@@ -56,7 +56,18 @@ pub fn (a URL) == (b URL) bool {
 	return a.value == b.value
 }
 
+pub fn (u URL) fragment() ?string {
+	// Stub: In a full implementation, this would parse and return the URL's fragment.
+	// For now, return the part after '#' if present.
+	idx := u.value.index_u8(`#`)
+	if idx < 0 {
+		return none
+	}
+	return u.value[idx + 1..]
+}
+
 pub fn (u URL) set_fragment(f ?string) {
+	_ = f
 }
 
 // Origin stub
@@ -120,13 +131,7 @@ pub struct ParentNode {
 	Node
 }
 
-// Stub for Element
-@[heap]
-pub struct Element {
-	Node
-pub mut:
-	namespace_uri string
-}
+// Element is defined in element.v
 
 // Stub for various HTML element types
 @[heap]
@@ -230,7 +235,12 @@ pub struct StyleScope {}
 
 pub struct StyleValue {}
 
-pub struct CustomPropertyRegistration {}
+pub struct CustomPropertyRegistration {
+pub mut:
+	initial_value ?string
+	syntax        string
+	inherits      bool
+}
 
 @[heap]
 pub struct CounterStyle {}
@@ -390,7 +400,10 @@ pub struct ProcessingInstruction {}
 pub struct Attr {}
 
 @[heap]
-pub struct Event {}
+pub struct Event {
+pub mut:
+	type_ string
+}
 
 @[heap]
 pub struct EventTarget {}
@@ -408,7 +421,11 @@ pub mut:
 }
 
 @[heap]
-pub struct ShadowRoot {}
+pub struct ShadowRoot {
+pub mut:
+	mode        ShadowRootMode
+	declarative bool
+}
 
 @[heap]
 pub struct DocumentObserver {}
@@ -531,42 +548,7 @@ pub fn (n &Node) text_content() ?string {
 	return none
 }
 
-// Element methods
-pub fn (e &Element) id() ?string {
-	return none
-}
-
-pub fn (e &Element) get_name() ?string {
-	return none
-}
-
-pub fn (e &Element) is_fullscreen_element() bool {
-	return false
-}
-
-pub fn (e &Element) set_fullscreen_flag(flag bool) {
-	_ = flag
-}
-
-pub fn (e &Element) is_potentially_scrollable() bool {
-	return false
-}
-
-pub fn (e &Element) document() ?&Document {
-	return none
-}
-
-pub fn (e &Element) is_svg_svg_element() bool {
-	return false
-}
-
-pub fn (e &Element) get_bounding_client_rect() Rect {
-	return Rect{}
-}
-
-pub fn (e &Element) append_child(child &Element) {
-	_ = child
-}
+// Element methods are in element.v
 
 // HTMLElement methods
 pub fn (he &HTMLElement) has_attribute(name string) bool {
@@ -912,6 +894,7 @@ pub fn (mut d Document) notify_each_document_observer_became_active() {}
 
 pub fn (mut d Document) evaluate_media_rules() {}
 
+// https://html.spec.whatwg.org/multipage/document-lifecycle.html#unloading-document-cleanup-steps
 pub fn (mut d Document) run_unloading_cleanup_steps() {}
 
 pub fn (mut d Document) set_needs_repaint() {
@@ -1699,6 +1682,7 @@ pub mut:
 // --- Constructor / Factory methods ---
 
 // create_and_initialize corresponds to Document::create_and_initialize
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#initialise-the-document-object
 pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, navigation_params &NavigationParams) !&Document {
 	// Stub: in full implementation would set up browsing context, window, etc.
 	mut doc := &Document{}
@@ -1723,9 +1707,189 @@ pub fn Document.create_for_fragment_parsing() &Document {
 }
 
 // construct_impl corresponds to Document::construct_impl (DOM Document() constructor)
+// https://dom.spec.whatwg.org/#dom-document-document
 pub fn Document.construct_impl() &Document {
 	mut doc := Document.create(url_about_blank())
 	return doc
+}
+
+// --- GC visitor ---
+
+// CellVisitor is the GC edge-visiting mechanism.
+// In C++ this is GC::Cell::Visitor; here we stub it
+// so the traversal structure is preserved.
+pub struct CellVisitor {
+mut:
+	visited int
+}
+
+pub fn (mut v CellVisitor) visit(ptr voidptr) {
+	_ = ptr
+	v.visited++
+}
+
+pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
+	// Base::visit_edges(visitor) — would call ParentNode.visit_edges
+	// d.style_scope_.visit_edges(visitor)
+
+	visitor.visit(d.pending_css_import_rules.data)
+	visitor.visit(d.page_)
+	visitor.visit(d.window)
+	visitor.visit(d.layout_root)
+	visitor.visit(d.style_sheets_)
+	visitor.visit(d.hovered_node)
+	visitor.visit(d.inspected_node)
+	visitor.visit(d.highlighted_node)
+	visitor.visit(d.active_favicon)
+	visitor.visit(d.browsing_context)
+	visitor.visit(d.focused_area)
+	visitor.visit(d.active_element_)
+	visitor.visit(d.target_element_)
+	visitor.visit(d.implementation_)
+	visitor.visit(d.current_script)
+	visitor.visit(d.associated_inert_template_document)
+	visitor.visit(d.appropriate_template_contents_owner_document)
+	visitor.visit(d.pending_parsing_blocking_script)
+	visitor.visit(d.history_)
+	visitor.visit(d.style_computer)
+	visitor.visit(d.font_computer)
+	// browsing_context visited again in C++ (intentional duplicate in original)
+
+	visitor.visit(d.applets_)
+	visitor.visit(d.anchors_)
+	visitor.visit(d.images_)
+	visitor.visit(d.embeds_)
+	visitor.visit(d.links_)
+	visitor.visit(d.forms_)
+	visitor.visit(d.scripts_)
+	visitor.visit(d.all_)
+	visitor.visit(d.fonts_)
+	visitor.visit(d.selection_)
+	visitor.visit(d.first_base_element_with_href_in_tree_order)
+	visitor.visit(d.first_base_element_with_target_in_tree_order)
+	visitor.visit(d.parser)
+	visitor.visit(d.lazy_load_intersection_observer)
+	visitor.visit(d.visual_viewport_)
+	visitor.visit(d.latest_entry)
+	visitor.visit(d.default_timeline)
+
+	for script in d.scripts_to_execute_when_parsing_has_finished {
+		visitor.visit(script)
+	}
+	for script in d.scripts_to_execute_in_order_as_soon_as_possible {
+		visitor.visit(script)
+	}
+	for script in d.scripts_to_execute_as_soon_as_possible {
+		visitor.visit(script)
+	}
+
+	for ni in d.node_iterators {
+		visitor.visit(ni)
+	}
+	for obs in d.document_observers_being_notified {
+		visitor.visit(obs)
+	}
+
+	for pse in d.pending_scroll_events {
+		visitor.visit(pse.target)
+	}
+	for ro in d.resize_observers {
+		visitor.visit(ro)
+	}
+
+	for svg_root in d.svg_roots_needing_relayout {
+		visitor.visit(svg_root)
+	}
+
+	for _, req in d.shared_resource_requests_ {
+		visitor.visit(req)
+	}
+
+	for tl in d.associated_animation_timelines {
+		visitor.visit(tl)
+	}
+	visitor.visit(d.list_of_available_images)
+
+	for fae in d.form_associated_elements_with_form_attribute {
+		visitor.visit(fae)
+	}
+
+	for el in d.potentially_named_elements {
+		visitor.visit(el)
+	}
+
+	for event in d.pending_animation_event_queue {
+		visitor.visit(event.event)
+		visitor.visit(event.animation)
+		visitor.visit(event.target)
+	}
+
+	for event in d.pending_fullscreen_events {
+		visitor.visit(event.element)
+	}
+
+	for sheet in d.adopted_style_sheets {
+		visitor.visit(sheet)
+	}
+	for el in d.script_blocking_style_sheet_set {
+		visitor.visit(el)
+	}
+
+	visitor.visit(d.active_view_transition)
+	visitor.visit(d.dynamic_view_transition_style_sheet)
+
+	for vt in d.update_callback_queue {
+		visitor.visit(vt)
+	}
+
+	for el in d.top_layer_elements {
+		visitor.visit(el)
+	}
+	for el in d.top_layer_pending_removals {
+		visitor.visit(el)
+	}
+	for el in d.showing_auto_popover_list {
+		visitor.visit(el)
+	}
+	for el in d.showing_hint_popover_list {
+		visitor.visit(el)
+	}
+	visitor.visit(d.popover_pointerdown_target)
+
+	for dlg in d.open_dialogs_list {
+		visitor.visit(dlg)
+	}
+	visitor.visit(d.dialog_pointerdown_target)
+
+	visitor.visit(d.console_client_)
+	visitor.visit(d.editing_host_manager_)
+	visitor.visit(d.local_storage_holder)
+	visitor.visit(d.session_storage_holder)
+
+	for el in d.render_blocking_elements {
+		visitor.visit(el)
+	}
+
+	visitor.visit(d.policy_container_)
+	visitor.visit(d.style_invalidator_)
+}
+
+// --- Lifecycle ---
+
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document
+pub fn (mut d Document) finalize() {
+	// Base::finalize()
+	// Unregister from the main thread event loop.
+	main_thread_event_loop_stub().unregister_document(d)
+}
+
+// https://html.spec.whatwg.org/multipage/dom.html#the-document-object
+pub fn (mut d Document) initialize() {
+	// Set up prototype, create selection, list of available images, etc.
+	d.selection_ = &Selection{}
+	d.list_of_available_images = &ListOfAvailableImages{}
+	d.page_.client_page_did_create_new_document(d)
+	d.ensure_cookie_version_index(d.url)
 }
 
 // --- Core property accessors ---
@@ -1760,6 +1924,11 @@ pub fn (d &Document) document_uri() string {
 
 // --- URL & Origin ---
 
+// C++: URL::Origin const& Document::origin() const
+pub fn (d &Document) origin() Origin {
+	return d.origin_
+}
+
 pub fn (d &Document) get_origin() Origin {
 	return d.origin_
 }
@@ -1768,6 +1937,7 @@ pub fn (mut d Document) set_origin(o Origin) {
 	d.origin_ = o
 }
 
+// https://html.spec.whatwg.org/multipage/urls-and-fetching.html#set-the-url
 pub fn (mut d Document) set_url(url URL) {
 	if d.url == url {
 		return
@@ -1806,6 +1976,7 @@ pub fn (d &Document) base_url() URL {
 	return d.fallback_base_url()
 }
 
+// https://html.spec.whatwg.org/multipage/urls-and-fetching.html#encoding-parsing-a-url
 pub fn (d &Document) encoding_parse_url(url_str string) ?URL {
 	// 1. Let encoding be document's character encoding.
 	_ = d.encoding_or_default()
@@ -1816,11 +1987,13 @@ pub fn (d &Document) encoding_parse_url(url_str string) ?URL {
 	return URL{url_str}
 }
 
+// https://html.spec.whatwg.org/multipage/urls-and-fetching.html#encoding-parsing-and-serializing-a-url
 pub fn (d &Document) encoding_parse_and_serialize_url(url string) ?string {
 	parsed := d.encoding_parse_url(url) or { return none }
 	return parsed.serialize()
 }
 
+// https://html.spec.whatwg.org/multipage/urls-and-fetching.html#respond-to-base-url-changes
 pub fn (mut d Document) respond_to_base_url_changes() {
 	// Ensure that CSS :link/:visited pseudo-classes are updated.
 	css_invalidate_style(d, .base_url_changed)
@@ -1902,6 +2075,7 @@ pub fn (d &Document) readiness() DocumentReadyState {
 	return d.readiness
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#update-the-current-document-readiness
 pub fn (mut d Document) update_readiness(readiness_value DocumentReadyState) {
 	if d.readiness == readiness_value {
 		return
@@ -1927,6 +2101,7 @@ pub fn (mut d Document) update_readiness(readiness_value DocumentReadyState) {
 
 // --- Selection ---
 
+// https://w3c.github.io/selection-api/#dom-document-getselection
 pub fn (d &Document) get_selection() ?&Selection {
 	if d.browsing_context == unsafe { nil } {
 		return none
@@ -1939,6 +2114,7 @@ pub fn (d &Document) get_selection() ?&Selection {
 
 // --- Cookie ---
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-cookie
 pub fn (d &Document) cookie() !string {
 	// On getting, if the document is a cookie-averse Document, return empty string.
 	if d.is_cookie_averse() {
@@ -1953,6 +2129,7 @@ pub fn (d &Document) cookie() !string {
 	return d.cookie_cache
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-cookie
 pub fn (mut d Document) set_cookie(cookie_string string) ! {
 	// On setting, if the document is a cookie-averse Document, do nothing.
 	if d.is_cookie_averse() {
@@ -1967,6 +2144,7 @@ pub fn (mut d Document) set_cookie(cookie_string string) ! {
 	d.cookie_cache = cookie_string
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#cookie-averse-document-object
 pub fn (d &Document) is_cookie_averse() bool {
 	// A Document is cookie-averse if:
 	// - its browsing context is null, OR
@@ -1989,30 +2167,35 @@ pub fn (d &Document) document_element() ?&Element {
 	return none
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#the-html-element-2
 pub fn (d &Document) html_element() ?&HTMLHtmlElement {
 	// The html element is the document element, if it's an html element.
 	// Stub: would call document_element() and check if it's HTMLHtmlElement
 	return none
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#the-head-element-2
 pub fn (d &Document) head() ?&HTMLHeadElement {
 	// The head element is the first head element child of the html element.
 	// Stub: would get html_element(), then find first HTMLHeadElement child
 	return none
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#the-title-element-2
 pub fn (d &Document) title_element() ?&HTMLTitleElement {
 	// The title element is the first title element in the document (in tree order).
 	// Stub: would search subtree for first HTMLTitleElement
 	return none
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#the-body-element-2
 pub fn (d &Document) body() ?&HTMLElement {
 	// The body element is the first body or frameset child of the html element.
 	// Stub: would get html_element(), then find first HTMLBodyElement or HTMLFrameSetElement child
 	return none
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-body
 pub fn (mut d Document) set_body(new_body &HTMLElement) ! {
 	// Per spec: if new_body is not body or frameset, throw HierarchyRequestError.
 	// If there's an existing body, replace it. Otherwise append to html element.
@@ -2020,6 +2203,7 @@ pub fn (mut d Document) set_body(new_body &HTMLElement) ! {
 	// Stub: would validate and perform DOM tree mutation
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#document.title
 pub fn (d &Document) title() string {
 	// Returns the title of the document - strips and collapses whitespace from
 	// the text content of the title element.
@@ -2028,6 +2212,7 @@ pub fn (d &Document) title() string {
 	return ''
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#document.title
 pub fn (mut d Document) set_title(value string) ! {
 	// Sets the document title by creating/updating the title element.
 	// Different behavior for HTML vs SVG documents.
@@ -2035,6 +2220,7 @@ pub fn (mut d Document) set_title(value string) ! {
 	// Stub: would find or create title element and set its text content
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-dir
 pub fn (d &Document) dir() string {
 	// Returns the dir attribute of the html element, if any.
 	_ = d.html_element() or { return '' }
@@ -2042,6 +2228,7 @@ pub fn (d &Document) dir() string {
 	return ''
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-dir
 pub fn (mut d Document) set_dir(dir string) {
 	// Sets the dir attribute of the html element.
 	_ = d.html_element() or { return }
@@ -2060,6 +2247,11 @@ pub fn (d &Document) get_browsing_context() ?&BrowsingContext {
 
 pub fn (mut d Document) set_browsing_context(bc &BrowsingContext) {
 	d.browsing_context = bc
+}
+
+// C++: Page& Document::page()
+pub fn (d &Document) page() &Page {
+	return d.page_
 }
 
 pub fn (d &Document) get_page() &Page {
@@ -2192,6 +2384,7 @@ pub fn (d &Document) supported_color_schemes() ?[]string {
 	return d.supported_color_schemes
 }
 
+// https://html.spec.whatwg.org/multipage/semantics.html#meta-color-scheme
 pub fn (mut d Document) obtain_supported_color_schemes() {
 	d.supported_color_schemes = none
 	// Scan <meta name="color-scheme"> elements and parse their content attribute.
@@ -2199,6 +2392,7 @@ pub fn (mut d Document) obtain_supported_color_schemes() {
 	// check name/content attributes, and parse CSS color-scheme value.
 }
 
+// https://html.spec.whatwg.org/multipage/semantics.html#meta-theme-color
 pub fn (mut d Document) obtain_theme_color() {
 	// Scan <meta name="theme-color"> elements and parse their content attribute.
 	// Stub: in full implementation would iterate subtree for HTMLMetaElement,
@@ -2302,11 +2496,13 @@ pub fn (mut d Document) tear_down_layout_tree() {
 
 // --- Node creation ---
 
+// https://dom.spec.whatwg.org/#dom-document-createelement
 pub fn (d &Document) create_element(local_name string) !&Element {
 	// Stub
 	return &Element{}
 }
 
+// https://dom.spec.whatwg.org/#internal-createelementns-steps
 pub fn (d &Document) create_element_ns(namespace_ ?string, qualified_name string) !&Element {
 	// Stub
 	return &Element{}
@@ -2320,6 +2516,7 @@ pub fn (d &Document) create_text_node(data string) &Text {
 	return &Text{}
 }
 
+// https://dom.spec.whatwg.org/#dom-document-createcdatasection
 pub fn (d &Document) create_cdata_section(data string) !&CDATASection {
 	if d.is_html_document() {
 		return error('InvalidStateError: createCDATASection on HTML document')
@@ -2331,21 +2528,25 @@ pub fn (d &Document) create_comment(data string) &Comment {
 	return &Comment{}
 }
 
+// https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction
 pub fn (d &Document) create_processing_instruction(target string, data string) !&ProcessingInstruction {
 	// Stub: would validate target
 	return &ProcessingInstruction{}
 }
 
+// https://dom.spec.whatwg.org/#dom-document-createattribute
 pub fn (d &Document) create_attribute(local_name string) !&Attr {
 	// Stub: would validate name
 	return &Attr{}
 }
 
+// https://dom.spec.whatwg.org/#dom-document-createattributens
 pub fn (d &Document) create_attribute_ns(namespace_ ?string, qualified_name string) !&Attr {
 	// Stub
 	return &Attr{}
 }
 
+// https://dom.spec.whatwg.org/#dom-document-createevent
 pub fn (d &Document) create_event(iface string) !&Event {
 	// Stub: legacy createEvent
 	return &Event{}
@@ -2357,15 +2558,18 @@ pub fn (d &Document) create_range() &Range {
 
 // --- Node operations ---
 
+// https://dom.spec.whatwg.org/#dom-document-importnode
 pub fn (d &Document) import_node(node &Node, deep bool) !&Node {
 	// Stub
 	return &Node{}
 }
 
+// https://dom.spec.whatwg.org/#concept-node-adopt
 pub fn (mut d Document) adopt_node(node &Node) {
 	// Stub: would re-parent node into this document
 }
 
+// https://dom.spec.whatwg.org/#dom-document-adoptnode
 pub fn (mut d Document) adopt_node_binding(node &Node) !&Node {
 	// Stub
 	return node
@@ -2434,6 +2638,7 @@ pub fn (mut d Document) set_target_element(element ?&Element) {
 
 // --- Scroll / fragment ---
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#try-to-scroll-to-the-fragment
 pub fn (mut d Document) try_to_scroll_to_the_fragment() {
 	// Per spec: parse the URL fragment, find matching element, scroll to it.
 	// Stub: in full implementation would call scroll_to_the_fragment() or
@@ -2446,11 +2651,13 @@ pub fn (mut d Document) try_to_scroll_to_the_fragment() {
 	}
 }
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#scroll-to-the-fragment-identifier
 pub fn (mut d Document) scroll_to_the_fragment() {
 	// Scroll to the element indicated by the document's URL fragment.
 	// Stub: in full implementation would find indicated element and scroll to it.
 }
 
+// https://drafts.csswg.org/cssom-view-1/#scroll-to-the-beginning-of-the-document
 pub fn (mut d Document) scroll_to_the_beginning_of_the_document() {
 	// Scroll to the beginning of the document.
 	// Stub: in full implementation would scroll navigable to position (0, 0).
@@ -2462,6 +2669,7 @@ pub fn (d &Document) created_for_appropriate_template_contents() bool {
 	return d.created_for_appropriate_template_contents
 }
 
+// https://html.spec.whatwg.org/multipage/scripting.html#appropriate-template-contents-owner-document
 pub fn (mut d Document) appropriate_template_contents_owner_document() &Document {
 	// 1. If document is not created by this algorithm:
 	if !d.created_for_appropriate_template_contents {
@@ -2498,6 +2706,7 @@ pub fn (mut d Document) set_window(w &Window) {
 
 // --- Dynamic markup insertion ---
 
+// https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-write
 pub fn (mut d Document) write(text []string) ! {
 	// document.write() - dynamic markup insertion
 	// 1. If document is XML, throw InvalidStateError.
@@ -2517,11 +2726,18 @@ pub fn (mut d Document) write(text []string) ! {
 	_ = joined
 }
 
+// https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-writeln
 pub fn (mut d Document) writeln(text []string) ! {
 	// document.writeln() - same as write() but appends a newline
 	mut all_text := text.clone()
 	all_text << '\n'
 	d.write(all_text)!
+}
+
+// https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-open
+// C++: WebIDL::ExceptionOr<Document*> Document::open(Optional<String> const&, Optional<String> const&)
+pub fn (mut d Document) open() !&Document {
+	return d.open_document()
 }
 
 pub fn (mut d Document) open_document() !&Document {
@@ -2582,6 +2798,7 @@ pub fn (mut d Document) open_window(url string, name string, features string) ?&
 	return none
 }
 
+// https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#closing-the-input-stream
 pub fn (mut d Document) close() ! {
 	// 1. If document is XML, throw InvalidStateError.
 	if d.is_xml_document() {
@@ -2602,6 +2819,7 @@ pub fn (mut d Document) close() ! {
 
 // --- Default view ---
 
+// https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-defaultview
 pub fn (d &Document) default_view() ?&WindowProxy {
 	// If this's browsing context is null, then return null.
 	if d.browsing_context == unsafe { nil } {
@@ -2706,16 +2924,24 @@ pub fn (mut d Document) history() &History {
 	return d.history_
 }
 
+// https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-location
+// C++: GC::Ptr<HTML::Location> Document::location()
+// https://html.spec.whatwg.org/multipage/history.html#dom-document-location
+pub fn (d &Document) location() ?&Location {
+	// The Document object's location attribute's getter must return this Document object's
+	// relevant global object's Location object, if this Document object is fully active,
+	// and null otherwise.
+	if !d.is_fully_active() {
+		return none
+	}
+	if d.window == unsafe { nil } {
+		return none
+	}
+	return d.window.location()
+}
+
 pub fn (d &Document) get_location() ?&Location {
-	// The document's location returns the Location object's relevant Document's Location.
-	// Returns null if browsing context is null.
-	if d.browsing_context == unsafe { nil } {
-		return none
-	}
-	if d.location_ == unsafe { nil } {
-		return none
-	}
-	return d.location_
+	return d.location()
 }
 
 // --- Loading ---
@@ -2732,6 +2958,7 @@ pub fn (mut d Document) decrement_number_of_things_delaying_the_load_event() {
 	d.number_of_things_delaying_the_load_event--
 }
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#completely-finish-loading
 pub fn (mut d Document) completely_finish_loading() {
 	nav := d.navigable() or { return }
 
@@ -2759,6 +2986,7 @@ pub fn (mut d Document) completely_finish_loading() {
 	}
 }
 
+// https://html.spec.whatwg.org/multipage/document-lifecycle.html#completely-loaded
 pub fn (d &Document) is_completely_loaded() bool {
 	return d.completely_loaded_time
 }
@@ -2769,21 +2997,29 @@ pub fn (mut d Document) set_page_showing(page_showing bool) {
 	d.page_showing = page_showing
 }
 
+// https://html.spec.whatwg.org/multipage/interaction.html#dom-document-hidden
 pub fn (d &Document) hidden() bool {
 	return d.visibility_state == .hidden
 }
 
-pub fn (d &Document) visibility_state_string() string {
+// https://html.spec.whatwg.org/multipage/interaction.html#dom-document-visibilitystate
+// C++: StringView Document::visibility_state() const
+pub fn (d &Document) visibility_state() string {
 	return match d.visibility_state {
 		.visible { 'visible' }
 		.hidden { 'hidden' }
 	}
 }
 
+pub fn (d &Document) visibility_state_string() string {
+	return d.visibility_state()
+}
+
 pub fn (d &Document) visibility_state_value() VisibilityState {
 	return d.visibility_state
 }
 
+// https://html.spec.whatwg.org/multipage/interaction.html#update-the-visibility-state
 pub fn (mut d Document) update_the_visibility_state(state VisibilityState) {
 	// 1. If document's visibility state equals visibilityState, then return.
 	if d.visibility_state == state {
@@ -2804,6 +3040,7 @@ pub fn (mut d Document) update_the_visibility_state(state VisibilityState) {
 
 // --- Media queries ---
 
+// https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes
 pub fn (mut d Document) evaluate_media_queries_and_report_changes() {
 	if !d.needs_media_query_evaluation {
 		return
@@ -2833,6 +3070,7 @@ pub fn (mut d Document) add_media_query_list(mql &MediaQueryList) {
 
 // --- Resize / Scroll ---
 
+// https://drafts.csswg.org/cssom-view/#document-run-the-resize-steps
 pub fn (mut d Document) run_the_resize_steps() {
 	// 1. If doc's viewport has had its width or height changed since the last time these steps were run,
 	//    fire an event named resize at the Window object associated with doc.
@@ -2858,6 +3096,7 @@ pub fn (mut d Document) run_the_resize_steps() {
 	}
 }
 
+// https://drafts.csswg.org/cssom-view-1/#document-run-the-scroll-steps
 pub fn (mut d Document) run_the_scroll_steps() {
 	// Process pending scroll events
 	pending_scroll_events := d.pending_scroll_events.clone()
@@ -2872,11 +3111,13 @@ pub fn (mut d Document) run_the_scroll_steps() {
 
 // --- Focus state ---
 
+// https://html.spec.whatwg.org/multipage/interaction.html#dom-document-hasfocus
 pub fn (d &Document) has_focus_for_bindings() bool {
 	// The hasFocus() method steps are to return the result of running the has focus steps given this.
 	return d.has_focus()
 }
 
+// https://html.spec.whatwg.org/multipage/interaction.html#has-focus-steps
 pub fn (d &Document) has_focus() bool {
 	// 1. If target's node navigable's top-level traversable does not have system focus, return false.
 	nav := d.navigable() or { return false }
@@ -2905,6 +3146,7 @@ pub fn (d &Document) has_focus() bool {
 	return false
 }
 
+// https://html.spec.whatwg.org/multipage/interaction.html#allow-focus-steps
 pub fn (d &Document) allow_focus() bool {
 	// 1. If target is allowed to use "focus-without-user-activation", return true.
 	if d.is_allowed_to_use_feature(.focus_without_user_activation) {
@@ -2929,6 +3171,7 @@ pub fn (mut d Document) detach_parser() {
 	d.active_parser_was_aborted = true
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#active-parser
 pub fn (d &Document) active_parser() ?&HTMLParser {
 	if d.parser == unsafe { nil } {
 		return none
@@ -2940,35 +3183,9 @@ pub fn (d &Document) is_temporary_document_for_fragment_parsing() bool {
 	return d.temporary_document_for_fragment_parsing == .yes
 }
 
-// --- Name validation ---
-
-pub fn is_valid_name(name string) bool {
-	if name.len == 0 {
-		return false
-	}
-	// Stub: simplified validation
-	first := name[0]
-	if !is_valid_name_start_character(first) {
-		return false
-	}
-	for i := 1; i < name.len; i++ {
-		if !is_valid_name_character(name[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-fn is_valid_name_start_character(c u8) bool {
-	return c == `:` || (c >= `A` && c <= `Z`) || c == `_` || (c >= `a` && c <= `z`)
-}
-
-fn is_valid_name_character(c u8) bool {
-	return is_valid_name_start_character(c) || c == `-` || c == `.` || (c >= `0` && c <= `9`)
-}
-
 // --- Node iterators / tree walkers ---
 
+// https://dom.spec.whatwg.org/#dom-document-createnodeiterator
 pub fn (d &Document) create_node_iterator(root &Node, what_to_show u32, filter ?&NodeFilter) &NodeIterator {
 	return &NodeIterator{
 		root:         root
@@ -2977,6 +3194,7 @@ pub fn (d &Document) create_node_iterator(root &Node, what_to_show u32, filter ?
 	}
 }
 
+// https://dom.spec.whatwg.org/#dom-document-createtreewalker
 pub fn (d &Document) create_tree_walker(root &Node, what_to_show u32, filter ?&NodeFilter) &TreeWalker {
 	return &TreeWalker{
 		root:         root
@@ -3034,6 +3252,7 @@ pub fn (mut d Document) set_needs_to_refresh_scroll_state(b bool) {
 
 // --- Collections ---
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-getelementsbyname
 pub fn (d &Document) get_elements_by_name(name string) &NodeList {
 	// Returns a live NodeList of elements with the given name attribute.
 	return &NodeList{
@@ -3042,6 +3261,7 @@ pub fn (d &Document) get_elements_by_name(name string) &NodeList {
 	}
 }
 
+// https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-applets
 pub fn (mut d Document) applets() &HTMLCollection {
 	if d.applets_ == unsafe { nil } {
 		d.applets_ = &HTMLCollection{}
@@ -3049,6 +3269,7 @@ pub fn (mut d Document) applets() &HTMLCollection {
 	return d.applets_
 }
 
+// https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-anchors
 pub fn (mut d Document) anchors() &HTMLCollection {
 	if d.anchors_ == unsafe { nil } {
 		d.anchors_ = &HTMLCollection{}
@@ -3056,6 +3277,7 @@ pub fn (mut d Document) anchors() &HTMLCollection {
 	return d.anchors_
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-images
 pub fn (mut d Document) images() &HTMLCollection {
 	if d.images_ == unsafe { nil } {
 		d.images_ = &HTMLCollection{}
@@ -3063,6 +3285,7 @@ pub fn (mut d Document) images() &HTMLCollection {
 	return d.images_
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-embeds
 pub fn (mut d Document) embeds() &HTMLCollection {
 	if d.embeds_ == unsafe { nil } {
 		d.embeds_ = &HTMLCollection{}
@@ -3070,10 +3293,12 @@ pub fn (mut d Document) embeds() &HTMLCollection {
 	return d.embeds_
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-plugins
 pub fn (mut d Document) plugins() &HTMLCollection {
 	return d.embeds()
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-links
 pub fn (mut d Document) links() &HTMLCollection {
 	if d.links_ == unsafe { nil } {
 		d.links_ = &HTMLCollection{}
@@ -3081,6 +3306,7 @@ pub fn (mut d Document) links() &HTMLCollection {
 	return d.links_
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-forms
 pub fn (mut d Document) forms() &HTMLCollection {
 	if d.forms_ == unsafe { nil } {
 		d.forms_ = &HTMLCollection{}
@@ -3088,6 +3314,7 @@ pub fn (mut d Document) forms() &HTMLCollection {
 	return d.forms_
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-scripts
 pub fn (mut d Document) scripts() &HTMLCollection {
 	if d.scripts_ == unsafe { nil } {
 		d.scripts_ = &HTMLCollection{}
@@ -3095,6 +3322,7 @@ pub fn (mut d Document) scripts() &HTMLCollection {
 	return d.scripts_
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-all
 pub fn (mut d Document) all() &HTMLAllCollection {
 	if d.all_ == unsafe { nil } {
 		d.all_ = &HTMLAllCollection{}
@@ -3102,18 +3330,22 @@ pub fn (mut d Document) all() &HTMLAllCollection {
 	return d.all_
 }
 
+// https://drafts.csswg.org/css-font-loading/#font-source
 pub fn (mut d Document) fonts() &FontFaceSet {
 	return d.fonts_
 }
 
+// https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-clear
 pub fn (mut d Document) clear() {
 	// Stub: does nothing per spec
 }
 
+// https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-captureevents
 pub fn (d &Document) capture_events() {
 	// Stub: does nothing per spec
 }
 
+// https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-releaseevents
 pub fn (d &Document) release_events() {
 	// Stub: does nothing per spec
 }
@@ -3145,16 +3377,22 @@ pub fn (mut d Document) for_each_active_css_style_sheet(callback fn (&CSSStyleSh
 
 // --- Referrer ---
 
+// C++: String Document::referrer() const
+pub fn (d &Document) referrer() string {
+	return d.referrer
+}
+
 pub fn (d &Document) get_referrer() string {
 	return d.referrer
 }
 
-pub fn (mut d Document) set_referrer(referrer string) {
-	d.referrer = referrer
+pub fn (mut d Document) set_referrer(r string) {
+	d.referrer = r
 }
 
 // --- Active state ---
 
+// https://html.spec.whatwg.org/multipage/document-sequences.html#fully-active
 pub fn (d &Document) is_fully_active() bool {
 	// A Document d is said to be fully active when d is the active document of a navigable navigable,
 	// and either navigable is a top-level traversable or navigable's container document is fully active.
@@ -3176,16 +3414,19 @@ pub fn (d &Document) is_active() bool {
 	return d.browsing_context != unsafe { nil }
 }
 
+// https://html.spec.whatwg.org/multipage/semantics.html#has-a-style-sheet-that-is-blocking-scripts
 pub fn (d &Document) has_a_style_sheet_that_is_blocking_scripts() bool {
 	return d.script_blocking_style_sheet_set.len > 0 || d.pending_css_import_rules.len > 0
 }
 
+// https://html.spec.whatwg.org/multipage/semantics.html#has-no-style-sheet-that-is-blocking-scripts
 pub fn (d &Document) has_no_style_sheet_that_is_blocking_scripts() bool {
 	return !d.has_a_style_sheet_that_is_blocking_scripts()
 }
 
 // --- Domain ---
 
+// https://html.spec.whatwg.org/multipage/origin.html#dom-document-domain
 pub fn (d &Document) domain() string {
 	// 1. Let effectiveDomain be this's origin's effective domain.
 	effective_domain := d.origin_.effective_domain() or {
@@ -3196,6 +3437,7 @@ pub fn (d &Document) domain() string {
 	return effective_domain
 }
 
+// https://html.spec.whatwg.org/multipage/browsers.html#dom-document-domain
 pub fn (mut d Document) set_domain(value string) ! {
 	// 1. If this's browsing context is null, throw a SecurityError.
 	if d.browsing_context == unsafe { nil } {
@@ -3249,6 +3491,7 @@ pub fn (mut d Document) set_navigation_id(id ?string) {
 
 // --- Navigables ---
 
+// https://html.spec.whatwg.org/multipage/document-sequences.html#descendant-navigables
 pub fn (d &Document) descendant_navigables() []&Navigable {
 	// 1. Let navigables be new list.
 	mut navigables := []&Navigable{}
@@ -3265,6 +3508,7 @@ pub fn (d &Document) descendant_navigables() []&Navigable {
 	return navigables
 }
 
+// https://html.spec.whatwg.org/multipage/document-sequences.html#inclusive-descendant-navigables
 pub fn (d &Document) inclusive_descendant_navigables() []&Navigable {
 	document_node_navigable := d.navigable() or { return [] }
 	// 1. Let navigables be « document's node navigable ».
@@ -3275,6 +3519,7 @@ pub fn (d &Document) inclusive_descendant_navigables() []&Navigable {
 	return navigables
 }
 
+// https://html.spec.whatwg.org/multipage/document-sequences.html#ancestor-navigables
 pub fn (d &Document) ancestor_navigables() []&Navigable {
 	document_node_navigable := d.navigable() or { return [] }
 	// 1. Let navigable be document's node navigable's parent.
@@ -3292,6 +3537,7 @@ pub fn (d &Document) ancestor_navigables() []&Navigable {
 	return ancestors
 }
 
+// https://html.spec.whatwg.org/multipage/document-sequences.html#inclusive-ancestor-navigables
 pub fn (d &Document) inclusive_ancestor_navigables() []&Navigable {
 	document_node_navigable := d.navigable() or { return [] }
 	// 1. Let navigables be document's ancestor navigables.
@@ -3302,6 +3548,7 @@ pub fn (d &Document) inclusive_ancestor_navigables() []&Navigable {
 	return navigables
 }
 
+// https://html.spec.whatwg.org/multipage/document-sequences.html#document-tree-child-navigables
 pub fn (d &Document) document_tree_child_navigables() []&Navigable {
 	// 1. If document's node navigable is null, return the empty list.
 	_ = d.navigable() or { return [] }
@@ -3325,6 +3572,7 @@ pub fn (d &Document) has_been_destroyed() bool {
 	return d.has_been_destroyed
 }
 
+// https://html.spec.whatwg.org/multipage/document-lifecycle.html#destroy-a-document
 pub fn (mut d Document) destroy() {
 	// 2. Abort document.
 	d.abort()
@@ -3362,6 +3610,7 @@ pub fn (mut d Document) destroy() {
 	d.tear_down_layout_tree()
 }
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#abort-a-document
 pub fn (mut d Document) abort() {
 	// 3. If document's during-loading navigation ID for WebDriver BiDi is non-null:
 	if d.navigation_id != none {
@@ -3380,6 +3629,7 @@ pub fn (mut d Document) abort() {
 	}
 }
 
+// https://html.spec.whatwg.org/multipage/document-lifecycle.html#unload-a-document
 pub fn (mut d Document) unload() {
 	// 5. Let intendToStoreInBfcache be false (simplification).
 
@@ -3428,6 +3678,7 @@ pub fn (mut d Document) unload() {
 	d.did_stop_being_active_document_in_navigable()
 }
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#make-active
 pub fn (mut d Document) make_active() {
 	// 1. Let window be document's relevant global object.
 	w := relevant_global_object_for_doc(d)
@@ -3452,6 +3703,7 @@ pub fn (mut d Document) make_active() {
 	d.notify_each_document_observer_became_active()
 }
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#make-document-unsalvageable
 pub fn (mut d Document) make_unsalvageable(reason string) {
 	_ = reason
 	// 3. Set document's salvageable state to false.
@@ -3704,8 +3956,14 @@ pub fn (d &Document) create_expression(expression string, resolver ?&XPathNSReso
 	return xpath_create_expression(expression, resolver)
 }
 
-pub fn (d &Document) evaluate_xpath(expression string, context_node &Node, resolver ?&XPathNSResolver, type_ u16, result ?&XPathResult) !&XPathResult {
+// https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-evaluate
+// C++: WebIDL::ExceptionOr<GC::Ref<XPath::XPathResult>> Document::evaluate(...)
+pub fn (d &Document) evaluate(expression string, context_node &Node, resolver ?&XPathNSResolver, type_ u16, result ?&XPathResult) !&XPathResult {
 	return xpath_evaluate(expression, context_node, resolver, type_, result)
+}
+
+pub fn (d &Document) evaluate_xpath(expression string, context_node &Node, resolver ?&XPathNSResolver, type_ u16, result ?&XPathResult) !&XPathResult {
+	return d.evaluate(expression, context_node, resolver, type_, result)
 }
 
 pub fn (d &Document) create_ns_resolver(node_resolver &Node) &Node {
@@ -3724,6 +3982,7 @@ pub fn (mut d Document) set_scheduled_selectionchange_event(value bool) {
 
 // --- Permissions ---
 
+// https://html.spec.whatwg.org/multipage/iframe-embed-object.html#allowed-to-use
 pub fn (d &Document) is_allowed_to_use_feature(feature PolicyControlledFeature) bool {
 	// 1. If document's browsing context is null, return false.
 	if d.browsing_context == unsafe { nil } {
@@ -3792,6 +4051,7 @@ pub fn (mut d Document) unregister_resize_observer(observer &ResizeObserver) {
 
 // --- Intersection observations ---
 
+// https://www.w3.org/TR/intersection-observer/#run-the-update-intersection-observations-steps
 pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64) {
 	// For each observer in the list of IntersectionObservers:
 	for observer in d.intersection_observers {
@@ -3806,6 +4066,7 @@ pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64)
 	}
 }
 
+// https://html.spec.whatwg.org/multipage/urls-and-fetching.html#start-intersection-observing-a-lazy-loading-element
 pub fn (mut d Document) start_intersection_observing_a_lazy_loading_element(element &Element) {
 	// 2. If doc's lazy load intersection observer is null, set it to a new IntersectionObserver instance.
 	if d.lazy_load_intersection_observer == unsafe { nil } {
@@ -3815,6 +4076,7 @@ pub fn (mut d Document) start_intersection_observing_a_lazy_loading_element(elem
 	d.lazy_load_intersection_observer.observe(element)
 }
 
+// https://html.spec.whatwg.org/multipage/urls-and-fetching.html#stop-intersection-observing-a-lazy-loading-element
 pub fn (mut d Document) stop_intersection_observing_a_lazy_loading_element(element &Element) {
 	// 2. Assert: doc's lazy load intersection observer is not null.
 	if d.lazy_load_intersection_observer == unsafe { nil } {
@@ -3826,6 +4088,7 @@ pub fn (mut d Document) stop_intersection_observing_a_lazy_loading_element(eleme
 
 // --- Resize observations ---
 
+// https://drafts.csswg.org/resize-observer-1/#gather-active-observations-h
 pub fn (mut d Document) gather_active_observations_at_depth(depth int) {
 	// For each observer in [[resizeObservers]]:
 	for mut observer in d.resize_observers {
@@ -3846,6 +4109,7 @@ pub fn (mut d Document) gather_active_observations_at_depth(depth int) {
 	}
 }
 
+// https://drafts.csswg.org/resize-observer-1/#broadcast-active-resize-observations
 pub fn (mut d Document) broadcast_active_resize_observations() int {
 	// 1. Let shallowestTargetDepth be infinity.
 	mut shallowest_target_depth := max_int
@@ -3869,6 +4133,7 @@ pub fn (mut d Document) broadcast_active_resize_observations() int {
 	return shallowest_target_depth
 }
 
+// https://drafts.csswg.org/resize-observer-1/#has-active-observations-h
 pub fn (d &Document) has_active_resize_observations() bool {
 	for observer in d.resize_observers {
 		if observer.active_targets().len > 0 {
@@ -3878,6 +4143,7 @@ pub fn (d &Document) has_active_resize_observations() bool {
 	return false
 }
 
+// https://drafts.csswg.org/resize-observer-1/#has-skipped-observations-h
 pub fn (d &Document) has_skipped_resize_observations() bool {
 	for observer in d.resize_observers {
 		if observer.skipped_targets().len > 0 {
@@ -3923,6 +4189,7 @@ pub fn (mut d Document) inform_all_viewport_clients_about_the_current_viewport_r
 
 // --- Declarative refresh ---
 
+// https://html.spec.whatwg.org/multipage/semantics.html#shared-declarative-refresh-steps
 pub fn (mut d Document) shared_declarative_refresh_steps(input string) {
 	// 1. If document's will declaratively refresh is true, then return.
 	if d.will_declaratively_refresh {
@@ -3989,6 +4256,7 @@ pub fn (mut d Document) shared_declarative_refresh_steps(input string) {
 
 // --- Animations ---
 
+// https://www.w3.org/TR/web-animations-1/#dom-document-timeline
 pub fn (mut d Document) timeline() &DocumentTimeline {
 	if d.default_timeline == unsafe { nil } {
 		d.default_timeline = &DocumentTimeline{}
@@ -4008,6 +4276,7 @@ pub fn (mut d Document) append_pending_animation_event(event PendingAnimationEve
 	d.pending_animation_event_queue << event
 }
 
+// https://www.w3.org/TR/web-animations-1/#update-animations-and-send-events
 pub fn (mut d Document) update_animations_and_send_events(timestamp f64) {
 	d.last_animation_frame_timestamp = timestamp
 	// 1. Update the current time of all timelines associated with doc.
@@ -4033,6 +4302,7 @@ pub fn (mut d Document) update_animations_and_send_events(timestamp f64) {
 	}
 }
 
+// https://www.w3.org/TR/web-animations-1/#remove-replaced-animations
 pub fn (mut d Document) remove_replaced_animations() {
 	// For every animation that is replaceable and has replace state of active,
 	// check if there exists a higher-composite-order replaceable animation
@@ -4053,7 +4323,7 @@ pub fn (d &Document) get_animations() ![]&Animation {
 		for anim in tl.associated_animations() {
 			effect := anim.effect() or { continue }
 			target := effect.target() or { continue }
-			target_doc := target.document() or { continue }
+			target_doc := target.document()
 			if target_doc == d {
 				result << anim
 			}
@@ -4147,6 +4417,7 @@ pub fn (mut d Document) set_design_mode_enabled_state(enabled bool) {
 	d.design_mode_enabled = enabled
 }
 
+// https://html.spec.whatwg.org/multipage/interaction.html#making-entire-documents-editable:-the-designmode-idl-attribute
 pub fn (d &Document) design_mode() string {
 	if d.design_mode_enabled {
 		return 'on'
@@ -4162,6 +4433,7 @@ pub fn (mut d Document) set_design_mode(dm string) ! {
 
 // --- Hit testing ---
 
+// https://drafts.csswg.org/cssom-view/#dom-document-elementfrompoint
 pub fn (d &Document) element_from_point(x f64, y f64) ?&Element {
 	// 1. If either argument is negative or beyond viewport, return null.
 	viewport := d.viewport_rect()
@@ -4178,6 +4450,7 @@ pub fn (d &Document) element_from_point(x f64, y f64) ?&Element {
 	return d.document_element()
 }
 
+// https://drafts.csswg.org/cssom-view/#dom-document-elementsfrompoint
 pub fn (d &Document) elements_from_point(x f64, y f64) []&Element {
 	// 1. Let sequence be a new empty sequence.
 	mut sequence := []&Element{}
@@ -4199,6 +4472,7 @@ pub fn (d &Document) elements_from_point(x f64, y f64) []&Element {
 	return sequence
 }
 
+// https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement
 pub fn (d &Document) scrolling_element() ?&Element {
 	// 1. If the Document is in quirks mode:
 	if d.in_quirks_mode() {
@@ -4217,6 +4491,7 @@ pub fn (d &Document) scrolling_element() ?&Element {
 
 // --- Named properties ---
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-tree-accessors:supported-property-names
 pub fn (d &Document) supported_property_names() []string {
 	// The supported property names consist of name/id attributes from
 	// exposed embed, form, iframe, img, and exposed object elements.
@@ -4248,22 +4523,26 @@ pub fn (mut d Document) unregister_shadow_root(shadow_root &ShadowRoot) {
 
 // --- Top layer ---
 
+// https://drafts.csswg.org/css-position-4/#add-an-element-to-the-top-layer
 pub fn (mut d Document) add_an_element_to_the_top_layer(element &Element) {
 	d.top_layer_elements << element
 	d.invalidate_layout_tree(.document_add_an_element_to_the_top_layer)
 }
 
+// https://drafts.csswg.org/css-position-4/#request-an-element-to-be-removed-from-the-top-layer
 pub fn (mut d Document) request_an_element_to_be_remove_from_the_top_layer(element &Element) {
 	d.top_layer_pending_removals << element
 	d.invalidate_layout_tree(.document_request_an_element_to_be_removed_from_the_top_layer)
 }
 
+// https://drafts.csswg.org/css-position-4/#remove-an-element-from-the-top-layer-immediately
 pub fn (mut d Document) remove_an_element_from_the_top_layer_immediately(element &Element) {
 	d.top_layer_elements = d.top_layer_elements.filter(it != element)
 	d.top_layer_pending_removals = d.top_layer_pending_removals.filter(it != element)
 	d.invalidate_layout_tree(.document_immediately_remove_element_from_the_top_layer)
 }
 
+// https://drafts.csswg.org/css-position-4/#process-top-layer-removals
 pub fn (mut d Document) process_top_layer_removals() {
 	if d.top_layer_pending_removals.len == 0 {
 		return
@@ -4277,6 +4556,7 @@ pub fn (mut d Document) process_top_layer_removals() {
 
 // --- Popover ---
 
+// https://html.spec.whatwg.org/multipage/popover.html#topmost-auto-popover
 pub fn (d &Document) topmost_auto_or_hint_popover() ?&HTMLElement {
 	if d.showing_hint_popover_list.len > 0 {
 		return d.showing_hint_popover_list.last()
@@ -4334,6 +4614,7 @@ pub fn (d &Document) find_matching_text(query string, case_sensitivity CaseSensi
 
 // --- HTML parsing ---
 
+// https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#parse-html-from-a-string
 pub fn (mut d Document) parse_html_from_a_string(markup string) {
 	// 1. Set document's type to "html".
 	d.type_ = .html
@@ -4430,6 +4711,7 @@ pub fn (mut d Document) word_segmenter() &Segmenter {
 
 // --- Beforeunload ---
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#steps-to-fire-beforeunload
 pub fn (mut d Document) steps_to_fire_beforeunload(unload_prompt_shown bool) StepsToFireBeforeunloadResult {
 	// 1. Let unloadPromptCanceled be false.
 	mut unload_prompt_canceled := false
@@ -4496,12 +4778,14 @@ pub fn (mut d Document) set_onfullscreenerror(value ?&CallbackType) {
 
 // --- View transitions ---
 
+// https://drafts.csswg.org/css-view-transitions-1/#dom-document-startviewtransition
 pub fn (mut d Document) start_view_transition(update_callback ?&CallbackType) &ViewTransition {
 	vt := &ViewTransition{}
 	d.active_view_transition = vt
 	return vt
 }
 
+// https://drafts.csswg.org/css-view-transitions-1/#perform-pending-transition-operations
 pub fn (mut d Document) perform_pending_transition_operations() {
 	// 1. If document's active view transition is not null:
 	if d.active_view_transition != unsafe { nil } {
@@ -4515,10 +4799,12 @@ pub fn (mut d Document) perform_pending_transition_operations() {
 	}
 }
 
+// https://drafts.csswg.org/css-view-transitions-1/#flush-the-update-callback-queue
 pub fn (mut d Document) flush_the_update_callback_queue() {
 	d.update_callback_queue.clear()
 }
 
+// https://drafts.csswg.org/css-view-transitions-1/#view-transition-page-visibility-change-steps
 pub fn (mut d Document) view_transition_page_visibility_change_steps() {
 	// Queue a global task on the DOM manipulation task source:
 	// If document's visibility state is "hidden" and active view transition is not null,
@@ -4543,6 +4829,7 @@ pub fn (mut d Document) set_active_view_transition(vt ?&ViewTransition) {
 
 // --- Fullscreen ---
 
+// https://fullscreen.spec.whatwg.org/#run-the-fullscreen-steps
 pub fn (mut d Document) run_fullscreen_steps() {
 	// 1. Let pendingEvents be document's list of pending fullscreen events.
 	pending_events := d.pending_fullscreen_events.clone()
@@ -4577,6 +4864,7 @@ pub fn (mut d Document) append_pending_fullscreen_change(type_ PendingFullscreen
 	}
 }
 
+// https://fullscreen.spec.whatwg.org/#fullscreen-element
 pub fn (d &Document) fullscreen_element() ?&Element {
 	// The fullscreen element is the topmost element in the document's top layer
 	// whose fullscreen flag is set, if any, and null otherwise.
@@ -4589,18 +4877,22 @@ pub fn (d &Document) fullscreen_element() ?&Element {
 	return none
 }
 
+// https://fullscreen.spec.whatwg.org/#dom-document-fullscreenelement
 pub fn (d &Document) fullscreen_element_for_bindings() ?&Element {
 	return d.fullscreen_element()
 }
 
+// https://fullscreen.spec.whatwg.org/#dom-document-fullscreen
 pub fn (d &Document) fullscreen() bool {
 	return d.fullscreen_element() != none
 }
 
+// https://fullscreen.spec.whatwg.org/#dom-document-fullscreenenabled
 pub fn (d &Document) fullscreen_enabled() bool {
 	return d.is_allowed_to_use_feature(.fullscreen)
 }
 
+// https://fullscreen.spec.whatwg.org/#fully-exit-fullscreen
 pub fn (mut d Document) fully_exit_fullscreen() {
 	// 1. If document's fullscreen element is null, terminate.
 	fullscreened := d.fullscreen_element() or { return }
@@ -4611,13 +4903,14 @@ pub fn (mut d Document) fully_exit_fullscreen() {
 			to_unfullscreen << el
 		}
 	}
-	for el in to_unfullscreen {
-		d.unfullscreen_element(el)
+	for mut el in to_unfullscreen {
+		d.unfullscreen_element(mut el)
 	}
 	// 3. Exit fullscreen document.
 	d.exit_fullscreen()
 }
 
+// https://fullscreen.spec.whatwg.org/#exit-fullscreen
 pub fn (mut d Document) exit_fullscreen() &Promise {
 	promise := &Promise{}
 	// 2. If doc is not fully active or doc's fullscreen element is null, reject.
@@ -4625,19 +4918,21 @@ pub fn (mut d Document) exit_fullscreen() &Promise {
 		return promise
 	}
 	// Unfullscreen the fullscreen element
-	if el := d.fullscreen_element() {
+	if mut el := d.fullscreen_element() {
 		d.append_pending_fullscreen_change(.change, el)
-		d.unfullscreen_element(el)
+		d.unfullscreen_element(mut el)
 	}
 	return promise
 }
 
-pub fn (mut d Document) unfullscreen_element(element &Element) {
+// https://fullscreen.spec.whatwg.org/#unfullscreen-an-element
+pub fn (mut d Document) unfullscreen_element(mut element Element) {
 	// Unset element's fullscreen flag and remove from the top layer immediately.
 	element.set_fullscreen_flag(false)
 	d.remove_an_element_from_the_top_layer_immediately(element)
 }
 
+// https://fullscreen.spec.whatwg.org/#unfullscreen-a-document
 pub fn (mut d Document) unfullscreen() {
 	// Unfullscreen all elements within document's top layer whose fullscreen flag is set.
 	mut fullscreen_elements := []&Element{}
@@ -4646,11 +4941,12 @@ pub fn (mut d Document) unfullscreen() {
 			fullscreen_elements << el
 		}
 	}
-	for el in fullscreen_elements {
-		d.unfullscreen_element(el)
+	for mut el in fullscreen_elements {
+		d.unfullscreen_element(mut el)
 	}
 }
 
+// https://fullscreen.spec.whatwg.org/#simple-fullscreen-document
 pub fn (d &Document) is_simple_fullscreen_document() bool {
 	// A document is a simple fullscreen document if there is exactly one element
 	// in its top layer that has its fullscreen flag set.
@@ -4668,10 +4964,12 @@ pub fn (d &Document) is_simple_fullscreen_document() bool {
 
 // --- Render blocking ---
 
+// https://html.spec.whatwg.org/multipage/dom.html#render-blocked
 pub fn (d &Document) is_render_blocked() bool {
 	return d.render_blocking_elements.len > 0
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#allows-adding-render-blocking-elements
 pub fn (d &Document) allows_adding_render_blocking_elements() bool {
 	// A document allows adding render-blocking elements if document's content type is "text/html"
 	// and the body element of document is null.
@@ -4698,6 +4996,7 @@ pub fn (mut d Document) remove_pending_css_import_rule(rule VoidPtr) {
 
 // --- Registered properties ---
 
+// https://drafts.css-houdini.org/css-properties-values-api/#determining-registration
 pub fn (d &Document) get_registered_custom_property(name string) ?CustomPropertyRegistration {
 	if name in d.registered_property_set {
 		return d.registered_property_set[name]
@@ -4766,6 +5065,7 @@ pub fn (mut d Document) reset_command_value_overrides() {
 
 // --- Container document ---
 
+// https://html.spec.whatwg.org/multipage/document-sequences.html#doc-container-document
 pub fn (d &Document) container_document() ?&Document {
 	// 1. If document's node navigable is null, then return null.
 	node_navigable := d.navigable() or { return none }
@@ -4876,6 +5176,7 @@ pub fn (mut d Document) set_latest_entry(e ?&SessionHistoryEntry) {
 	d.latest_entry = e or { unsafe { nil } }
 }
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#restore-the-history-object-state
 pub fn (mut d Document) restore_the_history_object_state(entry &SessionHistoryEntry) {
 	// 1. Let targetRealm be document's relevant realm.
 	realm := relevant_realm_for_doc(d)
@@ -4889,6 +5190,7 @@ pub fn (mut d Document) restore_the_history_object_state(entry &SessionHistoryEn
 	d.history().set_state(state)
 }
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#update-document-for-history-step-application
 pub fn (mut d Document) update_for_history_step_application(entry &SessionHistoryEntry, do_not_reactivate bool, script_history_length int, script_history_index int, navigation_type ?NavigationType) {
 	// 1. Let documentIsNew be true if document's latest entry is null; otherwise false.
 	document_is_new := d.latest_entry == unsafe { nil }
@@ -4926,12 +5228,14 @@ pub fn (mut d Document) update_for_history_step_application(entry &SessionHistor
 	_ = do_not_reactivate
 }
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#snapshotting-source-snapshot-params
 pub fn (mut d Document) snapshot_source_snapshot_params() &SourceSnapshotParams {
 	return &SourceSnapshotParams{}
 }
 
 // --- Last modified ---
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-lastmodified
 pub fn (d &Document) last_modified() string {
 	// The lastModified attribute returns the date and time of the Document's source file's
 	// last modification, formatted as MM/DD/YYYY HH:MM:SS.
@@ -4944,9 +5248,10 @@ pub fn (d &Document) last_modified() string {
 
 // --- Populate ---
 
+// https://html.spec.whatwg.org/multipage/document-lifecycle.html#populate-with-html/head/body
 pub fn (mut d Document) populate_with_html_head_and_body() ! {
 	// 1. Let html be the result of creating an element given document, "html", HTML namespace.
-	html_el := d.create_element(tag_html_) or { return err }
+	mut html_el := d.create_element(tag_html_) or { return err }
 	// 2. Let head be the result of creating an element given document, "head", HTML namespace.
 	head_el := d.create_element(tag_head_) or { return err }
 	// 3. Let body be the result of creating an element given document, "body", HTML namespace.
@@ -4965,6 +5270,7 @@ pub fn (d &Document) get_allow_declarative_shadow_roots() bool {
 	return d.allow_declarative_shadow_roots
 }
 
+// https://dom.spec.whatwg.org/#document-allow-declarative-shadow-roots
 pub fn (mut d Document) set_allow_declarative_shadow_roots(allow bool) {
 	d.allow_declarative_shadow_roots = allow
 }
@@ -5148,6 +5454,7 @@ pub fn (mut d Document) check_favicon_after_loading_link_resource() {
 
 // --- lookup_custom_element_definition ---
 
+// https://html.spec.whatwg.org/multipage/custom-elements.html#look-up-a-custom-element-definition
 pub fn (d &Document) lookup_custom_element_definition(namespace_ ?string, local_name string, is_ ?string) ?VoidPtr {
 	// 1. If namespace is not the HTML namespace, then return null.
 	ns := namespace_ or { return none }
@@ -5168,6 +5475,7 @@ pub fn (d &Document) lookup_custom_element_definition(namespace_ ?string, local_
 
 // --- SVG root element ---
 
+// https://www.w3.org/TR/SVG2/struct.html#InterfaceDocumentExtensions
 pub fn (d &Document) root_element() ?VoidPtr {
 	// Returns SVG root element if document element is an SVGSVGElement.
 	doc_el := d.document_element() or { return none }
@@ -5262,6 +5570,794 @@ pub fn update_layout_reason_to_string(reason UpdateLayoutReason) string {
 		.view_transition_capture { 'ViewTransitionCapture' }
 		.window_scroll { 'WindowScroll' }
 	}
+}
+
+// --- Missing methods translated from C++ ---
+
+// https://html.spec.whatwg.org/multipage/webappapis.html#relevant-settings-object
+// C++: HTML::EnvironmentSettingsObject& Document::relevant_settings_object() const
+pub fn (d &Document) relevant_settings_object() &EnvironmentSettingsObjectStub {
+	// The relevant settings object for a platform object o is the environment settings
+	// object of the relevant Realm for o.
+	return &EnvironmentSettingsObjectStub{}
+}
+
+// C++: Optional<String> Document::navigation_id() const
+pub fn (d &Document) navigation_id() ?string {
+	return d.navigation_id
+}
+
+// C++: bool Document::allow_declarative_shadow_roots() const
+// https://dom.spec.whatwg.org/#document-allow-declarative-shadow-roots
+pub fn (d &Document) allow_declarative_shadow_roots() bool {
+	return d.allow_declarative_shadow_roots
+}
+
+// C++: EventTarget* Document::get_parent(Event const& event)
+pub fn (d &Document) get_parent(event &Event) ?&Window {
+	// If event type is "load", return null.
+	if event.type_ == 'load' {
+		return none
+	}
+	if d.window == unsafe { nil } {
+		return none
+	}
+	// Otherwise return the window.
+	return d.window
+}
+
+// C++: bool Document::is_render_blocking_element(GC::Ref<Element> element) const
+pub fn (d &Document) is_render_blocking_element(element &Element) bool {
+	for el in d.render_blocking_elements {
+		if el == element {
+			return true
+		}
+	}
+	return false
+}
+
+// C++: bool Document::is_valid_name(String const& name)
+pub fn is_valid_name(name string) bool {
+	if name.len == 0 {
+		return false
+	}
+	runes := name.runes()
+	// First character must be a valid name start character
+	first := u32(runes[0])
+	if !is_valid_name_start_character(first) {
+		return false
+	}
+	// Remaining characters must be valid name characters
+	for i := 1; i < runes.len; i++ {
+		if !is_valid_name_character(u32(runes[i])) {
+			return false
+		}
+	}
+	return true
+}
+
+fn is_valid_name_start_character(ch u32) bool {
+	// https://www.w3.org/TR/xml/#NT-NameStartChar
+	// ":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF]
+	// | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F]
+	// | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD]
+	// | [#x10000-#xEFFFF]
+	if ch == `:` || ch == `_` {
+		return true
+	}
+	if ch >= `A` && ch <= `Z` {
+		return true
+	}
+	if ch >= `a` && ch <= `z` {
+		return true
+	}
+	if ch >= 0xC0 && ch <= 0xD6 {
+		return true
+	}
+	if ch >= 0xD8 && ch <= 0xF6 {
+		return true
+	}
+	if ch >= 0xF8 && ch <= 0x2FF {
+		return true
+	}
+	if ch >= 0x370 && ch <= 0x37D {
+		return true
+	}
+	if ch >= 0x37F && ch <= 0x1FFF {
+		return true
+	}
+	if ch >= 0x200C && ch <= 0x200D {
+		return true
+	}
+	if ch >= 0x2070 && ch <= 0x218F {
+		return true
+	}
+	if ch >= 0x2C00 && ch <= 0x2FEF {
+		return true
+	}
+	if ch >= 0x3001 && ch <= 0xD7FF {
+		return true
+	}
+	if ch >= 0xF900 && ch <= 0xFDCF {
+		return true
+	}
+	if ch >= 0xFDF0 && ch <= 0xFFFD {
+		return true
+	}
+	if ch >= 0x10000 && ch <= 0xEFFFF {
+		return true
+	}
+	return false
+}
+
+fn is_valid_name_character(ch u32) bool {
+	// NameStartChar plus "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
+	if is_valid_name_start_character(ch) {
+		return true
+	}
+	if ch == `-` || ch == `.` {
+		return true
+	}
+	if ch >= `0` && ch <= `9` {
+		return true
+	}
+	if ch == 0xB7 {
+		return true
+	}
+	if ch >= 0x0300 && ch <= 0x036F {
+		return true
+	}
+	if ch >= 0x203F && ch <= 0x2040 {
+		return true
+	}
+	return false
+}
+
+// C++: Vector<CSS::BackgroundLayerData> const* Document::background_layers() const
+pub fn (d &Document) background_layers() ?[]BackgroundLayerData {
+	body_el := d.body() or { return none }
+	// NB: Called during painting inside update_layout().
+	layout := body_el.unsafe_layout_node() or { return none }
+	_ = layout
+	// Stub: would return layout.background_layers()
+	return none
+}
+
+// C++: CSS::ImageRendering Document::background_image_rendering() const
+pub fn (d &Document) background_image_rendering() ImageRendering {
+	body_el := d.body() or { return .auto_ }
+	layout := body_el.unsafe_layout_node() or { return .auto_ }
+	_ = layout
+	// Stub: would return layout.computed_values().image_rendering()
+	return .auto_
+}
+
+// C++: void Document::mark_svg_root_as_needing_relayout(Layout::SVGSVGBox& svg_root)
+pub fn (mut d Document) mark_svg_root_as_needing_relayout(svg_root &SVGSVGBox) {
+	d.svg_roots_needing_relayout << svg_root
+}
+
+// C++: void Document::update_layout_if_needed_for_node(Node const& node, UpdateLayoutReason reason)
+pub fn (mut d Document) update_layout_if_needed_for_node(node &Node, reason UpdateLayoutReason) {
+	if node.is_connected() {
+		d.update_layout(reason)
+	}
+}
+
+// C++: void Document::update_style_if_needed_for_element(AbstractElement const& abstract_element)
+pub fn (mut d Document) update_style_if_needed_for_element(element &Element) {
+	if d.element_needs_style_update(element) {
+		d.update_style()
+	}
+}
+
+// C++: bool Document::element_needs_style_update(AbstractElement const& abstract_element) const
+pub fn (d &Document) element_needs_style_update(element &Element) bool {
+	// If there are document-level reasons to update style, we can't skip.
+	if d.needs_full_style_update {
+		return true
+	}
+	if d.needs_animated_style_update {
+		return true
+	}
+	if d.needs_invalidation_of_elements_affected_by_has {
+		return true
+	}
+	if d.style_invalidator_ != unsafe { nil } {
+		if d.style_invalidator_.has_pending_invalidations() {
+			return true
+		}
+	}
+	// Check the element itself.
+	if element.needs_style_update() {
+		return true
+	}
+	if element.entire_subtree_needs_style_update() {
+		return true
+	}
+	// If the navigable has a container and that container needs a style update, then we need one
+	// as well, since the container's style can affect this element (e.g. via media queries or
+	// viewport units).
+	if nav := d.navigable() {
+		if container := nav.container() {
+			_ = container
+			// Stub: would check container.document().element_needs_style_update(container)
+		}
+	}
+	return false
+}
+
+// C++: GC::Ptr<Layout::Node> Document::highlighted_layout_node()
+pub fn (d &Document) highlighted_layout_node() ?&LayoutNode {
+	if d.highlighted_node == unsafe { nil } {
+		return none
+	}
+	// NB: Called during painting inside update_layout().
+	if d.highlighted_pseudo_element == none || d.highlighted_node.node_type != .element_node {
+		return d.highlighted_node.unsafe_layout_node()
+	}
+	// Stub: would call element.get_pseudo_element_node(pseudo_element)
+	return d.highlighted_node.unsafe_layout_node()
+}
+
+// C++: void Document::update_active_element()
+pub fn (mut d Document) update_active_element() {
+	d.set_active_element(d.calculate_active_element())
+}
+
+fn (d &Document) calculate_active_element() ?&Element {
+	// The active element is the element that is focused, or the body/document element.
+	if d.focused_area != unsafe { nil } && d.focused_area.node_type == .element_node {
+		// Stub: would cast to Element
+	}
+	body_el := d.body() or { return d.document_element() }
+	return &body_el.Element
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#the-indicated-part-of-the-document
+// C++: Document::IndicatedPart Document::determine_the_indicated_part() const
+pub fn (d &Document) determine_the_indicated_part() IndicatedPart {
+	// 1. Let fragment be document's URL's fragment.
+	fragment := d.url.fragment() or {
+		// 2. If fragment is the empty string, return the special value top of the document.
+		return IndicatedPart{.top_of_document, unsafe { nil }}
+	}
+	if fragment.len == 0 {
+		return IndicatedPart{.top_of_document, unsafe { nil }}
+	}
+
+	// 3. Let potentialIndicatedElement be the result of finding a potential indicated element
+	//    given document and fragment.
+	potential := d.find_a_potential_indicated_element(fragment)
+	// 4. If potentialIndicatedElement is not null, then return potentialIndicatedElement.
+	if potential != unsafe { nil } {
+		return IndicatedPart{.element, potential}
+	}
+
+	// 5-6. Let fragmentBytes be the result of percent-decoding fragment.
+	//      Let decodedFragment be the result of running UTF-8 decode without BOM on fragmentBytes.
+	decoded_fragment := url_percent_decode(fragment)
+
+	// 7. Set potentialIndicatedElement to the result of finding a potential indicated element
+	//    given document and decodedFragment.
+	potential2 := d.find_a_potential_indicated_element(decoded_fragment)
+	// 8. If potentialIndicatedElement is not null, then return potentialIndicatedElement.
+	if potential2 != unsafe { nil } {
+		return IndicatedPart{.element, potential2}
+	}
+
+	// 9. If decodedFragment is an ASCII case-insensitive match for the string top,
+	//    then return the top of the document.
+	if decoded_fragment.to_lower() == 'top' {
+		return IndicatedPart{.top_of_document, unsafe { nil }}
+	}
+
+	// 10. Return null.
+	return IndicatedPart{.none_, unsafe { nil }}
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#find-a-potential-indicated-element
+// C++: Element* Document::find_a_potential_indicated_element(FlyString const& fragment) const
+pub fn (d &Document) find_a_potential_indicated_element(fragment string) &Element {
+	// 1. If there is an element in the document tree whose root is document and that
+	//    has an ID equal to fragment, then return the first such element in tree order.
+	if el := d.get_element_by_id(fragment) {
+		return el
+	}
+	// 2. If there is an a element in the document tree whose root is document that has
+	//    a name attribute whose value is equal to fragment, then return the first such
+	//    element in tree order.
+	// Stub: would walk the tree looking for <a name="fragment">
+
+	// 3. Return null.
+	return unsafe { nil }
+}
+
+// https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#document-write-steps
+// C++: WebIDL::ExceptionOr<void> Document::run_the_document_write_steps(...)
+pub fn (mut d Document) run_the_document_write_steps(text []string, add_line_feed bool) ! {
+	// 1. Let string be the empty string.
+	mut sb := strings.new_builder(256)
+
+	// 3. For each value of text: append it to string.
+	for val in text {
+		sb.write_string(val)
+	}
+
+	// 5. If lineFeed is true, append U+000A LINE FEED to string.
+	if add_line_feed {
+		sb.write_u8(0x0A)
+	}
+
+	// 6. If document is an XML document, then throw an "InvalidStateError" DOMException.
+	if d.type_ == .xml {
+		return error('InvalidStateError: write() called on XML document')
+	}
+
+	// 7. If document's throw-on-dynamic-markup-insertion counter is greater than 0, throw.
+	if d.throw_on_dynamic_markup_insertion_counter > 0 {
+		return error('InvalidStateError: throw-on-dynamic-markup-insertion-counter > 0')
+	}
+
+	// 8. If document's active parser was aborted is true, then return.
+	if d.active_parser_was_aborted {
+		return
+	}
+
+	// 9. If the insertion point is undefined, then:
+	if d.parser == unsafe { nil } {
+		// 1. If document's unload counter > 0 or ignore-destructive-writes counter > 0, return.
+		if d.unload_counter > 0 || d.ignore_destructive_writes_counter > 0 {
+			return
+		}
+		// 2. Run the document open steps with document.
+		d.open_document() or { return err }
+	}
+
+	// 10. Insert string into the input stream just before the insertion point.
+	if d.parser != unsafe { nil } {
+		d.parser.feed(sb.str())
+	}
+
+	// 11. If document's pending parsing-blocking script is null, have the HTML parser
+	//     process string.
+	if d.pending_parsing_blocking_script == unsafe { nil } {
+		if d.parser != unsafe { nil } {
+			d.parser.run()
+		}
+	}
+}
+
+// C++: GC::Ref<HTML::HTMLScriptElement> Document::take_pending_parsing_blocking_script(...)
+pub fn (mut d Document) take_pending_parsing_blocking_script() &HTMLScriptElement {
+	script := d.pending_parsing_blocking_script
+	d.pending_parsing_blocking_script = unsafe { nil }
+	return script
+}
+
+// C++: Vector<...> Document::take_scripts_to_execute_when_parsing_has_finished(...)
+pub fn (mut d Document) take_scripts_to_execute_when_parsing_has_finished() []&HTMLScriptElement {
+	result := d.scripts_to_execute_when_parsing_has_finished.clone()
+	d.scripts_to_execute_when_parsing_has_finished.clear()
+	return result
+}
+
+// C++: Vector<...> Document::take_scripts_to_execute_as_soon_as_possible(...)
+pub fn (mut d Document) take_scripts_to_execute_as_soon_as_possible() []&HTMLScriptElement {
+	result := d.scripts_to_execute_as_soon_as_possible.clone()
+	d.scripts_to_execute_as_soon_as_possible.clear()
+	return result
+}
+
+// C++: Vector<...> Document::take_scripts_to_execute_in_order_as_soon_as_possible(...)
+pub fn (mut d Document) take_scripts_to_execute_in_order_as_soon_as_possible() []&HTMLScriptElement {
+	result := d.scripts_to_execute_in_order_as_soon_as_possible.clone()
+	d.scripts_to_execute_in_order_as_soon_as_possible.clear()
+	return result
+}
+
+// https://www.w3.org/TR/css-transitions-2/#event-dispatch
+// C++: void Document::dispatch_events_for_transition(GC::Ref<CSS::CSSTransition> transition)
+// https://drafts.csswg.org/css-transitions-2/#event-dispatch
+pub fn (mut d Document) dispatch_events_for_transition(transition &Animation) {
+	_ = transition
+	// Stub: In the full implementation, this determines the transition phase
+	// (idle, pending, before, active, after) by comparing the animation's
+	// current time against its effect's timing, then dispatches transitionrun,
+	// transitionstart, transitionend, and transitioncancel events to the
+	// owning element based on phase transitions.
+}
+
+// https://www.w3.org/TR/css-animations-2/#event-dispatch
+// C++: void Document::dispatch_events_for_animation_if_necessary(GC::Ref<Animations::Animation> animation)
+pub fn (mut d Document) dispatch_events_for_animation_if_necessary(animation &Animation) {
+	_ = animation
+	// Stub: In the full implementation, if the animation is a CSS transition,
+	// delegates to dispatch_events_for_transition. Otherwise, for CSS
+	// animations, compares the previous phase with the current phase and
+	// dispatches animationstart, animationiteration, animationend, and
+	// animationcancel events as appropriate.
+}
+
+// https://html.spec.whatwg.org/multipage/document-lifecycle.html#unload-a-document-and-its-descendants
+// C++: void Document::unload_a_document_and_its_descendants(...)
+pub fn (mut d Document) unload_a_document_and_its_descendants(new_document ?&Document) {
+	// 2. Let childNavigables be document's child navigables.
+	child_navigables := d.document_tree_child_navigables()
+
+	// 4. For each childNavigable of childNavigables, queue a global task to:
+	for child_nav in child_navigables {
+		// 1-2. Unload the child's active document and its descendants, then increment counter.
+		if mut active_doc := child_nav.active_document() {
+			active_doc.unload_a_document_and_its_descendants(none)
+		}
+	}
+
+	// 6. Queue a global task to:
+	// 2. Unload document, passing along newDocument if it is not null.
+	_ = new_document
+	d.unload()
+}
+
+// https://html.spec.whatwg.org/multipage/document-lifecycle.html#destroy-a-document-and-its-descendants
+// C++: void Document::destroy_a_document_and_its_descendants(...)
+pub fn (mut d Document) destroy_a_document_and_its_descendants() {
+	// 1. If document is not fully active, then:
+	if !d.is_fully_active() {
+		// 2. Make document unsalvageable given document and reason.
+		d.make_unsalvageable('masked')
+	}
+
+	// 2. Let childNavigables be document's child navigables.
+	child_navigables := d.document_tree_child_navigables()
+
+	// 4. For each childNavigable of childNavigables, queue a global task to:
+	for child_nav in child_navigables {
+		if mut active_doc := child_nav.active_document() {
+			// 2. Destroy a document and its descendants given childNavigable's active document.
+			active_doc.destroy_a_document_and_its_descendants()
+		}
+	}
+
+	// 6. Queue a global task to:
+	// 1. Destroy document.
+	d.destroy()
+}
+
+// https://html.spec.whatwg.org/multipage/document-lifecycle.html#abort-a-document-and-its-descendants
+// C++: void Document::abort_a_document_and_its_descendants()
+pub fn (mut d Document) abort_a_document_and_its_descendants() {
+	// 2. Let descendantNavigables be document's descendant navigables.
+	descendant_navigables := d.descendant_navigables()
+
+	// 3. For each descendantNavigable of descendantNavigables, queue a global task to:
+	for desc_nav in descendant_navigables {
+		// 1. Abort descendantNavigable's active document.
+		if mut active_doc := desc_nav.active_document() {
+			active_doc.abort()
+			// 2. If descendantNavigable's active document's salvageable is false,
+			//    then set document's salvageable to false.
+			if !active_doc.salvageable {
+				d.salvageable = false
+			}
+		}
+	}
+
+	// 4. Abort document.
+	d.abort()
+}
+
+// C++: void Document::queue_intersection_observer_task()
+// https://www.w3.org/TR/intersection-observer/#queue-an-intersection-observer-task
+pub fn (mut d Document) queue_intersection_observer_task() {
+	if d.window == unsafe { nil } {
+		return
+	}
+	// 1. If document's IntersectionObserverTaskQueued flag is set to true, return.
+	if d.intersection_observer_task_queued {
+		return
+	}
+	// 2. Set document's IntersectionObserverTaskQueued flag to true.
+	d.intersection_observer_task_queued = true
+
+	// 3. Queue a task on the IntersectionObserver task source associated with
+	//    the document's event loop to notify intersection observers.
+	// Stub: In full implementation, this would:
+	//   - Set IntersectionObserverTaskQueued to false
+	//   - For each IntersectionObserver whose root is in the DOM tree:
+	//     - Take queued entries
+	//     - Invoke callback with queue and observer
+}
+
+// https://www.w3.org/TR/intersection-observer/#queue-an-intersectionobserverentry
+// C++: void Document::queue_an_intersection_observer_entry(...)
+pub fn (mut d Document) queue_an_intersection_observer_entry(observer &IntersectionObserver, time f64, root_bounds Rect, bounding_client_rect Rect, intersection_rect Rect, is_intersecting bool, intersection_ratio f64, target &Element) {
+	_ = time
+	_ = root_bounds
+	_ = bounding_client_rect
+	_ = intersection_rect
+	_ = is_intersecting
+	_ = intersection_ratio
+	_ = target
+	// 1. Construct an IntersectionObserverEntry, passing in time, rootBounds,
+	//    boundingClientRect, intersectionRect, isIntersecting, and target.
+	// 2. Append it to observer's internal [[QueuedEntries]] slot.
+	observer.queue_entry()
+	// 3. Queue an intersection observer task for document.
+	d.queue_intersection_observer_task()
+}
+
+// C++: JS::Value Document::named_item_value(FlyString const& name) const
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-nameditem
+pub fn (d &Document) named_item_value(name string) ?&Element {
+	// 1. Let elements be the list of named elements with the name name that
+	//    are in a document tree with the Document as their root.
+	// NOTE: There will be at least one such element.
+
+	// 2. If elements has only one element, and that element is an iframe element,
+	//    and that iframe element's content navigable is not null, then return the
+	//    active WindowProxy of the element's content navigable.
+	// (Stub: would check for iframe)
+
+	// 3. Otherwise, if elements has only one element, return that element.
+	// (Stub: would search named elements)
+	_ = name
+	return none
+}
+
+// https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtmlunsafe
+// C++: WebIDL::ExceptionOr<GC::Root<DOM::Document>> Document::parse_html_unsafe(JS::VM& vm, ...)
+pub fn parse_html_unsafe(html string) !&Document {
+	// 2. Let document be a new Document, whose content type is "text/html".
+	mut doc := Document.create_for_fragment_parsing()
+	doc.content_type = 'text/html'
+	// 3. Set document's allow declarative shadow roots to true.
+	doc.allow_declarative_shadow_roots = true
+	// 4. Parse HTML from a string given document and compliantHTML.
+	doc.parse_html_from_a_string(html)
+	// 5. Return document.
+	return doc
+}
+
+// C++: GC::Ref<CSS::FontFaceSet> Document::adopted_style_sheets() const
+pub fn (d &Document) adopted_style_sheets() []&CSSStyleSheet {
+	return d.adopted_style_sheets
+}
+
+// https://fullscreen.spec.whatwg.org/#fullscreen-an-element
+// C++: void Document::fullscreen_element_within_doc(GC::Ref<Element> element)
+pub fn (mut d Document) fullscreen_element_within_doc(mut element Element) {
+	// 1. Let hideUntil be the result of running topmost popover ancestor given element.
+	// Stub: would compute hide_until from popover lists
+
+	// 2. If hideUntil is not null, then:
+	//    1. Run hide all popovers until given hideUntil, false, and true.
+	// (Stub: would call hide_all_popovers_until)
+
+	// 3. Set element's fullscreen flag to true.
+	element.set_fullscreen_flag(true)
+
+	// 4-7. Handle iframe fullscreen flag, add to top layer, etc.
+	// Stub: would add element to top layer
+
+	// 8. Append (fullscreenchange, element) to document's list of pending fullscreen events.
+	d.pending_fullscreen_events << PendingFullscreenEvent{
+		element: element
+	}
+}
+
+// https://fullscreen.spec.whatwg.org/#collect-documents-to-unfullscreen
+// C++: GC::Ref<GC::HeapVector<GC::Ref<Document>>> Document::collect_documents_to_unfullscreen()
+pub fn (d &Document) collect_documents_to_unfullscreen() []&Document {
+	// 1. Let docs be an ordered set consisting of doc.
+	mut docs := [unsafe { &Document(d) }]
+
+	// 2. While true:
+	for {
+		// 1. Let lastDoc be docs's last document.
+		last_doc := docs.last()
+
+		// 2. Assert: lastDoc's fullscreen element is not null.
+		// 3. If lastDoc is not a simple fullscreen document, break.
+		if !last_doc.is_simple_fullscreen_document() {
+			break
+		}
+
+		// 4. Let container be lastDoc's node navigable's container.
+		nav := last_doc.navigable() or { break }
+		container := nav.container() or { break }
+		_ = container
+
+		// 5. If container is null, then break.
+		// 6. If container's iframe fullscreen flag is set, break.
+		// 7. Append container's node document to docs.
+		// Stub: would walk up navigable containers
+		break
+	}
+
+	// 3. Return docs.
+	return docs
+}
+
+// C++: RefPtr<Painting::DisplayList> Document::record_display_list(HTML::PaintConfig config)
+pub fn (mut d Document) record_display_list() ?&DisplayList {
+	if d.cached_display_list_ != unsafe { nil } {
+		return d.cached_display_list_
+	}
+
+	d.update_paint_and_hit_testing_properties_if_needed()
+
+	pb := d.paintable_box() or { return none }
+	_ = pb
+	// Stub: In the full implementation, this would:
+	//   - Create a DisplayList from the paintable's visual context tree
+	//   - Set up a DisplayListRecorder
+	//   - Determine color scheme from html element
+	//   - Fill with canvas color and background color
+	//   - Paint all phases
+	//   - Paint inspector overlay if highlighted
+	//   - Cache the result
+	display_list := &DisplayList{}
+	d.cached_display_list_ = display_list
+	return display_list
+}
+
+// C++: void Document::run_csp_initialization() const
+// https://w3c.github.io/webappsec-csp/#run-document-csp-initialization
+pub fn (d &Document) run_csp_initialization() {
+	// 1. For each policy of document's policy container's CSP list:
+	//    1. For each directive of policy:
+	//       1. Execute directive's initialization algorithm on document.
+	// Stub: Content Security Policy initialization requires full CSP implementation
+	if d.policy_container_ != unsafe { nil } {
+		// Would iterate CSP list policies and directives
+	}
+}
+
+// C++: ElementByIdMap& Document::element_by_id() const
+pub fn (d &Document) element_by_id(id string) ?&Element {
+	for el in d.potentially_named_elements {
+		if el_id := el.id() {
+			if el_id == id {
+				return el
+			}
+		}
+	}
+	return none
+}
+
+// C++: Optional<Vector<CSS::Parser::ComponentValue>> Document::environment_variable_value(...)
+pub fn (d &Document) environment_variable_value(variable EnvironmentVariable) ?string {
+	// Stub: Returns CSS environment variable values
+	return match variable {
+		.safe_area_inset_top, .safe_area_inset_bottom, .safe_area_inset_left,
+		.safe_area_inset_right { '0px' }
+		.preferred_text_scale { '1' }
+		else { none }
+	}
+}
+
+// C++: HashMap<FlyString, CSS::CustomPropertyRegistration>& Document::registered_property_set()
+pub fn (d &Document) registered_property_set() map[string]CustomPropertyRegistration {
+	return d.registered_property_set
+}
+
+// C++: NonnullRefPtr<CSS::StyleValue const> Document::custom_property_initial_value(FlyString const& name) const
+pub fn (d &Document) custom_property_initial_value(name string) ?string {
+	// Check if property is registered
+	if reg := d.registered_property_set[name] {
+		return reg.initial_value
+	}
+	// Check cached properties from CSS @property rules
+	if reg := d.cached_registered_properties_from_css_property_rules[name] {
+		return reg.initial_value
+	}
+	// For non-registered properties, the initial value is the guaranteed-invalid value.
+	return none
+}
+
+// C++: void Document::build_registered_properties_cache()
+pub fn (mut d Document) build_registered_properties_cache() {
+	d.cached_registered_properties_from_css_property_rules.clear()
+	d.for_each_active_css_style_sheet(fn [mut d] (sheet &CSSStyleSheet) {
+		// Stub: In the full implementation, this would iterate through
+		// each effective CSS rule in the stylesheet (preorder traversal),
+		// and for each CSSPropertyRule, add its registration to the cache.
+		_ = sheet
+		_ = d
+	})
+}
+
+// C++: void Document::build_counter_style_cache()
+pub fn (mut d Document) build_counter_style_cache() {
+	d.registered_counter_styles.clear()
+	// Stub: In the full implementation, this would:
+	// 1. Define complex predefined counter styles (ethiopic-numeric, CJK styles, etc.)
+	// 2. Walk all active stylesheets for @counter-style rules
+	// 3. Build CounterStyle objects from definitions
+}
+
+// C++: void Document::ensure_cookie_version_index(URL::URL const& new_url, URL::URL const& old_url)
+pub fn (mut d Document) ensure_cookie_version_index(new_url URL) {
+	// Stub: In the full implementation, this would canonicalize the domain
+	// and request a cookie version index from the page client.
+	_ = new_url
+	d.cookie_version_index = none
+}
+
+// C++: void Document::invalidate_style_for_elements_affected_by_pseudo_class_change(...)
+pub fn (mut d Document) invalidate_style_for_elements_affected_by_pseudo_class_change(pseudo_class PseudoClass, common_ancestor &Node) {
+	_ = pseudo_class
+	_ = common_ancestor
+	// Stub: In the full implementation, this would:
+	// 1. Get the pseudo class rule cache from the style scope
+	// 2. For each element under common_ancestor, check if it's affected by the pseudo class
+	// 3. Temporarily swap the element slot (old/new value) and check if different rules match
+	// 4. If different rules match, set_needs_style_update(true) on the element
+	// This is a performance optimization to avoid full style recalculation when only
+	// :hover, :focus, :active etc. change.
+}
+
+// https://html.spec.whatwg.org/multipage/interaction.html#currently-focused-area-of-a-top-level-traversable
+// C++: void Document::evaluate (XPath - already exists as evaluate_xpath)
+
+// --- IndicatedPart type ---
+
+enum IndicatedPartType {
+	none_
+	top_of_document
+	element
+}
+
+struct IndicatedPart {
+	type_   IndicatedPartType
+	element &Element = unsafe { nil }
+}
+
+// --- Stub methods on supporting types needed by new methods ---
+
+pub fn (si &StyleInvalidator) has_pending_invalidations() bool {
+	return false
+}
+
+// Element.needs_style_update and entire_subtree_needs_style_update are in element.v
+
+pub fn (n &Node) unsafe_layout_node() ?&LayoutNode {
+	return none
+}
+
+pub fn (he &HTMLElement) unsafe_layout_node() ?&LayoutNode {
+	return none
+}
+
+pub fn (w &Window) location() ?&Location {
+	return none
+}
+
+pub fn (io &IntersectionObserver) queue_entry() {}
+
+pub fn (p &Page) client_page_did_create_new_document(d &Document) {
+	_ = d
+}
+
+pub fn (el &EventLoopStub) unregister_document(d &Document) {
+	_ = d
+}
+
+pub fn (d &Document) get_element_by_id(id string) ?&Element {
+	for el in d.potentially_named_elements {
+		if el_id := el.id() {
+			if el_id == id {
+				return el
+			}
+		}
+	}
+	return none
+}
+
+fn url_percent_decode(s string) string {
+	// Stub: In the full implementation, this would percent-decode the string.
+	return s
 }
 
 // --- is_a_registrable_domain_suffix_of_or_is_equal_to (free function) ---
