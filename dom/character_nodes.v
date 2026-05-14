@@ -153,7 +153,7 @@ pub fn (mut a Attr) set_value_with_attribute_steps(value string) ! {
 
 	// 3. Let verifiedValue be the result of calling get Trusted Types-compliant attribute value with
 	//    attribute's local name, attribute's namespace, element, and value.
-	verified_value := get_trusted_types_compliant_attribute_value_stub(a.local_name_,
+	verified_value := get_trusted_types_compliant_attribute_value(a.local_name_,
 		a.namespace_uri_, element, value)!
 
 	// 4. If attribute's element is null, then set attribute's value to verifiedValue, and return.
@@ -205,7 +205,7 @@ pub fn (a &Attr) handle_attribute_changes(element &Element, old_value ?string, n
 		a.namespace_uri_)
 }
 
-fn get_trusted_types_compliant_attribute_value_stub(local_name string, namespace_uri ?string, element &Element, value string) !string {
+fn get_trusted_types_compliant_attribute_value(local_name string, namespace_uri ?string, element &Element, value string) !string {
 	_ = local_name
 	_ = namespace_uri
 	_ = element
@@ -249,12 +249,14 @@ pub fn (c &CharacterData) substring_data(offset int, count int) !string {
 
 	// 3. If offset plus count is greater than length, return a string whose value is the code units from the offsetth code unit
 	//    to the end of node's data, and then return.
+	start_byte := byte_index_for_utf16_code_unit_offset(c.data_, offset)
 	if offset + count > length {
-		return c.data_[offset..]
+		return c.data_[start_byte..]
 	}
 
 	// 4. Return a string whose value is the code units from the offsetth code unit to the offset+countth code unit in node's data.
-	return c.data_[offset..offset + count]
+	end_byte := byte_index_for_utf16_code_unit_offset(c.data_, offset + count)
+	return c.data_[start_byte..end_byte]
 }
 
 // https://dom.spec.whatwg.org/#concept-cd-replace
@@ -277,8 +279,10 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 	// 6. Let delete offset be offset + data's length.
 	// 7. Starting from delete offset code units, remove count code units from node's data.
 	old_data := c.data_
-	before_data := c.data_[..offset]
-	after_data := c.data_[offset + actual_count..]
+	start_byte := byte_index_for_utf16_code_unit_offset(c.data_, offset)
+	end_byte := byte_index_for_utf16_code_unit_offset(c.data_, offset + actual_count)
+	before_data := c.data_[..start_byte]
+	after_data := c.data_[end_byte..]
 	c.data_ = before_data + data + after_data
 
 	mut node := unsafe { &Node(&c) }
@@ -296,7 +300,7 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 	//     start offset by data's length and decrease it by count.
 	// 11. For each live range whose end node is node and end offset is greater than offset plus count, increase its end
 	//     offset by data's length and decrease it by count.
-	update_live_ranges_for_character_data_replacement_stub(node, offset, actual_count, data.len)
+	update_live_ranges_for_character_data_replacement(node, offset, actual_count, utf16_code_unit_length(data))
 
 	// 12. If node's parent is non-null, then run the children changed steps for node's parent.
 	if parent := node.parent() {
@@ -359,11 +363,30 @@ pub fn (c &CharacterData) word_segmenter() &Segmenter {
 	return document.word_segmenter()
 }
 
-fn update_live_ranges_for_character_data_replacement_stub(node &Node, offset int, count int, data_length int) {
-	_ = node
-	_ = offset
-	_ = count
-	_ = data_length
+fn update_live_ranges_for_character_data_replacement(node &Node, offset int, count int, data_length int) {
+	mut document := unsafe { &Document(node.document()) }
+	if document == unsafe { nil } {
+		return
+	}
+	end_offset := offset + count
+	delta := data_length - count
+	for live_range in document.live_ranges_ {
+		mut range := unsafe { &Range(live_range) }
+		if range.start_container_ == node {
+			if range.start_offset_ > offset && range.start_offset_ <= end_offset {
+				range.start_offset_ = offset
+			} else if range.start_offset_ > end_offset {
+				range.start_offset_ += delta
+			}
+		}
+		if range.end_container_ == node {
+			if range.end_offset_ > offset && range.end_offset_ <= end_offset {
+				range.end_offset_ = offset
+			} else if range.end_offset_ > end_offset {
+				range.end_offset_ += delta
+			}
+		}
+	}
 }
 
 // --- Text ---
@@ -393,7 +416,8 @@ pub fn (mut t Text) initialize() {
 pub fn (mut t Text) visit_edges(mut visitor CellVisitor) {
 	// Base::visit_edges(visitor);
 	// SlottableMixin::visit_edges(visitor);
-	_ = visitor
+	mut node := unsafe { &Node(&t) }
+	node.visit_edges(mut visitor)
 }
 
 // https://dom.spec.whatwg.org/#dom-text-text
@@ -403,19 +427,19 @@ pub fn Text.construct_impl(document &Document, data string) !&Text {
 }
 
 pub fn (t &Text) max_length() ?int {
-	return none
+	return t.max_length_
 }
 
 pub fn (mut t Text) set_max_length(max_length ?int) {
-	_ = max_length
+	t.max_length_ = max_length
 }
 
 pub fn (t &Text) is_password_input() bool {
-	return false
+	return t.is_password_input_
 }
 
 pub fn (mut t Text) set_is_password_input(value bool) {
-	_ = value
+	t.is_password_input_ = value
 }
 
 // https://dom.spec.whatwg.org/#dom-text-splittext
@@ -455,7 +479,7 @@ pub fn (mut t Text) split_text(offset int) !&Text {
 		//    increase its start offset by 1.
 		// 5. For each live range whose end node is parent and end offset is equal to the index of node plus 1, increase
 		//    its end offset by 1.
-		update_live_ranges_for_text_split_stub(t.as_node(), new_node.as_node(), parent_node, offset)
+		update_live_ranges_for_text_split(t.as_node(), new_node.as_node(), parent_node, offset)
 	}
 
 	// 8. Replace data with node node, offset offset, count count, and data the empty string.
@@ -527,11 +551,29 @@ pub fn (t &Text) directionality() ?Directionality {
 	return none
 }
 
-fn update_live_ranges_for_text_split_stub(node &Node, new_node &Node, parent &Node, offset int) {
-	_ = node
-	_ = new_node
-	_ = parent
-	_ = offset
+fn update_live_ranges_for_text_split(node &Node, new_node &Node, parent &Node, offset int) {
+	mut document := unsafe { &Document(node.document()) }
+	if document == unsafe { nil } {
+		return
+	}
+	node_inserted_after_index := node.index() + 1
+	for live_range in document.live_ranges_ {
+		mut range := unsafe { &Range(live_range) }
+		if range.start_container_ == node && range.start_offset_ > offset {
+			range.start_container_ = new_node
+			range.start_offset_ -= offset
+		}
+		if range.end_container_ == node && range.end_offset_ > offset {
+			range.end_container_ = new_node
+			range.end_offset_ -= offset
+		}
+		if range.start_container_ == parent && range.start_offset_ == node_inserted_after_index {
+			range.start_offset_++
+		}
+		if range.end_container_ == parent && range.end_offset_ == node_inserted_after_index {
+			range.end_offset_++
+		}
+	}
 }
 
 fn is_ltr_code_point_for_directionality(code_point u32) bool {

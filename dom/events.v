@@ -170,15 +170,19 @@ pub fn Event.construct_impl(event_name string, event_init EventInit) !&Event {
 // https://dom.spec.whatwg.org/#inner-event-creation-steps
 pub fn Event.new(event_name string) &Event {
 	return &Event{
-		type_: event_name
+		type_:        event_name
+		initialized_: true
 	}
 }
 
 // https://dom.spec.whatwg.org/#inner-event-creation-steps
 pub fn Event.new_with_init(event_name string, event_init EventInit) &Event {
-	_ = event_init
 	return &Event{
-		type_: event_name
+		type_:        event_name
+		bubbles_:     event_init.bubbles
+		cancelable_:  event_init.cancelable
+		composed_:    event_init.composed
+		initialized_: true
 	}
 }
 
@@ -190,8 +194,30 @@ pub fn (mut e Event) initialize() {
 
 pub fn (mut e Event) visit_edges(mut visitor CellVisitor) {
 	// Base::visit_edges(visitor);
-	// The currently translated Event storage in document.v only contains type_.
-	visitor.visit(unsafe { nil })
+	if target := e.target_ {
+		visitor.visit(target)
+	}
+	if related_target := e.related_target_ {
+		visitor.visit(related_target)
+	}
+	if current_target := e.current_target_ {
+		visitor.visit(current_target)
+	}
+	for entry in e.path_ {
+		visitor.visit(entry.invocation_target)
+		if shadow_adjusted_target := entry.shadow_adjusted_target {
+			visitor.visit(shadow_adjusted_target)
+		}
+		if related_target := entry.related_target {
+			visitor.visit(related_target)
+		}
+		for touch_target in entry.touch_target_list {
+			visitor.visit(touch_target)
+		}
+	}
+	for touch_target in e.touch_target_list_ {
+		visitor.visit(touch_target)
+	}
 }
 
 // C++: FlyString const& Event::type() const
@@ -205,17 +231,15 @@ pub fn (mut e Event) set_type(type_ string) {
 
 // https://dom.spec.whatwg.org/#dom-event-timestamp
 pub fn (e &Event) time_stamp() DOMHighResTimeStamp {
-	_ = e
-	return 0
+	return e.time_stamp_
 }
 
 pub fn (e &Event) target() ?&EventTarget {
-	_ = e
-	return none
+	return e.target_
 }
 
 pub fn (mut e Event) set_target(target ?&EventTarget) {
-	_ = target
+	e.target_ = target
 }
 
 // NOTE: This is intended for the JS bindings.
@@ -224,75 +248,67 @@ pub fn (e &Event) src_element() ?&EventTarget {
 }
 
 pub fn (e &Event) related_target() ?&EventTarget {
-	_ = e
-	return none
+	return e.related_target_
 }
 
 pub fn (mut e Event) set_related_target(related_target ?&EventTarget) {
-	_ = related_target
+	e.related_target_ = related_target
 }
 
 pub fn (e &Event) should_stop_propagation() bool {
-	_ = e
-	return false
+	return e.stop_propagation_
 }
 
 pub fn (mut e Event) set_stop_propagation(stop_propagation bool) {
-	_ = stop_propagation
+	e.stop_propagation_ = stop_propagation
 }
 
 pub fn (e &Event) should_stop_immediate_propagation() bool {
-	_ = e
-	return false
+	return e.stop_immediate_propagation_
 }
 
 pub fn (mut e Event) set_stop_immediate_propagation(stop_immediate_propagation bool) {
-	_ = stop_immediate_propagation
+	e.stop_immediate_propagation_ = stop_immediate_propagation
 }
 
 pub fn (e &Event) cancelled() bool {
-	_ = e
-	return false
+	return e.cancelled_
 }
 
 pub fn (mut e Event) set_cancelled(cancelled bool) {
-	_ = cancelled
+	e.cancelled_ = cancelled
 }
 
 pub fn (e &Event) in_passive_listener() bool {
-	_ = e
-	return false
+	return e.in_passive_listener_
 }
 
 pub fn (mut e Event) set_in_passive_listener(in_passive_listener bool) {
-	_ = in_passive_listener
+	e.in_passive_listener_ = in_passive_listener
 }
 
 pub fn (e &Event) composed() bool {
-	_ = e
-	return false
+	return e.composed_
 }
 
 pub fn (mut e Event) set_composed(composed bool) {
-	_ = composed
+	e.composed_ = composed
 }
 
 pub fn (e &Event) initialized() bool {
-	_ = e
-	return true
+	return e.initialized_
 }
 
 pub fn (mut e Event) set_initialized(initialized bool) {
-	_ = initialized
+	e.initialized_ = initialized
 }
 
 pub fn (e &Event) dispatched() bool {
-	_ = e
-	return false
+	return e.dispatched_
 }
 
 pub fn (mut e Event) set_dispatched(dispatched bool) {
-	_ = dispatched
+	e.dispatched_ = dispatched
 }
 
 pub fn (mut e Event) prevent_default() {
@@ -304,21 +320,19 @@ pub fn (e &Event) default_prevented() bool {
 }
 
 pub fn (e &Event) event_phase() u16 {
-	_ = e
-	return u16(int(EventPhase.none))
+	return u16(int(e.phase_))
 }
 
 pub fn (mut e Event) set_phase(phase EventPhase) {
-	_ = phase
+	e.phase_ = phase
 }
 
 pub fn (e &Event) current_target() ?&EventTarget {
-	_ = e
-	return none
+	return e.current_target_
 }
 
 pub fn (mut e Event) set_current_target(current_target ?&EventTarget) {
-	_ = current_target
+	e.current_target_ = current_target
 }
 
 // AD-HOC: Needed to return a WindowProxy when the current target is a Window,
@@ -340,65 +354,76 @@ pub fn (mut e Event) set_return_value(return_value bool) {
 // https://dom.spec.whatwg.org/#concept-event-path-append
 pub fn (mut e Event) append_to_path(invocation_target &EventTarget, shadow_adjusted_target ?&EventTarget, related_target ?&EventTarget, touch_targets TouchTargetList, slot_in_closed_tree bool) {
 	// 1. Let invocationTargetInShadowTree be false.
+	mut invocation_target_in_shadow_tree := false
 	// 2. If invocationTarget is a node and its root is a shadow root, then set invocationTargetInShadowTree to true.
+	if invocation_target_node := event_target_as_node(invocation_target) {
+		invocation_target_in_shadow_tree = invocation_target_node.root().as_shadow_root() != none
+	}
 	// 3. Let root-of-closed-tree be false.
+	mut root_of_closed_tree := false
 	// 4. If invocationTarget is a shadow root whose mode is "closed", then set root-of-closed-tree to true.
+	if invocation_target_node := event_target_as_node(invocation_target) {
+		if shadow_root := invocation_target_node.as_shadow_root() {
+			root_of_closed_tree = shadow_root.mode == .closed
+		}
+	}
 	// 5. Append a new struct to event's path whose invocation target is invocationTarget, invocation-target-in-shadow-tree is
 	// invocationTargetInShadowTree, shadow-adjusted target is shadowAdjustedTarget, relatedTarget is relatedTarget,
 	// touch target list is touchTargets, root-of-closed-tree is root-of-closed-tree, and slot-in-closed-tree is slot-in-closed-tree.
-	_ = e
-	_ = invocation_target
-	_ = shadow_adjusted_target
-	_ = related_target
-	_ = touch_targets
-	_ = slot_in_closed_tree
+	e.path_ << EventPathEntry{
+		invocation_target:                invocation_target
+		invocation_target_in_shadow_tree: invocation_target_in_shadow_tree
+		shadow_adjusted_target:           shadow_adjusted_target
+		related_target:                   related_target
+		touch_target_list:                touch_targets.clone()
+		root_of_closed_tree:              root_of_closed_tree
+		slot_in_closed_tree:              slot_in_closed_tree
+		index:                            e.path_.len
+	}
 }
 
 pub fn (e &Event) path() []EventPathEntry {
-	_ = e
-	return []
+	return e.path_.clone()
 }
 
 pub fn (mut e Event) clear_path() {
+	e.path_.clear()
 }
 
 pub fn (mut e Event) set_touch_target_list(touch_target_list TouchTargetList) {
-	_ = touch_target_list
+	e.touch_target_list_ = touch_target_list.clone()
 }
 
 pub fn (e &Event) touch_target_list() TouchTargetList {
-	_ = e
-	return TouchTargetList{}
+	return e.touch_target_list_.clone()
 }
 
 pub fn (mut e Event) clear_touch_target_list() {
+	e.touch_target_list_.clear()
 }
 
 pub fn (e &Event) bubbles() bool {
-	_ = e
-	return false
+	return e.bubbles_
 }
 
 pub fn (mut e Event) set_bubbles(bubbles bool) {
-	_ = bubbles
+	e.bubbles_ = bubbles
 }
 
 pub fn (e &Event) cancelable() bool {
-	_ = e
-	return false
+	return e.cancelable_
 }
 
 pub fn (mut e Event) set_cancelable(cancelable bool) {
-	_ = cancelable
+	e.cancelable_ = cancelable
 }
 
 pub fn (e &Event) is_trusted() bool {
-	_ = e
-	return false
+	return e.is_trusted_
 }
 
 pub fn (mut e Event) set_is_trusted(is_trusted bool) {
-	_ = is_trusted
+	e.is_trusted_ = is_trusted
 }
 
 pub fn (mut e Event) stop_propagation() {
@@ -421,7 +446,7 @@ pub fn (mut e Event) stop_immediate_propagation() {
 }
 
 pub fn (mut e Event) set_time_stamp(time_stamp f64) {
-	_ = time_stamp
+	e.time_stamp_ = time_stamp
 }
 
 fn (mut e Event) set_cancelled_flag() {
@@ -487,7 +512,86 @@ pub fn (e &Event) composed_path() []&EventTarget {
 	// 6. Append currentTarget to composedPath.
 	composed_path << current_target
 
-	// The remaining path walking steps are preserved in EventDispatcher; the current Event stub cannot store path entries yet.
+	// 7. Let currentTargetIndex be 0.
+	mut current_target_index := 0
+
+	// 8. Let currentTargetHiddenSubtreeLevel be 0.
+	mut current_target_hidden_subtree_level := 0
+
+	// 9. Let index be path's size - 1.
+	// 10. While index is greater than or equal to 0:
+	for index := path.len - 1; index >= 0; index-- {
+		path_entry := path[index]
+		// 1. If path[index]'s root-of-closed-tree is true, then increase currentTargetHiddenSubtreeLevel by 1.
+		if path_entry.root_of_closed_tree {
+			current_target_hidden_subtree_level++
+		}
+		// 2. If path[index]'s invocation target is currentTarget, then set currentTargetIndex to index and break.
+		if path_entry.invocation_target == current_target {
+			current_target_index = index
+			break
+		}
+		// 3. If path[index]'s slot-in-closed-tree is true, then decrease currentTargetHiddenSubtreeLevel by 1.
+		if path_entry.slot_in_closed_tree && current_target_hidden_subtree_level > 0 {
+			current_target_hidden_subtree_level--
+		}
+	}
+
+	// 11. Let currentHiddenLevel and maxHiddenLevel be currentTargetHiddenSubtreeLevel.
+	mut current_hidden_level := current_target_hidden_subtree_level
+	mut max_hidden_level := current_target_hidden_subtree_level
+
+	// 12. Set index to currentTargetIndex - 1.
+	// 13. While index is greater than or equal to 0:
+	if current_target_index > 0 {
+		for index := current_target_index - 1; index >= 0; index-- {
+			path_entry := path[index]
+			// 1. If path[index]'s root-of-closed-tree is true, then increase currentHiddenLevel by 1.
+			if path_entry.root_of_closed_tree {
+				current_hidden_level++
+			}
+			// 2. If currentHiddenLevel is less than or equal to maxHiddenLevel, then prepend path[index]'s invocation target to composedPath.
+			if current_hidden_level <= max_hidden_level {
+				composed_path.prepend(path_entry.invocation_target)
+			}
+			// 3. If path[index]'s slot-in-closed-tree is true, then:
+			if path_entry.slot_in_closed_tree {
+				if current_hidden_level > 0 {
+					current_hidden_level--
+				}
+				if current_hidden_level < max_hidden_level {
+					max_hidden_level = current_hidden_level
+				}
+			}
+		}
+	}
+
+	// 14. Set currentHiddenLevel and maxHiddenLevel to currentTargetHiddenSubtreeLevel.
+	current_hidden_level = current_target_hidden_subtree_level
+	max_hidden_level = current_target_hidden_subtree_level
+
+	// 15. Set index to currentTargetIndex + 1.
+	// 16. While index is less than path's size:
+	for index := current_target_index + 1; index < path.len; index++ {
+		path_entry := path[index]
+		// 1. If path[index]'s slot-in-closed-tree is true, then increase currentHiddenLevel by 1.
+		if path_entry.slot_in_closed_tree {
+			current_hidden_level++
+		}
+		// 2. If currentHiddenLevel is less than or equal to maxHiddenLevel, then append path[index]'s invocation target to composedPath.
+		if current_hidden_level <= max_hidden_level {
+			composed_path << path_entry.invocation_target
+		}
+		// 3. If path[index]'s root-of-closed-tree is true, then:
+		if path_entry.root_of_closed_tree {
+			if current_hidden_level > 0 {
+				current_hidden_level--
+			}
+			if current_hidden_level < max_hidden_level {
+				max_hidden_level = current_hidden_level
+			}
+		}
+	}
 	return composed_path
 }
 
@@ -685,12 +789,19 @@ pub fn (mut et EventTarget) initialize() {
 
 pub fn (mut et EventTarget) visit_edges(mut visitor CellVisitor) {
 	// Base::visit_edges(visitor);
-	visitor.visit(unsafe { nil })
+	for listener in et.data.event_listener_list {
+		visitor.visit(listener)
+	}
+	for _, handler in et.data.event_handler_map {
+		visitor.visit(handler)
+		if listener := handler.listener {
+			visitor.visit(listener)
+		}
+	}
 }
 
 pub fn (et &EventTarget) event_listener_list() []&DOMEventListener {
-	_ = et
-	return []
+	return et.data.event_listener_list.clone()
 }
 
 // https://dom.spec.whatwg.org/#concept-flatten-options
@@ -802,12 +913,20 @@ pub fn (et &EventTarget) add_an_event_listener(listener &DOMEventListener) {
 
 	// 4. If listener's passive is null, then set it to the default passive value given listener's type and eventTarget.
 	if listener.passive == none {
-		_ = default_passive_value(listener.type_, et)
+		mut mutable_listener := unsafe { &DOMEventListener(listener) }
+		mutable_listener.passive = default_passive_value(listener.type_, et)
 	}
 
 	// 5. If eventTarget's event listener list does not contain an event listener whose type is listener's type, callback is listener's callback,
 	//    and capture is listener's capture, then append listener to eventTarget's event listener list.
-	// The current EventTarget stub in document.v has no storage; this is a no-op until that layout is translated.
+	mut target := unsafe { &EventTarget(et) }
+	for entry in target.data.event_listener_list {
+		if entry.type_ == listener.type_ && entry.callback == listener.callback
+			&& entry.capture == listener.capture {
+			return
+		}
+	}
+	target.data.event_listener_list << listener
 
 	// 6. If listener's signal is not null, then add the following abort steps to it:
 	// The abort algorithm would remove this event listener from eventTarget.
@@ -817,13 +936,15 @@ pub fn (et &EventTarget) add_an_event_listener(listener &DOMEventListener) {
 pub fn (et &EventTarget) remove_event_listener(type_ string, callback ?&IDLEventListener, options EventListenerOptionsOrBool) {
 	// 1. Let capture be the result of flattening options.
 	capture := flatten_event_listener_options(options)
-	_ = capture
 
 	// 2. If this's event listener list contains an event listener whose type is type, callback is callback, and capture is capture,
 	//    then remove an event listener with this and that event listener.
-	_ = et
-	_ = type_
-	_ = callback
+	for listener in et.event_listener_list() {
+		if listener.type_ == type_ && listener.callback == callback && listener.capture == capture {
+			et.remove_an_event_listener(listener)
+			return
+		}
+	}
 }
 
 pub fn (et &EventTarget) remove_event_listener_without_options(type_ string, callback &IDLEventListener) {
@@ -836,8 +957,15 @@ pub fn (et &EventTarget) remove_an_event_listener(listener &DOMEventListener) {
 	//           then report a warning to the console that this might not give the expected results. [SERVICE-WORKERS]
 
 	// 2. Set listener's removed to true and remove listener from eventTarget's event listener list.
-	_ = et
-	_ = listener
+	mut mutable_listener := unsafe { &DOMEventListener(listener) }
+	mutable_listener.removed = true
+	mut target := unsafe { &EventTarget(et) }
+	for index, entry in target.data.event_listener_list {
+		if entry == listener {
+			target.data.event_listener_list.delete(index)
+			return
+		}
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-eventtarget-dispatchevent
@@ -851,7 +979,8 @@ pub fn (et &EventTarget) dispatch_event_binding(event &Event) !bool {
 	}
 
 	// 2. Initialize event's isTrusted attribute to false.
-	// The current Event storage cannot persist this flag yet.
+	mut mutable_event := unsafe { &Event(event) }
+	mutable_event.set_is_trusted(false)
 
 	// 3. Return the result of dispatching event to this.
 	return et.dispatch_event(event)
@@ -902,8 +1031,10 @@ pub fn (et &EventTarget) get_current_value_of_event_handler(name string) ?&Callb
 	//               However, this would be very allocation heavy. For example, each DOM::Element includes GlobalEventHandlers, which defines 60+ event handler attributes.
 	//               Plus, the vast majority of these allocations would be likely wasted, as web content will only use a handful of these attributes on certain elements.
 	//               Thus, treat the event handler not being in the event handler map as equivalent to an event handler with an initial null value.
-	_ = et
-	_ = name
+	handler := et.data.event_handler_map[name] or { return none }
+	if handler.value.kind == .object && handler.value.object_data != unsafe { nil } {
+		return unsafe { &CallbackType(handler.value.object_data) }
+	}
 	return none
 }
 
@@ -920,8 +1051,13 @@ pub fn (et &EventTarget) set_event_handler_attribute(name string, value ?&Callba
 	}
 
 	// 4. Otherwise, set eventHandler's value to the given value and activate an event handler.
+	mut target := unsafe { &EventTarget(event_target) }
+	handler := &EventHandler_{
+		value: js_object(value)
+	}
+	target.data.event_handler_map[name] = handler
 	event_target.activate_event_handler(name, EventHandler_{
-		value: js_object(unsafe { nil })
+		value: handler.value
 	})
 }
 
@@ -930,7 +1066,15 @@ pub fn (et &EventTarget) activate_event_handler(name string, event_handler Event
 	// 1. Let handlerMap be eventTarget's event handler map.
 	// 2. Let eventHandler be handlerMap[name].
 	// 3. If eventHandler's listener is not null, then return.
-	if event_handler.listener != none {
+	mut target := unsafe { &EventTarget(et) }
+	mut handler := target.data.event_handler_map[name] or {
+		new_handler := &EventHandler_{
+			value: event_handler.value
+		}
+		target.data.event_handler_map[name] = new_handler
+		new_handler
+	}
+	if handler.listener != none {
 		return
 	}
 
@@ -939,8 +1083,16 @@ pub fn (et &EventTarget) activate_event_handler(name string, event_handler Event
 	// 5. Let listener be a new event listener whose type is the event handler event type corresponding to eventHandler and callback is callback.
 	// 6. Add an event listener with eventTarget and listener.
 	// 7. Set eventHandler's listener to listener.
-	_ = et
-	_ = name
+	if handler.value.kind != .object || handler.value.object_data == unsafe { nil } {
+		return
+	}
+	callback := unsafe { &CallbackType(handler.value.object_data) }
+	listener := &DOMEventListener{
+		type_:    name
+		callback: IDLEventListener.new(callback)
+	}
+	et.add_an_event_listener(listener)
+	handler.listener = listener
 }
 
 pub fn (et &EventTarget) deactivate_event_handler(name string) {
@@ -950,8 +1102,13 @@ pub fn (et &EventTarget) deactivate_event_handler(name string) {
 	// 4. Let listener be eventHandler's listener.
 	// 5. If listener is not null, then remove an event listener with eventTarget and listener.
 	// 6. Set eventHandler's listener to null.
-	_ = et
-	_ = name
+	mut target := unsafe { &EventTarget(et) }
+	mut handler := target.data.event_handler_map[name] or { return }
+	handler.value = js_null()
+	if listener := handler.listener {
+		et.remove_an_event_listener(listener)
+	}
+	handler.listener = none
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#the-event-handler-processing-algorithm
@@ -972,12 +1129,14 @@ pub fn (et &EventTarget) process_event_handler_for_event(name string, event &Eve
 	if special_error_event_handling {
 		// If special error event handling is true, if return value is true, then set event's canceled flag.
 		if return_value.is_boolean() && return_value.as_bool() {
-			// Current Event storage cannot persist the canceled flag yet.
+			mut mutable_event := unsafe { &Event(event) }
+			mutable_event.set_cancelled(true)
 		}
 	} else {
 		// Otherwise, if return value is false, then set event's canceled flag.
 		if return_value.is_boolean() && !return_value.as_bool() && event.type_ != 'beforeunload' {
-			// Current Event storage cannot persist the canceled flag yet.
+			mut mutable_event := unsafe { &Event(event) }
+			mutable_event.set_cancelled(true)
 		}
 	}
 }
@@ -1004,6 +1163,10 @@ pub fn (et &EventTarget) element_event_handler_attribute_changed(local_name stri
 	//  4. Let location be the script location that triggered the execution of these steps.
 	//  5. Set eventHandler's value to the internal raw uncompiled handler value/location.
 	//  6. Activate an event handler given eventTarget and name.
+	mut target := unsafe { &EventTarget(event_target) }
+	target.data.event_handler_map[local_name] = &EventHandler_{
+		value: js_string(value)
+	}
 	event_target.activate_event_handler(local_name, EventHandler_{
 		value: js_string(value)
 	})
@@ -1059,8 +1222,8 @@ pub fn (et &EventTarget) is_universal_global_scope_mixin() bool {
 }
 
 fn (et &EventTarget) ensure_data() &EventTargetData {
-	_ = et
-	return &EventTargetData{}
+	mut target := unsafe { &EventTarget(et) }
+	return &target.data
 }
 
 pub struct EventDispatcher {}
@@ -1112,6 +1275,10 @@ pub fn EventDispatcher.inner_invoke(event &Event, listeners []&DOMEventListener,
 		_ = invocation_target_in_shadow_tree
 
 		// 9. If listener's passive is true, then set event's in passive listener flag.
+		mut mutable_event := unsafe { &Event(event) }
+		if listener.passive or { false } {
+			mutable_event.set_in_passive_listener(true)
+		}
 		// 10. If global is a Window object, then record timing info for event listener given event and listener.
 		// 11. Call a user object's operation with listener's callback, "handleEvent", event, and event's currentTarget attribute value.
 		if listener.callback == none {
@@ -1119,6 +1286,7 @@ pub fn EventDispatcher.inner_invoke(event &Event, listeners []&DOMEventListener,
 		}
 
 		// 12. Unset event's in passive listener flag.
+		mutable_event.set_in_passive_listener(false)
 		// 13. If global is a Window object, then restore global's current event.
 		// 14. If event's stop immediate propagation flag is set, then break.
 		if event.should_stop_immediate_propagation() {
@@ -1136,12 +1304,28 @@ pub fn EventDispatcher.invoke(struct_ EventPathEntry, event &Event, phase EventP
 	// that is either struct or preceding struct, whose shadow-adjusted target is non-null.
 	// 2. Set event's relatedTarget to struct's relatedTarget.
 	// 3. Set event's touch target list to struct's touch target list.
+	mut mutable_event := unsafe { &Event(event) }
+	mut last_valid_shadow_adjusted_target := ?&EventTarget(none)
+	for entry in event.path() {
+		if entry.index <= struct_.index {
+			if shadow_adjusted_target := entry.shadow_adjusted_target {
+				last_valid_shadow_adjusted_target = unsafe { &EventTarget(shadow_adjusted_target) }
+			}
+		}
+	}
+	if shadow_adjusted_target := last_valid_shadow_adjusted_target {
+		mutable_event.set_target(shadow_adjusted_target)
+	}
+	mutable_event.set_related_target(struct_.related_target)
+	mutable_event.set_touch_target_list(struct_.touch_target_list)
 	// 4. If event's stop propagation flag is set, then return.
 	if event.should_stop_propagation() {
 		return
 	}
 
 	// 5. Initialize event's currentTarget attribute to struct's invocation target.
+	mutable_event.set_current_target(struct_.invocation_target)
+	mutable_event.set_phase(if struct_.shadow_adjusted_target != none { .at_target } else { phase })
 	// 6. Let listeners be a clone of event's currentTarget attribute value's event listener list.
 	listeners := struct_.invocation_target.event_listener_list()
 
@@ -1169,22 +1353,35 @@ pub fn EventDispatcher.dispatch(target &EventTarget, event &Event, legacy_target
 // https://dom.spec.whatwg.org/#concept-event-dispatch
 pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &Event, legacy_target_override bool, mut legacy_output LegacyListenerExceptionFlag) bool {
 	// 1. Set event's dispatch flag.
+	mut mutable_event := unsafe { &Event(event) }
+	mutable_event.set_dispatched(true)
 	// 2. Let targetOverride be target, if legacy target override flag is not given, and target's associated Document otherwise. [HTML]
-	_ = legacy_target_override
+	mut target_override := ?&EventTarget(none)
+	if !legacy_target_override {
+		target_override = unsafe { &EventTarget(target) }
+	}
 
 	// 3. Let activationTarget be null.
+	mut activation_target := ?&EventTarget(none)
 	// 4. Let relatedTarget be the result of retargeting event's relatedTarget against target.
-	related_target := retarget(event.related_target(), target)
-	_ = related_target
+	mut related_target := retarget(event.related_target(), target)
 
 	// 5. Let clearTargets be false.
 	mut clear_targets := false
 
 	// OPTIMIZATION: Only dispatch events if there is at least one listener on the node or its ancestors. Activation events are always dispatched.
-	should_dispatch := target.has_event_listeners() || event.type_ == 'click'
+	is_activation_event := event.type_ == 'click'
+	should_dispatch := is_activation_event || event_target_or_ancestor_has_event_listener(target,
+		event.type_)
 
 	// 6. If target is not relatedTarget or target is event's relatedTarget, then:
-	if should_dispatch {
+	related_target_is_target := if rt := related_target { rt == target } else { false }
+	event_related_target_is_target := if event_related_target := event.related_target() {
+		event_related_target == target
+	} else {
+		false
+	}
+	if should_dispatch && (!related_target_is_target || event_related_target_is_target) {
 		// 1. Let touchTargets be a new list.
 		mut touch_targets := TouchTargetList{}
 
@@ -1196,55 +1393,237 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 		}
 
 		// 3. Append to an event path with event, target, targetOverride, relatedTarget, touchTargets, and false.
-		_ = touch_targets
+		mutable_event.append_to_path(target, target_override, related_target, touch_targets, false)
 
 		// 4. Let isActivationEvent be true, if event is a MouseEvent object and event's type attribute is "click"; otherwise false.
 		// 5. If isActivationEvent is true and target has activation behavior, then set activationTarget to target.
+		if is_activation_event && target.has_activation_behavior() {
+			activation_target = unsafe { &EventTarget(target) }
+		}
 		// 6. Let slottable be target, if target is a slottable and is assigned, and null otherwise.
+		mut slottable := ?&EventTarget(none)
+		if target_node := event_target_as_node(target) {
+			if is_an_assigned_slottable(target_node) {
+				slottable = unsafe { &EventTarget(target) }
+			}
+		}
 		// 7. Let slot-in-closed-tree be false.
+		mut slot_in_closed_tree := false
 		// 8. Let parent be the result of invoking target's get the parent with event.
+		mut current_target := unsafe { &EventTarget(target) }
+		mut parent := event_target_get_parent(current_target, event)
 		// 9. While parent is non-null, append parent entries to the event path.
+		for parent != none {
+			parent_target := parent or { break }
+			if slottable != none {
+				slottable = none
+				if parent_node := event_target_as_node(parent_target) {
+					if parent_shadow_root := parent_node.root().as_shadow_root() {
+						if parent_shadow_root.mode == .closed {
+							slot_in_closed_tree = true
+						}
+					}
+				}
+			}
+			if parent_node := event_target_as_node(parent_target) {
+				if is_an_assigned_slottable(parent_node) {
+					slottable = unsafe { &EventTarget(parent_target) }
+				}
+			}
+			related_target = retarget(event.related_target(), parent_target)
+			touch_targets.clear()
+			for touch_target in event.touch_target_list() {
+				if retargeted := retarget(touch_target, parent_target) {
+					touch_targets << retargeted
+				}
+			}
+
+			mut parent_is_in_current_target_root := false
+			if current_target_node := event_target_as_node(current_target) {
+				if parent_node := event_target_as_node(parent_target) {
+					parent_is_in_current_target_root = current_target_node.root().is_shadow_including_inclusive_ancestor_of(parent_node)
+				}
+			}
+			if parent_is_in_current_target_root {
+				if is_activation_event && event.bubbles() && activation_target == none
+					&& parent_target.has_activation_behavior() {
+					activation_target = unsafe { &EventTarget(parent_target) }
+				}
+				mutable_event.append_to_path(parent_target, none, related_target, touch_targets,
+					slot_in_closed_tree)
+			} else if if rt := related_target { rt == parent_target } else { false } {
+				parent = none
+			} else {
+				current_target = unsafe { &EventTarget(parent_target) }
+				if is_activation_event && activation_target == none
+					&& current_target.has_activation_behavior() {
+					activation_target = current_target
+				}
+				mutable_event.append_to_path(parent_target, current_target, related_target,
+					touch_targets, slot_in_closed_tree)
+			}
+
+			if parent != none {
+				parent = event_target_get_parent(parent_target, event)
+			}
+			slot_in_closed_tree = false
+		}
 		// 10. Let clearTargetsStruct be the last struct in event's path whose shadow-adjusted target is non-null.
 		// 11. If clearTargetsStruct's shadow-adjusted target, relatedTarget, or touch target list is in a shadow root, set clearTargets to true.
-		clear_targets = false
+		mut clear_targets_struct := EventPathEntry{}
+		mut has_clear_targets_struct := false
+		for entry in event.path() {
+			if entry.shadow_adjusted_target != none {
+				clear_targets_struct = entry
+				has_clear_targets_struct = true
+			}
+		}
+		if has_clear_targets_struct {
+			if target_to_check := clear_targets_struct.shadow_adjusted_target {
+				clear_targets = event_target_is_node_whose_root_is_shadow_root(target_to_check)
+			}
+			if !clear_targets {
+				if related_target_to_check := clear_targets_struct.related_target {
+					clear_targets = event_target_is_node_whose_root_is_shadow_root(related_target_to_check)
+				}
+			}
+			if !clear_targets {
+				for touch_target in clear_targets_struct.touch_target_list {
+					if event_target_is_node_whose_root_is_shadow_root(touch_target) {
+						clear_targets = true
+						break
+					}
+				}
+			}
+		}
 
 		// 12. If activationTarget is non-null and activationTarget has legacy-pre-activation behavior, then run it.
+		if activation := activation_target {
+			activation.legacy_pre_activation_behavior()
+		}
 		// 13. For each struct of event's path, in reverse order, invoke capturing listeners.
 		// 14. For each struct of event's path, invoke bubbling listeners.
-		mut path_entry := EventPathEntry{
-			invocation_target:      unsafe { &EventTarget(target) }
-			shadow_adjusted_target: unsafe { &EventTarget(target) }
-			related_target:         none
+		path := event.path()
+		for index := path.len - 1; index >= 0; index-- {
+			EventDispatcher.invoke(path[index], event, .capturing_phase, mut legacy_output)
 		}
-		EventDispatcher.invoke(path_entry, event, .capturing_phase, mut legacy_output)
-		EventDispatcher.invoke(path_entry, event, .bubbling_phase, mut legacy_output)
+		for path_entry in path {
+			if path_entry.shadow_adjusted_target == none && !event.bubbles() {
+				continue
+			}
+			EventDispatcher.invoke(path_entry, event, .bubbling_phase, mut legacy_output)
+		}
 	}
 
 	// 7. Set event's eventPhase attribute to NONE.
 	// 8. Set event's currentTarget attribute to null.
 	// 9. Set event's path to the empty list.
 	// 10. Unset event's dispatch flag, stop propagation flag, and stop immediate propagation flag.
+	mutable_event.set_phase(.none)
+	mutable_event.set_current_target(none)
+	mutable_event.clear_path()
+	mutable_event.set_dispatched(false)
+	mutable_event.set_stop_propagation(false)
+	mutable_event.set_stop_immediate_propagation(false)
 
 	// 11. If clearTargets, then:
 	if clear_targets {
 		// 1. Set event's target to null.
 		// 2. Set event's relatedTarget to null.
 		// 3. Set event's touch target list to the empty list.
+		mutable_event.set_target(none)
+		mutable_event.set_related_target(none)
+		mutable_event.clear_touch_target_list()
 	}
 
 	// 12. If activationTarget is non-null, then run activation or legacy canceled activation behavior.
+	if activation := activation_target {
+		if !event.cancelled() {
+			activation.activation_behavior(event)
+		} else {
+			activation.legacy_cancelled_activation_behavior_was_not_called()
+			activation.legacy_cancelled_activation_behavior()
+		}
+	}
 	// 13. Return false if event's canceled flag is set; otherwise true.
 	return !event.cancelled()
 }
 
+fn event_target_or_ancestor_has_event_listener(target &EventTarget, type_ string) bool {
+	if target.has_event_listener(type_) {
+		return true
+	}
+	node := event_target_as_node(target) or { return false }
+	for ancestor := node.parent_or_shadow_host(); ancestor != none; {
+		current := ancestor or { break }
+		if unsafe { &EventTarget(current) }.has_event_listener(type_) {
+			return true
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
+	return false
+}
+
+fn event_target_get_parent(target &EventTarget, event &Event) ?&EventTarget {
+	node := event_target_as_node(target) or { return none }
+	if shadow_root := node.as_shadow_root() {
+		return shadow_root.get_parent(event)
+	}
+	return node.get_parent(event)
+}
+
+fn event_target_is_node_whose_root_is_shadow_root(target &EventTarget) bool {
+	node := event_target_as_node(target) or { return false }
+	return node.root().as_shadow_root() != none
+}
+
 pub fn retarget(target ?&EventTarget, against &EventTarget) ?&EventTarget {
-	_ = against
-	return target
+	// To retarget an object A against an object B, repeat these steps until they return an object:
+	target_event := target or { return none }
+	mut a := unsafe { &EventTarget(target_event) }
+	for {
+		// 1. If A is not a node, then return A.
+		a_node := event_target_as_node(a) or { return a }
+
+		// If A's root is not a shadow root, then return A.
+		a_root := a_node.root()
+		a_shadow_root := a_root.as_shadow_root() or { return a }
+
+		// If B is a node and A's root is a shadow-including inclusive ancestor of B, then return A.
+		if b_node := event_target_as_node(against) {
+			if a_root.is_shadow_including_inclusive_ancestor_of(b_node) {
+				return a
+			}
+		}
+
+		// 2. Set A to A's root's host.
+		host := a_shadow_root.host() or { return a }
+		a = unsafe { &EventTarget(host.as_node()) }
+	}
+	return a
+}
+
+fn event_target_as_node(target &EventTarget) ?&Node {
+	node := unsafe { &Node(target) }
+	if node.node_type != .element_node
+		&& node.node_type != .attribute_node
+		&& node.node_type != .text_node
+		&& node.node_type != .cdata_section_node
+		&& node.node_type != .processing_instruction_node
+		&& node.node_type != .comment_node
+		&& node.node_type != .document_node
+		&& node.node_type != .document_type_node
+		&& node.node_type != .document_fragment_node {
+		return none
+	}
+	if node.document() == unsafe { nil } && !node.is_document() {
+		return none
+	}
+	return node
 }
 
 pub fn is_an_assigned_slottable(node &Node) bool {
-	_ = node
-	return false
+	return assigned_slot_for_node(node) != none
 }
 
 pub type AbortAlgorithm = fn ()

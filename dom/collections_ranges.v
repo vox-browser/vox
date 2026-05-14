@@ -382,7 +382,15 @@ pub fn (mut nl NodeList) initialize() {
 	// WEB_SET_PROTOTYPE_FOR_INTERFACE(NodeList)
 }
 
+fn collection_scope_from_live_node_list_scope(scope LiveNodeListScope) CollectionScope {
+	return if scope == .descendants { .descendants } else { .children }
+}
+
 pub fn (nl &NodeList) collection() []&Node {
+	if nl.is_live && nl.node_root != unsafe { nil } {
+		return collect_nodes_for_scope(nl.node_root, collection_scope_from_live_node_list_scope(nl.live_scope),
+			nl.live_filter)
+	}
 	if nl.nodes.len > 0 {
 		return nl.nodes.clone()
 	}
@@ -423,14 +431,11 @@ pub fn (nl &NodeList) item_value(index int) ?&Node {
 }
 
 pub fn LiveNodeList.create(root &Node, scope LiveNodeListScope, filter fn (&Node) bool) &NodeList {
-	collection_scope := if scope == .descendants {
-		CollectionScope.descendants
-	} else {
-		CollectionScope.children
-	}
 	return &NodeList{
-		node_root: root
-		nodes:     collect_nodes_for_scope(root, collection_scope, filter)
+		node_root:   root
+		is_live:     true
+		live_scope:  scope
+		live_filter: filter
 	}
 }
 
@@ -495,10 +500,75 @@ pub fn (s &StaticNodeList) item(index int) ?&Node {
 // --- HTMLCollection ---
 
 pub fn HTMLCollection.create(root &ParentNode, scope HTMLCollectionScope, filter fn (&Element) bool, sort fn (&Element, &Element) bool) &HTMLCollection {
-	_ = root
-	_ = scope
-	_ = filter
-	_ = sort
+	mut collection := &HTMLCollection{
+		root:   root
+		scope:  scope
+		filter: filter
+		sort:   sort
+	}
+	collection.update_cache_if_needed()
+	return collection
+}
+
+fn sort_elements_with_comparator(mut elements []&Element, sort fn (&Element, &Element) bool) {
+	for i := 1; i < elements.len; i++ {
+		mut j := i
+		for j > 0 && sort(elements[j], elements[j - 1]) {
+			tmp := elements[j - 1]
+			elements[j - 1] = elements[j]
+			elements[j] = tmp
+			j--
+		}
+	}
+}
+
+fn html_collection_name_for_element(element &Element) ?string {
+	if id := element.id() {
+		if id.len > 0 {
+			return id
+		}
+	}
+	if element.namespace_uri() or { '' } == namespace_html_uri {
+		if name := element.get_attribute('name') {
+			if name.len > 0 {
+				return name
+			}
+		}
+	}
+	return none
+}
+
+fn (c &HTMLCollection) element_for_supported_name(name string) ?&Element {
+	for element in c.cached_elements {
+		if id := element.id() {
+			if id == name {
+				return element
+			}
+		}
+	}
+	for element in c.cached_elements {
+		if element.namespace_uri() or { '' } == namespace_html_uri {
+			if element_name := element.get_attribute('name') {
+				if element_name == name {
+					return element
+				}
+			}
+		}
+	}
+	return none
+}
+
+fn (c &HTMLCollection) ordered_supported_names() []string {
+	mut result := []string{}
+	for element in c.cached_elements {
+		if name := html_collection_name_for_element(element) {
+			append_to_ordered_set(mut result, name)
+		}
+	}
+	return result
+}
+
+pub fn HTMLCollection.empty() &HTMLCollection {
 	return &HTMLCollection{}
 }
 
@@ -507,36 +577,66 @@ pub fn (mut c HTMLCollection) initialize() {
 }
 
 pub fn (mut c HTMLCollection) visit_edges(mut visitor CellVisitor) {
-	_ = visitor
+	if c.root != unsafe { nil } {
+		visitor.visit(c.root)
+	}
+	for element in c.cached_elements {
+		visitor.visit(element)
+	}
 }
 
 pub fn (c &HTMLCollection) update_name_to_element_mappings_if_needed() {
 	// The C++ object caches supported named properties. The current V
-	// placeholder has no root/cache fields, so there is no state to refresh.
+	// translation derives them from the current collected elements on demand.
+	c.update_cache_if_needed()
 }
 
 pub fn (c &HTMLCollection) update_cache_if_needed() {
-	// Nothing to do until HTMLCollection stores root/filter/cache state.
+	if c.root == unsafe { nil } {
+		return
+	}
+
+	root_node := c.root.as_node()
+	document := root_node.document()
+	current_dom_tree_version := if document == unsafe { nil } { u64(0) } else { document.dom_tree_version() }
+	if c.cache_initialized && c.cached_dom_tree_version == current_dom_tree_version {
+		return
+	}
+
+	collection_scope := if c.scope == .descendants {
+		CollectionScope.descendants
+	} else {
+		CollectionScope.children
+	}
+	mut elements := collect_elements_for_scope(root_node, collection_scope, c.filter)
+	sort_elements_with_comparator(mut elements, c.sort)
+
+	mut mutable_collection := unsafe { &HTMLCollection(c) }
+	mutable_collection.cached_elements = elements
+	mutable_collection.cached_dom_tree_version = current_dom_tree_version
+	mutable_collection.cache_initialized = true
 }
 
 pub fn (c &HTMLCollection) collect_matching_elements() []&Element {
 	c.update_cache_if_needed()
-	return []
+	return c.cached_elements.clone()
 }
 
 // https://dom.spec.whatwg.org/#dom-htmlcollection-length
 pub fn (c &HTMLCollection) length() int {
 	// The length getter steps are to return the number of nodes represented by the collection.
 	c.update_cache_if_needed()
-	return 0
+	return c.cached_elements.len
 }
 
 // https://dom.spec.whatwg.org/#dom-htmlcollection-item
 pub fn (c &HTMLCollection) item(index int) ?&Element {
 	// The item(index) method steps are to return the indexth element in the collection. If there is no indexth element in the collection, then the method must return null.
-	_ = index
 	c.update_cache_if_needed()
-	return none
+	if index < 0 || index >= c.cached_elements.len {
+		return none
+	}
+	return c.cached_elements[index]
 }
 
 // https://dom.spec.whatwg.org/#dom-htmlcollection-nameditem-key
@@ -546,14 +646,13 @@ pub fn (c &HTMLCollection) named_item(key string) ?&Element {
 		return none
 	}
 	c.update_name_to_element_mappings_if_needed()
-	return none
+	return c.element_for_supported_name(key)
 }
 
 // https://dom.spec.whatwg.org/#ref-for-dfn-supported-property-names
 pub fn (c &HTMLCollection) is_supported_property_name(name string) bool {
 	c.update_name_to_element_mappings_if_needed()
-	_ = name
-	return false
+	return c.element_for_supported_name(name) != none
 }
 
 // https://dom.spec.whatwg.org/#ref-for-dfn-supported-property-names
@@ -562,7 +661,7 @@ pub fn (c &HTMLCollection) supported_property_names() []string {
 	// 2. For each element represented by the collection, in tree order.
 	// 3. Return result.
 	c.update_name_to_element_mappings_if_needed()
-	return []
+	return c.ordered_supported_names()
 }
 
 pub fn (c &HTMLCollection) item_value(index int) ?&Element {
@@ -587,6 +686,9 @@ pub fn (mut n NamedNodeMap) visit_edges(mut visitor CellVisitor) {
 	for attr in n.attrs {
 		visitor.visit(attr)
 	}
+	if n.element != unsafe { nil } {
+		visitor.visit(n.element)
+	}
 }
 
 // https://dom.spec.whatwg.org/#ref-for-dfn-supported-property-names
@@ -599,7 +701,11 @@ pub fn (n &NamedNodeMap) supported_property_names() []string {
 			names << attribute_name
 		}
 	}
-	// 2. HTML namespace lowercasing needs the associated element, which is not stored by the current V stub.
+	// 2. If this NamedNodeMap object's element is in the HTML namespace and its node document is an HTML document, then for each name of names:
+	if n.element != unsafe { nil } && n.element.namespace_uri() or { '' } == namespace_html_uri
+		&& n.element.document().document_type() == .html {
+		names = names.filter(it == it.to_lower())
+	}
 	// 3. Return names.
 	return names
 }
@@ -649,7 +755,12 @@ pub fn (mut n NamedNodeMap) remove_named_item_ns(namespace_ ?string, local_name 
 // https://dom.spec.whatwg.org/#concept-element-attributes-set
 pub fn (mut n NamedNodeMap) set_attribute(attribute &Attr_) !&Attr_ {
 	// 1. Trusted Types validation is not available in this partial V port.
-	// 2. The Attr_ stub does not track owner element, so InUseAttributeError is deferred.
+	// 2. If attr's element is neither null nor element, throw an "InUseAttributeError" DOMException.
+	if owner := attribute.owner_element() {
+		if n.element != unsafe { nil } && owner != n.element {
+			return error('InUseAttributeError: Attribute must not already be in use')
+		}
+	}
 	// 3. Let oldAttr be the result of getting an attribute given attr's namespace, attr's local name, and element.
 	for index, old_attribute in n.attrs {
 		if old_attribute.namespace_uri_ == attribute.namespace_uri_
@@ -671,11 +782,18 @@ pub fn (mut n NamedNodeMap) set_attribute(attribute &Attr_) !&Attr_ {
 
 // https://dom.spec.whatwg.org/#concept-element-attributes-replace
 pub fn (mut n NamedNodeMap) replace_attribute(old_attribute &Attr_, new_attribute &Attr_, old_attribute_index int) {
-	_ = old_attribute
 	if old_attribute_index < 0 || old_attribute_index >= n.attrs.len {
 		return
 	}
 	n.attrs[old_attribute_index] = new_attribute
+	mut mutable_new_attribute := unsafe { &Attr_(new_attribute) }
+	mutable_new_attribute.owner_element_ = n.element
+	mut mutable_old_attribute := unsafe { &Attr_(old_attribute) }
+	mutable_old_attribute.owner_element_ = none
+	if n.element != unsafe { nil } {
+		old_attribute.handle_attribute_changes(n.element, old_attribute.value_,
+			new_attribute.value_)
+	}
 }
 
 // https://dom.spec.whatwg.org/#concept-element-attributes-remove
@@ -685,6 +803,13 @@ pub fn (mut n NamedNodeMap) remove_attribute_at_index(attribute_index int) ?&Att
 	}
 	attribute := n.attrs[attribute_index]
 	n.attrs.delete(attribute_index)
+	mut mutable_attribute := unsafe { &Attr_(attribute) }
+	old_value := attribute.value_
+	element := attribute.owner_element()
+	mutable_attribute.owner_element_ = none
+	if owner := element {
+		attribute.handle_attribute_changes(owner, old_value, none)
+	}
 	return attribute
 }
 
@@ -997,17 +1122,17 @@ pub fn (d &DOMTokenList) item_value(index int) ?string {
 // --- NodeFilter / NodeIterator / TreeWalker ---
 
 pub fn NodeFilter.create(callback &CallbackType) &NodeFilter {
-	_ = callback
-	return &NodeFilter{}
+	return &NodeFilter{
+		callback_: callback
+	}
 }
 
 pub fn (mut nf NodeFilter) visit_edges(mut visitor CellVisitor) {
-	_ = visitor
+	visitor.visit(nf.callback_)
 }
 
 pub fn (nf &NodeFilter) callback() &CallbackType {
-	_ = nf
-	return &CallbackType{}
+	return nf.callback_
 }
 
 pub fn node_filter_what_to_show_value(value NodeFilterWhatToShow) u32 {
@@ -1039,6 +1164,7 @@ pub fn (mut it NodeIterator) finalize() {
 pub fn (mut it NodeIterator) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(it.filter)
 	visitor.visit(it.root)
+	visitor.visit(it.reference_node_)
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createnodeiterator
@@ -1047,12 +1173,18 @@ pub fn NodeIterator.create(root &Node, what_to_show u32, filter ?&NodeFilter) &N
 	// 2. Set iterator's root and iterator's reference to root.
 	// 3. Set iterator's pointer before reference to true.
 	iterator := &NodeIterator{
-		root:         root
-		what_to_show: what_to_show
-		filter:       filter or { unsafe { nil } }
+		root:                           root
+		reference_node_:                root
+		pointer_before_reference_node_: true
+		what_to_show:                   what_to_show
+		filter:                         filter or { unsafe { nil } }
 	}
 	// 4. Set iterator's whatToShow to whatToShow.
 	// 5. Set iterator's filter to filter.
+	mut document := unsafe { &Document(root.document()) }
+	if document != unsafe { nil } {
+		document.register_node_iterator(iterator)
+	}
 	// 6. Return iterator.
 	return iterator
 }
@@ -1062,11 +1194,14 @@ pub fn (it &NodeIterator) root_node() &Node {
 }
 
 pub fn (it &NodeIterator) reference_node() &Node {
-	return it.root
+	if it.reference_node_ == unsafe { nil } {
+		return it.root
+	}
+	return it.reference_node_
 }
 
 pub fn (it &NodeIterator) pointer_before_reference_node() bool {
-	return true
+	return it.pointer_before_reference_node_
 }
 
 pub fn (it &NodeIterator) what_to_show_value() u32 {
@@ -1091,7 +1226,9 @@ pub fn (it &NodeIterator) filter_object() ?&NodeFilter {
 // https://dom.spec.whatwg.org/#concept-node-filter
 pub fn (mut it NodeIterator) filter_node(node &Node) NodeFilterResult {
 	// 1. If traverser's active flag is set, then throw an "InvalidStateError" DOMException.
-	// The current V NodeIterator stub has no active flag.
+	if it.active {
+		return .filter_reject
+	}
 	// 2. Let n be node's nodeType attribute value - 1.
 	n := int(node.node_type()) - 1
 	// 3. If the nth bit of traverser's whatToShow is not set, then return FILTER_SKIP.
@@ -1102,27 +1239,41 @@ pub fn (mut it NodeIterator) filter_node(node &Node) NodeFilterResult {
 	if it.filter == unsafe { nil } {
 		return .filter_accept
 	}
-	// 5-8. Callback invocation is not wired in this partial V port.
+	// 5-8. Callback invocation is not wired until the WebIDL user object operation support is ported.
+	it.active = true
+	it.active = false
 	return .filter_accept
 }
 
 // https://dom.spec.whatwg.org/#concept-nodeiterator-traverse
 pub fn (mut it NodeIterator) traverse(direction NodeIteratorDirection) ?&Node {
-	mut candidate := if direction == .next {
-		it.root.next_in_pre_order(it.root)
-	} else {
-		it.root.previous_in_pre_order()
+	mut pointer := NodePointer{
+		node:           it.reference_node()
+		is_before_node: it.pointer_before_reference_node_
 	}
-	for candidate != none {
-		node := candidate or { break }
-		result := it.filter_node(node)
-		if result == .filter_accept {
-			return node
-		}
-		candidate = if direction == .next {
-			node.next_in_pre_order(it.root)
+	for {
+		if direction == .next {
+			if !pointer.is_before_node {
+				pointer.node = pointer.node.next_in_pre_order(it.root) or { return none }
+			} else {
+				pointer.is_before_node = false
+			}
 		} else {
-			node.previous_in_pre_order()
+			if pointer.is_before_node {
+				if pointer.node == it.root {
+					return none
+				}
+				pointer.node = pointer.node.previous_in_pre_order() or { return none }
+			} else {
+				pointer.is_before_node = true
+			}
+		}
+		candidate := pointer.node
+		result := it.filter_node(pointer.node)
+		if result == .filter_accept {
+			it.reference_node_ = pointer.node
+			it.pointer_before_reference_node_ = pointer.is_before_node
+			return candidate
 		}
 	}
 	return none
@@ -1151,32 +1302,53 @@ pub fn (mut it NodeIterator) run_pre_removing_steps_with_node_pointer(to_be_remo
 		if next := to_be_removed_node.next_in_pre_order(it.root) {
 			mut node := unsafe { &Node(next) }
 			for node.is_descendant_of(to_be_removed_node) {
-				node = node.next_in_pre_order(it.root) or { break }
+				node = node.next_in_pre_order(it.root) or { return }
 			}
 			pointer.node = node
 			return
 		}
 		if previous := to_be_removed_node.previous_in_pre_order() {
-			pointer.node = previous
+			mut node := unsafe { &Node(previous) }
+			if to_be_removed_node.is_ancestor_of(pointer.node) {
+				for node.is_descendant_of(to_be_removed_node) {
+					node = node.previous_in_pre_order() or { return }
+				}
+			}
+			pointer.node = node
 			pointer.is_before_node = false
 		}
 		return
 	}
 	if previous := to_be_removed_node.previous_in_pre_order() {
-		pointer.node = previous
+		mut node := unsafe { &Node(previous) }
+		if to_be_removed_node.is_ancestor_of(pointer.node) {
+			for node.is_descendant_of(to_be_removed_node) {
+				node = node.previous_in_pre_order() or { return }
+			}
+		}
+		pointer.node = node
 		return
 	}
 	if next := to_be_removed_node.next_in_pre_order(it.root) {
-		pointer.node = next
+		mut node := unsafe { &Node(next) }
+		if to_be_removed_node.is_ancestor_of(pointer.node) {
+			for node.is_descendant_of(to_be_removed_node) {
+				node = node.previous_in_pre_order() or { return }
+			}
+		}
+		pointer.node = node
 	}
 }
 
 // https://dom.spec.whatwg.org/#nodeiterator-pre-removing-steps
 pub fn (mut it NodeIterator) run_pre_removing_steps(to_be_removed_node &Node) {
 	mut pointer := NodePointer{
-		node: it.root
+		node:           it.reference_node()
+		is_before_node: it.pointer_before_reference_node_
 	}
 	it.run_pre_removing_steps_with_node_pointer(to_be_removed_node, mut pointer)
+	it.reference_node_ = pointer.node
+	it.pointer_before_reference_node_ = pointer.is_before_node
 }
 
 pub fn (mut tw TreeWalker) initialize() {
@@ -1186,6 +1358,7 @@ pub fn (mut tw TreeWalker) initialize() {
 pub fn (mut tw TreeWalker) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(tw.filter)
 	visitor.visit(tw.root)
+	visitor.visit(tw.current)
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createtreewalker
@@ -1194,6 +1367,7 @@ pub fn TreeWalker.create(root &Node, what_to_show u32, filter ?&NodeFilter) &Tre
 	// 2. Set walker's root and walker's current to root.
 	walker := &TreeWalker{
 		root:         root
+		current:      root
 		what_to_show: what_to_show
 		filter:       filter or { unsafe { nil } }
 	}
@@ -1205,13 +1379,15 @@ pub fn TreeWalker.create(root &Node, what_to_show u32, filter ?&NodeFilter) &Tre
 
 // https://dom.spec.whatwg.org/#dom-treewalker-currentnode
 pub fn (tw &TreeWalker) current_node() &Node {
-	return tw.root
+	if tw.current == unsafe { nil } {
+		return tw.root
+	}
+	return tw.current
 }
 
 // https://dom.spec.whatwg.org/#dom-treewalker-currentnode
 pub fn (mut tw TreeWalker) set_current_node(node &Node) {
-	// The existing TreeWalker stub has no current field; keep the object usable by storing the current node in root.
-	tw.root = node
+	tw.current = node
 }
 
 // https://dom.spec.whatwg.org/#concept-traversal-filter
@@ -1225,7 +1401,9 @@ pub fn (tw &TreeWalker) filter_object() ?&NodeFilter {
 // https://dom.spec.whatwg.org/#concept-node-filter
 pub fn (mut tw TreeWalker) filter_node(node &Node) NodeFilterResult {
 	// 1. If traverser's active flag is set, then throw an "InvalidStateError" DOMException.
-	// The current V TreeWalker stub has no active flag.
+	if tw.active {
+		return .filter_reject
+	}
 	// 2. Let n be node's nodeType attribute value - 1.
 	n := int(node.node_type()) - 1
 	// 3. If the nth bit of traverser's whatToShow is not set, then return FILTER_SKIP.
@@ -1236,7 +1414,9 @@ pub fn (mut tw TreeWalker) filter_node(node &Node) NodeFilterResult {
 	if tw.filter == unsafe { nil } {
 		return .filter_accept
 	}
-	// 5-8. Callback invocation is not wired in this partial V port.
+	// 5-8. Callback invocation is not wired until the WebIDL user object operation support is ported.
+	tw.active = true
+	tw.active = false
 	return .filter_accept
 }
 
@@ -1530,17 +1710,53 @@ pub fn (mut p ParentNode) children_collection() &HTMLCollection {
 
 // https://dom.spec.whatwg.org/#concept-getelementsbytagname
 pub fn (mut p ParentNode) get_elements_by_tag_name(qualified_name string) &HTMLCollection {
-	_ = qualified_name
-	// The current HTMLCollection stub has no filter storage; return a placeholder collection.
-	return HTMLCollection.create(&p, .descendants, always_accept_element, never_sort_elements)
+	// 1. If qualifiedName is "*" (U+002A), return a HTMLCollection rooted at root, whose filter matches only descendant elements.
+	if qualified_name == '*' {
+		return HTMLCollection.create(&p, .descendants, always_accept_element, never_sort_elements)
+	}
+	root_node := p.as_node()
+	// 2. Otherwise, if root's node document is an HTML document, return a HTMLCollection rooted at root, whose filter matches the following descendant elements:
+	if root_node.document().document_type() == .html {
+		qualified_name_in_ascii_lowercase := qualified_name.to_lower()
+		return HTMLCollection.create(&p, .descendants, fn [qualified_name, qualified_name_in_ascii_lowercase] (element &Element) bool {
+			// - Whose namespace is the HTML namespace and whose qualified name is qualifiedName, in ASCII lowercase.
+			if element.namespace_uri() or { '' } == namespace_html_uri {
+				return element.qualified_name_str() == qualified_name_in_ascii_lowercase
+			}
+			// - Whose namespace is not the HTML namespace and whose qualified name is qualifiedName.
+			return element.qualified_name_str() == qualified_name
+		}, never_sort_elements)
+	}
+	// 3. Otherwise, return a HTMLCollection rooted at root, whose filter matches descendant elements whose qualified name is qualifiedName.
+	return HTMLCollection.create(&p, .descendants, fn [qualified_name] (element &Element) bool {
+		return element.qualified_name_str() == qualified_name
+	}, never_sort_elements)
 }
 
 // https://dom.spec.whatwg.org/#concept-getelementsbytagnamens
 pub fn (mut p ParentNode) get_elements_by_tag_name_ns(namespace_ ?string, local_name string) &HTMLCollection {
-	_ = namespace_
-	_ = local_name
-	// The current HTMLCollection stub has no filter storage; return a placeholder collection.
-	return HTMLCollection.create(&p, .descendants, always_accept_element, never_sort_elements)
+	// 1. If namespace is the empty string, set it to null.
+	normalized_namespace := if namespace_ or { '' } == '' { ?string(none) } else { namespace_ }
+	// 2. If both namespace and localName are "*" (U+002A), return a HTMLCollection rooted at root, whose filter matches descendant elements.
+	if normalized_namespace or { '' } == '*' && local_name == '*' {
+		return HTMLCollection.create(&p, .descendants, always_accept_element, never_sort_elements)
+	}
+	// 3. Otherwise, if namespace is "*" (U+002A), return a HTMLCollection rooted at root, whose filter matches descendant elements whose local name is localName.
+	if normalized_namespace or { '' } == '*' {
+		return HTMLCollection.create(&p, .descendants, fn [local_name] (element &Element) bool {
+			return element.local_name() == local_name
+		}, never_sort_elements)
+	}
+	// 4. Otherwise, if localName is "*" (U+002A), return a HTMLCollection rooted at root, whose filter matches descendant elements whose namespace is namespace.
+	if local_name == '*' {
+		return HTMLCollection.create(&p, .descendants, fn [normalized_namespace] (element &Element) bool {
+			return element.namespace_uri() == normalized_namespace
+		}, never_sort_elements)
+	}
+	// 5. Otherwise, return a HTMLCollection rooted at root, whose filter matches descendant elements whose namespace is namespace and local name is localName.
+	return HTMLCollection.create(&p, .descendants, fn [normalized_namespace, local_name] (element &Element) bool {
+		return element.namespace_uri() == normalized_namespace && element.local_name() == local_name
+	}, never_sort_elements)
 }
 
 // https://dom.spec.whatwg.org/#dom-parentnode-prepend
@@ -1591,8 +1807,23 @@ pub fn (mut p ParentNode) move_before(node &Node, child ?&Node) ! {
 
 // https://dom.spec.whatwg.org/#dom-document-getelementsbyclassname
 pub fn (mut p ParentNode) get_elements_by_class_name(class_names string) &HTMLCollection {
-	_ = split_on_ascii_whitespace(class_names)
-	return HTMLCollection.create(&p, .descendants, always_accept_element, never_sort_elements)
+	list_of_class_names := split_on_ascii_whitespace(class_names)
+	quirks_mode := p.as_node().document().in_quirks_mode()
+	return HTMLCollection.create(&p, .descendants, fn [list_of_class_names, quirks_mode] (element &Element) bool {
+		if list_of_class_names.len == 0 {
+			return false
+		}
+		for name in list_of_class_names {
+			if quirks_mode {
+				if !element.has_class_case_insensitive(name) {
+					return false
+				}
+			} else if !element.has_class(name) {
+				return false
+			}
+		}
+		return true
+	}, never_sort_elements)
 }
 
 pub fn (p &ParentNode) get_element_by_id(id string) ?&Element {
@@ -1728,24 +1959,37 @@ pub fn (mut r StaticRange) initialize() {
 }
 
 pub fn Range.create(document &Document) &Range {
-	return &Range{
+	range := &Range{
 		start_container_: unsafe { &Node(document) }
 		end_container_:   unsafe { &Node(document) }
 	}
+	mut mutable_document := unsafe { &Document(document) }
+	mutable_document.live_ranges_ << range
+	return range
 }
 
 pub fn Range.create_from_window(window &Window) &Range {
-	_ = window
-	return &Range{}
+	document := window.associated_document() or {
+		// The C++ constructor receives an HTML::Window whose associated document is guaranteed by the platform object.
+		// The current V Window stub can still be created without one, so keep the failure local instead of inventing
+		// nonstandard global state.
+		return &Range{}
+	}
+	return Range.create(document)
 }
 
 pub fn Range.create_from_boundary_points(start_container &Node, start_offset int, end_container &Node, end_offset int) &Range {
-	return &Range{
+	range := &Range{
 		start_container_: start_container
 		start_offset_:    start_offset
 		end_container_:   end_container
 		end_offset_:      end_offset
 	}
+	mut document := unsafe { &Document(start_container.document()) }
+	if document != unsafe { nil } {
+		document.live_ranges_ << range
+	}
+	return range
 }
 
 pub fn Range.construct_impl() &Range {
@@ -1753,7 +1997,16 @@ pub fn Range.construct_impl() &Range {
 }
 
 pub fn (mut r Range) finalize() {
-	// live_ranges().remove(this)
+	mut document := unsafe { &Document(r.start_container_.document()) }
+	if document == unsafe { nil } {
+		return
+	}
+	for index, live_range in document.live_ranges_ {
+		if live_range == &r {
+			document.live_ranges_.delete(index)
+			return
+		}
+	}
 }
 
 pub fn (mut r Range) initialize() {
@@ -1763,23 +2016,35 @@ pub fn (mut r Range) initialize() {
 pub fn (mut r Range) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(r.start_container_)
 	visitor.visit(r.end_container_)
+	visitor.visit(r.associated_selection_)
 }
 
 pub fn (mut r Range) set_associated_selection(selection ?&Selection) {
-	_ = selection
+	r.associated_selection_ = selection or { unsafe { nil } }
 	r.update_associated_selection()
 }
 
 pub fn (mut r Range) update_associated_selection() {
+	if r.associated_selection_ == unsafe { nil } {
+		return
+	}
 	if r.start_container_ == unsafe { nil } {
 		return
 	}
-	document := r.start_container_.document()
+	mut document := unsafe { &Document(r.start_container_.document()) }
 	if document == unsafe { nil } {
 		return
 	}
+	document.reset_cursor_blink_cycle()
+	if paintable := document.unsafe_paintable() {
+		paintable.recompute_selection_states(r)
+		paintable.set_needs_repaint()
+	}
 	// https://w3c.github.io/selection-api/#selectionchange-event
-	// The full port will schedule a selectionchange event on document.
+	// When the selection is dissociated with its range, associated with a new range, or the associated range's boundary
+	// point is mutated either by the user or the content script, the user agent must schedule a selectionchange event
+	// on document.
+	document.set_scheduled_selectionchange_event(true)
 }
 
 // https://dom.spec.whatwg.org/#concept-range-root
@@ -2162,38 +2427,39 @@ pub fn (r &Range) to_string() string {
 	// 1. Let s be the empty string.
 	mut builder := ''
 	// 2. If this's start node is this's end node and it is a Text node, then return the substring of that Text node's data.
-	if r.start_container_ == r.end_container_ && r.start_container_.is_exclusive_text() {
+	if r.start_container_ == r.end_container_ && r.start_container_.is_text_node_for_range_stringifier() {
 		if text := r.start_container_.character_data() {
-			end := if r.end_offset_ > text.data_.len { text.data_.len } else { r.end_offset_ }
-			start := if r.start_offset_ > end { end } else { r.start_offset_ }
-			return text.data_[start..end]
+			return text.substring_data(r.start_offset_, r.end_offset_ - r.start_offset_) or { '' }
 		}
 	}
 	// 3. If this's start node is a Text node, then append the substring of that node's data from this's start offset until the end to s.
-	if r.start_container_.is_exclusive_text() {
+	if r.start_container_.is_text_node_for_range_stringifier() {
 		if text := r.start_container_.character_data() {
-			if r.start_offset_ < text.data_.len {
-				builder += text.data_[r.start_offset_..]
+			builder += text.substring_data(r.start_offset_, text.length_in_utf16_code_units() - r.start_offset_) or {
+				''
 			}
 		}
 	}
 	// 4. Append the concatenation of the data of all Text nodes that are contained in this, in tree order, to s.
 	for node in r.contained_nodes() {
-		if node.is_exclusive_text() {
+		if node.is_text_node_for_range_stringifier() {
 			if text := node.character_data() {
 				builder += text.data_
 			}
 		}
 	}
 	// 5. If this's end node is a Text node, then append the substring of that node's data from its start until this's end offset to s.
-	if r.end_container_.is_exclusive_text() {
+	if r.end_container_.is_text_node_for_range_stringifier() {
 		if text := r.end_container_.character_data() {
-			end := if r.end_offset_ > text.data_.len { text.data_.len } else { r.end_offset_ }
-			builder += text.data_[..end]
+			builder += text.substring_data(0, r.end_offset_) or { '' }
 		}
 	}
 	// 6. Return s.
 	return builder
+}
+
+fn (n &Node) is_text_node_for_range_stringifier() bool {
+	return n.is_text() || n.is_cdata_section()
 }
 
 // https://dom.spec.whatwg.org/#dom-range-extractcontents
@@ -2221,38 +2487,120 @@ pub fn (mut r Range) extract() !&DocumentFragment {
 		mut clone_node := unsafe { &Node(clone) }
 		if mut clone_data := clone_node.character_data_mut() {
 			if data := original_start_node.character_data() {
-				end := if original_end_offset > data.data_.len {
-					data.data_.len
-				} else {
-					original_end_offset
-				}
-				start := if original_start_offset > end { end } else { original_start_offset }
-				clone_data.set_data(data.data_[start..end])
+				clone_data.set_data(data.substring_data(original_start_offset,
+					original_end_offset - original_start_offset)!)
 			}
 		}
 		fragment_node.append_child(clone)!
 		mut mutable_original_start_node := unsafe { &Node(original_start_node) }
 		if mut data := mutable_original_start_node.character_data_mut() {
-			data.replace_data(original_start_offset, original_end_offset - original_start_offset,
+			data.replace_data_with_mutation_steps(original_start_offset, original_end_offset - original_start_offset,
 				'')!
 		}
 		return fragment
 	}
-	// The complete C++ algorithm handles partial containment recursively. This V port preserves the observable
-	// contained-node extraction path while the surrounding node model is still skeletal.
-	mut nodes_to_extract := []&Node{}
-	r.for_each_contained(fn [mut nodes_to_extract] (node &Node) TraversalDecision {
-		nodes_to_extract << node
-		return .@continue
-	})
-	for node in nodes_to_extract {
-		if node.is_document_type() {
+	mut common_ancestor := unsafe { &Node(original_start_node) }
+	for !common_ancestor.is_inclusive_ancestor_of(original_end_node) {
+		common_ancestor = common_ancestor.parent_node() or {
+			return error('InvalidStateError: Range boundary nodes do not share an ancestor')
+		}
+	}
+	mut first_partially_contained_child := ?&Node(none)
+	if !original_start_node.is_inclusive_ancestor_of(original_end_node) {
+		for child in common_ancestor.children {
+			if r.partially_contains_node(child) {
+				first_partially_contained_child = unsafe { &Node(child) }
+				break
+			}
+		}
+	}
+	mut last_partially_contained_child := ?&Node(none)
+	if !original_end_node.is_inclusive_ancestor_of(original_start_node) {
+		for i := common_ancestor.children.len - 1; i >= 0; i-- {
+			child := common_ancestor.children[i]
+			if r.partially_contains_node(child) {
+				last_partially_contained_child = unsafe { &Node(child) }
+				break
+			}
+		}
+	}
+	mut contained_children := []&Node{}
+	for child in common_ancestor.children {
+		if r.contains_node(child) {
+			contained_children << child
+		}
+	}
+	for child in contained_children {
+		if child.is_document_type() {
 			return error('HierarchyRequestError: Contained child is a DocumentType')
 		}
-		fragment_node.append_child(node)!
 	}
-	r.set_start(original_start_node, original_start_offset)!
-	r.set_end(original_start_node, original_start_offset)!
+	mut new_node := unsafe { &Node(original_start_node) }
+	mut new_offset := original_start_offset
+	if !original_start_node.is_inclusive_ancestor_of(original_end_node) {
+		mut reference_node := unsafe { &Node(original_start_node) }
+		for reference_node.parent_node() != none
+			&& !(reference_node.parent_node() or { break }).is_inclusive_ancestor_of(original_end_node) {
+			reference_node = reference_node.parent_node() or { break }
+		}
+		new_node = reference_node.parent_node() or { new_node }
+		new_offset = reference_node.index() + 1
+	}
+	if first_child := first_partially_contained_child {
+		if first_child.is_character_data() {
+			clone := original_start_node.clone_node(none, false, none)!
+			mut clone_node := unsafe { &Node(clone) }
+			if mut clone_data := clone_node.character_data_mut() {
+				if data := original_start_node.character_data() {
+					clone_data.set_data(data.substring_data(original_start_offset,
+						original_start_node.length() - original_start_offset)!)
+				}
+			}
+			fragment_node.append_child(clone)!
+			mut mutable_original_start_node := unsafe { &Node(original_start_node) }
+			if mut data := mutable_original_start_node.character_data_mut() {
+				data.replace_data_with_mutation_steps(original_start_offset,
+					original_start_node.length() - original_start_offset, '')!
+			}
+		} else {
+			clone := first_child.clone_node(none, false, none)!
+			fragment_node.append_child(clone)!
+			mut subrange := Range.create_from_boundary_points(original_start_node,
+				original_start_offset, first_child, first_child.length())
+			subfragment := subrange.extract()!
+			mut clone_node := unsafe { &Node(clone) }
+			clone_node.append_child(subfragment.as_node())!
+		}
+	}
+	for contained_child in contained_children {
+		fragment_node.append_child(contained_child)!
+	}
+	if last_child := last_partially_contained_child {
+		if last_child.is_character_data() {
+			clone := original_end_node.clone_node(none, false, none)!
+			mut clone_node := unsafe { &Node(clone) }
+			if mut clone_data := clone_node.character_data_mut() {
+				if data := original_end_node.character_data() {
+					clone_data.set_data(data.substring_data(0, original_end_offset)!)
+				}
+			}
+			fragment_node.append_child(clone)!
+			mut mutable_original_end_node := unsafe { &Node(original_end_node) }
+			if mut data := mutable_original_end_node.character_data_mut() {
+				data.replace_data_with_mutation_steps(0, original_end_offset, '')!
+			}
+		} else {
+			clone := last_child.clone_node(none, false, none)!
+			fragment_node.append_child(clone)!
+			mut subrange := Range.create_from_boundary_points(last_child, 0, original_end_node,
+				original_end_offset)
+			subfragment := subrange.extract()!
+			mut clone_node := unsafe { &Node(clone) }
+			clone_node.append_child(subfragment.as_node())!
+		}
+	}
+	r.set_start(new_node, new_offset)!
+	r.set_end(new_node, new_offset)!
 	return fragment
 }
 
@@ -2408,27 +2756,94 @@ pub fn (mut r Range) clone_the_contents() !&DocumentFragment {
 		mut clone_node := unsafe { &Node(clone) }
 		if mut clone_data := clone_node.character_data_mut() {
 			if data := original_start_node.character_data() {
-				end := if original_end_offset > data.data_.len {
-					data.data_.len
-				} else {
-					original_end_offset
-				}
-				start := if original_start_offset > end { end } else { original_start_offset }
-				clone_data.set_data(data.data_[start..end])
+				clone_data.set_data(data.substring_data(original_start_offset,
+					original_end_offset - original_start_offset)!)
 			}
 		}
 		fragment_node.append_child(clone)!
 		return fragment
 	}
-	// The full recursive partial-containment algorithm is deferred until clone/import is complete across all node types.
-	r.for_each_contained(fn [mut fragment_node] (node &Node) TraversalDecision {
-		if !node.is_document_type() {
-			if clone := node.clone_node(none, true, none) {
-				fragment_node.append_child(clone) or {}
+	mut common_ancestor := unsafe { &Node(original_start_node) }
+	for !common_ancestor.is_inclusive_ancestor_of(original_end_node) {
+		common_ancestor = common_ancestor.parent_node() or {
+			return error('InvalidStateError: Range boundary nodes do not share an ancestor')
+		}
+	}
+	mut first_partially_contained_child := ?&Node(none)
+	if !original_start_node.is_inclusive_ancestor_of(original_end_node) {
+		for child in common_ancestor.children {
+			if r.partially_contains_node(child) {
+				first_partially_contained_child = unsafe { &Node(child) }
+				break
 			}
 		}
-		return .@continue
-	})
+	}
+	mut last_partially_contained_child := ?&Node(none)
+	if !original_end_node.is_inclusive_ancestor_of(original_start_node) {
+		for i := common_ancestor.children.len - 1; i >= 0; i-- {
+			child := common_ancestor.children[i]
+			if r.partially_contains_node(child) {
+				last_partially_contained_child = unsafe { &Node(child) }
+				break
+			}
+		}
+	}
+	mut contained_children := []&Node{}
+	for child in common_ancestor.children {
+		if r.contains_node(child) {
+			contained_children << child
+		}
+	}
+	for child in contained_children {
+		if child.is_document_type() {
+			return error('HierarchyRequestError: Contained child is a DocumentType')
+		}
+	}
+	if first_child := first_partially_contained_child {
+		if first_child.is_character_data() {
+			clone := original_start_node.clone_node(none, false, none)!
+			mut clone_node := unsafe { &Node(clone) }
+			if mut clone_data := clone_node.character_data_mut() {
+				if data := original_start_node.character_data() {
+					clone_data.set_data(data.substring_data(original_start_offset,
+						original_start_node.length() - original_start_offset)!)
+				}
+			}
+			fragment_node.append_child(clone)!
+		} else {
+			clone := first_child.clone_node(none, false, none)!
+			fragment_node.append_child(clone)!
+			mut subrange := Range.create_from_boundary_points(original_start_node,
+				original_start_offset, first_child, first_child.length())
+			subfragment := subrange.clone_the_contents()!
+			mut clone_node := unsafe { &Node(clone) }
+			clone_node.append_child(subfragment.as_node())!
+		}
+	}
+	for contained_child in contained_children {
+		clone := contained_child.clone_node(none, true, none)!
+		fragment_node.append_child(clone)!
+	}
+	if last_child := last_partially_contained_child {
+		if last_child.is_character_data() {
+			clone := original_end_node.clone_node(none, false, none)!
+			mut clone_node := unsafe { &Node(clone) }
+			if mut clone_data := clone_node.character_data_mut() {
+				if data := original_end_node.character_data() {
+					clone_data.set_data(data.substring_data(0, original_end_offset)!)
+				}
+			}
+			fragment_node.append_child(clone)!
+		} else {
+			clone := last_child.clone_node(none, false, none)!
+			fragment_node.append_child(clone)!
+			mut subrange := Range.create_from_boundary_points(last_child, 0, original_end_node,
+				original_end_offset)
+			subfragment := subrange.clone_the_contents()!
+			mut clone_node := unsafe { &Node(clone) }
+			clone_node.append_child(subfragment.as_node())!
+		}
+	}
 	return fragment
 }
 
@@ -2659,28 +3074,29 @@ pub fn Range.live_ranges() []&Range {
 // --- Position ---
 
 pub fn Position.create(node &Node, offset int) &Position {
-	_ = node
-	_ = offset
-	return &Position{}
+	return &Position{
+		node_:   node
+		offset_: offset
+	}
 }
 
 pub fn (mut p Position) visit_edges(mut visitor CellVisitor) {
-	_ = visitor
+	visitor.visit(p.node_)
 }
 
 pub fn (p &Position) node() ?&Node {
-	_ = p
-	return none
+	if p.node_ == unsafe { nil } {
+		return none
+	}
+	return p.node_
 }
 
 pub fn (p &Position) offset() int {
-	_ = p
-	return 0
+	return p.offset_
 }
 
 pub fn (p &Position) equals(other &Position) bool {
-	_ = other
-	return p.offset() == 0
+	return p.node_ == other.node_ && p.offset_ == other.offset_
 }
 
 pub fn (p &Position) to_string() string {

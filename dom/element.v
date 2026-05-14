@@ -30,7 +30,8 @@ pub fn (q &QualifiedName) as_string() string {
 
 pub struct NamedNodeMap {
 pub mut:
-	attrs []&Attr_
+	attrs   []&Attr_
+	element &Element = unsafe { nil }
 }
 
 pub fn (n &NamedNodeMap) length() int {
@@ -67,15 +68,30 @@ pub fn (n &NamedNodeMap) get_attribute_ns(namespace_ ?string, local_name string)
 }
 
 pub fn (mut n NamedNodeMap) append_attribute(attr &Attr_) {
+	if n.element != unsafe { nil } {
+		mut mutable_attr := unsafe { &Attr_(attr) }
+		mutable_attr.owner_element_ = n.element
+		mutable_attr.handle_attribute_changes(n.element, none, attr.value_)
+	}
 	n.attrs << attr
 }
 
 pub fn (mut n NamedNodeMap) remove_attribute(name string) {
-	n.attrs = n.attrs.filter(it.name_ != name)
+	for index, attr in n.attrs {
+		if attr.name_ == name {
+			n.remove_attribute_at_index(index)
+			return
+		}
+	}
 }
 
 pub fn (mut n NamedNodeMap) remove_attribute_node(attr &Attr_) {
-	n.attrs = n.attrs.filter(it != attr)
+	for index, existing in n.attrs {
+		if existing == attr {
+			n.remove_attribute_at_index(index)
+			return
+		}
+	}
 }
 
 // Attr_ is named with underscore to avoid conflict with document.v's empty Attr stub
@@ -87,6 +103,7 @@ pub mut:
 	local_name_    string
 	prefix__       ?string
 	namespace_uri_ ?string
+	owner_element_ ?&Element
 }
 
 pub fn (a &Attr_) name() string {
@@ -95,6 +112,19 @@ pub fn (a &Attr_) name() string {
 
 pub fn (a &Attr_) value() string {
 	return a.value_
+}
+
+pub fn (a &Attr_) owner_element() ?&Element {
+	return a.owner_element_
+}
+
+pub fn (mut a Attr_) set_owner_element(element ?&Element) {
+	a.owner_element_ = element
+}
+
+pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, new_value ?string) {
+	mut mutable_element := unsafe { &Element(element) }
+	mutable_element.attribute_changed(a.local_name_, old_value, new_value, a.namespace_uri_)
 }
 
 pub struct DOMTokenList_ {
@@ -196,11 +226,23 @@ pub mut:
 	disable_shadow_     bool
 	construction_stack  []&Element
 	name_               string
+	local_name_         string
 	observed_attributes []string
 }
 
 pub fn (d &CustomElementDefinition) disable_shadow() bool {
 	return d.disable_shadow_
+}
+
+pub fn (d &CustomElementDefinition) name() string {
+	return d.name_
+}
+
+pub fn (d &CustomElementDefinition) local_name() string {
+	if d.local_name_.len == 0 {
+		return d.name_
+	}
+	return d.local_name_
 }
 
 pub struct CustomStateSet_ {}
@@ -404,6 +446,11 @@ pub fn (r CSSPixelRect_) height() f64 {
 	return r.height_
 }
 
+fn css_pixel_rect_intersects_rect(rect CSSPixelRect_, other Rect) bool {
+	return rect.x_ < other.x + other.width && rect.x_ + rect.width_ > other.x
+		&& rect.y_ < other.y + other.height && rect.y_ + rect.height_ > other.y
+}
+
 pub struct IntersectionObserverRegistration_ {
 pub mut:
 	observer voidptr
@@ -433,6 +480,9 @@ pub enum FullscreenRequester {
 pub enum RequestFullscreenError {
 	false_
 	true_
+	unsupported_element
+	element_ready_check_failed
+	no_transient_user_activation
 }
 
 // Union type for custom element reaction queue
@@ -441,6 +491,224 @@ pub type CustomElementReaction = CustomElementUpgradeReaction | CustomElementCal
 const namespace_html_uri = 'http://www.w3.org/1999/xhtml'
 const namespace_svg_uri = 'http://www.w3.org/2000/svg'
 const namespace_xml_uri = 'http://www.w3.org/XML/1998/namespace'
+const namespace_xmlns_uri = 'http://www.w3.org/2000/xmlns/'
+
+pub enum ValidationContext {
+	element
+	attribute
+}
+
+fn contains_any_code_point(value string, invalid []u32) bool {
+	for ch in value.runes() {
+		if u32(ch) in invalid {
+			return true
+		}
+	}
+	return false
+}
+
+fn is_ascii_alpha_code_point(ch u32) bool {
+	return (ch >= `A` && ch <= `Z`) || (ch >= `a` && ch <= `z`)
+}
+
+fn is_ascii_lower_alpha_code_point(ch u32) bool {
+	return ch >= `a` && ch <= `z`
+}
+
+fn is_ascii_upper_alpha_code_point(ch u32) bool {
+	return ch >= `A` && ch <= `Z`
+}
+
+fn is_ascii_digit_code_point(ch u32) bool {
+	return ch >= `0` && ch <= `9`
+}
+
+// https://dom.spec.whatwg.org/#valid-namespace-prefix
+pub fn is_valid_namespace_prefix(prefix string) bool {
+	// A string is a valid namespace prefix if its length is at least 1 and it does not contain ASCII whitespace, U+0000 NULL, U+002F (/), or U+003E (>).
+	return prefix.len > 0 && !contains_any_code_point(prefix, [u32(9), 10, 12, 13, 32, 0, 47,
+		62])
+}
+
+// https://dom.spec.whatwg.org/#valid-attribute-local-name
+pub fn is_valid_attribute_local_name(local_name string) bool {
+	// A string is a valid attribute local name if its length is at least 1 and it does not contain ASCII whitespace, U+0000 NULL, U+002F (/), U+003D (=), or U+003E (>).
+	return local_name.len > 0 && !contains_any_code_point(local_name, [u32(9), 10, 12, 13, 32, 0,
+		47, 61, 62])
+}
+
+// https://dom.spec.whatwg.org/#valid-element-local-name
+pub fn is_valid_element_local_name(name string) bool {
+	// 1. If name's length is 0, then return false.
+	if name.len == 0 {
+		return false
+	}
+
+	runes := name.runes()
+	first_code_point := u32(runes[0])
+
+	// 2. If name's 0th code point is an ASCII alpha, then:
+	if is_ascii_alpha_code_point(first_code_point) {
+		// 1. If name contains ASCII whitespace, U+0000 NULL, U+002F (/), or U+003E (>), then return false.
+		if contains_any_code_point(name, [u32(9), 10, 12, 13, 32, 0, 47, 62]) {
+			return false
+		}
+
+		// 2. Return true.
+		return true
+	}
+
+	// 3. If name's 0th code point is not U+003A (:), U+005F (_), or in the range U+0080 to U+10FFFF, inclusive, then return false.
+	if first_code_point != `:` && first_code_point != `_`
+		&& (first_code_point < 0x0080 || first_code_point > 0x10ffff) {
+		return false
+	}
+
+	// 4. If name's subsequent code points, if any, are not ASCII alphas, ASCII digits, U+002D (-), U+002E (.),
+	//    U+003A (:), U+005F (_), or in the range U+0080 to U+10FFFF, inclusive, then return false.
+	for i := 1; i < runes.len; i++ {
+		code_point := u32(runes[i])
+		if !is_ascii_alpha_code_point(code_point) && !is_ascii_digit_code_point(code_point)
+			&& code_point != `-` && code_point != `.` && code_point != `:`
+			&& code_point != `_` && (code_point < 0x0080 || code_point > 0x10ffff) {
+			return false
+		}
+	}
+
+	// 5. Return true.
+	return true
+}
+
+// https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name
+pub fn is_valid_custom_element_name(name string) bool {
+	// A string name is a valid custom element name if all of the following are true:
+	// - name is a valid element local name;
+	if !is_valid_element_local_name(name) {
+		return false
+	}
+
+	runes := name.runes()
+	// - name's 0th code point is an ASCII lower alpha;
+	if runes.len == 0 || !is_ascii_lower_alpha_code_point(u32(runes[0])) {
+		return false
+	}
+
+	// - name does not contain any ASCII upper alphas;
+	// - name contains a U+002D (-); and
+	mut contains_hyphen := false
+	for ch in runes {
+		code_point := u32(ch)
+		if is_ascii_upper_alpha_code_point(code_point) {
+			return false
+		}
+		if code_point == `-` {
+			contains_hyphen = true
+		}
+	}
+	if !contains_hyphen {
+		return false
+	}
+
+	// - name is not one of the following:
+	//   - "annotation-xml"
+	//   - "color-profile"
+	//   - "font-face"
+	//   - "font-face-src"
+	//   - "font-face-uri"
+	//   - "font-face-format"
+	//   - "font-face-name"
+	//   - "missing-glyph"
+	if name in ['annotation-xml', 'color-profile', 'font-face', 'font-face-src', 'font-face-uri',
+		'font-face-format', 'font-face-name', 'missing-glyph'] {
+		return false
+	}
+
+	return true
+}
+
+fn namespace_matches(namespace_ ?string, value string) bool {
+	ns := namespace_ or { return false }
+	return ns == value
+}
+
+// https://dom.spec.whatwg.org/#validate-and-extract
+pub fn validate_and_extract(namespace_ ?string, qualified_name string, context ValidationContext) !QualifiedName {
+	// 1. If namespace is the empty string, then set it to null.
+	mut normalized_namespace := namespace_
+	if ns := normalized_namespace {
+		if ns.len == 0 {
+			normalized_namespace = none
+		}
+	}
+
+	// 2. Let prefix be null.
+	mut prefix := ?string(none)
+
+	// 3. Let localName be qualifiedName.
+	mut local_name := qualified_name
+
+	// 4. If qualifiedName contains a U+003A (:):
+	mut colon_position := -1
+	for index, byte in qualified_name.bytes() {
+		if byte == `:` {
+			colon_position = index
+			break
+		}
+	}
+	if colon_position >= 0 {
+		// 1. Set prefix to the part of qualifiedName before the first U+003A (:).
+		prefix = qualified_name[..colon_position]
+
+		// 2. Set localName to the part of qualifiedName after the first U+003A (:).
+		local_name = qualified_name[colon_position + 1..]
+
+		// 3. If prefix is not a valid namespace prefix, then throw an "InvalidCharacterError" DOMException.
+		if prefix_value := prefix {
+			if !is_valid_namespace_prefix(prefix_value) {
+				return error('InvalidCharacterError: Prefix not a valid namespace prefix')
+			}
+		}
+	}
+
+	// 6. If context is "attribute" and localName is not a valid attribute local name, then throw an "InvalidCharacterError" DOMException.
+	if context == .attribute && !is_valid_attribute_local_name(local_name) {
+		return error('InvalidCharacterError: Local name not a valid attribute local name')
+	}
+
+	// 7. If context is "element" and localName is not a valid element local name, then throw an "InvalidCharacterError" DOMException.
+	if context == .element && !is_valid_element_local_name(local_name) {
+		return error('InvalidCharacterError: Local name not a valid element local name')
+	}
+
+	// 8. If prefix is non-null and namespace is null, then throw a "NamespaceError" DOMException.
+	if prefix != none && normalized_namespace == none {
+		return error('NamespaceError: Prefix is non-null and namespace is null')
+	}
+
+	// 9. If prefix is "xml" and namespace is not the XML namespace, then throw a "NamespaceError" DOMException.
+	if prefix_value := prefix {
+		if prefix_value == 'xml' && !namespace_matches(normalized_namespace, namespace_xml_uri) {
+			return error("NamespaceError: Prefix is 'xml' and namespace is not the XML namespace")
+		}
+	}
+
+	// 10. If either qualifiedName or prefix is "xmlns" and namespace is not the XMLNS namespace, then throw a "NamespaceError" DOMException.
+	prefix_is_xmlns := if prefix_value := prefix { prefix_value == 'xmlns' } else { false }
+	if qualified_name == 'xmlns' || prefix_is_xmlns {
+		if !namespace_matches(normalized_namespace, namespace_xmlns_uri) {
+			return error("NamespaceError: Either qualifiedName or prefix is 'xmlns' and namespace is not the XMLNS namespace")
+		}
+	}
+
+	// 11. If namespace is the XMLNS namespace and neither qualifiedName nor prefix is "xmlns", then throw a "NamespaceError" DOMException.
+	if namespace_matches(normalized_namespace, namespace_xmlns_uri)
+		&& !(qualified_name == 'xmlns' || prefix_is_xmlns) {
+		return error('NamespaceError: Namespace is the XMLNS namespace and neither qualifiedName nor prefix is xmlns')
+	}
+
+	// 12. Return (namespace, prefix, localName).
+	return QualifiedName.new(local_name, prefix, normalized_namespace)
+}
 
 // Valid shadow host names
 const valid_shadow_host_names = ['article', 'aside', 'blockquote', 'body', 'div', 'footer', 'h1',
@@ -458,9 +726,9 @@ pub mut:
 	attributes_          ?&NamedNodeMap
 	inline_style_        ?&CSSStyleProperties_
 	attribute_style_map_ ?&StylePropertyMap_
-	class_list_          ?&DOMTokenList_
+	class_list_          ?&DOMTokenList
 	shadow_root_         ?&ShadowRoot
-	part_list_           ?&DOMTokenList_
+	part_list_           ?&DOMTokenList
 
 	cascaded_properties_  ?&CSSCascadedProperties_
 	computed_properties_  ?&CSSComputedProperties_
@@ -699,9 +967,11 @@ pub fn (e &Element) has_attributes() bool {
 pub fn (mut e Element) set_attribute_value(local_name string, value string) {
 	mut attrs := e.ensure_attributes()
 	if existing := attrs.get_attribute(local_name) {
+		old_value := existing.value_
 		unsafe {
 			existing.value_ = value
 		}
+		existing.handle_attribute_changes(e, old_value, value)
 	} else {
 		attrs.append_attribute(&Attr_{
 			name_:       local_name
@@ -813,7 +1083,9 @@ fn (mut e Element) ensure_attributes() &NamedNodeMap {
 	if attrs := e.attributes_ {
 		return attrs
 	}
-	new_attrs := &NamedNodeMap{}
+	new_attrs := &NamedNodeMap{
+		element: &e
+	}
 	e.attributes_ = new_attrs
 	return new_attrs
 }
@@ -836,21 +1108,21 @@ pub fn (e &Element) get_the_attribute_associated_element(content_attribute strin
 // --- Class / Part lists ---
 
 // https://dom.spec.whatwg.org/#dom-element-classlist
-pub fn (mut e Element) class_list() &DOMTokenList_ {
+pub fn (mut e Element) class_list() &DOMTokenList {
 	if cl := e.class_list_ {
 		return cl
 	}
-	new_cl := &DOMTokenList_{}
+	new_cl := DOMTokenList.create(&e, 'class')
 	e.class_list_ = new_cl
 	return new_cl
 }
 
 // https://drafts.csswg.org/css-shadow-1/#dom-element-part
-pub fn (mut e Element) part_list() &DOMTokenList_ {
+pub fn (mut e Element) part_list() &DOMTokenList {
 	if pl := e.part_list_ {
 		return pl
 	}
-	new_pl := &DOMTokenList_{}
+	new_pl := DOMTokenList.create(&e, 'part')
 	e.part_list_ = new_pl
 	return new_pl
 }
@@ -880,7 +1152,7 @@ fn is_valid_shadow_host_name(name string) bool {
 	if name in valid_shadow_host_names {
 		return true
 	}
-	if name.contains('-') && name.len > 0 {
+	if is_valid_custom_element_name(name) {
 		return true
 	}
 	return false
@@ -895,7 +1167,7 @@ pub fn (mut e Element) attach_a_shadow_root(mode ShadowRootMode, clonable bool, 
 	if !is_valid_shadow_host_name(e.local_name()) {
 		return error('NotSupportedError: Element local name is not a valid shadow host name')
 	}
-	if e.local_name().contains('-') || e.is_value != none {
+	if is_valid_custom_element_name(e.local_name()) || e.is_value != none {
 		if def := e.custom_element_definition_ {
 			if def.disable_shadow() {
 				return error('NotSupportedError: Custom element definition disables shadow roots')
@@ -1257,13 +1529,11 @@ pub fn (mut e Element) insert_adjacent_html(position string, text string) ! {
 // --- Focus / Active ---
 
 pub fn (e &Element) is_focused() bool {
-	// Stub: would check if document's focused area is this element
-	return false
+	return e.document().focused_area() or { return false } == e.as_node()
 }
 
 pub fn (e &Element) is_the_active_element() bool {
-	// Stub: would check if document's active element is this element
-	return false
+	return e.document().active_element() or { return false } == e
 }
 
 pub fn (e &Element) el_is_being_activated() bool {
@@ -1282,9 +1552,7 @@ pub fn (e &Element) is_target() bool {
 	if doc == unsafe { nil } {
 		return false
 	}
-	// Stub: would compare doc's target element with this
-	_ = doc
-	return false
+	return doc.target_element() or { return false } == e
 }
 
 pub fn (e &Element) is_document_element() bool {
@@ -1527,11 +1795,44 @@ pub fn (mut e Element) request_fullscreen(requester FullscreenRequester) &Promis
 }
 
 pub fn (e &Element) is_element_allowed_to_enter_fullscreen(requester FullscreenRequester) RequestFullscreenError {
+	// This's namespace is the HTML namespace or this is an SVG svg element.
+	// MathML math element support is not represented in the current V DOM type set.
+	if !(e.namespace_uri() or { '' } == namespace_html_uri || e.is_svg_svg_element()) {
+		return .unsupported_element
+	}
+
+	// This is not a dialog element.
+	if e.is_html_element() && e.local_name() == 'dialog' {
+		return .unsupported_element
+	}
+
+	// The fullscreen element ready check for this returns true.
+	if !e.is_element_ready_for_fullscreen() {
+		return .element_ready_check_failed
+	}
+
+	// Fullscreen support is represented by Document.is_allowed_to_use_feature().
+	// Transient user activation is owned by Window/HTML agent state, which is not
+	// translated in this DOM-only V port. WebDriver and bindings share the same
+	// successful path until that state exists.
 	_ = requester
 	return .false_
 }
 
 pub fn (e &Element) is_element_ready_for_fullscreen() bool {
+	// A fullscreen element ready check requires the element to be connected.
+	if !e.is_connected() {
+		return false
+	}
+
+	// The node document must be allowed to use the "fullscreen" feature.
+	if !e.document().is_allowed_to_use_feature(.fullscreen) {
+		return false
+	}
+
+	// If the element is in the HTML namespace, the C++ implementation also checks
+	// that the element's popover visibility state is hidden. Popover state is not
+	// represented in this port; the default HTML element state is hidden.
 	return true
 }
 
@@ -1543,28 +1844,201 @@ pub fn (e &Element) is_fullscreen_element() bool {
 	return e.fullscreen_flag
 }
 
+pub fn (e &Element) in_top_layer() bool {
+	return e.in_top_layer
+}
+
 fn (mut e Element) exit_fullscreen_on_element_removal() {
-	// Stub
+	// 1. Let document be removedNode's node document.
+	mut document := unsafe { &Document(e.document()) }
+
+	// 2. Let nodes be removedNode's shadow-including inclusive descendants that
+	//    have their fullscreen flag set, in shadow-including tree order.
+	mut fullscreen_elements := []&Element{}
+	e.as_node().for_each_shadow_including_inclusive_descendant(fn [mut fullscreen_elements] (node &Node) TraversalDecision {
+		element := node.as_element() or { return .@continue }
+		if element.is_fullscreen_element() {
+			fullscreen_elements << element
+		}
+		return .@continue
+	})
+
+	// 3. For each node in nodes:
+	for mut element in fullscreen_elements {
+		// 1. If node is document's fullscreen element, exit fullscreen document.
+		if fullscreen_element := document.fullscreen_element() {
+			if fullscreen_element == element {
+				document.exit_fullscreen()
+			} else {
+				// 2. Otherwise, unfullscreen node.
+				document.unfullscreen_element(mut element)
+			}
+		} else {
+			document.unfullscreen_element(mut element)
+		}
+
+		// 3. If document's top layer contains node, remove from the top layer immediately given node.
+		if element.in_top_layer() {
+			document.remove_an_element_from_the_top_layer_immediately(element)
+		}
+	}
 }
 
 // --- Actually disabled ---
 
+fn (e &Element) is_html_element_with_local_name(name string) bool {
+	return e.is_html_element() && e.local_name() == name
+}
+
+fn (e &Element) first_ancestor_fieldset_element() ?&Element {
+	for ancestor := e.as_node().parent(); ancestor != none; {
+		current := ancestor or { break }
+		if element := current.as_element() {
+			if element.is_html_element_with_local_name('fieldset') {
+				return element
+			}
+		}
+		ancestor = current.parent()
+	}
+	return none
+}
+
+fn (e &Element) first_legend_element_child() ?&Element {
+	for child in e.as_node().children {
+		if element := child.as_element() {
+			if element.is_html_element_with_local_name('legend') {
+				return element
+			}
+		}
+	}
+	return none
+}
+
+fn (e &Element) is_disabled_by_fieldset_ancestor() bool {
+	for fieldset_ancestor := e.first_ancestor_fieldset_element(); fieldset_ancestor != none; {
+		fieldset := fieldset_ancestor or { break }
+		if fieldset.has_attribute('disabled') {
+			if legend := fieldset.first_legend_element_child() {
+				if !e.as_node().is_descendant_of(legend.as_node()) {
+					return true
+				}
+			} else {
+				return true
+			}
+		}
+		fieldset_ancestor = fieldset.first_ancestor_fieldset_element()
+	}
+	return false
+}
+
+fn (e &Element) form_control_enabled() bool {
+	// https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#concept-fe-disabled
+	// A form control is disabled if any of the following are true:
+	// - The element is a button, input, select, textarea, or form-associated custom element, and the disabled attribute is specified on this element (regardless of its value); or
+	// FIXME: This doesn't check for form-associated custom elements.
+	if e.has_attribute('disabled') {
+		return false
+	}
+
+	// - The element is a descendant of a fieldset element whose disabled attribute is specified, and is not a descendant of that fieldset element's first legend element child, if any.
+	if e.is_disabled_by_fieldset_ancestor() {
+		return false
+	}
+
+	return true
+}
+
+fn (e &Element) option_element_disabled() bool {
+	// An option element is disabled if its disabled attribute is present or if it is a child of an optgroup element whose disabled attribute is present.
+	if e.has_attribute('disabled') {
+		return true
+	}
+	parent := e.as_node().parent() or { return false }
+	parent_element := parent.as_element() or { return false }
+	return parent_element.is_html_element_with_local_name('optgroup')
+		&& parent_element.has_attribute('disabled')
+}
+
+fn (e &Element) fieldset_element_disabled() bool {
+	// A fieldset element is a disabled fieldset if it matches any of the following conditions:
+	// - Its disabled attribute is specified
+	if e.has_attribute('disabled') {
+		return true
+	}
+
+	// - It is a descendant of another fieldset element whose disabled attribute is specified, and is not a descendant of that fieldset element's first legend element child, if any.
+	return e.is_disabled_by_fieldset_ancestor()
+}
+
 // https://html.spec.whatwg.org/multipage/semantics-other.html#concept-element-disabled
 pub fn (e &Element) is_actually_disabled() bool {
+	// An element is said to be actually disabled if it is one of the following:
+	// - a button element that is disabled
+	// - an input element that is disabled
+	// - a select element that is disabled
+	// - a textarea element that is disabled
+	if e.is_html_element() && e.local_name() in ['button', 'input', 'select', 'textarea'] {
+		return !e.form_control_enabled()
+	}
+
+	// - an optgroup element that has a disabled attribute
+	if e.is_html_element_with_local_name('optgroup') {
+		return e.has_attribute('disabled')
+	}
+
+	// - an option element that is disabled
+	if e.is_html_element_with_local_name('option') {
+		return e.option_element_disabled()
+	}
+
+	// - a fieldset element that is a disabled fieldset
+	if e.is_html_element_with_local_name('fieldset') {
+		return e.fieldset_element_disabled()
+	}
+
+	// FIXME: - a form-associated custom element that is disabled
 	return false
 }
 
 // --- Insert adjacent ---
 
-pub fn (mut e Element) insert_adjacent_element(where_ string, element &Element) ?&Element {
-	_ = where_
-	_ = element
-	return none
+fn (mut e Element) insert_adjacent(where_ string, node &Node) !&Node {
+	match where_.to_lower() {
+		'beforebegin' {
+			parent := e.as_node().parent() or { return unsafe { nil } }
+			mut mutable_parent := unsafe { &Node(parent) }
+			return mutable_parent.pre_insert(node, e.as_node())!
+		}
+		'afterbegin' {
+			mut element_node := unsafe { &Node(e.as_node()) }
+			return element_node.pre_insert(node, e.as_node().first_child())!
+		}
+		'beforeend' {
+			mut element_node := unsafe { &Node(e.as_node()) }
+			return element_node.pre_insert(node, none)!
+		}
+		'afterend' {
+			parent := e.as_node().parent() or { return unsafe { nil } }
+			mut mutable_parent := unsafe { &Node(parent) }
+			return mutable_parent.pre_insert(node, e.as_node().next_sibling())!
+		}
+		else {
+			return error("SyntaxError: Unknown position '${where_}'. Must be one of 'beforebegin', 'afterbegin', 'beforeend' or 'afterend'")
+		}
+	}
+}
+
+pub fn (mut e Element) insert_adjacent_element(where_ string, element &Element) !&Element {
+	returned_node := e.insert_adjacent(where_, element.as_node())!
+	if returned_node == unsafe { nil } {
+		return unsafe { nil }
+	}
+	return returned_node.as_element() or { unsafe { nil } }
 }
 
 pub fn (mut e Element) insert_adjacent_text(where_ string, data string) ! {
-	_ = where_
-	_ = data
+	text := new_text_node(e.document(), data)
+	e.insert_adjacent(where_, text.as_node())!
 }
 
 // --- check_visibility ---
@@ -1591,7 +2065,12 @@ pub fn (mut e Element) unregister_intersection_observer(observer voidptr) {
 // --- Custom elements ---
 
 fn (mut e Element) enqueue_an_element_on_the_appropriate_element_queue() {
-	// Stub
+	// 1. Let reactionsStack be element's relevant agent's custom element reactions stack.
+	// 2. If reactionsStack is empty, add element to reactionsStack's backup element queue.
+	// The current V port has no HTML agent or microtask queue, so the backup queue
+	// is stored on the node document and processed by future custom-element runtime wiring.
+	mut document := unsafe { &Document(e.document()) }
+	document.enqueue_custom_element_reaction_element(e)
 }
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#enqueue-a-custom-element-upgrade-reaction
@@ -1650,7 +2129,9 @@ pub fn (mut e Element) upgrade_element(definition &CustomElementDefinition) ! {
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#concept-try-upgrade
 pub fn (mut e Element) try_to_upgrade() {
-	// Stub
+	definition := e.document().lookup_custom_element_definition(e.namespace_uri(), e.local_name(),
+		e.is_value) or { return }
+	e.enqueue_a_custom_element_upgrade_reaction(definition)
 }
 
 // https://dom.spec.whatwg.org/#concept-element-defined
@@ -1696,6 +2177,9 @@ pub fn (e &Element) locate_a_namespace_prefix(namespace_ ?string) ?string {
 				}
 			}
 		}
+	}
+	if parent := e.as_node().parent_element() {
+		return parent.locate_a_namespace_prefix(namespace_)
 	}
 	return none
 }
@@ -1795,7 +2279,30 @@ pub fn (e &Element) proximity_to_the_viewport() ProximityToTheViewport {
 }
 
 pub fn (mut e Element) determine_proximity_to_the_viewport() {
-	// Stub
+	// An element that has content-visibility: auto is close to the viewport when
+	// its paint containment box's overflow clip edge intersects the viewport, or
+	// a user-agent defined margin around the viewport.
+	viewport_rect := e.document().viewport_rect()
+	expanded_viewport := Rect{
+		x:      viewport_rect.x - viewport_rect.width
+		y:      viewport_rect.y - viewport_rect.height
+		width:  viewport_rect.width * 3
+		height: viewport_rect.height * 3
+	}
+
+	// FIXME: We don't have paint containment or the overflow clip edge yet, so this
+	// uses the available scrollable overflow rect for the current paintable box.
+	if paintable_box := e.paintable_box() {
+		if rect := paintable_box.scrollable_overflow_rect() {
+			if css_pixel_rect_intersects_rect(rect, expanded_viewport) {
+				e.proximity_to_the_viewport_ = .close_to_the_viewport
+				return
+			}
+		}
+	}
+
+	// The element's proximity has been computed and is not close to the viewport.
+	e.proximity_to_the_viewport_ = .far_away_from_the_viewport
 }
 
 pub fn (mut e Element) is_relevant_to_the_user() bool {
@@ -1952,8 +2459,7 @@ pub fn (mut e Element) invalidate_lang_value() {
 // --- is_connected ---
 
 pub fn (e &Element) is_connected() bool {
-	doc := e.document()
-	return doc != unsafe { nil }
+	return e.as_node().is_connected()
 }
 
 // --- attribute_changed ---
@@ -1966,17 +2472,52 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 
 	value_or_empty := value or { '' }
 
+	if local_name == 'slot' {
+		// 1. If value is oldValue, then return.
+		if value == old_value {
+			return
+		}
+
+		// 2. If value is null and oldValue is the empty string, then return.
+		if value == none && old_value or { '\x01' } == '' {
+			return
+		}
+
+		// 3. If value is the empty string and oldValue is null, then return.
+		if value or { '\x01' } == '' && old_value == none {
+			return
+		}
+
+		// 4-5. The slottable name is reflected from the slot attribute by slottable_name().
+		// 6. If element is assigned, then run assign slottables for element's assigned slot.
+		if assigned_slot := unsafe { &Node(&e) }.assigned_slot_internal() {
+			assign_slottables(assigned_slot)
+		}
+
+		// 7. Run assign a slot for element.
+		assign_a_slot(unsafe { &Node(&e) })
+		return
+	}
+
 	if local_name == 'id' {
 		if value_or_empty.len == 0 {
 			e.id_ = none
 		} else {
 			e.id_ = value_or_empty
 		}
+		if e.is_connected() {
+			mut doc := unsafe { &Document(e.document()) }
+			doc.element_id_changed(&e, old_value)
+		}
 	} else if local_name == 'name' {
 		if value_or_empty.len == 0 {
 			e.name_ = none
 		} else {
 			e.name_ = value_or_empty
+		}
+		if e.is_connected() {
+			mut doc := unsafe { &Document(e.document()) }
+			doc.element_name_changed(&e)
 		}
 	} else if local_name == 'class' {
 		if value_or_empty.len == 0 {
@@ -2005,7 +2546,13 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 			e.dir__ = none
 		}
 	} else if local_name == 'lang' {
-		e.invalidate_lang_value()
+		e.as_node().for_each_in_inclusive_subtree(fn (node &Node) TraversalDecision {
+			if element := node.as_element() {
+				mut mutable_element := unsafe { &Element(element) }
+				mutable_element.invalidate_lang_value()
+			}
+			return .@continue
+		})
 	} else if local_name == 'part' {
 		e.parts.clear()
 		if value_or_empty.len > 0 {
@@ -2013,10 +2560,6 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		}
 		if mut pl := e.part_list_ {
 			pl.associated_attribute_changed(value_or_empty)
-		}
-	} else if local_name == 'slot' {
-		if value == old_value {
-			return
 		}
 	}
 }
@@ -2039,6 +2582,15 @@ pub fn (e &Element) is_hidden() bool {
 }
 
 pub fn (e &Element) has_hidden_ancestor() bool {
+	for ancestor := e.as_node().parent_or_shadow_host(); ancestor != none; {
+		current := ancestor or { break }
+		if element := current.as_element() {
+			if element.is_hidden() {
+				return true
+			}
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
 	return false
 }
 
@@ -2139,20 +2691,71 @@ pub fn (mut e Element) set_style_uses_tree_counting_function() {
 // --- Lifecycle callbacks ---
 
 pub fn (mut e Element) inserted() {
-	// Stub
+	mut node := unsafe { &Node(e.as_node()) }
+	node.recompute_editable_subtree_flag()
+	node.set_needs_style_update(true)
+
+	if e.is_connected() {
+		mut doc := unsafe { &Document(e.document()) }
+		if e.id_ != none {
+			doc.element_with_id_was_added(e)
+		}
+		if e.name_ != none {
+			doc.element_with_name_was_added(e)
+		}
+	}
+
+	// play_or_cancel_animations_after_display_property_change() depends on the animation/style subsystems.
 }
 
-pub fn (mut e Element) removed_from(old_parent ?&Node) {
+pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
 	_ = old_parent
+	mut node := unsafe { &Node(e.as_node()) }
+	node.in_editable_subtree_ = false
+	node.layout_node_ = unsafe { nil }
+	node.paintable_ = unsafe { nil }
+
+	if e.id_ != none {
+		if mut shadow_root := old_root.as_shadow_root() {
+			mut id_map := unsafe { &ElementByIdMap(shadow_root.element_by_id()) }
+			id_map.remove(e.id_ or { '' }, e)
+		}
+	}
+
+	if old_root.is_connected() {
+		mut doc := unsafe { &Document(e.document()) }
+		if e.id_ != none {
+			doc.element_with_id_was_removed(e)
+		}
+		if e.name_ != none {
+			doc.element_with_name_was_removed(e)
+		}
+	}
+
+	// play_or_cancel_animations_after_display_property_change() depends on the animation/style subsystems.
 	e.exit_fullscreen_on_element_removal()
 }
 
 pub fn (mut e Element) moved_from(old_parent ?&Node) {
 	_ = old_parent
+	mut node := unsafe { &Node(e.as_node()) }
+	node.recompute_editable_subtree_flag()
 }
 
-pub fn (mut e Element) children_changed() {
-	// Stub
+pub fn (mut e Element) children_changed(metadata ChildrenChangedMetadata) {
+	_ = metadata
+	e.set_needs_style_update(true)
+
+	if e.child_style_uses_tree_counting_function {
+		for child in e.as_node().children {
+			if element := child.as_element() {
+				mut mutable_element := unsafe { &Element(element) }
+				mutable_element.set_needs_style_update(true)
+				mut node := unsafe { &Node(e.as_node()) }
+				node.set_child_needs_style_update(true)
+			}
+		}
+	}
 }
 
 // --- element_to_inherit_style_from ---

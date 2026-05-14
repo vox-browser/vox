@@ -125,14 +125,23 @@ pub fn (mut record MutationRecord) visit_edges(mut visitor CellVisitor) {
 // https://dom.spec.whatwg.org/#dom-mutationobserver-mutationobserver
 pub fn MutationObserver.construct_impl(callback ?&CallbackType) !&MutationObserver {
 	// The new MutationObserver(callback) constructor steps are to set this's callback to callback.
-	_ = callback
-	return &MutationObserver{}
+	return &MutationObserver{
+		callback_: callback
+	}
 }
 
 pub fn (mut observer MutationObserver) initialize() {}
 
 pub fn (mut observer MutationObserver) visit_edges(mut visitor CellVisitor) {
-	_ = visitor
+	if callback := observer.callback_ {
+		visitor.visit(callback)
+	}
+	for record in observer.record_queue {
+		visitor.visit(record)
+	}
+	for node in observer.node_list_ {
+		visitor.visit(node)
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-mutationobserver-observe
@@ -185,19 +194,33 @@ pub fn (mut observer MutationObserver) observe(mut target Node, mut options Muta
 
 	// 8. Otherwise append a new registered observer whose observer is this and options is options.
 	target.add_registered_observer(RegisteredObserver.create(observer, options))
+	observer.node_list_ << unsafe { &Node(&target) }
 }
 
 // https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect
 pub fn (mut observer MutationObserver) disconnect() {
-	// The shared MutationObserver stub does not yet store the observer node list or record queue.
-	_ = observer
+	// 1. For each node of this's node list, remove any registered observer from node's registered observer list for which this is the observer.
+	for node in observer.node_list_ {
+		mut mutable_node := unsafe { &Node(node) }
+		for i := mutable_node.registered_observer_list_.len - 1; i >= 0; i-- {
+			if mutable_node.registered_observer_list_[i].observer_ == &observer {
+				mutable_node.registered_observer_list_.delete(i)
+			}
+		}
+	}
+	observer.node_list_.clear()
+	// 2. Empty this's record queue.
+	observer.record_queue.clear()
 }
 
 // https://dom.spec.whatwg.org/#dom-mutationobserver-takerecords
 pub fn (mut observer MutationObserver) take_records() []&MutationRecord {
-	// The full record queue is not present in the shared MutationObserver shape yet.
-	_ = observer
-	return []
+	// 1. Let records be a clone of this's record queue.
+	records := observer.record_queue.clone()
+	// 2. Empty this's record queue.
+	observer.record_queue.clear()
+	// 3. Return records.
+	return records
 }
 
 pub fn RegisteredObserver.create(observer &MutationObserver, options MutationObserverOptions) &RegisteredObserver {
@@ -221,18 +244,20 @@ pub fn (mut registered RegisteredObserver) visit_edges(mut visitor CellVisitor) 
 }
 
 pub fn TransientRegisteredObserver.create(observer &MutationObserver, options MutationObserverOptions, source &RegisteredObserver) &TransientRegisteredObserver {
-	_ = source
 	return &TransientRegisteredObserver{
 		RegisteredObserver: RegisteredObserver{
 			observer_: observer
 			options_:  options
 		}
+		source_: source
 	}
 }
 
 pub fn (registered &TransientRegisteredObserver) source() ?&RegisteredObserver {
-	_ = registered
-	return none
+	if registered.source_ == unsafe { nil } {
+		return none
+	}
+	return registered.source_
 }
 
 pub fn (registered &TransientRegisteredObserver) is_transient() bool {
@@ -242,6 +267,7 @@ pub fn (registered &TransientRegisteredObserver) is_transient() bool {
 
 pub fn (mut registered TransientRegisteredObserver) visit_edges(mut visitor CellVisitor) {
 	registered.RegisteredObserver.visit_edges(mut visitor)
+	visitor.visit(registered.source_)
 }
 
 fn shadow_root_as_node(shadow_root &ShadowRoot) &Node {
@@ -277,30 +303,27 @@ pub fn (mut shadow_root ShadowRoot) set_serializable(serializable bool) {
 }
 
 pub fn (shadow_root &ShadowRoot) available_to_element_internals() bool {
-	_ = shadow_root
-	return false
+	return shadow_root.available_to_element_internals_
 }
 
 pub fn (mut shadow_root ShadowRoot) set_available_to_element_internals(available bool) {
-	_ = available
+	shadow_root.available_to_element_internals_ = available
 }
 
 pub fn (shadow_root &ShadowRoot) is_user_agent_internal() bool {
-	_ = shadow_root
-	return false
+	return shadow_root.user_agent_internal_
 }
 
 pub fn (mut shadow_root ShadowRoot) set_user_agent_internal(user_agent_internal bool) {
-	_ = user_agent_internal
+	shadow_root.user_agent_internal_ = user_agent_internal
 }
 
 pub fn (shadow_root &ShadowRoot) uses_document_style_sheets() bool {
-	_ = shadow_root
-	return false
+	return shadow_root.uses_document_style_sheets_
 }
 
 pub fn (mut shadow_root ShadowRoot) set_uses_document_style_sheets(value bool) {
-	_ = value
+	shadow_root.uses_document_style_sheets_ = value
 }
 
 pub fn (mut shadow_root ShadowRoot) finalize() {
@@ -336,18 +359,25 @@ pub fn (mut shadow_root ShadowRoot) initialize() {}
 
 // https://dom.spec.whatwg.org/#dom-shadowroot-onslotchange
 pub fn (mut shadow_root ShadowRoot) set_onslotchange(event_handler ?&CallbackType) {
-	_ = event_handler
+	shadow_root.onslotchange_ = event_handler
 }
 
 // https://dom.spec.whatwg.org/#dom-shadowroot-onslotchange
 pub fn (shadow_root &ShadowRoot) onslotchange() ?&CallbackType {
-	_ = shadow_root
-	return none
+	return shadow_root.onslotchange_
 }
 
 // https://dom.spec.whatwg.org/#ref-for-get-the-parent
 pub fn (shadow_root &ShadowRoot) get_parent(event &Event) ?&EventTarget {
-	_ = event
+	if !event.composed() && event.path().len > 0 {
+		first_invocation_target := event.path()[0].invocation_target
+		if first_invocation_target != unsafe { nil } {
+			first_invocation_node := unsafe { &Node(first_invocation_target) }
+			if first_invocation_node.root() == shadow_root_as_node(shadow_root) {
+				return none
+			}
+		}
+	}
 	host := shadow_root.host() or { return none }
 	return unsafe { &EventTarget(host.as_node()) }
 }
@@ -407,13 +437,19 @@ pub fn (mut shadow_root ShadowRoot) style_sheets_for_bindings() &StyleSheetList 
 }
 
 pub fn (shadow_root &ShadowRoot) adopted_style_sheets() []&CSSStyleSheet {
-	// ShadowRoot-local adoptedStyleSheets storage is not present in the shared ShadowRoot stub.
-	_ = shadow_root
-	return []
+	return shadow_root.adopted_style_sheets_.clone()
 }
 
 pub fn (mut shadow_root ShadowRoot) set_adopted_style_sheets(new_value VoidPtr) ! {
+	// In C++ this consumes a JS iterable and appends CSSStyleSheet values into the observable array.
+	// JS iteration is outside this DOM-only port, so callers can use set_adopted_style_sheet_list()
+	// when they already have translated CSSStyleSheet references.
 	_ = new_value
+	shadow_root.adopted_style_sheets_.clear()
+}
+
+pub fn (mut shadow_root ShadowRoot) set_adopted_style_sheet_list(sheets []&CSSStyleSheet) {
+	shadow_root.adopted_style_sheets_ = sheets.clone()
 }
 
 pub fn (shadow_root &ShadowRoot) for_each_css_style_sheet(callback fn (&CSSStyleSheet)) {
@@ -437,6 +473,11 @@ pub fn (shadow_root &ShadowRoot) for_each_active_css_style_sheet(callback fn (&C
 pub fn (mut shadow_root ShadowRoot) visit_edges(mut visitor CellVisitor) {
 	mut fragment := shadow_root_as_document_fragment(&shadow_root)
 	fragment.visit_edges(mut visitor)
+	visitor.visit(shadow_root.element_by_id_)
+	visitor.visit(shadow_root.slot_registry_)
+	if handler := shadow_root.onslotchange_ {
+		visitor.visit(handler)
+	}
 }
 
 pub fn (mut shadow_root ShadowRoot) get_animations() ![]&Animation {
@@ -446,11 +487,19 @@ pub fn (mut shadow_root ShadowRoot) get_animations() ![]&Animation {
 }
 
 pub fn (shadow_root &ShadowRoot) element_by_id() &ElementByIdMap {
-	_ = shadow_root
-	return &ElementByIdMap{}
+	mut mutable_shadow_root := unsafe { &ShadowRoot(shadow_root) }
+	if mutable_shadow_root.element_by_id_ == unsafe { nil } {
+		mutable_shadow_root.element_by_id_ = &ElementByIdMap{}
+	}
+	return mutable_shadow_root.element_by_id_
 }
 
 pub fn (shadow_root &ShadowRoot) first_slot_with_name(name string) ?&HTMLSlotElement {
+	if shadow_root.slot_registry_ != unsafe { nil } {
+		registry := unsafe { &SlotRegistry(shadow_root.slot_registry_) }
+		return registry.first_slot_with_name(name)
+	}
+
 	mut found := ?&HTMLSlotElement(none)
 	shadow_root_as_node(shadow_root).for_each_in_subtree(fn [name, mut found] (node &Node) TraversalDecision {
 		if found != none {
@@ -524,6 +573,7 @@ pub fn (mut slot Slot) visit_edges(mut visitor CellVisitor) {
 	}
 }
 
+@[heap]
 pub struct SlotRegistry {
 mut:
 	slots []&HTMLSlotElement
@@ -601,9 +651,96 @@ pub fn (mut slot HTMLSlotElement) set_assigned_nodes(assigned_nodes []&Node) {
 	slot.assigned_nodes_ = assigned_nodes
 }
 
+pub fn (mut slot HTMLSlotElement) visit_edges(mut visitor CellVisitor) {
+	mut element := unsafe { &Element(&slot) }
+	element.visit_edges(mut visitor)
+	for node in slot.assigned_nodes_ {
+		visitor.visit(node)
+	}
+	for node in slot.manually_assigned_nodes_ {
+		visitor.visit(node)
+	}
+}
+
 pub fn (slot &HTMLSlotElement) manually_assigned_nodes() []&Node {
-	_ = slot
-	return []
+	return slot.manually_assigned_nodes_
+}
+
+pub fn (mut slot HTMLSlotElement) remove_manually_assigned_node(node &Node) {
+	slot.manually_assigned_nodes_ = slot.manually_assigned_nodes_.filter(it != node)
+}
+
+pub fn (mut slot HTMLSlotElement) set_manually_assigned_nodes(nodes []&Node) {
+	slot.manually_assigned_nodes_ = nodes.clone()
+}
+
+// https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-assignednodes
+pub fn (slot &HTMLSlotElement) assigned_nodes_with_options(options AssignedNodesOptions) []&Node {
+	// 1. If options["flatten"] is false, then return this's assigned nodes.
+	if !options.flatten {
+		return slot.assigned_nodes_internal().clone()
+	}
+
+	// 2. Return the result of finding flattened slottables with this.
+	return find_flattened_slottables(slot)
+}
+
+// https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-assignedelements
+pub fn (slot &HTMLSlotElement) assigned_elements(options AssignedNodesOptions) []&Element {
+	// 1. If options["flatten"] is false, then return this's assigned nodes, filtered to contain only Element nodes.
+	nodes := if options.flatten {
+		// 2. Return the result of finding flattened slottables with this, filtered to contain only Element nodes.
+		find_flattened_slottables(slot)
+	} else {
+		slot.assigned_nodes_internal()
+	}
+	mut elements := []&Element{}
+	for node in nodes {
+		if element := node.as_element() {
+			elements << element
+		}
+	}
+	return elements
+}
+
+// https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-assign
+pub fn (mut slot HTMLSlotElement) assign(nodes []&Node) {
+	// 1. For each node of this's manually assigned nodes, set node's manual slot assignment to null.
+	for manually_assigned_node in slot.manually_assigned_nodes_ {
+		mut node := unsafe { &Node(manually_assigned_node) }
+		node.set_manual_slot_assignment(none)
+	}
+
+	// 2. Let nodesSet be a new ordered set.
+	mut nodes_set := []&Node{}
+
+	// 3. For each node of nodes:
+	for node in nodes {
+		if !node.is_slottable() {
+			continue
+		}
+
+		// 1. If node's manual slot assignment refers to a slot, then remove node from that slot's manually assigned nodes.
+		if previous_slot := node.manual_slot_assignment() {
+			mut mutable_previous_slot := unsafe { &HTMLSlotElement(previous_slot) }
+			mutable_previous_slot.remove_manually_assigned_node(node)
+		}
+
+		// 2. Set node's manual slot assignment to this.
+		mut mutable_node := unsafe { &Node(node) }
+		mutable_node.set_manual_slot_assignment(&slot)
+
+		// 3. Append node to nodesSet.
+		if node !in nodes_set {
+			nodes_set << node
+		}
+	}
+
+	// 4. Set this's manually assigned nodes to nodesSet.
+	slot.manually_assigned_nodes_ = nodes_set
+
+	// 5. Run assign slottables for a tree for this's root.
+	assign_slottables_for_a_tree(html_slot_element_as_node(&slot).root())
 }
 
 pub fn (node &Node) slottable_name() string {
@@ -614,21 +751,19 @@ pub fn (node &Node) slottable_name() string {
 }
 
 pub fn (node &Node) assigned_slot_internal() ?&HTMLSlotElement {
-	_ = node
-	return none
+	return node.assigned_slot_
 }
 
 pub fn (mut node Node) set_assigned_slot(assigned_slot ?&HTMLSlotElement) {
-	_ = assigned_slot
+	node.assigned_slot_ = assigned_slot
 }
 
 pub fn (node &Node) manual_slot_assignment() ?&HTMLSlotElement {
-	_ = node
-	return none
+	return node.manual_slot_assignment_
 }
 
 pub fn (mut node Node) set_manual_slot_assignment(manual_slot_assignment ?&HTMLSlotElement) {
-	_ = manual_slot_assignment
+	node.manual_slot_assignment_ = manual_slot_assignment
 }
 
 // https://dom.spec.whatwg.org/#dom-slotable-assignedslot
@@ -779,15 +914,21 @@ pub fn assign_slottables(slot &HTMLSlotElement) {
 		signal_a_slot_change(slot)
 	}
 
-	// 4. For each slottable in slottables, set slottable's assigned slot to slot.
-	for slottable in slottables {
-		mut node := unsafe { &Node(slottable) }
-		node.set_assigned_slot(slot)
+	// Clear any previously assigned slottables before installing the new assignment list.
+	for old_slottable in slot.assigned_nodes_internal() {
+		mut old_node := unsafe { &Node(old_slottable) }
+		old_node.set_assigned_slot(none)
 	}
 
 	// 3. Set slot's assigned nodes to slottables.
 	mut mutable_slot := unsafe { &HTMLSlotElement(slot) }
 	mutable_slot.assigned_nodes_ = slottables
+
+	// 4. For each slottable in slottables, set slottable's assigned slot to slot.
+	for slottable in slottables {
+		mut node := unsafe { &Node(slottable) }
+		node.set_assigned_slot(slot)
+	}
 }
 
 // https://dom.spec.whatwg.org/#assign-slotables-for-a-tree
@@ -826,8 +967,17 @@ pub fn assign_a_slot(slottable &Node) {
 // https://dom.spec.whatwg.org/#signal-a-slot-change
 pub fn signal_a_slot_change(slot &HTMLSlotElement) {
 	// 1. Append slot to slot's relevant agent's signal slots.
+	mut document := unsafe { &Document(html_slot_element_as_node(slot).document()) }
+	if document != unsafe { nil } && slot !in document.signal_slots {
+		document.signal_slots << slot
+	}
+
 	// 2. Queue a mutation observer microtask.
-	_ = slot
+	queue_mutation_observer_microtask()
+}
+
+fn queue_mutation_observer_microtask() {
+	// Bindings::queue_mutation_observer_microtask is outside this DOM-only V port.
 }
 
 pub struct StyleInvalidationSet {
@@ -1061,6 +1211,14 @@ pub fn (element &Element) document_or_shadow_root_style_sheets() &StyleSheetList
 	return document.style_sheets()
 }
 
+pub fn (element &Element) document_or_shadow_root_element_by_id_map() &ElementByIdMap {
+	root_node := element.as_node().root()
+	if shadow_root := root_node.as_shadow_root() {
+		return shadow_root.element_by_id()
+	}
+	return element.document().element_by_id_map()
+}
+
 pub fn (element &Element) contributes_a_script_blocking_style_sheet() bool {
 	_ = element
 	return false
@@ -1080,20 +1238,21 @@ pub fn (mut element Element) queue_an_element_task(source string, callback fn ()
 }
 
 pub fn DOMImplementation.create(document &Document) &DOMImplementation {
-	_ = document
-	return &DOMImplementation{}
+	return &DOMImplementation{
+		document_: document
+	}
 }
 
 pub fn (mut implementation DOMImplementation) initialize() {}
 
 pub fn (mut implementation DOMImplementation) visit_edges(mut visitor CellVisitor) {
-	_ = implementation
-	_ = visitor
+	if implementation.document_ != unsafe { nil } {
+		visitor.visit(implementation.document_)
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-domimplementation-createdocument
 pub fn (implementation &DOMImplementation) create_document(namespace_ ?string, qualified_name string, doctype ?&DocumentType) !&XMLDocument {
-	_ = implementation
 	// 1. Let document be a new XMLDocument.
 	mut xml_document := XMLDocument.create(url_about_blank())
 	xml_document.ready_for_post_load_tasks = true
@@ -1128,13 +1287,17 @@ pub fn (implementation &DOMImplementation) create_document(namespace_ ?string, q
 		xml_document.content_type = 'application/xml'
 	}
 
+	// 6. document's origin is this's associated document's origin.
+	if implementation.document_ != unsafe { nil } {
+		xml_document.set_origin(implementation.document_.origin())
+	}
+
 	// 8. Return document.
 	return xml_document
 }
 
 // https://dom.spec.whatwg.org/#dom-domimplementation-createhtmldocument
 pub fn (implementation &DOMImplementation) create_html_document(title ?string) &Document {
-	_ = implementation
 	// 1. Let doc be a new document that is an HTML document.
 	mut html_document := Document.create(url_about_blank())
 	html_document.set_content_type('text/html')
@@ -1170,13 +1333,17 @@ pub fn (implementation &DOMImplementation) create_html_document(title ?string) &
 	html_node.append_child(body_element.as_node()) or {}
 	document_node.append_child(html_element.as_node()) or {}
 
+	// 8. doc's origin is this's associated document's origin.
+	if implementation.document_ != unsafe { nil } {
+		html_document.set_origin(implementation.document_.origin())
+	}
+
 	// 9. Return doc.
 	return html_document
 }
 
 // https://dom.spec.whatwg.org/#dom-domimplementation-createdocumenttype
 pub fn (implementation &DOMImplementation) create_document_type(name string, public_id string, system_id string) !&DocumentType {
-	_ = implementation
 	// 1. If name is not a valid doctype name, then throw an InvalidCharacterError.
 	if !is_valid_doctype_name(name) {
 		return error('InvalidCharacterError: Invalid doctype name')
@@ -1186,6 +1353,7 @@ pub fn (implementation &DOMImplementation) create_document_type(name string, pub
 	return &DocumentType{
 		Node:       Node{
 			node_type:  .document_type_node
+			document_:  implementation.document_
 			unique_id_: UniqueNodeID(0)
 		}
 		name_:      name
@@ -1450,7 +1618,7 @@ pub fn is_unknown_html_element(tag_name string) bool {
 	if tag_name in html_known_element_names {
 		return false
 	}
-	if tag_name.contains('-') {
+	if is_valid_custom_element_name(tag_name) {
 		return false
 	}
 	return true
@@ -1472,12 +1640,51 @@ fn create_mathml_element(document &Document, qualified_name QualifiedName) &Elem
 
 // https://dom.spec.whatwg.org/#concept-create-element
 pub fn create_element(document &Document, local_name string, namespace_ ?string, prefix ?string, is_value ?string, synchronous_custom_elements_flag bool) !&Element {
-	_ = synchronous_custom_elements_flag
-	// Custom element registry lookup is not translated yet; create an uncustomized element.
+	// 1. Let result be null.
+	// NOTE: We collapse this into just returning an element where necessary.
+
+	// 2. If registry is "default", then set registry to the result of looking up a custom element registry given document.
+	// The V port's custom element definition set is currently stored on Document.
+
+	// 3. Let definition be the result of looking up a custom element definition given registry, document, namespace, localName, and is.
+	if definition := document.lookup_custom_element_definition(namespace_, local_name, is_value) {
+		// 4. If definition is non-null, and definition's name is not equal to its local name (i.e., definition represents a customized built-in element), then:
+		if definition.name() != definition.local_name() {
+			mut element := create_element_internal(document, local_name, namespace_html_, prefix,
+				.undefined_, is_value)
+			if synchronous_custom_elements_flag {
+				element.upgrade_element(definition)!
+			} else {
+				element.enqueue_a_custom_element_upgrade_reaction(definition)
+			}
+			return element
+		}
+
+		// 5. Otherwise, if definition is non-null, then:
+		// The C++ implementation constructs through the JavaScript constructor for synchronous
+		// autonomous custom elements. Constructor execution is outside this V DOM port, so the
+		// translated path creates the element and performs the available upgrade bookkeeping.
+		mut element := create_element_internal(document, local_name, namespace_html_, prefix,
+			.undefined_, none)
+		if synchronous_custom_elements_flag {
+			element.upgrade_element(definition)!
+		} else {
+			element.enqueue_a_custom_element_upgrade_reaction(definition)
+		}
+		return element
+	}
+
+	// 6. Otherwise:
+	// 1. Let interface be the element interface for localName and namespace.
+	// 2. Set result to the result of creating an element internal given document, interface, localName, namespace,
+	//    prefix, "uncustomized", is, and registry.
 	mut element := create_element_internal(document, local_name, namespace_, prefix, .uncustomized,
 		is_value)
+
+	// 3. If namespace is the HTML namespace, and either localName is a valid custom element name or is is non-null,
+	//    then set result's custom element state to "undefined".
 	ns := namespace_ or { '' }
-	if ns == namespace_html_ && (local_name.contains('-') || is_value != none) {
+	if ns == namespace_html_ && (is_valid_custom_element_name(local_name) || is_value != none) {
 		element.set_custom_element_state(.undefined_)
 	}
 	return element
@@ -1507,19 +1714,37 @@ pub fn create_element_internal(document &Document, local_name string, namespace_
 }
 
 pub fn (mut id_map ElementByIdMap) add(element_id string, element &Element) {
-	_ = id_map
-	_ = element_id
-	_ = element
+	mut elements := id_map.elements_by_id[element_id] or { []&Element{} }
+	for existing in elements {
+		if existing == element {
+			return
+		}
+	}
+	elements << element
+	id_map.elements_by_id[element_id] = elements
 }
 
 pub fn (mut id_map ElementByIdMap) remove(element_id string, element &Element) {
-	_ = id_map
-	_ = element_id
-	_ = element
+	mut elements := id_map.elements_by_id[element_id] or { return }
+	elements = elements.filter(it != element)
+	if elements.len == 0 {
+		id_map.elements_by_id.delete(element_id)
+		return
+	}
+	id_map.elements_by_id[element_id] = elements
 }
 
 pub fn (id_map &ElementByIdMap) get(element_id string, scope_root &Node) ?&Element {
-	_ = id_map
+	if elements := id_map.elements_by_id[element_id] {
+		if elements.len == 1 {
+			return elements[0]
+		}
+		for element in elements {
+			if element.as_node().is_shadow_including_inclusive_descendant_of(scope_root) {
+				return element
+			}
+		}
+	}
 	return first_element_with_id_in_inclusive_subtree(scope_root, element_id)
 }
 
@@ -1540,7 +1765,12 @@ fn first_element_with_id_in_inclusive_subtree(root &Node, element_id string) ?&E
 }
 
 pub fn (id_map &ElementByIdMap) for_each_element_with_id(element_id string, scope_root &Node, callback fn (&Element)) {
-	_ = id_map
+	if elements := id_map.elements_by_id[element_id] {
+		if elements.len == 1 {
+			callback(elements[0])
+			return
+		}
+	}
 	scope_root.for_each_in_inclusive_subtree(fn [element_id, callback] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if id := element.id() {
@@ -1553,43 +1783,100 @@ pub fn (id_map &ElementByIdMap) for_each_element_with_id(element_id string, scop
 }
 
 pub fn (id_map &ElementByIdMap) for_each_id(callback fn (string)) {
-	_ = id_map
-	_ = callback
+	for id, _ in id_map.elements_by_id {
+		callback(id)
+	}
+}
+
+fn json_escape_string(value string) string {
+	mut builder := strings.new_builder(value.len)
+	for ch in value {
+		match ch {
+			`"` { builder.write_string('\\"') }
+			`\\` { builder.write_string('\\\\') }
+			`\n` { builder.write_string('\\n') }
+			`\r` { builder.write_string('\\r') }
+			`\t` { builder.write_string('\\t') }
+			else { builder.write_u8(ch) }
+		}
+	}
+	return builder.str()
 }
 
 pub fn AccessibilityTreeNode.create(document ?&Document, value ?&Node) &AccessibilityTreeNode {
 	_ = document
-	_ = value
-	return &AccessibilityTreeNode{}
+	return &AccessibilityTreeNode{
+		value_: value
+	}
 }
 
 pub fn (node &AccessibilityTreeNode) value() ?&Node {
-	_ = node
-	return none
+	return node.value_
 }
 
 pub fn (mut node AccessibilityTreeNode) set_value(value ?&Node) {
-	_ = value
+	node.value_ = value
 }
 
 pub fn (node &AccessibilityTreeNode) children() []&AccessibilityTreeNode {
-	_ = node
-	return []
+	return node.children_.clone()
 }
 
 pub fn (mut node AccessibilityTreeNode) append_child(child &AccessibilityTreeNode) {
-	_ = child
+	node.children_ << child
 }
 
 pub fn (node &AccessibilityTreeNode) serialize_tree_as_json(mut object strings.Builder, document &Document) {
-	_ = node
-	_ = document
-	object.write_string('{}')
+	value := node.value() or {
+		object.write_string('{}')
+		return
+	}
+	if value.is_element() {
+		element := value.as_element() or {
+			object.write_string('{}')
+			return
+		}
+		object.write_string('{"type":"element"')
+		name := element.accessible_name(document, .no) or { '' }
+		description := element.accessible_description(document) or { '' }
+		object.write_string(',"name":"${json_escape_string(name)}"')
+		object.write_string(',"description":"${json_escape_string(description)}"')
+		object.write_string(',"role":""')
+	} else if value.is_text() {
+		object.write_string('{"type":"text"')
+		object.write_string(',"name":"${json_escape_string(value.text_content() or { '' })}"')
+		object.write_string(',"role":"text leaf"')
+	} else {
+		object.write_string('{"type":"node"')
+	}
+	object.write_string(',"id":${value.unique_id().value()}')
+	if node.children_.len > 0 {
+		object.write_string(',"children":[')
+		mut wrote_child := false
+		for child in node.children_ {
+			if child_value := child.value() {
+				if child_value.is_uninteresting_whitespace_node() {
+					continue
+				}
+			}
+			if wrote_child {
+				object.write_string(',')
+			}
+			child.serialize_tree_as_json(mut object, document)
+			wrote_child = true
+		}
+		object.write_string(']')
+	}
+	object.write_string('}')
 }
 
 pub fn (mut node AccessibilityTreeNode) visit_edges(mut visitor CellVisitor) {
-	_ = node
-	_ = visitor
+	if value := node.value_ {
+		visitor.visit(value)
+	}
+	for child in node.children_ {
+		visitor.visit(child)
+	}
 }
 
 pub struct ObservableArray {
@@ -1805,81 +2092,89 @@ pub fn create_document_for_inline_content(navigable ?&Navigable, navigation_id ?
 }
 
 pub fn DocumentObserver.create(mut document Document) &DocumentObserver {
-	observer := &DocumentObserver{}
+	observer := &DocumentObserver{
+		document_: document
+	}
 	document.register_document_observer(observer)
 	return observer
 }
 
 pub fn (mut observer DocumentObserver) visit_edges(mut visitor CellVisitor) {
-	_ = observer
-	_ = visitor
+	if observer.document_ != unsafe { nil } {
+		visitor.visit(observer.document_)
+	}
 }
 
 pub fn (mut observer DocumentObserver) finalize() {
-	_ = observer
+	if observer.document_ != unsafe { nil } {
+		mut document := unsafe { &Document(observer.document_) }
+		document.unregister_document_observer(observer)
+		observer.document_ = unsafe { nil }
+	}
 }
 
 pub fn (mut observer DocumentObserver) set_document(mut document Document) {
+	if observer.document_ != unsafe { nil } {
+		mut old_document := unsafe { &Document(observer.document_) }
+		old_document.unregister_document_observer(observer)
+	}
+	observer.document_ = document
 	document.register_document_observer(observer)
 }
 
 pub fn (observer &DocumentObserver) document() ?&Document {
-	_ = observer
-	return none
+	if observer.document_ == unsafe { nil } {
+		return none
+	}
+	return observer.document_
 }
 
 pub fn (observer &DocumentObserver) document_became_active() ?fn () {
-	_ = observer
-	return none
+	return observer.document_became_active_
 }
 
 pub fn (mut observer DocumentObserver) set_document_became_active(callback ?fn ()) {
-	_ = callback
+	observer.document_became_active_ = callback
 }
 
 pub fn (observer &DocumentObserver) document_became_inactive() ?fn () {
-	_ = observer
-	return none
+	return observer.document_became_inactive_
 }
 
 pub fn (mut observer DocumentObserver) set_document_became_inactive(callback ?fn ()) {
-	_ = callback
+	observer.document_became_inactive_ = callback
 }
 
 pub fn (observer &DocumentObserver) document_completely_loaded() ?fn () {
-	_ = observer
-	return none
+	return observer.document_completely_loaded_
 }
 
 pub fn (mut observer DocumentObserver) set_document_completely_loaded(callback ?fn ()) {
-	_ = callback
+	observer.document_completely_loaded_ = callback
 }
 
 pub fn (observer &DocumentObserver) document_readiness_observer() ?fn (DocumentReadyState) {
-	_ = observer
-	return none
+	return observer.document_readiness_observer_
 }
 
 pub fn (mut observer DocumentObserver) set_document_readiness_observer(callback ?fn (DocumentReadyState)) {
-	_ = callback
+	observer.document_readiness_observer_ = callback
 }
 
 pub fn (observer &DocumentObserver) document_visibility_state_observer() ?fn (VisibilityState) {
-	_ = observer
-	return none
+	return observer.document_visibility_state_observer_
 }
 
 pub fn (mut observer DocumentObserver) set_document_visibility_state_observer(callback ?fn (VisibilityState)) {
-	_ = callback
+	observer.document_visibility_state_observer_ = callback
 }
 
 pub fn (observer &DocumentObserver) document_page_showing_observer() ?fn (bool) {
-	_ = observer
-	return none
+	return observer.document_page_showing_observer_
 }
 
 pub fn (mut observer DocumentObserver) set_document_page_showing_observer(callback ?fn (bool)) {
-	_ = callback
+	observer.document_page_showing_observer_ = callback
 }
 
 pub enum CollapseSelection {
@@ -1893,92 +2188,182 @@ pub enum EventResult {
 }
 
 pub fn EditingHostManager.create(mut document Document) &EditingHostManager {
-	_ = document
-	return &EditingHostManager{}
+	return &EditingHostManager{
+		document_: document
+	}
 }
 
 pub fn (mut manager EditingHostManager) visit_edges(mut visitor CellVisitor) {
-	_ = manager
-	_ = visitor
+	if manager.document_ != unsafe { nil } {
+		visitor.visit(manager.document_)
+	}
+	if manager.active_contenteditable_element_ != unsafe { nil } {
+		visitor.visit(manager.active_contenteditable_element_)
+	}
 }
 
 pub fn (mut manager EditingHostManager) handle_insert(input_type string, value string) {
 	// https://w3c.github.io/editing/docs/execCommand/#additional-requirements
-	_ = manager
 	_ = input_type
-	_ = value
+	if manager.document_ == unsafe { nil } {
+		return
+	}
+	mut document := unsafe { &Document(manager.document_) }
+	document.exec_command('insertText', false, value) or {}
 }
 
 pub fn (mut manager EditingHostManager) select_all() {
-	_ = manager
+	if manager.active_contenteditable_element_ == unsafe { nil } || manager.document_ == unsafe { nil } {
+		return
+	}
+	mut document := unsafe { &Document(manager.document_) }
+	mut selection := document.get_selection() or { return }
+	anchor := selection.anchor_node() or { return }
+	focus := selection.focus_node() or { return }
+	selection.set_base_and_extent(anchor, 0, focus, focus.length()) or {}
 }
 
 pub fn (mut manager EditingHostManager) set_selection_anchor(anchor_node &Node, anchor_offset int) {
-	_ = manager
-	_ = anchor_node
-	_ = anchor_offset
+	if manager.document_ == unsafe { nil } {
+		return
+	}
+	mut document := unsafe { &Document(manager.document_) }
+	mut selection := document.get_selection() or { return }
+	selection.collapse(anchor_node, anchor_offset) or { return }
+	document.reset_cursor_blink_cycle()
 }
 
 pub fn (mut manager EditingHostManager) set_selection_focus(focus_node &Node, focus_offset int) {
-	_ = manager
-	_ = focus_node
-	_ = focus_offset
+	if manager.document_ == unsafe { nil } || manager.active_contenteditable_element_ == unsafe { nil } {
+		return
+	}
+	if !manager.active_contenteditable_element_.is_ancestor_of(focus_node) {
+		return
+	}
+	mut document := unsafe { &Document(manager.document_) }
+	mut selection := document.get_selection() or { return }
+	anchor := selection.anchor_node() or { return }
+	selection.set_base_and_extent(anchor, selection.anchor_offset(), focus_node, focus_offset) or {
+		return
+	}
+	document.reset_cursor_blink_cycle()
 }
 
 fn (manager &EditingHostManager) get_selection_for_navigation(collapse CollapseSelection) ?&Selection {
-	_ = manager
-	_ = collapse
-	return none
+	if manager.document_ == unsafe { nil } {
+		return none
+	}
+	document := unsafe { &Document(manager.document_) }
+	selection := document.get_selection() or { return none }
+	focus_node := selection.focus_node() or { return none }
+	if !focus_node.is_text() {
+		return none
+	}
+	if collapse == .yes && !focus_node.is_editable() {
+		return none
+	}
+	return selection
 }
 
 pub fn (mut manager EditingHostManager) move_cursor_to_start(collapse CollapseSelection) {
-	_ = manager.get_selection_for_navigation(collapse)
+	mut selection := manager.get_selection_for_navigation(collapse) or { return }
+	node := selection.focus_node() or { return }
+	if collapse == .yes {
+		selection.collapse(node, 0) or { return }
+		if manager.document_ != unsafe { nil } {
+			mut document := unsafe { &Document(manager.document_) }
+			document.reset_cursor_blink_cycle()
+		}
+	} else {
+		anchor := selection.anchor_node() or { return }
+		selection.set_base_and_extent(anchor, selection.anchor_offset(), node, 0) or { return }
+	}
+	selection.scroll_focus_into_view()
 }
 
 pub fn (mut manager EditingHostManager) move_cursor_to_end(collapse CollapseSelection) {
-	_ = manager.get_selection_for_navigation(collapse)
+	mut selection := manager.get_selection_for_navigation(collapse) or { return }
+	node := selection.focus_node() or { return }
+	end_offset := node.length()
+	if collapse == .yes {
+		if manager.document_ != unsafe { nil } {
+			mut document := unsafe { &Document(manager.document_) }
+			document.reset_cursor_blink_cycle()
+		}
+		selection.collapse(node, end_offset) or { return }
+	} else {
+		anchor := selection.anchor_node() or { return }
+		selection.set_base_and_extent(anchor, selection.anchor_offset(), node, end_offset) or {
+			return
+		}
+	}
+	selection.scroll_focus_into_view()
 }
 
 pub fn (mut manager EditingHostManager) increment_cursor_position_offset(collapse CollapseSelection) {
-	_ = manager.get_selection_for_navigation(collapse)
+	mut selection := manager.get_selection_for_navigation(collapse) or { return }
+	selection.move_offset_to_next_character(collapse == .yes)
 }
 
 pub fn (mut manager EditingHostManager) decrement_cursor_position_offset(collapse CollapseSelection) {
-	_ = manager.get_selection_for_navigation(collapse)
+	mut selection := manager.get_selection_for_navigation(collapse) or { return }
+	selection.move_offset_to_previous_character(collapse == .yes)
 }
 
 pub fn (mut manager EditingHostManager) increment_cursor_position_to_next_word(collapse CollapseSelection) {
-	_ = manager.get_selection_for_navigation(collapse)
+	mut selection := manager.get_selection_for_navigation(collapse) or { return }
+	selection.move_offset_to_next_word(collapse == .yes)
 }
 
 pub fn (mut manager EditingHostManager) decrement_cursor_position_to_previous_word(collapse CollapseSelection) {
-	_ = manager.get_selection_for_navigation(collapse)
+	mut selection := manager.get_selection_for_navigation(collapse) or { return }
+	selection.move_offset_to_previous_word(collapse == .yes)
 }
 
 pub fn (mut manager EditingHostManager) increment_cursor_position_to_next_line(collapse CollapseSelection) {
-	_ = manager
-	_ = collapse
+	if manager.document_ == unsafe { nil } {
+		return
+	}
+	mut document := unsafe { &Document(manager.document_) }
+	mut selection := document.get_selection() or { return }
+	selection.move_offset_to_next_line(collapse == .yes)
 }
 
 pub fn (mut manager EditingHostManager) decrement_cursor_position_to_previous_line(collapse CollapseSelection) {
-	_ = manager
-	_ = collapse
+	if manager.document_ == unsafe { nil } {
+		return
+	}
+	mut document := unsafe { &Document(manager.document_) }
+	mut selection := document.get_selection() or { return }
+	selection.move_offset_to_previous_line(collapse == .yes)
 }
 
 pub fn (mut manager EditingHostManager) handle_delete(input_type string) {
 	// https://w3c.github.io/editing/docs/execCommand/#additional-requirements
-	_ = manager
-	_ = input_type
+	if manager.document_ == unsafe { nil } {
+		return
+	}
+	command := if input_type == 'deleteContentBackward' { 'delete' } else { 'forwardDelete' }
+	mut document := unsafe { &Document(manager.document_) }
+	document.exec_command(command, false, '') or {}
 }
 
 pub fn (mut manager EditingHostManager) handle_return_key(ui_input_type string) EventResult {
-	_ = manager
-	_ = ui_input_type
-	return .dropped
+	if manager.document_ == unsafe { nil } {
+		return .dropped
+	}
+	command := if ui_input_type == 'insertParagraph' {
+		'insertParagraph'
+	} else {
+		'insertLineBreak'
+	}
+	mut document := unsafe { &Document(manager.document_) }
+	result := document.exec_command(command, false, '') or { return .dropped }
+	return if result { .handled } else { .dropped }
 }
 
 pub fn (mut manager EditingHostManager) set_active_contenteditable_element(element ?&Node) {
-	_ = element
+	manager.active_contenteditable_element_ = element or { unsafe { nil } }
 }
 
 pub fn (mut pseudo PseudoElement_) visit_edges(mut visitor CellVisitor) {

@@ -141,6 +141,8 @@ pub mut:
 	unique_id_                UniqueNodeID
 	registered_observer_list_ []&RegisteredObserver
 	event_listener_types      []string
+	assigned_slot_            ?&HTMLSlotElement
+	manual_slot_assignment_   ?&HTMLSlotElement
 }
 
 // Stub for ParentNode
@@ -287,7 +289,10 @@ pub enum StyleSheetIdentifierType {
 
 // HTML stubs
 @[heap]
-pub struct Window {}
+pub struct Window {
+pub mut:
+	associated_document_ &Document = unsafe { nil }
+}
 
 @[heap]
 pub struct BrowsingContext {}
@@ -356,9 +361,14 @@ pub struct Animation {}
 
 pub struct PaintConfig {}
 
-// Selection stub
 @[heap]
-pub struct Selection {}
+pub struct Selection {
+pub mut:
+	anchor_node_   &Node = unsafe { nil }
+	focus_node_    &Node = unsafe { nil }
+	anchor_offset_ int
+	focus_offset_  int
+}
 
 // Intersection/Resize Observer stubs
 @[heap]
@@ -369,10 +379,22 @@ pub struct ResizeObserver {}
 
 // Other stubs
 @[heap]
-pub struct DOMImplementation {}
+pub struct DOMImplementation {
+pub mut:
+	document_ &Document = unsafe { nil }
+}
 
 @[heap]
-pub struct HTMLCollection {}
+pub struct HTMLCollection {
+pub mut:
+	root                    &ParentNode         = unsafe { nil }
+	scope                   HTMLCollectionScope = .descendants
+	filter                  fn (&Element) bool = always_accept_element
+	sort                    fn (&Element, &Element) bool = never_sort_elements
+	cached_elements         []&Element
+	cached_dom_tree_version u64
+	cache_initialized       bool
+}
 
 @[heap]
 pub struct HTMLAllCollection {}
@@ -384,26 +406,37 @@ pub mut:
 	root        &Document = unsafe { nil }
 	node_root   &Node     = unsafe { nil }
 	nodes       []&Node
+	is_live     bool
+	live_scope  LiveNodeListScope = .children
+	live_filter fn (&Node) bool = always_accept_node
 }
 
 @[heap]
 pub struct NodeIterator {
 pub mut:
-	root         &Node = unsafe { nil }
-	what_to_show u32
-	filter       &NodeFilter = unsafe { nil }
+	root                           &Node = unsafe { nil }
+	reference_node_                &Node = unsafe { nil }
+	pointer_before_reference_node_ bool  = true
+	what_to_show                   u32
+	filter                         &NodeFilter = unsafe { nil }
+	active                         bool
 }
 
 @[heap]
 pub struct TreeWalker {
 pub mut:
 	root         &Node = unsafe { nil }
+	current      &Node = unsafe { nil }
 	what_to_show u32
 	filter       &NodeFilter = unsafe { nil }
+	active       bool
 }
 
 @[heap]
-pub struct NodeFilter {}
+pub struct NodeFilter {
+pub mut:
+	callback_ &CallbackType = unsafe { nil }
+}
 
 @[heap]
 pub struct DocumentFragment {
@@ -422,6 +455,9 @@ pub mut:
 @[heap]
 pub struct Text {
 	CharacterData
+pub mut:
+	max_length_        ?int
+	is_password_input_ bool
 }
 
 @[heap]
@@ -456,44 +492,84 @@ pub mut:
 @[heap]
 pub struct Event {
 pub mut:
-	type_ string
+	type_                       string
+	target_                     ?&EventTarget
+	related_target_             ?&EventTarget
+	current_target_             ?&EventTarget
+	phase_                      EventPhase
+	bubbles_                    bool
+	cancelable_                 bool
+	stop_propagation_           bool
+	stop_immediate_propagation_ bool
+	cancelled_                  bool
+	in_passive_listener_        bool
+	composed_                   bool
+	initialized_                bool
+	dispatched_                 bool
+	is_trusted_                 bool
+	path_                       []EventPathEntry
+	touch_target_list_          TouchTargetList
+	time_stamp_                 DOMHighResTimeStamp
 }
 
 @[heap]
-pub struct EventTarget {}
+pub struct EventTarget {
+pub mut:
+	data EventTargetData
+}
 
 pub fn (et &EventTarget) dispatch_event(event &Event) bool {
-	_ = event
-	return true
+	return event_target_dispatch_event(et, event)
 }
 
 @[heap]
 pub struct Range {
 pub mut:
-	start_container_ &Node = unsafe { nil }
-	end_container_   &Node = unsafe { nil }
-	start_offset_    int
-	end_offset_      int
+	start_container_      &Node = unsafe { nil }
+	end_container_        &Node = unsafe { nil }
+	start_offset_         int
+	end_offset_           int
+	associated_selection_ &Selection = unsafe { nil }
 }
 
 @[heap]
 pub struct ShadowRoot {
 	DocumentFragment
 pub mut:
-	mode             ShadowRootMode
-	declarative      bool
-	clonable_        bool
-	serializable_    bool
-	delegates_focus_ bool
-	slot_assignment_ SlotAssignmentMode = .named
-	style_scope_     StyleScope
+	mode                  ShadowRootMode
+	declarative           bool
+	clonable_             bool
+	serializable_         bool
+	delegates_focus_      bool
+	available_to_element_internals_ bool
+	user_agent_internal_  bool
+	uses_document_style_sheets_ bool
+	slot_assignment_      SlotAssignmentMode = .named
+	style_scope_          StyleScope
+	adopted_style_sheets_ []&CSSStyleSheet
+	element_by_id_        &ElementByIdMap = unsafe { nil }
+	onslotchange_        ?&CallbackType
+	slot_registry_       &SlotRegistry = unsafe { nil }
 }
 
 @[heap]
-pub struct DocumentObserver {}
+pub struct DocumentObserver {
+pub mut:
+	document_                          &Document = unsafe { nil }
+	document_became_active_            ?fn ()
+	document_became_inactive_          ?fn ()
+	document_completely_loaded_        ?fn ()
+	document_readiness_observer_       ?fn (DocumentReadyState)
+	document_visibility_state_observer_ ?fn (VisibilityState)
+	document_page_showing_observer_    ?fn (bool)
+}
 
 @[heap]
-pub struct EditingHostManager {}
+pub struct EditingHostManager {
+pub mut:
+	document_                       &Document = unsafe { nil }
+	active_contenteditable_element_ &Node     = unsafe { nil }
+}
 
 @[heap]
 pub struct StyleInvalidator {}
@@ -502,7 +578,11 @@ pub struct StyleInvalidator {}
 pub struct InputEventsTarget {}
 
 @[heap]
-pub struct Position {}
+pub struct Position {
+pub mut:
+	node_   &Node = unsafe { nil }
+	offset_ int
+}
 
 @[heap]
 pub struct CallbackType {}
@@ -520,13 +600,20 @@ pub struct ConsoleClient {}
 pub struct FormAssociatedElement {}
 
 @[heap]
-pub struct ElementByIdMap {}
+pub struct ElementByIdMap {
+pub mut:
+	elements_by_id map[string][]&Element
+}
 
 @[heap]
 pub struct Promise {}
 
 @[heap]
-pub struct AccessibilityTreeNode {}
+pub struct AccessibilityTreeNode {
+pub mut:
+	value_    ?&Node
+	children_ []&AccessibilityTreeNode
+}
 
 @[heap]
 pub struct XPathExpression {}
@@ -566,18 +653,16 @@ pub fn (r Rect) size() [2]f64 {
 
 // HTMLElement methods
 pub fn (he &HTMLElement) has_attribute(name string) bool {
-	_ = name
-	return false
+	return unsafe { &Element(he) }.has_attribute(name)
 }
 
 pub fn (he &HTMLElement) get_attribute(name string) ?string {
-	_ = name
-	return none
+	return unsafe { &Element(he) }.get_attribute(name)
 }
 
 pub fn (he &HTMLElement) set_attribute(name string, value string) {
-	_ = name
-	_ = value
+	mut element := unsafe { &Element(he) }
+	element.set_attribute_value(name, value)
 }
 
 // BrowsingContext methods
@@ -591,6 +676,17 @@ pub fn (wp &WindowProxy) set_window(w &Window) {
 }
 
 // Window methods
+pub fn (w &Window) associated_document() ?&Document {
+	if w.associated_document_ == unsafe { nil } {
+		return none
+	}
+	return w.associated_document_
+}
+
+pub fn (mut w Window) set_associated_document(document &Document) {
+	w.associated_document_ = document
+}
+
 pub fn (w &Window) dispatch_event_simple(event_name string, bubbles bool) {
 	_ = event_name
 	_ = bubbles
@@ -704,6 +800,15 @@ pub fn (ssl &StyleSheetList) get_sheets() []&CSSStyleSheet {
 // ViewportPaintable methods
 pub fn (vp &ViewportPaintable) set_needs_to_refresh_scroll_state(b bool) {
 	_ = b
+}
+
+pub fn (vp &ViewportPaintable) recompute_selection_states(range &Range) {
+	_ = vp
+	_ = range
+}
+
+pub fn (vp &ViewportPaintable) set_needs_repaint() {
+	_ = vp
 }
 
 pub fn (vp &ViewportPaintable) invalidate_all_paint_caches() {}
@@ -841,17 +946,121 @@ pub fn (fae &FormAssociatedElement) element_with_id_was_added_or_removed() {}
 
 // EditingHostManager methods
 pub fn (ehm &EditingHostManager) is_within_active_contenteditable(node &Node) bool {
-	_ = node
+	if ehm.active_contenteditable_element_ == unsafe { nil } {
+		return false
+	}
+	for current := ?&Node(node); current != none; {
+		current_node := current or { break }
+		if current_node == ehm.active_contenteditable_element_ {
+			return true
+		}
+		current = current_node.parent_or_shadow_host()
+	}
 	return false
 }
 
 // Selection methods
 pub fn (s &Selection) cursor_position() ?&Position {
-	return none
+	if s.focus_node_ == unsafe { nil } {
+		return none
+	}
+	return Position.create(s.focus_node_, s.focus_offset_)
 }
 
 pub fn (s &Selection) is_collapsed() bool {
-	return true
+	return s.anchor_node_ == s.focus_node_ && s.anchor_offset_ == s.focus_offset_
+}
+
+pub fn (s &Selection) anchor_node() ?&Node {
+	if s.anchor_node_ == unsafe { nil } {
+		return none
+	}
+	return s.anchor_node_
+}
+
+pub fn (s &Selection) focus_node() ?&Node {
+	if s.focus_node_ == unsafe { nil } {
+		return none
+	}
+	return s.focus_node_
+}
+
+pub fn (s &Selection) anchor_offset() int {
+	return s.anchor_offset_
+}
+
+pub fn (s &Selection) focus_offset() int {
+	return s.focus_offset_
+}
+
+pub fn (mut s Selection) collapse(node &Node, offset int) ! {
+	if offset < 0 || offset > node.length() {
+		return error('IndexSizeError: Selection offset is out of range')
+	}
+	s.anchor_node_ = node
+	s.focus_node_ = node
+	s.anchor_offset_ = offset
+	s.focus_offset_ = offset
+}
+
+pub fn (mut s Selection) set_base_and_extent(anchor_node &Node, anchor_offset int, focus_node &Node, focus_offset int) ! {
+	if anchor_offset < 0 || anchor_offset > anchor_node.length() {
+		return error('IndexSizeError: Selection anchor offset is out of range')
+	}
+	if focus_offset < 0 || focus_offset > focus_node.length() {
+		return error('IndexSizeError: Selection focus offset is out of range')
+	}
+	s.anchor_node_ = anchor_node
+	s.anchor_offset_ = anchor_offset
+	s.focus_node_ = focus_node
+	s.focus_offset_ = focus_offset
+}
+
+pub fn (mut s Selection) move_offset_by(delta int, collapse_to_focus bool) {
+	if s.focus_node_ == unsafe { nil } {
+		return
+	}
+	max_offset := s.focus_node_.length()
+	mut new_offset := s.focus_offset_ + delta
+	if new_offset < 0 {
+		new_offset = 0
+	}
+	if new_offset > max_offset {
+		new_offset = max_offset
+	}
+	s.focus_offset_ = new_offset
+	if collapse_to_focus {
+		s.anchor_node_ = s.focus_node_
+		s.anchor_offset_ = s.focus_offset_
+	}
+}
+
+pub fn (mut s Selection) move_offset_to_next_character(collapse_to_focus bool) {
+	s.move_offset_by(1, collapse_to_focus)
+}
+
+pub fn (mut s Selection) move_offset_to_previous_character(collapse_to_focus bool) {
+	s.move_offset_by(-1, collapse_to_focus)
+}
+
+pub fn (mut s Selection) move_offset_to_next_word(collapse_to_focus bool) {
+	s.move_offset_to_next_character(collapse_to_focus)
+}
+
+pub fn (mut s Selection) move_offset_to_previous_word(collapse_to_focus bool) {
+	s.move_offset_to_previous_character(collapse_to_focus)
+}
+
+pub fn (mut s Selection) move_offset_to_next_line(collapse_to_focus bool) {
+	s.move_offset_to_next_character(collapse_to_focus)
+}
+
+pub fn (mut s Selection) move_offset_to_previous_line(collapse_to_focus bool) {
+	s.move_offset_to_previous_character(collapse_to_focus)
+}
+
+pub fn (s &Selection) scroll_focus_into_view() {
+	_ = s
 }
 
 // Timer methods
@@ -861,7 +1070,7 @@ pub fn (t &Timer) restart() {}
 
 // NodeList extra fields
 pub fn (nl &NodeList) items() []&Node {
-	return []
+	return nl.collection()
 }
 
 // NodeIterator/TreeWalker extra fields (adding to constructors above)
@@ -894,17 +1103,70 @@ pub fn (d &Document) in_quirks_mode() bool {
 	return d.quirks_mode == .yes
 }
 
-pub fn (d &Document) for_each_shadow_including_descendant(callback fn (&Node) TraversalDecision) {
-	_ = callback
+pub fn (d &Document) for_each_shadow_including_descendant(callback fn (&Node) TraversalDecision) TraversalDecision {
+	document_node := unsafe { &Node(d) }
+	return document_node.for_each_shadow_including_descendant(callback)
 }
 
-pub fn (mut d Document) notify_each_document_observer_completely_loaded() {}
+pub fn (mut d Document) notify_each_document_observer_completely_loaded() {
+	d.document_observers_being_notified = d.document_observers.clone()
+	for observer in d.document_observers_being_notified {
+		if callback := observer.document_completely_loaded() {
+			callback()
+		}
+	}
+	d.document_observers_being_notified.clear()
+}
 
-pub fn (mut d Document) notify_each_document_observer_visibility_state() {}
+pub fn (mut d Document) notify_each_document_observer_visibility_state() {
+	d.document_observers_being_notified = d.document_observers.clone()
+	for observer in d.document_observers_being_notified {
+		if callback := observer.document_visibility_state_observer() {
+			callback(d.visibility_state)
+		}
+	}
+	d.document_observers_being_notified.clear()
+}
 
-pub fn (mut d Document) notify_each_document_observer_became_inactive() {}
+pub fn (mut d Document) notify_each_document_observer_became_inactive() {
+	d.document_observers_being_notified = d.document_observers.clone()
+	for observer in d.document_observers_being_notified {
+		if callback := observer.document_became_inactive() {
+			callback()
+		}
+	}
+	d.document_observers_being_notified.clear()
+}
 
-pub fn (mut d Document) notify_each_document_observer_became_active() {}
+pub fn (mut d Document) notify_each_document_observer_became_active() {
+	d.document_observers_being_notified = d.document_observers.clone()
+	for observer in d.document_observers_being_notified {
+		if callback := observer.document_became_active() {
+			callback()
+		}
+	}
+	d.document_observers_being_notified.clear()
+}
+
+pub fn (mut d Document) notify_each_document_observer_readiness() {
+	d.document_observers_being_notified = d.document_observers.clone()
+	for observer in d.document_observers_being_notified {
+		if callback := observer.document_readiness_observer() {
+			callback(d.readiness)
+		}
+	}
+	d.document_observers_being_notified.clear()
+}
+
+pub fn (mut d Document) notify_each_document_observer_page_showing() {
+	d.document_observers_being_notified = d.document_observers.clone()
+	for observer in d.document_observers_being_notified {
+		if callback := observer.document_page_showing_observer() {
+			callback(d.page_showing)
+		}
+	}
+	d.document_observers_being_notified.clear()
+}
 
 pub fn (mut d Document) evaluate_media_rules() {}
 
@@ -926,13 +1188,23 @@ pub fn (mut d Document) remove_from_potentially_named_elements(element &Element)
 }
 
 pub fn (mut d Document) add_element_by_id(id string, element &Element) {
-	_ = id
-	_ = element
+	mut id_map := unsafe { &ElementByIdMap(element.document_or_shadow_root_element_by_id_map()) }
+	id_map.add(id, element)
 }
 
 pub fn (mut d Document) remove_element_by_id(id string, element &Element) {
-	_ = id
-	_ = element
+	mut id_map := unsafe { &ElementByIdMap(element.document_or_shadow_root_element_by_id_map()) }
+	id_map.remove(id, element)
+}
+
+pub fn (mut d Document) enqueue_custom_element_reaction_element(element &Element) {
+	for queued in d.custom_element_reaction_backup_queue {
+		if queued == element {
+			return
+		}
+	}
+	d.custom_element_reaction_backup_queue << element
+	d.processing_custom_element_reaction_backup_queue = true
 }
 
 pub fn (mut d Document) append_child(child &Element) {
@@ -1007,8 +1279,9 @@ fn url_matches_about_srcdoc(url URL) bool {
 }
 
 fn is_html_frame_set_element(el &HTMLElement) bool {
-	_ = el
-	return false
+	element := unsafe { &Element(el) }
+	return element.namespace_uri() or { '' } == namespace_html_
+		&& element.local_name() == 'frameset'
 }
 
 fn current_high_resolution_time(global_obj &Window) f64 {
@@ -1020,7 +1293,9 @@ fn relevant_global_object_for_doc(doc &Document) &Window {
 	if doc.window != unsafe { nil } {
 		return doc.window
 	}
-	return &Window{}
+	return &Window{
+		associated_document_: doc
+	}
 }
 
 fn relevant_agent_for_doc(doc &Document) AgentStub {
@@ -1424,12 +1699,14 @@ pub struct Document {
 	ParentNode
 pub mut:
 	// Core identity
-	type_        DocumentType_ = .xml
-	content_type string        = 'application/xml'
-	url          URL           = url_about_blank()
-	origin_      Origin        = origin_create_opaque()
-	referrer     string
-	source       string
+	type_                      DocumentType_ = .xml
+	content_type               string        = 'application/xml'
+	url                        URL           = url_about_blank()
+	origin_                    Origin        = origin_create_opaque()
+	referrer                   string
+	live_ranges_               []&Range
+	custom_element_definitions []&CustomElementDefinition
+	source                     string
 
 	// Version tracking
 	dom_tree_version       u64
@@ -1526,6 +1803,9 @@ pub mut:
 	scripts_to_execute_in_order_as_soon_as_possible []&HTMLScriptElement
 	scripts_to_execute_as_soon_as_possible          []&HTMLScriptElement
 	current_script                                  &HTMLScriptElement = unsafe { nil }
+	custom_element_reaction_backup_queue            []&Element
+	processing_custom_element_reaction_backup_queue bool
+	signal_slots                                    []&HTMLSlotElement
 
 	// Counters
 	ignore_destructive_writes_counter         u32
@@ -1647,6 +1927,7 @@ pub mut:
 	// Form associated elements
 	form_associated_elements_with_form_attribute []&FormAssociatedElement
 	potentially_named_elements                   []&Element
+	element_by_id_map_                           &ElementByIdMap = unsafe { nil }
 
 	// Render blocking
 	render_blocking_elements        []&Element
@@ -1703,12 +1984,14 @@ pub mut:
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#initialise-the-document-object
 pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, navigation_params &NavigationParams) !&Document {
 	// Stub: in full implementation would set up browsing context, window, etc.
+	_ = navigation_params
 	mut doc := &Document{}
 	doc.node_type = .document_node
 	doc.document_ = doc
 	doc.type_ = type_
 	doc.content_type = content_type
 	doc.readiness = .loading
+	doc.initialize()
 	return doc
 }
 
@@ -1718,13 +2001,18 @@ pub fn Document.create(url URL) &Document {
 	doc.node_type = .document_node
 	doc.document_ = doc
 	doc.url = url
+	doc.initialize()
 	return doc
 }
 
 // create_for_fragment_parsing corresponds to Document::create_for_fragment_parsing
 pub fn Document.create_for_fragment_parsing() &Document {
 	mut doc := &Document{}
+	doc.node_type = .document_node
+	doc.document_ = doc
+	doc.url = url_about_blank()
 	doc.temporary_document_for_fragment_parsing = .yes
+	doc.initialize()
 	return doc
 }
 
@@ -1826,6 +2114,12 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 	for _, req in d.shared_resource_requests_ {
 		visitor.visit(req)
 	}
+	for element in d.custom_element_reaction_backup_queue {
+		visitor.visit(element)
+	}
+	for slot in d.signal_slots {
+		visitor.visit(slot)
+	}
 
 	for tl in d.associated_animation_timelines {
 		visitor.visit(tl)
@@ -1839,6 +2133,7 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 	for el in d.potentially_named_elements {
 		visitor.visit(el)
 	}
+	visitor.visit(d.element_by_id_map_)
 
 	for event in d.pending_animation_event_queue {
 		visitor.visit(event.event)
@@ -1909,6 +2204,7 @@ pub fn (mut d Document) finalize() {
 pub fn (mut d Document) initialize() {
 	// Set up prototype, create selection, list of available images, etc.
 	d.selection_ = &Selection{}
+	d.editing_host_manager_ = EditingHostManager.create(mut d)
 	d.list_of_available_images = &ListOfAvailableImages{}
 	d.page_.client_page_did_create_new_document(d)
 	d.ensure_cookie_version_index(d.url)
@@ -1993,8 +2289,11 @@ pub fn (d &Document) base_url() URL {
 		return d.fallback_base_url()
 	}
 	// 2. Return the frozen base URL of the first base element with href.
-	// Stub: in full implementation would call base_element.frozen_base_url()
-	_ = base_element
+	if href := unsafe { &Element(base_element) }.get_attribute('href') {
+		if href.len > 0 {
+			return URL{href}
+		}
+	}
 	return d.fallback_base_url()
 }
 
@@ -2023,10 +2322,31 @@ pub fn (mut d Document) respond_to_base_url_changes() {
 
 pub fn (mut d Document) update_base_element() {
 	// Scan tree for <base> elements and update cached first-with-href / first-with-target.
-	// Stub: in full implementation would call for_each_in_subtree_of_type<HTMLBaseElement>
-	// and update first_base_element_with_href_in_tree_order / first_base_element_with_target_in_tree_order
 	d.first_base_element_with_href_in_tree_order = unsafe { nil }
 	d.first_base_element_with_target_in_tree_order = unsafe { nil }
+	document_node := unsafe { &Node(&d) }
+	document_node.for_each_in_subtree(fn [mut d] (node &Node) TraversalDecision {
+		element := node.as_element() or { return .@continue }
+		if !is_html_element_with_local_name(element, 'base') {
+			return .@continue
+		}
+		base_element := unsafe { &HTMLBaseElement(element) }
+		if d.first_base_element_with_href_in_tree_order == unsafe { nil }
+			&& element.has_attribute('href') {
+			d.first_base_element_with_href_in_tree_order = base_element
+			if d.first_base_element_with_target_in_tree_order != unsafe { nil } {
+				return .@break
+			}
+		}
+		if d.first_base_element_with_target_in_tree_order == unsafe { nil }
+			&& element.has_attribute('target') {
+			d.first_base_element_with_target_in_tree_order = base_element
+			if d.first_base_element_with_href_in_tree_order != unsafe { nil } {
+				return .@break
+			}
+		}
+		return .@continue
+	})
 }
 
 pub fn (d &Document) first_base_element_with_href_in_tree_order() ?&HTMLBaseElement {
@@ -2116,6 +2436,8 @@ pub fn (mut d Document) update_readiness(readiness_value DocumentReadyState) {
 		else {}
 	}
 
+	d.notify_each_document_observer_readiness()
+
 	// Fire a readystatechange event at the document.
 	// Stub: would dispatch Event with type "readystatechange"
 	// html.queue_global_task(html.dom_manipulation_task_source, relevant_global_object_for_doc(d), fn() {})
@@ -2183,37 +2505,107 @@ pub fn (d &Document) is_cookie_averse() bool {
 
 // --- Document element / body / head / title ---
 
+fn is_html_element_with_local_name(element &Element, local_name string) bool {
+	return element.namespace_uri() or { '' } == namespace_html_
+		&& element.local_name() == local_name
+}
+
+fn element_as_html_element(element &Element) &HTMLElement {
+	return unsafe { &HTMLElement(element) }
+}
+
+fn html_element_as_element(element &HTMLElement) &Element {
+	return unsafe { &Element(element) }
+}
+
+fn strip_and_collapse_ascii_whitespace(value string) string {
+	mut builder := strings.new_builder(value.len)
+	mut wrote_non_whitespace := false
+	mut pending_space := false
+	for byte in value.bytes() {
+		is_whitespace := byte == 0x09 || byte == 0x0a || byte == 0x0c || byte == 0x0d
+			|| byte == 0x20
+		if is_whitespace {
+			if wrote_non_whitespace {
+				pending_space = true
+			}
+			continue
+		}
+		if pending_space {
+			builder.write_u8(0x20)
+			pending_space = false
+		}
+		builder.write_u8(byte)
+		wrote_non_whitespace = true
+	}
+	return builder.str()
+}
+
 pub fn (d &Document) document_element() ?&Element {
 	// The document element is the first child element of the document.
-	// Stub: in full implementation would iterate d's children and return first Element
+	for child in unsafe { &Node(d) }.children {
+		if element := child.as_element() {
+			return element
+		}
+	}
 	return none
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#the-html-element-2
 pub fn (d &Document) html_element() ?&HTMLHtmlElement {
 	// The html element is the document element, if it's an html element.
-	// Stub: would call document_element() and check if it's HTMLHtmlElement
+	element := d.document_element() or { return none }
+	if is_html_element_with_local_name(element, 'html') {
+		return unsafe { &HTMLHtmlElement(element) }
+	}
 	return none
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#the-head-element-2
 pub fn (d &Document) head() ?&HTMLHeadElement {
 	// The head element is the first head element child of the html element.
-	// Stub: would get html_element(), then find first HTMLHeadElement child
+	html := d.html_element() or { return none }
+	for child in unsafe { &Element(html) }.as_node().children {
+		if element := child.as_element() {
+			if is_html_element_with_local_name(element, 'head') {
+				return unsafe { &HTMLHeadElement(element) }
+			}
+		}
+	}
 	return none
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#the-title-element-2
 pub fn (d &Document) title_element() ?&HTMLTitleElement {
 	// The title element is the first title element in the document (in tree order).
-	// Stub: would search subtree for first HTMLTitleElement
-	return none
+	mut found := ?&HTMLTitleElement(none)
+	document_node := unsafe { &Node(d) }
+	document_node.for_each_in_subtree(fn [mut found] (node &Node) TraversalDecision {
+		if found != none {
+			return .@break
+		}
+		element := node.as_element() or { return .@continue }
+		if is_html_element_with_local_name(element, 'title') {
+			found = unsafe { &HTMLTitleElement(element) }
+			return .@break
+		}
+		return .@continue
+	})
+	return found
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#the-body-element-2
 pub fn (d &Document) body() ?&HTMLElement {
 	// The body element is the first body or frameset child of the html element.
-	// Stub: would get html_element(), then find first HTMLBodyElement or HTMLFrameSetElement child
+	html := d.html_element() or { return none }
+	for child in unsafe { &Element(html) }.as_node().children {
+		if element := child.as_element() {
+			if is_html_element_with_local_name(element, 'body')
+				|| is_html_element_with_local_name(element, 'frameset') {
+				return element_as_html_element(unsafe { &Element(element) })
+			}
+		}
+	}
 	return none
 }
 
@@ -2221,41 +2613,106 @@ pub fn (d &Document) body() ?&HTMLElement {
 pub fn (mut d Document) set_body(new_body &HTMLElement) ! {
 	// Per spec: if new_body is not body or frameset, throw HierarchyRequestError.
 	// If there's an existing body, replace it. Otherwise append to html element.
-	_ = new_body
-	// Stub: would validate and perform DOM tree mutation
+	new_body_element := html_element_as_element(new_body)
+	if !is_html_element_with_local_name(new_body_element, 'body')
+		&& !is_html_element_with_local_name(new_body_element, 'frameset') {
+		return error("HierarchyRequestError: Invalid document body element, must be 'body' or 'frameset'")
+	}
+	new_body_node := new_body_element.as_node()
+	if existing_body := d.body() {
+		existing_body_node := html_element_as_element(existing_body).as_node()
+		parent := existing_body_node.parent() or {
+			return error('HierarchyRequestError: Existing body has no parent')
+		}
+		mut mutable_parent := unsafe { &Node(parent) }
+		mutable_parent.replace_child(new_body_node, existing_body_node)!
+		return
+	}
+	document_element := d.document_element() or {
+		return error('HierarchyRequestError: Missing document element')
+	}
+	mut document_element_node := unsafe { &Node(document_element.as_node()) }
+	document_element_node.append_child(new_body_node)!
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#document.title
 pub fn (d &Document) title() string {
 	// Returns the title of the document - strips and collapses whitespace from
 	// the text content of the title element.
-	_ = d.title_element() or { return '' }
-	// Stub: would get text content, strip/collapse whitespace
-	return ''
+	title_element := d.title_element() or { return '' }
+	value := unsafe { &Element(title_element) }.as_node().text_content() or { '' }
+	return strip_and_collapse_ascii_whitespace(value)
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#document.title
 pub fn (mut d Document) set_title(value string) ! {
 	// Sets the document title by creating/updating the title element.
 	// Different behavior for HTML vs SVG documents.
-	_ = value
-	// Stub: would find or create title element and set its text content
+	document_element := d.document_element() or { return }
+	if document_element.namespace_uri() or { '' } == namespace_svg_uri
+		&& document_element.local_name() == 'svg' {
+		mut title_target := ?&Element(none)
+		for child in document_element.as_node().children {
+			if element := child.as_element() {
+				if element.namespace_uri() or { '' } == namespace_svg_uri
+					&& element.local_name() == 'title' {
+					title_target = unsafe { &Element(element) }
+					break
+				}
+			}
+		}
+		target := if existing := title_target {
+			unsafe { &Element(existing) }
+		} else {
+			new_title := create_element(&d, 'title', namespace_svg_uri, none, none, true)!
+			mut document_element_node := unsafe { &Node(document_element.as_node()) }
+			document_element_node.pre_insert(new_title.as_node(),
+				document_element.as_node().first_child())!
+			unsafe { &Element(new_title) }
+		}
+		mut target_node := unsafe { &Node(target.as_node()) }
+		target_node.string_replace_all(value)
+		return
+	}
+
+	if document_element.namespace_uri() or { '' } == namespace_html_ {
+		title_target := d.title_element()
+		head_element := d.head()
+		if title_target == none && head_element == none {
+			return
+		}
+		target := if existing := title_target {
+			unsafe { &Element(existing) }
+		} else {
+			new_title := create_element(&d, 'title', namespace_html_, none, none, true)!
+			head := head_element or { return }
+			head_element_node := unsafe { &Element(head) }.as_node()
+			mut head_node := unsafe { &Node(head_element_node) }
+			head_node.append_child(new_title.as_node())!
+			unsafe { &Element(new_title) }
+		}
+		mut target_node := unsafe { &Node(target.as_node()) }
+		target_node.string_replace_all(value)
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#dom-document-dir
 pub fn (d &Document) dir() string {
 	// Returns the dir attribute of the html element, if any.
-	_ = d.html_element() or { return '' }
-	// Stub: would call html_element.get_attribute("dir")
+	html := d.html_element() or { return '' }
+	dir := unsafe { &Element(html) }.get_attribute_value('dir').to_lower()
+	if dir in ['ltr', 'rtl', 'auto'] {
+		return dir
+	}
 	return ''
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#dom-document-dir
 pub fn (mut d Document) set_dir(dir string) {
 	// Sets the dir attribute of the html element.
-	_ = d.html_element() or { return }
-	// Stub: would call html_element.set_attribute("dir", dir)
-	_ = dir
+	html := d.html_element() or { return }
+	mut element := unsafe { &Element(html) }
+	element.set_attribute_value('dir', dir)
 }
 
 // --- Browsing context ---
@@ -2317,17 +2774,16 @@ pub fn (d &Document) fg_color() string {
 	if is_html_frame_set_element(body_el) {
 		return ''
 	}
-	// Stub: would call body_el.get_attribute_value(html.attr_text)
-	return ''
+	return html_element_as_element(body_el).get_attribute_value('text')
 }
 
 pub fn (mut d Document) set_fg_color(value string) {
-	body_el := d.body() or { return }
+	mut body_el := d.body() or { return }
 	if is_html_frame_set_element(body_el) {
 		return
 	}
-	// Stub: would call body_el.set_attribute_value(html.attr_text, value)
-	_ = value
+	mut element := html_element_as_element(body_el)
+	element.set_attribute_value('text', value)
 }
 
 pub fn (d &Document) link_color() string {
@@ -2335,17 +2791,16 @@ pub fn (d &Document) link_color() string {
 	if is_html_frame_set_element(body_el) {
 		return ''
 	}
-	// Stub: would call body_el.get_attribute_value(html.attr_link)
-	return ''
+	return html_element_as_element(body_el).get_attribute_value('link')
 }
 
 pub fn (mut d Document) set_link_color(value string) {
-	body_el := d.body() or { return }
+	mut body_el := d.body() or { return }
 	if is_html_frame_set_element(body_el) {
 		return
 	}
-	// Stub: would call body_el.set_attribute_value(html.attr_link, value)
-	_ = value
+	mut element := html_element_as_element(body_el)
+	element.set_attribute_value('link', value)
 }
 
 pub fn (d &Document) vlink_color() string {
@@ -2353,17 +2808,16 @@ pub fn (d &Document) vlink_color() string {
 	if is_html_frame_set_element(body_el) {
 		return ''
 	}
-	// Stub: would call body_el.get_attribute_value(html.attr_vlink)
-	return ''
+	return html_element_as_element(body_el).get_attribute_value('vlink')
 }
 
 pub fn (mut d Document) set_vlink_color(value string) {
-	body_el := d.body() or { return }
+	mut body_el := d.body() or { return }
 	if is_html_frame_set_element(body_el) {
 		return
 	}
-	// Stub: would call body_el.set_attribute_value(html.attr_vlink, value)
-	_ = value
+	mut element := html_element_as_element(body_el)
+	element.set_attribute_value('vlink', value)
 }
 
 pub fn (d &Document) alink_color() string {
@@ -2371,17 +2825,16 @@ pub fn (d &Document) alink_color() string {
 	if is_html_frame_set_element(body_el) {
 		return ''
 	}
-	// Stub: would call body_el.get_attribute_value(html.attr_alink)
-	return ''
+	return html_element_as_element(body_el).get_attribute_value('alink')
 }
 
 pub fn (mut d Document) set_alink_color(value string) {
-	body_el := d.body() or { return }
+	mut body_el := d.body() or { return }
 	if is_html_frame_set_element(body_el) {
 		return
 	}
-	// Stub: would call body_el.set_attribute_value(html.attr_alink, value)
-	_ = value
+	mut element := html_element_as_element(body_el)
+	element.set_attribute_value('alink', value)
 }
 
 pub fn (d &Document) bg_color() string {
@@ -2389,17 +2842,16 @@ pub fn (d &Document) bg_color() string {
 	if is_html_frame_set_element(body_el) {
 		return ''
 	}
-	// Stub: would call body_el.get_attribute_value(html.attr_bgcolor)
-	return ''
+	return html_element_as_element(body_el).get_attribute_value('bgcolor')
 }
 
 pub fn (mut d Document) set_bg_color(value string) {
-	body_el := d.body() or { return }
+	mut body_el := d.body() or { return }
 	if is_html_frame_set_element(body_el) {
 		return
 	}
-	// Stub: would call body_el.set_attribute_value(html.attr_bgcolor, value)
-	_ = value
+	mut element := html_element_as_element(body_el)
+	element.set_attribute_value('bgcolor', value)
 }
 
 pub fn (d &Document) supported_color_schemes() ?[]string {
@@ -2520,20 +2972,41 @@ pub fn (mut d Document) tear_down_layout_tree() {
 
 // https://dom.spec.whatwg.org/#dom-document-createelement
 pub fn (d &Document) create_element(local_name string) !&Element {
-	return Element.new(d, QualifiedName{
-		local_name:            local_name
-		lowercased_local_name: local_name.to_lower()
-		namespace_:            namespace_html_
-	})
+	// 1. If localName is not a valid element local name, then throw an "InvalidCharacterError" DOMException.
+	if !is_valid_element_local_name(local_name) {
+		return error('InvalidCharacterError: Invalid character in tag name')
+	}
+
+	// 2. If this is an HTML document, then set localName to localName in ASCII lowercase.
+	local_name_lower := if d.document_type() == .html { local_name.to_lower() } else { local_name }
+
+	// 3. Let is be null.
+	// 4. If options is a dictionary and options["is"] exists, then set is to it.
+	// NOTE: This V binding does not expose ElementCreationOptions yet.
+
+	// 5. Let namespace be the HTML namespace, if this is an HTML document or this's content type is "application/xhtml+xml"; otherwise null.
+	namespace_ := if d.document_type() == .html || d.content_type == 'application/xhtml+xml' {
+		?string(namespace_html_)
+	} else {
+		?string(none)
+	}
+
+	// 6. Return the result of creating an element given this, localName, namespace, null, is, and with the synchronous custom elements flag set.
+	return create_element(d, local_name_lower, namespace_, none, none, true)!
 }
 
 // https://dom.spec.whatwg.org/#internal-createelementns-steps
 pub fn (d &Document) create_element_ns(namespace_ ?string, qualified_name string) !&Element {
-	return Element.new(d, QualifiedName{
-		local_name:            qualified_name
-		lowercased_local_name: qualified_name.to_lower()
-		namespace_:            namespace_
-	})
+	// 1. Let (namespace, prefix, localName) be the result of validating and extracting namespace and qualifiedName given "element".
+	extracted_qualified_name := validate_and_extract(namespace_, qualified_name, .element)!
+
+	// 2. Let is be null.
+	// 3. If options is a dictionary and options["is"] exists, then set is to it.
+	// NOTE: This V binding does not expose ElementCreationOptions yet.
+
+	// 4. Return the result of creating an element given document, localName, namespace, prefix, is, and with the synchronous custom elements flag set.
+	return create_element(d, extracted_qualified_name.local_name,
+		extracted_qualified_name.namespace_, extracted_qualified_name.prefix_, none, true)!
 }
 
 pub fn (d &Document) create_document_fragment() &DocumentFragment {
@@ -2548,6 +3021,10 @@ pub fn (d &Document) create_text_node(data string) &Text {
 pub fn (d &Document) create_cdata_section(data string) !&CDATASection {
 	if d.is_html_document() {
 		return error('InvalidStateError: createCDATASection on HTML document')
+	}
+	// 2. If data contains the string "]]>", then throw an "InvalidCharacterError" DOMException.
+	if data.contains(']]>') {
+		return error("InvalidCharacterError: String may not contain ']]>'")
 	}
 	return &CDATASection{
 		Text: Text{
@@ -2578,7 +3055,17 @@ pub fn (d &Document) create_comment(data string) &Comment {
 
 // https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction
 pub fn (d &Document) create_processing_instruction(target string, data string) !&ProcessingInstruction {
-	// Stub: would validate target
+	// 1. If target does not match the Name production, then throw an "InvalidCharacterError" DOMException.
+	if !is_valid_name(target) {
+		return error('InvalidCharacterError: Invalid character in target name')
+	}
+
+	// 2. If data contains the string "?>", then throw an "InvalidCharacterError" DOMException.
+	if data.contains('?>') {
+		return error("InvalidCharacterError: String may not contain '?>'")
+	}
+
+	// 3. Return a new ProcessingInstruction node, with target set to target, data set to data, and node document set to this.
 	return &ProcessingInstruction{
 		CharacterData: CharacterData{
 			Node:  Node{
@@ -2594,66 +3081,158 @@ pub fn (d &Document) create_processing_instruction(target string, data string) !
 
 // https://dom.spec.whatwg.org/#dom-document-createattribute
 pub fn (d &Document) create_attribute(local_name string) !&Attr {
-	// Stub: would validate name
-	return &Attr{
-		Node:        Node{
-			node_type:  .attribute_node
-			document_:  d
-			unique_id_: UniqueNodeID(0)
-		}
-		name_:       local_name
-		local_name_: local_name
+	// 1. If localName is not a valid attribute local name, then throw an "InvalidCharacterError" DOMException.
+	if !is_valid_attribute_local_name(local_name) {
+		return error('InvalidCharacterError: Invalid character in attribute name')
 	}
+
+	// 2. If this is an HTML document, then set localName to localName in ASCII lowercase.
+	// 3. Return a new attribute whose local name is localName and node document is this.
+	normalized_local_name := if d.is_html_document() { local_name.to_lower() } else { local_name }
+	return Attr.create_with_local_name(d, normalized_local_name, '', none)
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createattributens
 pub fn (d &Document) create_attribute_ns(namespace_ ?string, qualified_name string) !&Attr {
-	// Stub
-	return &Attr{
-		Node:           Node{
-			node_type:  .attribute_node
-			document_:  d
-			unique_id_: UniqueNodeID(0)
-		}
-		name_:          qualified_name
-		local_name_:    qualified_name
-		namespace_uri_: namespace_
-	}
+	// 1. Let (namespace, prefix, localName) be the result of validating and extracting namespace and qualifiedName given "attribute".
+	extracted_qualified_name := validate_and_extract(namespace_, qualified_name, .attribute)!
+
+	// 2. Return a new attribute whose namespace is namespace, namespace prefix is prefix, local name is localName, and node document is this.
+	return Attr.create(d, extracted_qualified_name, '', none)
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createevent
 pub fn (d &Document) create_event(iface string) !&Event {
-	// Stub: legacy createEvent
-	return &Event{}
+	_ = d
+	interface_name := iface.to_lower()
+	mut event := match interface_name {
+		'beforeunloadevent', 'compositionevent', 'customevent', 'devicemotionevent',
+		'deviceorientationevent', 'dragevent', 'event', 'events', 'focusevent', 'hashchangeevent',
+		'htmlevents', 'keyboardevent', 'messageevent', 'mouseevent', 'mouseevents', 'storageevent',
+		'svgevents', 'textevent', 'touchevent', 'uievent', 'uievents' {
+			Event.new('')
+		}
+		else {
+			return error('NotSupportedError: No constructor for interface found')
+		}
+	}
+
+	// 8. Initialize event's isTrusted attribute to false.
+	event.set_is_trusted(false)
+
+	// 9. Unset event's initialized flag.
+	event.set_initialized(false)
+
+	// 10. Return event.
+	return event
 }
 
 pub fn (d &Document) create_range() &Range {
-	return &Range{}
+	return Range.create(d)
 }
 
 // --- Node operations ---
 
 // https://dom.spec.whatwg.org/#dom-document-importnode
 pub fn (d &Document) import_node(node &Node, deep bool) !&Node {
-	// Stub
-	return &Node{}
+	// 1. If node is a document or shadow root, then throw a "NotSupportedError" DOMException.
+	if node.is_document() || node.is_shadow_root() {
+		return error('NotSupportedError: Cannot import a document or shadow root')
+	}
+
+	// 2. Return a clone of node, with this and the clone children flag set if deep is true.
+	return node.clone_node(d, deep, none)!
 }
 
 // https://dom.spec.whatwg.org/#concept-node-adopt
 pub fn (mut d Document) adopt_node(node &Node) {
-	// Stub: would re-parent node into this document
+	// 1. Let oldDocument be node's node document.
+	old_document := node.document()
+
+	// 2. If node's parent is non-null, then remove node.
+	if node.parent() != none {
+		mut mutable_node := unsafe { &Node(node) }
+		mutable_node.remove(false)
+	}
+
+	// 3. If document is not oldDocument, then:
+	if old_document != &d {
+		// 1. For each inclusiveDescendant in node's shadow-including inclusive descendants:
+		node.for_each_shadow_including_inclusive_descendant(fn [mut d] (inclusive_descendant &Node) TraversalDecision {
+			// 1. Set inclusiveDescendant's node document to document.
+			mut mutable_descendant := unsafe { &Node(inclusive_descendant) }
+			mutable_descendant.set_document(&d)
+
+			// 2. If inclusiveDescendant is an element, then set the node document of each attribute in inclusiveDescendant's attribute list to document.
+			// Element attributes in this V port are not Node-backed yet.
+			return .@continue
+		})
+
+		// 2. For each inclusiveDescendant in node's shadow-including inclusive descendants that is custom,
+		//    enqueue a custom element callback reaction with inclusiveDescendant, callback name "adoptedCallback",
+		//    and an argument list containing oldDocument and document.
+		node.for_each_shadow_including_inclusive_descendant(fn (inclusive_descendant &Node) TraversalDecision {
+			if element := inclusive_descendant.as_element() {
+				if element.is_custom() {
+					mut mutable_element := unsafe { &Element(element) }
+					mutable_element.enqueue_a_custom_element_callback_reaction('adoptedCallback',
+						[])
+				}
+			}
+			return .@continue
+		})
+
+		// 3. For each inclusiveDescendant in node's shadow-including inclusive descendants, in shadow-including tree order,
+		//    run the adopting steps with inclusiveDescendant and oldDocument.
+		node.for_each_shadow_including_inclusive_descendant(fn [old_document] (inclusive_descendant &Node) TraversalDecision {
+			mut mutable_descendant := unsafe { &Node(inclusive_descendant) }
+			mutable_descendant.adopted_from(old_document)
+			return .@continue
+		})
+
+		// Transfer NodeIterators rooted at `node` from old_document to this document.
+		mut node_iterators_to_transfer := []&NodeIterator{}
+		for node_iterator in old_document.node_iterators {
+			if node_iterator.root == node {
+				node_iterators_to_transfer << node_iterator
+			}
+		}
+		mut mutable_old_document := unsafe { &Document(old_document) }
+		for node_iterator in node_iterators_to_transfer {
+			mutable_old_document.unregister_node_iterator(node_iterator)
+			d.register_node_iterator(node_iterator)
+		}
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-document-adoptnode
 pub fn (mut d Document) adopt_node_binding(node &Node) !&Node {
-	// Stub
+	if node.is_document() {
+		return error('NotSupportedError: Cannot adopt a document into a document')
+	}
+
+	if node.is_shadow_root() {
+		return error('HierarchyRequestError: Cannot adopt a shadow root into a document')
+	}
+
+	if fragment := node.as_document_fragment() {
+		if fragment.host() != none {
+			return node
+		}
+	}
+
+	d.adopt_node(node)
 	return node
 }
 
 // --- Doctype & compat ---
 
 pub fn (d &Document) doctype() ?&DocumentType {
-	// Stub: find first DocumentType child
+	for child in unsafe { &Node(d) }.children {
+		if doctype := child.as_document_type() {
+			return doctype
+		}
+	}
 	return none
 }
 
@@ -2777,6 +3356,8 @@ pub fn (d &Document) get_window() ?&Window {
 
 pub fn (mut d Document) set_window(w &Window) {
 	d.window = w
+	mut window := unsafe { &Window(w) }
+	window.set_associated_document(d)
 }
 
 // --- Dynamic markup insertion ---
@@ -2834,7 +3415,8 @@ pub fn (mut d Document) open_document() !&Document {
 		return d
 	}
 	// 11. Replace all with null (clear document).
-	// Stub: would call replace_all(null)
+	mut document_node := unsafe { &Node(&d) }
+	document_node.replace_all(none)
 
 	// Reset editing state
 	d.css_styling_flag = false
@@ -2854,7 +3436,7 @@ pub fn (mut d Document) open_document() !&Document {
 	d.set_quirks_mode(.no)
 
 	// 16. Create HTML parser for scripting.
-	// Stub: d.parser = html_parser_create_for_scripting_stub(d)
+	d.parser = html_parser_create_for_scripting_stub(d)
 
 	// 18. Update readiness to loading.
 	d.update_readiness(.loading)
@@ -2946,7 +3528,7 @@ pub fn (d &Document) input_encoding() string {
 
 pub fn (mut d Document) implementation() &DOMImplementation {
 	if d.implementation_ == unsafe { nil } {
-		d.implementation_ = &DOMImplementation{}
+		d.implementation_ = DOMImplementation.create(d)
 	}
 	return d.implementation_
 }
@@ -3069,7 +3651,11 @@ pub fn (d &Document) is_completely_loaded() bool {
 // --- Page showing / visibility ---
 
 pub fn (mut d Document) set_page_showing(page_showing bool) {
+	if d.page_showing == page_showing {
+		return
+	}
 	d.page_showing = page_showing
+	d.notify_each_document_observer_page_showing()
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#dom-document-hidden
@@ -3262,11 +3848,7 @@ pub fn (d &Document) is_temporary_document_for_fragment_parsing() bool {
 
 // https://dom.spec.whatwg.org/#dom-document-createnodeiterator
 pub fn (d &Document) create_node_iterator(root &Node, what_to_show u32, filter ?&NodeFilter) &NodeIterator {
-	return &NodeIterator{
-		root:         root
-		what_to_show: what_to_show
-		filter:       filter or { unsafe { nil } }
-	}
+	return NodeIterator.create(root, what_to_show, filter)
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createtreewalker
@@ -3279,6 +3861,9 @@ pub fn (d &Document) create_tree_walker(root &Node, what_to_show u32, filter ?&N
 }
 
 pub fn (mut d Document) register_node_iterator(node_iterator &NodeIterator) {
+	if node_iterator in d.node_iterators {
+		return
+	}
 	d.node_iterators << node_iterator
 }
 
@@ -3289,6 +3874,11 @@ pub fn (mut d Document) unregister_node_iterator(node_iterator &NodeIterator) {
 // --- Document observers ---
 
 pub fn (mut d Document) register_document_observer(observer &DocumentObserver) {
+	for existing in d.document_observers {
+		if existing == observer {
+			return
+		}
+	}
 	d.document_observers << observer
 }
 
@@ -5200,11 +5790,10 @@ pub fn (d &Document) active_input_events_target(for_node ?&Node) ?&EditingHostMa
 		return none
 	}
 	if focused.is_editable_or_editing_host() {
-		if d.editing_host_manager_ != unsafe { nil } {
-			node := for_node or { return d.editing_host_manager_ }
-			if d.editing_host_manager_.is_within_active_contenteditable(node) {
-				return d.editing_host_manager_
-			}
+		manager := d.editing_host_manager()
+		node := for_node or { return manager }
+		if manager.is_within_active_contenteditable(node) {
+			return manager
 		}
 	}
 	return none
@@ -5472,10 +6061,11 @@ pub fn (d &Document) is_child_allowed(node &Node) bool {
 // --- Editing host manager ---
 
 pub fn (d &Document) editing_host_manager() &EditingHostManager {
-	if d.editing_host_manager_ == unsafe { nil } {
-		return &EditingHostManager{}
+	mut document := unsafe { &Document(d) }
+	if document.editing_host_manager_ == unsafe { nil } {
+		document.editing_host_manager_ = EditingHostManager.create(mut document)
 	}
-	return d.editing_host_manager_
+	return document.editing_host_manager_
 }
 
 // --- is_initial_about_blank ---
@@ -5531,7 +6121,7 @@ pub fn (mut d Document) check_favicon_after_loading_link_resource() {
 // --- lookup_custom_element_definition ---
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#look-up-a-custom-element-definition
-pub fn (d &Document) lookup_custom_element_definition(namespace_ ?string, local_name string, is_ ?string) ?VoidPtr {
+pub fn (d &Document) lookup_custom_element_definition(namespace_ ?string, local_name string, is_ ?string) ?&CustomElementDefinition {
 	// 1. If namespace is not the HTML namespace, then return null.
 	ns := namespace_ or { return none }
 	if ns != namespace_html_ {
@@ -5542,11 +6132,35 @@ pub fn (d &Document) lookup_custom_element_definition(namespace_ ?string, local_
 		return none
 	}
 	// 3. Let registry be document's relevant global object's custom element registry.
-	// 4-6. Look up definition in registry by local_name and is value.
-	// Simplified: return none since custom element registry is not yet implemented.
-	_ = local_name
-	_ = is_
+	// The V port keeps the translated definition set on Document until Window's
+	// CustomElementRegistry is available.
+
+	// 4. If registry's custom element definition set contains an item with name and local name both equal to localName, then return that item.
+	for definition in d.custom_element_definitions {
+		if definition.name() == local_name && definition.local_name() == local_name {
+			return definition
+		}
+	}
+
+	// 5. If registry's custom element definition set contains an item with name equal to is and local name equal to localName, then return that item.
+	// 6. Return null.
+	is_value := is_ or { return none }
+	for definition in d.custom_element_definitions {
+		if definition.name() == is_value && definition.local_name() == local_name {
+			return definition
+		}
+	}
 	return none
+}
+
+pub fn (mut d Document) register_custom_element_definition(definition &CustomElementDefinition) {
+	for index, existing in d.custom_element_definitions {
+		if existing.name() == definition.name() && existing.local_name() == definition.local_name() {
+			d.custom_element_definitions[index] = definition
+			return
+		}
+	}
+	d.custom_element_definitions << definition
 }
 
 // --- SVG root element ---
@@ -6169,15 +6783,35 @@ pub fn (d &Document) named_item_value(name string) ?&Element {
 	// 1. Let elements be the list of named elements with the name name that
 	//    are in a document tree with the Document as their root.
 	// NOTE: There will be at least one such element.
+	mut elements := []&Element{}
+	for element in d.potentially_named_elements {
+		if element.root().is_document() && element.root().document() == d {
+			if element_name := element.get_name() {
+				if element_name == name {
+					elements << element
+					continue
+				}
+			}
+			if element_id := element.id() {
+				if element_id == name {
+					elements << element
+				}
+			}
+		}
+	}
 
 	// 2. If elements has only one element, and that element is an iframe element,
 	//    and that iframe element's content navigable is not null, then return the
 	//    active WindowProxy of the element's content navigable.
-	// (Stub: would check for iframe)
+	// The V binding returns DOM elements, so WindowProxy is not representable here.
 
 	// 3. Otherwise, if elements has only one element, return that element.
-	// (Stub: would search named elements)
-	_ = name
+	if elements.len == 1 {
+		return elements[0]
+	}
+
+	// 4. Otherwise return an HTMLCollection rooted at the Document node, whose filter matches only named elements with the name name.
+	// This method's current V signature returns an optional Element, so multiple matches are represented as null until JS values/HTMLCollection returns are ported.
 	return none
 }
 
@@ -6291,13 +6925,18 @@ pub fn (d &Document) run_csp_initialization() {
 }
 
 // C++: ElementByIdMap& Document::element_by_id() const
+pub fn (d &Document) element_by_id_map() &ElementByIdMap {
+	mut document := unsafe { &Document(d) }
+	if document.element_by_id_map_ == unsafe { nil } {
+		document.element_by_id_map_ = &ElementByIdMap{}
+	}
+	return document.element_by_id_map_
+}
+
 pub fn (d &Document) element_by_id(id string) ?&Element {
-	for el in d.potentially_named_elements {
-		if el_id := el.id() {
-			if el_id == id {
-				return el
-			}
-		}
+	document_node := unsafe { &Node(d) }
+	if element := d.element_by_id_map().get(id, document_node) {
+		return element
 	}
 	return none
 }
@@ -6423,14 +7062,7 @@ pub fn (el &EventLoopStub) unregister_document(d &Document) {
 }
 
 pub fn (d &Document) get_element_by_id(id string) ?&Element {
-	for el in d.potentially_named_elements {
-		if el_id := el.id() {
-			if el_id == id {
-				return el
-			}
-		}
-	}
-	return none
+	return d.element_by_id(id)
 }
 
 fn url_percent_decode(s string) string {
