@@ -190,6 +190,7 @@ pub enum ProximityToTheViewport {
 	not_determined
 }
 
+@[heap]
 pub struct CustomElementDefinition {
 pub mut:
 	disable_shadow_     bool
@@ -217,7 +218,7 @@ pub fn (c &CSSStyleProperties_) is_updating() bool {
 @[heap]
 pub struct CSSComputedProperties_ {
 pub mut:
-	display_    CSSDisplay_ = CSSDisplay_{}
+	display_    CSSDisplay_  = CSSDisplay_{}
 	overflow_x_ CSSOverflow_ = .visible
 	overflow_y_ CSSOverflow_ = .visible
 }
@@ -266,6 +267,7 @@ pub struct CSSCascadedProperties_ {}
 @[heap]
 pub struct CSSCustomPropertyData_ {}
 
+@[heap]
 pub struct CSSCountersSet_ {}
 
 pub fn (mut c CSSCountersSet_) visit_edges(visitor &CellVisitor) {
@@ -285,9 +287,9 @@ pub fn (r RequiredInvalidationAfterStyleChange) is_none() bool {
 
 fn required_invalidation_full() RequiredInvalidationAfterStyleChange {
 	return RequiredInvalidationAfterStyleChange{
-		relayout: true
+		relayout:            true
 		rebuild_layout_tree: true
-		repaint: true
+		repaint:             true
 	}
 }
 
@@ -441,8 +443,8 @@ const namespace_svg_uri = 'http://www.w3.org/2000/svg'
 const namespace_xml_uri = 'http://www.w3.org/XML/1998/namespace'
 
 // Valid shadow host names
-const valid_shadow_host_names = ['article', 'aside', 'blockquote', 'body', 'div', 'footer',
-	'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'main', 'nav', 'p', 'section', 'span']
+const valid_shadow_host_names = ['article', 'aside', 'blockquote', 'body', 'div', 'footer', 'h1',
+	'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'main', 'nav', 'p', 'section', 'span']
 
 // --- Element struct ---
 
@@ -453,15 +455,15 @@ pub mut:
 	qualified_name                  QualifiedName
 	html_uppercased_qualified_name_ ?string
 
-	attributes_      ?&NamedNodeMap
-	inline_style_    ?&CSSStyleProperties_
+	attributes_          ?&NamedNodeMap
+	inline_style_        ?&CSSStyleProperties_
 	attribute_style_map_ ?&StylePropertyMap_
-	class_list_      ?&DOMTokenList_
-	shadow_root_     ?&ShadowRoot
-	part_list_       ?&DOMTokenList_
+	class_list_          ?&DOMTokenList_
+	shadow_root_         ?&ShadowRoot
+	part_list_           ?&DOMTokenList_
 
-	cascaded_properties_ ?&CSSCascadedProperties_
-	computed_properties_ ?&CSSComputedProperties_
+	cascaded_properties_  ?&CSSCascadedProperties_
+	computed_properties_  ?&CSSComputedProperties_
 	custom_property_data_ ?&CSSCustomPropertyData_
 
 	pseudo_element_data map[int]&PseudoElement_
@@ -475,10 +477,10 @@ pub mut:
 	id_   ?string
 	name_ ?string
 
-	custom_element_reaction_queue  []CustomElementReaction
-	custom_element_definition_     ?&CustomElementDefinition
-	is_value                       ?string
-	custom_state_set_              ?&CustomStateSet_
+	custom_element_reaction_queue []CustomElementReaction
+	custom_element_definition_    ?&CustomElementDefinition
+	is_value                      ?string
+	custom_state_set_             ?&CustomStateSet_
 
 	registered_intersection_observers []IntersectionObserverRegistration_
 	computed_style_map_cache_         ?&StylePropertyMapReadOnly_
@@ -486,25 +488,25 @@ pub mut:
 	scroll_offset_ CSSPixelPoint_
 
 	// Boolean flags
-	is_being_activated                                                         bool
-	in_top_layer                                                               bool
-	rendered_in_top_layer                                                      bool
-	style_uses_attr_css_function                                               bool
-	style_uses_var_css_function                                                bool
-	style_uses_tree_counting_function                                          bool
-	style_uses_if_css_function                                                 bool
-	style_uses_inherit_css_function                                            bool
-	child_style_uses_tree_counting_function                                    bool
-	affected_by_has_pseudo_class_in_subject_position                           bool
-	affected_by_has_pseudo_class_in_non_subject_position                       bool
-	affected_by_direct_sibling_combinator                                      bool
-	affected_by_indirect_sibling_combinator                                    bool
-	affected_by_first_child_pseudo_class                                       bool
-	affected_by_last_child_pseudo_class                                        bool
-	affected_by_forward_positional_pseudo_class                                bool
-	affected_by_backward_positional_pseudo_class                               bool
+	is_being_activated                                                              bool
+	in_top_layer                                                                    bool
+	rendered_in_top_layer                                                           bool
+	style_uses_attr_css_function                                                    bool
+	style_uses_var_css_function                                                     bool
+	style_uses_tree_counting_function                                               bool
+	style_uses_if_css_function                                                      bool
+	style_uses_inherit_css_function                                                 bool
+	child_style_uses_tree_counting_function                                         bool
+	affected_by_has_pseudo_class_in_subject_position                                bool
+	affected_by_has_pseudo_class_in_non_subject_position                            bool
+	affected_by_direct_sibling_combinator                                           bool
+	affected_by_indirect_sibling_combinator                                         bool
+	affected_by_first_child_pseudo_class                                            bool
+	affected_by_last_child_pseudo_class                                             bool
+	affected_by_forward_positional_pseudo_class                                     bool
+	affected_by_backward_positional_pseudo_class                                    bool
 	affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator bool
-	fullscreen_flag                                                            bool
+	fullscreen_flag                                                                 bool
 
 	sibling_invalidation_distance int
 
@@ -513,7 +515,7 @@ pub mut:
 	lang_value_    ?string
 
 	had_duplicate_attribute_during_tokenization bool
-	custom_element_state_                       CustomElementState = .undefined_
+	custom_element_state_                       CustomElementState     = .undefined_
 	proximity_to_the_viewport_                  ProximityToTheViewport = .not_determined
 	captured_in_a_view_transition               bool
 	is_contained_in_list_subtree                bool
@@ -531,8 +533,15 @@ pub struct StylePropertyMapReadOnly_ {}
 
 pub fn Element.new(doc &Document, qname QualifiedName) &Element {
 	return &Element{
+		ParentNode:     ParentNode{
+			Node: Node{
+				node_type:  .element_node
+				document_:  doc
+				unique_id_: UniqueNodeID(0)
+			}
+		}
 		qualified_name: qname
-		doc_: doc
+		doc_:           doc
 	}
 }
 
@@ -695,8 +704,8 @@ pub fn (mut e Element) set_attribute_value(local_name string, value string) {
 		}
 	} else {
 		attrs.append_attribute(&Attr_{
-			name_: local_name
-			value_: value
+			name_:       local_name
+			value_:      value
 			local_name_: local_name
 		})
 	}
@@ -706,8 +715,8 @@ pub fn (mut e Element) set_attribute_value(local_name string, value string) {
 pub fn (mut e Element) append_attribute_by_name(name string, value string) {
 	mut attrs := e.ensure_attributes()
 	attrs.append_attribute(&Attr_{
-		name_: name
-		value_: value
+		name_:       name
+		value_:      value
 		local_name_: name
 	})
 }
@@ -761,7 +770,7 @@ pub fn (mut e Element) toggle_attribute(name string, force ?bool) !bool {
 		return false
 	}
 
-	if force == none || !(force or { true }) {
+	if force == none || !force or { true } {
 		e.remove_attribute(actual_name)
 		return false
 	}
@@ -906,14 +915,29 @@ pub fn (mut e Element) attach_a_shadow_root(mode ShadowRootMode, clonable bool, 
 		}
 	}
 	shadow := &ShadowRoot{
-		mode: mode
+		DocumentFragment: DocumentFragment{
+			ParentNode: ParentNode{
+				Node: Node{
+					node_type:  .document_fragment_node
+					document_:  e.document()
+					unique_id_: UniqueNodeID(0)
+				}
+			}
+			host_:      e
+		}
+		mode:             mode
+		clonable_:        clonable
+		serializable_:    serializable
+		delegates_focus_: delegates_focus
+		slot_assignment_: slot_assignment
 	}
 	e.shadow_root_ = shadow
 }
 
 // https://dom.spec.whatwg.org/#dom-element-attachshadow
 pub fn (mut e Element) attach_shadow(init ShadowRootInit) !&ShadowRoot {
-	e.attach_a_shadow_root(init.mode, init.clonable, init.serializable, init.delegates_focus, init.slot_assignment)!
+	e.attach_a_shadow_root(init.mode, init.clonable, init.serializable, init.delegates_focus,
+		init.slot_assignment)!
 	return e.shadow_root_ or { return error('Shadow root not set') }
 }
 
@@ -1184,7 +1208,8 @@ pub fn (mut e Element) recompute_style() RequiredInvalidationAfterStyleChange {
 // --- recompute_inherited_style ---
 
 pub fn (mut e Element) recompute_inherited_style() RequiredInvalidationAfterStyleChange {
-	if e.cascaded_properties_ == none || e.computed_properties_ == none || e.el_unsafe_layout_node() == none {
+	if e.cascaded_properties_ == none || e.computed_properties_ == none
+		|| e.el_unsafe_layout_node() == none {
 		return RequiredInvalidationAfterStyleChange{}
 	}
 	return RequiredInvalidationAfterStyleChange{}
@@ -1274,8 +1299,8 @@ pub fn (e &Element) is_document_element() bool {
 
 pub fn (e &Element) is_void_element() bool {
 	name := e.local_name()
-	return name in ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link',
-		'meta', 'param', 'source', 'track', 'wbr']
+	return name in ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta',
+		'param', 'source', 'track', 'wbr']
 }
 
 pub fn (e &Element) serializes_as_void() bool {
@@ -1559,7 +1584,8 @@ pub fn (mut e Element) register_intersection_observer(registration IntersectionO
 }
 
 pub fn (mut e Element) unregister_intersection_observer(observer voidptr) {
-	e.registered_intersection_observers = e.registered_intersection_observers.filter(it.observer != observer)
+	e.registered_intersection_observers =
+		e.registered_intersection_observers.filter(it.observer != observer)
 }
 
 // --- Custom elements ---
@@ -1665,7 +1691,7 @@ pub fn (e &Element) locate_a_namespace_prefix(namespace_ ?string) ?string {
 	if attrs := e.attributes_ {
 		for i := 0; i < attrs.length(); i++ {
 			if a := attrs.item(i) {
-				if (a.prefix__ or { '' }) == 'xmlns' && a.value() == (namespace_ or { '' }) {
+				if (a.prefix__ or { '' }) == 'xmlns' && a.value() == namespace_ or { '' } {
 					return a.local_name_
 				}
 			}
@@ -1693,8 +1719,12 @@ pub fn (e &Element) dir() ?Dir {
 pub fn (e &Element) directionality() Directionality {
 	if d := e.dir__ {
 		match d {
-			.ltr { return .ltr }
-			.rtl { return .rtl }
+			.ltr {
+				return .ltr
+			}
+			.rtl {
+				return .rtl
+			}
 			.auto_ {
 				if result := e.auto_directionality() {
 					return result
@@ -1811,7 +1841,8 @@ pub fn (e &Element) matches_local_link_pseudo_class() bool {
 // --- Invalidation flags ---
 
 pub fn (e &Element) affected_by_forward_structural_changes() bool {
-	return e.affected_by_direct_sibling_combinator || e.affected_by_indirect_sibling_combinator || e.affected_by_first_child_pseudo_class || e.affected_by_forward_positional_pseudo_class
+	return e.affected_by_direct_sibling_combinator || e.affected_by_indirect_sibling_combinator
+		|| e.affected_by_first_child_pseudo_class || e.affected_by_forward_positional_pseudo_class
 }
 
 pub fn (e &Element) affected_by_backward_structural_changes() bool {
@@ -2030,7 +2061,7 @@ pub fn (e &Element) include_in_accessibility_tree() bool {
 
 // https://html.spec.whatwg.org/multipage/dom.html#block-rendering
 pub fn (mut e Element) block_rendering() {
-	doc := e.document()
+	mut doc := unsafe { &Document(e.document()) }
 	if doc == unsafe { nil } {
 		return
 	}
@@ -2041,7 +2072,7 @@ pub fn (mut e Element) block_rendering() {
 
 // https://html.spec.whatwg.org/multipage/dom.html#unblock-rendering
 pub fn (mut e Element) unblock_rendering() {
-	doc := e.document()
+	mut doc := unsafe { &Document(e.document()) }
 	if doc == unsafe { nil } {
 		return
 	}

@@ -118,11 +118,29 @@ mut:
 	inner ?&T
 }
 
-// Stub for Node base
+// Node base. The behavioral translation lives in node.v.
 @[heap]
 pub struct Node {
 pub mut:
 	node_type NodeType
+	document_ &Document = unsafe { nil }
+	parent_   &Node     = unsafe { nil }
+	children  []&Node
+
+	child_nodes_ &NodeList   = unsafe { nil }
+	layout_node_ &LayoutNode = unsafe { nil }
+	paintable_   &Paintable  = unsafe { nil }
+
+	needs_layout_tree_update           bool
+	child_needs_layout_tree_update     bool
+	needs_style_update_                bool
+	child_needs_style_update_          bool
+	entire_subtree_needs_style_update_ bool
+	in_editable_subtree_               bool
+
+	unique_id_                UniqueNodeID
+	registered_observer_list_ []&RegisteredObserver
+	event_listener_types      []string
 }
 
 // Stub for ParentNode
@@ -178,6 +196,10 @@ pub struct HTMLDialogElement {
 @[heap]
 pub struct DocumentType {
 	Node
+pub mut:
+	name_      string
+	public_id_ string
+	system_id_ string
 }
 
 // Layout stubs
@@ -360,6 +382,8 @@ pub struct NodeList {
 pub mut:
 	name_filter string
 	root        &Document = unsafe { nil }
+	node_root   &Node     = unsafe { nil }
+	nodes       []&Node
 }
 
 @[heap]
@@ -382,22 +406,52 @@ pub mut:
 pub struct NodeFilter {}
 
 @[heap]
-pub struct DocumentFragment {}
+pub struct DocumentFragment {
+	ParentNode
+pub mut:
+	host_ &Element = unsafe { nil }
+}
 
 @[heap]
-pub struct Text {}
+pub struct CharacterData {
+	Node
+pub mut:
+	data_ string
+}
 
 @[heap]
-pub struct CDATASection {}
+pub struct Text {
+	CharacterData
+}
 
 @[heap]
-pub struct Comment {}
+pub struct CDATASection {
+	Text
+}
 
 @[heap]
-pub struct ProcessingInstruction {}
+pub struct Comment {
+	CharacterData
+}
 
 @[heap]
-pub struct Attr {}
+pub struct ProcessingInstruction {
+	CharacterData
+pub mut:
+	target_ string
+}
+
+@[heap]
+pub struct Attr {
+	Node
+pub mut:
+	name_          string
+	value_         string
+	local_name_    string
+	prefix__       ?string
+	namespace_uri_ ?string
+	owner_element_ &Element = unsafe { nil }
+}
 
 @[heap]
 pub struct Event {
@@ -416,15 +470,23 @@ pub fn (et &EventTarget) dispatch_event(event &Event) bool {
 @[heap]
 pub struct Range {
 pub mut:
-	start_offset int
-	end_offset   int
+	start_container_ &Node = unsafe { nil }
+	end_container_   &Node = unsafe { nil }
+	start_offset_    int
+	end_offset_      int
 }
 
 @[heap]
 pub struct ShadowRoot {
+	DocumentFragment
 pub mut:
-	mode        ShadowRootMode
-	declarative bool
+	mode             ShadowRootMode
+	declarative      bool
+	clonable_        bool
+	serializable_    bool
+	delegates_focus_ bool
+	slot_assignment_ SlotAssignmentMode = .named
+	style_scope_     StyleScope
 }
 
 @[heap]
@@ -500,55 +562,7 @@ pub fn (r Rect) size() [2]f64 {
 
 // --- Stub methods on types ---
 
-// Node methods
-pub fn (n &Node) dispatch_event_simple(event_name string, bubbles bool) {
-	_ = event_name
-	_ = bubbles
-}
-
-pub fn (n &Node) dispatch_event(event &Event) {
-	_ = event
-}
-
-pub fn (n &Node) is_descendant_of(other &Node) bool {
-	_ = other
-	return false
-}
-
-pub fn (n &Node) is_ancestor_of(other &Node) bool {
-	_ = other
-	return false
-}
-
-pub fn (n &Node) parent_or_shadow_host() ?&Node {
-	return none
-}
-
-pub fn (n &Node) is_editable_or_editing_host() bool {
-	return false
-}
-
-pub fn (n &Node) is_link_element() bool {
-	return false
-}
-
-pub fn (n &Node) is_iframe_element() bool {
-	return false
-}
-
-pub fn (n &Node) has_loaded_icon() bool {
-	return false
-}
-
-pub fn (n &Node) is_connected() bool {
-	return true
-}
-
-pub fn (n &Node) text_content() ?string {
-	return none
-}
-
-// Element methods are in element.v
+// Node methods are in node.v. Element methods are in element.v.
 
 // HTMLElement methods
 pub fn (he &HTMLElement) has_attribute(name string) bool {
@@ -998,6 +1012,7 @@ fn is_html_frame_set_element(el &HTMLElement) bool {
 }
 
 fn current_high_resolution_time(global_obj &Window) f64 {
+	_ = global_obj
 	return 0.0
 }
 
@@ -1009,6 +1024,7 @@ fn relevant_global_object_for_doc(doc &Document) &Window {
 }
 
 fn relevant_agent_for_doc(doc &Document) AgentStub {
+	_ = doc
 	return AgentStub{
 		event_loop: &EventLoopStub{}
 	}
@@ -1020,6 +1036,7 @@ fn relevant_settings_object_for_win(w &Window) &EnvironmentSettingsObjectStub {
 }
 
 fn relevant_realm_for_doc(doc &Document) RealmStub {
+	_ = doc
 	return RealmStub{}
 }
 
@@ -1121,6 +1138,7 @@ enum CssStyleInvalidationReason {
 // --- Enums ---
 
 pub enum NodeType {
+	invalid                     = 0
 	element_node                = 1
 	attribute_node              = 2
 	text_node                   = 3
@@ -1686,6 +1704,8 @@ pub mut:
 pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, navigation_params &NavigationParams) !&Document {
 	// Stub: in full implementation would set up browsing context, window, etc.
 	mut doc := &Document{}
+	doc.node_type = .document_node
+	doc.document_ = doc
 	doc.type_ = type_
 	doc.content_type = content_type
 	doc.readiness = .loading
@@ -1695,6 +1715,8 @@ pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, 
 // create corresponds to Document::create
 pub fn Document.create(url URL) &Document {
 	mut doc := &Document{}
+	doc.node_type = .document_node
+	doc.document_ = doc
 	doc.url = url
 	return doc
 }
@@ -2498,22 +2520,28 @@ pub fn (mut d Document) tear_down_layout_tree() {
 
 // https://dom.spec.whatwg.org/#dom-document-createelement
 pub fn (d &Document) create_element(local_name string) !&Element {
-	// Stub
-	return &Element{}
+	return Element.new(d, QualifiedName{
+		local_name:            local_name
+		lowercased_local_name: local_name.to_lower()
+		namespace_:            namespace_html_
+	})
 }
 
 // https://dom.spec.whatwg.org/#internal-createelementns-steps
 pub fn (d &Document) create_element_ns(namespace_ ?string, qualified_name string) !&Element {
-	// Stub
-	return &Element{}
+	return Element.new(d, QualifiedName{
+		local_name:            qualified_name
+		lowercased_local_name: qualified_name.to_lower()
+		namespace_:            namespace_
+	})
 }
 
 pub fn (d &Document) create_document_fragment() &DocumentFragment {
-	return &DocumentFragment{}
+	return new_document_fragment(d)
 }
 
 pub fn (d &Document) create_text_node(data string) &Text {
-	return &Text{}
+	return new_text_node(d, data)
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createcdatasection
@@ -2521,29 +2549,76 @@ pub fn (d &Document) create_cdata_section(data string) !&CDATASection {
 	if d.is_html_document() {
 		return error('InvalidStateError: createCDATASection on HTML document')
 	}
-	return &CDATASection{}
+	return &CDATASection{
+		Text: Text{
+			CharacterData: CharacterData{
+				Node:  Node{
+					node_type:  .cdata_section_node
+					document_:  d
+					unique_id_: UniqueNodeID(0)
+				}
+				data_: data
+			}
+		}
+	}
 }
 
 pub fn (d &Document) create_comment(data string) &Comment {
-	return &Comment{}
+	return &Comment{
+		CharacterData: CharacterData{
+			Node:  Node{
+				node_type:  .comment_node
+				document_:  d
+				unique_id_: UniqueNodeID(0)
+			}
+			data_: data
+		}
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction
 pub fn (d &Document) create_processing_instruction(target string, data string) !&ProcessingInstruction {
 	// Stub: would validate target
-	return &ProcessingInstruction{}
+	return &ProcessingInstruction{
+		CharacterData: CharacterData{
+			Node:  Node{
+				node_type:  .processing_instruction_node
+				document_:  d
+				unique_id_: UniqueNodeID(0)
+			}
+			data_: data
+		}
+		target_:       target
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createattribute
 pub fn (d &Document) create_attribute(local_name string) !&Attr {
 	// Stub: would validate name
-	return &Attr{}
+	return &Attr{
+		Node:        Node{
+			node_type:  .attribute_node
+			document_:  d
+			unique_id_: UniqueNodeID(0)
+		}
+		name_:       local_name
+		local_name_: local_name
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createattributens
 pub fn (d &Document) create_attribute_ns(namespace_ ?string, qualified_name string) !&Attr {
 	// Stub
-	return &Attr{}
+	return &Attr{
+		Node:           Node{
+			node_type:  .attribute_node
+			document_:  d
+			unique_id_: UniqueNodeID(0)
+		}
+		name_:          qualified_name
+		local_name_:    qualified_name
+		namespace_uri_: namespace_
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createevent
@@ -3085,7 +3160,7 @@ pub fn (mut d Document) run_the_resize_steps() {
 	if !viewport_size_changed {
 		return
 	}
-	d.last_viewport_size = viewport_size
+	d.last_viewport_size = [viewport_size[0], viewport_size[1]]!
 
 	if !is_initial_size {
 		if viewport_size_changed {
@@ -3496,7 +3571,7 @@ pub fn (d &Document) descendant_navigables() []&Navigable {
 	// 1. Let navigables be new list.
 	mut navigables := []&Navigable{}
 	// 2-3. For each shadow-including descendant that is a navigable container:
-	d.for_each_shadow_including_descendant(fn [mut navigables, d] (node &Node) TraversalDecision {
+	d.for_each_shadow_including_descendant(fn [mut navigables] (node &Node) TraversalDecision {
 		nc := as_navigable_container_stub(node) or { return .@continue }
 		content_nav := nc.content_navigable() or { return .@continue }
 		active_doc := content_nav.active_document() or { return .@continue }
@@ -4404,7 +4479,8 @@ pub fn (mut d Document) add_form_associated_element_with_form_attribute(element 
 }
 
 pub fn (mut d Document) remove_form_associated_element_with_form_attribute(element &FormAssociatedElement) {
-	d.form_associated_elements_with_form_attribute = d.form_associated_elements_with_form_attribute.filter(it != element)
+	d.form_associated_elements_with_form_attribute =
+		d.form_associated_elements_with_form_attribute.filter(it != element)
 }
 
 // --- Design mode ---
@@ -4601,8 +4677,8 @@ pub fn (d &Document) find_matching_text(query string, case_sensitivity CaseSensi
 	for {
 		idx := search_text.index_after(search_query, offset) or { break }
 		matches << &Range{
-			start_offset: idx
-			end_offset:   idx + search_query.len
+			start_offset_: idx
+			end_offset_:   idx + search_query.len
 		}
 		offset = idx + search_query.len
 		if offset >= search_text.len {
@@ -6231,9 +6307,15 @@ pub fn (d &Document) environment_variable_value(variable EnvironmentVariable) ?s
 	// Stub: Returns CSS environment variable values
 	return match variable {
 		.safe_area_inset_top, .safe_area_inset_bottom, .safe_area_inset_left,
-		.safe_area_inset_right { '0px' }
-		.preferred_text_scale { '1' }
-		else { none }
+		.safe_area_inset_right {
+			'0px'
+		}
+		.preferred_text_scale {
+			'1'
+		}
+		else {
+			none
+		}
 	}
 }
 
@@ -6321,10 +6403,6 @@ pub fn (si &StyleInvalidator) has_pending_invalidations() bool {
 }
 
 // Element.needs_style_update and entire_subtree_needs_style_update are in element.v
-
-pub fn (n &Node) unsafe_layout_node() ?&LayoutNode {
-	return none
-}
 
 pub fn (he &HTMLElement) unsafe_layout_node() ?&LayoutNode {
 	return none
