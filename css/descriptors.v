@@ -71,7 +71,7 @@ fn parse_css_descriptor_value_for_cssom(at_rule_id AtRuleID, descriptor_id Descr
 	}
 }
 
-fn parse_css_descriptor_stub(at_rule_id AtRuleID, descriptor_id DescriptorID, value string) ?&dom.StyleValue {
+fn parse_css_descriptor_for_cssom(at_rule_id AtRuleID, descriptor_id DescriptorID, value string) ?&dom.StyleValue {
 	return (parse_css_descriptor_value_for_cssom(at_rule_id, descriptor_id, value) or {
 		return none
 	}).value
@@ -337,12 +337,12 @@ pub fn (descriptors &CSSDescriptors) descriptor_or_initial_value(descriptor_id D
 	if value := descriptors.descriptor(descriptor_id) {
 		return value
 	}
-	return descriptor_initial_value_stub(descriptors.at_rule_id, descriptor_id)
+	return descriptor_initial_value(descriptors.at_rule_id, descriptor_id)
 }
 
-fn descriptor_initial_value_stub(at_rule_id AtRuleID, descriptor_id DescriptorID) ?&dom.StyleValue {
+fn descriptor_initial_value(at_rule_id AtRuleID, descriptor_id DescriptorID) ?&dom.StyleValue {
 	initial_value := descriptor_initial_value_text(at_rule_id, descriptor_id) or { return none }
-	return parse_css_descriptor_stub(at_rule_id, descriptor_id, initial_value)
+	return parse_css_descriptor_for_cssom(at_rule_id, descriptor_id, initial_value)
 }
 
 fn descriptor_initial_value_text(at_rule_id AtRuleID, descriptor_id DescriptorID) ?string {
@@ -411,7 +411,7 @@ pub fn (mut descriptors CSSDescriptors) set_css_text(value string) ! {
 		return error('NoModificationAllowedError: Cannot modify properties of readonly CSSStyleDeclaration')
 	}
 
-	descriptors.descriptors = parse_descriptor_declaration_block_stub(descriptors.at_rule_id, value)
+	descriptors.descriptors = parse_descriptor_declaration_block(descriptors.at_rule_id, value)
 	descriptors.update_style_attribute()
 }
 
@@ -482,7 +482,7 @@ fn expand_page_margin_shorthand_descriptor_value(value StyleValue) []ExpandedDes
 	]
 }
 
-fn parse_descriptor_declaration_block_stub(at_rule_id AtRuleID, text string) []Descriptor {
+fn parse_descriptor_declaration_block(at_rule_id AtRuleID, text string) []Descriptor {
 	mut block := text.trim_space()
 	if block.starts_with('{') && block.ends_with('}') {
 		block = block[1..block.len - 1]
