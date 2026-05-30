@@ -2056,9 +2056,15 @@ pub fn interpolate_raw_int(from int, to int, delta f64, accepted_type_range ?Acc
 
 fn with_keyword_values_resolved_boundary(element &dom.Element, property_id PropertyID, value &dom.StyleValue) &dom.StyleValue {
 	_ = element
-	_ = property_id
-	// Boundary: dom.StyleValue is opaque in this port, so guaranteed-invalid and
-	// CSS-wide keyword resolution cannot inspect the incoming value yet.
+	if computed_interpolation_style_value_is_initial(value)
+		|| computed_interpolation_style_value_is_revert(value)
+		|| computed_interpolation_style_value_is_revert_layer(value)
+		|| (computed_interpolation_style_value_is_unset(value)
+		&& !computed_interpolation_is_inherited_property(property_id)) {
+		return computed_interpolation_property_initial_value(property_id)
+	}
+	// Boundary: inherited keyword resolution requires parent computed style access
+	// from DOM::Element, which is not exposed in this V port yet.
 	return unsafe { value }
 }
 
@@ -2451,16 +2457,28 @@ pub fn interpolate_repeatable_style_value_list(calculation_context Interpolation
 
 pub fn interpolate_value(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	_ = element
-	_ = calculation_context
-	// Boundary: dom.StyleValue has no bridge to the CSS StyleValue union yet; typed interpolation is implemented in interpolate_style_value().
-	return interpolate_discrete(from, to, delta, allow_discrete)
+	from_value := parse_css_value_logic(calculation_context.property, from.css_text) or {
+		return interpolate_discrete(from, to, delta, allow_discrete)
+	}
+	to_value := parse_css_value_logic(calculation_context.property, to.css_text) or {
+		return interpolate_discrete(from, to, delta, allow_discrete)
+	}
+	interpolated := interpolate_style_value(calculation_context, from_value, to_value, delta,
+		allow_discrete) or { return none }
+	return dom_style_value_from_value_logic(interpolated)
 }
 
 pub fn interpolate_repeatable_list(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	_ = element
-	_ = calculation_context
-	// Boundary: requires StyleValueList and repeatable-list expansion.
-	return interpolate_discrete(from, to, delta, allow_discrete)
+	from_value := parse_css_value_logic(calculation_context.property, from.css_text) or {
+		return interpolate_discrete(from, to, delta, allow_discrete)
+	}
+	to_value := parse_css_value_logic(calculation_context.property, to.css_text) or {
+		return interpolate_discrete(from, to, delta, allow_discrete)
+	}
+	interpolated := interpolate_repeatable_style_value_list(calculation_context, from_value,
+		to_value, delta, allow_discrete) or { return none }
+	return dom_style_value_from_value_logic(interpolated)
 }
 
 pub fn interpolate_box_shadow(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
