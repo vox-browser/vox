@@ -590,9 +590,14 @@ fn parse_dimension_value(type_ ValueType, mut tokens ComponentValueTokenStream) 
 
 fn parse_value_for_syntax_type(type_ ValueType, mut tokens ComponentValueTokenStream) ?StyleValue {
 	transaction_index := tokens.index
+
+	// Parser/SyntaxParsing.cpp parses TypeSyntaxNode values by delegating to parse_value().
+	if value := parse_value_using_existing_parser_for_syntax_type(type_, mut tokens) {
+		return value
+	}
+
 	tokens.discard_whitespace()
 	token := tokens.next_token()
-
 	match type_ {
 		.custom_ident {
 			if token.is(.ident) {
@@ -620,15 +625,112 @@ fn parse_value_for_syntax_type(type_ ValueType, mut tokens ComponentValueTokenSt
 				return StyleValue(StringStyleValue.create(tokens.consume_a_token().token().string_value()))
 			}
 		}
-		.angle, .angle_percentage, .flex, .frequency, .frequency_percentage, .length,
-		.length_percentage, .resolution, .time, .time_percentage {
-			return parse_dimension_value(type_, mut tokens)
-		}
 		else {}
 	}
 
 	tokens.index = transaction_index
 	return none
+}
+
+fn parse_value_using_existing_parser_for_syntax_type(type_ ValueType, mut tokens ComponentValueTokenStream) ?StyleValue {
+	mut parser := Parser.from_component_values([])
+	mut stream := ComponentValueStream.new(tokens.tokens[tokens.index..])
+	mut result := ?StyleValue(none)
+
+	match type_ {
+		.angle {
+			result = parser.parse_angle_value(mut stream)
+		}
+		.color {
+			result = parser.parse_color_value(mut stream)
+		}
+		.flex {
+			result = parser.parse_flex_value(mut stream)
+		}
+		.frequency {
+			result = parser.parse_frequency_value(mut stream)
+		}
+		.image {
+			if image := parser.parse_image_value(mut stream) {
+				result = StyleValue(StubStyleValue.create(.image, image.serialize(.normal)))
+			}
+		}
+		.integer {
+			result = parser.parse_integer_value(mut stream)
+		}
+		.length {
+			result = parser.parse_length_value(mut stream)
+		}
+		.length_percentage {
+			result = parser.parse_length_percentage_value(mut stream)
+		}
+		.number {
+			result = parser.parse_number_value(mut stream)
+		}
+		.percentage {
+			result = parser.parse_percentage_value(mut stream)
+		}
+		.resolution {
+			result = parser.parse_resolution_value(mut stream)
+		}
+		.string {
+			if string_value := parser.parse_string_value(mut stream) {
+				result = StyleValue(string_value)
+			}
+		}
+		.time {
+			result = parser.parse_time_value(mut stream)
+		}
+		.url {
+			result = parse_url_value_for_syntax(mut stream)
+		}
+		.transform_function {
+			result = parse_transform_function_value_for_syntax(mut stream)
+		}
+		.transform_list {
+			result = parse_transform_list_value_for_syntax(mut stream)
+		}
+		else {}
+	}
+
+	value := result or { return none }
+	tokens.index += stream.index
+	return value
+}
+
+fn parse_url_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
+	tokens.consume_whitespace()
+	component_value := tokens.consume() or { return none }
+	if component_value.is(.url) || component_value.is_function_named('url') {
+		return StyleValue(StubStyleValue.create(.url, component_value.to_string()))
+	}
+	return none
+}
+
+fn parse_transform_function_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
+	tokens.consume_whitespace()
+	component_value := tokens.consume() or { return none }
+	if !component_value.is(.function) {
+		return none
+	}
+	_ = transform_function_from_string(component_value.function().name) or { return none }
+	return StyleValue(StubStyleValue.create(.transformation, component_value.to_string()))
+}
+
+fn parse_transform_list_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
+	mut parts := []string{}
+	for {
+		tokens.consume_whitespace()
+		if !tokens.has_more_tokens() {
+			break
+		}
+		value := parse_transform_function_value_for_syntax(mut tokens) or { return none }
+		parts << value.serialize(.normal)
+	}
+	if parts.len == 0 {
+		return none
+	}
+	return StyleValue(StubStyleValue.create(.transformation, parts.join(' ')))
 }
 
 fn parse_comma_separated_syntax_value_list(mut tokens ComponentValueTokenStream, child SyntaxNode) ?StyleValue {

@@ -1,10 +1,14 @@
 module css
 
+import dom
+
 // This file ports Ladybird's LibWeb/CSS/Parser rule, selector, parser orchestration,
 // rule-context, error-reporter, and arbitrary-substitution-function glue into the
 // smaller V CSS model. Where the generated parser tables, full selector AST, DOM
 // integration, or CSSRule subclasses do not exist in this port yet, explicit local
 // stubs keep the translated control flow visible.
+// It includes folded translations of Parser/RuleParsing.cpp and
+// Parser/ArbitrarySubstitutionFunctions.cpp.
 
 enum ParserNested {
 	no
@@ -1149,6 +1153,12 @@ fn (mut parser RuleSelectorParser) convert_to_import_rule(rule AtRule) ?&CSSRule
 		supports_function := tokens.consume_a_token().function()
 		condition := parser_component_values_to_string(supports_function.value)
 		supports = parse_css_supports(ParsingParams{}, condition)
+		if supports == none {
+			mut supports_tokens := ParserTokenStream.from_values(supports_function.value)
+			if supports_declaration := parse_supports_declaration_from_parser_tokens(mut supports_tokens) {
+				supports = Supports.create(supports_declaration)
+			}
+		}
 		tokens.discard_whitespace()
 	}
 
@@ -1257,9 +1267,134 @@ fn (mut parser RuleSelectorParser) convert_to_keyframes_rule(rule AtRule) ?&CSSR
 	if prelude_stream.has_next_token() || (!name_token.is(.string) && !name_token.is(.ident)) {
 		return none
 	}
-	mut keyframes_rule := CSSRule.create_grouping(.keyframes, CSSRuleList.create_empty())
-	keyframes_rule.url = name_token.to_string()
-	return keyframes_rule
+
+	if name_token.is(.ident) {
+		name := name_token.token().ident()
+		if is_css_wide_keyword_local(name) || equals_ignoring_ascii_case(name, 'none')
+			|| equals_ignoring_ascii_case(name, 'default') {
+			parser_report_error(ParsingError(InvalidRuleError{
+				rule_name:   '@keyframes'
+				prelude:     prelude_stream.dump_string()
+				description: 'Invalid keyframes name.'
+			}))
+			return none
+		}
+	}
+
+	mut keyframes := []&CSSRule{}
+	for child in rule.child_rules_and_lists_of_declarations {
+		match child {
+			RuleNode {
+				match child.rule {
+					AtRule {
+						parser_report_error(ParsingError(InvalidRuleLocationError{
+							outer_rule_name: '@keyframes'
+							inner_rule_name: '@${child.rule.name}'
+						}))
+					}
+					QualifiedRule {
+						for keyframe_rule in parser.convert_to_keyframe_rules(child.rule) {
+							keyframes << keyframe_rule
+						}
+					}
+				}
+			}
+			DeclarationList {
+				parser_report_error(ParsingError(InvalidRuleLocationError{
+					outer_rule_name: '@keyframes'
+					inner_rule_name: 'list-of-declarations'
+				}))
+			}
+		}
+	}
+
+	return CSSRule.create_keyframes(name_token.to_string(), CSSRuleList.create(keyframes))
+}
+
+fn (mut parser RuleSelectorParser) convert_to_keyframe_rules(qualified_rule QualifiedRule) []&CSSRule {
+	for child_rule in qualified_rule.child_rules {
+		match child_rule {
+			RuleNode {
+				match child_rule.rule {
+					AtRule {
+						parser_report_error(ParsingError(InvalidRuleLocationError{
+							outer_rule_name: 'keyframe'
+							inner_rule_name: '@${child_rule.rule.name}'
+						}))
+					}
+					QualifiedRule {
+						parser_report_error(ParsingError(InvalidRuleLocationError{
+							outer_rule_name: 'keyframe'
+							inner_rule_name: 'qualified-rule'
+						}))
+					}
+				}
+			}
+			DeclarationList {
+				parser_report_error(ParsingError(InvalidRuleLocationError{
+					outer_rule_name: 'keyframe'
+					inner_rule_name: 'list-of-declarations'
+				}))
+			}
+		}
+	}
+
+	selectors := parser.parse_keyframe_selector_list(qualified_rule.prelude)
+	style := parser.convert_to_style_declaration(qualified_rule.declarations)
+	mut rules := []&CSSRule{}
+	for selector in selectors {
+		rules << CSSRule.create_keyframe(selector, style)
+	}
+	return rules
+}
+
+fn (mut parser RuleSelectorParser) parse_keyframe_selector_list(prelude []ComponentValue) []Percentage {
+	mut selectors := []Percentage{}
+	mut child_tokens := ParserTokenStream.from_values(prelude)
+	for child_tokens.has_next_token() {
+		child_tokens.discard_whitespace()
+		if !child_tokens.has_next_token() {
+			break
+		}
+
+		tok := child_tokens.consume_a_token()
+		if !tok.is_token() {
+			parser_report_error(ParsingError(InvalidRuleError{
+				rule_name:   'keyframe'
+				prelude:     child_tokens.dump_string()
+				description: 'Invalid selector.'
+			}))
+			child_tokens.reconsume_current_input_token()
+			break
+		}
+
+		token := tok.token()
+		mut read_a_selector := false
+		if token.is(.ident) {
+			if equals_ignoring_ascii_case(token.ident(), 'from') {
+				selectors << Percentage.new(0)
+				read_a_selector = true
+			}
+			if equals_ignoring_ascii_case(token.ident(), 'to') {
+				selectors << Percentage.new(100)
+				read_a_selector = true
+			}
+		} else if token.is(.percentage) {
+			selectors << Percentage.new(token.percentage())
+			read_a_selector = true
+		}
+
+		if read_a_selector {
+			child_tokens.discard_whitespace()
+			if child_tokens.consume_a_token().is(.comma) {
+				continue
+			}
+		}
+
+		child_tokens.reconsume_current_input_token()
+		break
+	}
+	return selectors
 }
 
 fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRule {
@@ -1358,6 +1493,7 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 		return none
 	}
 
+	mut parsed_initial_value_maybe := ?StyleValue(none)
 	if initial_value := initial_value_maybe {
 		initial_value_component_values := parse_component_values_for_value_logic(initial_value)
 		parsed_initial_value := parse_with_a_syntax(initial_value_component_values, maybe_syntax)
@@ -1369,9 +1505,11 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 		if parsed_initial_value.type_() == .guaranteed_invalid {
 			return none
 		}
+		parsed_initial_value_maybe = parsed_initial_value
 	}
 
-	return CSSRule.create_property_rule(name, syntax, inherits, initial_value_maybe)
+	return CSSRule.create_property_rule_with_parsed_initial_value(name, syntax, inherits,
+		initial_value_maybe, parsed_initial_value_maybe)
 }
 
 fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&CSSRule {
@@ -2451,6 +2589,16 @@ pub fn (mut contexts GuardedSubstitutionContexts) unguard(context SubstitutionCo
 	}
 }
 
+fn (contexts GuardedSubstitutionContexts) is_marked_cyclic(context SubstitutionContext) bool {
+	for existing_context in contexts.contexts {
+		if existing_context.dependency_type == context.dependency_type
+			&& existing_context.first == context.first && existing_context.second == context.second {
+			return existing_context.is_cyclic
+		}
+	}
+	return false
+}
+
 pub enum ArbitrarySubstitutionFunction {
 	attr
 	env
@@ -2487,14 +2635,627 @@ pub fn contains_guaranteed_invalid_value(values []ComponentValue) bool {
 	return false
 }
 
-pub fn substitute_arbitrary_substitution_functions(values []ComponentValue, context ?SubstitutionContext) []ComponentValue {
-	// Explicit stub: CSS Values 5 arbitrary substitution needs DOM::AbstractElement, registered custom properties,
-	// environment variables, and parse-with-syntax support. Preserve guaranteed-invalid propagation for callers.
-	_ = context
-	if contains_guaranteed_invalid_value(values) {
-		return [ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})]
+pub struct DeclarationValueList {
+pub mut:
+	values [][]ComponentValue
+}
+
+pub fn (list DeclarationValueList) first() []ComponentValue {
+	if list.values.len == 0 {
+		return []ComponentValue{}
 	}
-	return values.clone()
+	return list.values[0]
+}
+
+pub fn (list DeclarationValueList) get(index int) ?[]ComponentValue {
+	if index < 0 || index >= list.values.len {
+		return none
+	}
+	return list.values[index]
+}
+
+pub struct IfArgsBranch {
+pub mut:
+	condition []ComponentValue
+	value     ?[]ComponentValue
+}
+
+pub struct IfArgs {
+pub mut:
+	branches []IfArgsBranch
+}
+
+pub type ArbitrarySubstitutionFunctionArguments = DeclarationValueList | IfArgs
+
+fn arbitrary_substitution_guaranteed_invalid_value() []ComponentValue {
+	return [ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})]
+}
+
+fn parse_arbitrary_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenType) ?[]ComponentValue {
+	start_index := tokens.index
+	mut declaration_value := []ComponentValue{}
+	for tokens.has_next_token() {
+		peek := tokens.next_token()
+		if !peek.is_token() {
+			declaration_value << tokens.consume_a_token()
+			continue
+		}
+
+		mut valid := true
+		if peek.is(.invalid) || peek.is(.end_of_file) || peek.is(.bad_string) || peek.is(.bad_url)
+			|| peek.is(.semicolon) || peek.is(.function) || peek.is(.open_curly)
+			|| peek.is(.open_paren) || peek.is(.open_square) || peek.is(.close_curly)
+			|| peek.is(.close_paren) || peek.is(.close_square) {
+			valid = false
+		} else if peek.is(.delim) && peek.token().delim() == u32(`!`) {
+			valid = false
+		} else if end := end_token_type {
+			if peek.is(end) {
+				valid = false
+			}
+		}
+
+		if !valid {
+			break
+		}
+		declaration_value << tokens.consume_a_token()
+	}
+
+	if declaration_value.len == 0 {
+		tokens.index = start_index
+		return none
+	}
+	return declaration_value
+}
+
+fn parse_declaration_value_then_optional_declaration_value(mut tokens ParserTokenStream, separator TokenType) ?DeclarationValueList {
+	first_argument := parse_arbitrary_declaration_value(mut tokens, separator) or { return none }
+
+	if !tokens.has_next_token() {
+		return DeclarationValueList{
+			values: [first_argument]
+		}
+	}
+
+	if !tokens.next_token().is(separator) {
+		return none
+	}
+
+	tokens.discard_a_token()
+	second_argument := parse_arbitrary_declaration_value(mut tokens, none) or { []ComponentValue{} }
+	return DeclarationValueList{
+		values: [first_argument, second_argument]
+	}
+}
+
+pub fn parse_according_to_argument_grammar(function ArbitrarySubstitutionFunction, values []ComponentValue) ?ArbitrarySubstitutionFunctionArguments {
+	mut tokens := ParserTokenStream.from_values(values)
+	match function {
+		.attr, .env, .inherit, .var_ {
+			list := parse_declaration_value_then_optional_declaration_value(mut tokens, .comma) or {
+				return none
+			}
+			if tokens.has_next_token() {
+				return none
+			}
+			return ArbitrarySubstitutionFunctionArguments(list)
+		}
+		.if_ {
+			mut args := IfArgs{}
+			for tokens.has_next_token() {
+				if_args_branch := parse_declaration_value_then_optional_declaration_value(mut tokens,
+					.colon) or {
+					break
+				}
+
+				args.branches << IfArgsBranch{
+					condition: if_args_branch.first()
+					value:     if_args_branch.get(1)
+				}
+
+				if !tokens.next_token().is(.semicolon) {
+					break
+				}
+				tokens.discard_a_token()
+			}
+
+			if args.branches.len == 0 || tokens.has_next_token() {
+				return none
+			}
+			return ArbitrarySubstitutionFunctionArguments(args)
+		}
+	}
+}
+
+fn arbitrary_arguments_as_declaration_value_list(arguments ArbitrarySubstitutionFunctionArguments) ?DeclarationValueList {
+	if arguments is DeclarationValueList {
+		return arguments
+	}
+	return none
+}
+
+fn arbitrary_arguments_as_if_args(arguments ArbitrarySubstitutionFunctionArguments) ?IfArgs {
+	if arguments is IfArgs {
+		return arguments
+	}
+	return none
+}
+
+enum AttrSyntaxKind {
+	omitted
+	raw_string
+	number
+	unit
+	syntax
+}
+
+struct AttrSyntax {
+mut:
+	kind   AttrSyntaxKind
+	unit   string
+	syntax ?SyntaxNode
+}
+
+fn attr_failure_result(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, second_argument ?[]ComponentValue, syntax AttrSyntax) []ComponentValue {
+	// 1. If second arg is null, and syntax was omitted, return an empty CSS <string>.
+	if second_argument == none && syntax.kind == .omitted {
+		return [ComponentValue.from_token(Token.create_string('', ''))]
+	}
+
+	// 2. If second arg is null, return the guaranteed-invalid value.
+	if second_argument == none {
+		return arbitrary_substitution_guaranteed_invalid_value()
+	}
+
+	// 3. Substitute arbitrary substitution functions in second arg, and return the result.
+	return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
+		second_argument, none)
+}
+
+fn parse_number_from_attr_value(attribute_value string) ?Number {
+	values := parse_component_values_for_value_logic(attribute_value.trim_space())
+	mut tokens := ParserTokenStream.from_values(values)
+	tokens.discard_whitespace()
+	token := tokens.consume_a_token()
+	tokens.discard_whitespace()
+	if tokens.has_next_token() || !token.is(.number) {
+		return none
+	}
+	return token.token().number()
+}
+
+fn style_value_to_component_values_for_substitution(style_value StyleValue) []ComponentValue {
+	if style_value.type_() == .guaranteed_invalid {
+		return arbitrary_substitution_guaranteed_invalid_value()
+	}
+	return parse_component_values_for_value_logic(style_value.serialize(.normal))
+}
+
+fn replace_an_attr_function(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, arguments ArbitrarySubstitutionFunctionArguments) []ComponentValue {
+	// https://drafts.csswg.org/css-values-5/#replace-an-attr-function
+	declaration_value_list := arbitrary_arguments_as_declaration_value_list(arguments) or {
+		return arbitrary_substitution_guaranteed_invalid_value()
+	}
+	first_argument := declaration_value_list.first()
+	second_argument := declaration_value_list.get(1)
+	mut attribute_name := ''
+	mut syntax := AttrSyntax{}
+
+	substituted := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
+		first_argument, none)
+	mut first_argument_tokens := ParserTokenStream.from_values(substituted)
+
+	// <attr-name> = [ <ident-token>? '|' ]? <ident-token>
+	// FIXME: Support optional attribute namespace.
+	if !first_argument_tokens.next_token().is(.ident) {
+		return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
+	}
+	attribute_name = first_argument_tokens.consume_a_token().token().ident()
+	first_argument_tokens.discard_whitespace()
+
+	// <attr-type> = type( <syntax> ) | raw-string | number | <attr-unit>
+	if first_argument_tokens.next_token().is(.ident) {
+		syntax_ident := first_argument_tokens.next_token().token().ident()
+		if equals_ignoring_ascii_case(syntax_ident, 'raw-string') {
+			first_argument_tokens.discard_a_token()
+			syntax.kind = .raw_string
+		} else if equals_ignoring_ascii_case(syntax_ident, 'number') {
+			first_argument_tokens.discard_a_token()
+			syntax.kind = .number
+		} else if dimension := dimension_for_unit(syntax_ident) {
+			_ = dimension
+			syntax.kind = .unit
+			syntax.unit = first_argument_tokens.consume_a_token().token().ident()
+		} else {
+			return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
+		}
+	} else if first_argument_tokens.next_token().is_delim(u32(`%`)) {
+		first_argument_tokens.discard_a_token()
+		syntax.kind = .unit
+		syntax.unit = '%'
+	} else if first_argument_tokens.next_token().is_function_named('type') {
+		type_function := first_argument_tokens.consume_a_token().function()
+		if parsed_syntax := parse_as_syntax(type_function.value) {
+			syntax.kind = .syntax
+			syntax.syntax = parsed_syntax
+		} else {
+			return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
+		}
+	}
+
+	first_argument_tokens.discard_whitespace()
+	if first_argument_tokens.has_next_token() {
+		return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
+	}
+
+	el := element or {
+		return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
+	}
+
+	// FIXME: Attribute namespaces.
+	attribute_value := el.element().get_attribute(attribute_name) or {
+		return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
+	}
+
+	if syntax.kind == .number || syntax.kind == .unit {
+		parsed_number := parse_number_from_attr_value(attribute_value) or {
+			return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
+		}
+		if syntax.kind == .number {
+			return [ComponentValue.from_token(Token.create_number(parsed_number, ''))]
+		}
+		if syntax.unit == '%' {
+			return [ComponentValue.from_token(Token.create_percentage(parsed_number, ''))]
+		}
+		return [ComponentValue.from_token(Token.create_dimension(parsed_number, syntax.unit, ''))]
+	}
+
+	if syntax.kind == .omitted || syntax.kind == .raw_string {
+		return [ComponentValue.from_token(Token.create_string(attribute_value, ''))]
+	}
+
+	syntax_node := syntax.syntax or {
+		return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
+	}
+	unsubstituted_values := parse_component_values_for_value_logic(attribute_value)
+	substituted_values := substitute_arbitrary_substitution_functions_with_optional_element(element,
+		mut guarded_contexts, unsubstituted_values, SubstitutionContext{
+		dependency_type: .attribute
+		first:           attribute_name
+	})
+	parsed_value := parse_with_a_syntax(substituted_values, syntax_node)
+	if parsed_value.type_() == .guaranteed_invalid {
+		return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
+	}
+	return style_value_to_component_values_for_substitution(parsed_value)
+}
+
+fn environment_variable_from_string_local(name string) ?dom.EnvironmentVariable {
+	return match name.to_lower() {
+		'preferred-text-scale' { dom.EnvironmentVariable.preferred_text_scale }
+		'safe-area-inset-bottom' { dom.EnvironmentVariable.safe_area_inset_bottom }
+		'safe-area-inset-left' { dom.EnvironmentVariable.safe_area_inset_left }
+		'safe-area-inset-right' { dom.EnvironmentVariable.safe_area_inset_right }
+		'safe-area-inset-top' { dom.EnvironmentVariable.safe_area_inset_top }
+		'safe-area-max-inset-bottom' { dom.EnvironmentVariable.safe_area_max_inset_bottom }
+		'safe-area-max-inset-left' { dom.EnvironmentVariable.safe_area_max_inset_left }
+		'safe-area-max-inset-right' { dom.EnvironmentVariable.safe_area_max_inset_right }
+		'safe-area-max-inset-top' { dom.EnvironmentVariable.safe_area_max_inset_top }
+		'viewport-segment-bottom' { dom.EnvironmentVariable.viewport_segment_bottom }
+		'viewport-segment-height' { dom.EnvironmentVariable.viewport_segment_height }
+		'viewport-segment-left' { dom.EnvironmentVariable.viewport_segment_left }
+		'viewport-segment-right' { dom.EnvironmentVariable.viewport_segment_right }
+		'viewport-segment-top' { dom.EnvironmentVariable.viewport_segment_top }
+		'viewport-segment-width' { dom.EnvironmentVariable.viewport_segment_width }
+		else { none }
+	}
+}
+
+fn environment_variable_dimension_count_local(variable dom.EnvironmentVariable) int {
+	return match variable {
+		.viewport_segment_bottom, .viewport_segment_height, .viewport_segment_left,
+		.viewport_segment_right, .viewport_segment_top, .viewport_segment_width {
+			2
+		}
+		else {
+			0
+		}
+	}
+}
+
+fn environment_variable_is_viewport_segment_local(variable dom.EnvironmentVariable) bool {
+	return variable in [
+		dom.EnvironmentVariable.viewport_segment_bottom,
+		.viewport_segment_height,
+		.viewport_segment_left,
+		.viewport_segment_right,
+		.viewport_segment_top,
+		.viewport_segment_width,
+	]
+}
+
+fn replace_an_env_function(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, arguments ArbitrarySubstitutionFunctionArguments) []ComponentValue {
+	// https://drafts.csswg.org/css-env/#substitute-an-env
+	declaration_value_list := arbitrary_arguments_as_declaration_value_list(arguments) or {
+		return arbitrary_substitution_guaranteed_invalid_value()
+	}
+	first_argument := declaration_value_list.first()
+	second_argument := declaration_value_list.get(1)
+
+	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element,
+		mut guarded_contexts, first_argument, none)
+	mut first_argument_tokens := ParserTokenStream.from_values(substituted_first_argument)
+	first_argument_tokens.discard_whitespace()
+	name_token := first_argument_tokens.consume_a_token()
+	if !name_token.is(.ident) {
+		return arbitrary_substitution_guaranteed_invalid_value()
+	}
+	name := name_token.token().ident()
+	first_argument_tokens.discard_whitespace()
+
+	mut indices := []i64{}
+	for first_argument_tokens.has_next_token() {
+		maybe_integer := first_argument_tokens.consume_a_token()
+		if !maybe_integer.is(.number) {
+			return arbitrary_substitution_guaranteed_invalid_value()
+		}
+		number := maybe_integer.token().number()
+		if number.is_integer() && number.integer_value() >= 0 {
+			indices << number.integer_value()
+		} else {
+			return arbitrary_substitution_guaranteed_invalid_value()
+		}
+		first_argument_tokens.discard_whitespace()
+	}
+
+	if environment_variable := environment_variable_from_string_local(name) {
+		if indices.len == environment_variable_dimension_count_local(environment_variable) {
+			if environment_variable_is_viewport_segment_local(environment_variable) {
+				return arbitrary_substitution_guaranteed_invalid_value()
+			}
+			if el := element {
+				if result := el.document().environment_variable_value(environment_variable) {
+					return parse_component_values_for_value_logic(result)
+				}
+			}
+		}
+	}
+
+	if fallback := second_argument {
+		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
+			fallback, none)
+	}
+
+	return arbitrary_substitution_guaranteed_invalid_value()
+}
+
+fn parse_if_condition_for_arbitrary_substitution_stub(condition []ComponentValue) ?bool {
+	text := parser_component_values_to_string(condition).trim_space()
+	if text.len == 0 {
+		return none
+	}
+	lower := text.to_lower()
+	if lower == 'true' || lower == '1' {
+		return true
+	}
+	if lower == 'false' || lower == '0' {
+		return false
+	}
+	if supports := parse_css_supports(ParsingParams{}, text) {
+		return supports.matches_condition()
+	}
+	return none
+}
+
+fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, arguments ArbitrarySubstitutionFunctionArguments) []ComponentValue {
+	// https://drafts.csswg.org/css-values-5/#replace-an-if-function
+	if_args := arbitrary_arguments_as_if_args(arguments) or {
+		return arbitrary_substitution_guaranteed_invalid_value()
+	}
+
+	for branch in if_args.branches {
+		substituted_condition := substitute_arbitrary_substitution_functions_with_optional_element(element,
+			mut guarded_contexts, branch.condition, none)
+		condition_result := parse_if_condition_for_arbitrary_substitution_stub(substituted_condition) or {
+			continue
+		}
+		if !condition_result {
+			continue
+		}
+		value := branch.value or { return []ComponentValue{} }
+		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
+			value, none)
+	}
+
+	return []ComponentValue{}
+}
+
+fn custom_property_tokens_for_substitution_stub(abstract_element dom.AbstractElement, custom_property_name string) ?[]ComponentValue {
+	_ = abstract_element
+	_ = custom_property_name
+	// Stub: DOM::AbstractElement exposes opaque CSSStyleValue_ / dom.StyleValue placeholders in this V port.
+	// The substitution algorithm below still follows the C++ control flow and falls back when no tokenized value exists.
+	return none
+}
+
+fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, arguments ArbitrarySubstitutionFunctionArguments) []ComponentValue {
+	// https://drafts.csswg.org/css-values-5/#replace-an-inherit-function
+	declaration_value_list := arbitrary_arguments_as_declaration_value_list(arguments) or {
+		return arbitrary_substitution_guaranteed_invalid_value()
+	}
+	first_argument := declaration_value_list.first()
+	second_argument := declaration_value_list.get(1)
+
+	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element,
+		mut guarded_contexts, first_argument, none)
+	mut first_argument_tokens := ParserTokenStream.from_values(substituted_first_argument)
+	first_argument_tokens.discard_whitespace()
+	name_token := first_argument_tokens.consume_a_token()
+	first_argument_tokens.discard_whitespace()
+
+	if name_token.is(.ident) && is_a_custom_property_name_string(name_token.token().ident())
+		&& !first_argument_tokens.has_next_token() {
+		if el := element {
+			if element_to_inherit_style_from := el.element_to_inherit_style_from() {
+				if inherited_value := custom_property_tokens_for_substitution_stub(element_to_inherit_style_from,
+					name_token.token().ident()) {
+					if !contains_guaranteed_invalid_value(inherited_value) {
+						return inherited_value
+					}
+				}
+			}
+		}
+	}
+
+	if fallback := second_argument {
+		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
+			fallback, none)
+	}
+
+	return arbitrary_substitution_guaranteed_invalid_value()
+}
+
+fn replace_a_var_function(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, arguments ArbitrarySubstitutionFunctionArguments) []ComponentValue {
+	// https://drafts.csswg.org/css-variables-1/#replace-a-var-function
+	declaration_value_list := arbitrary_arguments_as_declaration_value_list(arguments) or {
+		return arbitrary_substitution_guaranteed_invalid_value()
+	}
+	first_argument := declaration_value_list.first()
+	second_argument := declaration_value_list.get(1)
+
+	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element,
+		mut guarded_contexts, first_argument, none)
+	mut name_tokens := ParserTokenStream.from_values(substituted_first_argument)
+	name_tokens.discard_whitespace()
+	name_token := name_tokens.consume_a_token()
+	name_tokens.discard_whitespace()
+
+	mut result := []ComponentValue{}
+	if name_tokens.has_next_token() || !name_token.is(.ident)
+		|| !is_a_custom_property_name_string(name_token.token().ident()) {
+		result = arbitrary_substitution_guaranteed_invalid_value()
+	} else if el := element {
+		custom_property_name := name_token.token().ident()
+		result = custom_property_tokens_for_substitution_stub(el, custom_property_name) or {
+			arbitrary_substitution_guaranteed_invalid_value()
+		}
+	} else {
+		result = arbitrary_substitution_guaranteed_invalid_value()
+	}
+
+	// FIXME: Animation-tainted custom properties.
+	if contains_guaranteed_invalid_value(result) {
+		if fallback := second_argument {
+			result = substitute_arbitrary_substitution_functions_with_optional_element(element,
+				mut guarded_contexts, fallback, none)
+		}
+	}
+	return result
+}
+
+pub fn replace_an_arbitrary_substitution_function(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, function ArbitrarySubstitutionFunction, arguments ArbitrarySubstitutionFunctionArguments) []ComponentValue {
+	return match function {
+		.attr { replace_an_attr_function(element, mut guarded_contexts, arguments) }
+		.env { replace_an_env_function(element, mut guarded_contexts, arguments) }
+		.if_ { replace_an_if_function(element, mut guarded_contexts, arguments) }
+		.inherit { replace_an_inherit_function(element, mut guarded_contexts, arguments) }
+		.var_ { replace_a_var_function(element, mut guarded_contexts, arguments) }
+	}
+}
+
+fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, source []ComponentValue) ?[]ComponentValue {
+	mut dest := []ComponentValue{}
+	for index, value in source {
+		if value.is_function() {
+			source_function := value.function()
+			if maybe_function_id := to_arbitrary_substitution_function(source_function.name) {
+				// FIXME: Substitute early-invoked functions in func's contents.
+				early_result := source_function.value
+				if contains_guaranteed_invalid_value(early_result) {
+					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
+					continue
+				}
+
+				arguments := parse_according_to_argument_grammar(maybe_function_id, early_result) or {
+					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
+					continue
+				}
+				result := replace_an_arbitrary_substitution_function(element, mut guarded_contexts,
+					maybe_function_id, arguments)
+
+				if contains_guaranteed_invalid_value(result) {
+					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
+				} else {
+					result_after_processing := substitute_arbitrary_substitution_functions_step_2(element,
+						mut guarded_contexts, result) or { return none }
+
+					// NB: Protect against the billion-laughs attack by limiting to an arbitrary large number of tokens.
+					// https://drafts.csswg.org/css-values-5/#long-substitution
+					if source.len - index - 1 + result_after_processing.len > 16384 {
+						return none
+					}
+					dest << result_after_processing
+				}
+				continue
+			}
+
+			function_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts,
+				source_function.value) or { return none }
+			mut function := source_function
+			function.value = function_values
+			dest << ComponentValue.from_function(function)
+			continue
+		}
+
+		if value.is_block() {
+			source_block := value.block()
+			block_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts,
+				source_block.value) or { return none }
+			mut block := source_block
+			block.value = block_values
+			dest << ComponentValue.from_block(block)
+			continue
+		}
+
+		dest << value
+	}
+	return dest
+}
+
+fn substitute_arbitrary_substitution_functions_with_optional_element(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, values []ComponentValue, context ?SubstitutionContext) []ComponentValue {
+	// https://drafts.csswg.org/css-values-5/#substitute-arbitrary-substitution-function
+	mut context_to_unguard := ?SubstitutionContext(none)
+	if existing_context := context {
+		mut context_copy := existing_context
+		guarded_contexts.guard(mut context_copy)
+		if context_copy.is_cyclic {
+			return arbitrary_substitution_guaranteed_invalid_value()
+		}
+		context_to_unguard = context_copy
+	}
+
+	mut new_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts,
+		values) or { arbitrary_substitution_guaranteed_invalid_value() }
+
+	if guarded_context := context_to_unguard {
+		if guarded_contexts.is_marked_cyclic(guarded_context) {
+			new_values = arbitrary_substitution_guaranteed_invalid_value()
+		}
+		guarded_contexts.unguard(guarded_context)
+	}
+
+	return new_values
+}
+
+pub fn substitute_arbitrary_substitution_functions_for_element(element dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, values []ComponentValue, context ?SubstitutionContext) []ComponentValue {
+	return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
+		values, context)
+}
+
+pub fn substitute_arbitrary_substitution_functions(values []ComponentValue, context ?SubstitutionContext) []ComponentValue {
+	mut guarded_contexts := GuardedSubstitutionContexts{}
+	return substitute_arbitrary_substitution_functions_with_optional_element(none, mut guarded_contexts,
+		values, context)
 }
 
 fn has_ignored_vendor_prefix_local(name string) bool {

@@ -4,6 +4,7 @@ import dom
 import strings
 
 // This file ports the CSSOM rule/list/style-sheet layer from Ladybird's LibWeb/CSS.
+// It includes folded translations of CSSConditionRule.cpp and CSSGroupingRule.cpp.
 // Parser, selector-engine, fetch, JS realm/promise, style-value resource loading, and
 // detailed media-feature evaluation are represented by explicit local stubs until the
 // surrounding V modules grow those subsystems.
@@ -525,6 +526,7 @@ pub mut:
 	property_rule_syntax        string
 	property_rule_inherits      bool
 	property_rule_initial_value ?string
+	property_rule_initial_style_value ?StyleValue
 
 	font_face_rule           ?&CSSFontFaceRule
 	font_feature_values_rule ?&CSSFontFeatureValuesRule

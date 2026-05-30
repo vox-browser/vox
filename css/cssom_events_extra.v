@@ -723,11 +723,17 @@ pub fn is_margin_rule_name(name string) bool {
 // --- CSSPropertyRule ---
 
 pub fn CSSRule.create_property_rule(name string, syntax string, inherits bool, initial_value ?string) &CSSRule {
+	return CSSRule.create_property_rule_with_parsed_initial_value(name, syntax, inherits,
+		initial_value, none)
+}
+
+pub fn CSSRule.create_property_rule_with_parsed_initial_value(name string, syntax string, inherits bool, initial_value ?string, initial_style_value ?StyleValue) &CSSRule {
 	mut rule := CSSRule.create(.property)
 	rule.property_rule_name = name
 	rule.property_rule_syntax = syntax
 	rule.property_rule_inherits = inherits
 	rule.property_rule_initial_value = initial_value
+	rule.property_rule_initial_style_value = initial_style_value
 	rule.url = name
 	rule.namespace_uri = syntax
 	if value := initial_value {
@@ -771,6 +777,13 @@ pub fn (rule &CSSRule) property_rule_initial_value() ?string {
 		return rule.prefix
 	}
 	return none
+}
+
+pub fn (rule &CSSRule) property_rule_initial_style_value() ?StyleValue {
+	if rule.type_ != .property {
+		return none
+	}
+	return rule.property_rule_initial_style_value
 }
 
 pub fn (rule &CSSRule) property_rule_to_registration() CustomPropertyRegistration {
