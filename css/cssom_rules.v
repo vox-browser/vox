@@ -2118,6 +2118,28 @@ pub fn supports_property(property_name string, value string) bool {
 	return false
 }
 
+// https://www.w3.org/TR/css-conditional-3/#dom-css-supports
+pub fn supports_condition(condition_text string) bool {
+	// 1. If conditionText, parsed and evaluated as a <supports-condition>, would return true, return true.
+	if supports := parse_css_supports(ParsingParams{}, condition_text) {
+		if supports.matches_condition() {
+			return true
+		}
+	}
+
+	// 2. Otherwise, If conditionText, wrapped in parentheses and then parsed and evaluated as a <supports-condition>,
+	//    would return true, return true.
+	wrapped_condition_text := '(${condition_text})'
+	if supports := parse_css_supports(ParsingParams{}, wrapped_condition_text) {
+		if supports.matches_condition() {
+			return true
+		}
+	}
+
+	// 3. Otherwise, return false.
+	return false
+}
+
 // https://www.w3.org/TR/css-properties-values-api-1/#the-registerproperty-function
 pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistration {
 	// 1. Let property set be the value of the current global object's associated Document's [[registeredPropertySet]] slot.
@@ -2134,20 +2156,36 @@ pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistrat
 
 	// 3. Attempt to consume a syntax definition from syntax. If it returns failure, throw a SyntaxError.
 	//    Otherwise, let syntax definition be the returned syntax definition.
-	if !parse_syntax_definition_stub(definition.syntax) {
+	syntax_component_values := parse_component_values_for_value_logic(definition.syntax)
+	maybe_syntax := parse_as_syntax(syntax_component_values) or {
 		return error('SyntaxError: Invalid syntax definition')
 	}
 
 	// 4. If syntax definition is the universal syntax definition, and initialValue is not present,
-	// let parsed initial value be empty. Otherwise validate the supplied initial value.
-	if definition.syntax != '*' && definition.initial_value == none {
+	if maybe_syntax.type() == .universal {
+		if initial_value := definition.initial_value {
+			// Otherwise, if syntax definition is the universal syntax definition,
+			// parse initialValue as a <declaration-value>
+			if initial_value.trim_space().len == 0 {
+				return error('SyntaxError: Invalid initial value')
+			}
+		}
+	}
+	// Otherwise, if initialValue is not present, throw a SyntaxError and exit this algorithm.
+	else if definition.initial_value == none {
 		// Otherwise, if initialValue is not present, throw a SyntaxError and exit this algorithm.
 		return error('SyntaxError: Initial value must be provided for non-universal syntax')
 	}
-	if initial_value := definition.initial_value {
-		if initial_value.trim_space().len == 0 {
+	// Otherwise, parse initialValue according to syntax definition.
+	else if initial_value := definition.initial_value {
+		initial_value_component_values := parse_component_values_for_value_logic(initial_value)
+		parsed_initial_value := parse_with_a_syntax(initial_value_component_values, maybe_syntax)
+		if parsed_initial_value.type_() == .guaranteed_invalid {
 			return error('SyntaxError: Invalid initial value')
 		}
+		// Otherwise, let parsed initial value be the parsed result.
+		// NB: Already done.
+		// FIXME: If parsed initial value is not computationally independent, throw a SyntaxError and exit this algorithm.
 	}
 
 	// 5. Set inherit flag to the value of inherits.
