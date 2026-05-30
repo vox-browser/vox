@@ -692,9 +692,23 @@ pub fn (properties &CSSStyleProperties) get_property_priority(property_name stri
 }
 
 fn (properties &CSSStyleProperties) invalidate_owners(reason StyleInvalidationReason) {
-	_ = properties
-	_ = reason
-	// Boundary: StyleSheet owner invalidation and DOM style invalidation hooks are not fully connected in this V port yet.
+	mapped_reason := css_style_declarations_to_dom_invalidation_reason(reason)
+	if owner_node := properties.owner_node {
+		mut node := unsafe { &dom.Node(owner_node.element()) }
+		node.invalidate_style(mapped_reason)
+	}
+	if parent_rule := properties.parent_rule {
+		if mut parent_style_sheet := parent_rule.parent_style_sheet {
+			parent_style_sheet.invalidate_owners(mapped_reason)
+		}
+	}
+}
+
+fn css_style_declarations_to_dom_invalidation_reason(reason StyleInvalidationReason) dom.StyleInvalidationReason {
+	return match reason {
+		.base_url_changed { dom.StyleInvalidationReason.base_url_changed }
+		.hover_changed, .style_sheet_changed, .dom_mutation { dom.StyleInvalidationReason.style_change }
+	}
 }
 
 @[heap]

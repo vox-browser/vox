@@ -174,7 +174,7 @@ pub fn (value ReferrerPolicyModifierValue) to_string() string {
 	}
 }
 
-// Stub: These are the Fetch::Infrastructure::Request pieces needed by
+// Boundary: These are the Fetch::Infrastructure::Request pieces needed by
 // RequestURLModifier::modify_request(). The full Fetch request implementation is
 // outside this V port, so keep the mutated request fields explicit here.
 pub enum CSSRequestMode {
