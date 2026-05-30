@@ -1448,43 +1448,115 @@ pub type DimensionStyleValue = AngleStyleValue
 	| ResolutionStyleValue
 	| TimeStyleValue
 
-pub type StyleValue = AngleStyleValue
+pub type StyleValue = AddFunctionStyleValue
+	| AnchorSizeStyleValue
+	| AnchorStyleValue
+	| AngleStyleValue
 	| CalculatedStyleValue
+	| BackgroundSizeStyleValue
+	| BasicShapeStyleValue
+	| BorderImageSliceStyleValue
+	| BorderRadiusRectStyleValue
+	| BorderRadiusStyleValue
 	| ColorStyleValue
+	| ContentStyleValue
+	| CursorStyleValue
 	| CustomIdentStyleValue
+	| DisplayStyleValue
+	| EasingStyleValue
+	| EdgeStyleValue
+	| FilterValueListStyleValue
 	| FlexStyleValue
+	| FontSourceStyleValue
+	| FontStyleStyleValue
+	| FontVariantAlternatesFunctionStyleValue
 	| FrequencyStyleValue
 	| IntegerStyleValue
 	| KeywordStyleValue
 	| LengthStyleValue
 	| NumberStyleValue
+	| OpenTypeTaggedStyleValue
 	| PercentageStyleValue
+	| PositionStyleValue
+	| RadialSizeStyleValue
+	| RandomValueSharingStyleValue
+	| RectStyleValue
+	| RepeatStyleStyleValue
 	| ResolutionStyleValue
+	| ScrollFunctionStyleValue
+	| ScrollbarColorStyleValue
+	| ScrollbarGutterStyleValue
+	| ShadowStyleValue
+	| ShorthandStyleValue
 	| StringStyleValue
+	| StyleValueList
 	| StubStyleValue
+	| SuperellipseStyleValue
+	| TextIndentStyleValue
+	| TextUnderlinePositionStyleValue
 	| TimeStyleValue
+	| TreeCountingFunctionStyleValue
+	| TupleStyleValue
+	| UnicodeRangeStyleValue
 	| UnresolvedStyleValue
+	| ViewFunctionStyleValue
 
 pub type StyleValueVector = []StyleValue
 
 pub fn (style_value StyleValue) type_() StyleValueType {
 	return match style_value {
+		AddFunctionStyleValue { .add_function }
+		AnchorSizeStyleValue { .anchor_size }
+		AnchorStyleValue { .anchor }
 		AngleStyleValue { .angle }
+		BackgroundSizeStyleValue { .background_size }
+		BasicShapeStyleValue { .basic_shape }
+		BorderImageSliceStyleValue { .border_image_slice }
+		BorderRadiusRectStyleValue { .border_radius_rect }
+		BorderRadiusStyleValue { .border_radius }
 		CalculatedStyleValue { .calculated }
 		ColorStyleValue { .color }
+		ContentStyleValue { .content }
+		CursorStyleValue { .cursor }
 		CustomIdentStyleValue { .custom_ident }
+		DisplayStyleValue { .display }
+		EasingStyleValue { .easing }
+		EdgeStyleValue { .edge }
+		FilterValueListStyleValue { .filter_value_list }
 		FlexStyleValue { .flex }
+		FontSourceStyleValue { .font_source }
+		FontStyleStyleValue { .font_style }
+		FontVariantAlternatesFunctionStyleValue { .font_variant_alternates_function }
 		FrequencyStyleValue { .frequency }
 		IntegerStyleValue { .integer }
 		KeywordStyleValue { .keyword }
 		LengthStyleValue { .length }
 		NumberStyleValue { .number }
+		OpenTypeTaggedStyleValue { .open_type_tagged }
 		PercentageStyleValue { .percentage }
+		PositionStyleValue { .position }
+		RadialSizeStyleValue { .radial_size }
+		RandomValueSharingStyleValue { .random_value_sharing }
+		RectStyleValue { .rect }
+		RepeatStyleStyleValue { .repeat_style }
 		ResolutionStyleValue { .resolution }
+		ScrollFunctionStyleValue { .scroll_function }
+		ScrollbarColorStyleValue { .scrollbar_color }
+		ScrollbarGutterStyleValue { .scrollbar_gutter }
+		ShadowStyleValue { .shadow }
+		ShorthandStyleValue { .shorthand }
 		StringStyleValue { .string }
+		StyleValueList { .value_list }
 		StubStyleValue { style_value.type_ }
+		SuperellipseStyleValue { .superellipse }
+		TextIndentStyleValue { .text_indent }
+		TextUnderlinePositionStyleValue { .text_underline_position }
 		TimeStyleValue { .time }
+		TreeCountingFunctionStyleValue { .tree_counting_function }
+		TupleStyleValue { .tuple }
+		UnicodeRangeStyleValue { .unicode_range }
 		UnresolvedStyleValue { .unresolved }
+		ViewFunctionStyleValue { .view_function }
 	}
 }
 
@@ -1638,8 +1710,30 @@ pub fn (style_value StyleValue) has_color() bool {
 
 pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleValue {
 	return match style_value {
+		AddFunctionStyleValue { style_value.absolutized(context) }
+		BackgroundSizeStyleValue { style_value.absolutized(context) }
+		BasicShapeStyleValue { style_value.absolutized(context) }
+		BorderRadiusRectStyleValue { style_value.absolutized(context) }
+		BorderRadiusStyleValue { style_value.absolutized(context) }
+		CursorStyleValue { style_value.absolutized(context) }
+		EasingStyleValue { style_value.absolutized(context) }
+		EdgeStyleValue { style_value.absolutized(context) }
+		FilterValueListStyleValue { style_value.absolutized(context) }
+		FontStyleStyleValue { style_value.absolutized(context) }
+		FontVariantAlternatesFunctionStyleValue { style_value.absolutized(context) }
 		LengthStyleValue { StyleValue(style_value.absolutized(context)) }
 		KeywordStyleValue { style_value.absolutized(context) }
+		OpenTypeTaggedStyleValue { style_value.absolutized(context) }
+		PositionStyleValue { style_value.absolutized(context) }
+		RadialSizeStyleValue { style_value.absolutized(context) }
+		RandomValueSharingStyleValue { style_value.absolutized(context) }
+		ShadowStyleValue { style_value.absolutized(context) }
+		StyleValueList { style_value.absolutized(context) }
+		SuperellipseStyleValue { style_value.absolutized(context) }
+		TextIndentStyleValue { style_value.absolutized(context) }
+		TreeCountingFunctionStyleValue { style_value.absolutized(context) }
+		TupleStyleValue { style_value.absolutized(context) }
+		ViewFunctionStyleValue { style_value.absolutized(context) }
 		else { style_value }
 	}
 }
@@ -1661,22 +1755,58 @@ pub fn (style_value StyleValue) to_keyword() Keyword {
 
 pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 	return match style_value {
+		AddFunctionStyleValue { style_value.serialize(mode) }
+		AnchorSizeStyleValue { style_value.serialize(mode) }
+		AnchorStyleValue { style_value.serialize(mode) }
 		AngleStyleValue { style_value.serialize(mode) }
+		BackgroundSizeStyleValue { style_value.serialize(mode) }
+		BasicShapeStyleValue { style_value.serialize(mode) }
+		BorderImageSliceStyleValue { style_value.serialize(mode) }
+		BorderRadiusRectStyleValue { style_value.serialize(mode) }
+		BorderRadiusStyleValue { style_value.serialize(mode) }
 		CalculatedStyleValue { style_value.serialize(mode) }
 		ColorStyleValue { style_value.serialize(mode) }
+		ContentStyleValue { style_value.serialize(mode) }
+		CursorStyleValue { style_value.serialize(mode) }
 		CustomIdentStyleValue { style_value.serialize(mode) }
+		DisplayStyleValue { style_value.serialize(mode) }
+		EasingStyleValue { style_value.serialize(mode) }
+		EdgeStyleValue { style_value.serialize(mode) }
+		FilterValueListStyleValue { style_value.serialize(mode) }
 		FlexStyleValue { style_value.serialize(mode) }
+		FontSourceStyleValue { style_value.serialize(mode) }
+		FontStyleStyleValue { style_value.serialize(mode) }
+		FontVariantAlternatesFunctionStyleValue { style_value.serialize(mode) }
 		FrequencyStyleValue { style_value.serialize(mode) }
 		IntegerStyleValue { style_value.serialize(mode) }
 		KeywordStyleValue { style_value.serialize(mode) }
 		LengthStyleValue { style_value.serialize(mode) }
 		NumberStyleValue { style_value.serialize(mode) }
+		OpenTypeTaggedStyleValue { style_value.serialize(mode) }
 		PercentageStyleValue { style_value.serialize(mode) }
+		PositionStyleValue { style_value.serialize(mode) }
+		RadialSizeStyleValue { style_value.serialize(mode) }
+		RandomValueSharingStyleValue { style_value.serialize(mode) }
+		RectStyleValue { style_value.serialize(mode) }
+		RepeatStyleStyleValue { style_value.serialize(mode) }
 		ResolutionStyleValue { style_value.serialize(mode) }
+		ScrollFunctionStyleValue { style_value.serialize(mode) }
+		ScrollbarColorStyleValue { style_value.serialize(mode) }
+		ScrollbarGutterStyleValue { style_value.serialize(mode) }
+		ShadowStyleValue { style_value.serialize(mode) }
+		ShorthandStyleValue { style_value.serialize(mode) }
 		StringStyleValue { style_value.serialize(mode) }
+		StyleValueList { style_value.serialize(mode) }
 		StubStyleValue { style_value.serialize(mode) }
+		SuperellipseStyleValue { style_value.serialize(mode) }
+		TextIndentStyleValue { style_value.serialize(mode) }
+		TextUnderlinePositionStyleValue { style_value.serialize(mode) }
 		TimeStyleValue { style_value.serialize(mode) }
+		TreeCountingFunctionStyleValue { style_value.serialize(mode) }
+		TupleStyleValue { style_value.serialize(mode) }
+		UnicodeRangeStyleValue { style_value.serialize(mode) }
 		UnresolvedStyleValue { style_value.serialize(mode) }
+		ViewFunctionStyleValue { style_value.serialize(mode) }
 	}
 }
 

@@ -36,17 +36,6 @@ pub fn parse_css_value(context ParsingParams, text string, property PropertyID) 
 	return none
 }
 
-pub fn parse_media_query(context ParsingParams, text string) ?&MediaQuery {
-	return none
-}
-
-@[heap]
-pub struct MediaQuery {}
-
-pub fn (mq &MediaQuery) evaluate(doc &dom.Document) bool {
-	return true
-}
-
 // --- Color resolution ---
 
 pub struct ColorResolutionContext {}

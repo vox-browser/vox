@@ -1,0 +1,2912 @@
+// Translated from the remaining non-image/non-transform LibWeb/CSS StyleValue subclasses.
+module css
+
+import math
+import strings
+
+// --- Small generated/layout/parser stubs used by these value objects ---
+
+pub struct CursorImageValue {
+pub mut:
+	serialization string
+}
+
+pub fn CursorImageValue.create(serialization string) CursorImageValue {
+	return CursorImageValue{
+		serialization: serialization
+	}
+}
+
+pub fn (image CursorImageValue) serialize(mode SerializationMode) string {
+	_ = mode
+	return image.serialization
+}
+
+pub fn (image CursorImageValue) absolutized(context ComputationContext) CursorImageValue {
+	_ = context
+	return image
+}
+
+fn serialize_style_value_sequence(values []StyleValue, separator string, mode SerializationMode) string {
+	mut builder := strings.new_builder(values.len * 8)
+	for index, value in values {
+		if index > 0 {
+			builder.write_string(separator)
+		}
+		builder.write_string(value.serialize(mode))
+	}
+	return builder.str()
+}
+
+fn serialize_style_value_options(values []?StyleValue, separator string, mode SerializationMode) string {
+	mut builder := strings.new_builder(values.len * 8)
+	mut first := true
+	for maybe_value in values {
+		value := maybe_value or { continue }
+		if !first {
+			builder.write_string(separator)
+		}
+		builder.write_string(value.serialize(mode))
+		first = false
+	}
+	return builder.str()
+}
+
+fn serialize_a_positional_value_list(values []StyleValue, mode SerializationMode) string {
+	if values.len != 4 {
+		return serialize_style_value_sequence(values, ' ', mode)
+	}
+
+	top := values[0]
+	right := values[1]
+	bottom := values[2]
+	left := values[3]
+
+	if top == right && top == bottom && top == left {
+		return top.serialize(mode)
+	}
+
+	if top == bottom && right == left {
+		return '${top.serialize(mode)} ${right.serialize(mode)}'
+	}
+
+	if right == left {
+		return '${top.serialize(mode)} ${right.serialize(mode)} ${bottom.serialize(mode)}'
+	}
+
+	return '${top.serialize(mode)} ${right.serialize(mode)} ${bottom.serialize(mode)} ${left.serialize(mode)}'
+}
+
+fn absolutized_style_value_option(value ?StyleValue, context ComputationContext) ?StyleValue {
+	if actual := value {
+		return actual.absolutized(context)
+	}
+	return none
+}
+
+fn zero_length_style_value() StyleValue {
+	return StyleValue(LengthStyleValue.create(Length.make_px(0)))
+}
+
+fn currentcolor_style_value() StyleValue {
+	return StyleValue(KeywordStyleValue.create(.currentcolor))
+}
+
+// --- Generated enum subset ---
+
+pub enum AnchorSize {
+	block
+	height
+	inline_
+	self_block
+	self_inline
+	width
+}
+
+pub fn anchor_size_to_string(value AnchorSize) string {
+	return match value {
+		.block { 'block' }
+		.height { 'height' }
+		.inline_ { 'inline' }
+		.self_block { 'self-block' }
+		.self_inline { 'self-inline' }
+		.width { 'width' }
+	}
+}
+
+pub enum Axis {
+	block
+	inline_
+	x
+	y
+}
+
+pub fn axis_to_string(value Axis) string {
+	return match value {
+		.block { 'block' }
+		.inline_ { 'inline' }
+		.x { 'x' }
+		.y { 'y' }
+	}
+}
+
+pub fn fill_rule_to_string(value FillRule) string {
+	return match value {
+		.nonzero { 'nonzero' }
+		.evenodd { 'evenodd' }
+	}
+}
+
+pub enum FontStyleKeyword {
+	normal
+	italic
+	left
+	right
+	oblique
+}
+
+pub fn font_style_keyword_to_string(value FontStyleKeyword) string {
+	return match value {
+		.normal { 'normal' }
+		.italic { 'italic' }
+		.left { 'left' }
+		.right { 'right' }
+		.oblique { 'oblique' }
+	}
+}
+
+pub enum PositionEdge {
+	center
+	left
+	right
+	top
+	bottom
+}
+
+pub fn position_edge_to_string(value PositionEdge) string {
+	return match value {
+		.center { 'center' }
+		.left { 'left' }
+		.right { 'right' }
+		.top { 'top' }
+		.bottom { 'bottom' }
+	}
+}
+
+pub enum RadialExtent {
+	closest_corner
+	closest_side
+	farthest_corner
+	farthest_side
+}
+
+pub fn radial_extent_to_string(value RadialExtent) string {
+	return match value {
+		.closest_corner { 'closest-corner' }
+		.closest_side { 'closest-side' }
+		.farthest_corner { 'farthest-corner' }
+		.farthest_side { 'farthest-side' }
+	}
+}
+
+pub enum Repetition {
+	no_repeat
+	repeat
+	round
+	space
+}
+
+pub fn repetition_to_string(value Repetition) string {
+	return match value {
+		.no_repeat { 'no-repeat' }
+		.repeat { 'repeat' }
+		.round { 'round' }
+		.space { 'space' }
+	}
+}
+
+pub enum Scroller {
+	root
+	nearest
+	self_
+}
+
+pub fn scroller_to_string(value Scroller) string {
+	return match value {
+		.root { 'root' }
+		.nearest { 'nearest' }
+		.self_ { 'self' }
+	}
+}
+
+pub enum ScrollbarGutter {
+	auto_
+	stable
+	both_edges
+}
+
+pub enum TextUnderlinePositionHorizontal {
+	auto_
+	from_font
+	under
+}
+
+pub fn text_underline_position_horizontal_to_string(value TextUnderlinePositionHorizontal) string {
+	return match value {
+		.auto_ { 'auto' }
+		.from_font { 'from-font' }
+		.under { 'under' }
+	}
+}
+
+pub enum TextUnderlinePositionVertical {
+	auto_
+	left
+	right
+}
+
+pub fn text_underline_position_vertical_to_string(value TextUnderlinePositionVertical) string {
+	return match value {
+		.auto_ { 'auto' }
+		.left { 'left' }
+		.right { 'right' }
+	}
+}
+
+pub fn font_tech_to_string(value FontTech) string {
+	return match value {
+		.features_opentype { 'features-opentype' }
+		.features_aat { 'features-aat' }
+		.features_graphite { 'features-graphite' }
+		.variations { 'variations' }
+		.color_colrv0 { 'color-colrv0' }
+		.color_colrv1 { 'color-colrv1' }
+		.color_svg { 'color-svg' }
+		.color_sbix { 'color-sbix' }
+		.color_cbdt { 'color-cbdt' }
+		.palettes { 'palettes' }
+		.incremental { 'incremental' }
+		.avar2 { 'avar2' }
+	}
+}
+
+// --- AddFunctionStyleValue ---
+
+pub struct AddFunctionStyleValue {
+pub mut:
+	value_ StyleValue
+}
+
+pub fn AddFunctionStyleValue.create(value StyleValue) AddFunctionStyleValue {
+	return AddFunctionStyleValue{
+		value_: value
+	}
+}
+
+pub fn (style_value AddFunctionStyleValue) value() StyleValue {
+	return style_value.value_
+}
+
+pub fn (style_value AddFunctionStyleValue) absolutized(context ComputationContext) StyleValue {
+	absolutized_value := style_value.value_.absolutized(context)
+	if absolutized_value == style_value.value_ {
+		return StyleValue(style_value)
+	}
+	return StyleValue(AddFunctionStyleValue.create(absolutized_value))
+}
+
+pub fn (style_value AddFunctionStyleValue) serialize(mode SerializationMode) string {
+	return 'add(${style_value.value_.serialize(mode)})'
+}
+
+pub fn (style_value AddFunctionStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value AddFunctionStyleValue) properties_equal(other AddFunctionStyleValue) bool {
+	return style_value.value_ == other.value_
+}
+
+// --- AnchorStyleValue ---
+
+pub struct AnchorStyleValue {
+pub mut:
+	anchor_name_    ?string
+	anchor_side_    StyleValue
+	fallback_value_ ?StyleValue
+}
+
+pub fn AnchorStyleValue.create(anchor_name ?string, anchor_side StyleValue, fallback_value ?StyleValue) AnchorStyleValue {
+	return AnchorStyleValue{
+		anchor_name_:    anchor_name
+		anchor_side_:    anchor_side
+		fallback_value_: fallback_value
+	}
+}
+
+pub fn (style_value AnchorStyleValue) anchor_name() ?string {
+	return style_value.anchor_name_
+}
+
+pub fn (style_value AnchorStyleValue) anchor_side() StyleValue {
+	return style_value.anchor_side_
+}
+
+pub fn (style_value AnchorStyleValue) fallback_value() ?StyleValue {
+	return style_value.fallback_value_
+}
+
+pub fn (style_value AnchorStyleValue) serialize(mode SerializationMode) string {
+	mut serialized := 'anchor('
+
+	if anchor_name := style_value.anchor_name_ {
+		serialized += anchor_name
+	}
+
+	if style_value.anchor_name_ != none {
+		serialized += ' '
+	}
+	serialized += style_value.anchor_side_.serialize(mode)
+
+	if fallback_value := style_value.fallback_value_ {
+		serialized += ', ${fallback_value.serialize(mode)}'
+	}
+
+	serialized += ')'
+	return serialized
+}
+
+pub fn (style_value AnchorStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value AnchorStyleValue) properties_equal(other AnchorStyleValue) bool {
+	return style_value == other
+}
+
+// --- AnchorSizeStyleValue ---
+
+pub struct AnchorSizeStyleValue {
+pub mut:
+	anchor_name_    ?string
+	anchor_size_    ?AnchorSize
+	fallback_value_ ?StyleValue
+}
+
+pub fn AnchorSizeStyleValue.create(anchor_name ?string, anchor_size ?AnchorSize, fallback_value ?StyleValue) AnchorSizeStyleValue {
+	return AnchorSizeStyleValue{
+		anchor_name_:    anchor_name
+		anchor_size_:    anchor_size
+		fallback_value_: fallback_value
+	}
+}
+
+pub fn (style_value AnchorSizeStyleValue) anchor_name() ?string {
+	return style_value.anchor_name_
+}
+
+pub fn (style_value AnchorSizeStyleValue) anchor_size() ?AnchorSize {
+	return style_value.anchor_size_
+}
+
+pub fn (style_value AnchorSizeStyleValue) fallback_value() ?StyleValue {
+	return style_value.fallback_value_
+}
+
+pub fn (style_value AnchorSizeStyleValue) serialize(mode SerializationMode) string {
+	// FIXME: Handle SerializationMode.
+	mut serialized := 'anchor-size('
+
+	if anchor_name := style_value.anchor_name_ {
+		serialized += anchor_name
+	}
+
+	if anchor_size := style_value.anchor_size_ {
+		if style_value.anchor_name_ != none {
+			serialized += ' '
+		}
+		serialized += anchor_size_to_string(anchor_size)
+	}
+
+	if fallback_value := style_value.fallback_value_ {
+		if style_value.anchor_name_ != none || style_value.anchor_size_ != none {
+			serialized += ', '
+		}
+		serialized += fallback_value.serialize(mode)
+	}
+
+	serialized += ')'
+	return serialized
+}
+
+pub fn (style_value AnchorSizeStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value AnchorSizeStyleValue) properties_equal(other AnchorSizeStyleValue) bool {
+	return style_value == other
+}
+
+// --- BackgroundSizeStyleValue ---
+
+pub struct BackgroundSizeStyleValue {
+pub mut:
+	size_x_ StyleValue
+	size_y_ StyleValue
+}
+
+pub fn BackgroundSizeStyleValue.create(size_x StyleValue, size_y StyleValue) BackgroundSizeStyleValue {
+	return BackgroundSizeStyleValue{
+		size_x_: size_x
+		size_y_: size_y
+	}
+}
+
+pub fn (style_value BackgroundSizeStyleValue) size_x() StyleValue {
+	return style_value.size_x_
+}
+
+pub fn (style_value BackgroundSizeStyleValue) size_y() StyleValue {
+	return style_value.size_y_
+}
+
+pub fn (style_value BackgroundSizeStyleValue) serialize(mode SerializationMode) string {
+	if style_value.size_x_.has_auto() && style_value.size_y_.has_auto() {
+		return 'auto'
+	}
+	return '${style_value.size_x_.serialize(mode)} ${style_value.size_y_.serialize(mode)}'
+}
+
+pub fn (style_value BackgroundSizeStyleValue) absolutized(context ComputationContext) StyleValue {
+	absolutized_size_x := style_value.size_x_.absolutized(context)
+	absolutized_size_y := style_value.size_y_.absolutized(context)
+	if absolutized_size_x == style_value.size_x_ && absolutized_size_y == style_value.size_y_ {
+		return StyleValue(style_value)
+	}
+	return StyleValue(BackgroundSizeStyleValue.create(absolutized_size_x, absolutized_size_y))
+}
+
+pub fn (style_value BackgroundSizeStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value BackgroundSizeStyleValue) properties_equal(other BackgroundSizeStyleValue) bool {
+	return style_value == other
+}
+
+// --- BorderImageSliceStyleValue ---
+
+pub struct BorderImageSliceStyleValue {
+pub mut:
+	top_    StyleValue
+	right_  StyleValue
+	bottom_ StyleValue
+	left_   StyleValue
+	fill_   bool
+}
+
+pub fn BorderImageSliceStyleValue.create(top StyleValue, right StyleValue, bottom StyleValue, left StyleValue, fill bool) BorderImageSliceStyleValue {
+	return BorderImageSliceStyleValue{
+		top_:    top
+		right_:  right
+		bottom_: bottom
+		left_:   left
+		fill_:   fill
+	}
+}
+
+pub fn (style_value BorderImageSliceStyleValue) top() StyleValue {
+	return style_value.top_
+}
+
+pub fn (style_value BorderImageSliceStyleValue) right() StyleValue {
+	return style_value.right_
+}
+
+pub fn (style_value BorderImageSliceStyleValue) bottom() StyleValue {
+	return style_value.bottom_
+}
+
+pub fn (style_value BorderImageSliceStyleValue) left() StyleValue {
+	return style_value.left_
+}
+
+pub fn (style_value BorderImageSliceStyleValue) fill() bool {
+	return style_value.fill_
+}
+
+pub fn (style_value BorderImageSliceStyleValue) serialize(mode SerializationMode) string {
+	mut serialized := style_value.top_.serialize(mode)
+	if !(style_value.top_ == style_value.right_ && style_value.top_ == style_value.bottom_
+		&& style_value.top_ == style_value.left_) {
+		serialized += ' ${style_value.right_.serialize(mode)}'
+		if style_value.top_ != style_value.bottom_ || style_value.right_ != style_value.left_ {
+			serialized += ' ${style_value.bottom_.serialize(mode)}'
+			if style_value.left_ != style_value.right_ {
+				serialized += ' ${style_value.left_.serialize(mode)}'
+			}
+		}
+	}
+
+	if style_value.fill_ {
+		serialized += ' fill'
+	}
+	return serialized
+}
+
+pub fn (style_value BorderImageSliceStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value BorderImageSliceStyleValue) properties_equal(other BorderImageSliceStyleValue) bool {
+	return style_value == other
+}
+
+// --- BorderRadiusStyleValue ---
+
+pub struct BorderRadiusStyleValue {
+pub mut:
+	is_elliptical_    bool
+	horizontal_radius StyleValue
+	vertical_radius   StyleValue
+}
+
+pub fn BorderRadiusStyleValue.create_zero() BorderRadiusStyleValue {
+	return BorderRadiusStyleValue.create(zero_length_style_value(), zero_length_style_value())
+}
+
+pub fn BorderRadiusStyleValue.create(horizontal_radius StyleValue, vertical_radius StyleValue) BorderRadiusStyleValue {
+	return BorderRadiusStyleValue{
+		is_elliptical_:    horizontal_radius != vertical_radius
+		horizontal_radius: horizontal_radius
+		vertical_radius:   vertical_radius
+	}
+}
+
+pub fn (style_value BorderRadiusStyleValue) horizontal_radius_() StyleValue {
+	return style_value.horizontal_radius
+}
+
+pub fn (style_value BorderRadiusStyleValue) vertical_radius_() StyleValue {
+	return style_value.vertical_radius
+}
+
+pub fn (style_value BorderRadiusStyleValue) is_elliptical() bool {
+	return style_value.is_elliptical_
+}
+
+pub fn (style_value BorderRadiusStyleValue) serialize(mode SerializationMode) string {
+	if style_value.horizontal_radius == style_value.vertical_radius {
+		return style_value.horizontal_radius.serialize(mode)
+	}
+	return '${style_value.horizontal_radius.serialize(mode)} ${style_value.vertical_radius.serialize(mode)}'
+}
+
+pub fn (style_value BorderRadiusStyleValue) absolutized(context ComputationContext) StyleValue {
+	absolutized_horizontal_radius := style_value.horizontal_radius.absolutized(context)
+	absolutized_vertical_radius := style_value.vertical_radius.absolutized(context)
+
+	if absolutized_vertical_radius == style_value.vertical_radius
+		&& absolutized_horizontal_radius == style_value.horizontal_radius {
+		return StyleValue(style_value)
+	}
+
+	return StyleValue(BorderRadiusStyleValue.create(absolutized_horizontal_radius,
+		absolutized_vertical_radius))
+}
+
+pub fn (style_value BorderRadiusStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value BorderRadiusStyleValue) properties_equal(other BorderRadiusStyleValue) bool {
+	return style_value == other
+}
+
+// --- BorderRadiusRectStyleValue ---
+
+pub struct BorderRadiusRectStyleValue {
+pub mut:
+	top_left_     StyleValue
+	top_right_    StyleValue
+	bottom_right_ StyleValue
+	bottom_left_  StyleValue
+}
+
+pub fn BorderRadiusRectStyleValue.create_zero() BorderRadiusRectStyleValue {
+	return BorderRadiusRectStyleValue.create(StyleValue(BorderRadiusStyleValue.create_zero()),
+		StyleValue(BorderRadiusStyleValue.create_zero()),
+		StyleValue(BorderRadiusStyleValue.create_zero()),
+		StyleValue(BorderRadiusStyleValue.create_zero()))
+}
+
+pub fn BorderRadiusRectStyleValue.create(top_left StyleValue, top_right StyleValue, bottom_right StyleValue, bottom_left StyleValue) BorderRadiusRectStyleValue {
+	return BorderRadiusRectStyleValue{
+		top_left_:     top_left
+		top_right_:    top_right
+		bottom_right_: bottom_right
+		bottom_left_:  bottom_left
+	}
+}
+
+pub fn (style_value BorderRadiusRectStyleValue) top_left() StyleValue {
+	return style_value.top_left_
+}
+
+pub fn (style_value BorderRadiusRectStyleValue) top_right() StyleValue {
+	return style_value.top_right_
+}
+
+pub fn (style_value BorderRadiusRectStyleValue) bottom_right() StyleValue {
+	return style_value.bottom_right_
+}
+
+pub fn (style_value BorderRadiusRectStyleValue) bottom_left() StyleValue {
+	return style_value.bottom_left_
+}
+
+fn border_radius_from_style_value(value StyleValue) BorderRadiusStyleValue {
+	if actual := value.as_border_radius() {
+		return actual
+	}
+	panic('VERIFY_NOT_REACHED')
+}
+
+pub fn (style_value BorderRadiusRectStyleValue) serialize(mode SerializationMode) string {
+	top_left := border_radius_from_style_value(style_value.top_left_)
+	top_right := border_radius_from_style_value(style_value.top_right_)
+	bottom_right := border_radius_from_style_value(style_value.bottom_right_)
+	bottom_left := border_radius_from_style_value(style_value.bottom_left_)
+
+	horizontal_radii_serialized := serialize_a_positional_value_list([
+		top_left.horizontal_radius,
+		top_right.horizontal_radius,
+		bottom_right.horizontal_radius,
+		bottom_left.horizontal_radius,
+	], mode)
+
+	vertical_radii_serialized := serialize_a_positional_value_list([
+		top_left.vertical_radius,
+		top_right.vertical_radius,
+		bottom_right.vertical_radius,
+		bottom_left.vertical_radius,
+	], mode)
+
+	if horizontal_radii_serialized == vertical_radii_serialized {
+		return horizontal_radii_serialized
+	}
+
+	return '${horizontal_radii_serialized} / ${vertical_radii_serialized}'
+}
+
+pub fn (style_value BorderRadiusRectStyleValue) absolutized(context ComputationContext) StyleValue {
+	return StyleValue(BorderRadiusRectStyleValue.create(style_value.top_left_.absolutized(context),
+		style_value.top_right_.absolutized(context),
+		style_value.bottom_right_.absolutized(context),
+		style_value.bottom_left_.absolutized(context)))
+}
+
+pub fn (style_value BorderRadiusRectStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value BorderRadiusRectStyleValue) properties_equal(other BorderRadiusRectStyleValue) bool {
+	return style_value == other
+}
+
+// --- BasicShapeStyleValue ---
+
+pub struct BasicShapeInset {
+pub mut:
+	top           StyleValue
+	right         StyleValue
+	bottom        StyleValue
+	left          StyleValue
+	border_radius StyleValue
+}
+
+pub struct BasicShapeXywh {
+pub mut:
+	x             StyleValue
+	y             StyleValue
+	width         StyleValue
+	height        StyleValue
+	border_radius StyleValue
+}
+
+pub struct BasicShapeRect {
+pub mut:
+	top           StyleValue
+	right         StyleValue
+	bottom        StyleValue
+	left          StyleValue
+	border_radius StyleValue
+}
+
+pub struct BasicShapeCircle {
+pub mut:
+	radius   StyleValue
+	position ?StyleValue
+}
+
+pub struct BasicShapeEllipse {
+pub mut:
+	radius   StyleValue
+	position ?StyleValue
+}
+
+pub struct BasicShapePolygonPoint {
+pub mut:
+	x StyleValue
+	y StyleValue
+}
+
+pub struct BasicShapePolygon {
+pub mut:
+	fill_rule FillRule
+	points    []BasicShapePolygonPoint
+}
+
+pub struct BasicShapePath {
+pub mut:
+	fill_rule         FillRule
+	path_instructions string
+}
+
+pub type BasicShape = BasicShapeCircle
+	| BasicShapeEllipse
+	| BasicShapeInset
+	| BasicShapePath
+	| BasicShapePolygon
+	| BasicShapeRect
+	| BasicShapeXywh
+
+pub struct BasicShapeStyleValue {
+pub mut:
+	basic_shape_ BasicShape
+}
+
+pub fn BasicShapeStyleValue.create(basic_shape BasicShape) BasicShapeStyleValue {
+	return BasicShapeStyleValue{
+		basic_shape_: basic_shape
+	}
+}
+
+pub fn (style_value BasicShapeStyleValue) basic_shape() BasicShape {
+	return style_value.basic_shape_
+}
+
+pub fn (shape BasicShapeInset) serialize(mode SerializationMode) string {
+	mut serialized := 'inset('
+	serialized +=
+		serialize_a_positional_value_list([shape.top, shape.right, shape.bottom, shape.left], mode)
+
+	serialized_border_radius := shape.border_radius.serialize(mode)
+	if serialized_border_radius != '0px' {
+		serialized += ' round ${serialized_border_radius}'
+	}
+
+	serialized += ')'
+	return serialized
+}
+
+pub fn (shape BasicShapeXywh) serialize(mode SerializationMode) string {
+	mut serialized := 'xywh('
+	serialized += '${shape.x.serialize(mode)} ${shape.y.serialize(mode)} ${shape.width.serialize(mode)} ${shape.height.serialize(mode)}'
+
+	serialized_border_radius := shape.border_radius.serialize(mode)
+	if serialized_border_radius != '0px' {
+		serialized += ' round ${serialized_border_radius}'
+	}
+
+	serialized += ')'
+	return serialized
+}
+
+pub fn (shape BasicShapeRect) serialize(mode SerializationMode) string {
+	mut serialized := 'rect('
+	serialized += '${shape.top.serialize(mode)} ${shape.right.serialize(mode)} ${shape.bottom.serialize(mode)} ${shape.left.serialize(mode)}'
+
+	serialized_border_radius := shape.border_radius.serialize(mode)
+	if serialized_border_radius != '0px' {
+		serialized += ' round ${serialized_border_radius}'
+	}
+
+	serialized += ')'
+	return serialized
+}
+
+pub fn (shape BasicShapeCircle) serialize(mode SerializationMode) string {
+	mut serialized := 'circle('
+	serialized_radius := shape.radius.serialize(mode)
+
+	has_radius := serialized_radius != 'closest-side'
+	if has_radius {
+		serialized += serialized_radius
+	}
+
+	if position := shape.position {
+		if has_radius {
+			serialized += ' '
+		}
+		serialized += 'at ${position.serialize(mode)}'
+	}
+
+	serialized += ')'
+	return serialized
+}
+
+pub fn (shape BasicShapeEllipse) serialize(mode SerializationMode) string {
+	mut serialized := 'ellipse('
+	serialized_radius := shape.radius.serialize(mode)
+
+	has_radius := serialized_radius != 'closest-side closest-side'
+	if has_radius {
+		serialized += serialized_radius
+	}
+
+	if position := shape.position {
+		if has_radius {
+			serialized += ' '
+		}
+		serialized += 'at ${position.serialize(mode)}'
+	}
+
+	serialized += ')'
+	return serialized
+}
+
+pub fn (shape BasicShapePolygon) serialize(mode SerializationMode) string {
+	mut serialized := 'polygon('
+	mut first := true
+	match shape.fill_rule {
+		.nonzero {}
+		.evenodd {
+			first = false
+			serialized += 'evenodd'
+		}
+	}
+
+	for point in shape.points {
+		if !first {
+			serialized += ', '
+		}
+		first = false
+		serialized += '${point.x.serialize(mode)} ${point.y.serialize(mode)}'
+	}
+	serialized += ')'
+	return serialized
+}
+
+pub fn (shape BasicShapePath) serialize(mode SerializationMode) string {
+	mut serialized := 'path('
+
+	// For serializing computed values, component values are computed, and omitted when possible without changing the
+	// meaning. NB: So, we don't include `nonzero` in that case.
+	if !(mode == .resolved_value && shape.fill_rule == .nonzero) {
+		match shape.fill_rule {
+			.nonzero { serialized += 'nonzero, ' }
+			.evenodd { serialized += 'evenodd, ' }
+		}
+	}
+
+	serialized += serialize_a_string(shape.path_instructions)
+	serialized += ')'
+	return serialized
+}
+
+pub fn (style_value BasicShapeStyleValue) serialize(mode SerializationMode) string {
+	shape := style_value.basic_shape_
+	return match shape {
+		BasicShapeInset { shape.serialize(mode) }
+		BasicShapeXywh { shape.serialize(mode) }
+		BasicShapeRect { shape.serialize(mode) }
+		BasicShapeCircle { shape.serialize(mode) }
+		BasicShapeEllipse { shape.serialize(mode) }
+		BasicShapePolygon { shape.serialize(mode) }
+		BasicShapePath { shape.serialize(mode) }
+	}
+}
+
+pub fn (style_value BasicShapeStyleValue) absolutized(context ComputationContext) StyleValue {
+	// The values in a <basic-shape> function are computed as specified, with these exceptions:
+	// - Omitted values are included and compute to their defaults.
+	// FIXME: A <position> value in circle() or ellipse() is computed as a pair of offsets (horizontal then vertical)
+	//        from the top left origin, each given as a <length-percentage>.
+	// FIXME: A <'border-radius'> value in a <basic-shape-rect> function is computed as an expanded list of all eight
+	//        <length-percentage> values.
+	// - All <basic-shape-rect> functions compute to the equivalent inset() function.
+	//
+	// Stub: the calculation tree needed for xywh()/rect() right/bottom conversion is not translated yet, so this port
+	// keeps the function kind and only absolutizes nested style values.
+	shape := style_value.basic_shape_
+	absolutized_shape := match shape {
+		BasicShapeInset {
+			BasicShape(BasicShapeInset{
+				top:           shape.top.absolutized(context)
+				right:         shape.right.absolutized(context)
+				bottom:        shape.bottom.absolutized(context)
+				left:          shape.left.absolutized(context)
+				border_radius: shape.border_radius.absolutized(context)
+			})
+		}
+		BasicShapeXywh {
+			BasicShape(BasicShapeXywh{
+				x:             shape.x.absolutized(context)
+				y:             shape.y.absolutized(context)
+				width:         shape.width.absolutized(context)
+				height:        shape.height.absolutized(context)
+				border_radius: shape.border_radius.absolutized(context)
+			})
+		}
+		BasicShapeRect {
+			BasicShape(BasicShapeRect{
+				top:           shape.top.absolutized(context)
+				right:         shape.right.absolutized(context)
+				bottom:        shape.bottom.absolutized(context)
+				left:          shape.left.absolutized(context)
+				border_radius: shape.border_radius.absolutized(context)
+			})
+		}
+		BasicShapeCircle {
+			BasicShape(BasicShapeCircle{
+				radius:   shape.radius.absolutized(context)
+				position: absolutized_style_value_option(shape.position, context)
+			})
+		}
+		BasicShapeEllipse {
+			BasicShape(BasicShapeEllipse{
+				radius:   shape.radius.absolutized(context)
+				position: absolutized_style_value_option(shape.position, context)
+			})
+		}
+		BasicShapePolygon {
+			mut points := []BasicShapePolygonPoint{cap: shape.points.len}
+			for point in shape.points {
+				points << BasicShapePolygonPoint{
+					x: point.x.absolutized(context)
+					y: point.y.absolutized(context)
+				}
+			}
+			BasicShape(BasicShapePolygon{
+				fill_rule: shape.fill_rule
+				points:    points
+			})
+		}
+		BasicShapePath {
+			BasicShape(shape)
+		}
+	}
+
+	if absolutized_shape == style_value.basic_shape_ {
+		return StyleValue(style_value)
+	}
+	return StyleValue(BasicShapeStyleValue.create(absolutized_shape))
+}
+
+pub fn (style_value BasicShapeStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value BasicShapeStyleValue) properties_equal(other BasicShapeStyleValue) bool {
+	return style_value.basic_shape_ == other.basic_shape_
+}
+
+// --- ContentStyleValue ---
+
+pub struct ContentStyleValue {
+pub mut:
+	content_  StyleValueList
+	alt_text_ ?StyleValueList
+}
+
+pub fn ContentStyleValue.create(content StyleValueList, alt_text ?StyleValueList) ContentStyleValue {
+	return ContentStyleValue{
+		content_:  content
+		alt_text_: alt_text
+	}
+}
+
+pub fn (style_value ContentStyleValue) content() StyleValueList {
+	return style_value.content_
+}
+
+pub fn (style_value ContentStyleValue) has_alt_text() bool {
+	return style_value.alt_text_ != none
+}
+
+pub fn (style_value ContentStyleValue) alt_text() ?StyleValueList {
+	return style_value.alt_text_
+}
+
+pub fn (style_value ContentStyleValue) serialize(mode SerializationMode) string {
+	mut serialized := style_value.content_.serialize(mode)
+	if alt_text := style_value.alt_text_ {
+		serialized += ' / ${alt_text.serialize(mode)}'
+	}
+	return serialized
+}
+
+pub fn (style_value ContentStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value ContentStyleValue) properties_equal(other ContentStyleValue) bool {
+	return style_value == other
+}
+
+// --- CursorStyleValue ---
+
+pub struct CursorStyleValue {
+pub mut:
+	image_ CursorImageValue
+	x_     ?StyleValue
+	y_     ?StyleValue
+}
+
+pub fn CursorStyleValue.create(image CursorImageValue, x ?StyleValue, y ?StyleValue) CursorStyleValue {
+	// We require either both or neither the X and Y parameters.
+	if !((x == none && y == none) || (x != none && y != none)) {
+		panic('VERIFY_NOT_REACHED')
+	}
+	return CursorStyleValue{
+		image_: image
+		x_:     x
+		y_:     y
+	}
+}
+
+pub fn (style_value CursorStyleValue) serialize(mode SerializationMode) string {
+	mut serialized := style_value.image_.serialize(mode)
+	if x := style_value.x_ {
+		y := style_value.y_ or { panic('VERIFY_NOT_REACHED') }
+		serialized += ' ${x.serialize(mode)} ${y.serialize(mode)}'
+	}
+	return serialized
+}
+
+pub fn (style_value CursorStyleValue) absolutized(context ComputationContext) StyleValue {
+	return StyleValue(CursorStyleValue.create(style_value.image_.absolutized(context), absolutized_style_value_option(style_value.x_,
+		context), absolutized_style_value_option(style_value.y_, context)))
+}
+
+pub fn (style_value CursorStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value CursorStyleValue) properties_equal(other CursorStyleValue) bool {
+	return style_value == other
+}
+
+// --- DisplayStyleValue ---
+
+pub struct DisplayStyleValue {
+pub mut:
+	display_ Display
+}
+
+pub fn DisplayStyleValue.create(display Display) DisplayStyleValue {
+	return DisplayStyleValue{
+		display_: display
+	}
+}
+
+pub fn (style_value DisplayStyleValue) display() Display {
+	return style_value.display_
+}
+
+pub fn (style_value DisplayStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	return style_value.display_.to_string()
+}
+
+pub fn (style_value DisplayStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value DisplayStyleValue) properties_equal(other DisplayStyleValue) bool {
+	return style_value.display_ == other.display_
+}
+
+// --- EasingStyleValue ---
+
+pub struct EasingLinearStop {
+pub mut:
+	output StyleValue
+	input  ?StyleValue
+}
+
+pub struct EasingLinear {
+pub mut:
+	stops []EasingLinearStop
+}
+
+pub struct EasingCubicBezier {
+pub mut:
+	x1 StyleValue
+	y1 StyleValue
+	x2 StyleValue
+	y2 StyleValue
+}
+
+pub struct EasingSteps {
+pub mut:
+	number_of_intervals StyleValue
+	position            StepPosition
+}
+
+pub type EasingStyleValueFunction = EasingCubicBezier | EasingLinear | EasingSteps
+
+pub struct EasingStyleValue {
+pub mut:
+	function_ EasingStyleValueFunction
+}
+
+pub fn EasingStyleValue.create(function EasingStyleValueFunction) EasingStyleValue {
+	return EasingStyleValue{
+		function_: function
+	}
+}
+
+pub fn (style_value EasingStyleValue) function() EasingStyleValueFunction {
+	return style_value.function_
+}
+
+pub fn (linear EasingLinear) serialize(mode SerializationMode) string {
+	// To serialize a linear() function:
+	// 1. Let s be the string "linear(".
+	mut serialized := 'linear('
+
+	// 2. Serialize each control point of the function, concatenate the results using the separator ", ", and append
+	//    the result to s.
+	for index, stop in linear.stops {
+		if index > 0 {
+			serialized += ', '
+		}
+
+		// To serialize a linear() control point:
+		// 1. Let s be the serialization, as a <number>, of the control point's output progress value.
+		serialized += stop.output.serialize(mode)
+
+		// 2. If the control point originally lacked an input progress value, return s.
+		// 3. Otherwise, append " " (U+0020 SPACE) to s, then serialize the control point's input progress value as a
+		//    <percentage> and append it to s.
+		if input := stop.input {
+			serialized += ' ${input.serialize(mode)}'
+		}
+
+		// 4. Return s.
+	}
+
+	// 4. Append ")" to s, and return it.
+	serialized += ')'
+	return serialized
+}
+
+pub fn (cubic_bezier EasingCubicBezier) serialize(mode SerializationMode) string {
+	return 'cubic-bezier(${cubic_bezier.x1.serialize(mode)}, ${cubic_bezier.y1.serialize(mode)}, ${cubic_bezier.x2.serialize(mode)}, ${cubic_bezier.y2.serialize(mode)})'
+}
+
+pub fn step_position_to_css_string(position StepPosition) string {
+	return match position {
+		.jump_start { 'jump-start' }
+		.jump_end { 'jump-end' }
+		.jump_none { 'jump-none' }
+		.jump_both { 'jump-both' }
+		.start { 'start' }
+		.end { 'end' }
+	}
+}
+
+pub fn (steps EasingSteps) serialize(mode SerializationMode) string {
+	position := if steps.position == .jump_end || steps.position == .end {
+		''
+	} else {
+		step_position_to_css_string(steps.position)
+	}
+
+	mut serialized := 'steps(${steps.number_of_intervals.serialize(mode)}'
+	if position != '' {
+		serialized += ', ${position}'
+	}
+	serialized += ')'
+	return serialized
+}
+
+pub fn (function EasingStyleValueFunction) serialize(mode SerializationMode) string {
+	return match function {
+		EasingLinear { function.serialize(mode) }
+		EasingCubicBezier { function.serialize(mode) }
+		EasingSteps { function.serialize(mode) }
+	}
+}
+
+pub fn (style_value EasingStyleValue) serialize(mode SerializationMode) string {
+	return style_value.function_.serialize(mode)
+}
+
+pub fn (style_value EasingStyleValue) absolutized(context ComputationContext) StyleValue {
+	function := style_value.function_
+	absolutized_function := match function {
+		EasingLinear {
+			mut absolutized_stops := []EasingLinearStop{cap: function.stops.len}
+			for stop in function.stops {
+				absolutized_stops << EasingLinearStop{
+					output: stop.output.absolutized(context)
+					input:  absolutized_style_value_option(stop.input, context)
+				}
+			}
+			EasingStyleValueFunction(EasingLinear{
+				stops: absolutized_stops
+			})
+		}
+		EasingCubicBezier {
+			EasingStyleValueFunction(EasingCubicBezier{
+				x1: function.x1.absolutized(context)
+				y1: function.y1.absolutized(context)
+				x2: function.x2.absolutized(context)
+				y2: function.y2.absolutized(context)
+			})
+		}
+		EasingSteps {
+			EasingStyleValueFunction(EasingSteps{
+				number_of_intervals: function.number_of_intervals.absolutized(context)
+				position:            function.position
+			})
+		}
+	}
+
+	return StyleValue(EasingStyleValue.create(absolutized_function))
+}
+
+pub fn (style_value EasingStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value EasingStyleValue) properties_equal(other EasingStyleValue) bool {
+	return style_value.function_ == other.function_
+}
+
+// --- EdgeStyleValue ---
+
+pub struct EdgeStyleValue {
+pub mut:
+	edge_   ?PositionEdge
+	offset_ ?StyleValue
+}
+
+pub fn EdgeStyleValue.create(edge ?PositionEdge, offset ?StyleValue) EdgeStyleValue {
+	return EdgeStyleValue{
+		edge_:   edge
+		offset_: offset
+	}
+}
+
+pub fn (style_value EdgeStyleValue) edge() ?PositionEdge {
+	return style_value.edge_
+}
+
+pub fn (style_value EdgeStyleValue) offset() StyleValue {
+	return style_value.offset_ or { panic('VERIFY_NOT_REACHED') }
+}
+
+pub fn (style_value EdgeStyleValue) is_center(mode SerializationMode) bool {
+	if edge := style_value.edge_ {
+		if edge == .center {
+			return true
+		}
+	}
+
+	if offset := style_value.offset_ {
+		if offset.serialize(mode) == '50%' {
+			return true
+		}
+	}
+
+	return false
+}
+
+pub fn (style_value EdgeStyleValue) serialize(mode SerializationMode) string {
+	mut serialized := ''
+	if edge := style_value.edge_ {
+		serialized += position_edge_to_string(edge)
+	}
+
+	if style_value.edge_ != none && style_value.offset_ != none {
+		serialized += ' '
+	}
+
+	if offset := style_value.offset_ {
+		serialized += offset.serialize(mode)
+	}
+	return serialized
+}
+
+pub fn (style_value EdgeStyleValue) with_resolved_keywords() EdgeStyleValue {
+	if edge := style_value.edge_ {
+		if edge == .center {
+			return EdgeStyleValue.create(none,
+				StyleValue(PercentageStyleValue.create(Percentage.new(50))))
+		}
+	}
+
+	if edge := style_value.edge_ {
+		if edge == .right || edge == .bottom {
+			if offset := style_value.offset_ {
+				return EdgeStyleValue.create(none, StyleValue(StubStyleValue.create(.calculated,
+					'calc(100% - ${offset.serialize(.normal)})')))
+			}
+			return EdgeStyleValue.create(none,
+				StyleValue(PercentageStyleValue.create(Percentage.new(100))))
+		}
+	}
+
+	if offset := style_value.offset_ {
+		return EdgeStyleValue.create(none, offset)
+	}
+	return EdgeStyleValue.create(none, StyleValue(PercentageStyleValue.create(Percentage.new(0))))
+}
+
+pub fn (style_value EdgeStyleValue) absolutized(context ComputationContext) StyleValue {
+	resolved := style_value.with_resolved_keywords()
+	absolutized_offset := resolved.offset().absolutized(context)
+	if style_value.edge_ == none {
+		if offset := style_value.offset_ {
+			if offset == absolutized_offset {
+				return StyleValue(style_value)
+			}
+		}
+	}
+	return StyleValue(EdgeStyleValue.create(none, absolutized_offset))
+}
+
+pub fn (style_value EdgeStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value EdgeStyleValue) properties_equal(other EdgeStyleValue) bool {
+	return style_value == other
+}
+
+// --- FilterValueListStyleValue ---
+
+pub enum ColorFilterType {
+	brightness
+	contrast
+	grayscale
+	invert
+	opacity
+	saturate
+	sepia
+}
+
+pub fn color_filter_type_to_string(value ColorFilterType) string {
+	return match value {
+		.brightness { 'brightness' }
+		.contrast { 'contrast' }
+		.grayscale { 'grayscale' }
+		.invert { 'invert' }
+		.opacity { 'opacity' }
+		.saturate { 'saturate' }
+		.sepia { 'sepia' }
+	}
+}
+
+pub struct FilterOperationBlur {
+pub mut:
+	radius StyleValue
+}
+
+pub struct FilterOperationDropShadow {
+pub mut:
+	offset_x StyleValue
+	offset_y StyleValue
+	radius   ?StyleValue
+	color    ?StyleValue
+}
+
+pub struct FilterOperationHueRotate {
+pub mut:
+	angle StyleValue
+}
+
+pub struct FilterOperationColor {
+pub mut:
+	operation ColorFilterType
+	amount    StyleValue
+}
+
+pub type FilterStyleValue = FilterOperationBlur
+	| FilterOperationColor
+	| FilterOperationDropShadow
+	| FilterOperationHueRotate
+	| URL
+
+pub struct FilterValueListStyleValue {
+pub mut:
+	filter_value_list_ []FilterStyleValue
+}
+
+pub fn FilterValueListStyleValue.create(filter_value_list []FilterStyleValue) FilterValueListStyleValue {
+	if filter_value_list.len < 1 {
+		panic('VERIFY_NOT_REACHED')
+	}
+	return FilterValueListStyleValue{
+		filter_value_list_: filter_value_list
+	}
+}
+
+pub fn (style_value FilterValueListStyleValue) filter_value_list() []FilterStyleValue {
+	return style_value.filter_value_list_
+}
+
+pub fn (style_value FilterValueListStyleValue) size() int {
+	return style_value.filter_value_list_.len
+}
+
+pub fn (style_value FilterValueListStyleValue) contains_url() bool {
+	for filter_value in style_value.filter_value_list_ {
+		if filter_value is URL {
+			return true
+		}
+	}
+	return false
+}
+
+pub fn (filter_value FilterStyleValue) serialize(mode SerializationMode) string {
+	return match filter_value {
+		FilterOperationBlur {
+			'blur(${filter_value.radius.serialize(mode)})'
+		}
+		FilterOperationDropShadow {
+			mut serialized := 'drop-shadow('
+			if color := filter_value.color {
+				serialized += '${color.serialize(mode)} '
+			}
+			serialized += '${filter_value.offset_x.serialize(mode)} ${filter_value.offset_y.serialize(mode)}'
+			if radius := filter_value.radius {
+				serialized += ' ${radius.serialize(mode)}'
+			}
+			serialized += ')'
+			serialized
+		}
+		FilterOperationHueRotate {
+			'hue-rotate(${filter_value.angle.serialize(mode)})'
+		}
+		FilterOperationColor {
+			'${color_filter_type_to_string(filter_value.operation)}(${filter_value.amount.serialize(mode)})'
+		}
+		URL {
+			filter_value.to_string()
+		}
+	}
+}
+
+pub fn (style_value FilterValueListStyleValue) serialize(mode SerializationMode) string {
+	mut parts := []string{cap: style_value.filter_value_list_.len}
+	for filter_value in style_value.filter_value_list_ {
+		parts << filter_value.serialize(mode)
+	}
+	return parts.join(' ')
+}
+
+pub fn (style_value FilterValueListStyleValue) absolutized(context ComputationContext) StyleValue {
+	mut absolutized_filter_values := []FilterStyleValue{cap: style_value.filter_value_list_.len}
+	for filter_value in style_value.filter_value_list_ {
+		absolutized_filter_values << match filter_value {
+			FilterOperationBlur {
+				FilterStyleValue(FilterOperationBlur{
+					radius: filter_value.radius.absolutized(context)
+				})
+			}
+			FilterOperationDropShadow {
+				FilterStyleValue(FilterOperationDropShadow{
+					offset_x: filter_value.offset_x.absolutized(context)
+					offset_y: filter_value.offset_y.absolutized(context)
+					radius:   absolutized_style_value_option(filter_value.radius, context)
+					color:    absolutized_style_value_option(filter_value.color, context)
+				})
+			}
+			FilterOperationHueRotate {
+				FilterStyleValue(FilterOperationHueRotate{
+					angle: filter_value.angle.absolutized(context)
+				})
+			}
+			FilterOperationColor {
+				FilterStyleValue(FilterOperationColor{
+					operation: filter_value.operation
+					amount:    StyleValue(NumberStyleValue.create(number_from_style_value(filter_value.amount.absolutized(context), 1.0)))
+				})
+			}
+			URL {
+				FilterStyleValue(filter_value)
+			}
+		}
+	}
+	return StyleValue(FilterValueListStyleValue.create(absolutized_filter_values))
+}
+
+pub fn (style_value FilterValueListStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value FilterValueListStyleValue) properties_equal(other FilterValueListStyleValue) bool {
+	return style_value.filter_value_list_ == other.filter_value_list_
+}
+
+// --- FontSourceStyleValue ---
+
+pub struct FontSourceLocal {
+pub mut:
+	name StyleValue
+}
+
+pub type FontSourceStyleValueSource = FontSourceLocal | URL
+
+pub struct FontSourceStyleValue {
+pub mut:
+	source_ FontSourceStyleValueSource
+	format_ ?string
+	tech_   []FontTech
+}
+
+pub fn FontSourceStyleValue.create(source FontSourceStyleValueSource, format ?string, tech []FontTech) FontSourceStyleValue {
+	return FontSourceStyleValue{
+		source_: source
+		format_: format
+		tech_:   tech
+	}
+}
+
+pub fn (style_value FontSourceStyleValue) source() FontSourceStyleValueSource {
+	return style_value.source_
+}
+
+pub fn (style_value FontSourceStyleValue) format() ?string {
+	return style_value.format_
+}
+
+pub fn (style_value FontSourceStyleValue) tech() []FontTech {
+	return style_value.tech_
+}
+
+pub fn (style_value FontSourceStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	source := style_value.source_
+	return match source {
+		FontSourceLocal {
+			// https://www.w3.org/TR/cssom-1/#serialize-a-local
+			// To serialize a LOCAL means to create a string represented by "local(", followed by the serialization of
+			// the LOCAL as a string, followed by ")".
+			'local(${source.name.serialize(.normal)})'
+		}
+		URL {
+			mut serialized := source.to_string()
+			if format := style_value.format_ {
+				serialized += ' format(${serialize_an_identifier(format)})'
+			}
+			if style_value.tech_.len > 0 {
+				mut tech_parts := []string{cap: style_value.tech_.len}
+				for tech in style_value.tech_ {
+					tech_parts << font_tech_to_string(tech)
+				}
+				serialized += ' tech(${tech_parts.join(', ')})'
+			}
+			serialized
+		}
+	}
+}
+
+pub fn (style_value FontSourceStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value FontSourceStyleValue) properties_equal(other FontSourceStyleValue) bool {
+	// Faithful to upstream: tech is intentionally not part of equality there.
+	return style_value.source_ == other.source_ && style_value.format_ == other.format_
+}
+
+// --- FontStyleStyleValue ---
+
+pub struct FontStyleStyleValue {
+pub mut:
+	font_style_  FontStyleKeyword
+	angle_value_ ?StyleValue
+}
+
+pub fn FontStyleStyleValue.create(font_style FontStyleKeyword, angle_value ?StyleValue) FontStyleStyleValue {
+	return FontStyleStyleValue{
+		font_style_:  font_style
+		angle_value_: angle_value
+	}
+}
+
+pub fn (style_value FontStyleStyleValue) font_style() FontStyleKeyword {
+	return style_value.font_style_
+}
+
+pub fn (style_value FontStyleStyleValue) angle() ?StyleValue {
+	return style_value.angle_value_
+}
+
+pub fn (style_value FontStyleStyleValue) to_font_slope() int {
+	// FIXME: Implement `left`, `right`, and `oblique <angle>`
+	return match style_value.font_style_ {
+		.italic { 1 }
+		.oblique { 2 }
+		else { 0 }
+	}
+}
+
+pub fn (style_value FontStyleStyleValue) serialize(mode SerializationMode) string {
+	mut angle_string := ?string(none)
+	if angle_value := style_value.angle_value_ {
+		serialized_angle := angle_value.serialize(mode)
+		angle_string = serialized_angle
+		if style_value.font_style_ == .oblique && serialized_angle == '0deg' {
+			return 'normal'
+		}
+	}
+	mut serialized := font_style_keyword_to_string(style_value.font_style_)
+	// https://drafts.csswg.org/css-fonts/#valdef-font-style-oblique-angle--90deg-90deg
+	// The lack of an <angle> represents 14deg. (Note that a font might internally provide its own mapping for
+	// "oblique", but the mapping within the font is disregarded.)
+	if actual_angle := angle_string {
+		if actual_angle != '14deg' {
+			serialized += ' ${actual_angle}'
+		}
+	}
+	return serialized
+}
+
+pub fn (style_value FontStyleStyleValue) absolutized(context ComputationContext) StyleValue {
+	absolutized_angle := absolutized_style_value_option(style_value.angle_value_, context)
+	if absolutized_angle == style_value.angle_value_ {
+		return StyleValue(style_value)
+	}
+	return StyleValue(FontStyleStyleValue.create(style_value.font_style_, absolutized_angle))
+}
+
+pub fn (style_value FontStyleStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value FontStyleStyleValue) properties_equal(other FontStyleStyleValue) bool {
+	return style_value == other
+}
+
+// --- FontVariantAlternatesFunctionStyleValue ---
+
+pub struct FontVariantAlternatesFunctionStyleValue {
+pub mut:
+	function_type_ FontFeatureValueType
+	names_         []StyleValue
+}
+
+pub fn FontVariantAlternatesFunctionStyleValue.create(function_type FontFeatureValueType, names []StyleValue) FontVariantAlternatesFunctionStyleValue {
+	return FontVariantAlternatesFunctionStyleValue{
+		function_type_: function_type
+		names_:         names
+	}
+}
+
+pub fn (style_value FontVariantAlternatesFunctionStyleValue) function_type() FontFeatureValueType {
+	return style_value.function_type_
+}
+
+pub fn (style_value FontVariantAlternatesFunctionStyleValue) names() []StyleValue {
+	return style_value.names_
+}
+
+pub fn (style_value FontVariantAlternatesFunctionStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	function_name := font_feature_value_type_to_string(style_value.function_type_)
+	return '${function_name}(${serialize_style_value_sequence(style_value.names_, ', ', .normal)})'
+}
+
+pub fn (style_value FontVariantAlternatesFunctionStyleValue) absolutized(context ComputationContext) StyleValue {
+	mut absolutized_names := []StyleValue{cap: style_value.names_.len}
+	mut any_name_changed := false
+	for name in style_value.names_ {
+		absolutized_name := name.absolutized(context)
+		if absolutized_name != name {
+			any_name_changed = true
+		}
+		absolutized_names << absolutized_name
+	}
+
+	if !any_name_changed {
+		return StyleValue(style_value)
+	}
+
+	return StyleValue(FontVariantAlternatesFunctionStyleValue.create(style_value.function_type_,
+		absolutized_names))
+}
+
+pub fn (style_value FontVariantAlternatesFunctionStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value FontVariantAlternatesFunctionStyleValue) properties_equal(other FontVariantAlternatesFunctionStyleValue) bool {
+	return style_value == other
+}
+
+// --- OpenTypeTaggedStyleValue ---
+
+pub enum OpenTypeTaggedStyleValueMode {
+	font_feature_settings
+	font_variation_settings
+}
+
+pub struct OpenTypeTaggedStyleValue {
+pub mut:
+	mode_  OpenTypeTaggedStyleValueMode
+	tag_   string
+	value_ StyleValue
+}
+
+pub fn OpenTypeTaggedStyleValue.create(mode OpenTypeTaggedStyleValueMode, tag string, value StyleValue) OpenTypeTaggedStyleValue {
+	return OpenTypeTaggedStyleValue{
+		mode_:  mode
+		tag_:   tag
+		value_: value
+	}
+}
+
+pub fn (style_value OpenTypeTaggedStyleValue) tag() string {
+	return style_value.tag_
+}
+
+pub fn (style_value OpenTypeTaggedStyleValue) value() StyleValue {
+	return style_value.value_
+}
+
+pub fn (style_value OpenTypeTaggedStyleValue) absolutized(context ComputationContext) StyleValue {
+	absolutized_value := style_value.value_.absolutized(context)
+	if absolutized_value == style_value.value_ {
+		return StyleValue(style_value)
+	}
+	return StyleValue(OpenTypeTaggedStyleValue.create(style_value.mode_, style_value.tag_,
+		absolutized_value))
+}
+
+pub fn (style_value OpenTypeTaggedStyleValue) serialize(mode SerializationMode) string {
+	mut serialized := serialize_a_string(style_value.tag_)
+	match style_value.mode_ {
+		.font_feature_settings {
+			// For font-feature-settings, a 1 value is implicit, so we shouldn't output it.
+			value_string := style_value.value_.serialize(mode)
+			if value_string != '1' {
+				serialized += ' ${value_string}'
+			}
+		}
+		.font_variation_settings {
+			serialized += ' ${style_value.value_.serialize(mode)}'
+		}
+	}
+
+	return serialized
+}
+
+pub fn (style_value OpenTypeTaggedStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value OpenTypeTaggedStyleValue) properties_equal(other OpenTypeTaggedStyleValue) bool {
+	// Faithful to upstream: mode is not part of properties_equal().
+	return other.tag() == style_value.tag() && other.value() == style_value.value()
+}
+
+// --- PositionStyleValue ---
+
+pub struct PositionStyleValue {
+pub mut:
+	edge_x_ EdgeStyleValue
+	edge_y_ EdgeStyleValue
+}
+
+pub fn PositionStyleValue.create(edge_x EdgeStyleValue, edge_y EdgeStyleValue) PositionStyleValue {
+	return PositionStyleValue{
+		edge_x_: edge_x
+		edge_y_: edge_y
+	}
+}
+
+pub fn PositionStyleValue.create_center() PositionStyleValue {
+	return PositionStyleValue.create(EdgeStyleValue.create(PositionEdge.center, none), EdgeStyleValue.create(PositionEdge.center,
+		none))
+}
+
+pub fn PositionStyleValue.create_computed_center() PositionStyleValue {
+	center := StyleValue(PercentageStyleValue.create(Percentage.new(50)))
+	return PositionStyleValue.create(EdgeStyleValue.create(none, center), EdgeStyleValue.create(none,
+		center))
+}
+
+pub fn (style_value PositionStyleValue) edge_x() EdgeStyleValue {
+	return style_value.edge_x_
+}
+
+pub fn (style_value PositionStyleValue) edge_y() EdgeStyleValue {
+	return style_value.edge_y_
+}
+
+pub fn (style_value PositionStyleValue) is_center(mode SerializationMode) bool {
+	return style_value.edge_x_.is_center(mode) && style_value.edge_y_.is_center(mode)
+}
+
+pub fn (style_value PositionStyleValue) with_resolved_keywords() PositionStyleValue {
+	return PositionStyleValue.create(style_value.edge_x_.with_resolved_keywords(),
+		style_value.edge_y_.with_resolved_keywords())
+}
+
+pub fn (style_value PositionStyleValue) absolutized(context ComputationContext) StyleValue {
+	edge_x := style_value.edge_x_.absolutized(context)
+	edge_y := style_value.edge_y_.absolutized(context)
+	return StyleValue(PositionStyleValue.create(edge_x.as_edge(), edge_y.as_edge()))
+}
+
+pub fn (style_value PositionStyleValue) serialize(mode SerializationMode) string {
+	return '${style_value.edge_x_.serialize(mode)} ${style_value.edge_y_.serialize(mode)}'
+}
+
+pub fn (style_value PositionStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value PositionStyleValue) properties_equal(other PositionStyleValue) bool {
+	return style_value == other
+}
+
+// --- RadialSizeStyleValue ---
+
+pub struct RadialExtentComponent {
+pub mut:
+	extent RadialExtent
+}
+
+pub type RadialSizeStyleValueComponent = RadialExtentComponent | StyleValue
+
+pub struct RadialSizeStyleValue {
+pub mut:
+	components_ []RadialSizeStyleValueComponent
+}
+
+pub fn RadialSizeStyleValue.create(components []RadialSizeStyleValueComponent) RadialSizeStyleValue {
+	if components.len != 1 && components.len != 2 {
+		panic('VERIFY_NOT_REACHED')
+	}
+	return RadialSizeStyleValue{
+		components_: components
+	}
+}
+
+pub fn (style_value RadialSizeStyleValue) components() []RadialSizeStyleValueComponent {
+	return style_value.components_
+}
+
+pub fn (style_value RadialSizeStyleValue) absolutized(context ComputationContext) StyleValue {
+	mut any_component_required_absolutization := false
+	mut absolutized_components := []RadialSizeStyleValueComponent{cap: style_value.components_.len}
+
+	for component in style_value.components_ {
+		match component {
+			RadialExtentComponent {
+				absolutized_components << component
+			}
+			StyleValue {
+				absolutized_length_percentage := component.absolutized(context)
+				if absolutized_length_percentage != component {
+					any_component_required_absolutization = true
+				}
+				absolutized_components << RadialSizeStyleValueComponent(absolutized_length_percentage)
+			}
+		}
+	}
+
+	if !any_component_required_absolutization {
+		return StyleValue(style_value)
+	}
+
+	return StyleValue(RadialSizeStyleValue.create(absolutized_components))
+}
+
+pub fn (style_value RadialSizeStyleValue) serialize(mode SerializationMode) string {
+	mut parts := []string{cap: style_value.components_.len}
+	for component in style_value.components_ {
+		parts << match component {
+			RadialExtentComponent { radial_extent_to_string(component.extent) }
+			StyleValue { component.serialize(mode) }
+		}
+	}
+	return parts.join(' ')
+}
+
+pub fn (style_value RadialSizeStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value RadialSizeStyleValue) properties_equal(other RadialSizeStyleValue) bool {
+	return style_value.components_ == other.components_
+}
+
+// --- RandomValueSharingStyleValue ---
+
+pub struct RandomCachingKey {
+pub mut:
+	name       string
+	element_id ?i64
+}
+
+pub struct RandomValueSharingStyleValue {
+pub mut:
+	fixed_value_    ?StyleValue
+	is_auto_        bool
+	name_           ?string
+	element_shared_ bool
+}
+
+pub fn RandomValueSharingStyleValue.create_fixed(fixed_value StyleValue) RandomValueSharingStyleValue {
+	return RandomValueSharingStyleValue{
+		fixed_value_: fixed_value
+	}
+}
+
+pub fn RandomValueSharingStyleValue.create_auto(name string, element_shared bool) RandomValueSharingStyleValue {
+	return RandomValueSharingStyleValue{
+		is_auto_:        true
+		name_:           name
+		element_shared_: element_shared
+	}
+}
+
+pub fn RandomValueSharingStyleValue.create_dashed_ident(name string, element_shared bool) RandomValueSharingStyleValue {
+	return RandomValueSharingStyleValue{
+		is_auto_:        false
+		name_:           name
+		element_shared_: element_shared
+	}
+}
+
+pub fn (style_value RandomValueSharingStyleValue) absolutized(context ComputationContext) StyleValue {
+	_ = context
+	// https://drafts.csswg.org/css-values-5/#random-caching
+	// Each instance of a random function in styles has an associated random base value.
+	// If the random function's <random-value-sharing> is fixed <number>, the random base value is that number.
+	if fixed_value := style_value.fixed_value_ {
+		absolutized_fixed_value := fixed_value.absolutized(context)
+		if fixed_value == absolutized_fixed_value {
+			return StyleValue(style_value)
+		}
+		return StyleValue(RandomValueSharingStyleValue.create_fixed(absolutized_fixed_value))
+	}
+
+	// Otherwise, the random base value is a pseudo-random real number in the range [0, 1). The document/element cache
+	// is not translated in this V port, so we use a deterministic explicit stub value.
+	return StyleValue(RandomValueSharingStyleValue.create_fixed(StyleValue(NumberStyleValue.create(0))))
+}
+
+pub fn (style_value RandomValueSharingStyleValue) random_base_value() f64 {
+	fixed_value := style_value.fixed_value_ or { return 0.0 }
+	return number_from_style_value(fixed_value, none)
+}
+
+pub fn (style_value RandomValueSharingStyleValue) serialize(mode SerializationMode) string {
+	if fixed_value := style_value.fixed_value_ {
+		return 'fixed ${fixed_value.serialize(mode)}'
+	}
+
+	mut serialized := ''
+	mut first := true
+	if !style_value.is_auto_ {
+		if name := style_value.name_ {
+			serialized += name
+		}
+		first = false
+	}
+
+	if style_value.element_shared_ {
+		if !first {
+			serialized += ' '
+		}
+		serialized += 'element-shared'
+	}
+	return serialized
+}
+
+pub fn (style_value RandomValueSharingStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value RandomValueSharingStyleValue) properties_equal(other RandomValueSharingStyleValue) bool {
+	return style_value == other
+}
+
+// --- RectStyleValue ---
+
+pub struct RectStyleValue {
+pub mut:
+	rect_ EdgeRect
+}
+
+pub fn RectStyleValue.create(rect EdgeRect) RectStyleValue {
+	return RectStyleValue{
+		rect_: rect
+	}
+}
+
+pub fn (style_value RectStyleValue) rect() EdgeRect {
+	return style_value.rect_
+}
+
+pub fn (style_value RectStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	return 'rect(${style_value.rect_.top_edge}, ${style_value.rect_.right_edge}, ${style_value.rect_.bottom_edge}, ${style_value.rect_.left_edge})'
+}
+
+pub fn (style_value RectStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value RectStyleValue) properties_equal(other RectStyleValue) bool {
+	return style_value.rect_ == other.rect_
+}
+
+// --- RepeatStyleStyleValue ---
+
+pub struct RepeatStyleStyleValue {
+pub mut:
+	repeat_x_ Repetition
+	repeat_y_ Repetition
+}
+
+pub fn RepeatStyleStyleValue.create(repeat_x Repetition, repeat_y Repetition) RepeatStyleStyleValue {
+	return RepeatStyleStyleValue{
+		repeat_x_: repeat_x
+		repeat_y_: repeat_y
+	}
+}
+
+pub fn (style_value RepeatStyleStyleValue) repeat_x() Repetition {
+	return style_value.repeat_x_
+}
+
+pub fn (style_value RepeatStyleStyleValue) repeat_y() Repetition {
+	return style_value.repeat_y_
+}
+
+pub fn (style_value RepeatStyleStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	if style_value.repeat_x_ == style_value.repeat_y_ {
+		return repetition_to_string(style_value.repeat_x_)
+	}
+
+	if style_value.repeat_x_ == .repeat && style_value.repeat_y_ == .no_repeat {
+		return 'repeat-x'
+	}
+	if style_value.repeat_x_ == .no_repeat && style_value.repeat_y_ == .repeat {
+		return 'repeat-y'
+	}
+
+	return '${repetition_to_string(style_value.repeat_x_)} ${repetition_to_string(style_value.repeat_y_)}'
+}
+
+pub fn (style_value RepeatStyleStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value RepeatStyleStyleValue) properties_equal(other RepeatStyleStyleValue) bool {
+	return style_value == other
+}
+
+// --- ScrollFunctionStyleValue ---
+
+pub struct ScrollFunctionStyleValue {
+pub mut:
+	scroller_ Scroller
+	axis_     Axis
+}
+
+pub fn ScrollFunctionStyleValue.create(scroller Scroller, axis Axis) ScrollFunctionStyleValue {
+	return ScrollFunctionStyleValue{
+		scroller_: scroller
+		axis_:     axis
+	}
+}
+
+pub fn (style_value ScrollFunctionStyleValue) scroller() Scroller {
+	return style_value.scroller_
+}
+
+pub fn (style_value ScrollFunctionStyleValue) axis() Axis {
+	return style_value.axis_
+}
+
+pub fn (style_value ScrollFunctionStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	mut serialized := 'scroll('
+
+	if style_value.scroller_ != .nearest {
+		serialized += scroller_to_string(style_value.scroller_)
+	}
+
+	if style_value.axis_ != .block {
+		if style_value.scroller_ != .nearest {
+			serialized += ' '
+		}
+		serialized += axis_to_string(style_value.axis_)
+	}
+
+	serialized += ')'
+	return serialized
+}
+
+pub fn (style_value ScrollFunctionStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value ScrollFunctionStyleValue) properties_equal(other ScrollFunctionStyleValue) bool {
+	return style_value == other
+}
+
+// --- ScrollbarColorStyleValue ---
+
+pub struct ScrollbarColorStyleValue {
+pub mut:
+	thumb_color_ StyleValue
+	track_color_ StyleValue
+}
+
+pub fn ScrollbarColorStyleValue.create(thumb_color StyleValue, track_color StyleValue) ScrollbarColorStyleValue {
+	return ScrollbarColorStyleValue{
+		thumb_color_: thumb_color
+		track_color_: track_color
+	}
+}
+
+pub fn (style_value ScrollbarColorStyleValue) thumb_color() StyleValue {
+	return style_value.thumb_color_
+}
+
+pub fn (style_value ScrollbarColorStyleValue) track_color() StyleValue {
+	return style_value.track_color_
+}
+
+pub fn (style_value ScrollbarColorStyleValue) serialize(mode SerializationMode) string {
+	return '${style_value.thumb_color_.serialize(mode)} ${style_value.track_color_.serialize(mode)}'
+}
+
+pub fn (style_value ScrollbarColorStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value ScrollbarColorStyleValue) properties_equal(other ScrollbarColorStyleValue) bool {
+	return style_value == other
+}
+
+// --- ScrollbarGutterStyleValue ---
+
+pub struct ScrollbarGutterStyleValue {
+pub mut:
+	value_ ScrollbarGutter
+}
+
+pub fn ScrollbarGutterStyleValue.create(value ScrollbarGutter) ScrollbarGutterStyleValue {
+	return ScrollbarGutterStyleValue{
+		value_: value
+	}
+}
+
+pub fn (style_value ScrollbarGutterStyleValue) value() ScrollbarGutter {
+	return style_value.value_
+}
+
+pub fn (style_value ScrollbarGutterStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	return match style_value.value_ {
+		.auto_ { 'auto' }
+		.stable { 'stable' }
+		.both_edges { 'stable both-edges' }
+	}
+}
+
+pub fn (style_value ScrollbarGutterStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value ScrollbarGutterStyleValue) properties_equal(other ScrollbarGutterStyleValue) bool {
+	return style_value.value_ == other.value_
+}
+
+// --- ShadowStyleValue ---
+
+pub enum ShadowPlacement {
+	outer
+	inner
+}
+
+pub enum ShadowType {
+	normal
+	text
+}
+
+pub struct ShadowStyleValue {
+pub mut:
+	shadow_type_     ShadowType
+	color_           ?StyleValue
+	offset_x_        StyleValue
+	offset_y_        StyleValue
+	blur_radius_     ?StyleValue
+	spread_distance_ ?StyleValue
+	placement_       ShadowPlacement
+}
+
+pub fn ShadowStyleValue.create(shadow_type ShadowType, color ?StyleValue, offset_x StyleValue, offset_y StyleValue, blur_radius ?StyleValue, spread_distance ?StyleValue, placement ShadowPlacement) ShadowStyleValue {
+	return ShadowStyleValue{
+		shadow_type_:     shadow_type
+		color_:           color
+		offset_x_:        offset_x
+		offset_y_:        offset_y
+		blur_radius_:     blur_radius
+		spread_distance_: spread_distance
+		placement_:       placement
+	}
+}
+
+pub fn (style_value ShadowStyleValue) shadow_type() ShadowType {
+	return style_value.shadow_type_
+}
+
+pub fn (style_value ShadowStyleValue) color() StyleValue {
+	return style_value.color_ or { currentcolor_style_value() }
+}
+
+pub fn (style_value ShadowStyleValue) offset_x() StyleValue {
+	return style_value.offset_x_
+}
+
+pub fn (style_value ShadowStyleValue) offset_y() StyleValue {
+	return style_value.offset_y_
+}
+
+pub fn (style_value ShadowStyleValue) blur_radius() StyleValue {
+	return style_value.blur_radius_ or { zero_length_style_value() }
+}
+
+pub fn (style_value ShadowStyleValue) spread_distance() StyleValue {
+	return style_value.spread_distance_ or { zero_length_style_value() }
+}
+
+pub fn (style_value ShadowStyleValue) placement() ShadowPlacement {
+	return style_value.placement_
+}
+
+pub fn (style_value ShadowStyleValue) serialize(mode SerializationMode) string {
+	mut serialized := ''
+	if color := style_value.color_ {
+		serialized += '${color.serialize(mode)} '
+	}
+
+	serialized += '${style_value.offset_x_.serialize(mode)} ${style_value.offset_y_.serialize(mode)}'
+
+	if blur_radius := style_value.blur_radius_ {
+		serialized += ' ${blur_radius.serialize(mode)}'
+	}
+
+	if spread_distance := style_value.spread_distance_ {
+		if style_value.shadow_type_ == .normal {
+			serialized += ' ${spread_distance.serialize(mode)}'
+		}
+	}
+
+	if style_value.placement_ == .inner {
+		serialized += ' inset'
+	}
+	return serialized
+}
+
+pub fn (style_value ShadowStyleValue) absolutized(context ComputationContext) StyleValue {
+	return StyleValue(ShadowStyleValue.create(style_value.shadow_type_, style_value.color(),
+		style_value.offset_x_.absolutized(context), style_value.offset_y_.absolutized(context),
+		style_value.blur_radius().absolutized(context),
+		style_value.spread_distance().absolutized(context), style_value.placement_))
+}
+
+pub fn (style_value ShadowStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value ShadowStyleValue) properties_equal(other ShadowStyleValue) bool {
+	return style_value == other
+}
+
+// --- ShorthandStyleValue ---
+
+pub struct ShorthandStyleValue {
+pub mut:
+	shorthand_      PropertyID
+	sub_properties_ []PropertyID
+	values_         []StyleValue
+}
+
+pub fn ShorthandStyleValue.create(shorthand PropertyID, sub_properties []PropertyID, values []StyleValue) ShorthandStyleValue {
+	return ShorthandStyleValue{
+		shorthand_:      shorthand
+		sub_properties_: sub_properties
+		values_:         values
+	}
+}
+
+pub fn (style_value ShorthandStyleValue) shorthand() PropertyID {
+	return style_value.shorthand_
+}
+
+pub fn (style_value ShorthandStyleValue) sub_properties() []PropertyID {
+	return style_value.sub_properties_
+}
+
+pub fn (style_value ShorthandStyleValue) values() []StyleValue {
+	return style_value.values_
+}
+
+pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) string {
+	// The full upstream implementation depends on generated shorthand tables and property-specific initial values.
+	// This explicit fallback mirrors its default serializer: serialize each longhand value separated by spaces.
+	return serialize_style_value_sequence(style_value.values_, ' ', mode)
+}
+
+pub fn (style_value ShorthandStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value ShorthandStyleValue) properties_equal(other ShorthandStyleValue) bool {
+	return style_value == other
+}
+
+// --- StyleValueList ---
+
+pub enum StyleValueListSeparator {
+	space
+	comma
+}
+
+pub enum StyleValueListCollapsible {
+	yes
+	no
+}
+
+pub struct StyleValueList {
+pub mut:
+	separator_   StyleValueListSeparator
+	collapsible_ StyleValueListCollapsible = .yes
+	values_      []StyleValue
+}
+
+pub fn StyleValueList.create(values []StyleValue, separator StyleValueListSeparator, collapsible StyleValueListCollapsible) StyleValueList {
+	return StyleValueList{
+		separator_:   separator
+		collapsible_: collapsible
+		values_:      values
+	}
+}
+
+pub fn StyleValueList.create_collapsible(values []StyleValue, separator StyleValueListSeparator) StyleValueList {
+	return StyleValueList.create(values, separator, .yes)
+}
+
+pub fn (style_value StyleValueList) size() int {
+	return style_value.values_.len
+}
+
+pub fn (style_value StyleValueList) values() []StyleValue {
+	return style_value.values_
+}
+
+pub fn (style_value StyleValueList) value_at(i int, allow_loop bool) StyleValue {
+	if allow_loop {
+		return style_value.values_[i % style_value.size()]
+	}
+	return style_value.values_[i]
+}
+
+pub fn (style_value StyleValueList) separator() StyleValueListSeparator {
+	return style_value.separator_
+}
+
+pub fn (style_value StyleValueList) serialize(mode SerializationMode) string {
+	if style_value.values_.len == 0 {
+		return ''
+	}
+
+	separator := match style_value.separator_ {
+		.space { ' ' }
+		.comma { ', ' }
+	}
+
+	first_value := style_value.values_[0]
+	if style_value.separator_ != .comma && style_value.collapsible_ == .yes {
+		mut all_equal := true
+		for value in style_value.values_ {
+			if value != first_value {
+				all_equal = false
+				break
+			}
+		}
+		if all_equal {
+			return first_value.serialize(mode)
+		}
+	}
+
+	return serialize_style_value_sequence(style_value.values_, separator, mode)
+}
+
+pub fn (style_value StyleValueList) absolutized(context ComputationContext) StyleValue {
+	for i, value in style_value.values_ {
+		absolutized_value := value.absolutized(context)
+		if absolutized_value != value {
+			mut result := []StyleValue{cap: style_value.values_.len}
+			for j := 0; j < i; j++ {
+				result << style_value.values_[j]
+			}
+			result << absolutized_value
+			for j := i + 1; j < style_value.values_.len; j++ {
+				result << style_value.values_[j].absolutized(context)
+			}
+			return StyleValue(StyleValueList.create(result, style_value.separator_,
+				style_value.collapsible_))
+		}
+	}
+	return StyleValue(style_value)
+}
+
+pub fn (style_value StyleValueList) tokenize() []ComponentValue {
+	mut component_values := []ComponentValue{}
+	mut first := true
+	for value in style_value.values_ {
+		if first {
+			first = false
+		} else {
+			if style_value.separator_ == .comma {
+				component_values << ComponentValue.from_token(Token.create(.comma, ','))
+			}
+			component_values << ComponentValue.from_token(Token.create_whitespace(' '))
+		}
+		component_values << value.tokenize()
+	}
+	return component_values
+}
+
+pub fn (style_value StyleValueList) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value StyleValueList) properties_equal(other StyleValueList) bool {
+	return style_value == other
+}
+
+// --- SuperellipseStyleValue ---
+
+pub struct SuperellipseStyleValue {
+pub mut:
+	parameter_ StyleValue
+}
+
+pub fn SuperellipseStyleValue.create(parameter StyleValue) SuperellipseStyleValue {
+	return SuperellipseStyleValue{
+		parameter_: parameter
+	}
+}
+
+pub fn (style_value SuperellipseStyleValue) parameter() f64 {
+	return number_from_style_value(style_value.parameter_, none)
+}
+
+pub fn (style_value SuperellipseStyleValue) serialize(mode SerializationMode) string {
+	if mode == .resolved_value && style_value.parameter_.is_number() {
+		number := style_value.parameter_.as_number().number()
+
+		if number == 1 {
+			return 'round'
+		}
+
+		if number == 2 {
+			return 'squircle'
+		}
+
+		if math.is_inf(number, 1) {
+			return 'square'
+		}
+
+		if number == 0 {
+			return 'bevel'
+		}
+
+		if number == -1 {
+			return 'scoop'
+		}
+
+		if math.is_inf(number, -1) {
+			return 'notch'
+		}
+	}
+
+	mut serialized := 'superellipse('
+	if !style_value.parameter_.is_number() {
+		serialized += style_value.parameter_.serialize(mode)
+	} else {
+		number := style_value.parameter_.as_number().number()
+		if math.is_inf(number, 1) {
+			serialized += 'infinity'
+		} else if math.is_inf(number, -1) {
+			serialized += '-infinity'
+		} else {
+			serialized += style_value.parameter_.serialize(mode)
+		}
+	}
+	serialized += ')'
+	return serialized
+}
+
+pub fn (style_value SuperellipseStyleValue) absolutized(context ComputationContext) StyleValue {
+	absolutized_parameter := style_value.parameter_.absolutized(context)
+	if absolutized_parameter == style_value.parameter_ {
+		return StyleValue(style_value)
+	}
+	return StyleValue(SuperellipseStyleValue.create(absolutized_parameter))
+}
+
+pub fn (style_value SuperellipseStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value SuperellipseStyleValue) properties_equal(other SuperellipseStyleValue) bool {
+	return style_value.parameter_ == other.parameter_
+}
+
+// --- TextIndentStyleValue ---
+
+pub enum TextIndentHanging {
+	no
+	yes
+}
+
+pub enum TextIndentEachLine {
+	no
+	yes
+}
+
+pub struct TextIndentStyleValue {
+pub mut:
+	length_percentage_ StyleValue
+	hanging_           bool
+	each_line_         bool
+}
+
+pub fn TextIndentStyleValue.create(length_percentage StyleValue, hanging TextIndentHanging, each_line TextIndentEachLine) TextIndentStyleValue {
+	return TextIndentStyleValue{
+		length_percentage_: length_percentage
+		hanging_:           hanging == .yes
+		each_line_:         each_line == .yes
+	}
+}
+
+pub fn (style_value TextIndentStyleValue) length_percentage() StyleValue {
+	return style_value.length_percentage_
+}
+
+pub fn (style_value TextIndentStyleValue) hanging() bool {
+	return style_value.hanging_
+}
+
+pub fn (style_value TextIndentStyleValue) each_line() bool {
+	return style_value.each_line_
+}
+
+pub fn (style_value TextIndentStyleValue) serialize(mode SerializationMode) string {
+	mut serialized := style_value.length_percentage_.serialize(mode)
+	if style_value.each_line_ {
+		serialized += ' each-line'
+	}
+	if style_value.hanging_ {
+		serialized += ' hanging'
+	}
+	return serialized
+}
+
+pub fn (style_value TextIndentStyleValue) absolutized(context ComputationContext) StyleValue {
+	new_length_percentage := style_value.length_percentage_.absolutized(context)
+	if new_length_percentage == style_value.length_percentage_ {
+		return StyleValue(style_value)
+	}
+	return StyleValue(TextIndentStyleValue.create(new_length_percentage, if style_value.hanging_ {
+		TextIndentHanging.yes
+	} else {
+		TextIndentHanging.no
+	}, if style_value.each_line_ { TextIndentEachLine.yes } else { TextIndentEachLine.no }))
+}
+
+pub fn (style_value TextIndentStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value TextIndentStyleValue) properties_equal(other TextIndentStyleValue) bool {
+	return style_value == other
+}
+
+// --- TextUnderlinePositionStyleValue ---
+
+pub struct TextUnderlinePositionStyleValue {
+pub mut:
+	horizontal_ TextUnderlinePositionHorizontal
+	vertical_   TextUnderlinePositionVertical
+}
+
+pub fn TextUnderlinePositionStyleValue.create(horizontal TextUnderlinePositionHorizontal, vertical TextUnderlinePositionVertical) TextUnderlinePositionStyleValue {
+	return TextUnderlinePositionStyleValue{
+		horizontal_: horizontal
+		vertical_:   vertical
+	}
+}
+
+pub fn (style_value TextUnderlinePositionStyleValue) horizontal() TextUnderlinePositionHorizontal {
+	return style_value.horizontal_
+}
+
+pub fn (style_value TextUnderlinePositionStyleValue) vertical() TextUnderlinePositionVertical {
+	return style_value.vertical_
+}
+
+pub fn (style_value TextUnderlinePositionStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	if style_value.horizontal_ == .auto_ && style_value.vertical_ == .auto_ {
+		return 'auto'
+	}
+
+	if style_value.vertical_ == .auto_ {
+		return text_underline_position_horizontal_to_string(style_value.horizontal_)
+	}
+
+	if style_value.horizontal_ == .auto_ {
+		return text_underline_position_vertical_to_string(style_value.vertical_)
+	}
+
+	return '${text_underline_position_horizontal_to_string(style_value.horizontal_)} ${text_underline_position_vertical_to_string(style_value.vertical_)}'
+}
+
+pub fn (style_value TextUnderlinePositionStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value TextUnderlinePositionStyleValue) properties_equal(other TextUnderlinePositionStyleValue) bool {
+	return style_value == other
+}
+
+// --- TreeCountingFunctionStyleValue ---
+
+pub enum TreeCountingFunction {
+	sibling_count
+	sibling_index
+}
+
+pub enum TreeCountingComputedType {
+	number
+	integer
+}
+
+pub struct TreeCountingFunctionStyleValue {
+pub mut:
+	function_      TreeCountingFunction
+	computed_type_ TreeCountingComputedType
+}
+
+pub fn TreeCountingFunctionStyleValue.create(function TreeCountingFunction, computed_type TreeCountingComputedType) TreeCountingFunctionStyleValue {
+	return TreeCountingFunctionStyleValue{
+		function_:      function
+		computed_type_: computed_type
+	}
+}
+
+pub fn (style_value TreeCountingFunctionStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	return match style_value.function_ {
+		.sibling_count { 'sibling-count()' }
+		.sibling_index { 'sibling-index()' }
+	}
+}
+
+pub fn (style_value TreeCountingFunctionStyleValue) resolve() int {
+	// Stub: DOM::AbstractElement and its tree-counting context are not translated in this V port.
+	return 0
+}
+
+pub fn (style_value TreeCountingFunctionStyleValue) absolutized(context ComputationContext) StyleValue {
+	_ = context
+	// FIXME: We should clamp this value in case it falls outside the valid range for the context it is in.
+	value := style_value.resolve()
+	return match style_value.computed_type_ {
+		.integer { StyleValue(IntegerStyleValue.create(value)) }
+		.number { StyleValue(NumberStyleValue.create(f64(value))) }
+	}
+}
+
+pub fn (style_value TreeCountingFunctionStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value TreeCountingFunctionStyleValue) properties_equal(other TreeCountingFunctionStyleValue) bool {
+	return style_value == other
+}
+
+// --- TupleStyleValue ---
+
+pub struct TupleStyleValue {
+pub mut:
+	tuple_ []?StyleValue
+}
+
+pub fn TupleStyleValue.create(values []?StyleValue) TupleStyleValue {
+	return TupleStyleValue{
+		tuple_: values
+	}
+}
+
+pub fn (style_value TupleStyleValue) tuple() []?StyleValue {
+	return style_value.tuple_
+}
+
+pub fn (style_value TupleStyleValue) serialize(mode SerializationMode) string {
+	return serialize_style_value_options(style_value.tuple_, ' ', mode)
+}
+
+pub fn (style_value TupleStyleValue) absolutized(context ComputationContext) StyleValue {
+	mut absolutized_tuple := []?StyleValue{cap: style_value.tuple_.len}
+	mut any_value_changed := false
+
+	for maybe_value in style_value.tuple_ {
+		if value := maybe_value {
+			absolutized_value := value.absolutized(context)
+			if absolutized_value != value {
+				any_value_changed = true
+			}
+			absolutized_tuple << absolutized_value
+		} else {
+			absolutized_tuple << none
+		}
+	}
+
+	if !any_value_changed {
+		return StyleValue(style_value)
+	}
+
+	return StyleValue(TupleStyleValue.create(absolutized_tuple))
+}
+
+pub fn (style_value TupleStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value TupleStyleValue) properties_equal(other TupleStyleValue) bool {
+	return style_value.tuple_ == other.tuple_
+}
+
+// --- UnicodeRangeStyleValue ---
+
+pub struct UnicodeRangeStyleValue {
+pub mut:
+	unicode_range_ UnicodeRange
+}
+
+pub fn UnicodeRangeStyleValue.create(unicode_range UnicodeRange) UnicodeRangeStyleValue {
+	return UnicodeRangeStyleValue{
+		unicode_range_: unicode_range
+	}
+}
+
+pub fn (style_value UnicodeRangeStyleValue) unicode_range() UnicodeRange {
+	return style_value.unicode_range_
+}
+
+pub fn (range UnicodeRange) to_css_string() string {
+	if range.start == range.end {
+		return 'U+${range.start:04X}'
+	}
+	return 'U+${range.start:04X}-${range.end:04X}'
+}
+
+pub fn (style_value UnicodeRangeStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	return style_value.unicode_range_.to_css_string()
+}
+
+pub fn (style_value UnicodeRangeStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value UnicodeRangeStyleValue) properties_equal(other UnicodeRangeStyleValue) bool {
+	return style_value.unicode_range_ == other.unicode_range_
+}
+
+// --- ViewFunctionStyleValue ---
+
+pub struct ViewFunctionStyleValue {
+pub mut:
+	axis_  Axis
+	inset_ StyleValue
+}
+
+pub fn ViewFunctionStyleValue.create(axis Axis, inset StyleValue) ViewFunctionStyleValue {
+	return ViewFunctionStyleValue{
+		axis_:  axis
+		inset_: inset
+	}
+}
+
+pub fn (style_value ViewFunctionStyleValue) axis() Axis {
+	return style_value.axis_
+}
+
+pub fn (style_value ViewFunctionStyleValue) inset() StyleValue {
+	return style_value.inset_
+}
+
+pub fn (style_value ViewFunctionStyleValue) serialize(mode SerializationMode) string {
+	mut serialized := 'view('
+
+	if style_value.axis_ != .block {
+		serialized += axis_to_string(style_value.axis_)
+	}
+
+	stringified_inset := style_value.inset_.serialize(mode)
+
+	if stringified_inset != 'auto' {
+		if style_value.axis_ != .block {
+			serialized += ' '
+		}
+		serialized += stringified_inset
+	}
+
+	serialized += ')'
+	return serialized
+}
+
+pub fn (style_value ViewFunctionStyleValue) absolutized(context ComputationContext) StyleValue {
+	absolutized_inset := style_value.inset_.absolutized(context)
+	if absolutized_inset == style_value.inset_ {
+		return StyleValue(style_value)
+	}
+	return StyleValue(ViewFunctionStyleValue.create(style_value.axis_, absolutized_inset))
+}
+
+pub fn (style_value ViewFunctionStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value ViewFunctionStyleValue) properties_equal(other ViewFunctionStyleValue) bool {
+	return style_value == other
+}
+
+// --- StyleValue downcasts for translated subclasses ---
+
+pub fn (style_value StyleValue) as_border_radius() ?BorderRadiusStyleValue {
+	value := style_value
+	if value is BorderRadiusStyleValue {
+		return value
+	}
+	return none
+}
+
+pub fn (style_value StyleValue) as_edge() EdgeStyleValue {
+	value := style_value
+	if value is EdgeStyleValue {
+		return value
+	}
+	panic('VERIFY_NOT_REACHED')
+}
+
+pub fn (style_value StyleValue) as_position() PositionStyleValue {
+	value := style_value
+	if value is PositionStyleValue {
+		return value
+	}
+	panic('VERIFY_NOT_REACHED')
+}
