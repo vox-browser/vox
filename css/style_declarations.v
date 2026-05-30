@@ -21,8 +21,16 @@ pub fn PropertyNameAndID.from_id(property_id PropertyID) PropertyNameAndID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.animation_composition { 'animation-composition' }
+		.animation_delay { 'animation-delay' }
+		.animation_direction { 'animation-direction' }
+		.animation_duration { 'animation-duration' }
+		.animation_fill_mode { 'animation-fill-mode' }
+		.animation_iteration_count { 'animation-iteration-count' }
 		.animation_name { 'animation-name' }
+		.animation_play_state { 'animation-play-state' }
 		.animation_timeline { 'animation-timeline' }
+		.animation_timing_function { 'animation-timing-function' }
 		.border_bottom_width { 'border-bottom-width' }
 		.border_left_width { 'border-left-width' }
 		.border_right_width { 'border-right-width' }
@@ -70,9 +78,11 @@ pub fn property_is_shorthand(property_id PropertyID) bool {
 
 pub fn property_is_single_valued(property_id PropertyID) bool {
 	return match property_id {
-		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function {
+		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
+		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
+		.animation_timeline, .animation_timing_function, .font_feature_settings,
+		.font_variation_settings, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function {
 			false
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
@@ -88,9 +98,11 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 
 pub fn property_is_list_valued(property_id PropertyID) bool {
 	return match property_id {
-		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function {
+		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
+		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
+		.animation_timeline, .animation_timing_function, .font_feature_settings,
+		.font_variation_settings, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function {
 			true
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
@@ -104,10 +116,10 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 39
+pub const number_of_longhand_properties = 47
 
 pub fn first_longhand_property_id() PropertyID {
-	return .animation_name
+	return .animation_composition
 }
 
 pub fn last_longhand_property_id() PropertyID {
@@ -116,45 +128,53 @@ pub fn last_longhand_property_id() PropertyID {
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
 	return match index {
-		0 { PropertyID.animation_name }
-		1 { PropertyID.animation_timeline }
-		2 { PropertyID.border_bottom_width }
-		3 { PropertyID.border_left_width }
-		4 { PropertyID.border_right_width }
-		5 { PropertyID.border_top_width }
-		6 { PropertyID.color }
-		7 { PropertyID.color_scheme }
-		8 { PropertyID.content_visibility }
-		9 { PropertyID.corner_bottom_left_shape }
-		10 { PropertyID.corner_bottom_right_shape }
-		11 { PropertyID.corner_top_left_shape }
-		12 { PropertyID.corner_top_right_shape }
-		13 { PropertyID.fill_opacity }
-		14 { PropertyID.flood_opacity }
-		15 { PropertyID.font_feature_settings }
-		16 { PropertyID.font_style }
-		17 { PropertyID.font_variation_settings }
-		18 { PropertyID.font_weight }
-		19 { PropertyID.font_width }
-		20 { PropertyID.letter_spacing }
-		21 { PropertyID.line_height }
-		22 { PropertyID.math_depth }
-		23 { PropertyID.math_style }
-		24 { PropertyID.opacity }
-		25 { PropertyID.outline_width }
-		26 { PropertyID.shape_image_threshold }
-		27 { PropertyID.stop_opacity }
-		28 { PropertyID.stroke_opacity }
-		29 { PropertyID.rotate }
-		30 { PropertyID.scale }
-		31 { PropertyID.transform }
-		32 { PropertyID.transition_behavior }
-		33 { PropertyID.transition_delay }
-		34 { PropertyID.transition_duration }
-		35 { PropertyID.transition_property }
-		36 { PropertyID.transition_timing_function }
-		37 { PropertyID.translate }
-		38 { PropertyID.word_spacing }
+		0 { PropertyID.animation_composition }
+		1 { PropertyID.animation_delay }
+		2 { PropertyID.animation_direction }
+		3 { PropertyID.animation_duration }
+		4 { PropertyID.animation_fill_mode }
+		5 { PropertyID.animation_iteration_count }
+		6 { PropertyID.animation_name }
+		7 { PropertyID.animation_play_state }
+		8 { PropertyID.animation_timeline }
+		9 { PropertyID.animation_timing_function }
+		10 { PropertyID.border_bottom_width }
+		11 { PropertyID.border_left_width }
+		12 { PropertyID.border_right_width }
+		13 { PropertyID.border_top_width }
+		14 { PropertyID.color }
+		15 { PropertyID.color_scheme }
+		16 { PropertyID.content_visibility }
+		17 { PropertyID.corner_bottom_left_shape }
+		18 { PropertyID.corner_bottom_right_shape }
+		19 { PropertyID.corner_top_left_shape }
+		20 { PropertyID.corner_top_right_shape }
+		21 { PropertyID.fill_opacity }
+		22 { PropertyID.flood_opacity }
+		23 { PropertyID.font_feature_settings }
+		24 { PropertyID.font_style }
+		25 { PropertyID.font_variation_settings }
+		26 { PropertyID.font_weight }
+		27 { PropertyID.font_width }
+		28 { PropertyID.letter_spacing }
+		29 { PropertyID.line_height }
+		30 { PropertyID.math_depth }
+		31 { PropertyID.math_style }
+		32 { PropertyID.opacity }
+		33 { PropertyID.outline_width }
+		34 { PropertyID.shape_image_threshold }
+		35 { PropertyID.stop_opacity }
+		36 { PropertyID.stroke_opacity }
+		37 { PropertyID.rotate }
+		38 { PropertyID.scale }
+		39 { PropertyID.transform }
+		40 { PropertyID.transition_behavior }
+		41 { PropertyID.transition_delay }
+		42 { PropertyID.transition_duration }
+		43 { PropertyID.transition_property }
+		44 { PropertyID.transition_timing_function }
+		45 { PropertyID.translate }
+		46 { PropertyID.word_spacing }
 		else { none }
 	}
 }

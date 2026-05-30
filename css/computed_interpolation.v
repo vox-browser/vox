@@ -807,11 +807,35 @@ fn computed_interpolation_property_computation_order() ComputedInterpolationProp
 fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
 	initial_text := match property_id {
+		.animation_composition {
+			'replace'
+		}
+		.animation_delay {
+			'0s'
+		}
+		.animation_direction {
+			'normal'
+		}
+		.animation_duration {
+			'0s'
+		}
+		.animation_fill_mode {
+			'none'
+		}
+		.animation_iteration_count {
+			'1'
+		}
 		.animation_name {
 			'none'
 		}
+		.animation_play_state {
+			'running'
+		}
 		.animation_timeline {
 			'auto'
+		}
+		.animation_timing_function {
+			'ease'
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width {
 			'medium'
@@ -912,7 +936,8 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 fn computed_interpolation_property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
+		.animation_delay, .animation_duration, .animation_iteration_count, .animation_name,
+		.animation_timeline, .animation_timing_function, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .color, .corner_bottom_left_shape,
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_opacity, .font_feature_settings, .font_style, .font_variation_settings,
@@ -922,6 +947,7 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.translate, .word_spacing {
 			true
 		}
+		.animation_composition, .animation_direction, .animation_fill_mode, .animation_play_state,
 		.color_scheme, .content_visibility, .math_style, .transition_behavior,
 		.transition_property {
 			false
@@ -943,11 +969,13 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.math_depth, .outline_width, .word_spacing {
 			true
 		}
-		.animation_name, .animation_timeline, .color_scheme, .content_visibility, .fill_opacity,
-		.flood_opacity, .font_feature_settings, .font_variation_settings, .line_height,
-		.math_style, .opacity, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate,
-		.scale, .transform, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .translate {
+		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
+		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
+		.animation_timeline, .animation_timing_function, .color_scheme, .content_visibility,
+		.fill_opacity, .flood_opacity, .font_feature_settings, .font_variation_settings,
+		.line_height, .math_style, .opacity, .shape_image_threshold, .stop_opacity,
+		.stroke_opacity, .rotate, .scale, .transform, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .translate {
 			false
 		}
 	}
@@ -1915,10 +1943,242 @@ pub fn (c &ComputedProperties) view_transition_name() ?string {
 }
 
 pub fn (c &ComputedProperties) animations(abstract_element &dom.AbstractElement) []ComputedAnimationProperties {
-	_ = c
+	animation_name_property := c.property(.animation_name, .yes) or {
+		return []ComputedAnimationProperties{}
+	}
+	animation_name_values :=
+		computed_interpolation_split_coordinating_list_value(animation_name_property)
+
+	// OPTIMIZATION: If all animation names are 'none', there are no animations to process
+	mut all_animation_names_are_none := true
+	for value in animation_name_values {
+		keyword := computed_interpolation_style_value_keyword(value) or { Keyword.invalid }
+		if keyword != .none_ {
+			all_animation_names_are_none = false
+			break
+		}
+	}
+	if all_animation_names_are_none {
+		return []ComputedAnimationProperties{}
+	}
+
+	// CSS Animations are defined by binding keyframes to an element using the animation-* properties. These list-valued
+	// properties, which are all longhands of the animation shorthand, form a coordinating list property group with
+	// animation-name as the coordinating list base property and each item in the coordinated value list defining the
+	// properties of a single animation effect.
+	coordinated_properties := c.assemble_coordinated_value_list(.animation_name, [
+		PropertyID.animation_duration,
+		.animation_timing_function,
+		.animation_iteration_count,
+		.animation_direction,
+		.animation_play_state,
+		.animation_delay,
+		.animation_fill_mode,
+		.animation_composition,
+		.animation_name,
+		.animation_timeline,
+	])
+
+	duration_values := coordinated_properties[.animation_duration] or {
+		return []ComputedAnimationProperties{}
+	}
+	timing_function_values := coordinated_properties[.animation_timing_function] or {
+		return []ComputedAnimationProperties{}
+	}
+	iteration_count_values := coordinated_properties[.animation_iteration_count] or {
+		return []ComputedAnimationProperties{}
+	}
+	direction_values := coordinated_properties[.animation_direction] or {
+		return []ComputedAnimationProperties{}
+	}
+	play_state_values := coordinated_properties[.animation_play_state] or {
+		return []ComputedAnimationProperties{}
+	}
+	delay_values := coordinated_properties[.animation_delay] or {
+		return []ComputedAnimationProperties{}
+	}
+	fill_mode_values := coordinated_properties[.animation_fill_mode] or {
+		return []ComputedAnimationProperties{}
+	}
+	composition_values := coordinated_properties[.animation_composition] or {
+		return []ComputedAnimationProperties{}
+	}
+	name_values := coordinated_properties[.animation_name] or {
+		return []ComputedAnimationProperties{}
+	}
+	timeline_values := coordinated_properties[.animation_timeline] or {
+		return []ComputedAnimationProperties{}
+	}
+
+	mut animations := []ComputedAnimationProperties{}
+	for i := 0; i < name_values.len; i++ {
+		// https://drafts.csswg.org/css-animations-1/#propdef-animation-name
+		// none: No keyframes are specified at all, so there will be no animation. Any other animations properties
+		//       specified for this animation have no effect.
+		name_keyword := computed_interpolation_style_value_keyword(name_values[i]) or {
+			Keyword.invalid
+		}
+		if name_keyword == .none_ {
+			continue
+		}
+
+		animation_duration_style_value := duration_values[i]
+		duration :=
+			computed_interpolation_animation_duration_to_milliseconds(animation_duration_style_value)
+		duration_keyword := computed_interpolation_style_value_keyword(animation_duration_style_value) or {
+			Keyword.invalid
+		}
+
+		animations << ComputedAnimationProperties{
+			duration:        duration
+			duration_string: if duration_keyword == .auto {
+				'auto'
+			} else {
+				''
+			}
+			timing_function: EasingFunction.from_style_value(timing_function_values[i])
+			iteration_count: computed_interpolation_animation_iteration_count_from_style_value(iteration_count_values[i])
+			direction:       computed_interpolation_animation_direction_from_style_value(direction_values[i])
+			play_state:      computed_interpolation_animation_play_state_from_style_value(play_state_values[i])
+			delay:           computed_interpolation_time_value_to_milliseconds(delay_values[i])
+			fill_mode:       computed_interpolation_animation_fill_mode_from_style_value(fill_mode_values[i])
+			composition:     computed_interpolation_animation_composition_from_style_value(composition_values[i])
+			name:            computed_interpolation_animation_name_from_style_value(name_values[i])
+			timeline:        computed_interpolation_animation_timeline_from_style_value(timeline_values[i],
+				abstract_element)
+		}
+	}
+
+	return animations
+}
+
+fn computed_interpolation_animation_duration_to_milliseconds(value &dom.StyleValue) f64 {
+	// https://drafts.csswg.org/css-animations-2/#animation-duration
+	keyword := computed_interpolation_style_value_keyword(value) or { Keyword.invalid }
+	if keyword == .auto {
+		// For time-driven animations, equivalent to 0s.
+		//
+		// FIXME: For scroll-driven animations, equivalent to the duration necessary to fill the timeline in
+		//        consideration of animation-range, animation-delay, and animation-iteration-count. See
+		//        Scroll-driven Animations § 4.1 Finite Timeline Calculations.
+		return 0
+	}
+
+	// <time [0s,∞]>
+	//
+	// FIXME: For scroll-driven animations, treated as auto.
+	//
+	// For time-driven animations, specifies the length of time that an animation takes to complete one cycle.
+	// A negative <time> is invalid.
+	return computed_interpolation_time_value_to_milliseconds(value)
+}
+
+fn computed_interpolation_animation_iteration_count_from_style_value(value &dom.StyleValue) f64 {
+	keyword := computed_interpolation_style_value_keyword(value) or { Keyword.invalid }
+	if keyword == .infinite {
+		return math.inf(1)
+	}
+
+	return computed_interpolation_number_from_dom_style_value(value) or { 1.0 }
+}
+
+fn computed_interpolation_animation_direction_from_style_value(value &dom.StyleValue) AnimationDirection {
+	keyword := computed_interpolation_style_value_keyword(value) or { return .normal }
+	return match keyword {
+		.reverse { AnimationDirection.reverse }
+		.alternate { AnimationDirection.alternate }
+		.alternate_reverse { AnimationDirection.alternate_reverse }
+		else { AnimationDirection.normal }
+	}
+}
+
+fn computed_interpolation_animation_play_state_from_style_value(value &dom.StyleValue) AnimationPlayState {
+	keyword := computed_interpolation_style_value_keyword(value) or { return .running }
+	return match keyword {
+		.paused { AnimationPlayState.paused }
+		else { AnimationPlayState.running }
+	}
+}
+
+fn computed_interpolation_animation_fill_mode_from_style_value(value &dom.StyleValue) AnimationFillMode {
+	keyword := computed_interpolation_style_value_keyword(value) or { return .none_ }
+	return match keyword {
+		.forwards { AnimationFillMode.forwards }
+		.backwards { AnimationFillMode.backwards }
+		.both { AnimationFillMode.both }
+		else { AnimationFillMode.none_ }
+	}
+}
+
+fn computed_interpolation_animation_composition_from_style_value(value &dom.StyleValue) AnimationComposition {
+	keyword := computed_interpolation_style_value_keyword(value) or { return .replace }
+	return match keyword {
+		.add { AnimationComposition.add }
+		.accumulate { AnimationComposition.accumulate }
+		else { AnimationComposition.replace }
+	}
+}
+
+fn computed_interpolation_animation_name_from_style_value(value &dom.StyleValue) string {
+	mut tokens := ComponentValueStream.new(parse_component_values_for_value_logic(value.css_text))
+	entry := computed_interpolation_animation_name_entry_from_tokens(mut tokens) or {
+		return value.css_text.trim_space()
+	}
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return value.css_text.trim_space()
+	}
+	computed_entry := computed_interpolation_compute_animation_name_entry(entry) or { entry }
+	if computed_entry.is_custom_ident() {
+		return computed_entry.as_custom_ident().custom_ident()
+	}
+	if computed_entry.is_string() {
+		return computed_entry.as_string().string_value()
+	}
+	return value.css_text.trim_space()
+}
+
+fn computed_interpolation_animation_timeline_from_style_value(value &dom.StyleValue, abstract_element &dom.AbstractElement) ?&AnimationTimeline {
 	_ = abstract_element
-	// Boundary: requires CSS animation longhands and AnimationTimeline subclasses.
-	return []ComputedAnimationProperties{}
+	keyword := computed_interpolation_style_value_keyword(value) or { Keyword.invalid }
+
+	// https://drafts.csswg.org/css-animations-2/#animation-timeline
+	if keyword == .auto {
+		// auto
+		// The animation's timeline is a DocumentTimeline, more specifically the default document timeline.
+		return &AnimationTimeline{}
+	}
+
+	if keyword == .none_ {
+		// none
+		// The animation is not associated with a timeline.
+		return none
+	}
+
+	serialized := value.css_text.trim_space()
+	if serialized.starts_with('--') {
+		// <dashed-ident>
+		// FIXME: If a named scroll progress timeline or view progress timeline is in scope on this element, use the
+		//        referenced timeline as defined in Scroll-driven Animations § Declaring a Named Timeline's Scope:
+		//        the timeline-scope property. Otherwise the animation is not associated with a timeline.
+	}
+
+	if serialized.starts_with('scroll(') {
+		// <scroll()>
+		// Use the scroll progress timeline indicated by the given scroll() function. See Scroll-driven Animations
+		// § 2.2.1 The scroll() notation.
+		return &AnimationTimeline{
+			kind: .scroll
+		}
+	}
+
+	// <view()>
+	// FIXME: Use the view progress timeline indicated by the given view() function. See Scroll-driven Animations § 3.3.1
+	//        The view() notation.
+	//
+	// FIXME: We fall back to document timeline for now as though we don't support the `animation-timeline` property at
+	//        all
+	return &AnimationTimeline{}
 }
 
 pub fn (c &ComputedProperties) transitions() []TransitionProperties {
@@ -2426,9 +2686,11 @@ pub fn interpolate_discrete(from &dom.StyleValue, to &dom.StyleValue, delta f64,
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
-		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings,
-		.math_depth, .math_style, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function {
+		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
+		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
+		.animation_timeline, .animation_timing_function, .font_feature_settings,
+		.font_variation_settings, .math_depth, .math_style, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function {
 			.none_
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
@@ -3135,7 +3397,9 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		// generated property metadata check. For the currently translated
 		// PropertyID set, the missing generated metadata has no remaining
 		// layout-affecting properties.
-		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
+		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
+		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
+		.animation_timeline, .animation_timing_function, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
@@ -3159,7 +3423,9 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.opacity, .rotate, .scale, .transform, .translate {
 			true
 		}
-		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
+		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
+		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
+		.animation_timeline, .animation_timing_function, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
@@ -3190,7 +3456,9 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.opacity, .rotate, .scale, .transform, .translate {
 			true
 		}
-		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
+		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
+		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
+		.animation_timeline, .animation_timing_function, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,

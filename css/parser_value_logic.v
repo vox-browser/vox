@@ -210,8 +210,29 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// represented with the currently translated PropertyID enum. The generated
 	// property grammar tables are not available in this V port yet.
 	match property_id {
+		.animation_composition {
+			return parser.parse_animation_composition_value(mut tokens)
+		}
+		.animation_delay {
+			return parser.parse_animation_delay_value(mut tokens)
+		}
+		.animation_direction {
+			return parser.parse_animation_direction_value(mut tokens)
+		}
+		.animation_duration {
+			return parser.parse_animation_duration_value(mut tokens)
+		}
+		.animation_fill_mode {
+			return parser.parse_animation_fill_mode_value(mut tokens)
+		}
+		.animation_iteration_count {
+			return parser.parse_animation_iteration_count_value(mut tokens)
+		}
 		.animation_name {
 			return parser.parse_animation_name_value(mut tokens)
+		}
+		.animation_play_state {
+			return parser.parse_animation_play_state_value(mut tokens)
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
 		.outline_width {
@@ -236,6 +257,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.animation_timeline {
 			return parser.parse_animation_timeline_value(mut tokens)
+		}
+		.animation_timing_function {
+			return parser.parse_animation_timing_function_value(mut tokens)
 		}
 		.font_feature_settings {
 			return parser.parse_font_feature_settings_value(mut tokens)
@@ -449,6 +473,162 @@ fn (mut stream ComponentValueStream) consume_remaining_component_values() []Comp
 	remaining_values := stream.values[stream.index..].clone()
 	stream.index = stream.values.len
 	return remaining_values
+}
+
+fn parse_animation_keyword_list_for_value_logic(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut keywords := []StyleValue{}
+	for value in values {
+		mut keyword_tokens := ComponentValueStream.new(value)
+		keyword_tokens.consume_whitespace()
+		token := keyword_tokens.consume() or { return none }
+		if !token.is(.ident) {
+			return none
+		}
+		keyword_text := to_ascii_lowercase(token.token().ident())
+		if keyword_text !in allowed_keywords {
+			return none
+		}
+		keyword := keyword_from_string(keyword_text) or { return none }
+		keyword_tokens.consume_whitespace()
+		if keyword_tokens.has_more_tokens() {
+			return none
+		}
+		keywords << StyleValue(KeywordStyleValue.create(keyword))
+	}
+
+	if keywords.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(keywords, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_animation_composition_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	// https://drafts.csswg.org/css-animations-2/#animation-composition
+	// replace | add | accumulate
+	return parse_animation_keyword_list_for_value_logic(mut tokens,
+		['replace', 'add', 'accumulate'])
+}
+
+fn (mut parser Parser) parse_animation_delay_value(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_transition_time_list_value(mut tokens, false)
+}
+
+fn (mut parser Parser) parse_animation_direction_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	// https://drafts.csswg.org/css-animations-1/#animation-direction
+	// normal | reverse | alternate | alternate-reverse
+	return parse_animation_keyword_list_for_value_logic(mut tokens, ['normal', 'reverse', 'alternate',
+		'alternate-reverse'])
+}
+
+fn (mut parser Parser) parse_animation_duration_value(mut tokens ComponentValueStream) ?StyleValue {
+	// https://drafts.csswg.org/css-animations-2/#animation-duration
+	// auto | <time [0s,∞]>
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut durations := []StyleValue{}
+	for value in values {
+		mut duration_tokens := ComponentValueStream.new(value)
+		duration_tokens.consume_whitespace()
+		if token := duration_tokens.peek() {
+			if token.is(.ident) && equals_ignoring_ascii_case(token.token().ident(), 'auto') {
+				duration_tokens.consume()
+				duration_tokens.consume_whitespace()
+				if duration_tokens.has_more_tokens() {
+					return none
+				}
+				durations << StyleValue(KeywordStyleValue.create(.auto))
+				continue
+			}
+		}
+
+		time_value := parser.parse_time_value(mut duration_tokens) or { return none }
+		duration_tokens.consume_whitespace()
+		if duration_tokens.has_more_tokens() {
+			return none
+		}
+		if time_value is TimeStyleValue && time_value.time().to_seconds() < 0 {
+			return none
+		}
+		durations << time_value
+	}
+
+	if durations.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(durations, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_animation_fill_mode_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	// https://drafts.csswg.org/css-animations-1/#animation-fill-mode
+	// none | forwards | backwards | both
+	return parse_animation_keyword_list_for_value_logic(mut tokens, ['none', 'forwards', 'backwards',
+		'both'])
+}
+
+fn (mut parser Parser) parse_animation_iteration_count_value(mut tokens ComponentValueStream) ?StyleValue {
+	// https://drafts.csswg.org/css-animations-1/#animation-iteration-count
+	// infinite | <number [0,∞]>
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut iteration_counts := []StyleValue{}
+	for value in values {
+		mut iteration_tokens := ComponentValueStream.new(value)
+		iteration_tokens.consume_whitespace()
+		if token := iteration_tokens.peek() {
+			if token.is(.ident) && equals_ignoring_ascii_case(token.token().ident(), 'infinite') {
+				iteration_tokens.consume()
+				iteration_tokens.consume_whitespace()
+				if iteration_tokens.has_more_tokens() {
+					return none
+				}
+				iteration_counts << StyleValue(KeywordStyleValue.create(.infinite))
+				continue
+			}
+		}
+
+		number_value := parser.parse_number_value(mut iteration_tokens) or { return none }
+		iteration_tokens.consume_whitespace()
+		if iteration_tokens.has_more_tokens() {
+			return none
+		}
+		if number_value is NumberStyleValue && number_value.number() < 0 {
+			return none
+		}
+		iteration_counts << number_value
+	}
+
+	if iteration_counts.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(iteration_counts, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_animation_play_state_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	// https://drafts.csswg.org/css-animations-1/#animation-play-state
+	// running | paused
+	return parse_animation_keyword_list_for_value_logic(mut tokens, ['running', 'paused'])
+}
+
+fn (mut parser Parser) parse_animation_timing_function_value(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_transition_timing_function_value(mut tokens)
 }
 
 fn parse_animation_name_entry_for_value_logic(values []ComponentValue) ?StyleValue {

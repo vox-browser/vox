@@ -99,46 +99,153 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 	}
 	property_id := match lowercase_name {
-		'animation-name' { PropertyID.animation_name }
-		'animation-timeline' { PropertyID.animation_timeline }
-		'border-bottom-width' { PropertyID.border_bottom_width }
-		'border-left-width' { PropertyID.border_left_width }
-		'border-right-width' { PropertyID.border_right_width }
-		'border-top-width' { PropertyID.border_top_width }
-		'color' { PropertyID.color }
-		'color-scheme' { PropertyID.color_scheme }
-		'content-visibility' { PropertyID.content_visibility }
-		'corner-bottom-left-shape' { PropertyID.corner_bottom_left_shape }
-		'corner-bottom-right-shape' { PropertyID.corner_bottom_right_shape }
-		'corner-top-left-shape' { PropertyID.corner_top_left_shape }
-		'corner-top-right-shape' { PropertyID.corner_top_right_shape }
-		'fill-opacity' { PropertyID.fill_opacity }
-		'flood-opacity' { PropertyID.flood_opacity }
-		'font-feature-settings' { PropertyID.font_feature_settings }
-		'font-style' { PropertyID.font_style }
-		'font-variation-settings' { PropertyID.font_variation_settings }
-		'font-weight' { PropertyID.font_weight }
-		'font-width' { PropertyID.font_width }
-		'letter-spacing' { PropertyID.letter_spacing }
-		'line-height' { PropertyID.line_height }
-		'math-depth' { PropertyID.math_depth }
-		'math-style' { PropertyID.math_style }
-		'opacity' { PropertyID.opacity }
-		'outline-width' { PropertyID.outline_width }
-		'shape-image-threshold' { PropertyID.shape_image_threshold }
-		'stop-opacity' { PropertyID.stop_opacity }
-		'stroke-opacity' { PropertyID.stroke_opacity }
-		'rotate' { PropertyID.rotate }
-		'scale' { PropertyID.scale }
-		'transform' { PropertyID.transform }
-		'transition-behavior' { PropertyID.transition_behavior }
-		'transition-delay' { PropertyID.transition_delay }
-		'transition-duration' { PropertyID.transition_duration }
-		'transition-property' { PropertyID.transition_property }
-		'transition-timing-function' { PropertyID.transition_timing_function }
-		'translate' { PropertyID.translate }
-		'word-spacing' { PropertyID.word_spacing }
-		else { return none }
+		'animation-composition' {
+			PropertyID.animation_composition
+		}
+		'animation-delay', '-webkit-animation-delay' {
+			PropertyID.animation_delay
+		}
+		'animation-direction', '-webkit-animation-direction' {
+			PropertyID.animation_direction
+		}
+		'animation-duration', '-webkit-animation-duration' {
+			PropertyID.animation_duration
+		}
+		'animation-fill-mode', '-webkit-animation-fill-mode' {
+			PropertyID.animation_fill_mode
+		}
+		'animation-iteration-count', '-webkit-animation-iteration-count' {
+			PropertyID.animation_iteration_count
+		}
+		'animation-name' {
+			PropertyID.animation_name
+		}
+		'-webkit-animation-name' {
+			PropertyID.animation_name
+		}
+		'animation-play-state', '-webkit-animation-play-state' {
+			PropertyID.animation_play_state
+		}
+		'animation-timeline' {
+			PropertyID.animation_timeline
+		}
+		'animation-timing-function', '-webkit-animation-timing-function' {
+			PropertyID.animation_timing_function
+		}
+		'border-bottom-width' {
+			PropertyID.border_bottom_width
+		}
+		'border-left-width' {
+			PropertyID.border_left_width
+		}
+		'border-right-width' {
+			PropertyID.border_right_width
+		}
+		'border-top-width' {
+			PropertyID.border_top_width
+		}
+		'color' {
+			PropertyID.color
+		}
+		'color-scheme' {
+			PropertyID.color_scheme
+		}
+		'content-visibility' {
+			PropertyID.content_visibility
+		}
+		'corner-bottom-left-shape' {
+			PropertyID.corner_bottom_left_shape
+		}
+		'corner-bottom-right-shape' {
+			PropertyID.corner_bottom_right_shape
+		}
+		'corner-top-left-shape' {
+			PropertyID.corner_top_left_shape
+		}
+		'corner-top-right-shape' {
+			PropertyID.corner_top_right_shape
+		}
+		'fill-opacity' {
+			PropertyID.fill_opacity
+		}
+		'flood-opacity' {
+			PropertyID.flood_opacity
+		}
+		'font-feature-settings' {
+			PropertyID.font_feature_settings
+		}
+		'font-style' {
+			PropertyID.font_style
+		}
+		'font-variation-settings' {
+			PropertyID.font_variation_settings
+		}
+		'font-weight' {
+			PropertyID.font_weight
+		}
+		'font-width' {
+			PropertyID.font_width
+		}
+		'letter-spacing' {
+			PropertyID.letter_spacing
+		}
+		'line-height' {
+			PropertyID.line_height
+		}
+		'math-depth' {
+			PropertyID.math_depth
+		}
+		'math-style' {
+			PropertyID.math_style
+		}
+		'opacity' {
+			PropertyID.opacity
+		}
+		'outline-width' {
+			PropertyID.outline_width
+		}
+		'shape-image-threshold' {
+			PropertyID.shape_image_threshold
+		}
+		'stop-opacity' {
+			PropertyID.stop_opacity
+		}
+		'stroke-opacity' {
+			PropertyID.stroke_opacity
+		}
+		'rotate' {
+			PropertyID.rotate
+		}
+		'scale' {
+			PropertyID.scale
+		}
+		'transform' {
+			PropertyID.transform
+		}
+		'transition-behavior' {
+			PropertyID.transition_behavior
+		}
+		'transition-delay' {
+			PropertyID.transition_delay
+		}
+		'transition-duration' {
+			PropertyID.transition_duration
+		}
+		'transition-property' {
+			PropertyID.transition_property
+		}
+		'transition-timing-function' {
+			PropertyID.transition_timing_function
+		}
+		'translate' {
+			PropertyID.translate
+		}
+		'word-spacing' {
+			PropertyID.word_spacing
+		}
+		else {
+			return none
+		}
 	}
 
 	return PropertyNameAndID{
@@ -168,8 +275,17 @@ pub fn property_id_from_string(name string) ?PropertyID {
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.animation_delay, .animation_duration {
+			value_type == .time
+		}
+		.animation_iteration_count {
+			value_type == .number
+		}
 		.animation_name {
 			value_type in [.custom_ident, .string]
+		}
+		.animation_timing_function {
+			value_type == .easing_function
 		}
 		.color {
 			value_type == .color
@@ -231,6 +347,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.transition_timing_function {
 			value_type == .easing_function
 		}
+		.animation_composition, .animation_direction, .animation_fill_mode, .animation_play_state,
 		.transition_behavior, .transition_property {
 			false
 		}
@@ -243,8 +360,32 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		return true
 	}
 	return match property_id {
+		.animation_composition {
+			lowercase_value in ['replace', 'add', 'accumulate']
+		}
+		.animation_delay {
+			false
+		}
+		.animation_direction {
+			lowercase_value in ['normal', 'reverse', 'alternate', 'alternate-reverse']
+		}
+		.animation_duration {
+			lowercase_value == 'auto'
+		}
+		.animation_fill_mode {
+			lowercase_value in ['none', 'forwards', 'backwards', 'both']
+		}
+		.animation_iteration_count {
+			lowercase_value == 'infinite'
+		}
 		.animation_name {
 			lowercase_value == 'none'
+		}
+		.animation_play_state {
+			lowercase_value in ['running', 'paused']
+		}
+		.animation_timing_function {
+			lowercase_value in ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease']
 		}
 		.color {
 			if keyword := keyword_from_string(lowercase_value) {
@@ -346,12 +487,15 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 			// CustomIdentStyleValue until a dedicated DashedIdent StyleValue exists.
 			value.starts_with('--')
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.letter_spacing, .line_height, .math_depth, .math_style, .fill_opacity, .flood_opacity,
-		.opacity, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate,
-		.scale, .transform, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_timing_function, .translate, .word_spacing {
+		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
+		.animation_fill_mode, .animation_iteration_count, .animation_play_state,
+		.animation_timing_function, .border_bottom_width, .border_left_width, .border_right_width,
+		.border_top_width, .font_feature_settings, .font_style, .font_variation_settings,
+		.font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .math_style,
+		.fill_opacity, .flood_opacity, .opacity, .outline_width, .shape_image_threshold,
+		.stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_timing_function, .translate,
+		.word_spacing {
 			false
 		}
 		.transition_property {
@@ -374,6 +518,9 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		ColorStyleValue {
 			property_accepts_type(property_id, .color)
 		}
+		EasingStyleValue {
+			property_accepts_type(property_id, .easing_function)
+		}
 		FontStyleStyleValue {
 			property_accepts_type(property_id, .font_style)
 		}
@@ -393,6 +540,10 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		}
 		SuperellipseStyleValue {
 			property_accepts_type(property_id, .corner_shape)
+		}
+		TimeStyleValue {
+			property_accepts_type(property_id, .time)
+				&& property_accepts_time(property_id, value.time())
 		}
 		TransformationStyleValue {
 			property_accepts_type(property_id, .transform_function)
@@ -428,6 +579,7 @@ pub fn property_accepts_keyword(property_id PropertyID, keyword Keyword) bool {
 
 pub fn property_accepts_number(property_id PropertyID, value f64) bool {
 	return match property_id {
+		.animation_iteration_count { value >= 0 }
 		.font_weight { value >= 1 && value <= 1000 }
 		else { true }
 	}
@@ -476,9 +628,10 @@ pub fn property_accepts_resolution(property_id PropertyID, value Resolution) boo
 }
 
 pub fn property_accepts_time(property_id PropertyID, value Time) bool {
-	_ = property_id
-	_ = value
-	return true
+	return match property_id {
+		.animation_duration, .transition_duration { value.to_seconds() >= 0 }
+		else { true }
+	}
 }
 
 fn to_ascii_lowercase(value string) string {
@@ -1352,6 +1505,18 @@ pub enum Keyword {
 	infinity
 	negative_infinity
 	allow_discrete
+	reverse
+	alternate
+	alternate_reverse
+	running
+	paused
+	forwards
+	backwards
+	both
+	infinite
+	replace
+	add
+	accumulate
 	light
 	dark
 	accentcolor
@@ -1503,6 +1668,18 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.infinity { 'infinity' }
 		.negative_infinity { '-infinity' }
 		.allow_discrete { 'allow-discrete' }
+		.reverse { 'reverse' }
+		.alternate { 'alternate' }
+		.alternate_reverse { 'alternate-reverse' }
+		.running { 'running' }
+		.paused { 'paused' }
+		.forwards { 'forwards' }
+		.backwards { 'backwards' }
+		.both { 'both' }
+		.infinite { 'infinite' }
+		.replace { 'replace' }
+		.add { 'add' }
+		.accumulate { 'accumulate' }
 		.light { 'light' }
 		.dark { 'dark' }
 		.accentcolor { 'accentcolor' }
@@ -1643,6 +1820,18 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'infinity' { Keyword.infinity }
 		'-infinity' { Keyword.negative_infinity }
 		'allow-discrete' { Keyword.allow_discrete }
+		'reverse' { Keyword.reverse }
+		'alternate' { Keyword.alternate }
+		'alternate-reverse' { Keyword.alternate_reverse }
+		'running' { Keyword.running }
+		'paused' { Keyword.paused }
+		'forwards' { Keyword.forwards }
+		'backwards' { Keyword.backwards }
+		'both' { Keyword.both }
+		'infinite' { Keyword.infinite }
+		'replace' { Keyword.replace }
+		'add' { Keyword.add }
+		'accumulate' { Keyword.accumulate }
 		'light' { Keyword.light }
 		'dark' { Keyword.dark }
 		'accentcolor' { Keyword.accentcolor }

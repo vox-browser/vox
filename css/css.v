@@ -34,8 +34,16 @@ pub:
 }
 
 pub enum PropertyID {
+	animation_composition
+	animation_delay
+	animation_direction
+	animation_duration
+	animation_fill_mode
+	animation_iteration_count
 	animation_name
+	animation_play_state
 	animation_timeline
+	animation_timing_function
 	border_bottom_width
 	border_left_width
 	border_right_width
