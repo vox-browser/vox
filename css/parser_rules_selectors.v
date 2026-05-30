@@ -2,6 +2,8 @@ module css
 
 import dom
 
+type ParserRuleDeclarations = []Declaration
+
 // This file ports Ladybird's LibWeb/CSS/Parser rule, selector, parser orchestration,
 // rule-context, error-reporter, and arbitrary-substitution-function glue into the
 // smaller V CSS model. Where the generated parser tables, full selector AST, DOM
@@ -760,7 +762,7 @@ fn (mut parser RuleSelectorParser) consume_a_blocks_contents(mut input ParserTok
 	return rules
 }
 
-fn (mut parser RuleSelectorParser) consume_qualified_rule_in_block(mut input ParserTokenStream, mut rules []RuleOrListOfDeclarations, mut declarations []Declaration) {
+fn (mut parser RuleSelectorParser) consume_qualified_rule_in_block(mut input ParserTokenStream, mut rules []RuleOrListOfDeclarations, mut declarations ParserRuleDeclarations) {
 	result := parser.consume_a_qualified_rule(mut input, TokenType.semicolon, .yes)
 	match result {
 		QualifiedRule {
@@ -1470,7 +1472,7 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 	mut syntax_maybe := ?string(none)
 	mut inherits_maybe := ?bool(none)
 	mut initial_value_maybe := ?string(none)
-	rule.for_each_as_declaration_list(fn [mut syntax_maybe, mut inherits_maybe, mut initial_value_maybe] (declaration Declaration) {
+	for declaration in declarations_from_at_rule(rule) {
 		value := parser_component_values_to_string(declaration.value).trim_space()
 		match declaration.name.to_lower() {
 			'syntax' {
@@ -1490,7 +1492,7 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 			}
 			else {}
 		}
-	})
+	}
 
 	// @property rules require a syntax and inherits descriptor; if either are missing, the entire rule is invalid and must be ignored.
 	syntax := syntax_maybe or { return none }
@@ -1590,7 +1592,7 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 	mut additive_symbols := ?CounterStyleAdditiveSymbolsStyleValue(none)
 	mut speak_as := ?StyleValue(none)
 
-	rule.for_each_as_declaration_list(fn [mut system, mut negative, mut prefix, mut suffix, mut range, mut pad, mut fallback, mut symbols, mut additive_symbols, mut speak_as] (declaration Declaration) {
+	for declaration in declarations_from_at_rule(rule) {
 		value_text := parser_component_values_to_string(declaration.value).trim_space()
 		match declaration.name.to_lower() {
 			'system' {
@@ -1625,7 +1627,7 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 			}
 			else {}
 		}
-	})
+	}
 
 	return CSSRule.create_counter_style_rule(CSSCounterStyleRule.create(name, system, negative,
 		prefix, suffix, range, pad, fallback, symbols, additive_symbols, speak_as))
@@ -1812,7 +1814,7 @@ fn (mut parser RuleSelectorParser) convert_to_page_rule(page_rule AtRule) ?&CSSR
 	page_selectors := parse_page_selector_list_for_rule_parsing(mut tokens) or { return none }
 	mut child_rules := []&CSSRule{}
 	mut descriptors := []Descriptor{}
-	page_rule.for_each_as_declaration_rule_list(fn [mut child_rules, mut descriptors, mut parser] (at_rule AtRule) {
+	page_rule.for_each_as_declaration_rule_list(fn [mut child_rules, mut parser] (at_rule AtRule) {
 		if converted_rule := parser.convert_to_rule(Rule(at_rule), .no) {
 			if converted_rule.type_ == .margin {
 				child_rules << converted_rule
@@ -1882,7 +1884,7 @@ fn (mut parser RuleSelectorParser) convert_child_rule_list(children []RuleOrList
 	return child_rules
 }
 
-fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations []Declaration) &CSSStyleProperties {
+fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations ParserRuleDeclarations) &CSSStyleProperties {
 	_ = parser
 	mut style := CSSStyleProperties.create()
 	for declaration in declarations {
@@ -2170,7 +2172,7 @@ fn convert_to_page_descriptor_for_rule_parsing(declaration Declaration) ?Descrip
 	}
 }
 
-fn declarations_from_at_rule(rule AtRule) []Declaration {
+fn declarations_from_at_rule(rule AtRule) ParserRuleDeclarations {
 	mut declarations := []Declaration{}
 	rule.for_each_as_declaration_list(fn [mut declarations] (declaration Declaration) {
 		declarations << declaration
@@ -2881,9 +2883,7 @@ pub fn parse_according_to_argument_grammar(function ArbitrarySubstitutionFunctio
 			mut args := IfArgs{}
 			for tokens.has_next_token() {
 				if_args_branch := parse_declaration_value_then_optional_declaration_value(mut tokens,
-					.colon) or {
-					break
-				}
+					.colon) or { break }
 
 				args.branches << IfArgsBranch{
 					condition: if_args_branch.first()
@@ -2945,8 +2945,8 @@ fn attr_failure_result(element ?dom.AbstractElement, mut guarded_contexts Guarde
 	}
 
 	// 3. Substitute arbitrary substitution functions in second arg, and return the result.
-	return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
-		second_argument, none)
+	return substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+		guarded_contexts, second_argument, none)
 }
 
 fn parse_number_from_attr_value(attribute_value string) ?Number {
@@ -2978,8 +2978,8 @@ fn replace_an_attr_function(element ?dom.AbstractElement, mut guarded_contexts G
 	mut attribute_name := ''
 	mut syntax := AttrSyntax{}
 
-	substituted := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
-		first_argument, none)
+	substituted := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+		guarded_contexts, first_argument, none)
 	mut first_argument_tokens := ParserTokenStream.from_values(substituted)
 
 	// <attr-name> = [ <ident-token>? '|' ]? <ident-token>
@@ -3042,9 +3042,13 @@ fn replace_an_attr_function(element ?dom.AbstractElement, mut guarded_contexts G
 			return [ComponentValue.from_token(Token.create_number(parsed_number, ''))]
 		}
 		if syntax.unit == '%' {
-			return [ComponentValue.from_token(Token.create_percentage(parsed_number, ''))]
+			return [
+				ComponentValue.from_token(Token.create_percentage(parsed_number, '')),
+			]
 		}
-		return [ComponentValue.from_token(Token.create_dimension(parsed_number, syntax.unit, ''))]
+		return [
+			ComponentValue.from_token(Token.create_dimension(parsed_number, syntax.unit, '')),
+		]
 	}
 
 	if syntax.kind == .omitted || syntax.kind == .raw_string {
@@ -3054,9 +3058,10 @@ fn replace_an_attr_function(element ?dom.AbstractElement, mut guarded_contexts G
 	syntax_node := syntax.syntax or {
 		return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
 	}
+
 	unsubstituted_values := parse_component_values_for_value_logic(attribute_value)
-	substituted_values := substitute_arbitrary_substitution_functions_with_optional_element(element,
-		mut guarded_contexts, unsubstituted_values, SubstitutionContext{
+	substituted_values := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+		guarded_contexts, unsubstituted_values, SubstitutionContext{
 		dependency_type: .attribute
 		first:           attribute_name
 	})
@@ -3119,8 +3124,8 @@ fn replace_an_env_function(element ?dom.AbstractElement, mut guarded_contexts Gu
 	first_argument := declaration_value_list.first()
 	second_argument := declaration_value_list.get(1)
 
-	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element,
-		mut guarded_contexts, first_argument, none)
+	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+		guarded_contexts, first_argument, none)
 	mut first_argument_tokens := ParserTokenStream.from_values(substituted_first_argument)
 	first_argument_tokens.discard_whitespace()
 	name_token := first_argument_tokens.consume_a_token()
@@ -3159,8 +3164,8 @@ fn replace_an_env_function(element ?dom.AbstractElement, mut guarded_contexts Gu
 	}
 
 	if fallback := second_argument {
-		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
-			fallback, none)
+		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+			guarded_contexts, fallback, none)
 	}
 
 	return arbitrary_substitution_guaranteed_invalid_value()
@@ -3343,8 +3348,8 @@ fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 	}
 
 	for branch in if_args.branches {
-		substituted_condition := substitute_arbitrary_substitution_functions_with_optional_element(element,
-			mut guarded_contexts, branch.condition, none)
+		substituted_condition := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+			guarded_contexts, branch.condition, none)
 		condition_result := parse_if_condition_for_arbitrary_substitution(substituted_condition) or {
 			continue
 		}
@@ -3352,8 +3357,8 @@ fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 			continue
 		}
 		value := branch.value or { return []ComponentValue{} }
-		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
-			value, none)
+		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+			guarded_contexts, value, none)
 	}
 
 	return []ComponentValue{}
@@ -3393,8 +3398,8 @@ fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_context
 	first_argument := declaration_value_list.first()
 	second_argument := declaration_value_list.get(1)
 
-	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element,
-		mut guarded_contexts, first_argument, none)
+	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+		guarded_contexts, first_argument, none)
 	mut first_argument_tokens := ParserTokenStream.from_values(substituted_first_argument)
 	first_argument_tokens.discard_whitespace()
 	name_token := first_argument_tokens.consume_a_token()
@@ -3405,7 +3410,8 @@ fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_context
 		if el := element {
 			if element_to_inherit_style_from := el.element_to_inherit_style_from() {
 				if inherited_value := custom_property_tokens_from_element_for_substitution(element_to_inherit_style_from,
-					name_token.token().ident()) {
+					name_token.token().ident())
+				{
 					if !contains_guaranteed_invalid_value(inherited_value) {
 						return inherited_value
 					}
@@ -3415,8 +3421,8 @@ fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_context
 	}
 
 	if fallback := second_argument {
-		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
-			fallback, none)
+		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+			guarded_contexts, fallback, none)
 	}
 
 	return arbitrary_substitution_guaranteed_invalid_value()
@@ -3430,8 +3436,8 @@ fn replace_a_var_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 	first_argument := declaration_value_list.first()
 	second_argument := declaration_value_list.get(1)
 
-	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element,
-		mut guarded_contexts, first_argument, none)
+	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+		guarded_contexts, first_argument, none)
 	mut name_tokens := ParserTokenStream.from_values(substituted_first_argument)
 	name_tokens.discard_whitespace()
 	name_token := name_tokens.consume_a_token()
@@ -3453,8 +3459,8 @@ fn replace_a_var_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 	// FIXME: Animation-tainted custom properties.
 	if contains_guaranteed_invalid_value(result) {
 		if fallback := second_argument {
-			result = substitute_arbitrary_substitution_functions_with_optional_element(element,
-				mut guarded_contexts, fallback, none)
+			result = substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+				guarded_contexts, fallback, none)
 		}
 	}
 	return result
@@ -3493,8 +3499,8 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 				if contains_guaranteed_invalid_value(result) {
 					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
 				} else {
-					result_after_processing := substitute_arbitrary_substitution_functions_step_2(element,
-						mut guarded_contexts, result) or { return none }
+					result_after_processing := substitute_arbitrary_substitution_functions_step_2(element, mut
+						guarded_contexts, result) or { return none }
 
 					// NB: Protect against the billion-laughs attack by limiting to an arbitrary large number of tokens.
 					// https://drafts.csswg.org/css-values-5/#long-substitution
@@ -3506,8 +3512,8 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 				continue
 			}
 
-			function_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts,
-				source_function.value) or { return none }
+			function_values := substitute_arbitrary_substitution_functions_step_2(element, mut
+				guarded_contexts, source_function.value) or { return none }
 			mut function := source_function
 			function.value = function_values
 			dest << ComponentValue.from_function(function)
@@ -3516,8 +3522,8 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 
 		if value.is_block() {
 			source_block := value.block()
-			block_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts,
-				source_block.value) or { return none }
+			block_values := substitute_arbitrary_substitution_functions_step_2(element, mut
+				guarded_contexts, source_block.value) or { return none }
 			mut block := source_block
 			block.value = block_values
 			dest << ComponentValue.from_block(block)
@@ -3541,8 +3547,8 @@ fn substitute_arbitrary_substitution_functions_with_optional_element(element ?do
 		context_to_unguard = context_copy
 	}
 
-	mut new_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts,
-		values) or { arbitrary_substitution_guaranteed_invalid_value() }
+	mut new_values := substitute_arbitrary_substitution_functions_step_2(element, mut
+		guarded_contexts, values) or { arbitrary_substitution_guaranteed_invalid_value() }
 
 	if guarded_context := context_to_unguard {
 		if guarded_contexts.is_marked_cyclic(guarded_context) {
@@ -3555,14 +3561,14 @@ fn substitute_arbitrary_substitution_functions_with_optional_element(element ?do
 }
 
 pub fn substitute_arbitrary_substitution_functions_for_element(element dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, values []ComponentValue, context ?SubstitutionContext) []ComponentValue {
-	return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts,
-		values, context)
+	return substitute_arbitrary_substitution_functions_with_optional_element(element, mut
+		guarded_contexts, values, context)
 }
 
 pub fn substitute_arbitrary_substitution_functions(values []ComponentValue, context ?SubstitutionContext) []ComponentValue {
 	mut guarded_contexts := GuardedSubstitutionContexts{}
-	return substitute_arbitrary_substitution_functions_with_optional_element(none, mut guarded_contexts,
-		values, context)
+	return substitute_arbitrary_substitution_functions_with_optional_element(none, mut
+		guarded_contexts, values, context)
 }
 
 fn has_ignored_vendor_prefix_local(name string) bool {
