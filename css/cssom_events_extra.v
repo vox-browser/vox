@@ -556,6 +556,11 @@ pub fn (rule &CSSRule) page_selector_text() string {
 	if rule.type_ != .page {
 		return ''
 	}
+	// The selectorText attribute, on getting, must return the result of serializing the
+	// associated selector list.
+	// https://www.w3.org/TR/cssom/#serialize-a-group-of-selectors
+	// To serialize a group of selectors serialize each selector in the group of selectors and
+	// then serialize a comma-separated list of these serializations.
 	mut selectors := []string{cap: rule.page_selectors.len}
 	for selector in rule.page_selectors {
 		serialized := selector.serialize()
@@ -563,10 +568,7 @@ pub fn (rule &CSSRule) page_selector_text() string {
 			selectors << serialized
 		}
 	}
-	if selectors.len != 0 {
-		return selectors.join(', ')
-	}
-	return rule.url
+	return selectors.join(', ')
 }
 
 pub fn (mut rule CSSRule) set_page_selector_text(text string) {
@@ -574,12 +576,14 @@ pub fn (mut rule CSSRule) set_page_selector_text(text string) {
 		return
 	}
 
-	// Stub: Full Parser::parse_page_selector_list() is not translated. This accepts the
-	// simple serialized form used by PageSelector::serialize() and leaves complex or invalid
-	// input untouched by returning no parsed selectors.
+	// On setting the selectorText attribute these steps must be run:
+	// 1. Run the parse a list of CSS page selectors algorithm on the given value.
 	selectors := parse_page_selector_list_stub(text) or { return }
+
+	// 2. If the algorithm returns a non-null value replace the associated selector list with
+	// the returned value.
+	// 3. Otherwise, if the algorithm returns a null value, do nothing.
 	rule.page_selectors = selectors
-	rule.url = text.trim_space()
 }
 
 fn (rule &CSSRule) serialized_page_rule() string {
@@ -611,57 +615,63 @@ fn (rule &CSSRule) serialized_page_rule() string {
 }
 
 fn parse_page_selector_list_stub(text string) ?PageSelectorList {
-	trimmed := text.trim_space()
-	if trimmed.len == 0 {
-		return PageSelectorList{}
-	}
-
-	mut selectors := PageSelectorList{}
-	for part in trimmed.split(',') {
-		selector_text := part.trim_space()
-		if selector_text.len == 0 {
-			return none
-		}
-		selector := parse_page_selector_stub(selector_text) or { return none }
-		selectors << selector
-	}
-	return selectors
+	mut tokens := ParserTokenStream.from_tokens(Tokenizer.tokenize(text, 'utf-8'))
+	return parse_a_page_selector_list_translated(mut tokens)
 }
 
-fn parse_page_selector_stub(text string) ?PageSelector {
-	mut name := ?string(none)
-	mut pseudo_classes := []PagePseudoClass{}
-	mut remaining := text
+fn parse_a_page_selector_list_translated(mut tokens ParserTokenStream) ?PageSelectorList {
+	// https://drafts.csswg.org/css-page-3/#syntax-page-selector
+	// <page-selector-list> = <page-selector>#
+	// <page-selector> = [ <ident-token>? <pseudo-page>* ]!
+	// <pseudo-page> = : [ left | right | first | blank ]
 
-	if !remaining.starts_with(':') {
-		colon_index := remaining.index(':') or { -1 }
-		if colon_index < 0 {
-			name = remaining
-			remaining = ''
-		} else {
-			name = remaining[..colon_index]
-			remaining = remaining[colon_index..]
+	mut selector_list := PageSelectorList{}
+
+	tokens.discard_whitespace()
+
+	for tokens.has_next_token() {
+		// First optional ident
+		mut maybe_ident := ?string(none)
+		if tokens.next_token().is(.ident) {
+			maybe_ident = tokens.consume_a_token().token().ident()
 		}
-		if resolved_name := name {
-			if resolved_name.trim_space().len == 0 {
+
+		// Then an optional series of pseudo-classes
+		mut pseudo_classes := []PagePseudoClass{}
+		for tokens.next_token().is(.colon) {
+			tokens.discard_a_token() // :
+			if !tokens.next_token().is(.ident) {
+				return none
+			}
+			pseudo_class_name := tokens.consume_a_token().token().ident()
+			if pseudo_class := page_pseudo_class_from_string(pseudo_class_name) {
+				pseudo_classes << pseudo_class
+			} else {
 				return none
 			}
 		}
-	}
 
-	for remaining.len != 0 {
-		if !remaining.starts_with(':') {
+		if maybe_ident == none && pseudo_classes.len == 0 {
+			// Nothing parsed
 			return none
 		}
-		remaining = remaining[1..]
-		next_colon := remaining.index(':') or { remaining.len }
-		pseudo_class_name := remaining[..next_colon]
-		pseudo_class := page_pseudo_class_from_string(pseudo_class_name) or { return none }
-		pseudo_classes << pseudo_class
-		remaining = remaining[next_colon..]
+
+		selector_list << PageSelector.new(maybe_ident, pseudo_classes)
+
+		tokens.discard_whitespace()
+
+		if tokens.next_token().is(.comma) {
+			tokens.discard_a_token() // ,
+			tokens.discard_whitespace()
+			if !tokens.has_next_token() {
+				return none
+			}
+		} else if tokens.has_next_token() {
+			return none
+		}
 	}
 
-	return PageSelector.new(name, pseudo_classes)
+	return selector_list
 }
 
 // --- CSSMarginRule ---
