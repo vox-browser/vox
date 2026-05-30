@@ -1,0 +1,460 @@
+module css
+
+import dom
+
+pub enum AtRuleID {
+	font_face
+	page
+	counter_style
+}
+
+fn descriptor_id_to_string(descriptor_id DescriptorID) string {
+	return match descriptor_id {
+		.unknown { '' }
+		.margin { 'margin' }
+		.margin_top { 'margin-top' }
+		.margin_right { 'margin-right' }
+		.margin_bottom { 'margin-bottom' }
+		.margin_left { 'margin-left' }
+		.size { 'size' }
+		.page_orientation { 'page-orientation' }
+		.marks { 'marks' }
+		.bleed { 'bleed' }
+	}
+}
+
+fn descriptor_id_from_string(at_rule_id AtRuleID, property string) ?DescriptorID {
+	lower := property.to_lower()
+	return match at_rule_id {
+		.page {
+			match lower {
+				'margin' { DescriptorID.margin }
+				'margin-top' { DescriptorID.margin_top }
+				'margin-right' { DescriptorID.margin_right }
+				'margin-bottom' { DescriptorID.margin_bottom }
+				'margin-left' { DescriptorID.margin_left }
+				'size' { DescriptorID.size }
+				'page-orientation' { DescriptorID.page_orientation }
+				'marks' { DescriptorID.marks }
+				'bleed' { DescriptorID.bleed }
+				else { none }
+			}
+		}
+		else {
+			// Stub: @font-face descriptors are represented by CSSFontFaceDescriptors in font_face_values.v, and
+			// @counter-style descriptor parsing is represented by counter_values.v.
+			none
+		}
+	}
+}
+
+fn descriptor_style_value_to_string(value &dom.StyleValue) string {
+	_ = value
+	// Stub: dom.StyleValue is currently an opaque DOM-side placeholder in this V port.
+	return ''
+}
+
+fn parse_css_descriptor_stub(at_rule_id AtRuleID, descriptor_id DescriptorID, value string) ?&dom.StyleValue {
+	_ = at_rule_id
+	_ = descriptor_id
+	if value.trim_space().len == 0 {
+		return none
+	}
+	return &dom.StyleValue{}
+}
+
+// A non-spec base class for descriptor-list classes.
+@[heap]
+pub struct CSSDescriptors {
+pub mut:
+	at_rule_id  AtRuleID
+	descriptors []Descriptor
+	readonly    bool
+	computed    bool
+}
+
+pub fn CSSDescriptors.create(at_rule_id AtRuleID, descriptors []Descriptor) &CSSDescriptors {
+	return &CSSDescriptors{
+		at_rule_id:  at_rule_id
+		descriptors: descriptors.clone()
+	}
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-length
+pub fn (descriptors &CSSDescriptors) length() usize {
+	// The length attribute must return the number of CSS declarations in the declarations.
+	return usize(descriptors.descriptors.len)
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-item
+pub fn (descriptors &CSSDescriptors) item(index usize) string {
+	// The item(index) method must return the property name of the CSS declaration at position index.
+	// If there is no indexth object in the collection, then the method must return the empty string.
+	if index >= descriptors.length() {
+		return ''
+	}
+
+	return descriptor_id_to_string(descriptors.descriptors[index].descriptor_id)
+}
+
+// https://drafts.csswg.org/cssom/#set-a-css-declaration
+fn (mut descriptors CSSDescriptors) set_a_css_declaration(descriptor_id DescriptorID, value &dom.StyleValue, important Important) bool {
+	_ = important
+	if descriptors.computed {
+		panic('Cannot set computed CSSDescriptors')
+	}
+
+	for i, descriptor in descriptors.descriptors {
+		if descriptor.descriptor_id == descriptor_id {
+			if descriptor.value == value {
+				return false
+			}
+			unsafe {
+				descriptors.descriptors[i].value = value
+			}
+			return true
+		}
+	}
+
+	unsafe {
+		descriptors.descriptors << Descriptor{
+			descriptor_id: descriptor_id
+			value:         value
+		}
+	}
+	return true
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty
+pub fn (mut descriptors CSSDescriptors) set_property(property string, value string, priority string) ! {
+	// 1. If the readonly flag is set, then throw a NoModificationAllowedError exception.
+	if descriptors.readonly {
+		return error('NoModificationAllowedError: Cannot modify properties of readonly CSSStyleDeclaration')
+	}
+
+	// 2. If property is not a custom property, follow these substeps:
+	// 1. Let property be property converted to ASCII lowercase.
+	// 2. If property is not a case-sensitive match for a supported CSS property, then return.
+	descriptor_id := descriptor_id_from_string(descriptors.at_rule_id, property) or { return }
+
+	// 3. If value is the empty string, invoke removeProperty() with property as argument and return.
+	if value.len == 0 {
+		descriptors.remove_property(property)!
+		return
+	}
+
+	// 4. If priority is not the empty string and is not an ASCII case-insensitive match for the string "important", then return.
+	if priority.len != 0 && priority.to_lower() != 'important' {
+		return
+	}
+
+	// 5. Let component value list be the result of parsing value for property property.
+	component_value_list := parse_css_descriptor_stub(descriptors.at_rule_id, descriptor_id, value) or {
+		// 6. If component value list is null, then return.
+		return
+	}
+
+	// 7. Let updated be false.
+	mut updated := false
+
+	// 8. If property is a shorthand property, then for each longhand property longhand that property maps to, in canonical order, follow these substeps:
+	if is_descriptor_shorthand(descriptors.at_rule_id, descriptor_id) {
+		for_each_expanded_descriptor_longhand(descriptors.at_rule_id, descriptor_id,
+			component_value_list, fn [mut descriptors, priority, mut updated] (longhand_id DescriptorID, longhand_value &dom.StyleValue) {
+			// 1. Let longhand result be the result of set the CSS declaration longhand with the appropriate value(s)
+			//    from component value list, with the important flag set if priority is not the empty string, and unset
+			//    otherwise, and with the list of declarations being the declarations.
+			longhand_result := descriptors.set_a_css_declaration(longhand_id, longhand_value, if priority.len == 0 {
+				Important.no
+			} else {
+				Important.yes
+			})
+
+			// 2. If longhand result is true, let updated be true.
+			if longhand_result {
+				updated = true
+			}
+		})
+	}
+	// 9. Otherwise, let updated be the result of set the CSS declaration property with value component value list,
+	//    with the important flag set if priority is not the empty string, and unset otherwise, and with the list of
+	//    declarations being the declarations.
+	else {
+		updated = descriptors.set_a_css_declaration(descriptor_id, component_value_list, if priority.len != 0 {
+			Important.yes
+		} else {
+			Important.no
+		})
+	}
+
+	// 10. If updated is true, update style attribute for the CSS declaration block.
+	if updated {
+		descriptors.update_style_attribute()
+	}
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-removeproperty
+pub fn (mut descriptors CSSDescriptors) remove_property(property string) !string {
+	// 1. If the readonly flag is set, then throw a NoModificationAllowedError exception.
+	if descriptors.readonly {
+		return error('NoModificationAllowedError: Cannot modify properties of readonly CSSStyleDeclaration')
+	}
+
+	// 2. If property is not a custom property, let property be property converted to ASCII lowercase.
+	// AD-HOC: We compare names case-insensitively instead.
+
+	// 3. Let value be the return value of invoking getPropertyValue() with property as argument.
+	value := descriptors.get_property_value(property)
+
+	// 4. Let removed be false.
+	mut removed := false
+	descriptor_id := descriptor_id_from_string(descriptors.at_rule_id, property)
+
+	// 5. If property is a shorthand property, for each longhand property longhand that property maps to:
+	if id := descriptor_id {
+		if is_descriptor_shorthand(descriptors.at_rule_id, id) {
+			for_each_expanded_descriptor_longhand(descriptors.at_rule_id, id, unsafe { nil }, fn [mut descriptors, mut removed] (longhand_id DescriptorID, longhand_value &dom.StyleValue) {
+				_ = longhand_value
+				// 1. If longhand is not a property name of a CSS declaration in the declarations, continue.
+				// 2. Remove that CSS declaration and let removed be true.
+				mut kept := []Descriptor{}
+				for descriptor in descriptors.descriptors {
+					if descriptor.descriptor_id == longhand_id {
+						removed = true
+						continue
+					}
+					kept << descriptor
+				}
+				descriptors.descriptors = kept
+			})
+		} else {
+			// 6. Otherwise, if property is a case-sensitive match for a property name of a CSS declaration in the
+			//    declarations, remove that CSS declaration and let removed be true.
+			mut kept := []Descriptor{}
+			for descriptor in descriptors.descriptors {
+				if descriptor.descriptor_id == id {
+					removed = true
+					continue
+				}
+				kept << descriptor
+			}
+			descriptors.descriptors = kept
+		}
+	}
+
+	// 7. If removed is true, Update style attribute for the CSS declaration block.
+	if removed {
+		descriptors.update_style_attribute()
+	}
+
+	// 8. Return value.
+	return value
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertyvalue
+pub fn (descriptors &CSSDescriptors) get_property_value(property string) string {
+	// 1. If property is not a custom property, follow these substeps: ...
+	// NB: These substeps only apply to shorthands, and descriptors cannot be shorthands.
+
+	// 2. If property is a case-sensitive match for a property name of a CSS declaration in the declarations, then
+	//    return the result of invoking serialize a CSS value of that declaration.
+	descriptor_id := descriptor_id_from_string(descriptors.at_rule_id, property) or { return '' }
+	for descriptor in descriptors.descriptors {
+		if descriptor.descriptor_id == descriptor_id {
+			return descriptor_style_value_to_string(descriptor.value)
+		}
+	}
+
+	// 3. Return the empty string.
+	return ''
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertypriority
+pub fn (descriptors &CSSDescriptors) get_property_priority(property string) string {
+	_ = descriptors
+	_ = property
+	// AD-HOC: It's not valid for descriptors to be !important.
+	return ''
+}
+
+pub fn (descriptors &CSSDescriptors) descriptor(descriptor_id DescriptorID) ?&dom.StyleValue {
+	for descriptor in descriptors.descriptors {
+		if descriptor.descriptor_id == descriptor_id {
+			return descriptor.value
+		}
+	}
+	return none
+}
+
+pub fn (descriptors &CSSDescriptors) descriptor_or_initial_value(descriptor_id DescriptorID) ?&dom.StyleValue {
+	if value := descriptors.descriptor(descriptor_id) {
+		return value
+	}
+	return descriptor_initial_value_stub(descriptors.at_rule_id, descriptor_id)
+}
+
+fn descriptor_initial_value_stub(at_rule_id AtRuleID, descriptor_id DescriptorID) ?&dom.StyleValue {
+	_ = at_rule_id
+	_ = descriptor_id
+	// Stub: generated descriptor initial values are not translated.
+	return none
+}
+
+// https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block
+pub fn (descriptors &CSSDescriptors) serialized() string {
+	// 1. Let list be an empty array.
+	mut list := []string{cap: descriptors.descriptors.len}
+
+	// 2. Let already serialized be an empty array.
+	// AD-HOC: Not needed as we don't have shorthands.
+
+	// 3. Declaration loop: For each CSS declaration declaration in declaration block's declarations, follow these substeps:
+	for descriptor in descriptors.descriptors {
+		// 1. Let property be declaration's property name.
+		property := descriptor_id_to_string(descriptor.descriptor_id)
+
+		// 2. If property is in already serialized, continue with the steps labeled declaration loop.
+		// AD-HOC: Not needed as we don't have shorthands.
+
+		// 3. If property maps to one or more shorthand properties, let shorthands be an array of those shorthand properties, in preferred order.
+		// 4. Shorthand loop: For each shorthand in shorthands, follow these substeps: ...
+		// NB: Descriptors can't be shorthands.
+
+		// 5. Let value be the result of invoking serialize a CSS value of declaration.
+		value := descriptor_style_value_to_string(descriptor.value)
+
+		// 6. Let serialized declaration be the result of invoking serialize a CSS declaration with property name property, value value, and the important flag set if declaration has its important flag set.
+		serialized_declaration := serialize_a_css_declaration(property, value, .no)
+
+		// 7. Append serialized declaration to list.
+		list << serialized_declaration
+
+		// 8. Append property to already serialized.
+		// AD-HOC: Not needed as we don't have shorthands.
+	}
+
+	// 4. Return list joined with " " (U+0020).
+	return list.join(' ')
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-csstext
+pub fn (mut descriptors CSSDescriptors) set_css_text(value string) ! {
+	// 1. If the readonly flag is set, then throw a NoModificationAllowedError exception.
+	if descriptors.readonly {
+		return error('NoModificationAllowedError: Cannot modify properties of readonly CSSStyleDeclaration')
+	}
+
+	// Stub: Parser::parse_css_style_declaration() for descriptors is not translated yet.
+	descriptors.descriptors = parse_descriptor_declaration_block_stub(descriptors.at_rule_id, value)
+	descriptors.update_style_attribute()
+}
+
+fn (mut descriptors CSSDescriptors) update_style_attribute() {
+	// Stub: CSS descriptors are not reflected into an owner style attribute.
+}
+
+pub fn is_descriptor_shorthand(at_rule_id AtRuleID, descriptor_id DescriptorID) bool {
+	_ = at_rule_id
+	_ = descriptor_id
+	return false
+}
+
+pub fn for_each_expanded_descriptor_longhand(at_rule_id AtRuleID, descriptor_id DescriptorID, value &dom.StyleValue, callback fn (DescriptorID, &dom.StyleValue)) {
+	_ = at_rule_id
+	// Stub: descriptors currently have no shorthand expansion in this V port.
+	callback(descriptor_id, value)
+}
+
+fn parse_descriptor_declaration_block_stub(at_rule_id AtRuleID, text string) []Descriptor {
+	_ = at_rule_id
+	_ = text
+	// Stub for Parser::parse_css_style_declaration(); no descriptors are produced until descriptor parsing is translated.
+	return []
+}
+
+@[heap]
+pub struct CSSPageDescriptors {
+pub mut:
+	base CSSDescriptors
+}
+
+pub fn CSSPageDescriptors.create(descriptors []Descriptor) &CSSPageDescriptors {
+	return &CSSPageDescriptors{
+		base: CSSDescriptors{
+			at_rule_id:  .page
+			descriptors: descriptors.clone()
+		}
+	}
+}
+
+pub fn (mut page_descriptors CSSPageDescriptors) set_margin(value string) ! {
+	page_descriptors.base.set_property('margin', value, '')!
+}
+
+pub fn (page_descriptors &CSSPageDescriptors) margin() string {
+	return page_descriptors.base.get_property_value('margin')
+}
+
+pub fn (mut page_descriptors CSSPageDescriptors) set_margin_top(value string) ! {
+	page_descriptors.base.set_property('margin-top', value, '')!
+}
+
+pub fn (page_descriptors &CSSPageDescriptors) margin_top() string {
+	return page_descriptors.base.get_property_value('margin-top')
+}
+
+pub fn (mut page_descriptors CSSPageDescriptors) set_margin_right(value string) ! {
+	page_descriptors.base.set_property('margin-right', value, '')!
+}
+
+pub fn (page_descriptors &CSSPageDescriptors) margin_right() string {
+	return page_descriptors.base.get_property_value('margin-right')
+}
+
+pub fn (mut page_descriptors CSSPageDescriptors) set_margin_bottom(value string) ! {
+	page_descriptors.base.set_property('margin-bottom', value, '')!
+}
+
+pub fn (page_descriptors &CSSPageDescriptors) margin_bottom() string {
+	return page_descriptors.base.get_property_value('margin-bottom')
+}
+
+pub fn (mut page_descriptors CSSPageDescriptors) set_margin_left(value string) ! {
+	page_descriptors.base.set_property('margin-left', value, '')!
+}
+
+pub fn (page_descriptors &CSSPageDescriptors) margin_left() string {
+	return page_descriptors.base.get_property_value('margin-left')
+}
+
+pub fn (mut page_descriptors CSSPageDescriptors) set_size(value string) ! {
+	page_descriptors.base.set_property('size', value, '')!
+}
+
+pub fn (page_descriptors &CSSPageDescriptors) size() string {
+	return page_descriptors.base.get_property_value('size')
+}
+
+pub fn (mut page_descriptors CSSPageDescriptors) set_page_orientation(value string) ! {
+	page_descriptors.base.set_property('page-orientation', value, '')!
+}
+
+pub fn (page_descriptors &CSSPageDescriptors) page_orientation() string {
+	return page_descriptors.base.get_property_value('page-orientation')
+}
+
+pub fn (mut page_descriptors CSSPageDescriptors) set_marks(value string) ! {
+	page_descriptors.base.set_property('marks', value, '')!
+}
+
+pub fn (page_descriptors &CSSPageDescriptors) marks() string {
+	return page_descriptors.base.get_property_value('marks')
+}
+
+pub fn (mut page_descriptors CSSPageDescriptors) set_bleed(value string) ! {
+	page_descriptors.base.set_property('bleed', value, '')!
+}
+
+pub fn (page_descriptors &CSSPageDescriptors) bleed() string {
+	return page_descriptors.base.get_property_value('bleed')
+}

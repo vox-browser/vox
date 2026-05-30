@@ -241,6 +241,15 @@ pub mut:
 
 pub enum DescriptorID {
 	unknown
+	margin
+	margin_top
+	margin_right
+	margin_bottom
+	margin_left
+	size
+	page_orientation
+	marks
+	bleed
 }
 
 pub struct Descriptor {

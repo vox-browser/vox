@@ -183,6 +183,40 @@ pub fn serialize_a_url(url string) string {
 	return 'url(${serialize_a_string(url)})'
 }
 
+// https://drafts.csswg.org/cssom/#serialize-a-css-declaration
+pub fn serialize_a_css_declaration(property string, value string, important Important) string {
+	// 1. Let s be the empty string.
+	mut serialized := ''
+
+	// 2. Append property to s.
+	// AD-HOC: There's no place currently on the spec where the property name properly escaped,
+	//         and this needs to be done when custom properties have special characters.
+	//         Related spec issues:
+	//          - https://github.com/w3c/csswg-drafts/issues/11729
+	//          - https://github.com/w3c/csswg-drafts/issues/12258
+	serialized += serialize_an_identifier(property)
+
+	// 3. Append ": " (U+003A U+0020) to s.
+	serialized += ': '
+
+	// 4. If value contains any non-whitespace characters, append value to s.
+	if value.trim_space().len != 0 {
+		serialized += value
+	}
+
+	// 5. If the important flag is set, append " !important" (U+0020 U+0021 U+0069 U+006D U+0070 U+006F U+0072 U+0074
+	//    U+0061 U+006E U+0074) to s.
+	if important == .yes {
+		serialized += ' !important'
+	}
+
+	// 6. Append ";" (U+003B) to s.
+	serialized += ';'
+
+	// 7. Return s.
+	return serialized
+}
+
 // --- Units ---
 
 pub enum AngleUnit {
