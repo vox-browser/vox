@@ -286,11 +286,7 @@ fn (mut parser Parser) parse_integer_value(mut tokens ComponentValueStream) ?Sty
 
 fn (mut parser Parser) parse_number_value(mut tokens ComponentValueStream) ?StyleValue {
 	number := parser.parse_number(mut tokens) or { return none }
-	return if number.is_integer() {
-		StyleValue(IntegerStyleValue.create(number.integer_value()))
-	} else {
-		StyleValue(NumberStyleValue.create(number.value()))
-	}
+	return StyleValue(NumberStyleValue.create(number.value()))
 }
 
 fn (mut parser Parser) parse_number(mut tokens ComponentValueStream) ?Number {
@@ -331,6 +327,24 @@ fn (mut parser Parser) parse_number_percentage_value(mut tokens ComponentValueSt
 	if value := parser.parse_percentage_value(mut copy) {
 		tokens = copy
 		return value
+	}
+	return none
+}
+
+fn (mut parser Parser) parse_number_percentage_none_value(mut tokens ComponentValueStream) ?StyleValue {
+	// Parses [<percentage> | <number> | none] (which is equivalent to [<alpha-value> | none])
+	if value := parser.parse_number_value(mut tokens) {
+		return value
+	}
+	if value := parser.parse_percentage_value(mut tokens) {
+		return value
+	}
+	tokens.consume_whitespace()
+	if value := tokens.peek() {
+		if value.is(.ident) && equals_ignoring_ascii_case(value.token().ident(), 'none') {
+			tokens.consume()
+			return StyleValue(KeywordStyleValue.create(.none_))
+		}
 	}
 	return none
 }
@@ -491,6 +505,60 @@ fn easing_number_from_style_value(value StyleValue) ?f64 {
 		NumberStyleValue { value.number() }
 		else { none }
 	}
+}
+
+fn style_value_resolves_to_percentage_for_value_logic(value StyleValue) bool {
+	return value.is_percentage()
+		|| (value.is_calculated() && value.as_calculated().resolves_to_percentage())
+}
+
+fn color_function_rectangular_color_space_from_string(value string) ?RectangularColorSpace {
+	return match to_ascii_lowercase(value) {
+		'srgb' { RectangularColorSpace.srgb }
+		'srgb-linear' { RectangularColorSpace.srgb_linear }
+		'display-p3' { RectangularColorSpace.display_p3 }
+		'a98-rgb' { RectangularColorSpace.a98_rgb }
+		'prophoto-rgb' { RectangularColorSpace.prophoto_rgb }
+		'rec2020' { RectangularColorSpace.rec2020 }
+		'lab' { RectangularColorSpace.lab }
+		'oklab' { RectangularColorSpace.oklab }
+		'xyz' { RectangularColorSpace.xyz_d65 }
+		'xyz-d50' { RectangularColorSpace.xyz_d50 }
+		'xyz-d65' { RectangularColorSpace.xyz_d65 }
+		else { none }
+	}
+}
+
+fn color_function_polar_color_space_from_string(value string) ?PolarColorSpace {
+	return match to_ascii_lowercase(value) {
+		'hsl' { PolarColorSpace.hsl }
+		'hwb' { PolarColorSpace.hwb }
+		'lch' { PolarColorSpace.lch }
+		'oklch' { PolarColorSpace.oklch }
+		else { none }
+	}
+}
+
+fn color_function_hue_interpolation_method_from_string(value string) ?HueInterpolationMethod {
+	return match to_ascii_lowercase(value) {
+		'shorter' { HueInterpolationMethod.shorter }
+		'longer' { HueInterpolationMethod.longer }
+		'increasing' { HueInterpolationMethod.increasing }
+		'decreasing' { HueInterpolationMethod.decreasing }
+		else { none }
+	}
+}
+
+fn color_function_supported_color_space(value string) bool {
+	return to_ascii_lowercase(value) in ['srgb', 'srgb-linear', 'display-p3', 'a98-rgb',
+		'prophoto-rgb', 'rec2020', 'xyz', 'xyz-d50', 'xyz-d65']
+}
+
+struct ParsedColorComponents {
+	first  StyleValue
+	second StyleValue
+	third  StyleValue
+	alpha  StyleValue
 }
 
 fn (mut parser Parser) parse_easing_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -690,34 +758,591 @@ fn (mut parser Parser) parse_easing_value(mut tokens ComponentValueStream) ?Styl
 	return none
 }
 
+fn (mut parser Parser) parse_hue_none_value(mut tokens ComponentValueStream) ?StyleValue {
+	// Parses [<hue> | none]
+	//   <hue> = <number> | <angle>
+	if angle := parser.parse_angle_value(mut tokens) {
+		return angle
+	}
+	if number := parser.parse_number_value(mut tokens) {
+		return number
+	}
+	tokens.consume_whitespace()
+	if value := tokens.peek() {
+		if value.is(.ident) && equals_ignoring_ascii_case(value.token().ident(), 'none') {
+			tokens.consume()
+			return StyleValue(KeywordStyleValue.create(.none_))
+		}
+	}
+	return none
+}
+
+fn (mut parser Parser) parse_solidus_and_alpha_value(mut tokens ComponentValueStream) ?StyleValue {
+	// [ / [<alpha-value> | none] ]?
+	// <alpha-value> = <number> | <percentage>
+	// Common to the modern-syntax color functions.
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	solidus := transaction.consume() or { return none }
+	if !solidus.is_delim(u32(`/`)) {
+		return none
+	}
+	transaction.consume_whitespace()
+	alpha := parser.parse_number_percentage_none_value(mut transaction) or { return none }
+	transaction.consume_whitespace()
+	tokens = transaction
+	return alpha
+}
+
+fn (mut parser Parser) parse_rgb_color_value(component_value ComponentValue) ?StyleValue {
+	// rgb() = [ <legacy-rgb-syntax> | <modern-rgb-syntax> ]
+	// rgba() = [ <legacy-rgba-syntax> | <modern-rgba-syntax> ]
+	// <legacy-rgb-syntax> = rgb( <percentage>#{3} , <alpha-value>? ) |
+	//                       rgb( <number>#{3} , <alpha-value>? )
+	// <legacy-rgba-syntax> = rgba( <percentage>#{3} , <alpha-value>? ) |
+	//                        rgba( <number>#{3} , <alpha-value>? )
+	// <modern-rgb-syntax> = rgb(
+	//     [ <number> | <percentage> | none]{3}
+	//     [ / [<alpha-value> | none] ]?  )
+	// <modern-rgba-syntax> = rgba(
+	//     [ <number> | <percentage> | none]{3}
+	//     [ / [<alpha-value> | none] ]?  )
+	if !component_value.is_function_named('rgb') && !component_value.is_function_named('rgba') {
+		return none
+	}
+
+	mut inner_tokens := ComponentValueStream.new(component_value.function().value)
+	inner_tokens.consume_whitespace()
+	red := parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+
+	inner_tokens.consume_whitespace()
+	legacy_syntax := if next := inner_tokens.peek() {
+		next.is(.comma)
+	} else {
+		false
+	}
+
+	mut green := ?StyleValue(none)
+	mut blue := ?StyleValue(none)
+	mut alpha := ?StyleValue(none)
+
+	if legacy_syntax {
+		// Legacy syntax
+		//   <percentage>#{3} , <alpha-value>?
+		//   | <number>#{3} , <alpha-value>?
+		// So, r/g/b can be numbers or percentages, as long as they're all the same type.
+		//
+		// We accepted the 'none' keyword when parsing the red value, but it's not allowed in the legacy syntax.
+		if red.is_keyword() {
+			return none
+		}
+
+		inner_tokens.consume()
+		inner_tokens.consume_whitespace()
+		green = parser.parse_number_percentage_value(mut inner_tokens) or { return none }
+		inner_tokens.consume_whitespace()
+
+		comma := inner_tokens.consume() or { return none }
+		if !comma.is(.comma) {
+			return none
+		}
+		inner_tokens.consume_whitespace()
+		blue = parser.parse_number_percentage_value(mut inner_tokens) or { return none }
+		inner_tokens.consume_whitespace()
+
+		if inner_tokens.has_more_tokens() {
+			alpha_comma := inner_tokens.consume() or { return none }
+			if !alpha_comma.is(.comma) {
+				return none
+			}
+			inner_tokens.consume_whitespace()
+			alpha = parser.parse_number_percentage_value(mut inner_tokens) or { return none }
+			inner_tokens.consume_whitespace()
+			if inner_tokens.has_more_tokens() {
+				return none
+			}
+		}
+
+		// Verify we're all percentages or all numbers.
+		green_value := green or { return none }
+		blue_value := blue or { return none }
+		red_is_percentage := style_value_resolves_to_percentage_for_value_logic(red)
+		green_is_percentage := style_value_resolves_to_percentage_for_value_logic(green_value)
+		blue_is_percentage := style_value_resolves_to_percentage_for_value_logic(blue_value)
+		if red_is_percentage != green_is_percentage || red_is_percentage != blue_is_percentage {
+			return none
+		}
+	} else {
+		// Modern syntax
+		//   [ <number> | <percentage> | none]{3}  [ / [<alpha-value> | none] ]?
+		green = parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+		inner_tokens.consume_whitespace()
+		blue = parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+		inner_tokens.consume_whitespace()
+
+		if inner_tokens.has_more_tokens() {
+			alpha = parser.parse_solidus_and_alpha_value(mut inner_tokens) or { return none }
+			if inner_tokens.has_more_tokens() {
+				return none
+			}
+		}
+	}
+
+	return StyleValue(RGBColorStyleValue.create(red, green or { return none }, blue or {
+		return none
+	}, alpha or { StyleValue(NumberStyleValue.create(1)) }, if legacy_syntax {
+		.legacy
+	} else {
+		.modern
+	}, none))
+}
+
+fn (mut parser Parser) parse_hsl_color_value(component_value ComponentValue) ?StyleValue {
+	// hsl() = [ <legacy-hsl-syntax> | <modern-hsl-syntax> ]
+	// hsla() = [ <legacy-hsla-syntax> | <modern-hsla-syntax> ]
+	if !component_value.is_function_named('hsl') && !component_value.is_function_named('hsla') {
+		return none
+	}
+
+	mut inner_tokens := ComponentValueStream.new(component_value.function().value)
+	inner_tokens.consume_whitespace()
+	hue := parser.parse_hue_none_value(mut inner_tokens) or { return none }
+
+	inner_tokens.consume_whitespace()
+	legacy_syntax := if next := inner_tokens.peek() {
+		next.is(.comma)
+	} else {
+		false
+	}
+
+	mut saturation := ?StyleValue(none)
+	mut lightness := ?StyleValue(none)
+	mut alpha := ?StyleValue(none)
+
+	if legacy_syntax {
+		// Legacy syntax
+		//   <hue>, <percentage>, <percentage>, <alpha-value>?
+		//
+		// We accepted the 'none' keyword when parsing the h value, but it's not allowed in the legacy syntax.
+		if hue.is_keyword() {
+			return none
+		}
+
+		inner_tokens.consume()
+		inner_tokens.consume_whitespace()
+		saturation = parser.parse_percentage_value(mut inner_tokens) or { return none }
+		inner_tokens.consume_whitespace()
+
+		comma := inner_tokens.consume() or { return none }
+		if !comma.is(.comma) {
+			return none
+		}
+		inner_tokens.consume_whitespace()
+		lightness = parser.parse_percentage_value(mut inner_tokens) or { return none }
+		inner_tokens.consume_whitespace()
+
+		if inner_tokens.has_more_tokens() {
+			alpha_comma := inner_tokens.consume() or { return none }
+			if !alpha_comma.is(.comma) {
+				return none
+			}
+			inner_tokens.consume_whitespace()
+			alpha = parser.parse_number_percentage_value(mut inner_tokens) or { return none }
+			inner_tokens.consume_whitespace()
+			if inner_tokens.has_more_tokens() {
+				return none
+			}
+		}
+	} else {
+		// Modern syntax
+		//   [<hue> | none]
+		//   [<percentage> | <number> | none]
+		//   [<percentage> | <number> | none]
+		//   [ / [<alpha-value> | none] ]?
+		saturation = parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+		inner_tokens.consume_whitespace()
+		lightness = parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+		inner_tokens.consume_whitespace()
+
+		if inner_tokens.has_more_tokens() {
+			alpha = parser.parse_solidus_and_alpha_value(mut inner_tokens) or { return none }
+			if inner_tokens.has_more_tokens() {
+				return none
+			}
+		}
+	}
+
+	return StyleValue(HSLColorStyleValue.create(hue, saturation or { return none }, lightness or {
+		return none
+	}, alpha or { StyleValue(NumberStyleValue.create(1)) }, if legacy_syntax {
+		.legacy
+	} else {
+		.modern
+	}))
+}
+
+fn (mut parser Parser) parse_hwb_color_value(component_value ComponentValue) ?StyleValue {
+	// hwb() = hwb(
+	//     [<hue> | none]
+	//     [<percentage> | <number> | none]
+	//     [<percentage> | <number> | none]
+	//     [ / [<alpha-value> | none] ]? )
+	if !component_value.is_function_named('hwb') {
+		return none
+	}
+
+	mut inner_tokens := ComponentValueStream.new(component_value.function().value)
+	inner_tokens.consume_whitespace()
+	hue := parser.parse_hue_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+	whiteness := parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+	blackness := parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+
+	mut alpha := ?StyleValue(none)
+	if inner_tokens.has_more_tokens() {
+		alpha = parser.parse_solidus_and_alpha_value(mut inner_tokens) or { return none }
+		if inner_tokens.has_more_tokens() {
+			return none
+		}
+	}
+
+	return StyleValue(HWBColorStyleValue.create(hue, whiteness, blackness, alpha or {
+		StyleValue(NumberStyleValue.create(1))
+	}, .modern))
+}
+
+fn (mut parser Parser) parse_lab_like_color_value(component_value ComponentValue, function_name string) ?ParsedColorComponents {
+	// This helper is designed to be compatible with lab and oklab and parses a function with a form like:
+	// f() = f( [ <percentage> | <number> | none]
+	//     [ <percentage> | <number> | none]
+	//     [ <percentage> | <number> | none]
+	//     [ / [<alpha-value> | none] ]? )
+	if !component_value.is_function_named(function_name) {
+		return none
+	}
+
+	mut inner_tokens := ComponentValueStream.new(component_value.function().value)
+	inner_tokens.consume_whitespace()
+	first := parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+	second := parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+	third := parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+
+	mut alpha := ?StyleValue(none)
+	if inner_tokens.has_more_tokens() {
+		alpha = parser.parse_solidus_and_alpha_value(mut inner_tokens) or { return none }
+		if inner_tokens.has_more_tokens() {
+			return none
+		}
+	}
+
+	return ParsedColorComponents{
+		first:  first
+		second: second
+		third:  third
+		alpha:  alpha or { StyleValue(NumberStyleValue.create(1)) }
+	}
+}
+
+fn (mut parser Parser) parse_lch_like_color_value(component_value ComponentValue, function_name string) ?ParsedColorComponents {
+	// This helper is designed to be compatible with lch and oklch and parses a function with a form like:
+	// f() = f( [<percentage> | <number> | none]
+	//     [ <percentage> | <number> | none]
+	//     [ <hue> | none]
+	//     [ / [<alpha-value> | none] ]? )
+	if !component_value.is_function_named(function_name) {
+		return none
+	}
+
+	mut inner_tokens := ComponentValueStream.new(component_value.function().value)
+	inner_tokens.consume_whitespace()
+	first := parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+	second := parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+	third := parser.parse_hue_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+
+	mut alpha := ?StyleValue(none)
+	if inner_tokens.has_more_tokens() {
+		alpha = parser.parse_solidus_and_alpha_value(mut inner_tokens) or { return none }
+		if inner_tokens.has_more_tokens() {
+			return none
+		}
+	}
+
+	return ParsedColorComponents{
+		first:  first
+		second: second
+		third:  third
+		alpha:  alpha or { StyleValue(NumberStyleValue.create(1)) }
+	}
+}
+
+fn (mut parser Parser) parse_color_function(component_value ComponentValue) ?StyleValue {
+	// color() = color( <colorspace-params> [ / [ <alpha-value> | none ] ]? )
+	//     <colorspace-params> = [ <predefined-rgb-params> | <xyz-params>]
+	//     <predefined-rgb-params> = <predefined-rgb> [ <number> | <percentage> | none ]{3}
+	//     <predefined-rgb> = srgb | srgb-linear | display-p3 | a98-rgb | prophoto-rgb | rec2020
+	//     <xyz-params> = <xyz-space> [ <number> | <percentage> | none ]{3}
+	//     <xyz-space> = xyz | xyz-d50 | xyz-d65
+	if !component_value.is_function_named('color') {
+		return none
+	}
+
+	mut inner_tokens := ComponentValueStream.new(component_value.function().value)
+	inner_tokens.consume_whitespace()
+	maybe_color_space := inner_tokens.consume() or { return none }
+	if !maybe_color_space.is(.ident) {
+		return none
+	}
+	color_space := to_ascii_lowercase(maybe_color_space.token().ident())
+	if !color_function_supported_color_space(color_space) {
+		return none
+	}
+
+	inner_tokens.consume_whitespace()
+	c1 := parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+	c2 := parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+	c3 := parser.parse_number_percentage_none_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+
+	mut alpha := ?StyleValue(none)
+	if inner_tokens.has_more_tokens() {
+		alpha = parser.parse_solidus_and_alpha_value(mut inner_tokens) or { return none }
+		if inner_tokens.has_more_tokens() {
+			return none
+		}
+	}
+
+	return StyleValue(ColorFunctionStyleValue.create(color_space, c1, c2, c3, alpha or {
+		StyleValue(NumberStyleValue.create(1))
+	}))
+}
+
+fn (mut parser Parser) parse_color_interpolation_method_value(mut tokens ComponentValueStream) ?ColorInterpolationMethodStyleValue {
+	// <rectangular-color-space> = srgb | srgb-linear | display-p3 | display-p3-linear | a98-rgb | prophoto-rgb | rec2020 | lab | oklab | <xyz-space>
+	// <polar-color-space> = hsl | hwb | lch | oklch
+	// <custom-color-space> = <dashed-ident>
+	// <hue-interpolation-method> = [ shorter | longer | increasing | decreasing ] hue
+	// <color-interpolation-method> = in [ <rectangular-color-space> | <polar-color-space> <hue-interpolation-method>? | <custom-color-space> ]
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	in_token := transaction.consume() or { return none }
+	if !in_token.is(.ident) || !equals_ignoring_ascii_case(in_token.token().ident(), 'in') {
+		return none
+	}
+
+	transaction.consume_whitespace()
+	color_space_token := transaction.consume() or { return none }
+	if !color_space_token.is(.ident) {
+		return none
+	}
+	color_space_name := color_space_token.token().ident()
+
+	if rectangular_color_space := color_function_rectangular_color_space_from_string(color_space_name) {
+		tokens = transaction
+		return ColorInterpolationMethodStyleValue.create(ColorInterpolationMethod(rectangular_color_space))
+	}
+
+	if polar_color_space := color_function_polar_color_space_from_string(color_space_name) {
+		mut hue_interpolation_method := HueInterpolationMethod.shorter
+		transaction.consume_whitespace()
+		if maybe_hue_method_token := transaction.peek() {
+			if maybe_hue_method_token.is(.ident) {
+				if maybe_hue_method := color_function_hue_interpolation_method_from_string(maybe_hue_method_token.token().ident()) {
+					transaction.consume()
+					hue_interpolation_method = maybe_hue_method
+					transaction.consume_whitespace()
+					hue_token := transaction.consume() or { return none }
+					if !hue_token.is(.ident)
+						|| !equals_ignoring_ascii_case(hue_token.token().ident(), 'hue') {
+						return none
+					}
+				}
+			}
+		}
+
+		tokens = transaction
+		return ColorInterpolationMethodStyleValue.create(ColorInterpolationMethod(PolarColorInterpolationMethod{
+			color_space:              polar_color_space
+			hue_interpolation_method: hue_interpolation_method
+		}))
+	}
+
+	// TODO: Support <custom-color-space> once we support @color-profile rules.
+	return none
+}
+
+fn (mut parser Parser) parse_color_mix_component(mut tokens ComponentValueStream) ?ColorMixComponent {
+	tokens.consume_whitespace()
+	mut percentage_style_value := ?StyleValue(none)
+	if percentage := parser.parse_percentage_value(mut tokens) {
+		percentage_style_value = percentage
+	}
+	tokens.consume_whitespace()
+
+	color_style_value := parser.parse_color_value(mut tokens) or { return none }
+	tokens.consume_whitespace()
+	if percentage_style_value == none {
+		if percentage := parser.parse_percentage_value(mut tokens) {
+			percentage_style_value = percentage
+			tokens.consume_whitespace()
+		}
+	}
+
+	mut percentage_or_calculated := ?PercentageOrCalculated(none)
+	if percentage_value := percentage_style_value {
+		if !percentage_value.is_calculated() {
+			percentage := percentage_value.as_percentage().percentage().value()
+			if percentage < 0 || percentage > 100 {
+				return none
+			}
+			percentage_or_calculated =
+				PercentageOrCalculated.from_percentage(percentage_value.as_percentage().percentage())
+		} else {
+			percentage_or_calculated =
+				PercentageOrCalculated.from_calculated(percentage_value.as_calculated())
+		}
+	}
+
+	return ColorMixComponent{
+		color:      color_style_value
+		percentage: percentage_or_calculated
+	}
+}
+
+fn (mut parser Parser) parse_color_mix_function(component_value ComponentValue) ?StyleValue {
+	// color-mix() = color-mix( <color-interpolation-method>? , [ <color> && <percentage [0,100]>? ]#)
+	// FIXME: Update color-mix to accept 1+ colors instead of exactly 2.
+	if !component_value.is_function_named('color-mix') {
+		return none
+	}
+
+	mut function_tokens := ComponentValueStream.new(component_value.function().value)
+	mut color_interpolation_method := ?ColorInterpolationMethodStyleValue(none)
+	if method := parser.parse_color_interpolation_method_value(mut function_tokens) {
+		color_interpolation_method = method
+		function_tokens.consume_whitespace()
+		comma := function_tokens.consume() or { return none }
+		if !comma.is(.comma) {
+			return none
+		}
+	}
+
+	first_component := parser.parse_color_mix_component(mut function_tokens) or { return none }
+	function_tokens.consume_whitespace()
+	comma := function_tokens.consume() or { return none }
+	if !comma.is(.comma) {
+		return none
+	}
+	second_component := parser.parse_color_mix_component(mut function_tokens) or { return none }
+
+	if first_percentage := first_component.percentage {
+		if second_percentage := second_component.percentage {
+			if !first_percentage.is_calculated() && !second_percentage.is_calculated()
+				&& first_percentage.value().value() == 0 && second_percentage.value().value() == 0 {
+				return none
+			}
+		}
+	}
+
+	function_tokens.consume_whitespace()
+	if function_tokens.has_more_tokens() {
+		return none
+	}
+
+	return StyleValue(ColorMixStyleValue.create(color_interpolation_method, first_component,
+		second_component))
+}
+
+fn (mut parser Parser) parse_light_dark_color_value(component_value ComponentValue) ?StyleValue {
+	if !component_value.is_function_named('light-dark') {
+		return none
+	}
+
+	mut inner_tokens := ComponentValueStream.new(component_value.function().value)
+	inner_tokens.consume_whitespace()
+	light := parser.parse_color_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+	comma := inner_tokens.consume() or { return none }
+	if !comma.is(.comma) {
+		return none
+	}
+	inner_tokens.consume_whitespace()
+	dark := parser.parse_color_value(mut inner_tokens) or { return none }
+	inner_tokens.consume_whitespace()
+	if inner_tokens.has_more_tokens() {
+		return none
+	}
+	return StyleValue(LightDarkStyleValue.create(light, dark))
+}
+
 fn (mut parser Parser) parse_color_value(mut tokens ComponentValueStream) ?StyleValue {
 	tokens.consume_whitespace()
 	component_value := tokens.consume() or { return none }
+
+	// Keywords: <system-color> | <deprecated-color> | currentColor
+	if component_value.is(.ident) {
+		ident := component_value.token().ident()
+		if keyword := keyword_from_string(ident) {
+			if KeywordStyleValue.is_color(keyword) {
+				return StyleValue(KeywordStyleValue.create(keyword))
+			}
+		}
+		if color := named_css_color_for_value_logic(ident) {
+			return StyleValue(ColorStyleValue.create_from_color(color, .legacy, ident))
+		}
+		return none
+	}
+
+	// Functions
+	if color := parser.parse_color_function(component_value) {
+		return color
+	}
+	if color := parser.parse_color_mix_function(component_value) {
+		return color
+	}
+	if rgb := parser.parse_rgb_color_value(component_value) {
+		return rgb
+	}
+	if hsl := parser.parse_hsl_color_value(component_value) {
+		return hsl
+	}
+	if hwb := parser.parse_hwb_color_value(component_value) {
+		return hwb
+	}
+	if lab_values := parser.parse_lab_like_color_value(component_value, 'lab') {
+		return StyleValue(LabColorStyleValue.create(lab_values.first, lab_values.second,
+			lab_values.third, lab_values.alpha))
+	}
+	if lch_values := parser.parse_lch_like_color_value(component_value, 'lch') {
+		return StyleValue(LCHColorStyleValue.create(lch_values.first, lch_values.second,
+			lch_values.third, lch_values.alpha))
+	}
+	if oklab_values := parser.parse_lab_like_color_value(component_value, 'oklab') {
+		return StyleValue(OKLabColorStyleValue.create(oklab_values.first, oklab_values.second,
+			oklab_values.third, oklab_values.alpha))
+	}
+	if oklch_values := parser.parse_lch_like_color_value(component_value, 'oklch') {
+		return StyleValue(OKLCHColorStyleValue.create(oklch_values.first, oklch_values.second,
+			oklch_values.third, oklch_values.alpha))
+	}
+	if light_dark := parser.parse_light_dark_color_value(component_value) {
+		return light_dark
+	}
 
 	if component_value.is(.hash) {
 		color := parse_hash_color_for_value_logic(component_value.token().hash_value()) or {
 			return none
 		}
-		return StyleValue(ColorStyleValue.create(color))
-	}
-
-	if component_value.is(.ident) {
-		ident := component_value.token().ident()
-		keyword := keyword_from_string(ident) or { return none }
-		if KeywordStyleValue.is_color(keyword) {
-			return StyleValue(KeywordStyleValue.create(keyword))
-		}
-		return none
-	}
-
-	if component_value.is_function_named('rgb') || component_value.is_function_named('rgba')
-		|| component_value.is_function_named('hsl') || component_value.is_function_named('hsla')
-		|| component_value.is_function_named('hwb') || component_value.is_function_named('lab')
-		|| component_value.is_function_named('oklab') || component_value.is_function_named('lch')
-		|| component_value.is_function_named('oklch') || component_value.is_function_named('color')
-		|| component_value.is_function_named('color-mix')
-		|| component_value.is_function_named('light-dark') {
-		return StyleValue(StubStyleValue.create(.color, component_value.to_string()))
+		return StyleValue(ColorStyleValue.create_from_color(color, .legacy, none))
 	}
 
 	return none
@@ -744,6 +1369,172 @@ fn parse_hash_color_for_value_logic(value string) ?Color {
 		u64(255)
 	}
 	return Color.rgba(u8(r), u8(g), u8(b), u8(a))
+}
+
+fn color_from_rgb_hex_for_value_logic(value int) Color {
+	return Color.rgb(u8((value >> 16) & 0xff), u8((value >> 8) & 0xff), u8(value & 0xff))
+}
+
+fn named_css_color_for_value_logic(value string) ?Color {
+	if equals_ignoring_ascii_case(value, 'transparent') {
+		return Color.rgba(0, 0, 0, 0)
+	}
+
+	return match to_ascii_lowercase(value) {
+		// CSS Level 1
+		'black' { color_from_rgb_hex_for_value_logic(0x000000) }
+		'silver' { color_from_rgb_hex_for_value_logic(0xc0c0c0) }
+		'gray' { color_from_rgb_hex_for_value_logic(0x808080) }
+		'white' { color_from_rgb_hex_for_value_logic(0xffffff) }
+		'maroon' { color_from_rgb_hex_for_value_logic(0x800000) }
+		'red' { color_from_rgb_hex_for_value_logic(0xff0000) }
+		'purple' { color_from_rgb_hex_for_value_logic(0x800080) }
+		'fuchsia' { color_from_rgb_hex_for_value_logic(0xff00ff) }
+		'green' { color_from_rgb_hex_for_value_logic(0x008000) }
+		'lime' { color_from_rgb_hex_for_value_logic(0x00ff00) }
+		'olive' { color_from_rgb_hex_for_value_logic(0x808000) }
+		'yellow' { color_from_rgb_hex_for_value_logic(0xffff00) }
+		'navy' { color_from_rgb_hex_for_value_logic(0x000080) }
+		'blue' { color_from_rgb_hex_for_value_logic(0x0000ff) }
+		'teal' { color_from_rgb_hex_for_value_logic(0x008080) }
+		'aqua' { color_from_rgb_hex_for_value_logic(0x00ffff) }
+		// CSS Level 2 (Revision 1)
+		'orange' { color_from_rgb_hex_for_value_logic(0xffa500) }
+		// CSS Color Module Level 3
+		'aliceblue' { color_from_rgb_hex_for_value_logic(0xf0f8ff) }
+		'antiquewhite' { color_from_rgb_hex_for_value_logic(0xfaebd7) }
+		'aquamarine' { color_from_rgb_hex_for_value_logic(0x7fffd4) }
+		'azure' { color_from_rgb_hex_for_value_logic(0xf0ffff) }
+		'beige' { color_from_rgb_hex_for_value_logic(0xf5f5dc) }
+		'bisque' { color_from_rgb_hex_for_value_logic(0xffe4c4) }
+		'blanchedalmond' { color_from_rgb_hex_for_value_logic(0xffebcd) }
+		'blueviolet' { color_from_rgb_hex_for_value_logic(0x8a2be2) }
+		'brown' { color_from_rgb_hex_for_value_logic(0xa52a2a) }
+		'burlywood' { color_from_rgb_hex_for_value_logic(0xdeb887) }
+		'cadetblue' { color_from_rgb_hex_for_value_logic(0x5f9ea0) }
+		'chartreuse' { color_from_rgb_hex_for_value_logic(0x7fff00) }
+		'chocolate' { color_from_rgb_hex_for_value_logic(0xd2691e) }
+		'coral' { color_from_rgb_hex_for_value_logic(0xff7f50) }
+		'cornflowerblue' { color_from_rgb_hex_for_value_logic(0x6495ed) }
+		'cornsilk' { color_from_rgb_hex_for_value_logic(0xfff8dc) }
+		'crimson' { color_from_rgb_hex_for_value_logic(0xdc143c) }
+		'cyan' { color_from_rgb_hex_for_value_logic(0x00ffff) }
+		'darkblue' { color_from_rgb_hex_for_value_logic(0x00008b) }
+		'darkcyan' { color_from_rgb_hex_for_value_logic(0x008b8b) }
+		'darkgoldenrod' { color_from_rgb_hex_for_value_logic(0xb8860b) }
+		'darkgray' { color_from_rgb_hex_for_value_logic(0xa9a9a9) }
+		'darkgreen' { color_from_rgb_hex_for_value_logic(0x006400) }
+		'darkgrey' { color_from_rgb_hex_for_value_logic(0xa9a9a9) }
+		'darkkhaki' { color_from_rgb_hex_for_value_logic(0xbdb76b) }
+		'darkmagenta' { color_from_rgb_hex_for_value_logic(0x8b008b) }
+		'darkolivegreen' { color_from_rgb_hex_for_value_logic(0x556b2f) }
+		'darkorange' { color_from_rgb_hex_for_value_logic(0xff8c00) }
+		'darkorchid' { color_from_rgb_hex_for_value_logic(0x9932cc) }
+		'darkred' { color_from_rgb_hex_for_value_logic(0x8b0000) }
+		'darksalmon' { color_from_rgb_hex_for_value_logic(0xe9967a) }
+		'darkseagreen' { color_from_rgb_hex_for_value_logic(0x8fbc8f) }
+		'darkslateblue' { color_from_rgb_hex_for_value_logic(0x483d8b) }
+		'darkslategray' { color_from_rgb_hex_for_value_logic(0x2f4f4f) }
+		'darkslategrey' { color_from_rgb_hex_for_value_logic(0x2f4f4f) }
+		'darkturquoise' { color_from_rgb_hex_for_value_logic(0x00ced1) }
+		'darkviolet' { color_from_rgb_hex_for_value_logic(0x9400d3) }
+		'deeppink' { color_from_rgb_hex_for_value_logic(0xff1493) }
+		'deepskyblue' { color_from_rgb_hex_for_value_logic(0x00bfff) }
+		'dimgray' { color_from_rgb_hex_for_value_logic(0x696969) }
+		'dimgrey' { color_from_rgb_hex_for_value_logic(0x696969) }
+		'dodgerblue' { color_from_rgb_hex_for_value_logic(0x1e90ff) }
+		'firebrick' { color_from_rgb_hex_for_value_logic(0xb22222) }
+		'floralwhite' { color_from_rgb_hex_for_value_logic(0xfffaf0) }
+		'forestgreen' { color_from_rgb_hex_for_value_logic(0x228b22) }
+		'gainsboro' { color_from_rgb_hex_for_value_logic(0xdcdcdc) }
+		'ghostwhite' { color_from_rgb_hex_for_value_logic(0xf8f8ff) }
+		'gold' { color_from_rgb_hex_for_value_logic(0xffd700) }
+		'goldenrod' { color_from_rgb_hex_for_value_logic(0xdaa520) }
+		'greenyellow' { color_from_rgb_hex_for_value_logic(0xadff2f) }
+		'grey' { color_from_rgb_hex_for_value_logic(0x808080) }
+		'honeydew' { color_from_rgb_hex_for_value_logic(0xf0fff0) }
+		'hotpink' { color_from_rgb_hex_for_value_logic(0xff69b4) }
+		'indianred' { color_from_rgb_hex_for_value_logic(0xcd5c5c) }
+		'indigo' { color_from_rgb_hex_for_value_logic(0x4b0082) }
+		'ivory' { color_from_rgb_hex_for_value_logic(0xfffff0) }
+		'khaki' { color_from_rgb_hex_for_value_logic(0xf0e68c) }
+		'lavender' { color_from_rgb_hex_for_value_logic(0xe6e6fa) }
+		'lavenderblush' { color_from_rgb_hex_for_value_logic(0xfff0f5) }
+		'lawngreen' { color_from_rgb_hex_for_value_logic(0x7cfc00) }
+		'lemonchiffon' { color_from_rgb_hex_for_value_logic(0xfffacd) }
+		'lightblue' { color_from_rgb_hex_for_value_logic(0xadd8e6) }
+		'lightcoral' { color_from_rgb_hex_for_value_logic(0xf08080) }
+		'lightcyan' { color_from_rgb_hex_for_value_logic(0xe0ffff) }
+		'lightgoldenrodyellow' { color_from_rgb_hex_for_value_logic(0xfafad2) }
+		'lightgray' { color_from_rgb_hex_for_value_logic(0xd3d3d3) }
+		'lightgreen' { color_from_rgb_hex_for_value_logic(0x90ee90) }
+		'lightgrey' { color_from_rgb_hex_for_value_logic(0xd3d3d3) }
+		'lightpink' { color_from_rgb_hex_for_value_logic(0xffb6c1) }
+		'lightsalmon' { color_from_rgb_hex_for_value_logic(0xffa07a) }
+		'lightseagreen' { color_from_rgb_hex_for_value_logic(0x20b2aa) }
+		'lightskyblue' { color_from_rgb_hex_for_value_logic(0x87cefa) }
+		'lightslategray' { color_from_rgb_hex_for_value_logic(0x778899) }
+		'lightslategrey' { color_from_rgb_hex_for_value_logic(0x778899) }
+		'lightsteelblue' { color_from_rgb_hex_for_value_logic(0xb0c4de) }
+		'lightyellow' { color_from_rgb_hex_for_value_logic(0xffffe0) }
+		'limegreen' { color_from_rgb_hex_for_value_logic(0x32cd32) }
+		'linen' { color_from_rgb_hex_for_value_logic(0xfaf0e6) }
+		'magenta' { color_from_rgb_hex_for_value_logic(0xff00ff) }
+		'mediumaquamarine' { color_from_rgb_hex_for_value_logic(0x66cdaa) }
+		'mediumblue' { color_from_rgb_hex_for_value_logic(0x0000cd) }
+		'mediumorchid' { color_from_rgb_hex_for_value_logic(0xba55d3) }
+		'mediumpurple' { color_from_rgb_hex_for_value_logic(0x9370db) }
+		'mediumseagreen' { color_from_rgb_hex_for_value_logic(0x3cb371) }
+		'mediumslateblue' { color_from_rgb_hex_for_value_logic(0x7b68ee) }
+		'mediumspringgreen' { color_from_rgb_hex_for_value_logic(0x00fa9a) }
+		'mediumturquoise' { color_from_rgb_hex_for_value_logic(0x48d1cc) }
+		'mediumvioletred' { color_from_rgb_hex_for_value_logic(0xc71585) }
+		'midnightblue' { color_from_rgb_hex_for_value_logic(0x191970) }
+		'mintcream' { color_from_rgb_hex_for_value_logic(0xf5fffa) }
+		'mistyrose' { color_from_rgb_hex_for_value_logic(0xffe4e1) }
+		'moccasin' { color_from_rgb_hex_for_value_logic(0xffe4b5) }
+		'navajowhite' { color_from_rgb_hex_for_value_logic(0xffdead) }
+		'oldlace' { color_from_rgb_hex_for_value_logic(0xfdf5e6) }
+		'olivedrab' { color_from_rgb_hex_for_value_logic(0x6b8e23) }
+		'orangered' { color_from_rgb_hex_for_value_logic(0xff4500) }
+		'orchid' { color_from_rgb_hex_for_value_logic(0xda70d6) }
+		'palegoldenrod' { color_from_rgb_hex_for_value_logic(0xeee8aa) }
+		'palegreen' { color_from_rgb_hex_for_value_logic(0x98fb98) }
+		'paleturquoise' { color_from_rgb_hex_for_value_logic(0xafeeee) }
+		'palevioletred' { color_from_rgb_hex_for_value_logic(0xdb7093) }
+		'papayawhip' { color_from_rgb_hex_for_value_logic(0xffefd5) }
+		'peachpuff' { color_from_rgb_hex_for_value_logic(0xffdab9) }
+		'peru' { color_from_rgb_hex_for_value_logic(0xcd853f) }
+		'pink' { color_from_rgb_hex_for_value_logic(0xffc0cb) }
+		'plum' { color_from_rgb_hex_for_value_logic(0xdda0dd) }
+		'powderblue' { color_from_rgb_hex_for_value_logic(0xb0e0e6) }
+		'rosybrown' { color_from_rgb_hex_for_value_logic(0xbc8f8f) }
+		'royalblue' { color_from_rgb_hex_for_value_logic(0x4169e1) }
+		'saddlebrown' { color_from_rgb_hex_for_value_logic(0x8b4513) }
+		'salmon' { color_from_rgb_hex_for_value_logic(0xfa8072) }
+		'sandybrown' { color_from_rgb_hex_for_value_logic(0xf4a460) }
+		'seagreen' { color_from_rgb_hex_for_value_logic(0x2e8b57) }
+		'seashell' { color_from_rgb_hex_for_value_logic(0xfff5ee) }
+		'sienna' { color_from_rgb_hex_for_value_logic(0xa0522d) }
+		'skyblue' { color_from_rgb_hex_for_value_logic(0x87ceeb) }
+		'slateblue' { color_from_rgb_hex_for_value_logic(0x6a5acd) }
+		'slategray' { color_from_rgb_hex_for_value_logic(0x708090) }
+		'slategrey' { color_from_rgb_hex_for_value_logic(0x708090) }
+		'snow' { color_from_rgb_hex_for_value_logic(0xfffafa) }
+		'springgreen' { color_from_rgb_hex_for_value_logic(0x00ff7f) }
+		'steelblue' { color_from_rgb_hex_for_value_logic(0x4682b4) }
+		'tan' { color_from_rgb_hex_for_value_logic(0xd2b48c) }
+		'thistle' { color_from_rgb_hex_for_value_logic(0xd8bfd8) }
+		'tomato' { color_from_rgb_hex_for_value_logic(0xff6347) }
+		'turquoise' { color_from_rgb_hex_for_value_logic(0x40e0d0) }
+		'violet' { color_from_rgb_hex_for_value_logic(0xee82ee) }
+		'wheat' { color_from_rgb_hex_for_value_logic(0xf5deb3) }
+		'whitesmoke' { color_from_rgb_hex_for_value_logic(0xf5f5f5) }
+		'yellowgreen' { color_from_rgb_hex_for_value_logic(0x9acd32) }
+		// CSS Color Module Level 4
+		'rebeccapurple' { color_from_rgb_hex_for_value_logic(0x663399) }
+		else { none }
+	}
 }
 
 fn (mut parser Parser) parse_color_scheme_value(mut tokens ComponentValueStream) ?StyleValue {
