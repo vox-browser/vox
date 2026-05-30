@@ -508,6 +508,44 @@ pub fn is_relative_length_unit(unit LengthUnit) bool {
 	return is_font_relative_length_unit(unit) || is_viewport_relative_length_unit(unit)
 }
 
+pub fn angle_units_are_compatible(a AngleUnit, b AngleUnit) bool {
+	_ = a
+	_ = b
+	return true
+}
+
+pub fn frequency_units_are_compatible(a FrequencyUnit, b FrequencyUnit) bool {
+	_ = a
+	_ = b
+	return true
+}
+
+pub fn flex_units_are_compatible(a FlexUnit, b FlexUnit) bool {
+	_ = a
+	_ = b
+	return true
+}
+
+pub fn resolution_units_are_compatible(a ResolutionUnit, b ResolutionUnit) bool {
+	_ = a
+	_ = b
+	return true
+}
+
+pub fn time_units_are_compatible(a TimeUnit, b TimeUnit) bool {
+	_ = a
+	_ = b
+	return true
+}
+
+pub fn length_units_are_compatible(a LengthUnit, b LengthUnit) bool {
+	// https://drafts.csswg.org/css-values-4/#compatible-units
+	// NB: The spec describes two ways units can be compatible. Absolute ones always are, but it also lists em/px
+	//     as compatible at computed value time. We should already have absolutized the units by then, but perhaps
+	//     there is some case where we need to handle that here instead.
+	return is_absolute_length_unit(a) && is_absolute_length_unit(b)
+}
+
 pub fn ratio_between_angle_units(from AngleUnit, to AngleUnit) f64 {
 	return angle_units_per_canonical_unit(from) / angle_units_per_canonical_unit(to)
 }

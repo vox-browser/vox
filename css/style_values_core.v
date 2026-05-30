@@ -4361,22 +4361,31 @@ pub fn (unit_value CSSUnitValue) converted_to_unit(unit string) ?CSSUnitValue {
 			.angle {
 				from := string_to_angle_unit(old_unit) or { return none }
 				to := string_to_angle_unit(new_unit) or { return none }
+				if !angle_units_are_compatible(from, to) {
+					return none
+				}
 				ratio = ratio_between_angle_units(from, to)
 			}
 			.flex {
 				from := string_to_flex_unit(old_unit) or { return none }
 				to := string_to_flex_unit(new_unit) or { return none }
+				if !flex_units_are_compatible(from, to) {
+					return none
+				}
 				ratio = ratio_between_flex_units(from, to)
 			}
 			.frequency {
 				from := string_to_frequency_unit(old_unit) or { return none }
 				to := string_to_frequency_unit(new_unit) or { return none }
+				if !frequency_units_are_compatible(from, to) {
+					return none
+				}
 				ratio = ratio_between_frequency_units(from, to)
 			}
 			.length {
 				from := string_to_length_unit(old_unit) or { return none }
 				to := string_to_length_unit(new_unit) or { return none }
-				if !is_absolute_length_unit(from) || !is_absolute_length_unit(to) {
+				if !length_units_are_compatible(from, to) {
 					return none
 				}
 				ratio = ratio_between_length_units(from, to)
@@ -4384,11 +4393,17 @@ pub fn (unit_value CSSUnitValue) converted_to_unit(unit string) ?CSSUnitValue {
 			.resolution {
 				from := string_to_resolution_unit(old_unit) or { return none }
 				to := string_to_resolution_unit(new_unit) or { return none }
+				if !resolution_units_are_compatible(from, to) {
+					return none
+				}
 				ratio = ratio_between_resolution_units(from, to)
 			}
 			.time {
 				from := string_to_time_unit(old_unit) or { return none }
 				to := string_to_time_unit(new_unit) or { return none }
+				if !time_units_are_compatible(from, to) {
+					return none
+				}
 				ratio = ratio_between_time_units(from, to)
 			}
 		}
@@ -4426,7 +4441,8 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.angle {
 				angle_unit := string_to_angle_unit(unit) or { return none }
 				canonical_unit := canonical_angle_unit()
-				if angle_unit != canonical_unit {
+				if angle_unit != canonical_unit
+					&& angle_units_are_compatible(angle_unit, canonical_unit) {
 					value *= ratio_between_angle_units(angle_unit, canonical_unit)
 					unit = angle_unit_name(canonical_unit)
 				}
@@ -4434,7 +4450,8 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.flex {
 				flex_unit := string_to_flex_unit(unit) or { return none }
 				canonical_unit := canonical_flex_unit()
-				if flex_unit != canonical_unit {
+				if flex_unit != canonical_unit
+					&& flex_units_are_compatible(flex_unit, canonical_unit) {
 					value *= ratio_between_flex_units(flex_unit, canonical_unit)
 					unit = flex_unit_name(canonical_unit)
 				}
@@ -4442,7 +4459,8 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.frequency {
 				frequency_unit := string_to_frequency_unit(unit) or { return none }
 				canonical_unit := canonical_frequency_unit()
-				if frequency_unit != canonical_unit {
+				if frequency_unit != canonical_unit
+					&& frequency_units_are_compatible(frequency_unit, canonical_unit) {
 					value *= ratio_between_frequency_units(frequency_unit, canonical_unit)
 					unit = to_ascii_lowercase(frequency_unit_name(canonical_unit))
 				}
@@ -4450,8 +4468,8 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.length {
 				length_unit := string_to_length_unit(unit) or { return none }
 				canonical_unit := canonical_length_unit()
-				if length_unit != canonical_unit && is_absolute_length_unit(length_unit)
-					&& is_absolute_length_unit(canonical_unit) {
+				if length_unit != canonical_unit
+					&& length_units_are_compatible(length_unit, canonical_unit) {
 					value *= ratio_between_length_units(length_unit, canonical_unit)
 					unit = length_unit_name(canonical_unit)
 				}
@@ -4459,7 +4477,8 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.resolution {
 				resolution_unit := string_to_resolution_unit(unit) or { return none }
 				canonical_unit := canonical_resolution_unit()
-				if resolution_unit != canonical_unit {
+				if resolution_unit != canonical_unit
+					&& resolution_units_are_compatible(resolution_unit, canonical_unit) {
 					value *= ratio_between_resolution_units(resolution_unit, canonical_unit)
 					unit = resolution_unit_name(canonical_unit)
 				}
@@ -4467,7 +4486,8 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.time {
 				time_unit := string_to_time_unit(unit) or { return none }
 				canonical_unit := canonical_time_unit()
-				if time_unit != canonical_unit {
+				if time_unit != canonical_unit
+					&& time_units_are_compatible(time_unit, canonical_unit) {
 					value *= ratio_between_time_units(time_unit, canonical_unit)
 					unit = time_unit_name(canonical_unit)
 				}
