@@ -908,8 +908,96 @@ pub fn EasingFunction.ease() EasingFunction {
 	}
 }
 
+fn easing_resolve_percentage(style_value StyleValue) f64 {
+	if style_value.is_percentage() {
+		return style_value.as_percentage().percentage().as_fraction()
+	}
+
+	if style_value.is_calculated() {
+		return (style_value.as_calculated().resolve_percentage(CalculationResolutionContext{}) or {
+			panic('VERIFY_NOT_REACHED')
+		}).as_fraction()
+	}
+
+	panic('VERIFY_NOT_REACHED')
+}
+
+pub fn EasingFunction.from_css_style_value(style_value StyleValue) EasingFunction {
+	if style_value is EasingStyleValue {
+		function := style_value.function()
+		return match function {
+			EasingLinear {
+				mut resolved_control_points := []LinearEasingControlPoint{}
+				for control_point in function.stops {
+					output := number_from_style_value(control_point.output, none)
+
+					input := if existing_input := control_point.input {
+						?f64(easing_resolve_percentage(existing_input))
+					} else {
+						?f64(none)
+					}
+
+					resolved_control_points << LinearEasingControlPoint{
+						input:  input
+						output: output
+					}
+				}
+
+				// https://drafts.csswg.org/css-easing-2/#funcdef-linear
+				// If an argument lacks a <percentage>, its input progress value is initially empty. This is corrected
+				// at used value time by linear() canonicalization.
+				resolved_control_points =
+					canonicalize_linear_easing_function_control_points(resolved_control_points)
+
+				EasingFunction{
+					value: LinearEasingFunction{
+						control_points: resolved_control_points
+						stringified:    function.serialize(.resolved_value)
+					}
+				}
+			}
+			EasingCubicBezier {
+				resolved_x1 := number_from_style_value(function.x1, none)
+				resolved_y1 := number_from_style_value(function.y1, none)
+				resolved_x2 := number_from_style_value(function.x2, none)
+				resolved_y2 := number_from_style_value(function.y2, none)
+
+				EasingFunction{
+					value: CubicBezierEasingFunction{
+						x1:          resolved_x1
+						y1:          resolved_y1
+						x2:          resolved_x2
+						y2:          resolved_y2
+						stringified: function.serialize(.normal)
+					}
+				}
+			}
+			EasingSteps {
+				EasingFunction{
+					value: StepsEasingFunction{
+						interval_count: int_from_style_value(function.number_of_intervals)
+						position:       function.position
+						stringified:    function.serialize(.resolved_value)
+					}
+				}
+			}
+		}
+	}
+
+	return match style_value.serialize(.normal) {
+		'linear' { EasingFunction.linear() }
+		'ease-in' { EasingFunction.ease_in() }
+		'ease-out' { EasingFunction.ease_out() }
+		'ease-in-out' { EasingFunction.ease_in_out() }
+		'ease' { EasingFunction.ease() }
+		else { panic('VERIFY_NOT_REACHED') }
+	}
+}
+
 pub fn EasingFunction.from_style_value(style_value &dom.StyleValue) EasingFunction {
 	_ = style_value
+	// Boundary: dom.StyleValue is currently opaque in this V port. CSS-side callers should use
+	// from_css_style_value() with translated StyleValue objects.
 	return EasingFunction.ease()
 }
 
