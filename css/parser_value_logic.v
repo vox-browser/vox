@@ -592,12 +592,17 @@ fn (mut parser Parser) parse_font_feature_settings_value(mut tokens ComponentVal
 	mut transaction := tokens.clone()
 	component_values := transaction.consume_remaining_component_values()
 	tag_values := parse_a_comma_separated_list_of_component_values_for_value_logic(component_values)
+	mut feature_tags := []StyleValue{}
 	for values in tag_values {
-		_ = computed_interpolation_parse_font_feature_settings_entry(values) or { return none }
+		feature_tags << StyleValue(computed_interpolation_parse_font_feature_settings_entry(values) or {
+			return none
+		})
+	}
+	if feature_tags.len == 0 {
+		return none
 	}
 	tokens = transaction
-	return StyleValue(StubStyleValue.create(.value_list,
-		serialize_a_series_of_component_values(component_values)))
+	return StyleValue(StyleValueList.create(feature_tags, .comma, .yes))
 }
 
 fn (mut parser Parser) parse_font_variation_settings_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -619,12 +624,17 @@ fn (mut parser Parser) parse_font_variation_settings_value(mut tokens ComponentV
 	mut transaction := tokens.clone()
 	component_values := transaction.consume_remaining_component_values()
 	tag_values := parse_a_comma_separated_list_of_component_values_for_value_logic(component_values)
+	mut axis_tags := []StyleValue{}
 	for values in tag_values {
-		_ = computed_interpolation_parse_font_variation_settings_entry(values) or { return none }
+		axis_tags << StyleValue(computed_interpolation_parse_font_variation_settings_entry(values) or {
+			return none
+		})
+	}
+	if axis_tags.len == 0 {
+		return none
 	}
 	tokens = transaction
-	return StyleValue(StubStyleValue.create(.value_list,
-		serialize_a_series_of_component_values(component_values)))
+	return StyleValue(StyleValueList.create(axis_tags, .comma, .yes))
 }
 
 fn (mut parser Parser) parse_single_animation_timeline_value(mut tokens ComponentValueStream) ?StyleValue {
