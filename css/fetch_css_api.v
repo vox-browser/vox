@@ -379,8 +379,8 @@ pub fn fetch_a_style_resource(url_value StyleResourceURL, css_rule_or_declaratio
 	request := fetch_a_style_resource_impl(url_value, css_rule_or_declaration, destination,
 		cors_mode) or { return none }
 
-	// Stub: Fetch::Fetching::fetch() and FetchAlgorithms are not translated yet; return the constructed request in a
-	// controller-shaped object.
+	// Boundary: Fetch::Fetching::fetch() and FetchAlgorithms are not translated yet; return the constructed request in
+	// a controller-shaped object.
 	return CSSFetchController{
 		request: request
 	}
@@ -400,8 +400,8 @@ pub fn fetch_an_external_image_for_a_stylesheet(url_value StyleResourceURL, decl
 		return none
 	}
 
-	// Stub: HTML::SharedResourceRequest is currently an empty DOM-side placeholder. Preserve the get-or-create shape and
-	// document notification callback side effect from the C++ path.
+	// Boundary: HTML::SharedResourceRequest is currently an empty DOM-side placeholder. Preserve the get-or-create shape
+	// and document notification callback side effect from the C++ path.
 	mut shared_resource_requests := document.shared_resource_requests()
 	if shared_resource_request := shared_resource_requests[request.url] {
 		document.notify_css_background_image_loaded()

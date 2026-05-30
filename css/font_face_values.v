@@ -777,8 +777,8 @@ fn add_font_feature_values_map_to_hash_map(mut target map[string][]u32, source &
 
 pub fn (mut rule CSSFontFeatureValuesRule) clear_caches() {
 	rule.cache_generation++
-	// Stub: CSSFontFeatureValuesRule::clear_caches normally clears FontComputer caches through the parent stylesheet's
-	// owning document. The V CSSOM/DOM integration for that path is not present yet.
+	// Boundary: CSSFontFeatureValuesRule::clear_caches clears FontComputer caches through the parent stylesheet's
+	// owning document in C++; this standalone rule object has no owning document link yet.
 }
 
 // --- CSS @font-face descriptors and rule ---
@@ -1347,8 +1347,8 @@ pub fn (rule &CSSFontFaceRule) loading_state() CSSStyleSheetLoadingState {
 }
 
 pub fn (mut rule CSSFontFaceRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSheet) {
-	// Stub: This mirrors the critical-subresource bookkeeping, but CSSStyleSheet currently tracks CSSRule rather than
-	// CSSFontFaceRule objects in this V port.
+	// Boundary: C++ registers CSSFontFaceRule as a critical stylesheet subresource here. CSSStyleSheet currently tracks
+	// CSSRule wrapper objects rather than CSSFontFaceRule objects in this V port.
 	rule.parent_style_sheet = parent_style_sheet
 }
 
@@ -2430,9 +2430,7 @@ pub fn (mut set FontFaceSet) clear() {
 fn find_matching_font_faces(font_face_set &FontFaceSet, font string, text string) ![]&FontFaceObject {
 	_ = text
 	// 1. Parse font using the CSS value syntax of the font property. If a syntax error occurs, return a syntax error.
-	// Stub: The CSS font shorthand parser is not translated. Treat the input as a comma-separated family list.
-	font_family_list := parse_font_family_list(font)
-	if font_family_list.len == 0 {
+	font_family_list := parse_font_shorthand_family_list(font) or {
 		return error('SyntaxError: Unable to parse font')
 	}
 
@@ -2765,6 +2763,20 @@ pub fn (key ComputedFontCacheKey) id() string {
 	return builder.str()
 }
 
+fn computed_font_cache_key_references_family(cache_key string, family_name string) bool {
+	if family_name.len == 0 {
+		return false
+	}
+	font_family_end := cache_key.index_u8(`|`)
+	font_family_part := if font_family_end < 0 { cache_key } else { cache_key[..font_family_end] }
+	for family in split_css_comma_list(font_family_part) {
+		if unquote_css_string(family).to_lower() == family_name.to_lower() {
+			return true
+		}
+	}
+	return false
+}
+
 @[heap]
 pub struct FontLoader {
 pub mut:
@@ -2914,13 +2926,13 @@ pub fn (mut computer FontComputer) clear_computed_font_cache(family_name string)
 	// Only clear cache entries that reference the loaded font family.
 	mut kept := map[string]FontCascadeList{}
 	for key, value in computer.computed_font_cache {
-		if !key.to_lower().contains(family_name.to_lower()) {
+		if !computed_font_cache_key_references_family(key, family_name) {
 			kept[key] = value
 		}
 	}
 	computer.computed_font_cache = kept.clone()
 
-	// Stub: The C++ walks the DOM tree and marks elements using this family for style update. The V DOM style-cache
+	// Boundary: The C++ walks the DOM tree and marks elements using this family for style update. The V DOM style-cache
 	// integration is not present here.
 }
 
@@ -3051,8 +3063,8 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 	for family in font_family {
 		mut other_font_list := ?FontCascadeList(none)
 		if is_generic_font_family(family) {
-			other_font_list = computer.find_font(platform_generic_font_name_boundary(family), weight,
-				slope, font_size_in_pt, variation, font_feature_data)
+			other_font_list = computer.find_font(platform_generic_font_name_boundary(family),
+				weight, slope, font_size_in_pt, variation, font_feature_data)
 		} else {
 			other_font_list = computer.find_font(family, weight, slope, font_size_in_pt, variation,
 				font_feature_data)
@@ -4027,6 +4039,124 @@ fn parse_font_family_list(value string) []string {
 		}
 	}
 	return families
+}
+
+fn parse_font_shorthand_family_list(value string) ?[]string {
+	tokens := split_css_space_list(value)
+	if tokens.len == 0 {
+		return none
+	}
+
+	mut family_start := -1
+	for i, token in tokens {
+		if !is_font_size_token(token) {
+			continue
+		}
+
+		mut next := i + 1
+		if token.ends_with('/') && next < tokens.len {
+			next++
+		} else if !token.contains('/') && next < tokens.len {
+			line_height_token := tokens[next]
+			if line_height_token == '/' {
+				next += 2
+			} else if line_height_token.starts_with('/') {
+				next++
+			} else if line_height_token.ends_with('/') {
+				next += 2
+			}
+		}
+		family_start = next
+		break
+	}
+
+	if family_start < 0 || family_start >= tokens.len {
+		return none
+	}
+
+	families := parse_font_family_list(tokens[family_start..].join(' '))
+	if families.len == 0 {
+		return none
+	}
+	return families
+}
+
+fn is_font_size_token(token string) bool {
+	mut size := token.trim_space()
+	slash := size.index_u8(`/`)
+	if slash >= 0 {
+		size = size[..slash]
+	}
+	size = size.trim_space()
+	if size.len == 0 {
+		return false
+	}
+
+	lower := size.to_lower()
+	if lower in [
+		'xx-small',
+		'x-small',
+		'small',
+		'medium',
+		'large',
+		'x-large',
+		'xx-large',
+		'xxx-large',
+		'larger',
+		'smaller',
+		'math',
+	] {
+		return true
+	}
+	if is_valid_css_percentage(lower) {
+		return true
+	}
+	if starts_with_css_math_function(lower) {
+		return true
+	}
+	for unit in [
+		'cap',
+		'cqb',
+		'cqh',
+		'cqi',
+		'cqmax',
+		'cqmin',
+		'cqw',
+		'rem',
+		'rlh',
+		'vmax',
+		'vmin',
+		'vb',
+		'vh',
+		'vi',
+		'vw',
+		'ch',
+		'cm',
+		'em',
+		'ex',
+		'ic',
+		'in',
+		'lh',
+		'mm',
+		'pc',
+		'pt',
+		'px',
+		'q',
+	] {
+		if lower.ends_with(unit) && lower.len > unit.len {
+			return is_valid_css_number(lower[..lower.len - unit.len])
+		}
+	}
+	return false
+}
+
+fn starts_with_css_math_function(value string) bool {
+	for name in ['calc(', 'min(', 'max(', 'clamp('] {
+		if value.starts_with(name) && value.ends_with(')') {
+			return true
+		}
+	}
+	return false
 }
 
 fn contains_ascii_whitespace(value string) bool {
