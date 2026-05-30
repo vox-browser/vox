@@ -2057,7 +2057,7 @@ pub fn (style_value CounterStylePadStyleValue) serialize(mode SerializationMode)
 	return '${style_value.minimum_length.serialize(mode)} ${style_value.symbol.serialize(mode)}'
 }
 
-// Minimal CSSCounterStyleRule translation/stub so CounterStyleDefinition::from_counter_style_rule can keep its logic.
+// CSSCounterStyleRule translation so CounterStyleDefinition::from_counter_style_rule can keep its logic.
 pub struct CSSCounterStyleRule {
 pub mut:
 	name_                         string
@@ -2093,40 +2093,216 @@ pub fn (rule CSSCounterStyleRule) name() string {
 	return rule.name_
 }
 
+// https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-name
+pub fn (mut rule CSSCounterStyleRule) set_name(name string) {
+	// On setting the name attribute, run the following steps:
+
+	// 1. If the value is an ASCII case-insensitive match for "none" or one of the non-overridable counter-style names, do nothing and return.
+	if equals_ignoring_ascii_case(name, 'none')
+		|| css_counter_style_rule_matches_non_overridable_counter_style_name(name) {
+		return
+	}
+
+	// 2. If the value is an ASCII case-insensitive match for any of the predefined counter styles, lowercase it.
+	// 3. Replace the associated rule's name with an identifier equal to the value.
+	rule.name_ = if is_predefined_counter_style_name(name) { name.to_lower() } else { name }
+}
+
+pub fn (rule CSSCounterStyleRule) system() string {
+	system := rule.system_style_value_ or { return '' }
+	return system.serialize(.normal)
+}
+
+// https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-system
+pub fn (mut rule CSSCounterStyleRule) set_system(system string) {
+	// 1. parse the given value as the descriptor associated with the attribute.
+	value := parse_counter_style_system_descriptor_value(system) or { return }
+
+	// 2. If the result is invalid according to the given descriptor's grammar, or would cause the @counter-style rule
+	//    to not define a counter style, do nothing and abort these steps. (For example, some systems require the
+	//    symbols descriptor to contain two values.)
+	// NB: Since we only allow changing parameters of the system, not the algorithm itself (see below), we know this
+	//     change can't cause the @counter-style to not define a counter style.
+
+	// 3. If the attribute being set is system, and the new value would change the algorithm used, do nothing and abort
+	//    these steps.
+	// Note: It's okay to change an aspect of the algorithm, like the first symbol value of a fixed system.
+	current_system := rule.system_style_value_ or { return }
+	if current_system.algorithm_differs_from(value) {
+		return
+	}
+
+	// 4. Set the descriptor to the value.
+	rule.system_style_value_ = value
+}
+
 pub fn (rule CSSCounterStyleRule) system_style_value() ?CounterStyleSystemStyleValue {
 	return rule.system_style_value_
+}
+
+pub fn (rule CSSCounterStyleRule) negative() string {
+	negative := rule.negative_style_value_ or { return '' }
+	return negative.serialize(.normal)
+}
+
+pub fn (mut rule CSSCounterStyleRule) set_negative(negative string) {
+	if value := parse_counter_style_symbol_list_descriptor_value(negative) {
+		rule.negative_style_value_ = value
+	}
 }
 
 pub fn (rule CSSCounterStyleRule) negative_style_value() ?CounterStyleSymbolListStyleValue {
 	return rule.negative_style_value_
 }
 
+pub fn (rule CSSCounterStyleRule) prefix() string {
+	prefix := rule.prefix_style_value_ or { return '' }
+	return prefix.serialize(.normal)
+}
+
+pub fn (mut rule CSSCounterStyleRule) set_prefix(prefix string) {
+	if value := parse_counter_style_symbol_descriptor_value(prefix) {
+		rule.prefix_style_value_ = value
+	}
+}
+
 pub fn (rule CSSCounterStyleRule) prefix_style_value() ?StyleValue {
 	return rule.prefix_style_value_
+}
+
+pub fn (rule CSSCounterStyleRule) suffix() string {
+	suffix := rule.suffix_style_value_ or { return '' }
+	return suffix.serialize(.normal)
+}
+
+pub fn (mut rule CSSCounterStyleRule) set_suffix(suffix string) {
+	if value := parse_counter_style_symbol_descriptor_value(suffix) {
+		rule.suffix_style_value_ = value
+	}
 }
 
 pub fn (rule CSSCounterStyleRule) suffix_style_value() ?StyleValue {
 	return rule.suffix_style_value_
 }
 
+pub fn (rule CSSCounterStyleRule) range() string {
+	range := rule.range_style_value_ or { return '' }
+	return range.serialize(.normal)
+}
+
+pub fn (mut rule CSSCounterStyleRule) set_range(range string) {
+	if value := parse_counter_style_range_descriptor_value(range) {
+		rule.range_style_value_ = value
+	}
+}
+
 pub fn (rule CSSCounterStyleRule) range_style_value() ?CounterStyleRangeStyleValue {
 	return rule.range_style_value_
+}
+
+pub fn (rule CSSCounterStyleRule) pad() string {
+	pad := rule.pad_style_value_ or { return '' }
+	return pad.serialize(.normal)
+}
+
+pub fn (mut rule CSSCounterStyleRule) set_pad(pad string) {
+	if value := parse_counter_style_pad_descriptor_value(pad) {
+		rule.pad_style_value_ = value
+	}
 }
 
 pub fn (rule CSSCounterStyleRule) pad_style_value() ?CounterStylePadStyleValue {
 	return rule.pad_style_value_
 }
 
+pub fn (rule CSSCounterStyleRule) fallback() string {
+	fallback := rule.fallback_style_value_ or { return '' }
+	return fallback.serialize(.normal)
+}
+
+pub fn (mut rule CSSCounterStyleRule) set_fallback(fallback string) {
+	if value := parse_counter_style_name_descriptor_value(fallback) {
+		rule.fallback_style_value_ = value
+	}
+}
+
 pub fn (rule CSSCounterStyleRule) fallback_style_value() ?StyleValue {
 	return rule.fallback_style_value_
+}
+
+pub fn (rule CSSCounterStyleRule) symbols() string {
+	symbols := rule.symbols_style_value_ or { return '' }
+	return symbols.serialize(.normal)
+}
+
+// https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-symbols
+pub fn (mut rule CSSCounterStyleRule) set_symbols(symbols string) {
+	// On setting, run the following steps:
+
+	// 1. parse the given value as the descriptor associated with the attribute.
+	value := parse_counter_style_symbol_list_descriptor_value(symbols) or { return }
+
+	// 2. If the result is invalid according to the given descriptor's grammar, or would cause the @counter-style rule
+	//    to not define a counter style, do nothing and abort these steps. (For example, some systems require the
+	//    symbols descriptor to contain two values.)
+	if system := rule.system_style_value_ {
+		if !system.is_valid_symbol_count(value.values.len) {
+			return
+		}
+	}
+
+	// 3. If the attribute being set is system, and the new value would change the algorithm used, do nothing and abort
+	//    these steps. It's okay to change an aspect of the algorithm, like the first symbol value of a fixed system.
+
+	// 4. Set the descriptor to the value.
+	rule.symbols_style_value_ = value
 }
 
 pub fn (rule CSSCounterStyleRule) symbols_style_value() ?CounterStyleSymbolListStyleValue {
 	return rule.symbols_style_value_
 }
 
+pub fn (rule CSSCounterStyleRule) additive_symbols() string {
+	additive_symbols := rule.additive_symbols_style_value_ or { return '' }
+	return additive_symbols.serialize(.normal)
+}
+
+// https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-additivesymbols
+pub fn (mut rule CSSCounterStyleRule) set_additive_symbols(additive_symbols string) {
+	// On setting, run the following steps:
+
+	// 1. parse the given value as the descriptor associated with the attribute.
+	value := parse_counter_style_additive_symbols_descriptor_value(additive_symbols) or { return }
+
+	// 2. If the result is invalid according to the given descriptor's grammar, or would cause the @counter-style rule
+	//    to not define a counter style, do nothing and abort these steps. (For example, some systems require the
+	//    symbols descriptor to contain two values.)
+	if system := rule.system_style_value_ {
+		if !system.is_valid_additive_symbol_count(value.tuples.len) {
+			return
+		}
+	}
+
+	// 3. If the attribute being set is system, and the new value would change the algorithm used, do nothing and abort
+	//    these steps. It's okay to change an aspect of the algorithm, like the first symbol value of a fixed system.
+
+	// 4. Set the descriptor to the value.
+	rule.additive_symbols_style_value_ = value
+}
+
 pub fn (rule CSSCounterStyleRule) additive_symbols_style_value() ?CounterStyleAdditiveSymbolsStyleValue {
 	return rule.additive_symbols_style_value_
+}
+
+pub fn (rule CSSCounterStyleRule) speak_as() string {
+	speak_as := rule.speak_as_style_value_ or { return '' }
+	return speak_as.serialize(.normal)
+}
+
+pub fn (mut rule CSSCounterStyleRule) set_speak_as(speak_as string) {
+	if value := parse_counter_style_speak_as_descriptor_value(speak_as) {
+		rule.speak_as_style_value_ = value
+	}
 }
 
 pub fn (rule CSSCounterStyleRule) speak_as_style_value() ?StyleValue {
