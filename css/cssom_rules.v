@@ -2087,8 +2087,23 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 		list.sheets << sheet
 	} else {
 		// We have sheets from before. Insert the new sheet in the correct position (DOM tree order).
-		// Boundary: DOM tree order sorting requires DOM position APIs; preserve insertion order here.
-		list.sheets << sheet
+		mut did_insert := false
+		if owner_node := sheet.base.owner_node {
+			for i := list.sheets.len - 1; i >= 0; i-- {
+				existing_sheet := list.sheets[i]
+				existing_owner_node := existing_sheet.base.owner_node or { continue }
+				position :=
+					existing_owner_node.as_node().compare_document_position(owner_node.as_node())
+				if position & dom.document_position_following != 0 {
+					list.sheets.insert(i + 1, sheet)
+					did_insert = true
+					break
+				}
+			}
+		}
+		if !did_insert {
+			list.sheets.insert(0, sheet)
+		}
 	}
 
 	// NOTE: We evaluate media queries immediately when adding a new sheet.
