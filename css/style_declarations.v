@@ -47,6 +47,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.border_top_width { 'border-top-width' }
 		.border_image_source { 'border-image-source' }
 		.caret_color { 'caret-color' }
+		.clear { 'clear' }
 		.color { 'color' }
 		.color_scheme { 'color-scheme' }
 		.content_visibility { 'content-visibility' }
@@ -57,6 +58,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.fill_opacity { 'fill-opacity' }
 		.flood_color { 'flood-color' }
 		.flood_opacity { 'flood-opacity' }
+		.float_ { 'float' }
 		.font_feature_settings { 'font-feature-settings' }
 		.font_style { 'font-style' }
 		.font_variation_settings { 'font-variation-settings' }
@@ -80,6 +82,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.overflow_x { 'overflow-x' }
 		.overflow_y { 'overflow-y' }
 		.pointer_events { 'pointer-events' }
+		.position { 'position' }
 		.position_anchor { 'position-anchor' }
 		.shape_image_threshold { 'shape-image-threshold' }
 		.stop_color { 'stop-color' }
@@ -124,11 +127,11 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
-		.line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode, .object_fit,
-		.opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
-		.outline_width, .overflow_x, .overflow_y, .pointer_events, .position_anchor,
+		.clear, .line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode,
+		.object_fit, .opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
+		.outline_width, .overflow_x, .overflow_y, .pointer_events, .position_anchor, .position,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.transform, .translate, .webkit_text_fill_color, .word_spacing {
+		.float_, .transform, .translate, .webkit_text_fill_color, .word_spacing {
 			true
 		}
 	}
@@ -151,17 +154,17 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
-		.line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode, .object_fit,
-		.opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
-		.outline_width, .overflow_x, .overflow_y, .pointer_events, .position_anchor,
+		.clear, .line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode,
+		.object_fit, .opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
+		.outline_width, .overflow_x, .overflow_y, .pointer_events, .position_anchor, .position,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.transform, .translate, .webkit_text_fill_color, .word_spacing {
+		.float_, .transform, .translate, .webkit_text_fill_color, .word_spacing {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 78
+pub const number_of_longhand_properties = 81
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
@@ -199,58 +202,61 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		23 { PropertyID.border_top_width }
 		24 { PropertyID.border_image_source }
 		25 { PropertyID.caret_color }
-		26 { PropertyID.color }
-		27 { PropertyID.color_scheme }
-		28 { PropertyID.content_visibility }
-		29 { PropertyID.corner_bottom_left_shape }
-		30 { PropertyID.corner_bottom_right_shape }
-		31 { PropertyID.corner_top_left_shape }
-		32 { PropertyID.corner_top_right_shape }
-		33 { PropertyID.fill_opacity }
-		34 { PropertyID.flood_color }
-		35 { PropertyID.flood_opacity }
-		36 { PropertyID.font_feature_settings }
-		37 { PropertyID.font_style }
-		38 { PropertyID.font_variation_settings }
-		39 { PropertyID.font_weight }
-		40 { PropertyID.font_width }
-		41 { PropertyID.letter_spacing }
-		42 { PropertyID.line_height }
-		43 { PropertyID.list_style_image }
-		44 { PropertyID.mask_image }
-		45 { PropertyID.math_depth }
-		46 { PropertyID.math_style }
-		47 { PropertyID.mix_blend_mode }
-		48 { PropertyID.object_fit }
-		49 { PropertyID.opacity }
-		50 { PropertyID.order }
-		51 { PropertyID.orphans }
-		52 { PropertyID.outline_color }
-		53 { PropertyID.outline_offset }
-		54 { PropertyID.outline_style }
-		55 { PropertyID.outline_width }
-		56 { PropertyID.overflow_x }
-		57 { PropertyID.overflow_y }
-		58 { PropertyID.pointer_events }
-		59 { PropertyID.position_anchor }
-		60 { PropertyID.shape_image_threshold }
-		61 { PropertyID.stop_color }
-		62 { PropertyID.stop_opacity }
-		63 { PropertyID.stroke_opacity }
-		64 { PropertyID.rotate }
-		65 { PropertyID.scale }
-		66 { PropertyID.scroll_timeline_name }
-		67 { PropertyID.transform }
-		68 { PropertyID.transition_behavior }
-		69 { PropertyID.transition_delay }
-		70 { PropertyID.transition_duration }
-		71 { PropertyID.transition_property }
-		72 { PropertyID.transition_timing_function }
-		73 { PropertyID.translate }
-		74 { PropertyID.view_timeline_inset }
-		75 { PropertyID.view_timeline_name }
-		76 { PropertyID.webkit_text_fill_color }
-		77 { PropertyID.word_spacing }
+		26 { PropertyID.clear }
+		27 { PropertyID.color }
+		28 { PropertyID.color_scheme }
+		29 { PropertyID.content_visibility }
+		30 { PropertyID.corner_bottom_left_shape }
+		31 { PropertyID.corner_bottom_right_shape }
+		32 { PropertyID.corner_top_left_shape }
+		33 { PropertyID.corner_top_right_shape }
+		34 { PropertyID.fill_opacity }
+		35 { PropertyID.flood_color }
+		36 { PropertyID.flood_opacity }
+		37 { PropertyID.float_ }
+		38 { PropertyID.font_feature_settings }
+		39 { PropertyID.font_style }
+		40 { PropertyID.font_variation_settings }
+		41 { PropertyID.font_weight }
+		42 { PropertyID.font_width }
+		43 { PropertyID.letter_spacing }
+		44 { PropertyID.line_height }
+		45 { PropertyID.list_style_image }
+		46 { PropertyID.mask_image }
+		47 { PropertyID.math_depth }
+		48 { PropertyID.math_style }
+		49 { PropertyID.mix_blend_mode }
+		50 { PropertyID.object_fit }
+		51 { PropertyID.opacity }
+		52 { PropertyID.order }
+		53 { PropertyID.orphans }
+		54 { PropertyID.outline_color }
+		55 { PropertyID.outline_offset }
+		56 { PropertyID.outline_style }
+		57 { PropertyID.outline_width }
+		58 { PropertyID.overflow_x }
+		59 { PropertyID.overflow_y }
+		60 { PropertyID.pointer_events }
+		61 { PropertyID.position }
+		62 { PropertyID.position_anchor }
+		63 { PropertyID.shape_image_threshold }
+		64 { PropertyID.stop_color }
+		65 { PropertyID.stop_opacity }
+		66 { PropertyID.stroke_opacity }
+		67 { PropertyID.rotate }
+		68 { PropertyID.scale }
+		69 { PropertyID.scroll_timeline_name }
+		70 { PropertyID.transform }
+		71 { PropertyID.transition_behavior }
+		72 { PropertyID.transition_delay }
+		73 { PropertyID.transition_duration }
+		74 { PropertyID.transition_property }
+		75 { PropertyID.transition_timing_function }
+		76 { PropertyID.translate }
+		77 { PropertyID.view_timeline_inset }
+		78 { PropertyID.view_timeline_name }
+		79 { PropertyID.webkit_text_fill_color }
+		80 { PropertyID.word_spacing }
 		else { none }
 	}
 }

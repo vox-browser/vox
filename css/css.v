@@ -60,6 +60,7 @@ pub enum PropertyID {
 	border_top_width
 	border_image_source
 	caret_color
+	clear
 	color
 	color_scheme
 	content_visibility
@@ -70,6 +71,7 @@ pub enum PropertyID {
 	fill_opacity
 	flood_color
 	flood_opacity
+	float_
 	font_feature_settings
 	font_style
 	font_variation_settings
@@ -93,6 +95,7 @@ pub enum PropertyID {
 	overflow_x
 	overflow_y
 	pointer_events
+	position
 	position_anchor
 	shape_image_threshold
 	stop_color

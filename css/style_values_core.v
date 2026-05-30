@@ -180,6 +180,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'caret-color' {
 			PropertyID.caret_color
 		}
+		'clear' {
+			PropertyID.clear
+		}
 		'color' {
 			PropertyID.color
 		}
@@ -209,6 +212,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'flood-opacity' {
 			PropertyID.flood_opacity
+		}
+		'float' {
+			PropertyID.float_
 		}
 		'font-feature-settings' {
 			PropertyID.font_feature_settings
@@ -278,6 +284,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'pointer-events' {
 			PropertyID.pointer_events
+		}
+		'position' {
+			PropertyID.position
 		}
 		'position-anchor' {
 			PropertyID.position_anchor
@@ -403,7 +412,8 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.content_visibility {
 			false
 		}
-		.mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y, .pointer_events {
+		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
+		.pointer_events, .position {
 			false
 		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
@@ -578,6 +588,15 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.pointer_events {
 			lowercase_value in ['auto', 'all', 'none']
 		}
+		.clear {
+			lowercase_value in ['none', 'left', 'right', 'both', 'inline-start', 'inline-end']
+		}
+		.float_ {
+			lowercase_value in ['none', 'left', 'right', 'inline-start', 'inline-end']
+		}
+		.position {
+			lowercase_value in ['absolute', 'fixed', 'relative', 'static', 'sticky']
+		}
 		.mix_blend_mode {
 			lowercase_value in ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten',
 				'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion',
@@ -641,9 +660,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.accent_color, .background_color, .background_image, .border_bottom_color,
 		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
-		.caret_color, .color, .flood_color, .list_style_image, .mask_image, .mix_blend_mode,
-		.object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y, .pointer_events,
-		.stop_color, .view_timeline_inset, .webkit_text_fill_color {
+		.caret_color, .clear, .color, .float_, .flood_color, .list_style_image, .mask_image,
+		.mix_blend_mode, .object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y,
+		.pointer_events, .position, .stop_color, .view_timeline_inset, .webkit_text_fill_color {
 			false
 		}
 		.color_scheme {
@@ -1709,6 +1728,13 @@ pub enum Keyword {
 	luminosity
 	plus_darker
 	plus_lighter
+	inline_start
+	inline_end
+	absolute
+	fixed
+	relative
+	static_
+	sticky
 	normal
 	compact
 	bold
@@ -1904,6 +1930,13 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.luminosity { 'luminosity' }
 		.plus_darker { 'plus-darker' }
 		.plus_lighter { 'plus-lighter' }
+		.inline_start { 'inline-start' }
+		.inline_end { 'inline-end' }
+		.absolute { 'absolute' }
+		.fixed { 'fixed' }
+		.relative { 'relative' }
+		.static_ { 'static' }
+		.sticky { 'sticky' }
 		.normal { 'normal' }
 		.compact { 'compact' }
 		.bold { 'bold' }
@@ -2088,6 +2121,13 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'luminosity' { Keyword.luminosity }
 		'plus-darker' { Keyword.plus_darker }
 		'plus-lighter' { Keyword.plus_lighter }
+		'inline-start' { Keyword.inline_start }
+		'inline-end' { Keyword.inline_end }
+		'absolute' { Keyword.absolute }
+		'fixed' { Keyword.fixed }
+		'relative' { Keyword.relative }
+		'static' { Keyword.static_ }
+		'sticky' { Keyword.sticky }
 		'normal' { Keyword.normal }
 		'compact' { Keyword.compact }
 		'bold' { Keyword.bold }

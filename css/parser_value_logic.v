@@ -259,6 +259,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.pointer_events {
 			return parser.parse_pointer_events_value(mut tokens)
 		}
+		.position {
+			return parser.parse_position_value(mut tokens)
+		}
 		.position_anchor {
 			return parser.parse_position_anchor_value(mut tokens)
 		}
@@ -319,6 +322,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.border_image_source, .list_style_image {
 			return parser.parse_image_or_none_value(mut tokens)
+		}
+		.clear {
+			return parser.parse_clear_value(mut tokens)
+		}
+		.float_ {
+			return parser.parse_float_value(mut tokens)
 		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
@@ -1105,6 +1114,24 @@ fn (mut parser Parser) parse_overflow_value(mut tokens ComponentValueStream) ?St
 fn (mut parser Parser) parse_pointer_events_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'all', 'none'])
+}
+
+fn (mut parser Parser) parse_clear_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['none', 'left', 'right', 'both', 'inline-start',
+		'inline-end'])
+}
+
+fn (mut parser Parser) parse_float_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['none', 'left', 'right', 'inline-start',
+		'inline-end'])
+}
+
+fn (mut parser Parser) parse_position_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['absolute', 'fixed', 'relative', 'static',
+		'sticky'])
 }
 
 fn (mut parser Parser) parse_mix_blend_mode_value(mut tokens ComponentValueStream) ?StyleValue {
