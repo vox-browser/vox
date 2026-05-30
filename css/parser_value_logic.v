@@ -278,6 +278,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.aspect_ratio {
 			return parser.parse_aspect_ratio_value(mut tokens)
 		}
+		.background_image, .mask_image {
+			return parser.parse_image_or_none_list_value(mut tokens)
+		}
 		.font_feature_settings {
 			return parser.parse_font_feature_settings_value(mut tokens)
 		}
@@ -298,6 +301,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.line_height {
 			return parser.parse_line_height_value(mut tokens)
+		}
+		.border_image_source, .list_style_image {
+			return parser.parse_image_or_none_value(mut tokens)
 		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
@@ -3497,6 +3503,46 @@ fn style_value_from_css_image_source_for_value_logic(value CSSImageSourceStyleVa
 		RadialGradientStyleValue { StyleValue(value) }
 		StyleValue { value }
 	}
+}
+
+fn (mut parser Parser) parse_image_or_none_value(mut tokens ComponentValueStream) ?StyleValue {
+	if none_value := parse_single_keyword_value_for_value_logic(mut tokens, .none_) {
+		return none_value
+	}
+
+	mut transaction := tokens.clone()
+	image := parser.parse_image_value(mut transaction) or { return none }
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+
+	tokens = transaction
+	return style_value_from_css_image_source_for_value_logic(image)
+}
+
+fn (mut parser Parser) parse_image_or_none_list_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut images := []StyleValue{}
+	for value in values {
+		mut item_tokens := ComponentValueStream.new(value)
+		image := parser.parse_image_or_none_value(mut item_tokens) or { return none }
+		item_tokens.consume_whitespace()
+		if item_tokens.has_more_tokens() {
+			return none
+		}
+		images << image
+	}
+
+	if images.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(images, .comma, .yes))
 }
 
 fn (mut parser Parser) parse_image_value(mut tokens ComponentValueStream) ?CSSImageSourceStyleValue {

@@ -49,6 +49,7 @@ pub enum PropertyID {
 	animation_timing_function
 	aspect_ratio
 	background_color
+	background_image
 	border_bottom_color
 	border_bottom_width
 	border_left_color
@@ -57,6 +58,7 @@ pub enum PropertyID {
 	border_right_width
 	border_top_color
 	border_top_width
+	border_image_source
 	caret_color
 	color
 	color_scheme
@@ -75,6 +77,8 @@ pub enum PropertyID {
 	font_width
 	letter_spacing
 	line_height
+	list_style_image
+	mask_image
 	math_depth
 	math_style
 	opacity

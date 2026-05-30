@@ -36,6 +36,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.animation_timing_function { 'animation-timing-function' }
 		.aspect_ratio { 'aspect-ratio' }
 		.background_color { 'background-color' }
+		.background_image { 'background-image' }
 		.border_bottom_color { 'border-bottom-color' }
 		.border_bottom_width { 'border-bottom-width' }
 		.border_left_color { 'border-left-color' }
@@ -44,6 +45,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.border_right_width { 'border-right-width' }
 		.border_top_color { 'border-top-color' }
 		.border_top_width { 'border-top-width' }
+		.border_image_source { 'border-image-source' }
 		.caret_color { 'caret-color' }
 		.color { 'color' }
 		.color_scheme { 'color-scheme' }
@@ -62,6 +64,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.font_width { 'font-width' }
 		.letter_spacing { 'letter-spacing' }
 		.line_height { 'line-height' }
+		.list_style_image { 'list-style-image' }
+		.mask_image { 'mask-image' }
 		.math_depth { 'math-depth' }
 		.math_style { 'math-style' }
 		.opacity { 'opacity' }
@@ -99,21 +103,22 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.anchor_name, .anchor_scope, .animation_composition, .animation_delay,
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
-		.animation_timing_function, .font_feature_settings, .font_variation_settings,
-		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .view_timeline_inset,
-		.view_timeline_name {
+		.animation_timing_function, .background_image, .font_feature_settings,
+		.font_variation_settings, .mask_image, .scroll_timeline_name, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
+		.view_timeline_inset, .view_timeline_name {
 			false
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
-		.border_bottom_width, .border_left_color, .border_left_width, .border_right_color,
-		.border_right_width, .border_top_color, .border_top_width, .caret_color, .color,
-		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
-		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .line_height,
-		.math_depth, .math_style, .opacity, .outline_color, .outline_width, .position_anchor,
-		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.transform, .translate, .webkit_text_fill_color, .word_spacing {
+		.border_bottom_width, .border_image_source, .border_left_color, .border_left_width,
+		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
+		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
+		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .outline_color,
+		.outline_width, .position_anchor, .shape_image_threshold, .stop_color, .stop_opacity,
+		.stroke_opacity, .rotate, .scale, .transform, .translate, .webkit_text_fill_color,
+		.word_spacing {
 			true
 		}
 	}
@@ -124,27 +129,28 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.anchor_name, .anchor_scope, .animation_composition, .animation_delay,
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
-		.animation_timing_function, .font_feature_settings, .font_variation_settings,
-		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .view_timeline_inset,
-		.view_timeline_name {
+		.animation_timing_function, .background_image, .font_feature_settings,
+		.font_variation_settings, .mask_image, .scroll_timeline_name, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
+		.view_timeline_inset, .view_timeline_name {
 			true
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
-		.border_bottom_width, .border_left_color, .border_left_width, .border_right_color,
-		.border_right_width, .border_top_color, .border_top_width, .caret_color, .color,
-		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
-		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .line_height,
-		.math_depth, .math_style, .opacity, .outline_color, .outline_width, .position_anchor,
-		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.transform, .translate, .webkit_text_fill_color, .word_spacing {
+		.border_bottom_width, .border_image_source, .border_left_color, .border_left_width,
+		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
+		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
+		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .outline_color,
+		.outline_width, .position_anchor, .shape_image_threshold, .stop_color, .stop_opacity,
+		.stroke_opacity, .rotate, .scale, .transform, .translate, .webkit_text_fill_color,
+		.word_spacing {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 65
+pub const number_of_longhand_properties = 69
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
@@ -171,56 +177,60 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		12 { PropertyID.animation_timing_function }
 		13 { PropertyID.aspect_ratio }
 		14 { PropertyID.background_color }
-		15 { PropertyID.border_bottom_color }
-		16 { PropertyID.border_bottom_width }
-		17 { PropertyID.border_left_color }
-		18 { PropertyID.border_left_width }
-		19 { PropertyID.border_right_color }
-		20 { PropertyID.border_right_width }
-		21 { PropertyID.border_top_color }
-		22 { PropertyID.border_top_width }
-		23 { PropertyID.caret_color }
-		24 { PropertyID.color }
-		25 { PropertyID.color_scheme }
-		26 { PropertyID.content_visibility }
-		27 { PropertyID.corner_bottom_left_shape }
-		28 { PropertyID.corner_bottom_right_shape }
-		29 { PropertyID.corner_top_left_shape }
-		30 { PropertyID.corner_top_right_shape }
-		31 { PropertyID.fill_opacity }
-		32 { PropertyID.flood_color }
-		33 { PropertyID.flood_opacity }
-		34 { PropertyID.font_feature_settings }
-		35 { PropertyID.font_style }
-		36 { PropertyID.font_variation_settings }
-		37 { PropertyID.font_weight }
-		38 { PropertyID.font_width }
-		39 { PropertyID.letter_spacing }
-		40 { PropertyID.line_height }
-		41 { PropertyID.math_depth }
-		42 { PropertyID.math_style }
-		43 { PropertyID.opacity }
-		44 { PropertyID.outline_color }
-		45 { PropertyID.outline_width }
-		46 { PropertyID.position_anchor }
-		47 { PropertyID.shape_image_threshold }
-		48 { PropertyID.stop_color }
-		49 { PropertyID.stop_opacity }
-		50 { PropertyID.stroke_opacity }
-		51 { PropertyID.rotate }
-		52 { PropertyID.scale }
-		53 { PropertyID.scroll_timeline_name }
-		54 { PropertyID.transform }
-		55 { PropertyID.transition_behavior }
-		56 { PropertyID.transition_delay }
-		57 { PropertyID.transition_duration }
-		58 { PropertyID.transition_property }
-		59 { PropertyID.transition_timing_function }
-		60 { PropertyID.translate }
-		61 { PropertyID.view_timeline_inset }
-		62 { PropertyID.view_timeline_name }
-		63 { PropertyID.webkit_text_fill_color }
-		64 { PropertyID.word_spacing }
+		15 { PropertyID.background_image }
+		16 { PropertyID.border_bottom_color }
+		17 { PropertyID.border_bottom_width }
+		18 { PropertyID.border_left_color }
+		19 { PropertyID.border_left_width }
+		20 { PropertyID.border_right_color }
+		21 { PropertyID.border_right_width }
+		22 { PropertyID.border_top_color }
+		23 { PropertyID.border_top_width }
+		24 { PropertyID.border_image_source }
+		25 { PropertyID.caret_color }
+		26 { PropertyID.color }
+		27 { PropertyID.color_scheme }
+		28 { PropertyID.content_visibility }
+		29 { PropertyID.corner_bottom_left_shape }
+		30 { PropertyID.corner_bottom_right_shape }
+		31 { PropertyID.corner_top_left_shape }
+		32 { PropertyID.corner_top_right_shape }
+		33 { PropertyID.fill_opacity }
+		34 { PropertyID.flood_color }
+		35 { PropertyID.flood_opacity }
+		36 { PropertyID.font_feature_settings }
+		37 { PropertyID.font_style }
+		38 { PropertyID.font_variation_settings }
+		39 { PropertyID.font_weight }
+		40 { PropertyID.font_width }
+		41 { PropertyID.letter_spacing }
+		42 { PropertyID.line_height }
+		43 { PropertyID.list_style_image }
+		44 { PropertyID.mask_image }
+		45 { PropertyID.math_depth }
+		46 { PropertyID.math_style }
+		47 { PropertyID.opacity }
+		48 { PropertyID.outline_color }
+		49 { PropertyID.outline_width }
+		50 { PropertyID.position_anchor }
+		51 { PropertyID.shape_image_threshold }
+		52 { PropertyID.stop_color }
+		53 { PropertyID.stop_opacity }
+		54 { PropertyID.stroke_opacity }
+		55 { PropertyID.rotate }
+		56 { PropertyID.scale }
+		57 { PropertyID.scroll_timeline_name }
+		58 { PropertyID.transform }
+		59 { PropertyID.transition_behavior }
+		60 { PropertyID.transition_delay }
+		61 { PropertyID.transition_duration }
+		62 { PropertyID.transition_property }
+		63 { PropertyID.transition_timing_function }
+		64 { PropertyID.translate }
+		65 { PropertyID.view_timeline_inset }
+		66 { PropertyID.view_timeline_name }
+		67 { PropertyID.webkit_text_fill_color }
+		68 { PropertyID.word_spacing }
 		else { none }
 	}
 }

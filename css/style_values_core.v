@@ -147,6 +147,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'background-color' {
 			PropertyID.background_color
 		}
+		'background-image' {
+			PropertyID.background_image
+		}
 		'border-bottom-color' {
 			PropertyID.border_bottom_color
 		}
@@ -170,6 +173,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'border-top-width' {
 			PropertyID.border_top_width
+		}
+		'border-image-source' {
+			PropertyID.border_image_source
 		}
 		'caret-color' {
 			PropertyID.caret_color
@@ -224,6 +230,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'line-height' {
 			PropertyID.line_height
+		}
+		'list-style-image' {
+			PropertyID.list_style_image
+		}
+		'mask-image' {
+			PropertyID.mask_image
 		}
 		'math-depth' {
 			PropertyID.math_depth
@@ -351,6 +363,12 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.border_right_color, .border_top_color, .caret_color, .color, .flood_color, .outline_color,
 		.stop_color, .webkit_text_fill_color {
 			value_type == .color
+		}
+		.background_image, .border_image_source, .list_style_image {
+			value_type == .image
+		}
+		.mask_image {
+			value_type in [.image, .url]
 		}
 		.color_scheme {
 			value_type == .custom_ident
@@ -488,6 +506,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 				false
 			}
 		}
+		.background_image, .border_image_source, .list_style_image, .mask_image {
+			lowercase_value == 'none'
+		}
 		.color_scheme {
 			// color-scheme = normal | [ light | dark | <custom-ident> ]+ && only?
 			lowercase_value in ['normal', 'light', 'dark']
@@ -561,8 +582,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.animation_name {
 			lowercase_value !in ['default', 'none']
 		}
-		.accent_color, .background_color, .border_bottom_color, .border_left_color,
-		.border_right_color, .border_top_color, .caret_color, .color, .flood_color, .outline_color,
+		.accent_color, .background_color, .background_image, .border_bottom_color,
+		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
+		.caret_color, .color, .flood_color, .list_style_image, .mask_image, .outline_color,
 		.stop_color, .view_timeline_inset, .webkit_text_fill_color {
 			false
 		}
@@ -629,6 +651,9 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		FontStyleStyleValue {
 			property_accepts_type(property_id, .font_style)
 		}
+		ImageStyleValue {
+			property_accepts_type(property_id, .image)
+		}
 		NumberStyleValue {
 			property_accepts_type(property_id, .number)
 				&& property_accepts_number(property_id, value.number())
@@ -655,6 +680,9 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		}
 		TransformationStyleValue {
 			property_accepts_type(property_id, .transform_function)
+		}
+		URLStyleValue {
+			property_accepts_type(property_id, .url)
 		}
 		StyleValueList {
 			if property_is_list_valued(property_id) {
