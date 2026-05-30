@@ -121,6 +121,8 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'font-width' { PropertyID.font_width }
 		'letter-spacing' { PropertyID.letter_spacing }
 		'line-height' { PropertyID.line_height }
+		'math-depth' { PropertyID.math_depth }
+		'math-style' { PropertyID.math_style }
 		'opacity' { PropertyID.opacity }
 		'outline-width' { PropertyID.outline_width }
 		'shape-image-threshold' { PropertyID.shape_image_threshold }
@@ -202,6 +204,12 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.letter_spacing, .word_spacing {
 			value_type in [.length, .percentage]
 		}
+		.math_depth {
+			value_type == .integer
+		}
+		.math_style {
+			false
+		}
 	}
 }
 
@@ -257,6 +265,12 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.letter_spacing, .line_height, .word_spacing {
 			lowercase_value == 'normal'
 		}
+		.math_depth {
+			lowercase_value == 'auto-add'
+		}
+		.math_style {
+			lowercase_value in ['normal', 'compact']
+		}
 		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,
 		.stroke_opacity {
 			false
@@ -295,8 +309,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
 		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.letter_spacing, .line_height, .fill_opacity, .flood_opacity, .opacity, .outline_width,
-		.shape_image_threshold, .stop_opacity, .stroke_opacity, .word_spacing {
+		.letter_spacing, .line_height, .math_depth, .math_style, .fill_opacity, .flood_opacity,
+		.opacity, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity,
+		.word_spacing {
 			false
 		}
 	}
@@ -1256,11 +1271,13 @@ pub enum Keyword {
 	revert
 	revert_layer
 	unset
+	auto_add
 	auto
 	none_
 	visible
 	hidden
 	normal
+	compact
 	bold
 	bolder
 	lighter
@@ -1399,11 +1416,13 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.revert { 'revert' }
 		.revert_layer { 'revert-layer' }
 		.unset { 'unset' }
+		.auto_add { 'auto-add' }
 		.auto { 'auto' }
 		.none_ { 'none' }
 		.visible { 'visible' }
 		.hidden { 'hidden' }
 		.normal { 'normal' }
+		.compact { 'compact' }
 		.bold { 'bold' }
 		.bolder { 'bolder' }
 		.lighter { 'lighter' }
@@ -1531,11 +1550,13 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'revert' { Keyword.revert }
 		'revert-layer' { Keyword.revert_layer }
 		'unset' { Keyword.unset }
+		'auto-add' { Keyword.auto_add }
 		'auto' { Keyword.auto }
 		'none' { Keyword.none_ }
 		'visible' { Keyword.visible }
 		'hidden' { Keyword.hidden }
 		'normal' { Keyword.normal }
+		'compact' { Keyword.compact }
 		'bold' { Keyword.bold }
 		'bolder' { Keyword.bolder }
 		'lighter' { Keyword.lighter }

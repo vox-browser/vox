@@ -315,6 +315,8 @@ pub mut:
 	opacity_            f32                   = 1.0
 	visibility_         CSSVisibility_        = .visible
 	font_weight_        f64                   = 400
+	math_depth_         int
+	math_style_         CSSMathStyle_ = .normal
 }
 
 pub fn (c &CSSComputedProperties_) display() CSSDisplay_ {
@@ -343,6 +345,14 @@ pub fn (c &CSSComputedProperties_) visibility() CSSVisibility_ {
 
 pub fn (c &CSSComputedProperties_) font_weight() f64 {
 	return c.font_weight_
+}
+
+pub fn (c &CSSComputedProperties_) math_depth() int {
+	return c.math_depth_
+}
+
+pub fn (c &CSSComputedProperties_) math_style() CSSMathStyle_ {
+	return c.math_style_
 }
 
 pub fn (c &CSSComputedProperties_) view_transition_name() ?string {
@@ -388,6 +398,11 @@ pub enum CSSVisibility_ {
 	visible
 	hidden
 	collapse
+}
+
+pub enum CSSMathStyle_ {
+	normal
+	compact
 }
 
 @[heap]

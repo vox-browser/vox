@@ -56,6 +56,8 @@ pub enum PropertyID {
 	font_width
 	letter_spacing
 	line_height
+	math_depth
+	math_style
 	opacity
 	outline_width
 	shape_image_threshold

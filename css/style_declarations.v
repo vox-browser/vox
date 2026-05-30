@@ -43,6 +43,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.font_width { 'font-width' }
 		.letter_spacing { 'letter-spacing' }
 		.line_height { 'line-height' }
+		.math_depth { 'math-depth' }
+		.math_style { 'math-style' }
 		.opacity { 'opacity' }
 		.outline_width { 'outline-width' }
 		.shape_image_threshold { 'shape-image-threshold' }
@@ -65,8 +67,9 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
 		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_opacity,
-		.font_style, .font_weight, .font_width, .letter_spacing, .line_height, .opacity,
-		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .word_spacing {
+		.font_style, .font_weight, .font_width, .letter_spacing, .line_height, .math_depth,
+		.math_style, .opacity, .outline_width, .shape_image_threshold, .stop_opacity,
+		.stroke_opacity, .word_spacing {
 			true
 		}
 	}
@@ -80,14 +83,15 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
 		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_opacity,
-		.font_style, .font_weight, .font_width, .letter_spacing, .line_height, .opacity,
-		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .word_spacing {
+		.font_style, .font_weight, .font_width, .letter_spacing, .line_height, .math_depth,
+		.math_style, .opacity, .outline_width, .shape_image_threshold, .stop_opacity,
+		.stroke_opacity, .word_spacing {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 28
+pub const number_of_longhand_properties = 30
 
 pub fn first_longhand_property_id() PropertyID {
 	return .animation_name
@@ -121,12 +125,14 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		19 { PropertyID.font_width }
 		20 { PropertyID.letter_spacing }
 		21 { PropertyID.line_height }
-		22 { PropertyID.opacity }
-		23 { PropertyID.outline_width }
-		24 { PropertyID.shape_image_threshold }
-		25 { PropertyID.stop_opacity }
-		26 { PropertyID.stroke_opacity }
-		27 { PropertyID.word_spacing }
+		22 { PropertyID.math_depth }
+		23 { PropertyID.math_style }
+		24 { PropertyID.opacity }
+		25 { PropertyID.outline_width }
+		26 { PropertyID.shape_image_threshold }
+		27 { PropertyID.stop_opacity }
+		28 { PropertyID.stroke_opacity }
+		29 { PropertyID.word_spacing }
 		else { none }
 	}
 }

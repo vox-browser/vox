@@ -853,6 +853,12 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.line_height {
 			'normal'
 		}
+		.math_depth {
+			'0'
+		}
+		.math_style {
+			'normal'
+		}
 		.opacity {
 			'1'
 		}
@@ -879,7 +885,7 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
 		.color, .color_scheme, .fill_opacity, .font_style, .font_weight, .letter_spacing,
-		.stroke_opacity, .word_spacing {
+		.math_depth, .math_style, .stroke_opacity, .word_spacing {
 			true
 		}
 		else {
@@ -895,11 +901,11 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.border_right_width, .border_top_width, .color, .corner_bottom_left_shape,
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_opacity, .font_feature_settings, .font_style, .font_variation_settings,
-		.font_weight, .font_width, .letter_spacing, .line_height, .opacity, .outline_width,
-		.shape_image_threshold, .stop_opacity, .stroke_opacity, .word_spacing {
+		.font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .opacity,
+		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .word_spacing {
 			true
 		}
-		.color_scheme, .content_visibility {
+		.color_scheme, .content_visibility, .math_style {
 			false
 		}
 	}
@@ -916,12 +922,12 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .font_style, .font_weight, .font_width, .letter_spacing,
-		.outline_width, .word_spacing {
+		.math_depth, .outline_width, .word_spacing {
 			true
 		}
 		.animation_name, .animation_timeline, .color_scheme, .content_visibility, .fill_opacity,
-		.flood_opacity, .font_feature_settings, .font_variation_settings, .line_height, .opacity,
-		.shape_image_threshold, .stop_opacity, .stroke_opacity {
+		.flood_opacity, .font_feature_settings, .font_variation_settings, .line_height,
+		.math_style, .opacity, .shape_image_threshold, .stop_opacity, .stroke_opacity {
 			false
 		}
 	}
@@ -933,6 +939,14 @@ fn computed_interpolation_style_value_keyword(value &dom.StyleValue) ?Keyword {
 		return none
 	}
 	return keyword_from_string(to_ascii_lowercase(serialized))
+}
+
+fn computed_interpolation_math_style_from_dom_style_value(value &dom.StyleValue) ?MathStyle {
+	return match computed_interpolation_style_value_keyword(value) {
+		.normal { MathStyle.normal }
+		.compact { MathStyle.compact }
+		else { none }
+	} or { return none }
 }
 
 fn computed_interpolation_style_value_is_inherit(value &dom.StyleValue) bool {
@@ -2057,12 +2071,20 @@ pub fn (mut c ComputedProperties) first_available_computed_font(font_computer &F
 }
 
 pub fn (c &ComputedProperties) math_style() MathStyle {
-	_ = c
+	if value := c.property(.math_style, .yes) {
+		if math_style := computed_interpolation_math_style_from_dom_style_value(value) {
+			return math_style
+		}
+	}
 	return .normal
 }
 
 pub fn (c &ComputedProperties) math_depth() int {
-	_ = c
+	if value := c.property(.math_depth, .yes) {
+		if integer := computed_interpolation_integer_from_dom_style_value(value) {
+			return int(integer)
+		}
+	}
 	return 0
 }
 
@@ -2276,7 +2298,8 @@ pub fn interpolate_discrete(from &dom.StyleValue, to &dom.StyleValue, delta f64,
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
-		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings {
+		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings,
+		.math_depth, .math_style {
 			.none_
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
@@ -2986,8 +3009,9 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
-		.font_style, .font_variation_settings, .font_weight, .font_width, .line_height, .opacity,
-		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity {
+		.font_style, .font_variation_settings, .font_weight, .font_width, .line_height,
+		.math_depth, .math_style, .opacity, .outline_width, .shape_image_threshold, .stop_opacity,
+		.stroke_opacity {
 			false
 		}
 		.letter_spacing, .word_spacing {
@@ -3009,8 +3033,8 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
 		.font_style, .font_variation_settings, .font_weight, .font_width, .letter_spacing,
-		.line_height, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity,
-		.word_spacing {
+		.line_height, .math_depth, .math_style, .outline_width, .shape_image_threshold,
+		.stop_opacity, .stroke_opacity, .word_spacing {
 			false
 		}
 	}
@@ -3039,8 +3063,8 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
 		.font_style, .font_variation_settings, .font_weight, .font_width, .letter_spacing,
-		.line_height, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity,
-		.word_spacing {
+		.line_height, .math_depth, .math_style, .outline_width, .shape_image_threshold,
+		.stop_opacity, .stroke_opacity, .word_spacing {
 			false
 		}
 	}
@@ -4432,6 +4456,10 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 			StyleComputer.compute_line_height(absolutized_value,
 				computation_context.length_resolution_context.font_metrics.font_size)
 		}
+		.math_depth {
+			inheritance_parent := style_computation_inheritance_parent(computation_context)
+			StyleComputer.compute_math_depth(absolutized_value, inheritance_parent)
+		}
 		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,
 		.stroke_opacity {
 			StyleComputer.compute_opacity(absolutized_value)
@@ -4760,8 +4788,45 @@ pub fn StyleComputer.compute_font_feature_tag_value_list(absolutized_value &dom.
 }
 
 pub fn StyleComputer.compute_math_depth(absolutized_value &dom.StyleValue, inheritance_parent ?dom.AbstractElement) &dom.StyleValue {
-	_ = inheritance_parent
-	return unsafe { absolutized_value }
+	// https://w3c.github.io/mathml-core/#propdef-math-depth
+	mut inherited_math_depth := 0
+	mut inherited_math_style := MathStyle.normal
+	if parent := inheritance_parent {
+		if computed_properties := parent.computed_properties() {
+			inherited_math_depth = computed_properties.math_depth()
+			if computed_properties.math_style() == dom.CSSMathStyle_.compact {
+				inherited_math_style = .compact
+			}
+		}
+	}
+
+	parsed_value := parse_css_value_logic(.math_depth, absolutized_value.css_text) or {
+		return unsafe { absolutized_value }
+	}
+
+	// The computed value of the math-depth value is determined as follows:
+	// - If the specified value of math-depth is auto-add and the inherited value of math-style is compact
+	//   then the computed value of math-depth of the element is its inherited value plus one.
+	if parsed_value.to_keyword() == .auto_add && inherited_math_style == .compact {
+		return dom_style_value_from_value_logic(StyleValue(IntegerStyleValue.create(i64(
+			inherited_math_depth + 1))))
+	}
+
+	// - If the specified value of math-depth is of the form add(<integer>) then the computed value of
+	//   math-depth of the element is its inherited value plus the specified integer.
+	if parsed_value is AddFunctionStyleValue {
+		depth := inherited_math_depth + int(int_from_style_value(parsed_value.value()))
+		return dom_style_value_from_value_logic(StyleValue(IntegerStyleValue.create(i64(depth))))
+	}
+
+	// - If the specified value of math-depth is of the form <integer> then the computed value of math-depth
+	//   of the element is the specified integer.
+	if parsed_value.is_integer() || parsed_value.is_calculated() {
+		return dom_style_value_from_value_logic(StyleValue(IntegerStyleValue.create(int_from_style_value(parsed_value))))
+	}
+
+	// - Otherwise, the computed value of math-depth of the element is the inherited one.
+	return dom_style_value_from_value_logic(StyleValue(IntegerStyleValue.create(i64(inherited_math_depth))))
 }
 
 pub fn StyleComputer.compute_font_size(absolutized_value &dom.StyleValue, computed_math_depth int, inheritance_parent ?dom.AbstractElement) &dom.StyleValue {
@@ -4905,6 +4970,14 @@ fn computed_interpolation_number_from_dom_style_value(style_value &dom.StyleValu
 		return none
 	}
 	return (parsed_value as NumberStyleValue).number()
+}
+
+fn computed_interpolation_integer_from_dom_style_value(style_value &dom.StyleValue) ?i64 {
+	parsed_value := parse_css_value_logic(.math_depth, style_value.css_text) or { return none }
+	if parsed_value.is_integer() || parsed_value.is_calculated() {
+		return int_from_style_value(parsed_value)
+	}
+	return none
 }
 
 fn computed_interpolation_percentage_from_dom_style_value(style_value &dom.StyleValue) ?Percentage {

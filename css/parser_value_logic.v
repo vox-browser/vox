@@ -258,6 +258,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.line_height {
 			return parser.parse_line_height_value(mut tokens)
 		}
+		.math_depth {
+			return parser.parse_math_depth_value(mut tokens)
+		}
+		.math_style {
+			return parser.parse_math_style_value(mut tokens)
+		}
 	}
 
 	return none
@@ -616,6 +622,72 @@ fn (mut parser Parser) parse_letter_or_word_spacing_value(mut tokens ComponentVa
 	return none
 }
 
+fn (mut parser Parser) parse_math_depth_value(mut tokens ComponentValueStream) ?StyleValue {
+	// https://w3c.github.io/mathml-core/#propdef-math-depth
+	// auto-add | add(<integer>) | <integer>
+	mut keyword_transaction := tokens.clone()
+	keyword_transaction.consume_whitespace()
+	if component_value := keyword_transaction.consume() {
+		if component_value.is(.ident)
+			&& equals_ignoring_ascii_case(component_value.token().ident(), 'auto-add') {
+			keyword_transaction.consume_whitespace()
+			if !keyword_transaction.has_more_tokens() {
+				tokens = keyword_transaction
+				return StyleValue(KeywordStyleValue.create(.auto_add))
+			}
+		}
+	}
+
+	mut add_transaction := tokens.clone()
+	add_transaction.consume_whitespace()
+	if component_value := add_transaction.consume() {
+		if component_value.is_function_named('add') {
+			mut add_tokens := ComponentValueStream.new(component_value.function().value)
+			add_tokens.consume_whitespace()
+			integer_value := parser.parse_integer_value(mut add_tokens) or { return none }
+			add_tokens.consume_whitespace()
+			if add_tokens.has_more_tokens() {
+				return none
+			}
+			add_transaction.consume_whitespace()
+			if add_transaction.has_more_tokens() {
+				return none
+			}
+			tokens = add_transaction
+			return StyleValue(AddFunctionStyleValue.create(integer_value))
+		}
+	}
+
+	mut integer_transaction := tokens.clone()
+	if integer_value := parser.parse_integer_value(mut integer_transaction) {
+		tokens = integer_transaction
+		return integer_value
+	}
+	return none
+}
+
+fn (mut parser Parser) parse_math_style_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is(.ident) {
+		return none
+	}
+	keyword := match to_ascii_lowercase(component_value.token().ident()) {
+		'normal' { Keyword.normal }
+		'compact' { Keyword.compact }
+		else { return none }
+	}
+
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(KeywordStyleValue.create(keyword))
+}
+
 fn (mut parser Parser) parse_font_feature_settings_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	// https://drafts.csswg.org/css-fonts/#propdef-font-feature-settings
@@ -818,13 +890,18 @@ fn (mut parser Parser) parse_view_function_value(component_value ComponentValue)
 	}
 	mut argument_tokens := ComponentValueStream.new(component_value.function().value)
 	mut axis := ?Axis(none)
-	mut inset := ?StyleValue(none)
+	mut has_inset := false
+	mut inset := StyleValue(StyleValueList.create([
+		StyleValue(KeywordStyleValue.create(.auto)),
+		StyleValue(KeywordStyleValue.create(.auto)),
+	], .space, .yes))
 	for argument_tokens.has_more_tokens() {
 		if inset_value := parser.parse_view_timeline_inset_value(mut argument_tokens) {
-			if _ := inset {
+			if has_inset {
 				return none
 			}
 			inset = inset_value
+			has_inset = true
 			continue
 		}
 
@@ -841,12 +918,7 @@ fn (mut parser Parser) parse_view_function_value(component_value ComponentValue)
 	}
 
 	resolved_axis := axis or { Axis.block }
-	resolved_inset := inset or {
-		StyleValue(StyleValueList.create([
-			StyleValue(KeywordStyleValue.create(.auto)),
-			StyleValue(KeywordStyleValue.create(.auto)),
-		], .space, .yes))
-	}
+	resolved_inset := inset
 
 	return ViewFunctionStyleValue.create(resolved_axis, resolved_inset)
 }
@@ -1502,9 +1574,9 @@ fn (mut parser Parser) parse_rgb_color_value(component_value ComponentValue) ?St
 		}
 	}
 
-	return StyleValue(RGBColorStyleValue.create(red, green or { return none }, blue or {
-		return none
-	}, alpha or { StyleValue(NumberStyleValue.create(1)) }, if legacy_syntax {
+	green_value := green or { return none }
+	blue_value := blue or { return none }
+	return StyleValue(RGBColorStyleValue.create(red, green_value, blue_value, alpha, if legacy_syntax {
 		.legacy
 	} else {
 		.modern
@@ -1586,9 +1658,9 @@ fn (mut parser Parser) parse_hsl_color_value(component_value ComponentValue) ?St
 		}
 	}
 
-	return StyleValue(HSLColorStyleValue.create(hue, saturation or { return none }, lightness or {
-		return none
-	}, alpha or { StyleValue(NumberStyleValue.create(1)) }, if legacy_syntax {
+	saturation_value := saturation or { return none }
+	lightness_value := lightness or { return none }
+	return StyleValue(HSLColorStyleValue.create(hue, saturation_value, lightness_value, alpha, if legacy_syntax {
 		.legacy
 	} else {
 		.modern
@@ -1622,9 +1694,7 @@ fn (mut parser Parser) parse_hwb_color_value(component_value ComponentValue) ?St
 		}
 	}
 
-	return StyleValue(HWBColorStyleValue.create(hue, whiteness, blackness, alpha or {
-		StyleValue(NumberStyleValue.create(1))
-	}, .modern))
+	return StyleValue(HWBColorStyleValue.create(hue, whiteness, blackness, alpha, .modern))
 }
 
 fn (mut parser Parser) parse_lab_like_color_value(component_value ComponentValue, function_name string) ?ParsedColorComponents {
@@ -1735,9 +1805,7 @@ fn (mut parser Parser) parse_color_function(component_value ComponentValue) ?Sty
 		}
 	}
 
-	return StyleValue(ColorFunctionStyleValue.create(color_space, c1, c2, c3, alpha or {
-		StyleValue(NumberStyleValue.create(1))
-	}))
+	return StyleValue(ColorFunctionStyleValue.create(color_space, c1, c2, c3, alpha))
 }
 
 fn (mut parser Parser) parse_color_interpolation_method_value(mut tokens ComponentValueStream) ?ColorInterpolationMethodStyleValue {
