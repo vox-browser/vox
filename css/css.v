@@ -47,14 +47,21 @@ pub enum PropertyID {
 	corner_bottom_right_shape
 	corner_top_left_shape
 	corner_top_right_shape
+	fill_opacity
+	flood_opacity
 	font_feature_settings
 	font_style
 	font_variation_settings
 	font_weight
 	font_width
+	letter_spacing
 	line_height
 	opacity
 	outline_width
+	shape_image_threshold
+	stop_opacity
+	stroke_opacity
+	word_spacing
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

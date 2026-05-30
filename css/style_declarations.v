@@ -34,14 +34,21 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.corner_bottom_right_shape { 'corner-bottom-right-shape' }
 		.corner_top_left_shape { 'corner-top-left-shape' }
 		.corner_top_right_shape { 'corner-top-right-shape' }
+		.fill_opacity { 'fill-opacity' }
+		.flood_opacity { 'flood-opacity' }
 		.font_feature_settings { 'font-feature-settings' }
 		.font_style { 'font-style' }
 		.font_variation_settings { 'font-variation-settings' }
 		.font_weight { 'font-weight' }
 		.font_width { 'font-width' }
+		.letter_spacing { 'letter-spacing' }
 		.line_height { 'line-height' }
 		.opacity { 'opacity' }
 		.outline_width { 'outline-width' }
+		.shape_image_threshold { 'shape-image-threshold' }
+		.stop_opacity { 'stop-opacity' }
+		.stroke_opacity { 'stroke-opacity' }
+		.word_spacing { 'word-spacing' }
 	}
 }
 
@@ -57,8 +64,9 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
 		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_top_left_shape, .corner_top_right_shape, .font_style, .font_weight, .font_width,
-		.line_height, .opacity, .outline_width {
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_opacity,
+		.font_style, .font_weight, .font_width, .letter_spacing, .line_height, .opacity,
+		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .word_spacing {
 			true
 		}
 	}
@@ -71,21 +79,22 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
 		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_top_left_shape, .corner_top_right_shape, .font_style, .font_weight, .font_width,
-		.line_height, .opacity, .outline_width {
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_opacity,
+		.font_style, .font_weight, .font_width, .letter_spacing, .line_height, .opacity,
+		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .word_spacing {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 21
+pub const number_of_longhand_properties = 28
 
 pub fn first_longhand_property_id() PropertyID {
 	return .animation_name
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .outline_width
+	return .word_spacing
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -103,14 +112,21 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		10 { PropertyID.corner_bottom_right_shape }
 		11 { PropertyID.corner_top_left_shape }
 		12 { PropertyID.corner_top_right_shape }
-		13 { PropertyID.font_feature_settings }
-		14 { PropertyID.font_style }
-		15 { PropertyID.font_variation_settings }
-		16 { PropertyID.font_weight }
-		17 { PropertyID.font_width }
-		18 { PropertyID.line_height }
-		19 { PropertyID.opacity }
-		20 { PropertyID.outline_width }
+		13 { PropertyID.fill_opacity }
+		14 { PropertyID.flood_opacity }
+		15 { PropertyID.font_feature_settings }
+		16 { PropertyID.font_style }
+		17 { PropertyID.font_variation_settings }
+		18 { PropertyID.font_weight }
+		19 { PropertyID.font_width }
+		20 { PropertyID.letter_spacing }
+		21 { PropertyID.line_height }
+		22 { PropertyID.opacity }
+		23 { PropertyID.outline_width }
+		24 { PropertyID.shape_image_threshold }
+		25 { PropertyID.stop_opacity }
+		26 { PropertyID.stroke_opacity }
+		27 { PropertyID.word_spacing }
 		else { none }
 	}
 }

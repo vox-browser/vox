@@ -230,6 +230,10 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.corner_top_right_shape {
 			return parser.parse_corner_shape_value(mut tokens)
 		}
+		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,
+		.stroke_opacity {
+			return parser.parse_opacity_value(mut tokens)
+		}
 		.animation_timeline {
 			return parser.parse_animation_timeline_value(mut tokens)
 		}
@@ -248,11 +252,11 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.font_width {
 			return parser.parse_font_width_value(mut tokens)
 		}
+		.letter_spacing, .word_spacing {
+			return parser.parse_letter_or_word_spacing_value(mut tokens)
+		}
 		.line_height {
 			return parser.parse_line_height_value(mut tokens)
-		}
-		.opacity {
-			return parser.parse_opacity_value(mut tokens)
 		}
 	}
 
@@ -564,6 +568,45 @@ fn (mut parser Parser) parse_line_height_value(mut tokens ComponentValueStream) 
 	if value := numeric_style_value_from_css_text_for_value_logic(remaining_text) {
 		match value {
 			LengthStyleValue, NumberStyleValue, PercentageStyleValue {
+				tokens = transaction
+				return value
+			}
+			else {}
+		}
+	}
+	return none
+}
+
+fn (mut parser Parser) parse_letter_or_word_spacing_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut normal_transaction := tokens.clone()
+	normal_transaction.consume_whitespace()
+	if token := normal_transaction.consume() {
+		if token.is(.ident) && equals_ignoring_ascii_case(token.token().ident(), 'normal') {
+			normal_transaction.consume_whitespace()
+			if !normal_transaction.has_more_tokens() {
+				tokens = normal_transaction
+				return StyleValue(KeywordStyleValue.create(.normal))
+			}
+		}
+	}
+
+	mut length_transaction := tokens.clone()
+	if value := parser.parse_length_value(mut length_transaction) {
+		tokens = length_transaction
+		return value
+	}
+	mut percentage_transaction := tokens.clone()
+	if value := parser.parse_percentage_value(mut percentage_transaction) {
+		tokens = percentage_transaction
+		return value
+	}
+
+	mut transaction := tokens.clone()
+	remaining_text :=
+		serialize_a_series_of_component_values(transaction.consume_remaining_component_values())
+	if value := numeric_style_value_from_css_text_for_value_logic(remaining_text) {
+		match value {
+			LengthStyleValue, PercentageStyleValue {
 				tokens = transaction
 				return value
 			}

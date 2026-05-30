@@ -829,6 +829,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.corner_top_right_shape {
 			'round'
 		}
+		.fill_opacity, .flood_opacity {
+			'1'
+		}
 		.font_feature_settings {
 			'normal'
 		}
@@ -844,6 +847,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.font_width {
 			'normal'
 		}
+		.letter_spacing {
+			'normal'
+		}
 		.line_height {
 			'normal'
 		}
@@ -852,6 +858,15 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		}
 		.outline_width {
 			'medium'
+		}
+		.shape_image_threshold {
+			'0'
+		}
+		.stop_opacity, .stroke_opacity {
+			'1'
+		}
+		.word_spacing {
+			'normal'
 		}
 	}
 
@@ -863,9 +878,13 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.color, .color_scheme { true }
-		.font_style, .font_weight { true }
-		else { false }
+		.color, .color_scheme, .fill_opacity, .font_style, .font_weight, .letter_spacing,
+		.stroke_opacity, .word_spacing {
+			true
+		}
+		else {
+			false
+		}
 	}
 }
 
@@ -874,9 +893,10 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 	return match property_id {
 		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .color, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape,
-		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.line_height, .opacity, .outline_width {
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.flood_opacity, .font_feature_settings, .font_style, .font_variation_settings,
+		.font_weight, .font_width, .letter_spacing, .line_height, .opacity, .outline_width,
+		.shape_image_threshold, .stop_opacity, .stroke_opacity, .word_spacing {
 			true
 		}
 		.color_scheme, .content_visibility {
@@ -895,11 +915,13 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 	return match property_id {
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .font_style, .font_weight, .font_width, .outline_width {
+		.corner_top_right_shape, .font_style, .font_weight, .font_width, .letter_spacing,
+		.outline_width, .word_spacing {
 			true
 		}
-		.animation_name, .animation_timeline, .color_scheme, .content_visibility,
-		.font_feature_settings, .font_variation_settings, .line_height, .opacity {
+		.animation_name, .animation_timeline, .color_scheme, .content_visibility, .fill_opacity,
+		.flood_opacity, .font_feature_settings, .font_variation_settings, .line_height, .opacity,
+		.shape_image_threshold, .stop_opacity, .stroke_opacity {
 			false
 		}
 	}
@@ -1469,12 +1491,20 @@ pub fn (c &ComputedProperties) word_break() WordBreak {
 }
 
 pub fn (c &ComputedProperties) word_spacing() CSSPixels {
-	_ = c
+	if value := c.property(.word_spacing, .yes) {
+		if length := computed_interpolation_length_from_dom_style_value(value) {
+			return length.absolute_length_to_px()
+		}
+	}
 	return CSSPixels{}
 }
 
 pub fn (c &ComputedProperties) letter_spacing() CSSPixels {
-	_ = c
+	if value := c.property(.letter_spacing, .yes) {
+		if length := computed_interpolation_length_from_dom_style_value(value) {
+			return length.absolute_length_to_px()
+		}
+	}
 	return CSSPixels{}
 }
 
@@ -1927,14 +1957,21 @@ pub fn (c &ComputedProperties) mask_type() MaskType {
 	return .luminance
 }
 
+fn (c &ComputedProperties) opacity_property(property_id PropertyID, default_value f32) f32 {
+	if value := c.property(property_id, .yes) {
+		if number := computed_interpolation_number_from_dom_style_value(value) {
+			return f32(number)
+		}
+	}
+	return default_value
+}
+
 pub fn (c &ComputedProperties) stop_opacity() f32 {
-	_ = c
-	return 1
+	return c.opacity_property(.stop_opacity, 1)
 }
 
 pub fn (c &ComputedProperties) fill_opacity() f32 {
-	_ = c
-	return 1
+	return c.opacity_property(.fill_opacity, 1)
 }
 
 pub fn (c &ComputedProperties) stroke_dasharray() []StrokeDasharrayItem {
@@ -1958,8 +1995,7 @@ pub fn (c &ComputedProperties) stroke_miterlimit() f64 {
 }
 
 pub fn (c &ComputedProperties) stroke_opacity() f32 {
-	_ = c
-	return 1
+	return c.opacity_property(.stroke_opacity, 1)
 }
 
 pub fn (c &ComputedProperties) fill_rule() FillRule {
@@ -1973,8 +2009,7 @@ pub fn (c &ComputedProperties) clip_rule() ClipRule {
 }
 
 pub fn (c &ComputedProperties) flood_opacity() f32 {
-	_ = c
-	return 1
+	return c.opacity_property(.flood_opacity, 1)
 }
 
 pub fn (c &ComputedProperties) shape_rendering() ShapeRendering {
@@ -2246,8 +2281,9 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .font_style, .font_weight, .font_width, .line_height, .opacity,
-		.outline_width {
+		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_style, .font_weight,
+		.font_width, .letter_spacing, .line_height, .opacity, .outline_width,
+		.shape_image_threshold, .stop_opacity, .stroke_opacity, .word_spacing {
 			.by_computed_value
 		}
 		.content_visibility {
@@ -2949,9 +2985,13 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .font_feature_settings, .font_style, .font_variation_settings,
-		.font_weight, .font_width, .line_height, .opacity, .outline_width {
+		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
+		.font_style, .font_variation_settings, .font_weight, .font_width, .line_height, .opacity,
+		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity {
 			false
+		}
+		.letter_spacing, .word_spacing {
+			true
 		}
 	}
 }
@@ -2967,8 +3007,10 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .font_feature_settings, .font_style, .font_variation_settings,
-		.font_weight, .font_width, .line_height, .outline_width {
+		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
+		.font_style, .font_variation_settings, .font_weight, .font_width, .letter_spacing,
+		.line_height, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity,
+		.word_spacing {
 			false
 		}
 	}
@@ -2995,8 +3037,10 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .font_feature_settings, .font_style, .font_variation_settings,
-		.font_weight, .font_width, .line_height, .outline_width {
+		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
+		.font_style, .font_variation_settings, .font_weight, .font_width, .letter_spacing,
+		.line_height, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity,
+		.word_spacing {
 			false
 		}
 	}
@@ -4381,11 +4425,15 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 		.font_width {
 			StyleComputer.compute_font_width(absolutized_value)
 		}
+		.letter_spacing, .word_spacing {
+			StyleComputer.compute_letter_or_word_spacing(absolutized_value)
+		}
 		.line_height {
 			StyleComputer.compute_line_height(absolutized_value,
 				computation_context.length_resolution_context.font_metrics.font_size)
 		}
-		.opacity {
+		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,
+		.stroke_opacity {
 			StyleComputer.compute_opacity(absolutized_value)
 		}
 		else {
@@ -4577,6 +4625,13 @@ pub fn StyleComputer.compute_corner_shape(absolutized_value &dom.StyleValue) &do
 	}
 
 	return dom_style_value_from_value_logic(StyleValue(SuperellipseStyleValue.create(StyleValue(NumberStyleValue.create(parameter)))))
+}
+
+pub fn StyleComputer.compute_letter_or_word_spacing(absolutized_value &dom.StyleValue) &dom.StyleValue {
+	if computed_interpolation_style_value_keyword(absolutized_value) or { Keyword.invalid } == .normal {
+		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(0))))
+	}
+	return unsafe { absolutized_value }
 }
 
 fn computed_interpolation_parse_opentype_tag_value(mut tokens ComponentValueStream) ?StringStyleValue {
