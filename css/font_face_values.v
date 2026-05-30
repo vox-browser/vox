@@ -3479,10 +3479,6 @@ fn parse_font_face_source(input string) ?ParsedFontFaceSource {
 		close := text.index(')') or { return none }
 		url = unquote_css_string(text[4..close].trim_space())
 		rest = text[close + 1..].trim_space()
-	} else if lower.starts_with('src(') {
-		close := text.index(')') or { return none }
-		url = unquote_css_string(text[4..close].trim_space())
-		rest = text[close + 1..].trim_space()
 	} else {
 		return none
 	}
@@ -3491,9 +3487,15 @@ fn parse_font_face_source(input string) ?ParsedFontFaceSource {
 		kind:  .url
 		value: url
 	}
+	mut saw_format := false
+	mut saw_tech := false
 	for modifier in split_css_space_list(rest) {
 		modifier_lower := modifier.to_lower()
 		if modifier_lower.starts_with('format(') && modifier.ends_with(')') {
+			if saw_format || saw_tech {
+				return none
+			}
+			saw_format = true
 			format_name := normalize_font_format_name(modifier[7..modifier.len - 1].trim_space()) or {
 				return none
 			}
@@ -3502,6 +3504,10 @@ fn parse_font_face_source(input string) ?ParsedFontFaceSource {
 				source.tech << tech
 			}
 		} else if modifier_lower.starts_with('tech(') && modifier.ends_with(')') {
+			if saw_tech {
+				return none
+			}
+			saw_tech = true
 			tech_names := split_font_tech_names(modifier[5..modifier.len - 1]) or { return none }
 			for tech_name in tech_names {
 				if tech := font_tech_from_string(tech_name) {
