@@ -153,31 +153,16 @@ pub fn (value CSSMathValue) create_an_internal_representation(property PropertyN
 		}
 		return StyleValue(CalculatedStyleValue{})
 	}
-	matches := if type_.matches_angle(none) {
-		property_accepts_type(property_id, .angle)
-	} else if type_.matches_flex(none) {
-		property_accepts_type(property_id, .flex)
-	} else if type_.matches_frequency(none) {
-		property_accepts_type(property_id, .frequency)
-	} else if type_.matches_length(none) {
-		property_accepts_type(property_id, .length)
-	} else if type_.matches_number(none) {
-		property_accepts_type(property_id, .number)
-	} else if type_.matches_percentage() {
-		property_accepts_type(property_id, .percentage)
-	} else if type_.matches_resolution(none) {
-		property_accepts_type(property_id, .resolution)
-	} else if type_.matches_time(none) {
-		property_accepts_type(property_id, .time)
-	} else {
-		false
-	}
+	matches := css_numeric_type_matches_property(type_, property_id, none)
 
 	if perform_type_check == .yes && !matches {
 		return error('Property does not accept values of this type.')
 	}
 
-	_ = context
+	// The V CalculatedStyleValue stub cannot store the calculation node or resolved
+	// type yet, but still run the translated node construction so unsupported
+	// numeric leaves fail at the same boundary as the C++ algorithm.
+	_ = value.create_calculation_node(context)!
 	return StyleValue(CalculatedStyleValue{})
 }
 
@@ -239,6 +224,34 @@ fn css_numberish_from_numeric_value(value CSSNumericValue) CSSNumberish {
 		CSSMathMax { CSSNumberish(value) }
 		CSSMathClamp { CSSNumberish(value) }
 	}
+}
+
+fn css_numeric_type_matches_property(type_ NumericType, property_id PropertyID, percentages_resolve_as ?ValueType) bool {
+	if type_.matches_angle(percentages_resolve_as) {
+		return property_accepts_type(property_id, .angle)
+	}
+	if type_.matches_flex(percentages_resolve_as) {
+		return property_accepts_type(property_id, .flex)
+	}
+	if type_.matches_frequency(percentages_resolve_as) {
+		return property_accepts_type(property_id, .frequency)
+	}
+	if type_.matches_length(percentages_resolve_as) {
+		return property_accepts_type(property_id, .length)
+	}
+	if type_.matches_number(percentages_resolve_as) {
+		return property_accepts_type(property_id, .number)
+	}
+	if type_.matches_percentage() {
+		return property_accepts_type(property_id, .percentage)
+	}
+	if type_.matches_resolution(percentages_resolve_as) {
+		return property_accepts_type(property_id, .resolution)
+	}
+	if type_.matches_time(percentages_resolve_as) {
+		return property_accepts_type(property_id, .time)
+	}
+	return false
 }
 
 pub fn CSSMathSum.create(type_ NumericType, values CSSNumericArray) CSSMathSum {
@@ -397,9 +410,9 @@ pub fn (sum CSSMathSum) create_a_sum_value() ?SumValue {
 
 	// 3. Create a type from the unit map of each item of values, and add all the types together.
 	//    If the result is failure, return failure.
-	mut added_type := NumericType.create_from_unit_map(values[0].unit_map) or { return none }
+	mut added_type := numeric_type_from_sum_value_unit_map(values[0].unit_map) or { return none }
 	for i := 1; i < values.len; i++ {
-		type_ := NumericType.create_from_unit_map(values[i].unit_map) or { return none }
+		type_ := numeric_type_from_sum_value_unit_map(values[i].unit_map) or { return none }
 		added_type = added_type.added_to(type_) or { return none }
 	}
 	_ = added_type
@@ -1200,6 +1213,13 @@ fn remove_zero_entries_from_unit_map(mut unit_map map[string]int) {
 	for unit in keys_to_remove {
 		unit_map.delete(unit)
 	}
+}
+
+fn numeric_type_from_sum_value_unit_map(unit_map map[string]int) ?NumericType {
+	if unit_map.len == 0 {
+		return NumericType.new()
+	}
+	return NumericType.create_from_unit_map(unit_map)
 }
 
 fn join_calculation_nodes(nodes []CalculationNode, separator string, prefix string, suffix string) string {

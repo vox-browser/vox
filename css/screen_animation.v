@@ -803,7 +803,7 @@ pub struct TransitionTimingAttributes {
 pub mut:
 	delay               f64
 	duration            f64
-	timing_function EasingFunction = EasingFunction.linear()
+	timing_function     EasingFunction = EasingFunction.linear()
 	transition_behavior TransitionBehavior
 }
 
@@ -834,6 +834,19 @@ pub fn (mut storage CSSTransitionStorage) add_transitioned_properties(abstract_e
 	for transition_properties in transitions {
 		attributes := transition_attributes_from_transition_properties(transition_properties)
 		for property_id in transition_properties.properties {
+			mut did_update_existing_entry := false
+			for mut entry in storage.registered_transition_attributes {
+				if abstract_elements_equal(entry.abstract_element, abstract_element)
+					&& entry.property_id == property_id {
+					entry.attributes = attributes
+					did_update_existing_entry = true
+					break
+				}
+			}
+			if did_update_existing_entry {
+				continue
+			}
+
 			storage.registered_transition_attributes << CSSTransitionStorageEntry{
 				abstract_element: abstract_element
 				property_id:      property_id
@@ -889,7 +902,7 @@ pub fn (mut storage CSSTransitionStorage) set_transition(abstract_element dom.Ab
 	for entry in storage.associated_transitions {
 		if abstract_elements_equal(entry.abstract_element, abstract_element)
 			&& entry.property_id == property_id {
-			return
+			panic('Transition already associated for property ${string_from_property_id(property_id)}')
 		}
 	}
 	storage.associated_transitions << CSSTransitionStorageEntry{
@@ -901,11 +914,17 @@ pub fn (mut storage CSSTransitionStorage) set_transition(abstract_element dom.Ab
 
 pub fn (mut storage CSSTransitionStorage) remove_transition(abstract_element dom.AbstractElement, property_id PropertyID) {
 	mut kept := []CSSTransitionStorageEntry{}
+	mut did_remove := false
 	for entry in storage.associated_transitions {
 		if !abstract_elements_equal(entry.abstract_element, abstract_element)
 			|| entry.property_id != property_id {
 			kept << entry
+		} else {
+			did_remove = true
 		}
+	}
+	if !did_remove {
+		panic('No transition associated for property ${string_from_property_id(property_id)}')
 	}
 	storage.associated_transitions = kept
 }
@@ -924,6 +943,14 @@ pub fn compute_transitioned_properties_for_storage(style &ComputedProperties, ab
 fn combined_transition_duration(transition_attributes TransitionTimingAttributes) f64 {
 	// Define the combined duration of the transition as the sum of max(matching transition duration, 0s) and the matching transition delay.
 	return math.max(transition_attributes.duration, 0) + transition_attributes.delay
+}
+
+fn collect_transition_into_computed_properties(abstract_element dom.AbstractElement, transition &CSSTransition, mut computed_properties ComputedProperties) {
+	_ = abstract_element
+	_ = transition
+	_ = computed_properties
+	// Boundary: StyleComputer::collect_animation_into() requires Animation sampling and effect stacks that are not
+	// translated into this V port yet. Keep the transition-starting flow intact without synthesizing an incorrect value.
 }
 
 pub fn transition_timing_attributes_for_property(abstract_element dom.AbstractElement, property_id PropertyID) TransitionTimingAttributes {
@@ -955,6 +982,22 @@ pub fn CSSTransition.start_a_transition(abstract_element dom.AbstractElement, pr
 }
 
 pub fn CSSTransition.new(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
+	transition_attributes := transition_timing_attributes_for_property(abstract_element,
+		property_id)
+	return CSSTransition.new_with_timing_attributes(abstract_element, property_id,
+		transition_generation, transition_attributes, delay, start_time, end_time, start_value,
+		end_value, reversing_adjusted_start_value, reversing_shortening_factor)
+}
+
+pub fn CSSTransition.start_a_transition_for_storage(mut storage CSSTransitionStorage, abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, transition_attributes TransitionTimingAttributes, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
+	transition := CSSTransition.new_with_timing_attributes(abstract_element, property_id,
+		transition_generation, transition_attributes, delay, start_time, end_time, start_value,
+		end_value, reversing_adjusted_start_value, reversing_shortening_factor)
+	storage.set_transition(abstract_element, property_id, transition)
+	return transition
+}
+
+pub fn CSSTransition.new_with_timing_attributes(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, transition_attributes TransitionTimingAttributes, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
 	mut transition := &CSSTransition{
 		transition_property_:            property_id
 		transition_generation_:          transition_generation
@@ -981,8 +1024,7 @@ pub fn CSSTransition.new(abstract_element dom.AbstractElement, property_id Prope
 	// Timing properties may also be updated due to a style change. Any change to a CSS animation property that affects
 	// timing requires rerunning the procedure to normalize specified timing.
 	transition.keyframe_effect_.normalize_specified_timing()
-	transition.keyframe_effect_.set_timing_function(transition_timing_attributes_for_property(abstract_element,
-		property_id).timing_function)
+	transition.keyframe_effect_.set_timing_function(transition_attributes.timing_function)
 
 	mut key_frame_set := &KeyFrameSet{}
 	mut initial_keyframe := ResolvedKeyFrame{}
@@ -1005,6 +1047,228 @@ pub fn CSSTransition.new(abstract_element dom.AbstractElement, property_id Prope
 	// Stub: HTML::TemporaryExecutionContext is not translated yet.
 	transition.play() or {}
 	return transition
+}
+
+fn start_transition_for_storage(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, transition_attributes TransitionTimingAttributes, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64, mut new_style ComputedProperties, mut storage CSSTransitionStorage) &CSSTransition {
+	transition := CSSTransition.start_a_transition_for_storage(mut storage, abstract_element,
+		property_id, transition_generation, transition_attributes, delay, start_time, end_time,
+		start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor)
+
+	// Immediately set the property's value to the transition's current value, to prevent single-frame jumps.
+	collect_transition_into_computed_properties(abstract_element, transition, mut new_style)
+	return transition
+}
+
+// https://drafts.csswg.org/css-transitions/#starting
+pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, mut new_style ComputedProperties, abstract_element dom.AbstractElement, transition_generation int, style_change_event_time f64, mut storage CSSTransitionStorage) {
+	// For each element and property, the implementation must act as follows:
+	// NB: C++ gets style_change_event_time from DocumentTimeline's current time in milliseconds. The caller supplies it
+	// here because DocumentTimeline is not translated into this CSS animation model yet.
+
+	// OPTIMIZATION: Instead of iterating over all properties we split the logic into two loops, one for the properties
+	//               which appear in transition-property and one for those which have existing transitions
+	for property_id in storage.property_ids_with_matching_transition_property_entry(abstract_element) {
+		matching_transition_properties := storage.property_transition_attributes(abstract_element,
+			property_id) or { continue }
+		before_change_value := previous_style.property(property_id, .yes) or { continue }
+		after_change_value := new_style.property(property_id, .no) or { continue }
+
+		mut existing_transition := &CSSTransition(unsafe { nil })
+		mut has_existing_transition := false
+		if transition := storage.property_transition(abstract_element, property_id) {
+			existing_transition = unsafe { &CSSTransition(transition) }
+			has_existing_transition = true
+		}
+
+		has_running_transition := has_existing_transition && !existing_transition.is_finished()
+			&& !existing_transition.is_idle()
+		has_completed_transition := has_existing_transition
+			&& (existing_transition.is_finished() || existing_transition.is_idle())
+
+		// 1. If all of the following are true:
+		// - the element does not have a running transition for the property,
+		// - there is a matching transition-property value, and
+		// NOTE: We only iterate over properties for which this is true
+		// - the before-change style is different from the after-change style for that property, and the values for the property are transitionable,
+		before_and_after_are_transitionable :=
+			!style_values_equal(before_change_value, after_change_value)
+			&& property_values_are_transitionable(property_id, before_change_value, after_change_value, abstract_element.element(), matching_transition_properties.transition_behavior)
+		// - the element does not have a completed transition for the property
+		//   or the end value of the completed transition is different from the after-change style for the property,
+		completed_transition_can_be_replaced := !has_completed_transition
+			|| !style_values_equal(existing_transition.transition_end_value(), after_change_value)
+		// - the combined duration is greater than 0s,
+		matching_transition_has_duration := combined_transition_duration(matching_transition_properties) > 0
+		if !has_running_transition && before_and_after_are_transitionable
+			&& completed_transition_can_be_replaced && matching_transition_has_duration {
+			// then implementations must remove the completed transition (if present) from the set of completed transitions
+			if has_completed_transition {
+				storage.remove_transition(abstract_element, property_id)
+			}
+			// and start a transition whose:
+
+			// AD-HOC: We pass delay to the constructor separately so we can use it to construct the contained KeyframeEffect
+			delay := matching_transition_properties.delay
+
+			// - start time is the time of the style change event plus the matching transition delay,
+			start_time := style_change_event_time
+
+			// - end time is the start time plus the matching transition duration,
+			end_time := start_time + matching_transition_properties.duration
+
+			// - start value is the value of the transitioning property in the before-change style,
+			start_value := before_change_value
+
+			// - end value is the value of the transitioning property in the after-change style,
+			end_value := after_change_value
+
+			// - reversing-adjusted start value is the same as the start value, and
+			reversing_adjusted_start_value := start_value
+
+			// - reversing shortening factor is 1.
+			reversing_shortening_factor := 1.0
+
+			start_transition_for_storage(abstract_element, property_id, transition_generation,
+				matching_transition_properties, delay, start_time, end_time, start_value,
+				end_value, reversing_adjusted_start_value, reversing_shortening_factor, mut
+				new_style, mut storage)
+		}
+		// 2. Otherwise, if the element has a completed transition for the property
+		//    and the end value of the completed transition is different from the after-change style for the property,
+		//    then implementations must remove the completed transition from the set of completed transitions.
+		else if has_completed_transition
+			&& !style_values_equal(existing_transition.transition_end_value(), after_change_value) {
+			storage.remove_transition(abstract_element, property_id)
+		}
+
+		// NOTE: Step 3 is handled in a separate loop below for performance reasons
+
+		// 4. If the element has a running transition for the property,
+		//    there is a matching transition-property value,
+		//    and the end value of the running transition is not equal to the value of the property in the after-change style, then:
+		if has_running_transition
+			&& !style_values_equal(existing_transition.transition_end_value(), after_change_value) {
+			// 1. If the current value of the property in the running transition is equal to the value of the property in the after-change style,
+			//    or if these two values are not transitionable,
+			//    then implementations must cancel the running transition.
+			current_value := new_style.property(property_id, .yes) or { continue }
+			if style_values_equal(current_value, after_change_value)
+				|| !property_values_are_transitionable(property_id, current_value, after_change_value, abstract_element.element(), matching_transition_properties.transition_behavior) {
+				existing_transition.cancel()
+			}
+			// 2. Otherwise, if the combined duration is less than or equal to 0s,
+			//    or if the current value of the property in the running transition is not transitionable with the value of the property in the after-change style,
+			//    then implementations must cancel the running transition.
+			else if combined_transition_duration(matching_transition_properties) <= 0
+				|| !property_values_are_transitionable(property_id, current_value, after_change_value, abstract_element.element(), matching_transition_properties.transition_behavior) {
+				existing_transition.cancel()
+			}
+			// 3. Otherwise, if the reversing-adjusted start value of the running transition is the same as the value of the property in the after-change style
+			//    (see the section on reversing of transitions for why these case exists),
+			else if style_values_equal(existing_transition.reversing_adjusted_start_value(),
+				after_change_value)
+			{
+				// implementations must cancel the running transition and start a new transition whose:
+				existing_transition.cancel()
+				// AD-HOC: Remove the cancelled transition, otherwise it breaks the invariant that there is only one
+				// running or completed transition for a property at once.
+				storage.remove_transition(abstract_element, property_id)
+
+				// - reversing-adjusted start value is the end value of the running transition,
+				reversing_adjusted_start_value := existing_transition.transition_end_value()
+
+				// - reversing shortening factor is the absolute value, clamped to the range [0, 1], of the sum of:
+				//   1. the output of the timing function of the old transition at the time of the style change event,
+				//      times the reversing shortening factor of the old transition
+				term_1 := existing_transition.timing_function_output_at_time(style_change_event_time) * existing_transition.reversing_shortening_factor()
+				//   2. 1 minus the reversing shortening factor of the old transition.
+				term_2 := 1 - existing_transition.reversing_shortening_factor()
+				reversing_shortening_factor := screen_animation_clamp_f64(math.abs(term_1 + term_2),
+					0.0, 1.0)
+
+				// AD-HOC: We pass delay to the constructor separately so we can use it to construct the contained KeyframeEffect
+				delay := if matching_transition_properties.delay >= 0 {
+					matching_transition_properties.delay
+				} else {
+					reversing_shortening_factor * matching_transition_properties.delay
+				}
+
+				// - start time is the time of the style change event plus:
+				//   1. if the matching transition delay is nonnegative, the matching transition delay, or
+				//   2. if the matching transition delay is negative, the product of the new transition's reversing shortening factor and the matching transition delay,
+				start_time := style_change_event_time
+
+				// - end time is the start time plus the product of the matching transition duration and the new transition's reversing shortening factor,
+				end_time := start_time +
+					(matching_transition_properties.duration * reversing_shortening_factor)
+
+				// - start value is the current value of the property in the running transition,
+				start_value := current_value
+
+				// - end value is the value of the property in the after-change style,
+				end_value := after_change_value
+
+				start_transition_for_storage(abstract_element, property_id, transition_generation,
+					matching_transition_properties, delay, start_time, end_time, start_value,
+					end_value, reversing_adjusted_start_value, reversing_shortening_factor, mut
+					new_style, mut storage)
+			}
+			// 4. Otherwise,
+			else {
+				// implementations must cancel the running transition and start a new transition whose:
+				existing_transition.cancel()
+				// AD-HOC: Remove the cancelled transition, otherwise it breaks the invariant that there is only one
+				// running or completed transition for a property at once.
+				storage.remove_transition(abstract_element, property_id)
+
+				// AD-HOC: We pass delay to the constructor separately so we can use it to construct the contained KeyframeEffect
+				delay := matching_transition_properties.delay
+
+				// - start time is the time of the style change event plus the matching transition delay,
+				start_time := style_change_event_time
+
+				// - end time is the start time plus the matching transition duration,
+				end_time := start_time + matching_transition_properties.duration
+
+				// - start value is the current value of the property in the running transition,
+				start_value := current_value
+
+				// - end value is the value of the property in the after-change style,
+				end_value := after_change_value
+
+				// - reversing-adjusted start value is the same as the start value, and
+				reversing_adjusted_start_value := start_value
+
+				// - reversing shortening factor is 1.
+				reversing_shortening_factor := 1.0
+
+				start_transition_for_storage(abstract_element, property_id, transition_generation,
+					matching_transition_properties, delay, start_time, end_time, start_value,
+					end_value, reversing_adjusted_start_value, reversing_shortening_factor, mut
+					new_style, mut storage)
+			}
+		}
+	}
+
+	for property_id in storage.property_ids_with_existing_transitions(abstract_element) {
+		// 3. If the element has a running transition or completed transition for the property, and there is not a
+		//    matching transition-property value, then implementations must cancel the running transition or remove the
+		//    completed transition from the set of completed transitions.
+		if _ := storage.property_transition_attributes(abstract_element, property_id) {
+			continue
+		}
+
+		mut existing_transition := unsafe {
+			&CSSTransition(storage.property_transition(abstract_element, property_id) or {
+				continue
+			})
+		}
+		if !existing_transition.is_finished() && !existing_transition.is_idle() {
+			existing_transition.cancel()
+		} else {
+			storage.remove_transition(abstract_element, property_id)
+		}
+	}
 }
 
 pub fn (mut transition CSSTransition) initialize() {
@@ -1052,6 +1316,25 @@ pub fn (mut transition CSSTransition) set_effect(effect &KeyframeEffect) {
 
 pub fn (mut transition CSSTransition) play() ! {
 	transition.play_state_ = .running
+}
+
+pub fn (mut transition CSSTransition) cancel() {
+	transition.play_state_ = .idle
+}
+
+pub fn (transition &CSSTransition) is_finished() bool {
+	return transition.play_state_ == .finished
+}
+
+pub fn (transition &CSSTransition) is_idle() bool {
+	return transition.play_state_ == .idle
+}
+
+pub fn (transition &CSSTransition) effect() ?&KeyframeEffect {
+	if transition.keyframe_effect_ == unsafe { nil } {
+		return none
+	}
+	return transition.keyframe_effect_
 }
 
 pub fn (transition &CSSTransition) class_specific_composite_order(other &CSSTransition) int {

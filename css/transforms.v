@@ -724,6 +724,16 @@ pub fn (value CSSNumericValue) create_an_internal_representation(property Proper
 			value.create_an_internal_representation(property, perform_type_check)!
 		}
 		CSSMathValueStub {
+			context := CalculationContext.for_property(property)
+			if perform_type_check == .yes {
+				property_id := property.id() or {
+					return error('Property does not accept values of this type.')
+				}
+				if !css_numeric_type_matches_property(value.type_, property_id, none) {
+					return error('Property does not accept values of this type.')
+				}
+			}
+			_ = CSSNumericValue(value).create_calculation_node(context)!
 			StyleValue(CalculatedStyleValue{})
 		}
 		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax,
@@ -2243,6 +2253,9 @@ fn transform_property_accepts_type(property PropertyNameAndID, value_type ValueT
 	name := to_ascii_lowercase(property.name())
 	if name == 'transform' {
 		return value_type == .transform_function || value_type == .transform_list
+	}
+	if name in ['rotate', 'scale', 'translate'] {
+		return value_type == .transform_function
 	}
 	if property_id := property.id() {
 		return property_accepts_type(property_id, value_type)

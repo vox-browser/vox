@@ -1,6 +1,7 @@
 // Translated from the remaining non-image/non-transform LibWeb/CSS StyleValue subclasses.
 module css
 
+import dom
 import math
 import strings
 
@@ -90,6 +91,10 @@ fn zero_length_style_value() StyleValue {
 
 fn currentcolor_style_value() StyleValue {
 	return StyleValue(KeywordStyleValue.create(.currentcolor))
+}
+
+fn percentage_style_value(value f64) StyleValue {
+	return StyleValue(PercentageStyleValue.create(Percentage.new(value)))
 }
 
 // --- Generated enum subset ---
@@ -908,6 +913,56 @@ pub fn (style_value BasicShapeStyleValue) serialize(mode SerializationMode) stri
 	}
 }
 
+fn basic_shape_percentage_value(style_value StyleValue) ?f64 {
+	return match style_value {
+		PercentageStyleValue { style_value.percentage().value() }
+		else { none }
+	}
+}
+
+fn basic_shape_one_hundred_percent_minus(values []StyleValue, context ComputationContext) StyleValue {
+	if values.len == 0 {
+		return percentage_style_value(100)
+	}
+
+	mut absolutized_values := []StyleValue{cap: values.len}
+	mut percentage_total := 0.0
+	mut all_values_are_percentages := true
+	for value in values {
+		absolutized_value := value.absolutized(context)
+		absolutized_values << absolutized_value
+		if percentage_value := basic_shape_percentage_value(absolutized_value) {
+			percentage_total += percentage_value
+		} else {
+			all_values_are_percentages = false
+		}
+	}
+
+	if all_values_are_percentages {
+		return percentage_style_value(100.0 - percentage_total)
+	}
+
+	// Boundary: CalculationNode/SumCalculationNode are not translated here, so preserve the C++ calculation shape
+	// as a calculated style-value placeholder after absolutizing nested values.
+	mut serialized := 'calc(100%'
+	for value in absolutized_values {
+		serialized += ' - ${value.serialize(.normal)}'
+	}
+	serialized += ')'
+	return StyleValue(StubStyleValue.create(.calculated, serialized))
+}
+
+fn basic_shape_rect_resolve_auto(style_value StyleValue, value_of_auto f64) StyleValue {
+	if style_value.is_keyword() {
+		if style_value.to_keyword() != .auto {
+			panic('VERIFY_NOT_REACHED')
+		}
+		return percentage_style_value(value_of_auto)
+	}
+
+	return style_value
+}
+
 pub fn (style_value BasicShapeStyleValue) absolutized(context ComputationContext) StyleValue {
 	// The values in a <basic-shape> function are computed as specified, with these exceptions:
 	// - Omitted values are included and compute to their defaults.
@@ -916,9 +971,6 @@ pub fn (style_value BasicShapeStyleValue) absolutized(context ComputationContext
 	// FIXME: A <'border-radius'> value in a <basic-shape-rect> function is computed as an expanded list of all eight
 	//        <length-percentage> values.
 	// - All <basic-shape-rect> functions compute to the equivalent inset() function.
-	//
-	// Stub: the calculation tree needed for xywh()/rect() right/bottom conversion is not translated yet, so this port
-	// keeps the function kind and only absolutizes nested style values.
 	shape := style_value.basic_shape_
 	absolutized_shape := match shape {
 		BasicShapeInset {
@@ -931,20 +983,29 @@ pub fn (style_value BasicShapeStyleValue) absolutized(context ComputationContext
 			})
 		}
 		BasicShapeXywh {
-			BasicShape(BasicShapeXywh{
-				x:             shape.x.absolutized(context)
-				y:             shape.y.absolutized(context)
-				width:         shape.width.absolutized(context)
-				height:        shape.height.absolutized(context)
+			// Note: Given xywh(x y w h), the equivalent function is inset(y calc(100% - x - w)
+			// calc(100% - y - h) x).
+			BasicShape(BasicShapeInset{
+				top:           shape.y.absolutized(context)
+				right:         basic_shape_one_hundred_percent_minus([shape.x, shape.width],
+					context)
+				bottom:        basic_shape_one_hundred_percent_minus([shape.y, shape.height],
+					context)
+				left:          shape.x.absolutized(context)
 				border_radius: shape.border_radius.absolutized(context)
 			})
 		}
 		BasicShapeRect {
-			BasicShape(BasicShapeRect{
-				top:           shape.top.absolutized(context)
-				right:         shape.right.absolutized(context)
-				bottom:        shape.bottom.absolutized(context)
-				left:          shape.left.absolutized(context)
+			// Note: Given rect(t r b l), the equivalent function is inset(t calc(100% - r) calc(100% - b) l).
+			BasicShape(BasicShapeInset{
+				top:           basic_shape_rect_resolve_auto(shape.top, 0).absolutized(context)
+				right:         basic_shape_one_hundred_percent_minus([
+					basic_shape_rect_resolve_auto(shape.right, 100),
+				], context)
+				bottom:        basic_shape_one_hundred_percent_minus([
+					basic_shape_rect_resolve_auto(shape.bottom, 100),
+				], context)
+				left:          basic_shape_rect_resolve_auto(shape.left, 0).absolutized(context)
 				border_radius: shape.border_radius.absolutized(context)
 			})
 		}
@@ -2714,19 +2775,46 @@ pub fn (style_value TreeCountingFunctionStyleValue) serialize(mode Serialization
 	}
 }
 
+fn (style_value TreeCountingFunctionStyleValue) resolve_for_dom_context(context dom.TreeCountingFunctionResolutionContext) int {
+	return match style_value.function_ {
+		.sibling_count { context.sibling_count }
+		.sibling_index { context.sibling_index }
+	}
+}
+
+pub fn (style_value TreeCountingFunctionStyleValue) resolve_for_dom_abstract_element(abstract_element &dom.AbstractElement) int {
+	mut element := unsafe { &dom.Element(abstract_element.element()) }
+	element.set_style_uses_tree_counting_function()
+	tree_counting_function_resolution_context :=
+		abstract_element.tree_counting_function_resolution_context()
+	return style_value.resolve_for_dom_context(tree_counting_function_resolution_context)
+}
+
 pub fn (style_value TreeCountingFunctionStyleValue) resolve() int {
-	// Stub: DOM::AbstractElement and its tree-counting context are not translated in this V port.
-	return 0
+	// Boundary: C++ resolves this through ComputationContext::abstract_element. The V ComputationContext stub does
+	// not carry a DOM element yet; callers with one should use resolve_for_dom_abstract_element().
+	panic('TreeCountingFunctionStyleValue::resolve requires a DOM AbstractElement')
+}
+
+fn tree_counting_computed_style_value(value int, computed_type TreeCountingComputedType) StyleValue {
+	return match computed_type {
+		.integer { StyleValue(IntegerStyleValue.create(i64(value))) }
+		.number { StyleValue(NumberStyleValue.create(f64(value))) }
+	}
 }
 
 pub fn (style_value TreeCountingFunctionStyleValue) absolutized(context ComputationContext) StyleValue {
 	_ = context
 	// FIXME: We should clamp this value in case it falls outside the valid range for the context it is in.
 	value := style_value.resolve()
-	return match style_value.computed_type_ {
-		.integer { StyleValue(IntegerStyleValue.create(value)) }
-		.number { StyleValue(NumberStyleValue.create(f64(value))) }
-	}
+	return tree_counting_computed_style_value(value, style_value.computed_type_)
+}
+
+pub fn (style_value TreeCountingFunctionStyleValue) absolutized_for_dom_abstract_element(context ComputationContext, abstract_element &dom.AbstractElement) StyleValue {
+	_ = context
+	// FIXME: We should clamp this value in case it falls outside the valid range for the context it is in.
+	value := style_value.resolve_for_dom_abstract_element(abstract_element)
+	return tree_counting_computed_style_value(value, style_value.computed_type_)
 }
 
 pub fn (style_value TreeCountingFunctionStyleValue) to_string() string {
