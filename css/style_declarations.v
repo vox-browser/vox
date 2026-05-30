@@ -53,6 +53,11 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.rotate { 'rotate' }
 		.scale { 'scale' }
 		.transform { 'transform' }
+		.transition_behavior { 'transition-behavior' }
+		.transition_delay { 'transition-delay' }
+		.transition_duration { 'transition-duration' }
+		.transition_property { 'transition-property' }
+		.transition_timing_function { 'transition-timing-function' }
 		.translate { 'translate' }
 		.word_spacing { 'word-spacing' }
 	}
@@ -65,7 +70,9 @@ pub fn property_is_shorthand(property_id PropertyID) bool {
 
 pub fn property_is_single_valued(property_id PropertyID) bool {
 	return match property_id {
-		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings {
+		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings,
+		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
+		.transition_timing_function {
 			false
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
@@ -81,7 +88,9 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 
 pub fn property_is_list_valued(property_id PropertyID) bool {
 	return match property_id {
-		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings {
+		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings,
+		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
+		.transition_timing_function {
 			true
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
@@ -95,7 +104,7 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 34
+pub const number_of_longhand_properties = 39
 
 pub fn first_longhand_property_id() PropertyID {
 	return .animation_name
@@ -139,8 +148,13 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		29 { PropertyID.rotate }
 		30 { PropertyID.scale }
 		31 { PropertyID.transform }
-		32 { PropertyID.translate }
-		33 { PropertyID.word_spacing }
+		32 { PropertyID.transition_behavior }
+		33 { PropertyID.transition_delay }
+		34 { PropertyID.transition_duration }
+		35 { PropertyID.transition_property }
+		36 { PropertyID.transition_timing_function }
+		37 { PropertyID.translate }
+		38 { PropertyID.word_spacing }
 		else { none }
 	}
 }

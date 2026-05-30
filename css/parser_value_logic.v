@@ -273,6 +273,21 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.transform {
 			return parser.parse_transform_value(mut tokens)
 		}
+		.transition_behavior {
+			return parser.parse_transition_behavior_value(mut tokens)
+		}
+		.transition_delay {
+			return parser.parse_transition_time_list_value(mut tokens, false)
+		}
+		.transition_duration {
+			return parser.parse_transition_time_list_value(mut tokens, true)
+		}
+		.transition_property {
+			return parser.parse_transition_property_value(mut tokens)
+		}
+		.transition_timing_function {
+			return parser.parse_transition_timing_function_value(mut tokens)
+		}
 		.translate {
 			return parser.parse_translate_value(mut tokens)
 		}
@@ -472,6 +487,168 @@ fn (mut parser Parser) parse_animation_name_value(mut tokens ComponentValueStrea
 	}
 	tokens = transaction
 	return StyleValue(StyleValueList.create(names, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_transition_property_value(mut tokens ComponentValueStream) ?StyleValue {
+	// https://drafts.csswg.org/css-transitions/#transition-property-property
+	// none | <single-transition-property>#
+	mut none_transaction := tokens.clone()
+	none_transaction.consume_whitespace()
+	if none_token := none_transaction.consume() {
+		if none_token.is(.ident) && equals_ignoring_ascii_case(none_token.token().ident(), 'none') {
+			none_transaction.consume_whitespace()
+			if !none_transaction.has_more_tokens() {
+				tokens = none_transaction
+				return StyleValue(StyleValueList.create([
+					StyleValue(KeywordStyleValue.create(.none_)),
+				], .comma, .yes))
+			}
+		}
+	}
+
+	mut transaction := tokens.clone()
+	transition_property_values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut transition_properties := []StyleValue{}
+	for value in transition_property_values {
+		mut transition_property_tokens := ComponentValueStream.new(value)
+		custom_ident := parser.parse_custom_ident_value(mut transition_property_tokens, [
+			'none',
+		]) or { return none }
+		transition_property_tokens.consume_whitespace()
+		if transition_property_tokens.has_more_tokens() {
+			return none
+		}
+		transition_properties << StyleValue(custom_ident)
+	}
+
+	if transition_properties.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(transition_properties, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_transition_time_list_value(mut tokens ComponentValueStream, non_negative bool) ?StyleValue {
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut times := []StyleValue{}
+	for value in values {
+		mut time_tokens := ComponentValueStream.new(value)
+		time_value := parser.parse_time_value(mut time_tokens) or { return none }
+		time_tokens.consume_whitespace()
+		if time_tokens.has_more_tokens() {
+			return none
+		}
+		if non_negative && time_value is TimeStyleValue && time_value.time().to_seconds() < 0 {
+			return none
+		}
+		times << time_value
+	}
+
+	if times.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(times, .comma, .yes))
+}
+
+fn parse_transition_timing_keyword(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	token := transaction.consume() or { return none }
+	if !token.is(.ident) {
+		return none
+	}
+	keyword := transition_timing_keyword_from_string(token.token().ident()) or { return none }
+
+	tokens = transaction
+	return StyleValue(KeywordStyleValue.create(keyword))
+}
+
+fn (mut parser Parser) parse_transition_timing_function_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut timing_functions := []StyleValue{}
+	for value in values {
+		mut timing_tokens := ComponentValueStream.new(value)
+		mut timing_function := ?StyleValue(none)
+		if easing := parser.parse_easing_value(mut timing_tokens) {
+			timing_function = easing
+		} else if keyword := parse_transition_timing_keyword(mut timing_tokens) {
+			timing_function = keyword
+		} else {
+			return none
+		}
+		timing_tokens.consume_whitespace()
+		if timing_tokens.has_more_tokens() {
+			return none
+		}
+		timing_functions << timing_function or { return none }
+	}
+
+	if timing_functions.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(timing_functions, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_transition_behavior_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut behaviors := []StyleValue{}
+	for value in values {
+		mut behavior_tokens := ComponentValueStream.new(value)
+		behavior_tokens.consume_whitespace()
+		token := behavior_tokens.consume() or { return none }
+		if !token.is(.ident) {
+			return none
+		}
+		keyword := transition_behavior_keyword_from_string(token.token().ident()) or { return none }
+
+		behavior_tokens.consume_whitespace()
+		if behavior_tokens.has_more_tokens() {
+			return none
+		}
+		behaviors << StyleValue(KeywordStyleValue.create(keyword))
+	}
+
+	if behaviors.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(behaviors, .comma, .yes))
+}
+
+fn transition_timing_keyword_from_string(value string) ?Keyword {
+	return match to_ascii_lowercase(value) {
+		'linear' { Keyword.linear }
+		'ease' { Keyword.ease }
+		'ease-in' { Keyword.ease_in }
+		'ease-out' { Keyword.ease_out }
+		'ease-in-out' { Keyword.ease_in_out }
+		else { none }
+	}
+}
+
+fn transition_behavior_keyword_from_string(value string) ?Keyword {
+	return match to_ascii_lowercase(value) {
+		'normal' { Keyword.normal }
+		'allow-discrete' { Keyword.allow_discrete }
+		else { none }
+	}
 }
 
 fn parse_keyword_as_custom_ident_for_value_logic(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {
@@ -1421,11 +1598,13 @@ fn (mut parser Parser) parse_easing_value(mut tokens ComponentValueStream) ?Styl
 			mut argument_tokens := ComponentValueStream.new(argument)
 
 			mut output := ?StyleValue(none)
+			mut output_set := false
 			mut first_input := ?StyleValue(none)
 			mut second_input := ?StyleValue(none)
 
 			if maybe_output := parser.parse_easing_number_value(mut argument_tokens) {
 				output = maybe_output
+				output_set = true
 			}
 
 			if maybe_first_input := parser.parse_percentage_value(mut argument_tokens) {
@@ -1436,10 +1615,11 @@ fn (mut parser Parser) parse_easing_value(mut tokens ComponentValueStream) ?Styl
 			}
 
 			if maybe_output := parser.parse_easing_number_value(mut argument_tokens) {
-				if _ := output {
+				if output_set {
 					return none
 				}
 				output = maybe_output
+				output_set = true
 			}
 
 			resolved_output := output or { return none }

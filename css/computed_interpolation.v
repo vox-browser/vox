@@ -874,6 +874,18 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.rotate, .scale, .transform, .translate {
 			'none'
 		}
+		.transition_behavior {
+			'normal'
+		}
+		.transition_delay, .transition_duration {
+			'0s'
+		}
+		.transition_property {
+			'all'
+		}
+		.transition_timing_function {
+			'ease'
+		}
 		.word_spacing {
 			'normal'
 		}
@@ -906,10 +918,12 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.flood_opacity, .font_feature_settings, .font_style, .font_variation_settings,
 		.font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .opacity,
 		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.transform, .translate, .word_spacing {
+		.transform, .transition_delay, .transition_duration, .transition_timing_function,
+		.translate, .word_spacing {
 			true
 		}
-		.color_scheme, .content_visibility, .math_style {
+		.color_scheme, .content_visibility, .math_style, .transition_behavior,
+		.transition_property {
 			false
 		}
 	}
@@ -932,7 +946,8 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.animation_name, .animation_timeline, .color_scheme, .content_visibility, .fill_opacity,
 		.flood_opacity, .font_feature_settings, .font_variation_settings, .line_height,
 		.math_style, .opacity, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate,
-		.scale, .transform, .translate {
+		.scale, .transform, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .translate {
 			false
 		}
 	}
@@ -1907,9 +1922,72 @@ pub fn (c &ComputedProperties) animations(abstract_element &dom.AbstractElement)
 }
 
 pub fn (c &ComputedProperties) transitions() []TransitionProperties {
-	_ = c
-	// Boundary: requires transition-* longhands and property name parsing.
-	return []TransitionProperties{}
+	coordinated_properties := c.assemble_coordinated_value_list(.transition_property, [
+		PropertyID.transition_property,
+		.transition_duration,
+		.transition_timing_function,
+		.transition_delay,
+		.transition_behavior,
+	])
+
+	property_values := coordinated_properties[.transition_property] or {
+		return []TransitionProperties{}
+	}
+	duration_values := coordinated_properties[.transition_duration] or {
+		return []TransitionProperties{}
+	}
+	timing_function_values := coordinated_properties[.transition_timing_function] or {
+		return []TransitionProperties{}
+	}
+	delay_values := coordinated_properties[.transition_delay] or { return []TransitionProperties{} }
+	behavior_values := coordinated_properties[.transition_behavior] or {
+		return []TransitionProperties{}
+	}
+
+	mut transitions := []TransitionProperties{cap: property_values.len}
+	for i := 0; i < property_values.len; i++ {
+		mut properties := []PropertyID{}
+		property_name := property_values[i].css_text.trim_space()
+		if !equals_ignoring_ascii_case(property_name, 'none') {
+			if transition_property := property_id_from_string(property_name) {
+				if !property_is_shorthand(transition_property) {
+					properties << transition_property
+				}
+				// Boundary: shorthand expansion and logical alias mapping need the generated property tables.
+			}
+		}
+
+		transitions << TransitionProperties{
+			properties:          properties
+			duration:            computed_interpolation_time_value_to_milliseconds(duration_values[i])
+			timing_function:     EasingFunction.from_style_value(timing_function_values[i])
+			delay:               computed_interpolation_time_value_to_milliseconds(delay_values[i])
+			transition_behavior: computed_interpolation_transition_behavior_from_style_value(behavior_values[i])
+		}
+	}
+
+	return transitions
+}
+
+fn computed_interpolation_time_value_to_milliseconds(value &dom.StyleValue) f64 {
+	mut parser := Parser.from_css_text(value.css_text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	style_value := parser.parse_time_value(mut tokens) or { return 0.0 }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return 0.0
+	}
+	return match style_value {
+		TimeStyleValue { style_value.time().to_milliseconds() }
+		else { 0.0 }
+	}
+}
+
+fn computed_interpolation_transition_behavior_from_style_value(value &dom.StyleValue) TransitionBehavior {
+	if equals_ignoring_ascii_case(value.css_text.trim_space(), 'allow-discrete') {
+		return .allow_discrete
+	}
+	return .normal
 }
 
 pub fn (c &ComputedProperties) display_before_box_type_transformation() Display {
@@ -2349,7 +2427,8 @@ pub fn interpolate_discrete(from &dom.StyleValue, to &dom.StyleValue, delta f64,
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
 		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings,
-		.math_depth, .math_style {
+		.math_depth, .math_style, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function {
 			.none_
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
@@ -3062,7 +3141,8 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
 		.font_style, .font_variation_settings, .font_weight, .font_width, .line_height,
 		.math_depth, .math_style, .opacity, .outline_width, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity, .rotate, .scale, .transform, .translate {
+		.stroke_opacity, .rotate, .scale, .transform, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .translate {
 			false
 		}
 		.letter_spacing, .word_spacing {
@@ -3085,7 +3165,8 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
 		.font_style, .font_variation_settings, .font_weight, .font_width, .letter_spacing,
 		.line_height, .math_depth, .math_style, .outline_width, .shape_image_threshold,
-		.stop_opacity, .stroke_opacity, .word_spacing {
+		.stop_opacity, .stroke_opacity, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .word_spacing {
 			false
 		}
 	}
@@ -3115,7 +3196,8 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
 		.font_style, .font_variation_settings, .font_weight, .font_width, .letter_spacing,
 		.line_height, .math_depth, .math_style, .outline_width, .shape_image_threshold,
-		.stop_opacity, .stroke_opacity, .word_spacing {
+		.stop_opacity, .stroke_opacity, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .word_spacing {
 			false
 		}
 	}

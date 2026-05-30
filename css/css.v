@@ -66,6 +66,11 @@ pub enum PropertyID {
 	rotate
 	scale
 	transform
+	transition_behavior
+	transition_delay
+	transition_duration
+	transition_property
+	transition_timing_function
 	translate
 	word_spacing
 }

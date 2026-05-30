@@ -131,6 +131,11 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'rotate' { PropertyID.rotate }
 		'scale' { PropertyID.scale }
 		'transform' { PropertyID.transform }
+		'transition-behavior' { PropertyID.transition_behavior }
+		'transition-delay' { PropertyID.transition_delay }
+		'transition-duration' { PropertyID.transition_duration }
+		'transition-property' { PropertyID.transition_property }
+		'transition-timing-function' { PropertyID.transition_timing_function }
 		'translate' { PropertyID.translate }
 		'word-spacing' { PropertyID.word_spacing }
 		else { return none }
@@ -220,6 +225,15 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.rotate, .scale, .translate {
 			value_type == .transform_function
 		}
+		.transition_delay, .transition_duration {
+			value_type == .time
+		}
+		.transition_timing_function {
+			value_type == .easing_function
+		}
+		.transition_behavior, .transition_property {
+			false
+		}
 	}
 }
 
@@ -288,6 +302,18 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.rotate, .scale, .transform, .translate {
 			lowercase_value == 'none'
 		}
+		.transition_behavior {
+			lowercase_value in ['normal', 'allow-discrete']
+		}
+		.transition_timing_function {
+			lowercase_value in ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease']
+		}
+		.transition_property {
+			lowercase_value == 'none'
+		}
+		.transition_delay, .transition_duration {
+			false
+		}
 	}
 }
 
@@ -324,8 +350,12 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
 		.letter_spacing, .line_height, .math_depth, .math_style, .fill_opacity, .flood_opacity,
 		.opacity, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate,
-		.scale, .transform, .translate, .word_spacing {
+		.scale, .transform, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_timing_function, .translate, .word_spacing {
 			false
+		}
+		.transition_property {
+			lowercase_value != 'none'
 		}
 	}
 }
@@ -1305,6 +1335,11 @@ pub enum Keyword {
 	bolder
 	lighter
 	italic
+	linear
+	ease
+	ease_in
+	ease_out
+	ease_in_out
 	left
 	right
 	oblique
@@ -1316,6 +1351,7 @@ pub enum Keyword {
 	squircle
 	infinity
 	negative_infinity
+	allow_discrete
 	light
 	dark
 	accentcolor
@@ -1450,6 +1486,11 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.bolder { 'bolder' }
 		.lighter { 'lighter' }
 		.italic { 'italic' }
+		.linear { 'linear' }
+		.ease { 'ease' }
+		.ease_in { 'ease-in' }
+		.ease_out { 'ease-out' }
+		.ease_in_out { 'ease-in-out' }
 		.left { 'left' }
 		.right { 'right' }
 		.oblique { 'oblique' }
@@ -1461,6 +1502,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.squircle { 'squircle' }
 		.infinity { 'infinity' }
 		.negative_infinity { '-infinity' }
+		.allow_discrete { 'allow-discrete' }
 		.light { 'light' }
 		.dark { 'dark' }
 		.accentcolor { 'accentcolor' }
@@ -1584,6 +1626,11 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'bolder' { Keyword.bolder }
 		'lighter' { Keyword.lighter }
 		'italic' { Keyword.italic }
+		'linear' { Keyword.linear }
+		'ease' { Keyword.ease }
+		'ease-in' { Keyword.ease_in }
+		'ease-out' { Keyword.ease_out }
+		'ease-in-out' { Keyword.ease_in_out }
 		'left' { Keyword.left }
 		'right' { Keyword.right }
 		'oblique' { Keyword.oblique }
@@ -1595,6 +1642,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'squircle' { Keyword.squircle }
 		'infinity' { Keyword.infinity }
 		'-infinity' { Keyword.negative_infinity }
+		'allow-discrete' { Keyword.allow_discrete }
 		'light' { Keyword.light }
 		'dark' { Keyword.dark }
 		'accentcolor' { Keyword.accentcolor }
