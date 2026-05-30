@@ -108,10 +108,97 @@ pub fn property_id_from_string(name string) ?PropertyID {
 }
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
-	// Stub: the generated property grammar tables are not translated yet.
 	return match property_id {
 		.color {
 			value_type == .color
+		}
+		.color_scheme {
+			value_type == .custom_ident
+		}
+		.content_visibility {
+			false
+		}
+		.animation_timeline {
+			value_type in [.custom_ident, .dashed_ident, .scroll_function, .view_function]
+		}
+	}
+}
+
+fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
+	lowercase_value := to_ascii_lowercase(value)
+	if is_css_wide_keyword_string(lowercase_value) {
+		return true
+	}
+	return match property_id {
+		.color {
+			if keyword := keyword_from_string(lowercase_value) {
+				KeywordStyleValue.is_color(keyword)
+			} else {
+				false
+			}
+		}
+		.color_scheme {
+			// color-scheme = normal | [ light | dark | <custom-ident> ]+ && only?
+			lowercase_value in ['normal', 'light', 'dark', 'only']
+		}
+		.content_visibility {
+			// content-visibility = visible | auto | hidden
+			lowercase_value in ['visible', 'auto', 'hidden']
+		}
+		.animation_timeline {
+			// animation-timeline accepts the regular CSS-wide keywords through the
+			// early check above. Named timelines are custom identifiers.
+			lowercase_value != ''
+		}
+	}
+}
+
+fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
+	lowercase_value := to_ascii_lowercase(value)
+	if lowercase_value.len == 0 || is_css_wide_keyword_string(lowercase_value) {
+		return false
+	}
+	return match property_id {
+		.color {
+			false
+		}
+		.color_scheme {
+			lowercase_value !in ['normal', 'only']
+		}
+		.content_visibility {
+			false
+		}
+		.animation_timeline {
+			true
+		}
+	}
+}
+
+fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
+	if value.is_css_wide_keyword() {
+		return true
+	}
+	return match value {
+		KeywordStyleValue {
+			property_accepts_keyword_string(property_id, value.to_string())
+		}
+		CustomIdentStyleValue {
+			property_accepts_custom_ident(property_id, value.custom_ident())
+		}
+		ColorStyleValue {
+			property_accepts_type(property_id, .color)
+		}
+		StyleValueList {
+			if property_is_list_valued(property_id) {
+				for item in value.values() {
+					if !property_accepts_style_value(property_id, item) {
+						return false
+					}
+				}
+				true
+			} else {
+				false
+			}
 		}
 		else {
 			false
@@ -120,14 +207,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 }
 
 pub fn property_accepts_keyword(property_id PropertyID, keyword Keyword) bool {
-	return match property_id {
-		.color {
-			KeywordStyleValue.is_color(keyword) || keyword.is_css_wide_keyword()
-		}
-		else {
-			keyword.is_css_wide_keyword()
-		}
-	}
+	return property_accepts_keyword_string(property_id, string_from_keyword(keyword))
 }
 
 pub fn property_accepts_number(property_id PropertyID, value f64) bool {
@@ -2583,23 +2663,46 @@ pub fn CSSStyleValue.parse_all(property string, css_text string) ![]CSSStyleValu
 
 // https://drafts.css-houdini.org/css-typed-om-1/#parse-a-cssstylevalue
 pub fn CSSStyleValue.parse_a_css_style_value(property_name string, css_text string, parse_multiple bool) ![]CSSStyleValue {
-	_ = css_text
-	_ = parse_multiple
 	// 1. If property is not a custom property name string, set property to property ASCII lowercased.
 	// 2. If property is not a valid CSS property, throw a TypeError.
 	property := PropertyNameAndID.from_name(property_name) or {
 		return error("'${property_name}' is not a valid CSS property")
 	}
-	_ = property
 
 	// 3. Attempt to parse cssText according to property's grammar.
 	//    If this fails, throw a TypeError.
 	//    Otherwise, let whole value be the parsed result.
+	mut parser := Parser.from_css_text(css_text)
+	whole_value := if property.is_custom_property() {
+		StyleValue(UnresolvedStyleValue.create(parser.component_values))
+	} else {
+		property_id := property.id() or {
+			return error("'${property_name}' is not a valid CSS property")
+		}
+		parser.parse_css_value(property_id) or {
+			return error("Failed to parse '${css_text}' as a value for '${property.name()}' property")
+		}
+	}
+
 	// 4. Subdivide into iterations whole value, according to property, and let values be the result.
+	values := whole_value.subdivide_into_iterations(property)
+
 	// 5. For each value in values, replace it with the result of reifying value for property.
+	mut reified_values := []CSSStyleValue{cap: values.len}
+	for value in values {
+		reified_values << value.reify(property.name())
+	}
+
 	// 6. If parseMultiple is false, return values[0]. Otherwise, return values.
-	// Stub: the CSS parser currently returns dom.StyleValue, not this module's StyleValue hierarchy.
-	return error('CSSStyleValue parsing is not implemented in this V port')
+	// FIXME: We need to somehow store the source css_text on the returned CSSStyleValue.
+	//        https://github.com/w3c/css-houdini-drafts/issues/1156
+	if !parse_multiple {
+		if reified_values.len == 0 {
+			return error("Failed to parse '${css_text}' as a value for '${property.name()}' property")
+		}
+		return [reified_values[0]]
+	}
+	return reified_values
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#stylevalue-serialization
@@ -2706,14 +2809,14 @@ pub fn (value CSSKeywordValue) create_an_internal_representation(property Proper
 		if is_css_wide_keyword_string(value.value_) {
 			return true
 		}
-		if property.is_custom_property() {
-			// FIXME: If this is a registered custom property, check if that allows the keyword.
-			return true
-		}
-		keyword := keyword_from_string(value.value_) or { return false }
-		property_id := property.id() or { return false }
-		return property_accepts_keyword(property_id, keyword)
-	}()
+			if property.is_custom_property() {
+				// FIXME: If this is a registered custom property, check if that allows the keyword.
+				return true
+			}
+			property_id := property.id() or { return false }
+			return property_accepts_keyword_string(property_id, value.value_)
+				|| property_accepts_custom_ident(property_id, value.value_)
+		}()
 	if perform_type_check == .yes && !matches_grammar {
 		return error("Property '${property.name()}' does not accept the keyword '${value.value_}'")
 	}
