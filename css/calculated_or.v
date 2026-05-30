@@ -107,8 +107,8 @@ pub fn (c CalculatedStyleValue) resolve_time(context CalculationResolutionContex
 	return Time.make_seconds(0)
 }
 
-fn empty_style_value() &dom.StyleValue {
-	return &dom.StyleValue{}
+fn calculated_or_style_value(value StyleValue) &dom.StyleValue {
+	return dom_style_value_from_value_logic(value)
 }
 
 pub type AngleOrCalculatedValue = Angle | CalculatedStyleValue
@@ -151,7 +151,11 @@ pub fn (v AngleOrCalculated) calculated() CalculatedStyleValue {
 }
 
 pub fn (v AngleOrCalculated) as_style_value() &dom.StyleValue {
-	return empty_style_value()
+	value := v.value_
+	return match value {
+		Angle { calculated_or_style_value(StyleValue(AngleStyleValue.create(value))) }
+		CalculatedStyleValue { calculated_or_style_value(StyleValue(value)) }
+	}
 }
 
 pub fn (v AngleOrCalculated) resolved(context CalculationResolutionContext) ?Angle {
@@ -218,7 +222,11 @@ pub fn (v FlexOrCalculated) calculated() CalculatedStyleValue {
 }
 
 pub fn (v FlexOrCalculated) as_style_value() &dom.StyleValue {
-	return empty_style_value()
+	value := v.value_
+	return match value {
+		Flex { calculated_or_style_value(StyleValue(FlexStyleValue.create(value))) }
+		CalculatedStyleValue { calculated_or_style_value(StyleValue(value)) }
+	}
 }
 
 pub fn (v FlexOrCalculated) resolved(context CalculationResolutionContext) ?Flex {
@@ -285,7 +293,11 @@ pub fn (v FrequencyOrCalculated) calculated() CalculatedStyleValue {
 }
 
 pub fn (v FrequencyOrCalculated) as_style_value() &dom.StyleValue {
-	return empty_style_value()
+	value := v.value_
+	return match value {
+		Frequency { calculated_or_style_value(StyleValue(FrequencyStyleValue.create(value))) }
+		CalculatedStyleValue { calculated_or_style_value(StyleValue(value)) }
+	}
 }
 
 pub fn (v FrequencyOrCalculated) resolved(context CalculationResolutionContext) ?Frequency {
@@ -352,7 +364,11 @@ pub fn (v IntegerOrCalculated) calculated() CalculatedStyleValue {
 }
 
 pub fn (v IntegerOrCalculated) as_style_value() &dom.StyleValue {
-	return empty_style_value()
+	value := v.value_
+	return match value {
+		i64 { calculated_or_style_value(StyleValue(IntegerStyleValue.create(value))) }
+		CalculatedStyleValue { calculated_or_style_value(StyleValue(value)) }
+	}
 }
 
 pub fn (v IntegerOrCalculated) resolved(context CalculationResolutionContext) ?i64 {
@@ -420,7 +436,11 @@ pub fn (v LengthOrCalculated) calculated() CalculatedStyleValue {
 }
 
 pub fn (v LengthOrCalculated) as_style_value() &dom.StyleValue {
-	return empty_style_value()
+	value := v.value_
+	return match value {
+		Length { calculated_or_style_value(StyleValue(LengthStyleValue.create(value))) }
+		CalculatedStyleValue { calculated_or_style_value(StyleValue(value)) }
+	}
 }
 
 pub fn (v LengthOrCalculated) resolved(context CalculationResolutionContext) ?Length {
@@ -487,7 +507,20 @@ pub fn (v LengthOrAutoOrCalculated) calculated() CalculatedStyleValue {
 }
 
 pub fn (v LengthOrAutoOrCalculated) as_style_value() &dom.StyleValue {
-	return empty_style_value()
+	value := v.value_
+	return match value {
+		LengthOrAuto {
+			if value.is_auto() {
+				calculated_or_style_value(StyleValue(KeywordStyleValue.create(.auto)))
+			} else {
+				length := value.length() or { panic('VERIFY_NOT_REACHED') }
+				calculated_or_style_value(StyleValue(LengthStyleValue.create(length)))
+			}
+		}
+		CalculatedStyleValue {
+			calculated_or_style_value(StyleValue(value))
+		}
+	}
 }
 
 pub fn (v LengthOrAutoOrCalculated) resolved(context CalculationResolutionContext) ?LengthOrAuto {
@@ -574,7 +607,11 @@ pub fn (v NumberOrCalculated) calculated() CalculatedStyleValue {
 }
 
 pub fn (v NumberOrCalculated) as_style_value() &dom.StyleValue {
-	return empty_style_value()
+	value := v.value_
+	return match value {
+		f64 { calculated_or_style_value(StyleValue(NumberStyleValue.create(value))) }
+		CalculatedStyleValue { calculated_or_style_value(StyleValue(value)) }
+	}
 }
 
 pub fn (v NumberOrCalculated) resolved(context CalculationResolutionContext) ?f64 {
@@ -642,7 +679,11 @@ pub fn (v PercentageOrCalculated) calculated() CalculatedStyleValue {
 }
 
 pub fn (v PercentageOrCalculated) as_style_value() &dom.StyleValue {
-	return empty_style_value()
+	value := v.value_
+	return match value {
+		Percentage { calculated_or_style_value(StyleValue(PercentageStyleValue.create(value))) }
+		CalculatedStyleValue { calculated_or_style_value(StyleValue(value)) }
+	}
 }
 
 pub fn (v PercentageOrCalculated) resolved(context CalculationResolutionContext) ?Percentage {
@@ -709,7 +750,11 @@ pub fn (v ResolutionOrCalculated) calculated() CalculatedStyleValue {
 }
 
 pub fn (v ResolutionOrCalculated) as_style_value() &dom.StyleValue {
-	return empty_style_value()
+	value := v.value_
+	return match value {
+		Resolution { calculated_or_style_value(StyleValue(ResolutionStyleValue.create(value))) }
+		CalculatedStyleValue { calculated_or_style_value(StyleValue(value)) }
+	}
 }
 
 pub fn (v ResolutionOrCalculated) resolved(context CalculationResolutionContext) ?Resolution {
@@ -776,7 +821,11 @@ pub fn (v TimeOrCalculated) calculated() CalculatedStyleValue {
 }
 
 pub fn (v TimeOrCalculated) as_style_value() &dom.StyleValue {
-	return empty_style_value()
+	value := v.value_
+	return match value {
+		Time { calculated_or_style_value(StyleValue(TimeStyleValue.create(value))) }
+		CalculatedStyleValue { calculated_or_style_value(StyleValue(value)) }
+	}
 }
 
 pub fn (v TimeOrCalculated) resolved(context CalculationResolutionContext) ?Time {
