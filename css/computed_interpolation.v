@@ -4312,8 +4312,47 @@ pub fn StyleComputer.compute_line_height(absolutized_value &dom.StyleValue, comp
 	return unsafe { absolutized_value }
 }
 
+fn computed_interpolation_opacity_value_from_numeric_value(numeric_value CSSNumericValue) ?f64 {
+	if numeric_value is CSSUnitValue {
+		unit := numeric_value.unit()
+		if unit == 'number' {
+			return clamp_f64(numeric_value.value(), 0.0, 1.0)
+		}
+		if unit == 'percent' {
+			return clamp_f64(numeric_value.value() / 100.0, 0.0, 1.0)
+		}
+	}
+
+	sum := numeric_value.create_a_sum_value() or { return none }
+	if sum.len != 1 {
+		return none
+	}
+	item := sum[0]
+	if item.unit_map.len == 0 {
+		return clamp_f64(item.value, 0.0, 1.0)
+	}
+	if item.unit_map.len == 1 {
+		if exponent := item.unit_map['percent'] {
+			if exponent == 1 {
+				return clamp_f64(item.value / 100.0, 0.0, 1.0)
+			}
+		}
+	}
+	return none
+}
+
 pub fn StyleComputer.compute_opacity(absolutized_value &dom.StyleValue) &dom.StyleValue {
-	return unsafe { absolutized_value }
+	// https://drafts.csswg.org/css-color-4/#transparency
+	// specified number, clamped to the range [0,1]
+	numeric_value := CSSNumericValue.parse(absolutized_value.css_text) or {
+		return unsafe { absolutized_value }
+	}
+	value := computed_interpolation_opacity_value_from_numeric_value(numeric_value) or {
+		return unsafe { absolutized_value }
+	}
+	return &dom.StyleValue{
+		css_text: serialize_a_number(value)
+	}
 }
 
 pub fn StyleComputer.compute_position_area(absolutized_value &dom.StyleValue) &dom.StyleValue {
