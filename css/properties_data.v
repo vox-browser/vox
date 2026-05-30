@@ -188,7 +188,48 @@ pub fn (mut c CascadedProperties) revert_layer_property(property_id PropertyID, 
 
 pub fn (mut c CascadedProperties) resolve_unresolved_properties(abstract_element &dom.AbstractElement) {
 	_ = abstract_element
-	// Parser::Parser::resolve_unresolved_style_value is not translated yet.
+	// DOM::StyleValue is currently an opaque DOM-side placeholder in this V port, so entries cannot be inspected for
+	// UnresolvedStyleValue here. The translated resolver below is used by CSS-side callers that still have typed values.
+	// FIXME: Replace this boundary once dom.StyleValue carries or exposes the CSS StyleValue variant.
+}
+
+// https://drafts.csswg.org/css-values-5/#property-replacement
+fn resolve_unresolved_style_value_for_property(abstract_element dom.AbstractElement, property_id PropertyID, unresolved UnresolvedStyleValue) &dom.StyleValue {
+	mut guarded_contexts := GuardedSubstitutionContexts{}
+	return resolve_unresolved_style_value_for_property_with_context(abstract_element, property_id,
+		unresolved, mut guarded_contexts)
+}
+
+fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom.AbstractElement, property_id PropertyID, unresolved UnresolvedStyleValue, mut guarded_contexts GuardedSubstitutionContexts) &dom.StyleValue {
+	// AD-HOC: Report that we might rely on custom properties.
+	// FIXME: DOM::Element exposes these flags internally, but the setter methods are not translated for attr()/var()/if()/inherit().
+
+	// To replace substitution functions in a property prop:
+
+	// 1. Substitute arbitrary substitution functions in prop's value, given << "property", prop's name >> as the
+	//    substitution context. Let result be the returned component value sequence.
+	result := substitute_arbitrary_substitution_functions_for_element(abstract_element, mut
+		guarded_contexts, unresolved.tokens, SubstitutionContext{
+		dependency_type: .property
+		first:           string_from_property_id(property_id)
+	})
+
+	// 2. If result contains the guaranteed-invalid value, prop is invalid at computed-value time; return.
+	if contains_guaranteed_invalid_value(result) {
+		return dom_style_value_from_value_logic(StyleValue(StubStyleValue.create(.guaranteed_invalid,
+			'')))
+	}
+
+	// 3. Parse result according to prop's grammar. If this returns failure, prop is invalid at computed-value time; return.
+	// NB: Custom properties have no grammar as such, so we skip this step for them.
+	// FIXME: Parse according to @property syntax once we support that.
+	mut parser := Parser.from_component_values(result)
+	parsed_value := parser.parse_css_value(property_id) or {
+		return dom_style_value_from_value_logic(StyleValue(StubStyleValue.create(.guaranteed_invalid, '')))
+	}
+
+	// 4. Otherwise, replace prop's value with the parsed result.
+	return dom_style_value_from_value_logic(parsed_value)
 }
 
 pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &dom.StyleValue, important Important, origin CascadeOrigin, layer_name ?string, source voidptr) {
@@ -226,20 +267,81 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 }
 
 pub fn (mut c CascadedProperties) set_property_from_presentational_hint(property_id PropertyID, value &dom.StyleValue) {
-	// StyleComputer::for_each_property_expanding_shorthands is not translated yet; keep the longhand path.
-	c.contained_properties_cache_[property_id] = true
-	mut entries := c.properties_[property_id] or { []CascadedPropertiesEntry{} }
-	entries << CascadedPropertiesEntry{
-		property:   StyleProperty{
-			important:   .no
-			property_id: property_id
-			value:       unsafe { value }
+	cascaded_properties_for_each_property_expanding_shorthands(property_id, value, fn [mut c] (longhand_property_id PropertyID, longhand_value &dom.StyleValue) {
+		c.contained_properties_cache_[longhand_property_id] = true
+		mut entries := c.properties_[longhand_property_id] or { []CascadedPropertiesEntry{} }
+		entries << CascadedPropertiesEntry{
+			property:   StyleProperty{
+				important:   .no
+				property_id: longhand_property_id
+				value:       unsafe { longhand_value }
+			}
+			origin:     .author
+			layer_name: none
+			source:     unsafe { nil }
 		}
-		origin:     .author
-		layer_name: none
-		source:     unsafe { nil }
+		c.properties_[longhand_property_id] = entries
+	})
+}
+
+fn cascaded_properties_for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn (PropertyID, &dom.StyleValue)) {
+	// The typed StyleValue overload below translates StyleComputer::for_each_property_expanding_shorthands. Cascaded
+	// properties currently store opaque DOM values, so only the direct longhand path is observable until DOM values expose
+	// ShorthandStyleValue/UnresolvedStyleValue/PendingSubstitutionStyleValue.
+	set_longhand_property(property_id, value)
+}
+
+fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value StyleValue, set_longhand_property fn (PropertyID, StyleValue)) {
+	if property_is_shorthand(property_id)
+		&& (value.type_() == .unresolved || value.type_() == .pending_substitution) {
+		// If a shorthand property contains an arbitrary substitution function in its value, the longhand properties
+		// it's associated with must instead be filled in with a special, unobservable-to-authors pending-substitution
+		// value that indicates the shorthand contains an arbitrary substitution function, and thus the longhand's
+		// value can't be determined until after substituted.
+		// https://drafts.csswg.org/css-values-5/#pending-substitution-value
+		// Ensure we keep the longhand around until it can be resolved.
+		set_longhand_property(property_id, value)
+		pending_substitution_value := StyleValue(StubStyleValue.create(.pending_substitution,
+			value.serialize(.normal)))
+		for longhand_id in longhands_for_shorthand_local(property_id) {
+			for_each_typed_property_expanding_shorthands(longhand_id, pending_substitution_value,
+				set_longhand_property)
+		}
+		return
 	}
-	c.properties_[property_id] = entries
+
+	if value is ShorthandStyleValue {
+		properties := value.sub_properties()
+		values := value.values()
+		for i := 0; i < properties.len && i < values.len; i++ {
+			for_each_typed_property_expanding_shorthands(properties[i], values[i],
+				set_longhand_property)
+		}
+		return
+	}
+
+	if property_is_shorthand(property_id) {
+		// ShorthandStyleValue was handled already, as were unresolved shorthands.
+		// That means the only values we should see are the CSS-wide keywords, or the guaranteed-invalid value.
+		// Both should be applied to our longhand properties.
+		// We don't directly call `set_longhand_property()` because the longhands might have longhands of their own.
+		// (eg `grid` -> `grid-template` -> `grid-template-areas` & `grid-template-rows` & `grid-template-columns`)
+		if !value.is_css_wide_keyword() && value.type_() != .guaranteed_invalid {
+			return
+		}
+		for longhand in longhands_for_shorthand_local(property_id) {
+			for_each_typed_property_expanding_shorthands(longhand, value, set_longhand_property)
+		}
+		return
+	}
+
+	set_longhand_property(property_id, value)
+}
+
+fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
+	_ = property_id
+	// The current translated PropertyID set contains only longhands.
+	return []PropertyID{}
 }
 
 pub fn (c &CascadedProperties) property(property_id PropertyID) ?&dom.StyleValue {
