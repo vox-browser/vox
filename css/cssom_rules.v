@@ -150,6 +150,10 @@ pub mut:
 	properties        []CSSStyleProperty
 	custom_properties map[string]string
 	parent_rule       ?&CSSRule
+	computed          bool
+	readonly          bool
+	updating          bool
+	owner_node        ?dom.AbstractElement
 }
 
 pub fn CSSStyleProperties.create() &CSSStyleProperties {
