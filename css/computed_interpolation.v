@@ -3347,22 +3347,31 @@ pub fn (mut s StyleComputer) reset_has_result_cache() {
 	s.has_result_cache_.clear()
 }
 
-fn style_computer_element_hash_stub(element &dom.Element) u32 {
-	_ = element
-	// Stub: Selector::ancestor_hashes() and element selector hashes are not translated yet.
-	return 0
+fn style_computer_element_hashes(element &dom.Element) []u32 {
+	mut hashes := []u32{}
+	hashes << selector_string_hash(to_ascii_lowercase(element.local_name()))
+	if id := element.id() {
+		hashes << selector_string_hash(id)
+	}
+	if class_attribute := element.get_attribute('class') {
+		for class_name in class_attribute.fields() {
+			hashes << selector_string_hash(class_name)
+		}
+	}
+	for attribute_name in element.get_attribute_names() {
+		hashes << selector_string_hash(to_ascii_lowercase(attribute_name))
+	}
+	return hashes
 }
 
 pub fn (mut s StyleComputer) push_ancestor(element &dom.Element) {
-	hash := style_computer_element_hash_stub(element)
-	if hash != 0 {
+	for hash in style_computer_element_hashes(element) {
 		s.ancestor_filter_.increment(hash)
 	}
 }
 
 pub fn (mut s StyleComputer) pop_ancestor(element &dom.Element) {
-	hash := style_computer_element_hash_stub(element)
-	if hash != 0 {
+	for hash in style_computer_element_hashes(element) {
 		s.ancestor_filter_.decrement(hash)
 	}
 }
@@ -3379,8 +3388,22 @@ pub fn (s &StyleComputer) compute_style(abstract_element dom.AbstractElement) &C
 }
 
 pub fn (mut s StyleComputer) compute_style_with_seeded_ancestors(abstract_element dom.AbstractElement) &ComputedProperties {
-	_ = abstract_element
-	return ComputedProperties.new()
+	mut ancestors := []&dom.Element{}
+	mut parent := abstract_element.parent_element()
+	for {
+		ancestor := parent or { break }
+		ancestors << ancestor
+		s.push_ancestor(ancestor)
+		parent = ancestor.as_node().parent_element()
+	}
+
+	computed_properties := s.compute_style(abstract_element)
+
+	for ancestor in ancestors {
+		s.pop_ancestor(ancestor)
+	}
+
+	return computed_properties
 }
 
 pub fn (s &StyleComputer) compute_pseudo_element_style_if_needed(abstract_element dom.AbstractElement) ?&ComputedProperties {
@@ -3490,8 +3513,14 @@ pub fn (s &StyleComputer) process_animation_definitions(computed_properties &Com
 }
 
 pub fn (s &StyleComputer) should_reject_with_ancestor_filter(selector Selector) bool {
-	_ = selector
-	// Stub: Selector::ancestor_hashes() is not exposed by the V selector placeholder.
+	for hash in selector.ancestor_hashes() {
+		if hash == 0 {
+			break
+		}
+		if !s.ancestor_filter_.may_contain(hash) {
+			return true
+		}
+	}
 	return false
 }
 
@@ -3592,14 +3621,52 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 }
 
 pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) &CascadedProperties {
-	_ = s
-	_ = abstract_element
-	_ = did_match_any_pseudo_element_rules
-	_ = mode
-	_ = matching_rule_set
-	_ = logical_alias_mapping_context
-	_ = properties_to_cascade
-	return CascadedProperties.new()
+	mut cascaded_properties := CascadedProperties.new()
+	if mode == .create_pseudo_element_style_if_needed {
+		if !did_match_any_pseudo_element_rules {
+			return cascaded_properties
+		}
+	}
+
+	// Normal user agent declarations
+	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_agent_rules,
+		.user_agent, .no, none, logical_alias_mapping_context, properties_to_cascade)
+
+	// Normal user declarations
+	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_rules,
+		.user, .no, none, logical_alias_mapping_context, properties_to_cascade)
+
+	// Author presentational hints are not exposed by the current V DOM surface. SVG
+	// presentation attributes are represented as cascaded properties elsewhere, so
+	// keep the unresolved-property hook in the same cascade position.
+	if abstract_element.pseudo_element() == none {
+		if abstract_element.element().is_svg_element() {
+			cascaded_properties.resolve_unresolved_properties(&abstract_element)
+		}
+	}
+
+	// Normal author declarations, ordered by @layer, with un-@layer-ed rules last.
+	for layer in matching_rule_set.author_rules {
+		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author, .no,
+			layer.qualified_layer_name, logical_alias_mapping_context, properties_to_cascade)
+	}
+
+	// Important author declarations, with un-@layer-ed rules first, followed by each @layer in reverse order.
+	for i := matching_rule_set.author_rules.len - 1; i >= 0; i-- {
+		layer := matching_rule_set.author_rules[i]
+		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author, .yes,
+			none, logical_alias_mapping_context, properties_to_cascade)
+	}
+
+	// Important user declarations
+	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_rules,
+		.user, .yes, none, logical_alias_mapping_context, properties_to_cascade)
+
+	// Important user agent declarations
+	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_agent_rules,
+		.user_agent, .yes, none, logical_alias_mapping_context, properties_to_cascade)
+
+	return cascaded_properties
 }
 
 pub fn (s &StyleComputer) compute_custom_properties(mut computed_properties ComputedProperties, abstract_element dom.AbstractElement) {
@@ -3640,17 +3707,61 @@ pub fn (s &StyleComputer) calculate_root_element_font_metrics(computed_propertie
 	return LengthFontMetrics.default()
 }
 
+fn style_computer_css_wide_keyword_from_declaration_text(value string) ?Keyword {
+	return keyword_from_string(value.trim_space()) or { none }
+}
+
 pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, rules []MatchingRule, origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
 	_ = s
-	_ = cascaded_properties
-	_ = abstract_element
-	_ = rules
-	_ = origin
-	_ = important
-	_ = layer_name
 	_ = logical_alias_mapping_context
-	_ = properties_to_cascade
-	// Stub: requires MatchingRule declarations and shorthand expansion.
+	for match_rule in rules {
+		rule := match_rule.rule or { continue }
+		declaration := rule.style() or { continue }
+
+		mut seen_properties := map[PropertyID]bool{}
+		for property in declaration.properties {
+			property_id := property_id_from_string(property.name) or { continue }
+			if properties_to_cascade.len != 0 && property_id !in properties_to_cascade {
+				continue
+			}
+			property_importance := if property.important { Important.yes } else { Important.no }
+			if important != property_importance {
+				continue
+			}
+
+			mut property_value := property.style_value or {
+				parse_css_value(ParsingParams{
+					document: abstract_element.document()
+				}, property.value, property_id) or { continue }
+			}
+
+			if keyword := style_computer_css_wide_keyword_from_declaration_text(property.value) {
+				if keyword == .revert {
+					cascaded_properties.revert_property(property_id, important, origin)
+					continue
+				}
+				if keyword == .revert_layer {
+					cascaded_properties.revert_layer_property(property_id, important, layer_name)
+					continue
+				}
+			}
+
+			StyleComputer.for_each_property_expanding_shorthands(property_id, property_value,
+				fn [mut cascaded_properties, mut seen_properties, important, origin, layer_name, declaration] (longhand_id PropertyID, longhand_value &dom.StyleValue) {
+				if seen_properties[longhand_id] {
+					return
+				}
+				seen_properties[longhand_id] = true
+				cascaded_properties.set_property(longhand_id, longhand_value, important, origin, layer_name,
+					voidptr(declaration))
+			})
+		}
+	}
+
+	if origin == .author && abstract_element.pseudo_element() == none {
+		// The DOM-side inline style object is still an opaque CSSStyleProperties_
+		// placeholder in this port, so inline declarations cannot be read here yet.
+	}
 }
 
 pub fn (s &StyleComputer) rule_cache_for_cascade_origin(origin CascadeOrigin, qualified_layer_name ?string, shadow_root ?&dom.ShadowRoot) ?&RuleCache {
