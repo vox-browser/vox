@@ -3225,11 +3225,29 @@ fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 	return []ComponentValue{}
 }
 
-fn custom_property_tokens_for_substitution_stub(abstract_element dom.AbstractElement, custom_property_name string) ?[]ComponentValue {
-	_ = abstract_element
+fn custom_property_tokens_from_element_for_substitution(abstract_element dom.AbstractElement, custom_property_name string) ?[]ComponentValue {
 	_ = custom_property_name
-	// Stub: DOM::AbstractElement exposes opaque CSSStyleValue_ / dom.StyleValue placeholders in this V port.
-	// The substitution algorithm below still follows the C++ control flow and falls back when no tokenized value exists.
+	if _ := abstract_element.get_custom_property(custom_property_name) {
+		// Boundary: DOM::AbstractElement currently exposes custom properties as
+		// opaque CSSStyleValue_ placeholders, so their tokenized CSS::StyleValue
+		// representation cannot be recovered here yet.
+		return none
+	}
+	return none
+}
+
+fn computed_custom_property_tokens_for_substitution(abstract_element dom.AbstractElement, custom_property_name string) ?[]ComponentValue {
+	if tokens := custom_property_tokens_from_element_for_substitution(abstract_element,
+		custom_property_name)
+	{
+		return tokens
+	}
+	if initial_value := abstract_element.document().custom_property_initial_value(custom_property_name) {
+		// Mirrors StyleComputer::compute_value_of_custom_property() for the representable no-specified-value case:
+		// registered custom properties fall back to their document initial value, while unregistered properties remain
+		// the guaranteed-invalid initial value and are handled by the caller's fallback path.
+		return parse_component_values_for_value_logic(initial_value)
+	}
 	return none
 }
 
@@ -3252,7 +3270,7 @@ fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_context
 		&& !first_argument_tokens.has_next_token() {
 		if el := element {
 			if element_to_inherit_style_from := el.element_to_inherit_style_from() {
-				if inherited_value := custom_property_tokens_for_substitution_stub(element_to_inherit_style_from,
+				if inherited_value := custom_property_tokens_from_element_for_substitution(element_to_inherit_style_from,
 					name_token.token().ident()) {
 					if !contains_guaranteed_invalid_value(inherited_value) {
 						return inherited_value
@@ -3291,7 +3309,7 @@ fn replace_a_var_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 		result = arbitrary_substitution_guaranteed_invalid_value()
 	} else if el := element {
 		custom_property_name := name_token.token().ident()
-		result = custom_property_tokens_for_substitution_stub(el, custom_property_name) or {
+		result = computed_custom_property_tokens_for_substitution(el, custom_property_name) or {
 			arbitrary_substitution_guaranteed_invalid_value()
 		}
 	} else {
