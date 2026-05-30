@@ -26,6 +26,7 @@ pub:
 }
 
 pub enum PropertyID {
+	animation_timeline
 	color
 	color_scheme
 	content_visibility

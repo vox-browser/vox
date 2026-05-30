@@ -713,7 +713,17 @@ pub enum AnimationComposition {
 	accumulate
 }
 
-pub struct AnimationTimeline {}
+pub enum AnimationTimelineKind {
+	generic
+	scroll
+}
+
+@[heap]
+pub struct AnimationTimeline {
+pub mut:
+	kind             AnimationTimelineKind
+	anonymous_source ?string
+}
 
 pub enum TransitionBehavior {
 	normal
@@ -1867,6 +1877,7 @@ pub fn interpolate_discrete(from &dom.StyleValue, to &dom.StyleValue, delta f64,
 
 fn animation_type_from_longhand_property_stub(property_id PropertyID) AnimationType {
 	return match property_id {
+		.animation_timeline { .discrete }
 		.color { .by_computed_value }
 		.content_visibility { .custom }
 		.color_scheme { .discrete }

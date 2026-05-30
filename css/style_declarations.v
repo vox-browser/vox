@@ -21,6 +21,7 @@ pub fn PropertyNameAndID.from_id(property_id PropertyID) PropertyNameAndID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.animation_timeline { 'animation-timeline' }
 		.color { 'color' }
 		.color_scheme { 'color-scheme' }
 		.content_visibility { 'content-visibility' }
