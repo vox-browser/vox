@@ -135,6 +135,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'animation-timing-function', '-webkit-animation-timing-function' {
 			PropertyID.animation_timing_function
 		}
+		'aspect-ratio' {
+			PropertyID.aspect_ratio
+		}
 		'background-color' {
 			PropertyID.background_color
 		}
@@ -320,6 +323,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.animation_timing_function {
 			value_type == .easing_function
 		}
+		.aspect_ratio {
+			value_type == .ratio
+		}
 		.accent_color, .background_color, .border_bottom_color, .border_left_color,
 		.border_right_color, .border_top_color, .caret_color, .color, .flood_color, .outline_color,
 		.stop_color, .webkit_text_fill_color {
@@ -421,6 +427,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.animation_timing_function {
 			lowercase_value in ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease']
+		}
+		.aspect_ratio {
+			lowercase_value == 'auto'
 		}
 		.accent_color, .caret_color {
 			if lowercase_value == 'auto' {
@@ -537,13 +546,13 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
 		.animation_fill_mode, .animation_iteration_count, .animation_play_state,
-		.animation_timing_function, .border_bottom_width, .border_left_width, .border_right_width,
-		.border_top_width, .font_feature_settings, .font_style, .font_variation_settings,
-		.font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .math_style,
-		.fill_opacity, .flood_opacity, .opacity, .outline_width, .shape_image_threshold,
-		.stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_timing_function, .translate,
-		.word_spacing {
+		.animation_timing_function, .aspect_ratio, .border_bottom_width, .border_left_width,
+		.border_right_width, .border_top_width, .font_feature_settings, .font_style,
+		.font_variation_settings, .font_weight, .font_width, .letter_spacing, .line_height,
+		.math_depth, .math_style, .fill_opacity, .flood_opacity, .opacity, .outline_width,
+		.shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform,
+		.transition_behavior, .transition_delay, .transition_duration, .transition_timing_function,
+		.translate, .word_spacing {
 			false
 		}
 		.transition_property {
@@ -582,6 +591,9 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		PercentageStyleValue {
 			property_accepts_type(property_id, .percentage)
 				&& property_accepts_percentage(property_id, value.percentage())
+		}
+		RatioStyleValue {
+			property_accepts_type(property_id, .ratio)
 		}
 		StringStyleValue {
 			property_accepts_type(property_id, .string)

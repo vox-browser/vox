@@ -32,6 +32,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.animation_play_state { 'animation-play-state' }
 		.animation_timeline { 'animation-timeline' }
 		.animation_timing_function { 'animation-timing-function' }
+		.aspect_ratio { 'aspect-ratio' }
 		.background_color { 'background-color' }
 		.border_bottom_color { 'border-bottom-color' }
 		.border_bottom_width { 'border-bottom-width' }
@@ -96,10 +97,10 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.transition_property, .transition_timing_function {
 			false
 		}
-		.accent_color, .background_color, .border_bottom_color, .border_bottom_width,
-		.border_left_color, .border_left_width, .border_right_color, .border_right_width,
-		.border_top_color, .border_top_width, .caret_color, .color, .color_scheme,
-		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
+		.border_bottom_width, .border_left_color, .border_left_width, .border_right_color,
+		.border_right_width, .border_top_color, .border_top_width, .caret_color, .color,
+		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
 		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .line_height,
 		.math_depth, .math_style, .opacity, .outline_color, .outline_width, .shape_image_threshold,
@@ -119,10 +120,10 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.transition_property, .transition_timing_function {
 			true
 		}
-		.accent_color, .background_color, .border_bottom_color, .border_bottom_width,
-		.border_left_color, .border_left_width, .border_right_color, .border_right_width,
-		.border_top_color, .border_top_width, .caret_color, .color, .color_scheme,
-		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
+		.border_bottom_width, .border_left_color, .border_left_width, .border_right_color,
+		.border_right_width, .border_top_color, .border_top_width, .caret_color, .color,
+		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
 		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .line_height,
 		.math_depth, .math_style, .opacity, .outline_color, .outline_width, .shape_image_threshold,
@@ -133,7 +134,7 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 58
+pub const number_of_longhand_properties = 59
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
@@ -156,53 +157,54 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		8 { PropertyID.animation_play_state }
 		9 { PropertyID.animation_timeline }
 		10 { PropertyID.animation_timing_function }
-		11 { PropertyID.background_color }
-		12 { PropertyID.border_bottom_color }
-		13 { PropertyID.border_bottom_width }
-		14 { PropertyID.border_left_color }
-		15 { PropertyID.border_left_width }
-		16 { PropertyID.border_right_color }
-		17 { PropertyID.border_right_width }
-		18 { PropertyID.border_top_color }
-		19 { PropertyID.border_top_width }
-		20 { PropertyID.caret_color }
-		21 { PropertyID.color }
-		22 { PropertyID.color_scheme }
-		23 { PropertyID.content_visibility }
-		24 { PropertyID.corner_bottom_left_shape }
-		25 { PropertyID.corner_bottom_right_shape }
-		26 { PropertyID.corner_top_left_shape }
-		27 { PropertyID.corner_top_right_shape }
-		28 { PropertyID.fill_opacity }
-		29 { PropertyID.flood_color }
-		30 { PropertyID.flood_opacity }
-		31 { PropertyID.font_feature_settings }
-		32 { PropertyID.font_style }
-		33 { PropertyID.font_variation_settings }
-		34 { PropertyID.font_weight }
-		35 { PropertyID.font_width }
-		36 { PropertyID.letter_spacing }
-		37 { PropertyID.line_height }
-		38 { PropertyID.math_depth }
-		39 { PropertyID.math_style }
-		40 { PropertyID.opacity }
-		41 { PropertyID.outline_color }
-		42 { PropertyID.outline_width }
-		43 { PropertyID.shape_image_threshold }
-		44 { PropertyID.stop_color }
-		45 { PropertyID.stop_opacity }
-		46 { PropertyID.stroke_opacity }
-		47 { PropertyID.rotate }
-		48 { PropertyID.scale }
-		49 { PropertyID.transform }
-		50 { PropertyID.transition_behavior }
-		51 { PropertyID.transition_delay }
-		52 { PropertyID.transition_duration }
-		53 { PropertyID.transition_property }
-		54 { PropertyID.transition_timing_function }
-		55 { PropertyID.translate }
-		56 { PropertyID.webkit_text_fill_color }
-		57 { PropertyID.word_spacing }
+		11 { PropertyID.aspect_ratio }
+		12 { PropertyID.background_color }
+		13 { PropertyID.border_bottom_color }
+		14 { PropertyID.border_bottom_width }
+		15 { PropertyID.border_left_color }
+		16 { PropertyID.border_left_width }
+		17 { PropertyID.border_right_color }
+		18 { PropertyID.border_right_width }
+		19 { PropertyID.border_top_color }
+		20 { PropertyID.border_top_width }
+		21 { PropertyID.caret_color }
+		22 { PropertyID.color }
+		23 { PropertyID.color_scheme }
+		24 { PropertyID.content_visibility }
+		25 { PropertyID.corner_bottom_left_shape }
+		26 { PropertyID.corner_bottom_right_shape }
+		27 { PropertyID.corner_top_left_shape }
+		28 { PropertyID.corner_top_right_shape }
+		29 { PropertyID.fill_opacity }
+		30 { PropertyID.flood_color }
+		31 { PropertyID.flood_opacity }
+		32 { PropertyID.font_feature_settings }
+		33 { PropertyID.font_style }
+		34 { PropertyID.font_variation_settings }
+		35 { PropertyID.font_weight }
+		36 { PropertyID.font_width }
+		37 { PropertyID.letter_spacing }
+		38 { PropertyID.line_height }
+		39 { PropertyID.math_depth }
+		40 { PropertyID.math_style }
+		41 { PropertyID.opacity }
+		42 { PropertyID.outline_color }
+		43 { PropertyID.outline_width }
+		44 { PropertyID.shape_image_threshold }
+		45 { PropertyID.stop_color }
+		46 { PropertyID.stop_opacity }
+		47 { PropertyID.stroke_opacity }
+		48 { PropertyID.rotate }
+		49 { PropertyID.scale }
+		50 { PropertyID.transform }
+		51 { PropertyID.transition_behavior }
+		52 { PropertyID.transition_delay }
+		53 { PropertyID.transition_duration }
+		54 { PropertyID.transition_property }
+		55 { PropertyID.transition_timing_function }
+		56 { PropertyID.translate }
+		57 { PropertyID.webkit_text_fill_color }
+		58 { PropertyID.word_spacing }
 		else { none }
 	}
 }

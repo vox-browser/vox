@@ -266,6 +266,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.animation_timing_function {
 			return parser.parse_animation_timing_function_value(mut tokens)
 		}
+		.aspect_ratio {
+			return parser.parse_aspect_ratio_value(mut tokens)
+		}
 		.font_feature_settings {
 			return parser.parse_font_feature_settings_value(mut tokens)
 		}
@@ -672,6 +675,65 @@ fn (mut parser Parser) parse_animation_name_value(mut tokens ComponentValueStrea
 	}
 	tokens = transaction
 	return StyleValue(StyleValueList.create(names, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_aspect_ratio_value(mut tokens ComponentValueStream) ?StyleValue {
+	// https://www.w3.org/TR/css-sizing-4/#aspect-ratio
+	// `auto || <ratio>`
+	mut transaction := tokens.clone()
+	mut auto_value := ?StyleValue(none)
+	mut ratio_value := ?StyleValue(none)
+	mut auto_value_set := false
+	mut ratio_value_set := false
+
+	for {
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			break
+		}
+
+		mut value_transaction := transaction.clone()
+		if value := parser.parse_ratio_value(mut value_transaction) {
+			if ratio_value_set {
+				return none
+			}
+			ratio_value = value
+			ratio_value_set = true
+			transaction = value_transaction
+			continue
+		}
+
+		value_transaction = transaction.clone()
+		if value := parser.parse_keyword_value(mut value_transaction) {
+			if value.to_keyword() == .auto {
+				if auto_value_set {
+					return none
+				}
+				auto_value = value
+				auto_value_set = true
+				transaction = value_transaction
+				continue
+			}
+		}
+
+		return none
+	}
+
+	if resolved_auto := auto_value {
+		if resolved_ratio := ratio_value {
+			tokens = transaction
+			return StyleValue(StyleValueList.create([resolved_auto, resolved_ratio], .space, .yes))
+		}
+		tokens = transaction
+		return resolved_auto
+	}
+
+	if resolved_ratio := ratio_value {
+		tokens = transaction
+		return resolved_ratio
+	}
+
+	return none
 }
 
 fn (mut parser Parser) parse_transition_property_value(mut tokens ComponentValueStream) ?StyleValue {

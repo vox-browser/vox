@@ -45,6 +45,7 @@ pub enum PropertyID {
 	animation_play_state
 	animation_timeline
 	animation_timing_function
+	aspect_ratio
 	background_color
 	border_bottom_color
 	border_bottom_width
