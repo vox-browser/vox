@@ -434,6 +434,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.scale {
 			return parser.parse_scale_value(mut tokens)
 		}
+		.scrollbar_width {
+			return parser.parse_scrollbar_width_value(mut tokens)
+		}
 		.shape_rendering {
 			return parser.parse_shape_rendering_value(mut tokens)
 		}
@@ -515,8 +518,14 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.view_timeline_name {
 			return parser.parse_timeline_name_value(mut tokens)
 		}
+		.view_transition_name {
+			return parser.parse_view_transition_name_value(mut tokens)
+		}
 		.visibility {
 			return parser.parse_visibility_value(mut tokens)
+		}
+		.writing_mode {
+			return parser.parse_writing_mode_value(mut tokens)
 		}
 		.white_space_collapse {
 			return parser.parse_white_space_collapse_value(mut tokens)
@@ -529,6 +538,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.z_index {
 			return parser.parse_z_index_value(mut tokens)
+		}
+		.resize {
+			return parser.parse_resize_value(mut tokens)
 		}
 	}
 
@@ -1614,6 +1626,31 @@ fn (mut parser Parser) parse_transform_box_value(mut tokens ComponentValueStream
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['content-box', 'border-box', 'fill-box',
 		'stroke-box', 'view-box'])
+}
+
+fn (mut parser Parser) parse_writing_mode_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['horizontal-tb', 'vertical-rl', 'vertical-lr',
+		'sideways-rl', 'sideways-lr'])
+}
+
+fn (mut parser Parser) parse_scrollbar_width_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'thin', 'none'])
+}
+
+fn (mut parser Parser) parse_resize_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['none', 'both', 'horizontal', 'vertical',
+		'inline', 'block'])
+}
+
+fn (mut parser Parser) parse_view_transition_name_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parse_property_keyword_value(mut tokens, ['none']) {
+		return value
+	}
+	value := parser.parse_custom_ident_value(mut tokens, ['auto', 'none']) or { return none }
+	return StyleValue(value)
 }
 
 fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {

@@ -554,6 +554,8 @@ pub enum WritingMode {
 	horizontal_tb
 	vertical_rl
 	vertical_lr
+	sideways_rl
+	sideways_lr
 }
 
 pub enum UserSelect {
@@ -1183,6 +1185,18 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.touch_action {
 			'auto'
 		}
+		.writing_mode {
+			'horizontal-tb'
+		}
+		.view_transition_name {
+			'none'
+		}
+		.scrollbar_width {
+			'auto'
+		}
+		.resize {
+			'none'
+		}
 		.webkit_text_fill_color {
 			'currentcolor'
 		}
@@ -1228,7 +1242,7 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		.orphans, .pointer_events, .shape_rendering, .stroke_linecap, .stroke_linejoin,
 		.stroke_opacity, .text_align, .text_anchor, .text_justify, .text_rendering,
 		.text_transform, .text_wrap_mode, .text_wrap_style, .visibility, .webkit_text_fill_color,
-		.white_space_collapse, .word_break, .word_spacing, .border_collapse {
+		.white_space_collapse, .word_break, .word_spacing, .writing_mode, .border_collapse {
 			true
 		}
 		else {
@@ -1269,7 +1283,8 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.text_align, .text_anchor, .text_justify, .text_overflow, .text_rendering, .text_transform,
 		.text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .transition_behavior,
 		.transition_property, .touch_action, .unicode_bidi, .user_select, .view_timeline_name,
-		.visibility, .white_space_collapse, .white_space_trim, .word_break {
+		.view_transition_name, .visibility, .white_space_collapse, .white_space_trim, .word_break,
+		.writing_mode, .scrollbar_width, .resize {
 			false
 		}
 	}
@@ -1311,8 +1326,9 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transition_behavior,
 		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
 		.translate, .touch_action, .unicode_bidi, .user_select, .view_timeline_inset,
-		.view_timeline_name, .visibility, .webkit_text_fill_color, .white_space_collapse,
-		.white_space_trim, .word_break, .z_index {
+		.view_timeline_name, .view_transition_name, .visibility, .webkit_text_fill_color,
+		.white_space_collapse, .white_space_trim, .word_break, .writing_mode, .scrollbar_width,
+		.resize, .z_index {
 			false
 		}
 	}
@@ -2674,8 +2690,16 @@ pub fn (c &ComputedProperties) unicode_bidi() UnicodeBidi {
 }
 
 pub fn (c &ComputedProperties) writing_mode() WritingMode {
-	_ = c
-	return .horizontal_tb
+	value := c.property(.writing_mode, .yes) or { return .horizontal_tb }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .horizontal_tb }
+	return match keyword {
+		.horizontal_tb { WritingMode.horizontal_tb }
+		.vertical_rl { WritingMode.vertical_rl }
+		.vertical_lr { WritingMode.vertical_lr }
+		.sideways_rl { WritingMode.sideways_rl }
+		.sideways_lr { WritingMode.sideways_lr }
+		else { WritingMode.horizontal_tb }
+	}
 }
 
 pub fn (c &ComputedProperties) user_select() UserSelect {
@@ -2793,7 +2817,11 @@ pub fn (c &ComputedProperties) mix_blend_mode() MixBlendMode {
 }
 
 pub fn (c &ComputedProperties) view_transition_name() ?string {
-	_ = c
+	value := c.property(.view_transition_name, .yes) or { return none }
+	parsed_value := parse_css_value_logic(.view_transition_name, value.css_text) or { return none }
+	if parsed_value is CustomIdentStyleValue {
+		return parsed_value.custom_ident()
+	}
 	return none
 }
 
@@ -3485,13 +3513,28 @@ pub fn (c &ComputedProperties) scrollbar_color(layout_node &dom.LayoutNode) Scro
 }
 
 pub fn (c &ComputedProperties) scrollbar_width() ScrollbarWidth {
-	_ = c
-	return .auto_
+	value := c.property(.scrollbar_width, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { ScrollbarWidth.auto_ }
+		.thin { ScrollbarWidth.thin }
+		.none_ { ScrollbarWidth.none_ }
+		else { ScrollbarWidth.auto_ }
+	}
 }
 
 pub fn (c &ComputedProperties) resize() Resize {
-	_ = c
-	return .none_
+	value := c.property(.resize, .yes) or { return .none_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .none_ }
+	return match keyword {
+		.none_ { Resize.none_ }
+		.both { Resize.both }
+		.horizontal { Resize.horizontal }
+		.vertical { Resize.vertical }
+		.block { Resize.block }
+		.inline_ { Resize.inline_ }
+		else { Resize.none_ }
+	}
 }
 
 pub fn ComputedProperties.font_fallback(monospace bool, bold bool, point_size f32) &FontData {
@@ -3623,7 +3666,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.animation_timeline, .animation_timing_function, .direction, .font_feature_settings,
 		.font_variation_settings, .math_depth, .math_style, .scroll_timeline_name,
 		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .unicode_bidi, .view_timeline_inset, .view_timeline_name {
+		.transition_timing_function, .unicode_bidi, .view_timeline_inset, .view_timeline_name,
+		.writing_mode, .resize {
 			.none_
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
@@ -3634,7 +3678,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.font_weight, .font_width, .letter_spacing, .line_height, .opacity, .order, .orphans,
 		.outline_color, .outline_offset, .outline_style, .outline_width, .shape_image_threshold,
 		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
-		.webkit_text_fill_color, .word_spacing, .z_index {
+		.webkit_text_fill_color, .word_spacing, .scrollbar_width, .z_index {
 			.by_computed_value
 		}
 		.content_visibility, .visibility {
@@ -3652,7 +3696,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align,
 		.text_anchor, .text_justify, .text_overflow, .text_rendering, .text_transform,
 		.text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .touch_action,
-		.user_select, .white_space_collapse, .white_space_trim, .word_break {
+		.user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break {
 			.discrete
 		}
 	}
@@ -4387,8 +4431,8 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale, .scroll_timeline_name,
 		.transform, .transform_box, .transition_behavior, .transition_delay, .transition_duration,
 		.transition_property, .transition_timing_function, .translate, .touch_action, .user_select,
-		.view_timeline_inset, .view_timeline_name, .text_overflow, .text_rendering,
-		.webkit_text_fill_color, .z_index {
+		.view_timeline_inset, .view_timeline_name, .view_transition_name, .scrollbar_width,
+		.resize, .text_overflow, .text_rendering, .webkit_text_fill_color, .z_index {
 			false
 		}
 		.anchor_name, .aspect_ratio, .border_bottom_style, .border_bottom_width, .border_collapse,
@@ -4402,7 +4446,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.position, .position_anchor, .shape_rendering, .table_layout, .text_align, .text_anchor,
 		.text_justify, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
 		.unicode_bidi, .visibility, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing {
+		.word_spacing, .writing_mode {
 			true
 		}
 	}
@@ -4441,9 +4485,9 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,
 		.transform_style, .touch_action, .transition_behavior, .transition_delay,
 		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
-		.user_select, .view_timeline_inset, .view_timeline_name, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing {
+		.user_select, .view_timeline_inset, .view_timeline_name, .view_transition_name,
+		.writing_mode, .scrollbar_width, .resize, .visibility, .webkit_text_fill_color,
+		.white_space_collapse, .white_space_trim, .word_break, .word_spacing {
 			false
 		}
 	}
@@ -4497,9 +4541,9 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,
 		.transform_style, .touch_action, .transition_behavior, .transition_delay,
 		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
-		.user_select, .view_timeline_inset, .view_timeline_name, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing, .z_index {
+		.user_select, .view_timeline_inset, .view_timeline_name, .view_transition_name,
+		.writing_mode, .scrollbar_width, .resize, .visibility, .webkit_text_fill_color,
+		.white_space_collapse, .white_space_trim, .word_break, .word_spacing, .z_index {
 			false
 		}
 	}

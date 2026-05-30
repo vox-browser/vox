@@ -169,6 +169,10 @@ pub enum PropertyID {
 	image_rendering
 	transform_box
 	touch_action
+	writing_mode
+	view_transition_name
+	scrollbar_width
+	resize
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

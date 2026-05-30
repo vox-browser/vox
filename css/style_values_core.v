@@ -411,8 +411,14 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'rotate' {
 			PropertyID.rotate
 		}
+		'resize' {
+			PropertyID.resize
+		}
 		'scale' {
 			PropertyID.scale
+		}
+		'scrollbar-width' {
+			PropertyID.scrollbar_width
 		}
 		'scroll-timeline-name' {
 			PropertyID.scroll_timeline_name
@@ -486,6 +492,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'view-timeline-name' {
 			PropertyID.view_timeline_name
 		}
+		'view-transition-name' {
+			PropertyID.view_transition_name
+		}
 		'visibility' {
 			PropertyID.visibility
 		}
@@ -503,6 +512,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'word-spacing' {
 			PropertyID.word_spacing
+		}
+		'writing-mode' {
+			PropertyID.writing_mode
 		}
 		'z-index' {
 			PropertyID.z_index
@@ -571,6 +583,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.color_scheme {
 			value_type == .custom_ident
 		}
+		.view_transition_name {
+			value_type == .custom_ident
+		}
 		.font_language_override {
 			value_type == .string
 		}
@@ -580,7 +595,8 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
 		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .transform_box,
-		.touch_action, .isolation, .list_style_position, .mask_type {
+		.touch_action, .writing_mode, .scrollbar_width, .resize, .isolation, .list_style_position,
+		.mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
@@ -721,6 +737,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.view_timeline_inset {
 			false
+		}
+		.view_transition_name {
+			lowercase_value == 'none'
 		}
 		.accent_color, .caret_color {
 			if lowercase_value == 'auto' {
@@ -891,6 +910,16 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['auto', 'manipulation', 'none', 'pan-down', 'pan-left', 'pan-right',
 				'pan-up', 'pan-x', 'pan-y']
 		}
+		.writing_mode {
+			lowercase_value in ['horizontal-tb', 'vertical-rl', 'vertical-lr', 'sideways-rl',
+				'sideways-lr']
+		}
+		.scrollbar_width {
+			lowercase_value in ['auto', 'thin', 'none']
+		}
+		.resize {
+			lowercase_value in ['none', 'both', 'horizontal', 'vertical', 'inline', 'block']
+		}
 		.user_select {
 			lowercase_value in ['all', 'auto', 'contain', 'none', 'text']
 		}
@@ -1013,15 +1042,18 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.overflow_x, .overflow_y, .pointer_events, .position, .shape_rendering, .stop_color,
 		.stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify,
 		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
-		.transform_box, .transform_style, .touch_action, .unicode_bidi, .user_select,
-		.view_timeline_inset, .visibility, .webkit_text_fill_color, .white_space_collapse,
-		.white_space_trim, .word_break {
+		.transform_box, .transform_style, .touch_action, .writing_mode, .scrollbar_width, .resize,
+		.unicode_bidi, .user_select, .view_timeline_inset, .visibility, .webkit_text_fill_color,
+		.white_space_collapse, .white_space_trim, .word_break {
 			false
 		}
 		.color_scheme {
 			// color-scheme accepts `light` and `dark` as keywords, but excludes
 			// them from the <custom-ident> branch.
 			lowercase_value !in ['normal', 'light', 'dark', 'only']
+		}
+		.view_transition_name {
+			lowercase_value !in ['auto', 'none']
 		}
 		.content_visibility {
 			false
@@ -2202,6 +2234,16 @@ pub enum Keyword {
 	pan_up
 	pan_x
 	pan_y
+	horizontal_tb
+	vertical_rl
+	vertical_lr
+	sideways_rl
+	sideways_lr
+	thin
+	horizontal
+	vertical
+	block
+	inline_
 	separate
 	border_box
 	content_box
@@ -2527,6 +2569,16 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.pan_up { 'pan-up' }
 		.pan_x { 'pan-x' }
 		.pan_y { 'pan-y' }
+		.horizontal_tb { 'horizontal-tb' }
+		.vertical_rl { 'vertical-rl' }
+		.vertical_lr { 'vertical-lr' }
+		.sideways_rl { 'sideways-rl' }
+		.sideways_lr { 'sideways-lr' }
+		.thin { 'thin' }
+		.horizontal { 'horizontal' }
+		.vertical { 'vertical' }
+		.block { 'block' }
+		.inline_ { 'inline' }
 		.separate { 'separate' }
 		.border_box { 'border-box' }
 		.content_box { 'content-box' }
@@ -2841,6 +2893,16 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'pan-up' { Keyword.pan_up }
 		'pan-x' { Keyword.pan_x }
 		'pan-y' { Keyword.pan_y }
+		'horizontal-tb' { Keyword.horizontal_tb }
+		'vertical-rl' { Keyword.vertical_rl }
+		'vertical-lr' { Keyword.vertical_lr }
+		'sideways-rl' { Keyword.sideways_rl }
+		'sideways-lr' { Keyword.sideways_lr }
+		'thin' { Keyword.thin }
+		'horizontal' { Keyword.horizontal }
+		'vertical' { Keyword.vertical }
+		'block' { Keyword.block }
+		'inline' { Keyword.inline_ }
 		'separate' { Keyword.separate }
 		'border-box' { Keyword.border_box }
 		'content-box' { Keyword.content_box }

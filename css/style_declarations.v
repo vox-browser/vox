@@ -125,6 +125,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.stroke_opacity { 'stroke-opacity' }
 		.rotate { 'rotate' }
 		.scale { 'scale' }
+		.scrollbar_width { 'scrollbar-width' }
 		.scroll_timeline_name { 'scroll-timeline-name' }
 		.table_layout { 'table-layout' }
 		.text_align { 'text-align' }
@@ -149,13 +150,16 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.touch_action { 'touch-action' }
 		.view_timeline_inset { 'view-timeline-inset' }
 		.view_timeline_name { 'view-timeline-name' }
+		.view_transition_name { 'view-transition-name' }
 		.visibility { 'visibility' }
 		.webkit_text_fill_color { '-webkit-text-fill-color' }
 		.white_space_collapse { 'white-space-collapse' }
 		.white_space_trim { 'white-space-trim' }
 		.word_break { 'word-break' }
 		.word_spacing { 'word-spacing' }
+		.writing_mode { 'writing-mode' }
 		.z_index { 'z-index' }
+		.resize { 'resize' }
 	}
 }
 
@@ -195,8 +199,9 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.float_, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
 		.transform_box, .transform_style, .translate, .unicode_bidi, .user_select, .touch_action,
-		.visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim,
-		.word_break, .word_spacing, .z_index {
+		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing, .z_index {
 			true
 		}
 	}
@@ -233,21 +238,22 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.float_, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
 		.transform_box, .transform_style, .translate, .unicode_bidi, .user_select, .touch_action,
-		.visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim,
-		.word_break, .word_spacing, .z_index {
+		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing, .z_index {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 135
+pub const number_of_longhand_properties = 139
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .touch_action
+	return .resize
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -387,6 +393,10 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		132 { PropertyID.image_rendering }
 		133 { PropertyID.transform_box }
 		134 { PropertyID.touch_action }
+		135 { PropertyID.writing_mode }
+		136 { PropertyID.view_transition_name }
+		137 { PropertyID.scrollbar_width }
+		138 { PropertyID.resize }
 		else { none }
 	}
 }
