@@ -1904,7 +1904,16 @@ pub type Rule = AtRule | QualifiedRule
 
 pub type RuleOrListOfDeclarations = DeclarationList | RuleNode
 
-pub type ComponentValuePayload = Function | GuaranteedInvalidValue | SimpleBlock | Token
+pub type ComponentValuePayload = Function
+	| GuaranteedInvalidValue
+	| RawComponentValue
+	| SimpleBlock
+	| Token
+
+pub struct RawComponentValue {
+pub mut:
+	text string
+}
 
 pub struct RuleNode {
 pub mut:
@@ -1965,6 +1974,14 @@ pub mut:
 pub fn ComponentValue.from_token(token Token) ComponentValue {
 	return ComponentValue{
 		value: token
+	}
+}
+
+pub fn ComponentValue.new(text string) ComponentValue {
+	return ComponentValue{
+		value: RawComponentValue{
+			text: text
+		}
 	}
 }
 
@@ -2046,6 +2063,9 @@ pub fn (component_value ComponentValue) contains_guaranteed_invalid_value() bool
 		Token {
 			return false
 		}
+		RawComponentValue {
+			return false
+		}
 		SimpleBlock {
 			for item in component_value.value.value {
 				if item.contains_guaranteed_invalid_value() {
@@ -2073,6 +2093,9 @@ pub fn (component_value ComponentValue) to_string() string {
 		Token {
 			return component_value.value.to_string()
 		}
+		RawComponentValue {
+			return component_value.value.text
+		}
 		SimpleBlock {
 			return component_value.value.to_string()
 		}
@@ -2090,6 +2113,9 @@ pub fn (component_value ComponentValue) to_debug_string() string {
 		Token {
 			return 'Token: ${component_value.value.to_debug_string()}'
 		}
+		RawComponentValue {
+			return 'Raw: ${component_value.value.text}'
+		}
 		SimpleBlock {
 			return 'Block: ${component_value.value.to_string()}'
 		}
@@ -2106,6 +2132,9 @@ pub fn (component_value ComponentValue) original_source_text() string {
 	match component_value.value {
 		Token {
 			return component_value.value.original_source_text()
+		}
+		RawComponentValue {
+			return component_value.value.text
 		}
 		SimpleBlock {
 			return component_value.value.original_source_text()
