@@ -119,10 +119,10 @@ pub fn resolve_a_style_resource_url(url_value StyleResourceURL, css_rule_or_decl
 
 	// 2. Return the result of the URL parser steps with urlValue's url and base.
 	url_string := style_resource_url_string(url_value)
-	return resolve_css_url_with_base_stub(url_string, base)
+	return resolve_css_url_with_base(url_string, base)
 }
 
-fn resolve_css_url_with_base_stub(url_string string, base string) ?string {
+fn resolve_css_url_with_base(url_string string, base string) ?string {
 	// FIXME: Use DOMURL::parse() once the URL module is ported. This mirrors the URL parser behavior that CSS fetch
 	// needs with the local string-backed URL type: absolute URLs are preserved, relative URLs resolve against the style
 	// resource base URL, fragment/query-only references attach to the base, and path dot segments are normalized.

@@ -1617,7 +1617,7 @@ pub fn (style_value ImageStyleValue) absolutized(context ComputationContext) Ima
 	}
 
 	if base := base_url {
-		if resolved_url := resolve_css_url_with_base_stub(style_value.url_.url(), base) {
+		if resolved_url := resolve_css_url_with_base(style_value.url_.url(), base) {
 			return ImageStyleValue.create(URL.from_url(resolved_url))
 		}
 	}
