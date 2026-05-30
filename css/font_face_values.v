@@ -501,13 +501,25 @@ pub fn (data FontFeatureData) to_shape_features(font_feature_values map[string][
 	// FIXME: 1. Font features enabled by default are applied, including features required for a given script. See
 	//           section 7.1 Default features for a description of these.
 	// FIXME: 2. Font variations as enabled by the font-weight, font-width, and font-style properties are applied.
+	//
+	//           The application of the value enabled by font-style is affected by font selection, because this property
+	//           might select an italic or an oblique font. The value applied is the closest matching value as determined
+	//           by the font matching algorithm. User agents must apply at most one value due to the font-style property;
+	//           both "ital" and "slnt" values must not be set together.
+	//
+	//           If the selected font is defined in an @font-face rule, then the values applied at this step should be
+	//           clamped to the value of the font-weight, font-width, and font-style descriptors in that @font-face rule.
+	//
+	//           Then, the values applied in this step should be clamped (possibly again) to the values that are
+	//           supported by the font.
 	// FIXME: 3. The language specified by the inherited value of lang/xml:lang is applied.
 	// FIXME: 4. If the font is defined via an @font-face rule, the font language override implied by the
 	//           font-language-override descriptor in the @font-face rule is applied.
 	// FIXME: 5. If the font is defined via an @font-face rule, that @font-face rule includes at least one valid
 	//           font-named-instance descriptor with a value other than 'font-named-instance/none', and the loaded font
-	//           resource includes a named instance with that name according to the localized name matching rules, then
-	//           all the variation values represented by that named instance are applied.
+	//           resource includes a named instance with that name according to the 5.1 Localized name matching rules,
+	//           then all the variation values represented by that named instance are applied. These values are clamped
+	//           to the values that are supported by the font.
 	// FIXME: 6. If the font is defined via an @font-face rule, the font variations implied by the
 	//           font-variation-settings descriptor in the @font-face rule are applied.
 	// FIXME: 7. If the font is defined via an @font-face rule, the font features implied by the font-feature-settings
@@ -777,8 +789,10 @@ fn add_font_feature_values_map_to_hash_map(mut target map[string][]u32, source &
 
 pub fn (mut rule CSSFontFeatureValuesRule) clear_caches() {
 	rule.cache_generation++
-	// Boundary: CSSFontFeatureValuesRule::clear_caches clears FontComputer caches through the parent stylesheet's
-	// owning document in C++; this standalone rule object has no owning document link yet.
+	// Boundary: CSSFontFeatureValuesRule::clear_caches calls CSSRule::clear_caches(), then clears computed-font and
+	// @font-feature-values caches through the parent stylesheet's owning document in C++. This standalone rule object
+	// has no owning document link; FontComputer.add/remove_font_feature_values_rule performs the representable cache
+	// invalidation when the rule is managed directly by FontComputer.
 }
 
 // --- CSS @font-face descriptors and rule ---
@@ -2106,6 +2120,8 @@ pub fn (mut face FontFaceObject) load() FontPromiseStub {
 
 	// 3. Otherwise, set font face's status attribute to "loading", return font face's [[FontStatusPromise]],
 	//    and continue executing the rest of this algorithm asynchronously.
+	// Boundary: C++ defers the URL load through the platform event loop and later queues a font-loading task for
+	// completion. The V port runs the boundary synchronously while preserving status, promise, and set-list effects.
 	face.finish_loading_from_typeface(face.load_first_available_url())
 	return face.loaded()
 }
@@ -2485,6 +2501,9 @@ pub fn (mut set FontFaceSet) load(font string, text string) !FontPromiseStub {
 	}
 
 	// 4. Queue a task to run the following steps synchronously:
+	// Boundary: C++ defers this algorithm through the event loop, then queues a font-loading task and resolves with
+	// wait_for_all over FontStatusPromise values. This local PromiseStub observes the same final fulfilled/rejected
+	// state after running the representable steps synchronously.
 	// 1. For all of the font faces in the font face list, call their load() method.
 	for font_face in matched_font_faces {
 		mut mutable_font_face := unsafe { &FontFaceObject(font_face) }
@@ -2568,6 +2587,7 @@ pub fn (mut set FontFaceSet) switch_to_loading() {
 	}
 
 	// 4. Queue a task to fire a font load event named loading at font face set.
+	// Boundary: The C++ queues this event on the font-loading task source. The V port records it immediately.
 	set.fire_a_font_load_event('loading', [])
 }
 
@@ -2587,6 +2607,8 @@ pub fn (mut set FontFaceSet) switch_to_loaded() {
 	set.ready_promise.state = 'fulfilled'
 
 	// 5. Queue a task to perform the following steps synchronously:
+	// Boundary: The C++ resolves ready immediately, then queues event dispatch and list reset on the font-loading task
+	// source. The V port performs the queued portion inline.
 	// 1. Let loaded fonts be the (possibly empty) contents of font face set's [[LoadedFonts]] slot.
 	// 2. Let failed fonts be the (possibly empty) contents of font face set's [[FailedFonts]] slot.
 	// 3. Reset the [[LoadedFonts]] and [[FailedFonts]] slots to empty lists.
@@ -2820,6 +2842,8 @@ pub fn (mut loader FontLoader) font_with_point_size(point_size f32, variations F
 
 pub fn (mut loader FontLoader) start_loading_next_url() {
 	// FIXME: Load local() fonts somehow.
+	// Boundary: C++ tracks an ongoing FetchController and returns early if a fetch is already in progress. This
+	// synchronous boundary has no fetch-controller state, so each call consumes at most one pending URL chain.
 	if loader.urls.len == 0 {
 		return
 	}
@@ -2849,6 +2873,9 @@ pub fn (loader &FontLoader) family_name() string {
 
 pub fn (loader &FontLoader) try_load_font(response FontFetchResponseStub, bytes []u8) !PlatformTypeface {
 	_ = response
+	// Boundary: C++ first extracts or sniffs the response MIME type, then attempts the matching TTF/OTF, WOFF, or WOFF2
+	// decoder. The V port has no HTTP response headers or font decoders wired in yet, so byte decoding is centralized
+	// at this explicit platform boundary.
 	if typeface := platform_load_font_from_bytes_boundary(bytes) {
 		return typeface
 	}
@@ -2914,6 +2941,25 @@ pub fn FontComputer.create() &FontComputer {
 		loaded_fonts:              map[string][]&FontLoader{}
 		computed_font_cache:       map[string]FontCascadeList{}
 		font_feature_values_cache: map[string]map[string][]u32{}
+	}
+}
+
+pub fn (mut computer FontComputer) add_font_feature_values_rule(rule &CSSFontFeatureValuesRule) {
+	if !font_feature_values_rule_array_contains(computer.font_feature_values_rules, rule) {
+		computer.font_feature_values_rules << rule
+	}
+	for family in rule.font_families() {
+		computer.clear_computed_font_cache(family)
+		computer.clear_font_feature_values_cache(family)
+	}
+}
+
+pub fn (mut computer FontComputer) remove_font_feature_values_rule(rule &CSSFontFeatureValuesRule) {
+	computer.font_feature_values_rules =
+		font_feature_values_rule_array_without(computer.font_feature_values_rules, rule)
+	for family in rule.font_families() {
+		computer.clear_computed_font_cache(family)
+		computer.clear_font_feature_values_cache(family)
 	}
 }
 
@@ -2993,6 +3039,33 @@ pub fn (mut computer FontComputer) load_fonts_from_font_face_rules(rules []&CSSF
 	}
 }
 
+pub fn (mut computer FontComputer) load_fonts_from_css_rules(rules []&CSSRule, font_face_set &FontFaceSet) {
+	// FIXME: Handle @font-face and @font-feature-values within grouping rules (@media, @supports, etc)
+	for rule in rules {
+		if font_face_rule := rule.font_face_rule_ref() {
+			if !font_face_rule.is_valid() {
+				continue
+			}
+
+			font_face := FontFaceObject.create_css_connected(font_face_rule)
+			mut mutable_set := unsafe { &FontFaceSet(font_face_set) }
+			mutable_set.add_css_connected_font(font_face)
+
+			// NB: Load via FontFace::load(), to satisfy this requirement:
+			// https://drafts.csswg.org/css-font-loading/#font-face-load
+			// User agents can initiate font loads on their own, whenever they determine that a given font face is
+			// necessary to render something on the page. When this happens, they must act as if they had called the
+			// corresponding FontFace's load() method described here.
+			mut mutable_face := unsafe { &FontFaceObject(font_face) }
+			mutable_face.load_with_font_computer(computer)
+		}
+
+		if font_feature_values_rule := rule.font_feature_values_rule_ref() {
+			computer.add_font_feature_values_rule(font_feature_values_rule)
+		}
+	}
+}
+
 pub fn (mut computer FontComputer) unload_fonts_from_font_face_rules(rules []&CSSFontFaceRule) {
 	// FIXME: Handle @font-face and @font-feature-values within grouping rules (@media, @supports, etc)
 	// https://drafts.csswg.org/css-font-loading/#font-face-css-connection
@@ -3003,6 +3076,23 @@ pub fn (mut computer FontComputer) unload_fonts_from_font_face_rules(rules []&CS
 		}
 		mut mutable_rule := unsafe { &CSSFontFaceRule(rule) }
 		mutable_rule.disconnect_font_face()
+	}
+}
+
+pub fn (mut computer FontComputer) unload_fonts_from_css_rules(rules []&CSSRule) {
+	// FIXME: Handle @font-face and @font-feature-values within grouping rules (@media, @supports, etc)
+	for rule in rules {
+		if font_face_rule := rule.font_face_rule_ref() {
+			if font_face_rule.is_valid() {
+				computer.loaded_fonts.delete(font_face_key_for_parsed_font_face(font_face_rule.font_face()).id())
+			}
+			mut mutable_rule := unsafe { &CSSFontFaceRule(font_face_rule) }
+			mutable_rule.disconnect_font_face()
+		}
+
+		if font_feature_values_rule := rule.font_feature_values_rule_ref() {
+			computer.remove_font_feature_values_rule(font_feature_values_rule)
+		}
 	}
 }
 
@@ -4207,8 +4297,27 @@ fn font_face_set_array_contains(values []&FontFaceSet, needle &FontFaceSet) bool
 	return false
 }
 
+fn font_feature_values_rule_array_contains(values []&CSSFontFeatureValuesRule, needle &CSSFontFeatureValuesRule) bool {
+	for value in values {
+		if value == needle {
+			return true
+		}
+	}
+	return false
+}
+
 fn font_face_object_array_without(values []&FontFaceObject, needle &FontFaceObject) []&FontFaceObject {
 	mut kept := []&FontFaceObject{}
+	for value in values {
+		if value != needle {
+			kept << value
+		}
+	}
+	return kept
+}
+
+fn font_feature_values_rule_array_without(values []&CSSFontFeatureValuesRule, needle &CSSFontFeatureValuesRule) []&CSSFontFeatureValuesRule {
+	mut kept := []&CSSFontFeatureValuesRule{}
 	for value in values {
 		if value != needle {
 			kept << value

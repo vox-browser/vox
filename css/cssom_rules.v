@@ -1067,7 +1067,7 @@ pub fn (mut rule CSSRule) fetch() {
 
 	rule.set_loading_state(.loading)
 
-	// Fetch/style-resource integration is outside this V port. Keep the observable loading transition explicit.
+	// Boundary: Fetch/style-resource integration is outside this V port. Keep the observable loading transition explicit.
 	if loaded_style_sheet := rule.loaded_style_sheet {
 		rule.set_loading_state(loaded_style_sheet.loading_state())
 		return
@@ -1601,7 +1601,7 @@ pub fn (mut sheet CSSStyleSheet) delete_rule(index u32) ! {
 
 // https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace
 pub fn (mut sheet CSSStyleSheet) replace(text string) !&CSSStyleSheet {
-	// Promise/parallel execution is a JS integration point. This V port performs the same rule replacement synchronously.
+	// Boundary: Promise/parallel execution is a JS integration point. This V port performs the same rule replacement synchronously.
 	if !sheet.constructed {
 		return error("NotAllowedError: Can't call replace() on non-constructed stylesheets")
 	}
