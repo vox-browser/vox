@@ -2517,6 +2517,9 @@ fn parser_selector_text_is_syntactically_valid(selector_text string, mode Parser
 	if !parser_balanced_selector_text(trimmed) {
 		return false
 	}
+	if selector_text_has_invalid_simple_selectors(trimmed, mode == .relative) {
+		return false
+	}
 	return !parser_selector_uses_undeclared_namespace(trimmed, declared_namespaces)
 }
 

@@ -2069,6 +2069,12 @@ fn parse_simple_selector(text string, start int) ParsedSimpleSelector {
 	}
 	if ch == `#` {
 		name, next := parse_identifier(text, start + 1)
+		if name.len == 0 {
+			return ParsedSimpleSelector{
+				selector: invalid_simple_selector('#')
+				next:     next
+			}
+		}
 		return ParsedSimpleSelector{
 			selector: SimpleSelector{
 				type_: .id
@@ -2079,6 +2085,12 @@ fn parse_simple_selector(text string, start int) ParsedSimpleSelector {
 	}
 	if ch == `.` {
 		name, next := parse_identifier(text, start + 1)
+		if name.len == 0 {
+			return ParsedSimpleSelector{
+				selector: invalid_simple_selector('.')
+				next:     next
+			}
+		}
 		return ParsedSimpleSelector{
 			selector: SimpleSelector{
 				type_: .class
@@ -2186,15 +2198,10 @@ fn parse_type_or_universal_selector(text string, start int) ParsedSimpleSelector
 
 fn parse_attribute_selector(body string) SimpleSelector {
 	mut text := body.trim_space()
-	mut case_type := AttributeCaseType.default_match
-	lower := text.to_lower()
-	if lower.ends_with(' i') {
-		case_type = .case_insensitive_match
-		text = text[..text.len - 2].trim_space()
-	} else if lower.ends_with(' s') {
-		case_type = .case_sensitive_match
-		text = text[..text.len - 2].trim_space()
+	if text.len == 0 {
+		return invalid_simple_selector('[${body}]')
 	}
+	mut case_type := AttributeCaseType.default_match
 
 	operators := ['~=', '*=', '|=', '^=', '$=', '=']
 	mut operator := ''
@@ -2208,9 +2215,20 @@ fn parse_attribute_selector(body string) SimpleSelector {
 	}
 
 	name_text := if operator_index >= 0 { text[..operator_index].trim_space() } else { text }
+	qualified_name := parse_attribute_qualified_name(name_text) or {
+		return invalid_simple_selector('[${body}]')
+	}
 	value := if operator_index >= 0 {
-		strip_css_string(text[operator_index + operator.len..].trim_space())
+		value_text, parsed_case_type, ok := parse_attribute_value_and_case_suffix(text[operator_index + operator.len..].trim_space())
+		if !ok {
+			return invalid_simple_selector('[${body}]')
+		}
+		case_type = parsed_case_type
+		value_text
 	} else {
+		if selector_text_contains_unquoted_whitespace(name_text) {
+			return invalid_simple_selector('[${body}]')
+		}
 		''
 	}
 	match_type := match operator {
@@ -2227,39 +2245,91 @@ fn parse_attribute_selector(body string) SimpleSelector {
 		type_:     .attribute
 		attribute: SelectorAttribute{
 			match_type:     match_type
-			qualified_name: parse_attribute_qualified_name(name_text)
+			qualified_name: qualified_name
 			value:          value
 			case_type:      case_type
 		}
 	}
 }
 
-fn parse_attribute_qualified_name(name_text string) SelectorQualifiedName {
+fn parse_attribute_qualified_name(name_text string) ?SelectorQualifiedName {
 	text := name_text.trim_space()
+	if text.len == 0 || selector_text_contains_unquoted_whitespace(text) {
+		return none
+	}
 	if text.starts_with('*|') {
+		name := text[2..]
+		if !is_valid_selector_identifier(name) || name == '*' {
+			return none
+		}
 		return SelectorQualifiedName{
 			namespace_type: .any
-			name:           SelectorName.new(text[2..])
+			name:           SelectorName.new(name)
 		}
 	}
 	if text.starts_with('|') {
+		name := text[1..]
+		if !is_valid_selector_identifier(name) || name == '*' {
+			return none
+		}
 		return SelectorQualifiedName{
 			namespace_type: .none
-			name:           SelectorName.new(text[1..])
+			name:           SelectorName.new(name)
 		}
 	}
 	if text.contains('|') {
 		parts := text.split_nth('|', 2)
+		if parts.len != 2 || !is_valid_selector_identifier(parts[0])
+			|| !is_valid_selector_identifier(parts[1]) || parts[1] == '*' {
+			return none
+		}
 		return SelectorQualifiedName{
 			namespace_type: .named
 			namespace_:     parts[0]
 			name:           SelectorName.new(parts[1])
 		}
 	}
+	if !is_valid_selector_identifier(text) {
+		return none
+	}
 	return SelectorQualifiedName{
 		namespace_type: .default_
 		name:           SelectorName.new(text)
 	}
+}
+
+fn parse_attribute_value_and_case_suffix(text string) (string, AttributeCaseType, bool) {
+	trimmed := text.trim_space()
+	if trimmed.len == 0 {
+		return '', AttributeCaseType.default_match, false
+	}
+	mut value_text := trimmed
+	mut case_type := AttributeCaseType.default_match
+	if whitespace_index := last_top_level_whitespace_index(trimmed) {
+		suffix := trimmed[whitespace_index..].trim_space()
+		if suffix.len != 0 {
+			lower_suffix := suffix.to_lower()
+			if lower_suffix == 'i' {
+				case_type = .case_insensitive_match
+				value_text = trimmed[..whitespace_index].trim_space()
+			} else if lower_suffix == 's' {
+				case_type = .case_sensitive_match
+				value_text = trimmed[..whitespace_index].trim_space()
+			} else {
+				return '', AttributeCaseType.default_match, false
+			}
+		}
+	}
+	if value_text.len == 0 {
+		return '', AttributeCaseType.default_match, false
+	}
+	if selector_is_quoted_string(value_text) {
+		return strip_css_string(value_text), case_type, true
+	}
+	if !is_valid_selector_identifier(value_text) {
+		return '', AttributeCaseType.default_match, false
+	}
+	return value_text, case_type, true
 }
 
 fn parse_pseudo_selector(text string, start int) ParsedSimpleSelector {
@@ -2271,54 +2341,81 @@ fn parse_pseudo_selector(text string, start int) ParsedSimpleSelector {
 	}
 	name, mut next := parse_identifier(text, i)
 	mut argument := ''
+	mut is_function := false
 	if next < text.len && text[next] == `(` {
+		is_function = true
 		argument, next = read_balanced(text, next, `(`, `)`)
 	}
 
 	if is_pseudo_element {
 		return ParsedSimpleSelector{
-			selector: parse_pseudo_element_selector(name, argument)
+			selector: parse_pseudo_element_selector(name, argument, is_function)
 			next:     next
 		}
 	}
 
 	pseudo_element := pseudo_element_from_string(name)
-	if pseudo_element != .unknown && argument.len == 0
+	if pseudo_element != .unknown && !is_function
 		&& pseudo_element in [.before, .after, .first_line, .first_letter] {
 		return ParsedSimpleSelector{
-			selector: parse_pseudo_element_selector(name, argument)
+			selector: parse_pseudo_element_selector(name, argument, false)
 			next:     next
 		}
 	}
 
 	return ParsedSimpleSelector{
-		selector: parse_pseudo_class_selector(name, argument)
+		selector: parse_pseudo_class_selector(name, argument, is_function)
 		next:     next
 	}
 }
 
-fn parse_pseudo_element_selector(name string, argument string) SimpleSelector {
+fn parse_pseudo_element_selector(name string, argument string, is_function bool) SimpleSelector {
 	pseudo_element := pseudo_element_from_string(name)
+	if pseudo_element == .unknown || (pseudo_element == .unknown_webkit && is_function) {
+		return invalid_simple_selector(if is_function { '::${name}(${argument})' } else { '::${name}' })
+	}
+	if is_function {
+		if !pseudo_element_valid_as_function(pseudo_element) || argument.trim_space().len == 0 {
+			return invalid_simple_selector('::${name}(${argument})')
+		}
+	} else if !pseudo_element_valid_as_identifier(pseudo_element) {
+		return invalid_simple_selector('::${name}')
+	}
 	mut selector := PseudoElementSelector{
 		type_: pseudo_element
 		name:  if pseudo_element == .unknown_webkit { name } else { '' }
 	}
-	if argument.len != 0 {
+	if is_function {
 		match pseudo_element {
 			.slotted {
+				if !selector_text_is_valid_compound(argument.trim_space()) {
+					return invalid_simple_selector('::${name}(${argument})')
+				}
 				selector.value_kind = .compound_selector
 				selector.compound_selector = Selector{
 					text: argument.trim_space()
 				}
 			}
 			.part {
+				idents := split_selector_whitespace(argument)
+				if idents.len == 0 {
+					return invalid_simple_selector('::${name}(${argument})')
+				}
+				for ident in idents {
+					if !is_valid_selector_identifier(ident) {
+						return invalid_simple_selector('::${name}(${argument})')
+					}
+				}
 				selector.value_kind = .ident_list
-				selector.ident_list = split_selector_whitespace(argument)
+				selector.ident_list = idents
 			}
 			.view_transition_group, .view_transition_image_pair, .view_transition_old,
 			.view_transition_new {
 				selector.value_kind = .pt_name_selector
 				arg := argument.trim_space()
+				if arg != '*' && !is_valid_selector_identifier(arg) {
+					return invalid_simple_selector('::${name}(${argument})')
+				}
 				selector.pt_name_selector = PseudoElementPTNameSelector{
 					is_universal: arg == '*'
 					value:        arg
@@ -2343,26 +2440,56 @@ fn invalid_simple_selector(text string) SimpleSelector {
 	}
 }
 
-fn parse_pseudo_class_selector(name string, argument string) SimpleSelector {
+fn parse_pseudo_class_selector(name string, argument string, is_function bool) SimpleSelector {
 	pseudo_class_type := pseudo_class_from_string(name)
+	if pseudo_class_type == .invalid {
+		return invalid_simple_selector(if is_function { ':${name}(${argument})' } else { ':${name}' })
+	}
+	if is_function {
+		if !pseudo_class_valid_as_function(pseudo_class_type) || argument.trim_space().len == 0 {
+			return invalid_simple_selector(':${name}(${argument})')
+		}
+	} else if !pseudo_class_valid_as_identifier(pseudo_class_type) {
+		return invalid_simple_selector(':${name}')
+	}
 	mut pseudo_class := PseudoClassSelector{
 		type_: pseudo_class_type
 	}
 	match pseudo_class_type {
 		.has {
+			if !selector_list_text_is_valid_for_standard(argument, true) {
+				return invalid_simple_selector(':${name}(${argument})')
+			}
 			pseudo_class.argument_selector_list = selector_list_from_text(argument, true)
 		}
-		.host, .is_, .where, .not_ {
+		.host {
+			if is_function {
+				if !selector_text_is_valid_compound(argument.trim_space()) {
+					return invalid_simple_selector(':${name}(${argument})')
+				}
+				pseudo_class.argument_selector_list = selector_list_from_text(argument, false)
+			}
+		}
+		.is_, .where, .not_ {
+			if pseudo_class_type == .not_ && !selector_list_text_is_valid_for_standard(argument,
+				false) {
+				return invalid_simple_selector(':${name}(${argument})')
+			}
 			pseudo_class.is_forgiving = pseudo_class_type in [.is_, .where]
 			pseudo_class.argument_selector_list = selector_list_from_text(argument, false)
 		}
 		.nth_child, .nth_last_child, .nth_of_type, .nth_last_of_type {
+			has_of_selector := top_level_ascii_word_index(argument, 'of') != none
 			anb, selector_list_text := split_an_plus_b_of_selector(argument)
 			pseudo_class.an_plus_b_pattern = parse_an_plus_b(anb) or {
 				return invalid_simple_selector(':${name}(${argument})')
 			}
-			if selector_list_text.len != 0 {
+			if has_of_selector {
 				if pseudo_class_type !in [.nth_child, .nth_last_child] {
+					return invalid_simple_selector(':${name}(${argument})')
+				}
+				if selector_list_text.len == 0
+					|| !selector_list_text_is_valid_for_standard(selector_list_text, false) {
 					return invalid_simple_selector(':${name}(${argument})')
 				}
 				pseudo_class.argument_selector_list = selector_list_from_text(selector_list_text,
@@ -2371,11 +2498,18 @@ fn parse_pseudo_class_selector(name string, argument string) SimpleSelector {
 		}
 		.lang {
 			for language in split_selector_list_text(argument) {
-				pseudo_class.languages << strip_css_string(language.trim_space())
+				trimmed := language.trim_space()
+				if !selector_is_quoted_string(trimmed) && !is_valid_selector_identifier(trimmed) {
+					return invalid_simple_selector(':${name}(${argument})')
+				}
+				pseudo_class.languages << strip_css_string(trimmed)
 			}
 		}
 		.dir, .state {
-			ident := strip_css_string(argument.trim_space())
+			ident := argument.trim_space()
+			if !is_valid_selector_identifier(ident) {
+				return invalid_simple_selector(':${name}(${argument})')
+			}
 			pseudo_class.ident = PseudoClassIdent{
 				keyword:      direction_keyword_from_string(ident)
 				string_value: ident
@@ -2385,7 +2519,10 @@ fn parse_pseudo_class_selector(name string, argument string) SimpleSelector {
 			for part in split_selector_list_text(argument) {
 				trimmed := part.trim_space()
 				if trimmed.len != 0 {
-					pseudo_class.levels << trimmed.i64()
+					level := parse_selector_signed_integer(trimmed) or {
+						return invalid_simple_selector(':${name}(${argument})')
+					}
+					pseudo_class.levels << i64(level)
 				}
 			}
 		}
@@ -2393,14 +2530,170 @@ fn parse_pseudo_class_selector(name string, argument string) SimpleSelector {
 	}
 
 	return SimpleSelector{
-		type_:        if pseudo_class_type == .invalid {
-			SimpleSelectorType.invalid
-		} else {
-			SimpleSelectorType.pseudo_class
-		}
+		type_:        SimpleSelectorType.pseudo_class
 		pseudo_class: pseudo_class
-		invalid_text: if pseudo_class_type == .invalid { ':${name}' } else { '' }
 	}
+}
+
+fn pseudo_class_valid_as_function(pseudo_class PseudoClass) bool {
+	return pseudo_class in [.dir, .has, .heading, .host, .is_, .lang, .not_, .nth_child,
+		.nth_last_child, .nth_of_type, .nth_last_of_type, .state, .where]
+}
+
+fn pseudo_class_valid_as_identifier(pseudo_class PseudoClass) bool {
+	if pseudo_class == .invalid {
+		return false
+	}
+	return !pseudo_class_valid_as_function(pseudo_class) || pseudo_class in [.heading, .host]
+}
+
+fn pseudo_element_valid_as_function(pseudo_element PseudoElement) bool {
+	return pseudo_element in [.part, .slotted, .view_transition_group, .view_transition_image_pair,
+		.view_transition_old, .view_transition_new]
+}
+
+fn pseudo_element_valid_as_identifier(pseudo_element PseudoElement) bool {
+	if pseudo_element in [.unknown, .part, .slotted, .view_transition_group, .view_transition_image_pair,
+		.view_transition_old, .view_transition_new] {
+		return false
+	}
+	return true
+}
+
+fn selector_list_text_is_valid_for_standard(text string, relative bool) bool {
+	parts := split_selector_list_text(text)
+	if parts.len == 0 {
+		return false
+	}
+	for part in parts {
+		trimmed := part.trim_space()
+		if trimmed.len == 0 || selector_text_has_invalid_simple_selectors(trimmed, relative) {
+			return false
+		}
+	}
+	return true
+}
+
+fn selector_text_has_invalid_simple_selectors(text string, relative bool) bool {
+	if selector_text_has_bad_top_level_combinators(text, relative) {
+		return true
+	}
+	compound_selectors := parse_complex_selector(text)
+	if compound_selectors.len == 0 {
+		return true
+	}
+	if !relative && compound_selectors[0].combinator != .no_combinator {
+		return true
+	}
+
+	mut pseudo_element_count := 0
+	for compound_index, compound_selector in compound_selectors {
+		if compound_selector.simple_selectors.len == 0 {
+			return true
+		}
+		for simple_index, simple_selector in compound_selector.simple_selectors {
+			match simple_selector.type_ {
+				.invalid {
+					return true
+				}
+				.class, .id {
+					if simple_selector.name.name.len == 0 {
+						return true
+					}
+				}
+				.tag_name {
+					if simple_selector.qualified_name.name.name.len == 0 || simple_index != 0 {
+						return true
+					}
+				}
+				.universal {
+					if simple_selector.qualified_name.name.name.len == 0 {
+						return true
+					}
+				}
+				.attribute {
+					if simple_selector.attribute.qualified_name.name.name.len == 0 {
+						return true
+					}
+				}
+				.pseudo_element {
+					pseudo_element_count++
+					if compound_index != compound_selectors.len - 1 || pseudo_element_count > 1 {
+						return true
+					}
+				}
+				else {}
+			}
+		}
+	}
+	return false
+}
+
+fn selector_text_has_bad_top_level_combinators(text string, relative bool) bool {
+	mut quote := u8(0)
+	mut parens := 0
+	mut squares := 0
+	mut saw_compound_token := false
+	mut expecting_compound_after_combinator := false
+	mut i := 0
+	for i < text.len {
+		ch := text[i]
+		if quote != 0 {
+			if ch == `\\` && i + 1 < text.len {
+				i += 2
+				continue
+			}
+			if ch == quote {
+				quote = 0
+			}
+			i++
+			continue
+		}
+		match ch {
+			`"`, `'` {
+				quote = ch
+				saw_compound_token = true
+				expecting_compound_after_combinator = false
+				i++
+			}
+			`(` {
+				parens++
+				saw_compound_token = true
+				expecting_compound_after_combinator = false
+				i++
+			}
+			`)` {
+				parens--
+				i++
+			}
+			`[` {
+				squares++
+				saw_compound_token = true
+				expecting_compound_after_combinator = false
+				i++
+			}
+			`]` {
+				squares--
+				i++
+			}
+			else {
+				if parens == 0 && squares == 0 && is_combinator_start(text, i) {
+					if (!relative && !saw_compound_token) || expecting_compound_after_combinator {
+						return true
+					}
+					expecting_compound_after_combinator = true
+					i += if text[i] == `|` { 2 } else { 1 }
+					continue
+				}
+				if !is_ascii_whitespace_byte(ch) {
+					saw_compound_token = true
+					expecting_compound_after_combinator = false
+				}
+				i++
+			}
+		}
+	}
+	return expecting_compound_after_combinator
 }
 
 fn selector_list_from_text(text string, relative bool) SelectorList {
@@ -3422,6 +3715,122 @@ fn strip_css_string(text string) string {
 		return text[1..text.len - 1]
 	}
 	return text
+}
+
+fn selector_is_quoted_string(text string) bool {
+	return text.len >= 2 && ((text[0] == `"` && text[text.len - 1] == `"`)
+		|| (text[0] == `'` && text[text.len - 1] == `'`))
+}
+
+fn selector_text_contains_unquoted_whitespace(text string) bool {
+	mut quote := u8(0)
+	mut i := 0
+	for i < text.len {
+		ch := text[i]
+		if quote != 0 {
+			if ch == `\\` && i + 1 < text.len {
+				i += 2
+				continue
+			}
+			if ch == quote {
+				quote = 0
+			}
+			i++
+			continue
+		}
+		if ch == `"` || ch == `'` {
+			quote = ch
+		} else if is_ascii_whitespace_byte(ch) {
+			return true
+		}
+		i++
+	}
+	return false
+}
+
+fn last_top_level_whitespace_index(text string) ?int {
+	mut quote := u8(0)
+	mut result := -1
+	mut i := 0
+	for i < text.len {
+		ch := text[i]
+		if quote != 0 {
+			if ch == `\\` && i + 1 < text.len {
+				i += 2
+				continue
+			}
+			if ch == quote {
+				quote = 0
+			}
+			i++
+			continue
+		}
+		if ch == `"` || ch == `'` {
+			quote = ch
+		} else if is_ascii_whitespace_byte(ch) {
+			result = i
+		}
+		i++
+	}
+	if result < 0 {
+		return none
+	}
+	return result
+}
+
+fn is_valid_selector_identifier(text string) bool {
+	if text.len == 0 {
+		return false
+	}
+	if text.starts_with('--') {
+		return text.len > 2
+	}
+	mut i := 0
+	if text[i] == `-` {
+		i++
+		if i >= text.len || (text[i] >= `0` && text[i] <= `9`) {
+			return false
+		}
+	}
+	if i < text.len && text[i] == `\\` {
+		if i + 1 >= text.len {
+			return false
+		}
+		i += 2
+	} else {
+		if i >= text.len || !is_ident_start_byte(text[i]) || (text[i] >= `0` && text[i] <= `9`) {
+			return false
+		}
+		i++
+	}
+	for i < text.len {
+		if is_ident_byte(text[i]) {
+			i++
+			continue
+		}
+		if text[i] == `\\` && i + 1 < text.len {
+			i += 2
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+fn selector_text_is_valid_compound(text string) bool {
+	if text.len == 0 {
+		return false
+	}
+	compound_selectors := parse_complex_selector(text)
+	if compound_selectors.len != 1 || compound_selectors[0].simple_selectors.len == 0 {
+		return false
+	}
+	for simple_selector in compound_selectors[0].simple_selectors {
+		if simple_selector.type_ == .invalid {
+			return false
+		}
+	}
+	return true
 }
 
 fn top_level_index(text string, needle string) ?int {
