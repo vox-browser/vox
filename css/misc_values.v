@@ -995,9 +995,33 @@ pub fn EasingFunction.from_css_style_value(style_value StyleValue) EasingFunctio
 }
 
 pub fn EasingFunction.from_style_value(style_value &dom.StyleValue) EasingFunction {
-	_ = style_value
-	// Boundary: dom.StyleValue is currently opaque in this V port. CSS-side callers should use
-	// from_css_style_value() with translated StyleValue objects.
+	if style_value.css_text.len == 0 {
+		return EasingFunction.ease()
+	}
+
+	mut parser := Parser.from_css_text(style_value.css_text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	if easing := parser.parse_easing_value(mut tokens) {
+		if !tokens.has_more_tokens() {
+			return EasingFunction.from_css_style_value(easing)
+		}
+	}
+
+	mut keyword_parser := Parser.from_css_text(style_value.css_text)
+	mut keyword_tokens := ComponentValueStream.new(keyword_parser.component_values)
+	if keyword := keyword_parser.parse_keyword_value(mut keyword_tokens) {
+		if !keyword_tokens.has_more_tokens() {
+			return match keyword.serialize(.normal) {
+				'linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease' {
+					EasingFunction.from_css_style_value(keyword)
+				}
+				else {
+					EasingFunction.ease()
+				}
+			}
+		}
+	}
+
 	return EasingFunction.ease()
 }
 

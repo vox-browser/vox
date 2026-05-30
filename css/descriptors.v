@@ -49,9 +49,7 @@ fn descriptor_id_from_string(at_rule_id AtRuleID, property string) ?DescriptorID
 }
 
 fn descriptor_style_value_to_string(value &dom.StyleValue) string {
-	_ = value
-	// Boundary: dom.StyleValue is currently an opaque DOM-side placeholder in this V port.
-	return ''
+	return value.css_text
 }
 
 struct ParsedCSSDescriptorValue {

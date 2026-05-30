@@ -752,9 +752,15 @@ pub fn (mut property_map StylePropertyMapReadOnly) get(property_name string) ?CS
 		return StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic(serialized_value))).reify(property.name())
 	}
 	if property_value := property_map.get_style_value(property) {
-		_ = property_value
-		// Boundary: dom.StyleValue is currently opaque to CSS-side reification in this V port.
-		return StyleValue(StubStyleValue.create(.unresolved, '')).reify(property.name())
+		if property_value.css_text.len > 0 {
+			reified_values := reify_serialized_style_map_value(property, property_value.css_text,
+				false)
+			if reified_values.len > 0 {
+				return reified_values[0]
+			}
+			return StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic(property_value.css_text))).reify(property.name())
+		}
+		return StyleValue(UnresolvedStyleValue.create([]ComponentValue{})).reify(property.name())
 	}
 
 	// 5. Otherwise, return undefined.
@@ -781,9 +787,15 @@ pub fn (mut property_map StylePropertyMapReadOnly) get_all(property_name string)
 		return [StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic(serialized_value))).reify(property.name())]
 	}
 	if property_value := property_map.get_style_value(property) {
-		_ = property_value
-		// Boundary: dom.StyleValue is currently opaque to CSS-side reification in this V port.
-		return [StyleValue(StubStyleValue.create(.unresolved, '')).reify(property.name())]
+		if property_value.css_text.len > 0 {
+			reified_values :=
+				reify_serialized_style_map_value(property, property_value.css_text, true)
+			if reified_values.len > 0 {
+				return reified_values
+			}
+			return [StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic(property_value.css_text))).reify(property.name())]
+		}
+		return [StyleValue(UnresolvedStyleValue.create([]ComponentValue{})).reify(property.name())]
 	}
 
 	// 5. Otherwise, return an empty list.
