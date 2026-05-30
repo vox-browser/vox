@@ -175,6 +175,9 @@ pub enum PropertyID {
 	resize
 	contain
 	container_type
+	text_decoration_line
+	text_decoration_style
+	paint_order
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

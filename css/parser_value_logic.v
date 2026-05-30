@@ -265,6 +265,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.overflow_x, .overflow_y {
 			return parser.parse_overflow_value(mut tokens)
 		}
+		.paint_order {
+			return parser.parse_paint_order_value(mut tokens)
+		}
 		.pointer_events {
 			return parser.parse_pointer_events_value(mut tokens)
 		}
@@ -463,6 +466,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.text_anchor {
 			return parser.parse_text_anchor_value(mut tokens)
+		}
+		.text_decoration_line {
+			return parser.parse_text_decoration_line_value(mut tokens)
+		}
+		.text_decoration_style {
+			return parser.parse_text_decoration_style_value(mut tokens)
 		}
 		.text_justify {
 			return parser.parse_text_justify_value(mut tokens)
@@ -1829,6 +1838,221 @@ fn (mut parser Parser) parse_container_type_value(mut tokens ComponentValueStrea
 
 	tokens = transaction
 	return StyleValue(StyleValueList.create(containment_values, .space, .yes))
+}
+
+struct PaintOrderParseState {
+mut:
+	has_fill    bool
+	has_stroke  bool
+	has_markers bool
+}
+
+fn parse_paint_order_keyword_for_value_logic(mut tokens ComponentValueStream, mut state PaintOrderParseState) ?StyleValue {
+	keyword := parse_single_keyword_from_set_for_value_logic(mut tokens, [
+		'fill',
+		'markers',
+		'stroke',
+	]) or { return none }
+
+	match keyword {
+		.fill {
+			if state.has_fill {
+				return none
+			}
+			state.has_fill = true
+		}
+		.markers {
+			if state.has_markers {
+				return none
+			}
+			state.has_markers = true
+		}
+		.stroke {
+			if state.has_stroke {
+				return none
+			}
+			state.has_stroke = true
+		}
+		else {
+			return none
+		}
+	}
+
+	return StyleValue(KeywordStyleValue.create(keyword))
+}
+
+fn (mut parser Parser) parse_paint_order_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	if normal := parse_property_keyword_value(mut tokens, ['normal']) {
+		return normal
+	}
+
+	mut transaction := tokens.clone()
+	mut state := PaintOrderParseState{}
+
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		return none
+	}
+
+	first_keyword_value := parse_paint_order_keyword_for_value_logic(mut transaction, mut state) or {
+		return none
+	}
+
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		tokens = transaction
+		return first_keyword_value
+	}
+
+	second_keyword_value := parse_paint_order_keyword_for_value_logic(mut transaction, mut state) or {
+		return none
+	}
+
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		// The third keyword is parsed to ensure it is valid, but it doesn't get added to the list. This follows the
+		// shortest-serialization principle, as the value can always be inferred.
+		_ = parse_paint_order_keyword_for_value_logic(mut transaction, mut state) or { return none }
+		transaction.consume_whitespace()
+		if transaction.has_more_tokens() {
+			return none
+		}
+	}
+
+	tokens = transaction
+	mut expected_second_keyword := Keyword.fill
+	if first_keyword_value.to_keyword() == .fill {
+		expected_second_keyword = .stroke
+	}
+
+	if expected_second_keyword == second_keyword_value.to_keyword() {
+		return first_keyword_value
+	}
+
+	return StyleValue(StyleValueList.create([first_keyword_value, second_keyword_value], .space,
+		.yes))
+}
+
+fn (mut parser Parser) parse_text_decoration_line_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	mut transaction := tokens.clone()
+	mut has_underline := false
+	mut has_overline := false
+	mut has_line_through := false
+	mut has_blink := false
+	mut has_spelling_error := false
+	mut has_grammar_error := false
+	mut style_values_count := 0
+	mut includes_spelling_or_grammar_error_value := false
+
+	for {
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			break
+		}
+
+		keyword := parse_single_keyword_from_set_for_value_logic(mut transaction, [
+			'none',
+			'underline',
+			'overline',
+			'line-through',
+			'blink',
+			'spelling-error',
+			'grammar-error',
+		]) or { break }
+
+		match keyword {
+			.none_ {
+				if style_values_count != 0 {
+					return none
+				}
+				tokens = transaction
+				return StyleValue(KeywordStyleValue.create(keyword))
+			}
+			.underline {
+				if has_underline {
+					return none
+				}
+				has_underline = true
+			}
+			.overline {
+				if has_overline {
+					return none
+				}
+				has_overline = true
+			}
+			.line_through {
+				if has_line_through {
+					return none
+				}
+				has_line_through = true
+			}
+			.blink {
+				if has_blink {
+					return none
+				}
+				has_blink = true
+			}
+			.spelling_error {
+				if has_spelling_error {
+					return none
+				}
+				has_spelling_error = true
+				includes_spelling_or_grammar_error_value = true
+			}
+			.grammar_error {
+				if has_grammar_error {
+					return none
+				}
+				has_grammar_error = true
+				includes_spelling_or_grammar_error_value = true
+			}
+			else {
+				return none
+			}
+		}
+
+		style_values_count++
+	}
+
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() || style_values_count == 0 {
+		return none
+	}
+
+	// These can only appear on their own.
+	if style_values_count > 1 && includes_spelling_or_grammar_error_value {
+		return none
+	}
+
+	mut style_values := []StyleValue{}
+	if has_underline {
+		style_values << StyleValue(KeywordStyleValue.create(.underline))
+	}
+	if has_overline {
+		style_values << StyleValue(KeywordStyleValue.create(.overline))
+	}
+	if has_line_through {
+		style_values << StyleValue(KeywordStyleValue.create(.line_through))
+	}
+	if has_blink {
+		style_values << StyleValue(KeywordStyleValue.create(.blink))
+	}
+	if has_spelling_error {
+		style_values << StyleValue(KeywordStyleValue.create(.spelling_error))
+	}
+	if has_grammar_error {
+		style_values << StyleValue(KeywordStyleValue.create(.grammar_error))
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(style_values, .space, .yes))
+}
+
+fn (mut parser Parser) parse_text_decoration_style_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['dashed', 'dotted', 'double', 'solid', 'wavy'])
 }
 
 fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {

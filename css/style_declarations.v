@@ -116,6 +116,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.overflow_x { 'overflow-x' }
 		.overflow_y { 'overflow-y' }
 		.pointer_events { 'pointer-events' }
+		.paint_order { 'paint-order' }
 		.position { 'position' }
 		.position_anchor { 'position-anchor' }
 		.shape_image_threshold { 'shape-image-threshold' }
@@ -132,6 +133,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.table_layout { 'table-layout' }
 		.text_align { 'text-align' }
 		.text_anchor { 'text-anchor' }
+		.text_decoration_line { 'text-decoration-line' }
+		.text_decoration_style { 'text-decoration-style' }
 		.text_justify { 'text-justify' }
 		.text_overflow { 'text-overflow' }
 		.text_rendering { 'text-rendering' }
@@ -202,8 +205,9 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
 		.transform_box, .transform_style, .translate, .unicode_bidi, .user_select, .touch_action,
 		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .contain, .container_type,
-		.visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim,
-		.word_break, .word_spacing, .z_index {
+		.text_decoration_line, .text_decoration_style, .paint_order, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing, .z_index {
 			true
 		}
 	}
@@ -241,21 +245,22 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
 		.transform_box, .transform_style, .translate, .unicode_bidi, .user_select, .touch_action,
 		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .contain, .container_type,
-		.visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim,
-		.word_break, .word_spacing, .z_index {
+		.text_decoration_line, .text_decoration_style, .paint_order, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing, .z_index {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 141
+pub const number_of_longhand_properties = 144
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .container_type
+	return .paint_order
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -401,6 +406,9 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		138 { PropertyID.resize }
 		139 { PropertyID.contain }
 		140 { PropertyID.container_type }
+		141 { PropertyID.text_decoration_line }
+		142 { PropertyID.text_decoration_style }
+		143 { PropertyID.paint_order }
 		else { none }
 	}
 }

@@ -384,6 +384,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'overflow-y' {
 			PropertyID.overflow_y
 		}
+		'paint-order' {
+			PropertyID.paint_order
+		}
 		'pointer-events' {
 			PropertyID.pointer_events
 		}
@@ -437,6 +440,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'text-anchor' {
 			PropertyID.text_anchor
+		}
+		'text-decoration-line' {
+			PropertyID.text_decoration_line
+		}
+		'text-decoration-style' {
+			PropertyID.text_decoration_style
 		}
 		'text-justify' {
 			PropertyID.text_justify
@@ -602,7 +611,8 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
 		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .transform_box,
 		.touch_action, .writing_mode, .scrollbar_width, .resize, .contain, .container_type,
-		.isolation, .list_style_position, .mask_type {
+		.text_decoration_line, .text_decoration_style, .paint_order, .isolation,
+		.list_style_position, .mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
@@ -839,6 +849,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.pointer_events {
 			lowercase_value in ['auto', 'all', 'none']
 		}
+		.paint_order {
+			lowercase_value in ['normal', 'fill', 'stroke', 'markers']
+		}
 		.clear {
 			lowercase_value in ['none', 'left', 'right', 'both', 'inline-start', 'inline-end']
 		}
@@ -889,6 +902,13 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.text_anchor {
 			lowercase_value in ['start', 'middle', 'end']
+		}
+		.text_decoration_line {
+			lowercase_value in ['none', 'underline', 'overline', 'line-through', 'blink',
+				'spelling-error', 'grammar-error']
+		}
+		.text_decoration_style {
+			lowercase_value in ['dashed', 'dotted', 'double', 'solid', 'wavy']
 		}
 		.text_align {
 			lowercase_value in ['center', 'justify', 'start', 'end', 'left', 'right', 'match-parent',
@@ -1052,11 +1072,12 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance,
 		.column_span, .image_rendering, .isolation, .list_style_image, .list_style_position,
 		.mask_image, .mask_type, .mix_blend_mode, .object_fit, .outline_color, .outline_style,
-		.overflow_x, .overflow_y, .pointer_events, .position, .shape_rendering, .stop_color,
-		.stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify,
-		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
-		.transform_box, .transform_style, .touch_action, .writing_mode, .scrollbar_width, .resize,
-		.contain, .container_type, .unicode_bidi, .user_select, .view_timeline_inset, .visibility,
+		.overflow_x, .overflow_y, .paint_order, .pointer_events, .position, .shape_rendering,
+		.stop_color, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor,
+		.text_decoration_line, .text_decoration_style, .text_justify, .text_overflow,
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,
+		.transform_style, .touch_action, .writing_mode, .scrollbar_width, .resize, .contain,
+		.container_type, .unicode_bidi, .user_select, .view_timeline_inset, .visibility,
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break {
 			false
 		}
@@ -2110,6 +2131,8 @@ pub enum Keyword {
 	clip
 	scroll
 	fill
+	stroke
+	markers
 	contain
 	cover
 	scale_down
@@ -2280,6 +2303,13 @@ pub enum Keyword {
 	sticky
 	normal
 	compact
+	underline
+	overline
+	line_through
+	blink
+	spelling_error
+	grammar_error
+	wavy
 	bold
 	bolder
 	lighter
@@ -2453,6 +2483,8 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.clip { 'clip' }
 		.scroll { 'scroll' }
 		.fill { 'fill' }
+		.stroke { 'stroke' }
+		.markers { 'markers' }
 		.contain { 'contain' }
 		.cover { 'cover' }
 		.scale_down { 'scale-down' }
@@ -2623,6 +2655,13 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.sticky { 'sticky' }
 		.normal { 'normal' }
 		.compact { 'compact' }
+		.underline { 'underline' }
+		.overline { 'overline' }
+		.line_through { 'line-through' }
+		.blink { 'blink' }
+		.spelling_error { 'spelling-error' }
+		.grammar_error { 'grammar-error' }
+		.wavy { 'wavy' }
 		.bold { 'bold' }
 		.bolder { 'bolder' }
 		.lighter { 'lighter' }
@@ -2785,6 +2824,8 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'clip' { Keyword.clip }
 		'scroll' { Keyword.scroll }
 		'fill' { Keyword.fill }
+		'stroke' { Keyword.stroke }
+		'markers' { Keyword.markers }
 		'contain' { Keyword.contain }
 		'cover' { Keyword.cover }
 		'scale-down' { Keyword.scale_down }
@@ -2955,6 +2996,13 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'sticky' { Keyword.sticky }
 		'normal' { Keyword.normal }
 		'compact' { Keyword.compact }
+		'underline' { Keyword.underline }
+		'overline' { Keyword.overline }
+		'line-through' { Keyword.line_through }
+		'blink' { Keyword.blink }
+		'spelling-error' { Keyword.spelling_error }
+		'grammar-error' { Keyword.grammar_error }
+		'wavy' { Keyword.wavy }
 		'bold' { Keyword.bold }
 		'bolder' { Keyword.bolder }
 		'lighter' { Keyword.lighter }
