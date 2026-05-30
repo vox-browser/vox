@@ -99,6 +99,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 	}
 	property_id := match lowercase_name {
+		'accent-color' {
+			PropertyID.accent_color
+		}
 		'animation-composition' {
 			PropertyID.animation_composition
 		}
@@ -132,17 +135,35 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'animation-timing-function', '-webkit-animation-timing-function' {
 			PropertyID.animation_timing_function
 		}
+		'background-color' {
+			PropertyID.background_color
+		}
+		'border-bottom-color' {
+			PropertyID.border_bottom_color
+		}
 		'border-bottom-width' {
 			PropertyID.border_bottom_width
+		}
+		'border-left-color' {
+			PropertyID.border_left_color
 		}
 		'border-left-width' {
 			PropertyID.border_left_width
 		}
+		'border-right-color' {
+			PropertyID.border_right_color
+		}
 		'border-right-width' {
 			PropertyID.border_right_width
 		}
+		'border-top-color' {
+			PropertyID.border_top_color
+		}
 		'border-top-width' {
 			PropertyID.border_top_width
+		}
+		'caret-color' {
+			PropertyID.caret_color
 		}
 		'color' {
 			PropertyID.color
@@ -167,6 +188,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'fill-opacity' {
 			PropertyID.fill_opacity
+		}
+		'flood-color' {
+			PropertyID.flood_color
 		}
 		'flood-opacity' {
 			PropertyID.flood_opacity
@@ -201,11 +225,17 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'opacity' {
 			PropertyID.opacity
 		}
+		'outline-color' {
+			PropertyID.outline_color
+		}
 		'outline-width' {
 			PropertyID.outline_width
 		}
 		'shape-image-threshold' {
 			PropertyID.shape_image_threshold
+		}
+		'stop-color' {
+			PropertyID.stop_color
 		}
 		'stop-opacity' {
 			PropertyID.stop_opacity
@@ -239,6 +269,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'translate' {
 			PropertyID.translate
+		}
+		'-webkit-text-fill-color' {
+			PropertyID.webkit_text_fill_color
 		}
 		'word-spacing' {
 			PropertyID.word_spacing
@@ -287,7 +320,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.animation_timing_function {
 			value_type == .easing_function
 		}
-		.color {
+		.accent_color, .background_color, .border_bottom_color, .border_left_color,
+		.border_right_color, .border_top_color, .caret_color, .color, .flood_color, .outline_color,
+		.stop_color, .webkit_text_fill_color {
 			value_type == .color
 		}
 		.color_scheme {
@@ -387,7 +422,18 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.animation_timing_function {
 			lowercase_value in ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease']
 		}
-		.color {
+		.accent_color, .caret_color {
+			if lowercase_value == 'auto' {
+				true
+			} else if keyword := keyword_from_string(lowercase_value) {
+				KeywordStyleValue.is_color(keyword)
+			} else {
+				false
+			}
+		}
+		.background_color, .border_bottom_color, .border_left_color, .border_right_color,
+		.border_top_color, .color, .flood_color, .outline_color, .stop_color,
+		.webkit_text_fill_color {
 			if keyword := keyword_from_string(lowercase_value) {
 				KeywordStyleValue.is_color(keyword)
 			} else {
@@ -467,7 +513,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.animation_name {
 			lowercase_value !in ['default', 'none']
 		}
-		.color {
+		.accent_color, .background_color, .border_bottom_color, .border_left_color,
+		.border_right_color, .border_top_color, .caret_color, .color, .flood_color, .outline_color,
+		.stop_color, .webkit_text_fill_color {
 			false
 		}
 		.color_scheme {

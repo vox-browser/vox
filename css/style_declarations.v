@@ -21,6 +21,7 @@ pub fn PropertyNameAndID.from_id(property_id PropertyID) PropertyNameAndID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.accent_color { 'accent-color' }
 		.animation_composition { 'animation-composition' }
 		.animation_delay { 'animation-delay' }
 		.animation_direction { 'animation-direction' }
@@ -31,10 +32,16 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.animation_play_state { 'animation-play-state' }
 		.animation_timeline { 'animation-timeline' }
 		.animation_timing_function { 'animation-timing-function' }
+		.background_color { 'background-color' }
+		.border_bottom_color { 'border-bottom-color' }
 		.border_bottom_width { 'border-bottom-width' }
+		.border_left_color { 'border-left-color' }
 		.border_left_width { 'border-left-width' }
+		.border_right_color { 'border-right-color' }
 		.border_right_width { 'border-right-width' }
+		.border_top_color { 'border-top-color' }
 		.border_top_width { 'border-top-width' }
+		.caret_color { 'caret-color' }
 		.color { 'color' }
 		.color_scheme { 'color-scheme' }
 		.content_visibility { 'content-visibility' }
@@ -43,6 +50,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.corner_top_left_shape { 'corner-top-left-shape' }
 		.corner_top_right_shape { 'corner-top-right-shape' }
 		.fill_opacity { 'fill-opacity' }
+		.flood_color { 'flood-color' }
 		.flood_opacity { 'flood-opacity' }
 		.font_feature_settings { 'font-feature-settings' }
 		.font_style { 'font-style' }
@@ -54,8 +62,10 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.math_depth { 'math-depth' }
 		.math_style { 'math-style' }
 		.opacity { 'opacity' }
+		.outline_color { 'outline-color' }
 		.outline_width { 'outline-width' }
 		.shape_image_threshold { 'shape-image-threshold' }
+		.stop_color { 'stop-color' }
 		.stop_opacity { 'stop-opacity' }
 		.stroke_opacity { 'stroke-opacity' }
 		.rotate { 'rotate' }
@@ -67,6 +77,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.transition_property { 'transition-property' }
 		.transition_timing_function { 'transition-timing-function' }
 		.translate { 'translate' }
+		.webkit_text_fill_color { '-webkit-text-fill-color' }
 		.word_spacing { 'word-spacing' }
 	}
 }
@@ -85,12 +96,15 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.transition_property, .transition_timing_function {
 			false
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
-		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_opacity,
-		.font_style, .font_weight, .font_width, .letter_spacing, .line_height, .math_depth,
-		.math_style, .opacity, .outline_width, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity, .rotate, .scale, .transform, .translate, .word_spacing {
+		.accent_color, .background_color, .border_bottom_color, .border_bottom_width,
+		.border_left_color, .border_left_width, .border_right_color, .border_right_width,
+		.border_top_color, .border_top_width, .caret_color, .color, .color_scheme,
+		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
+		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .line_height,
+		.math_depth, .math_style, .opacity, .outline_color, .outline_width, .shape_image_threshold,
+		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
+		.webkit_text_fill_color, .word_spacing {
 			true
 		}
 	}
@@ -105,21 +119,24 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.transition_property, .transition_timing_function {
 			true
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
-		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_opacity,
-		.font_style, .font_weight, .font_width, .letter_spacing, .line_height, .math_depth,
-		.math_style, .opacity, .outline_width, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity, .rotate, .scale, .transform, .translate, .word_spacing {
+		.accent_color, .background_color, .border_bottom_color, .border_bottom_width,
+		.border_left_color, .border_left_width, .border_right_color, .border_right_width,
+		.border_top_color, .border_top_width, .caret_color, .color, .color_scheme,
+		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
+		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .line_height,
+		.math_depth, .math_style, .opacity, .outline_color, .outline_width, .shape_image_threshold,
+		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
+		.webkit_text_fill_color, .word_spacing {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 47
+pub const number_of_longhand_properties = 58
 
 pub fn first_longhand_property_id() PropertyID {
-	return .animation_composition
+	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
@@ -128,53 +145,64 @@ pub fn last_longhand_property_id() PropertyID {
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
 	return match index {
-		0 { PropertyID.animation_composition }
-		1 { PropertyID.animation_delay }
-		2 { PropertyID.animation_direction }
-		3 { PropertyID.animation_duration }
-		4 { PropertyID.animation_fill_mode }
-		5 { PropertyID.animation_iteration_count }
-		6 { PropertyID.animation_name }
-		7 { PropertyID.animation_play_state }
-		8 { PropertyID.animation_timeline }
-		9 { PropertyID.animation_timing_function }
-		10 { PropertyID.border_bottom_width }
-		11 { PropertyID.border_left_width }
-		12 { PropertyID.border_right_width }
-		13 { PropertyID.border_top_width }
-		14 { PropertyID.color }
-		15 { PropertyID.color_scheme }
-		16 { PropertyID.content_visibility }
-		17 { PropertyID.corner_bottom_left_shape }
-		18 { PropertyID.corner_bottom_right_shape }
-		19 { PropertyID.corner_top_left_shape }
-		20 { PropertyID.corner_top_right_shape }
-		21 { PropertyID.fill_opacity }
-		22 { PropertyID.flood_opacity }
-		23 { PropertyID.font_feature_settings }
-		24 { PropertyID.font_style }
-		25 { PropertyID.font_variation_settings }
-		26 { PropertyID.font_weight }
-		27 { PropertyID.font_width }
-		28 { PropertyID.letter_spacing }
-		29 { PropertyID.line_height }
-		30 { PropertyID.math_depth }
-		31 { PropertyID.math_style }
-		32 { PropertyID.opacity }
-		33 { PropertyID.outline_width }
-		34 { PropertyID.shape_image_threshold }
-		35 { PropertyID.stop_opacity }
-		36 { PropertyID.stroke_opacity }
-		37 { PropertyID.rotate }
-		38 { PropertyID.scale }
-		39 { PropertyID.transform }
-		40 { PropertyID.transition_behavior }
-		41 { PropertyID.transition_delay }
-		42 { PropertyID.transition_duration }
-		43 { PropertyID.transition_property }
-		44 { PropertyID.transition_timing_function }
-		45 { PropertyID.translate }
-		46 { PropertyID.word_spacing }
+		0 { PropertyID.accent_color }
+		1 { PropertyID.animation_composition }
+		2 { PropertyID.animation_delay }
+		3 { PropertyID.animation_direction }
+		4 { PropertyID.animation_duration }
+		5 { PropertyID.animation_fill_mode }
+		6 { PropertyID.animation_iteration_count }
+		7 { PropertyID.animation_name }
+		8 { PropertyID.animation_play_state }
+		9 { PropertyID.animation_timeline }
+		10 { PropertyID.animation_timing_function }
+		11 { PropertyID.background_color }
+		12 { PropertyID.border_bottom_color }
+		13 { PropertyID.border_bottom_width }
+		14 { PropertyID.border_left_color }
+		15 { PropertyID.border_left_width }
+		16 { PropertyID.border_right_color }
+		17 { PropertyID.border_right_width }
+		18 { PropertyID.border_top_color }
+		19 { PropertyID.border_top_width }
+		20 { PropertyID.caret_color }
+		21 { PropertyID.color }
+		22 { PropertyID.color_scheme }
+		23 { PropertyID.content_visibility }
+		24 { PropertyID.corner_bottom_left_shape }
+		25 { PropertyID.corner_bottom_right_shape }
+		26 { PropertyID.corner_top_left_shape }
+		27 { PropertyID.corner_top_right_shape }
+		28 { PropertyID.fill_opacity }
+		29 { PropertyID.flood_color }
+		30 { PropertyID.flood_opacity }
+		31 { PropertyID.font_feature_settings }
+		32 { PropertyID.font_style }
+		33 { PropertyID.font_variation_settings }
+		34 { PropertyID.font_weight }
+		35 { PropertyID.font_width }
+		36 { PropertyID.letter_spacing }
+		37 { PropertyID.line_height }
+		38 { PropertyID.math_depth }
+		39 { PropertyID.math_style }
+		40 { PropertyID.opacity }
+		41 { PropertyID.outline_color }
+		42 { PropertyID.outline_width }
+		43 { PropertyID.shape_image_threshold }
+		44 { PropertyID.stop_color }
+		45 { PropertyID.stop_opacity }
+		46 { PropertyID.stroke_opacity }
+		47 { PropertyID.rotate }
+		48 { PropertyID.scale }
+		49 { PropertyID.transform }
+		50 { PropertyID.transition_behavior }
+		51 { PropertyID.transition_delay }
+		52 { PropertyID.transition_duration }
+		53 { PropertyID.transition_property }
+		54 { PropertyID.transition_timing_function }
+		55 { PropertyID.translate }
+		56 { PropertyID.webkit_text_fill_color }
+		57 { PropertyID.word_spacing }
 		else { none }
 	}
 }

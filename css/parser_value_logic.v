@@ -210,6 +210,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// represented with the currently translated PropertyID enum. The generated
 	// property grammar tables are not available in this V port yet.
 	match property_id {
+		.accent_color, .caret_color {
+			return parser.parse_auto_or_color_value(mut tokens)
+		}
 		.animation_composition {
 			return parser.parse_animation_composition_value(mut tokens)
 		}
@@ -238,7 +241,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.outline_width {
 			return parser.parse_border_or_outline_width_value(mut tokens)
 		}
-		.color {
+		.background_color, .border_bottom_color, .border_left_color, .border_right_color,
+		.border_top_color, .color, .flood_color, .outline_color, .stop_color,
+		.webkit_text_fill_color {
 			return parser.parse_color_value(mut tokens)
 		}
 		.color_scheme {
@@ -1411,6 +1416,18 @@ fn (mut parser Parser) parse_keyword_value(mut tokens ComponentValueStream) ?Sty
 	}
 	keyword := keyword_from_string(component_value.token().ident()) or { return none }
 	return StyleValue(KeywordStyleValue.create(keyword))
+}
+
+fn (mut parser Parser) parse_auto_or_color_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if keyword := parser.parse_keyword_value(mut transaction) {
+		if keyword.to_keyword() == .auto {
+			tokens = transaction
+			return keyword
+		}
+	}
+
+	return parser.parse_color_value(mut tokens)
 }
 
 fn (mut parser Parser) parse_content_visibility_value(mut tokens ComponentValueStream) ?StyleValue {

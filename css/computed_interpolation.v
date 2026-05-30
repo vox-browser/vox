@@ -807,6 +807,9 @@ fn computed_interpolation_property_computation_order() ComputedInterpolationProp
 fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
 	initial_text := match property_id {
+		.accent_color {
+			'auto'
+		}
 		.animation_composition {
 			'replace'
 		}
@@ -837,8 +840,17 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.animation_timing_function {
 			'ease'
 		}
+		.background_color {
+			'transparent'
+		}
+		.border_bottom_color, .border_left_color, .border_right_color, .border_top_color {
+			'currentcolor'
+		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width {
 			'medium'
+		}
+		.caret_color {
+			'auto'
 		}
 		.color {
 			'canvastext'
@@ -855,6 +867,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		}
 		.fill_opacity, .flood_opacity {
 			'1'
+		}
+		.flood_color {
+			'black'
 		}
 		.font_feature_settings {
 			'normal'
@@ -886,11 +901,17 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.opacity {
 			'1'
 		}
+		.outline_color {
+			'currentcolor'
+		}
 		.outline_width {
 			'medium'
 		}
 		.shape_image_threshold {
 			'0'
+		}
+		.stop_color {
+			'black'
 		}
 		.stop_opacity, .stroke_opacity {
 			'1'
@@ -910,6 +931,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.transition_timing_function {
 			'ease'
 		}
+		.webkit_text_fill_color {
+			'currentcolor'
+		}
 		.word_spacing {
 			'normal'
 		}
@@ -923,8 +947,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.color, .color_scheme, .fill_opacity, .font_style, .font_weight, .letter_spacing,
-		.math_depth, .math_style, .stroke_opacity, .word_spacing {
+		.accent_color, .caret_color, .color, .color_scheme, .fill_opacity, .font_style,
+		.font_weight, .letter_spacing, .math_depth, .math_style, .stroke_opacity,
+		.webkit_text_fill_color, .word_spacing {
 			true
 		}
 		else {
@@ -936,15 +961,17 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 fn computed_interpolation_property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.animation_delay, .animation_duration, .animation_iteration_count, .animation_name,
-		.animation_timeline, .animation_timing_function, .border_bottom_width, .border_left_width,
-		.border_right_width, .border_top_width, .color, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.accent_color, .animation_delay, .animation_duration, .animation_iteration_count,
+		.animation_name, .animation_timeline, .animation_timing_function, .background_color,
+		.border_bottom_color, .border_bottom_width, .border_left_color, .border_left_width,
+		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
+		.caret_color, .color, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
 		.flood_opacity, .font_feature_settings, .font_style, .font_variation_settings,
 		.font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .opacity,
-		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.transform, .transition_delay, .transition_duration, .transition_timing_function,
-		.translate, .word_spacing {
+		.outline_color, .outline_width, .shape_image_threshold, .stop_color, .stop_opacity,
+		.stroke_opacity, .rotate, .scale, .transform, .transition_delay, .transition_duration,
+		.transition_timing_function, .translate, .webkit_text_fill_color, .word_spacing {
 			true
 		}
 		.animation_composition, .animation_direction, .animation_fill_mode, .animation_play_state,
@@ -963,19 +990,21 @@ fn computed_interpolation_property_requires_computation_with_inherited_value(pro
 fn computed_interpolation_property_requires_computation_with_initial_value(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .font_style, .font_weight, .font_width, .letter_spacing,
-		.math_depth, .outline_width, .word_spacing {
+		.background_color, .border_bottom_width, .border_left_width, .border_right_width,
+		.border_top_width, .color, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .flood_color, .font_style, .font_weight,
+		.font_width, .letter_spacing, .math_depth, .outline_width, .stop_color, .word_spacing {
 			true
 		}
-		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
-		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
-		.animation_timeline, .animation_timing_function, .color_scheme, .content_visibility,
-		.fill_opacity, .flood_opacity, .font_feature_settings, .font_variation_settings,
-		.line_height, .math_style, .opacity, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity, .rotate, .scale, .transform, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function, .translate {
+		.accent_color, .animation_composition, .animation_delay, .animation_direction,
+		.animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name,
+		.animation_play_state, .animation_timeline, .animation_timing_function,
+		.border_bottom_color, .border_left_color, .border_right_color, .border_top_color,
+		.caret_color, .color_scheme, .content_visibility, .fill_opacity, .flood_opacity,
+		.font_feature_settings, .font_variation_settings, .line_height, .math_style, .opacity,
+		.outline_color, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale,
+		.transform, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .translate, .webkit_text_fill_color {
 			false
 		}
 	}
@@ -1497,9 +1526,14 @@ pub fn (c &ComputedProperties) float_() Float {
 }
 
 pub fn (c &ComputedProperties) caret_color(layout_node &dom.LayoutNode) ComputedColor {
-	_ = c
-	_ = layout_node
-	return ComputedColor.black()
+	color_resolution_context := color_resolution_context_for_layout_node(layout_node)
+	value := c.property(.caret_color, .yes) or { return ComputedColor.black() }
+	keyword := computed_interpolation_style_value_keyword(value) or { Keyword.invalid }
+	if keyword == .auto {
+		return c.color_or_fallback(.color, color_resolution_context, ComputedColor.black())
+	}
+
+	return c.color_or_fallback(.caret_color, color_resolution_context, ComputedColor.black())
 }
 
 pub fn (c &ComputedProperties) clear() Clear {
@@ -1661,9 +1695,14 @@ pub fn (c &ComputedProperties) order() int {
 }
 
 pub fn (c &ComputedProperties) accent_color(layout_node &dom.LayoutNode) ?ComputedColor {
-	_ = c
-	_ = layout_node
-	return none
+	color_resolution_context := color_resolution_context_for_layout_node(layout_node)
+	value := c.property(.accent_color, .yes) or { return none }
+	parsed_value := parse_css_value_logic(.accent_color, value.css_text) or { return none }
+	if !parsed_value.has_color() {
+		return none
+	}
+	color := parsed_value.to_color(color_resolution_context) or { return none }
+	return ComputedColor.rgba(color.red(), color.green(), color.blue(), color.alpha())
 }
 
 pub fn (c &ComputedProperties) align_content() AlignContent {
@@ -2693,12 +2732,14 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.transition_delay, .transition_duration, .transition_property, .transition_timing_function {
 			.none_
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_style, .font_weight,
-		.font_width, .letter_spacing, .line_height, .opacity, .outline_width,
-		.shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform,
-		.translate, .word_spacing {
+		.accent_color, .background_color, .border_bottom_color, .border_bottom_width,
+		.border_left_color, .border_left_width, .border_right_color, .border_right_width,
+		.border_top_color, .border_top_width, .caret_color, .color, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
+		.line_height, .opacity, .outline_color, .outline_width, .shape_image_threshold,
+		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
+		.webkit_text_fill_color, .word_spacing {
 			.by_computed_value
 		}
 		.content_visibility {
@@ -3397,16 +3438,19 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		// generated property metadata check. For the currently translated
 		// PropertyID set, the missing generated metadata has no remaining
 		// layout-affecting properties.
-		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
-		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
-		.animation_timeline, .animation_timing_function, .border_bottom_width, .border_left_width,
-		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
-		.font_style, .font_variation_settings, .font_weight, .font_width, .line_height,
-		.math_depth, .math_style, .opacity, .outline_width, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity, .rotate, .scale, .transform, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function, .translate {
+		.accent_color, .animation_composition, .animation_delay, .animation_direction,
+		.animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name,
+		.animation_play_state, .animation_timeline, .animation_timing_function, .background_color,
+		.border_bottom_color, .border_bottom_width, .border_left_color, .border_left_width,
+		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
+		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.flood_color, .flood_opacity, .font_feature_settings, .font_style,
+		.font_variation_settings, .font_weight, .font_width, .line_height, .math_depth,
+		.math_style, .opacity, .outline_color, .outline_width, .shape_image_threshold, .stop_color,
+		.stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
+		.translate, .webkit_text_fill_color {
 			false
 		}
 		.letter_spacing, .word_spacing {
@@ -3423,16 +3467,19 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.opacity, .rotate, .scale, .transform, .translate {
 			true
 		}
-		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
-		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
-		.animation_timeline, .animation_timing_function, .border_bottom_width, .border_left_width,
-		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
-		.font_style, .font_variation_settings, .font_weight, .font_width, .letter_spacing,
-		.line_height, .math_depth, .math_style, .outline_width, .shape_image_threshold,
-		.stop_opacity, .stroke_opacity, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function, .word_spacing {
+		.accent_color, .animation_composition, .animation_delay, .animation_direction,
+		.animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name,
+		.animation_play_state, .animation_timeline, .animation_timing_function, .background_color,
+		.border_bottom_color, .border_bottom_width, .border_left_color, .border_left_width,
+		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
+		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.flood_color, .flood_opacity, .font_feature_settings, .font_style,
+		.font_variation_settings, .font_weight, .font_width, .letter_spacing, .line_height,
+		.math_depth, .math_style, .outline_color, .outline_width, .shape_image_threshold,
+		.stop_color, .stop_opacity, .stroke_opacity, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function,
+		.webkit_text_fill_color, .word_spacing {
 			false
 		}
 	}
@@ -3456,16 +3503,19 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.opacity, .rotate, .scale, .transform, .translate {
 			true
 		}
-		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
-		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
-		.animation_timeline, .animation_timing_function, .border_bottom_width, .border_left_width,
-		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
-		.font_style, .font_variation_settings, .font_weight, .font_width, .letter_spacing,
-		.line_height, .math_depth, .math_style, .outline_width, .shape_image_threshold,
-		.stop_opacity, .stroke_opacity, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function, .word_spacing {
+		.accent_color, .animation_composition, .animation_delay, .animation_direction,
+		.animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name,
+		.animation_play_state, .animation_timeline, .animation_timing_function, .background_color,
+		.border_bottom_color, .border_bottom_width, .border_left_color, .border_left_width,
+		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
+		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.flood_color, .flood_opacity, .font_feature_settings, .font_style,
+		.font_variation_settings, .font_weight, .font_width, .letter_spacing, .line_height,
+		.math_depth, .math_style, .outline_color, .outline_width, .shape_image_threshold,
+		.stop_color, .stop_opacity, .stroke_opacity, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function,
+		.webkit_text_fill_color, .word_spacing {
 			false
 		}
 	}

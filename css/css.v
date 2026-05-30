@@ -34,6 +34,7 @@ pub:
 }
 
 pub enum PropertyID {
+	accent_color
 	animation_composition
 	animation_delay
 	animation_direction
@@ -44,10 +45,16 @@ pub enum PropertyID {
 	animation_play_state
 	animation_timeline
 	animation_timing_function
+	background_color
+	border_bottom_color
 	border_bottom_width
+	border_left_color
 	border_left_width
+	border_right_color
 	border_right_width
+	border_top_color
 	border_top_width
+	caret_color
 	color
 	color_scheme
 	content_visibility
@@ -56,6 +63,7 @@ pub enum PropertyID {
 	corner_top_left_shape
 	corner_top_right_shape
 	fill_opacity
+	flood_color
 	flood_opacity
 	font_feature_settings
 	font_style
@@ -67,8 +75,10 @@ pub enum PropertyID {
 	math_depth
 	math_style
 	opacity
+	outline_color
 	outline_width
 	shape_image_threshold
+	stop_color
 	stop_opacity
 	stroke_opacity
 	rotate
@@ -80,6 +90,7 @@ pub enum PropertyID {
 	transition_property
 	transition_timing_function
 	translate
+	webkit_text_fill_color
 	word_spacing
 }
 
