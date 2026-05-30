@@ -215,7 +215,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 			parser.parse_color_scheme_value(mut tokens)
 		}
 		.content_visibility {
-			parser.parse_keyword_value(mut tokens)
+			parser.parse_content_visibility_value(mut tokens)
 		}
 		.animation_timeline {
 			parser.parse_builtin_value(mut tokens)
@@ -269,6 +269,18 @@ fn (mut parser Parser) parse_keyword_value(mut tokens ComponentValueStream) ?Sty
 	}
 	keyword := keyword_from_string(component_value.token().ident()) or { return none }
 	return StyleValue(KeywordStyleValue.create(keyword))
+}
+
+fn (mut parser Parser) parse_content_visibility_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	value := parser.parse_keyword_value(mut transaction) or { return none }
+	if value is KeywordStyleValue {
+		if value.keyword() in [.visible, .auto, .hidden] {
+			tokens = transaction
+			return value
+		}
+	}
+	return none
 }
 
 fn (mut parser Parser) parse_integer_value(mut tokens ComponentValueStream) ?StyleValue {
