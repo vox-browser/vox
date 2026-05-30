@@ -323,8 +323,17 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_image_source, .list_style_image {
 			return parser.parse_image_or_none_value(mut tokens)
 		}
+		.caption_side {
+			return parser.parse_caption_side_value(mut tokens)
+		}
 		.clear {
 			return parser.parse_clear_value(mut tokens)
+		}
+		.direction {
+			return parser.parse_direction_value(mut tokens)
+		}
+		.empty_cells {
+			return parser.parse_empty_cells_value(mut tokens)
 		}
 		.float_ {
 			return parser.parse_float_value(mut tokens)
@@ -350,6 +359,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.scroll_timeline_name {
 			return parser.parse_timeline_name_value(mut tokens)
 		}
+		.table_layout {
+			return parser.parse_table_layout_value(mut tokens)
+		}
 		.transform {
 			return parser.parse_transform_value(mut tokens)
 		}
@@ -371,11 +383,20 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.translate {
 			return parser.parse_translate_value(mut tokens)
 		}
+		.unicode_bidi {
+			return parser.parse_unicode_bidi_value(mut tokens)
+		}
 		.view_timeline_inset {
 			return parser.parse_view_timeline_inset_list_value(mut tokens)
 		}
 		.view_timeline_name {
 			return parser.parse_timeline_name_value(mut tokens)
+		}
+		.visibility {
+			return parser.parse_visibility_value(mut tokens)
+		}
+		.z_index {
+			return parser.parse_z_index_value(mut tokens)
 		}
 	}
 
@@ -1132,6 +1153,47 @@ fn (mut parser Parser) parse_position_value(mut tokens ComponentValueStream) ?St
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['absolute', 'fixed', 'relative', 'static',
 		'sticky'])
+}
+
+fn (mut parser Parser) parse_caption_side_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['top', 'bottom'])
+}
+
+fn (mut parser Parser) parse_direction_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['ltr', 'rtl'])
+}
+
+fn (mut parser Parser) parse_empty_cells_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['show', 'hide'])
+}
+
+fn (mut parser Parser) parse_table_layout_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'fixed'])
+}
+
+fn (mut parser Parser) parse_unicode_bidi_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['bidi-override', 'embed', 'isolate',
+		'isolate-override', 'normal', 'plaintext'])
+}
+
+fn (mut parser Parser) parse_visibility_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['collapse', 'hidden', 'visible'])
+}
+
+fn (mut parser Parser) parse_z_index_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto']) {
+		tokens = transaction
+		return value
+	}
+
+	return parser.parse_integer_value(mut tokens)
 }
 
 fn (mut parser Parser) parse_mix_blend_mode_value(mut tokens ComponentValueStream) ?StyleValue {

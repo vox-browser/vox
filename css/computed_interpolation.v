@@ -878,6 +878,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.border_image_source {
 			'none'
 		}
+		.caption_side {
+			'top'
+		}
 		.caret_color {
 			'auto'
 		}
@@ -892,6 +895,12 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		}
 		.content_visibility {
 			'visible'
+		}
+		.direction {
+			'ltr'
+		}
+		.empty_cells {
+			'show'
 		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape {
@@ -990,6 +999,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.scroll_timeline_name {
 			'none'
 		}
+		.table_layout {
+			'auto'
+		}
 		.transition_behavior {
 			'normal'
 		}
@@ -1002,6 +1014,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.transition_timing_function {
 			'ease'
 		}
+		.unicode_bidi {
+			'normal'
+		}
 		.webkit_text_fill_color {
 			'currentcolor'
 		}
@@ -1011,8 +1026,14 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.view_timeline_name {
 			'none'
 		}
+		.visibility {
+			'visible'
+		}
 		.word_spacing {
 			'normal'
+		}
+		.z_index {
+			'auto'
 		}
 	}
 
@@ -1024,9 +1045,10 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.accent_color, .caret_color, .color, .color_scheme, .fill_opacity, .font_style,
-		.font_weight, .letter_spacing, .list_style_image, .math_depth, .math_style, .orphans,
-		.pointer_events, .stroke_opacity, .webkit_text_fill_color, .word_spacing {
+		.accent_color, .caption_side, .caret_color, .color, .color_scheme, .direction,
+		.empty_cells, .fill_opacity, .font_style, .font_weight, .letter_spacing, .list_style_image,
+		.math_depth, .math_style, .orphans, .pointer_events, .stroke_opacity, .visibility,
+		.webkit_text_fill_color, .word_spacing {
 			true
 		}
 		else {
@@ -1050,14 +1072,15 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.order, .orphans, .outline_color, .outline_offset, .outline_width, .shape_image_threshold,
 		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform,
 		.transition_delay, .transition_duration, .transition_timing_function, .translate,
-		.view_timeline_inset, .webkit_text_fill_color, .word_spacing {
+		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index {
 			true
 		}
 		.anchor_name, .anchor_scope, .animation_composition, .animation_direction,
-		.animation_fill_mode, .animation_play_state, .clear, .color_scheme, .content_visibility,
-		.float_, .math_style, .mix_blend_mode, .object_fit, .outline_style, .overflow_x,
-		.overflow_y, .pointer_events, .position, .position_anchor, .scroll_timeline_name,
-		.transition_behavior, .transition_property, .view_timeline_name {
+		.animation_fill_mode, .animation_play_state, .caption_side, .clear, .color_scheme,
+		.content_visibility, .direction, .empty_cells, .float_, .math_style, .mix_blend_mode,
+		.object_fit, .outline_style, .overflow_x, .overflow_y, .pointer_events, .position,
+		.position_anchor, .scroll_timeline_name, .table_layout, .transition_behavior,
+		.transition_property, .unicode_bidi, .view_timeline_name, .visibility {
 			false
 		}
 	}
@@ -1082,15 +1105,16 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .aspect_ratio, .background_image, .border_bottom_color,
 		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
-		.caret_color, .clear, .color_scheme, .content_visibility, .fill_opacity, .float_,
-		.flood_opacity, .font_feature_settings, .font_variation_settings, .line_height,
-		.list_style_image, .mask_image, .math_style, .mix_blend_mode, .object_fit, .opacity,
-		.order, .orphans, .outline_color, .outline_offset, .outline_style, .overflow_x,
-		.overflow_y, .pointer_events, .position, .position_anchor, .scroll_timeline_name,
-		.shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .translate, .view_timeline_inset, .view_timeline_name,
-		.webkit_text_fill_color {
+		.caption_side, .caret_color, .clear, .color_scheme, .content_visibility, .direction,
+		.empty_cells, .fill_opacity, .float_, .flood_opacity, .font_feature_settings,
+		.font_variation_settings, .line_height, .list_style_image, .mask_image, .math_style,
+		.mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color, .outline_offset,
+		.outline_style, .overflow_x, .overflow_y, .pointer_events, .position, .position_anchor,
+		.scroll_timeline_name, .table_layout, .shape_image_threshold, .stop_opacity,
+		.stroke_opacity, .rotate, .scale, .transform, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .translate,
+		.unicode_bidi, .view_timeline_inset, .view_timeline_name, .visibility,
+		.webkit_text_fill_color, .z_index {
 			false
 		}
 	}
@@ -1593,8 +1617,13 @@ pub fn (c &ComputedProperties) border_spacing_vertical() Length {
 }
 
 pub fn (c &ComputedProperties) caption_side() CaptionSide {
-	_ = c
-	return .top
+	value := c.property(.caption_side, .yes) or { return .top }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .top }
+	return match keyword {
+		.top { CaptionSide.top }
+		.bottom { CaptionSide.bottom }
+		else { CaptionSide.top }
+	}
 }
 
 pub fn (c &ComputedProperties) clip() Clip {
@@ -1878,8 +1907,14 @@ pub fn (c &ComputedProperties) opacity() f32 {
 }
 
 pub fn (c &ComputedProperties) visibility() Visibility {
-	_ = c
-	return .visible
+	value := c.property(.visibility, .yes) or { return .visible }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .visible }
+	return match keyword {
+		.visible { Visibility.visible }
+		.hidden { Visibility.hidden }
+		.collapse { Visibility.collapse }
+		else { Visibility.visible }
+	}
 }
 
 pub fn (c &ComputedProperties) image_rendering() ImageRendering {
@@ -2069,8 +2104,13 @@ pub fn (c &ComputedProperties) border_collapse() BorderCollapse {
 }
 
 pub fn (c &ComputedProperties) empty_cells() EmptyCells {
-	_ = c
-	return .show
+	value := c.property(.empty_cells, .yes) or { return .show }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .show }
+	return match keyword {
+		.show { EmptyCells.show }
+		.hide { EmptyCells.hide }
+		else { EmptyCells.show }
+	}
 }
 
 pub fn (c &ComputedProperties) grid_template_areas() GridTemplateAreas {
@@ -2097,18 +2137,37 @@ pub fn (c &ComputedProperties) object_position() Position {
 }
 
 pub fn (c &ComputedProperties) table_layout() TableLayout {
-	_ = c
-	return .auto_
+	value := c.property(.table_layout, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { TableLayout.auto_ }
+		.fixed { TableLayout.fixed }
+		else { TableLayout.auto_ }
+	}
 }
 
 pub fn (c &ComputedProperties) direction() Direction {
-	_ = c
-	return .ltr
+	value := c.property(.direction, .yes) or { return .ltr }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .ltr }
+	return match keyword {
+		.ltr { Direction.ltr }
+		.rtl { Direction.rtl }
+		else { Direction.ltr }
+	}
 }
 
 pub fn (c &ComputedProperties) unicode_bidi() UnicodeBidi {
-	_ = c
-	return .normal
+	value := c.property(.unicode_bidi, .yes) or { return .normal }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .normal }
+	return match keyword {
+		.normal { UnicodeBidi.normal }
+		.embed { UnicodeBidi.embed }
+		.isolate { UnicodeBidi.isolate }
+		.bidi_override { UnicodeBidi.bidi_override }
+		.isolate_override { UnicodeBidi.isolate_override }
+		.plaintext { UnicodeBidi.plaintext }
+		else { UnicodeBidi.normal }
+	}
 }
 
 pub fn (c &ComputedProperties) writing_mode() WritingMode {
@@ -2769,7 +2828,24 @@ pub fn (c &ComputedProperties) position() Positioning {
 }
 
 pub fn (c &ComputedProperties) z_index() ?int {
-	_ = c
+	value := c.property(.z_index, .yes) or { return none }
+	if computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .auto {
+		return none
+	}
+
+	parsed_value := parse_css_value_logic(.z_index, value.css_text) or { return none }
+	if parsed_value.is_integer() || parsed_value.is_calculated() {
+		// Clamp z-index to the range of a signed 32-bit integer for consistency with other engines.
+		number := int_from_style_value(parsed_value)
+		if number >= i64(2147483647) {
+			return 2147483647
+		}
+		if number <= i64(-2147483647 - 1) {
+			return -2147483647 - 1
+		}
+		return int(number)
+	}
+
 	return none
 }
 
@@ -2926,10 +3002,10 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
 		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
 		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
-		.animation_timeline, .animation_timing_function, .font_feature_settings,
+		.animation_timeline, .animation_timing_function, .direction, .font_feature_settings,
 		.font_variation_settings, .math_depth, .math_style, .scroll_timeline_name,
 		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .view_timeline_inset, .view_timeline_name {
+		.transition_timing_function, .unicode_bidi, .view_timeline_inset, .view_timeline_name {
 			.none_
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
@@ -2940,15 +3016,16 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.font_weight, .font_width, .letter_spacing, .line_height, .opacity, .order, .orphans,
 		.outline_color, .outline_offset, .outline_style, .outline_width, .shape_image_threshold,
 		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
-		.webkit_text_fill_color, .word_spacing {
+		.webkit_text_fill_color, .word_spacing, .z_index {
 			.by_computed_value
 		}
-		.content_visibility {
+		.content_visibility, .visibility {
 			.custom
 		}
-		.anchor_name, .anchor_scope, .background_image, .border_image_source, .clear,
-		.color_scheme, .float_, .list_style_image, .mask_image, .mix_blend_mode, .object_fit,
-		.overflow_x, .overflow_y, .pointer_events, .position, .position_anchor {
+		.anchor_name, .anchor_scope, .background_image, .border_image_source, .caption_side,
+		.clear, .color_scheme, .empty_cells, .float_, .list_style_image, .mask_image,
+		.mix_blend_mode, .object_fit, .overflow_x, .overflow_y, .pointer_events, .position,
+		.position_anchor, .table_layout {
 			.discrete
 		}
 	}
@@ -2971,6 +3048,33 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 				allow_discrete)
 		}
 		.custom {
+			if property_id == .visibility {
+				// https://drafts.csswg.org/web-animations-1/#animating-visibility
+				// For the visibility property, visible is interpolated as a discrete step where values of p between 0 and 1 map to visible and other values of p map to the closer endpoint.
+				// If neither value is visible, then discrete animation is used.
+				if from.css_text == to.css_text {
+					return unsafe { from }
+				}
+
+				from_is_visible := computed_interpolation_style_value_keyword(from) or {
+					Keyword.invalid
+				} == .visible
+				to_is_visible := computed_interpolation_style_value_keyword(to) or {
+					Keyword.invalid
+				} == .visible
+				if from_is_visible || to_is_visible {
+					if delta <= 0 {
+						return unsafe { from }
+					}
+					if delta >= 1 {
+						return unsafe { to }
+					}
+					visible_value := if from_is_visible { from } else { to }
+					return unsafe { visible_value }
+				}
+
+				return interpolate_discrete(from, to, delta, allow_discrete)
+			}
 			if property_id == .content_visibility {
 				// https://drafts.csswg.org/css-contain/#content-visibility-animation
 				// In general, the content-visibility property’s animation type is discrete.
@@ -3656,11 +3760,12 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .scroll_timeline_name,
 		.transform, .transition_behavior, .transition_delay, .transition_duration,
 		.transition_property, .transition_timing_function, .translate, .view_timeline_inset,
-		.view_timeline_name, .webkit_text_fill_color {
+		.view_timeline_name, .webkit_text_fill_color, .z_index {
 			false
 		}
-		.anchor_name, .aspect_ratio, .clear, .float_, .letter_spacing, .list_style_image, .order,
-		.orphans, .overflow_x, .overflow_y, .position, .position_anchor, .word_spacing {
+		.anchor_name, .aspect_ratio, .caption_side, .clear, .direction, .empty_cells, .float_,
+		.letter_spacing, .list_style_image, .order, .orphans, .overflow_x, .overflow_y, .position,
+		.position_anchor, .table_layout, .unicode_bidi, .visibility, .word_spacing {
 			true
 		}
 	}
@@ -3671,7 +3776,7 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		// None of the currently translated longhands maps to the C++ generated
 		// affects-stacking-context metadata. ContentVisibility is handled by the
 		// full-invalidation branch above.
-		.mask_image, .mix_blend_mode, .opacity, .rotate, .scale, .transform, .translate {
+		.mask_image, .mix_blend_mode, .opacity, .rotate, .scale, .transform, .translate, .z_index {
 			true
 		}
 		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
@@ -3680,17 +3785,18 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.animation_timing_function, .aspect_ratio, .background_color, .background_image,
 		.border_bottom_color, .border_bottom_width, .border_image_source, .border_left_color,
 		.border_left_width, .border_right_color, .border_right_width, .border_top_color,
-		.border_top_width, .caret_color, .clear, .color, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity, .float_,
-		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.letter_spacing, .line_height, .list_style_image, .math_depth, .math_style, .object_fit,
-		.order, .orphans, .outline_color, .outline_offset, .outline_style, .outline_width,
-		.overflow_x, .overflow_y, .pointer_events, .position, .position_anchor,
-		.scroll_timeline_name, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .view_timeline_inset, .view_timeline_name,
-		.webkit_text_fill_color, .word_spacing {
+		.border_top_width, .caption_side, .caret_color, .clear, .color, .color_scheme,
+		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
+		.flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_style,
+		.font_variation_settings, .font_weight, .font_width, .letter_spacing, .line_height,
+		.list_style_image, .math_depth, .math_style, .object_fit, .order, .orphans, .outline_color,
+		.outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
+		.position, .position_anchor, .scroll_timeline_name, .shape_image_threshold, .stop_color,
+		.stop_opacity, .stroke_opacity, .table_layout, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
+		.view_timeline_inset, .view_timeline_name, .visibility, .webkit_text_fill_color,
+		.word_spacing {
 			false
 		}
 	}
@@ -3702,6 +3808,9 @@ fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&d
 	}
 	if property_id == .mix_blend_mode {
 		return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } != .normal
+	}
+	if property_id == .z_index {
+		return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } != .auto
 	}
 	// Boundary: the C++ implementation checks typed DOM StyleValue subclasses
 	// (opacity numbers, keywords, lists, transforms, filters). The V DOM
@@ -3722,17 +3831,18 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.animation_timing_function, .aspect_ratio, .background_color, .background_image,
 		.border_bottom_color, .border_bottom_width, .border_image_source, .border_left_color,
 		.border_left_width, .border_right_color, .border_right_width, .border_top_color,
-		.border_top_width, .caret_color, .clear, .color, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity, .float_,
-		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.letter_spacing, .line_height, .list_style_image, .math_depth, .math_style, .object_fit,
-		.order, .orphans, .outline_color, .outline_offset, .outline_style, .outline_width,
-		.overflow_x, .overflow_y, .pointer_events, .position, .position_anchor,
-		.scroll_timeline_name, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .view_timeline_inset, .view_timeline_name,
-		.webkit_text_fill_color, .word_spacing {
+		.border_top_width, .caption_side, .caret_color, .clear, .color, .color_scheme,
+		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
+		.flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_style,
+		.font_variation_settings, .font_weight, .font_width, .letter_spacing, .line_height,
+		.list_style_image, .math_depth, .math_style, .object_fit, .order, .orphans, .outline_color,
+		.outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
+		.position, .position_anchor, .scroll_timeline_name, .shape_image_threshold, .stop_color,
+		.stop_opacity, .stroke_opacity, .table_layout, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
+		.view_timeline_inset, .view_timeline_name, .visibility, .webkit_text_fill_color,
+		.word_spacing, .z_index {
 			false
 		}
 	}
@@ -3740,9 +3850,9 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 
 fn property_requires_full_invalidation(property_id PropertyID) bool {
 	return match property_id {
-		// C++: Display, Position, Content, ContentVisibility.
-		// Only Position and ContentVisibility are currently represented in the V PropertyID enum.
-		.content_visibility, .position { true }
+		// C++: Display, Position, Content, ContentVisibility, OverflowX, OverflowY.
+		// Only these represented properties are currently present in the V PropertyID enum.
+		.content_visibility, .overflow_x, .overflow_y, .position { true }
 		else { false }
 	}
 }
@@ -3761,17 +3871,50 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 		return required_invalidation_after_style_change_full()
 	}
 
-	if property_affects_layout_generated_metadata_boundary(property_id) {
+	// OPTIMIZATION: Special handling for CSS `visibility`:
+	if property_id == .visibility {
+		// We don't need to relayout if the visibility changes from visible to hidden or vice versa. Only collapse requires relayout.
+		old_is_collapse := if old := old_value {
+			computed_interpolation_style_value_keyword(old) or { Keyword.invalid } == .collapse
+		} else {
+			false
+		}
+		new_is_collapse := if new := new_value {
+			computed_interpolation_style_value_keyword(new) or { Keyword.invalid } == .collapse
+		} else {
+			false
+		}
+		if old_is_collapse != new_is_collapse {
+			invalidation.relayout = true
+		}
+		// Of course, we still have to repaint on any visibility change.
+		invalidation.repaint = true
+	} else if property_affects_layout_generated_metadata_boundary(property_id) {
 		invalidation.relayout = true
 	}
 
 	if property_affects_stacking_context_generated_metadata_boundary(property_id) {
-		// OPTIMIZATION: Only rebuild stacking context tree when property crosses from a neutral value
-		// (doesn't create stacking context) to a creating value or vice versa.
-		old_creates := is_stacking_context_creating_value_boundary(property_id, old_value)
-		new_creates := is_stacking_context_creating_value_boundary(property_id, new_value)
-		if old_creates != new_creates {
+		// z-index changes always require rebuilding the stacking context tree because
+		// the value determines painting order within the tree, not just whether a
+		// stacking context is created. During tree construction, elements with
+		// z-index 0/auto are placed in m_positioned_descendants_and_stacking_contexts_
+		// with_stack_level_0, while elements with non-zero z-index are painted from
+		// m_children (negative z-index at step 3, positive at step 9 of CSS 2.1
+		// Appendix E). If z-index changes between non-auto values (e.g. 0 -> 10),
+		// both old and new values create stacking contexts, so the generic optimization
+		// below would skip the rebuild. But the element remains in the wrong list,
+		// causing it to be painted from both step 8 (m_positioned_descendants) and
+		// step 9 (m_children with z >= 1), resulting in double painting.
+		if property_id == .z_index {
 			invalidation.rebuild_stacking_context_tree = true
+		} else {
+			// OPTIMIZATION: Only rebuild stacking context tree when property crosses from a neutral value
+			// (doesn't create stacking context) to a creating value or vice versa.
+			old_creates := is_stacking_context_creating_value_boundary(property_id, old_value)
+			new_creates := is_stacking_context_creating_value_boundary(property_id, new_value)
+			if old_creates != new_creates {
+				invalidation.rebuild_stacking_context_tree = true
+			}
 		}
 	}
 

@@ -115,6 +115,13 @@ pub enum PropertyID {
 	view_timeline_name
 	webkit_text_fill_color
 	word_spacing
+	caption_side
+	direction
+	empty_cells
+	table_layout
+	unicode_bidi
+	visibility
+	z_index
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

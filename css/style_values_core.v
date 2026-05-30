@@ -177,6 +177,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'border-image-source' {
 			PropertyID.border_image_source
 		}
+		'caption-side' {
+			PropertyID.caption_side
+		}
 		'caret-color' {
 			PropertyID.caret_color
 		}
@@ -191,6 +194,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'content-visibility' {
 			PropertyID.content_visibility
+		}
+		'direction' {
+			PropertyID.direction
+		}
+		'empty-cells' {
+			PropertyID.empty_cells
 		}
 		'corner-bottom-left-shape' {
 			PropertyID.corner_bottom_left_shape
@@ -312,6 +321,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'scroll-timeline-name' {
 			PropertyID.scroll_timeline_name
 		}
+		'table-layout' {
+			PropertyID.table_layout
+		}
 		'transform' {
 			PropertyID.transform
 		}
@@ -333,17 +345,26 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'translate' {
 			PropertyID.translate
 		}
+		'unicode-bidi' {
+			PropertyID.unicode_bidi
+		}
 		'view-timeline-inset' {
 			PropertyID.view_timeline_inset
 		}
 		'view-timeline-name' {
 			PropertyID.view_timeline_name
 		}
+		'visibility' {
+			PropertyID.visibility
+		}
 		'-webkit-text-fill-color' {
 			PropertyID.webkit_text_fill_color
 		}
 		'word-spacing' {
 			PropertyID.word_spacing
+		}
+		'z-index' {
+			PropertyID.z_index
 		}
 		else {
 			return none
@@ -409,11 +430,11 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.color_scheme {
 			value_type == .custom_ident
 		}
-		.content_visibility {
+		.caption_side, .content_visibility, .direction, .empty_cells {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
-		.pointer_events, .position {
+		.pointer_events, .position, .table_layout, .unicode_bidi, .visibility {
 			false
 		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
@@ -427,7 +448,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.animation_timeline {
 			value_type in [.dashed_ident, .scroll_function, .view_function]
 		}
-		.order, .orphans {
+		.order, .orphans, .z_index {
 			value_type == .integer
 		}
 		.view_timeline_inset {
@@ -560,6 +581,15 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			// content-visibility = visible | auto | hidden
 			lowercase_value in ['visible', 'auto', 'hidden']
 		}
+		.caption_side {
+			lowercase_value in ['top', 'bottom']
+		}
+		.direction {
+			lowercase_value in ['ltr', 'rtl']
+		}
+		.empty_cells {
+			lowercase_value in ['show', 'hide']
+		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape {
 			lowercase_value in ['round', 'scoop', 'bevel', 'notch', 'square', 'squircle']
@@ -596,6 +626,19 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.position {
 			lowercase_value in ['absolute', 'fixed', 'relative', 'static', 'sticky']
+		}
+		.table_layout {
+			lowercase_value in ['auto', 'fixed']
+		}
+		.unicode_bidi {
+			lowercase_value in ['bidi-override', 'embed', 'isolate', 'isolate-override', 'normal',
+				'plaintext']
+		}
+		.visibility {
+			lowercase_value in ['collapse', 'hidden', 'visible']
+		}
+		.z_index {
+			lowercase_value == 'auto'
 		}
 		.mix_blend_mode {
 			lowercase_value in ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten',
@@ -660,9 +703,10 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.accent_color, .background_color, .background_image, .border_bottom_color,
 		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
-		.caret_color, .clear, .color, .float_, .flood_color, .list_style_image, .mask_image,
-		.mix_blend_mode, .object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y,
-		.pointer_events, .position, .stop_color, .view_timeline_inset, .webkit_text_fill_color {
+		.caption_side, .caret_color, .clear, .color, .direction, .empty_cells, .float_,
+		.flood_color, .list_style_image, .mask_image, .mix_blend_mode, .object_fit, .outline_color,
+		.outline_style, .overflow_x, .overflow_y, .pointer_events, .position, .stop_color,
+		.table_layout, .unicode_bidi, .view_timeline_inset, .visibility, .webkit_text_fill_color {
 			false
 		}
 		.color_scheme {
@@ -690,7 +734,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.math_depth, .math_style, .fill_opacity, .flood_opacity, .opacity, .order, .orphans,
 		.outline_offset, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity,
 		.rotate, .scale, .transform, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_timing_function, .translate, .word_spacing {
+		.transition_timing_function, .translate, .word_spacing, .z_index {
 			false
 		}
 		.transition_property {
@@ -734,6 +778,10 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		NumberStyleValue {
 			property_accepts_type(property_id, .number)
 				&& property_accepts_number(property_id, value.number())
+		}
+		IntegerStyleValue {
+			property_accepts_type(property_id, .integer)
+				&& property_accepts_integer(property_id, value.integer())
 		}
 		OpenTypeTaggedStyleValue {
 			property_accepts_type(property_id, .opentype_tag)
@@ -1730,6 +1778,18 @@ pub enum Keyword {
 	plus_lighter
 	inline_start
 	inline_end
+	top
+	bottom
+	collapse
+	show
+	hide
+	ltr
+	rtl
+	embed
+	isolate
+	bidi_override
+	isolate_override
+	plaintext
 	absolute
 	fixed
 	relative
@@ -1932,6 +1992,18 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.plus_lighter { 'plus-lighter' }
 		.inline_start { 'inline-start' }
 		.inline_end { 'inline-end' }
+		.top { 'top' }
+		.bottom { 'bottom' }
+		.collapse { 'collapse' }
+		.show { 'show' }
+		.hide { 'hide' }
+		.ltr { 'ltr' }
+		.rtl { 'rtl' }
+		.embed { 'embed' }
+		.isolate { 'isolate' }
+		.bidi_override { 'bidi-override' }
+		.isolate_override { 'isolate-override' }
+		.plaintext { 'plaintext' }
 		.absolute { 'absolute' }
 		.fixed { 'fixed' }
 		.relative { 'relative' }
@@ -2123,6 +2195,18 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'plus-lighter' { Keyword.plus_lighter }
 		'inline-start' { Keyword.inline_start }
 		'inline-end' { Keyword.inline_end }
+		'top' { Keyword.top }
+		'bottom' { Keyword.bottom }
+		'collapse' { Keyword.collapse }
+		'show' { Keyword.show }
+		'hide' { Keyword.hide }
+		'ltr' { Keyword.ltr }
+		'rtl' { Keyword.rtl }
+		'embed' { Keyword.embed }
+		'isolate' { Keyword.isolate }
+		'bidi-override' { Keyword.bidi_override }
+		'isolate-override' { Keyword.isolate_override }
+		'plaintext' { Keyword.plaintext }
 		'absolute' { Keyword.absolute }
 		'fixed' { Keyword.fixed }
 		'relative' { Keyword.relative }

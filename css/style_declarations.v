@@ -46,11 +46,14 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.border_top_color { 'border-top-color' }
 		.border_top_width { 'border-top-width' }
 		.border_image_source { 'border-image-source' }
+		.caption_side { 'caption-side' }
 		.caret_color { 'caret-color' }
 		.clear { 'clear' }
 		.color { 'color' }
 		.color_scheme { 'color-scheme' }
 		.content_visibility { 'content-visibility' }
+		.direction { 'direction' }
+		.empty_cells { 'empty-cells' }
 		.corner_bottom_left_shape { 'corner-bottom-left-shape' }
 		.corner_bottom_right_shape { 'corner-bottom-right-shape' }
 		.corner_top_left_shape { 'corner-top-left-shape' }
@@ -91,6 +94,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.rotate { 'rotate' }
 		.scale { 'scale' }
 		.scroll_timeline_name { 'scroll-timeline-name' }
+		.table_layout { 'table-layout' }
 		.transform { 'transform' }
 		.transition_behavior { 'transition-behavior' }
 		.transition_delay { 'transition-delay' }
@@ -98,10 +102,13 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.transition_property { 'transition-property' }
 		.transition_timing_function { 'transition-timing-function' }
 		.translate { 'translate' }
+		.unicode_bidi { 'unicode-bidi' }
 		.view_timeline_inset { 'view-timeline-inset' }
 		.view_timeline_name { 'view-timeline-name' }
+		.visibility { 'visibility' }
 		.webkit_text_fill_color { '-webkit-text-fill-color' }
 		.word_spacing { 'word-spacing' }
+		.z_index { 'z-index' }
 	}
 }
 
@@ -124,14 +131,16 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
 		.border_bottom_width, .border_image_source, .border_left_color, .border_left_width,
 		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
-		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
-		.clear, .line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode,
-		.object_fit, .opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
+		.caption_side, .caret_color, .color, .color_scheme, .content_visibility,
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .fill_opacity, .direction, .empty_cells, .flood_color,
+		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .clear,
+		.line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode, .object_fit,
+		.opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
 		.outline_width, .overflow_x, .overflow_y, .pointer_events, .position_anchor, .position,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.float_, .transform, .translate, .webkit_text_fill_color, .word_spacing {
+		.float_, .table_layout, .transform, .translate, .unicode_bidi, .visibility,
+		.webkit_text_fill_color, .word_spacing, .z_index {
 			true
 		}
 	}
@@ -151,27 +160,29 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
 		.border_bottom_width, .border_image_source, .border_left_color, .border_left_width,
 		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
-		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
-		.clear, .line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode,
-		.object_fit, .opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
+		.caption_side, .caret_color, .color, .color_scheme, .content_visibility,
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .fill_opacity, .direction, .empty_cells, .flood_color,
+		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .clear,
+		.line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode, .object_fit,
+		.opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
 		.outline_width, .overflow_x, .overflow_y, .pointer_events, .position_anchor, .position,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.float_, .transform, .translate, .webkit_text_fill_color, .word_spacing {
+		.float_, .table_layout, .transform, .translate, .unicode_bidi, .visibility,
+		.webkit_text_fill_color, .word_spacing, .z_index {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 81
+pub const number_of_longhand_properties = 88
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .word_spacing
+	return .z_index
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -257,6 +268,13 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		78 { PropertyID.view_timeline_name }
 		79 { PropertyID.webkit_text_fill_color }
 		80 { PropertyID.word_spacing }
+		81 { PropertyID.caption_side }
+		82 { PropertyID.direction }
+		83 { PropertyID.empty_cells }
+		84 { PropertyID.table_layout }
+		85 { PropertyID.unicode_bidi }
+		86 { PropertyID.visibility }
+		87 { PropertyID.z_index }
 		else { none }
 	}
 }
