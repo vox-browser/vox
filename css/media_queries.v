@@ -34,7 +34,14 @@ pub fn (supports &Supports) dump(indent_levels int) string {
 
 pub fn parse_css_supports(context ParsingParams, condition_text string) ?&Supports {
 	_ = context
-	return parse_css_supports_stub(condition_text)
+	mut tokens :=
+		SupportsTokenStream.from_values(parse_component_values_for_value_logic(condition_text))
+	condition := parse_supports_condition(mut tokens) or { return none }
+	tokens.discard_whitespace()
+	if tokens.has_next_token() {
+		return none
+	}
+	return Supports.create(condition)
 }
 
 fn parse_css_supports_stub(condition_text string) ?&Supports {
@@ -43,6 +50,266 @@ fn parse_css_supports_stub(condition_text string) ?&Supports {
 		return none
 	}
 	return Supports.create(BooleanExpression.create_general_enclosed(trimmed, .true_))
+}
+
+struct SupportsTokenStream {
+mut:
+	values []ComponentValue
+	index  int
+}
+
+fn SupportsTokenStream.from_values(values []ComponentValue) SupportsTokenStream {
+	return SupportsTokenStream{
+		values: values.clone()
+	}
+}
+
+fn (tokens SupportsTokenStream) has_next_token() bool {
+	return tokens.index < tokens.values.len
+}
+
+fn (tokens SupportsTokenStream) next_token() ?ComponentValue {
+	if !tokens.has_next_token() {
+		return none
+	}
+	return tokens.values[tokens.index]
+}
+
+fn (mut tokens SupportsTokenStream) consume_a_token() ?ComponentValue {
+	token := tokens.next_token() or { return none }
+	tokens.index++
+	return token
+}
+
+fn (mut tokens SupportsTokenStream) discard_a_token() {
+	if tokens.has_next_token() {
+		tokens.index++
+	}
+}
+
+fn (mut tokens SupportsTokenStream) discard_whitespace() {
+	for {
+		token := tokens.next_token() or { return }
+		if !token.is(.whitespace) {
+			return
+		}
+		tokens.index++
+	}
+}
+
+// https://drafts.csswg.org/css-conditional-3/#typedef-supports-condition
+fn parse_supports_condition(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	// RuleContext::SupportsCondition is represented by calling the declaration
+	// parser with supports-condition validation below.
+	return parse_supports_boolean_expression(mut tokens, .false_)
+}
+
+// https://drafts.csswg.org/css-values-5/#typedef-boolean-expr
+fn parse_supports_boolean_expression(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+
+	// `not <boolean-expr-group>`
+	if peeked_token := transaction.next_token() {
+		if peeked_token.is_ident('not') {
+			transaction.discard_a_token()
+			transaction.discard_whitespace()
+			child := parse_supports_boolean_expression_group(mut transaction,
+				result_for_general_enclosed) or { return none }
+			transaction.discard_whitespace()
+			tokens = transaction
+			return BooleanExpression.create_not(child)
+		}
+	}
+
+	mut children := []&BooleanExpression{}
+	mut combinator := ?string(none)
+	for transaction.has_next_token() {
+		if children.len != 0 {
+			token := transaction.consume_a_token() or { return none }
+			if !token.is(.ident) {
+				return none
+			}
+			maybe_combinator := token.token().ident().to_lower()
+			if maybe_combinator != 'and' && maybe_combinator != 'or' {
+				return none
+			}
+			if existing := combinator {
+				if existing != maybe_combinator {
+					return none
+				}
+			} else {
+				combinator = maybe_combinator
+			}
+		}
+
+		transaction.discard_whitespace()
+		child := parse_supports_boolean_expression_group(mut transaction,
+			result_for_general_enclosed) or { return none }
+		children << child
+		transaction.discard_whitespace()
+	}
+
+	if children.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	if children.len == 1 {
+		return children[0]
+	}
+
+	if combinator_value := combinator {
+		if combinator_value == 'and' {
+			return BooleanExpression.create_and(children)
+		}
+		if combinator_value == 'or' {
+			return BooleanExpression.create_or(children)
+		}
+	}
+	return none
+}
+
+fn parse_supports_boolean_expression_group(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
+	// <boolean-expr-group> = <test> | ( <boolean-expr[ <test> ]> ) | <general-enclosed>
+	if first_token := tokens.next_token() {
+		if first_token.is_block() && first_token.block().is_paren() {
+			mut transaction := tokens
+			transaction.discard_a_token()
+			mut child_tokens := SupportsTokenStream.from_values(first_token.block().value)
+			if expression := parse_supports_boolean_expression(mut child_tokens,
+				result_for_general_enclosed)
+			{
+				child_tokens.discard_whitespace()
+				if !child_tokens.has_next_token() {
+					tokens = transaction
+					return BooleanExpression.create_in_parens(expression)
+				}
+			}
+		}
+	}
+
+	if test := parse_supports_feature(mut tokens) {
+		return test
+	}
+
+	if general_enclosed := parse_supports_general_enclosed(mut tokens, result_for_general_enclosed) {
+		return general_enclosed
+	}
+
+	return none
+}
+
+// https://drafts.csswg.org/css-conditional-5/#typedef-supports-feature
+fn parse_supports_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	first_token := transaction.consume_a_token() or { return none }
+
+	// `<supports-decl> = ( <declaration> )`
+	if first_token.is_block() && first_token.block().is_paren() {
+		mut block_tokens := ParserTokenStream.from_values(first_token.block().value)
+		if declaration := parse_supports_declaration_from_parser_tokens(mut block_tokens) {
+			transaction.discard_whitespace()
+			tokens = transaction
+			return BooleanExpression.create_in_parens(declaration)
+		}
+	}
+
+	// `<supports-selector-fn> = selector( <complex-selector> )`
+	if first_token.is_function_named('selector') {
+		selector := supports_component_values_to_string(first_token.function().value)
+		matches := parse_selector_with_parser(selector, map[string]bool{}) != none
+			&& !supports_selector_contains_unknown_webkit_pseudo_element_stub(selector)
+		tokens = transaction
+		return BooleanExpression.create_supports_selector(selector, matches)
+	}
+
+	// `<supports-font-tech-fn> = font-tech( <font-tech> )`
+	if first_token.is_function_named('font-tech') {
+		mut tech_tokens := SupportsTokenStream.from_values(first_token.function().value)
+		tech_tokens.discard_whitespace()
+		tech_token := tech_tokens.consume_a_token() or { return none }
+		tech_tokens.discard_whitespace()
+		if tech_tokens.has_next_token() || !tech_token.is(.ident) {
+			return none
+		}
+		tech_name := tech_token.token().ident()
+		tokens = transaction
+		return BooleanExpression.create_supports_font_tech(tech_name,
+			font_tech_is_supported_name(tech_name))
+	}
+
+	// `<supports-font-format-fn> = font-format( <font-format> )`
+	if first_token.is_function_named('font-format') {
+		mut format_tokens := SupportsTokenStream.from_values(first_token.function().value)
+		format_tokens.discard_whitespace()
+		format_token := format_tokens.consume_a_token() or { return none }
+		format_tokens.discard_whitespace()
+		if format_tokens.has_next_token() || !format_token.is(.ident) {
+			return none
+		}
+		format_name := format_token.token().ident()
+		tokens = transaction
+		return BooleanExpression.create_supports_font_format(format_name,
+			font_format_is_supported(format_name))
+	}
+
+	return none
+}
+
+// https://drafts.csswg.org/css-conditional-5/#typedef-supports-decl
+fn parse_supports_declaration_from_parser_tokens(mut tokens ParserTokenStream) ?&BooleanExpression {
+	mut parser := RuleSelectorParser.create(ParsingParams{}, '', 'utf-8')
+	declaration := parser.consume_a_declaration(mut tokens, .no, .yes) or { return none }
+	tokens.discard_whitespace()
+	if tokens.has_next_token() {
+		return none
+	}
+
+	property := PropertyNameAndID.from_name(declaration.name) or { return none }
+	if property.is_custom_property() {
+		original := declaration.original_full_text or {
+			supports_component_values_to_string(declaration.value)
+		}
+
+		return BooleanExpression.create_supports_declaration(original, true)
+	}
+	property_id := property.id() or { return none }
+	value_text := supports_component_values_to_string(declaration.value).trim_space()
+	matches := parse_css_value(ParsingParams{}, value_text, property_id) != none
+	original := declaration.original_full_text or { '${declaration.name}: ${value_text}' }
+	return BooleanExpression.create_supports_declaration(original, matches)
+}
+
+// https://www.w3.org/TR/mediaqueries-4/#typedef-general-enclosed
+fn parse_supports_general_enclosed(mut tokens SupportsTokenStream, result MatchResult) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	first_token := transaction.consume_a_token() or { return none }
+	if first_token.is_function() {
+		tokens = transaction
+		return BooleanExpression.create_general_enclosed(first_token.to_string(), result)
+	}
+	if first_token.is_block() && first_token.block().is_paren() {
+		tokens = transaction
+		return BooleanExpression.create_general_enclosed(first_token.to_string(), result)
+	}
+	return none
+}
+
+fn supports_component_values_to_string(values []ComponentValue) string {
+	mut builder := strings.new_builder(32)
+	for value in values {
+		builder.write_string(value.to_string())
+	}
+	return builder.str()
+}
+
+fn supports_selector_contains_unknown_webkit_pseudo_element_stub(selector string) bool {
+	_ = selector
+	// Stub for Selector::contains_unknown_webkit_pseudo_element().
+	return false
 }
 
 pub enum MediaQueryKnownMediaType {
