@@ -50,6 +50,10 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.shape_image_threshold { 'shape-image-threshold' }
 		.stop_opacity { 'stop-opacity' }
 		.stroke_opacity { 'stroke-opacity' }
+		.rotate { 'rotate' }
+		.scale { 'scale' }
+		.transform { 'transform' }
+		.translate { 'translate' }
 		.word_spacing { 'word-spacing' }
 	}
 }
@@ -69,7 +73,7 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_opacity,
 		.font_style, .font_weight, .font_width, .letter_spacing, .line_height, .math_depth,
 		.math_style, .opacity, .outline_width, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity, .word_spacing {
+		.stroke_opacity, .rotate, .scale, .transform, .translate, .word_spacing {
 			true
 		}
 	}
@@ -85,13 +89,13 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_opacity,
 		.font_style, .font_weight, .font_width, .letter_spacing, .line_height, .math_depth,
 		.math_style, .opacity, .outline_width, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity, .word_spacing {
+		.stroke_opacity, .rotate, .scale, .transform, .translate, .word_spacing {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 30
+pub const number_of_longhand_properties = 34
 
 pub fn first_longhand_property_id() PropertyID {
 	return .animation_name
@@ -132,7 +136,11 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		26 { PropertyID.shape_image_threshold }
 		27 { PropertyID.stop_opacity }
 		28 { PropertyID.stroke_opacity }
-		29 { PropertyID.word_spacing }
+		29 { PropertyID.rotate }
+		30 { PropertyID.scale }
+		31 { PropertyID.transform }
+		32 { PropertyID.translate }
+		33 { PropertyID.word_spacing }
 		else { none }
 	}
 }

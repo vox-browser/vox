@@ -264,6 +264,18 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.math_style {
 			return parser.parse_math_style_value(mut tokens)
 		}
+		.rotate {
+			return parser.parse_rotate_value(mut tokens)
+		}
+		.scale {
+			return parser.parse_scale_value(mut tokens)
+		}
+		.transform {
+			return parser.parse_transform_value(mut tokens)
+		}
+		.translate {
+			return parser.parse_translate_value(mut tokens)
+		}
 	}
 
 	return none
@@ -2938,6 +2950,212 @@ fn (mut parser Parser) parse_transform_list_value(mut tokens ComponentValueStrea
 	}
 	tokens = transaction
 	return StyleValue(StyleValueList.create(transformations, .space, .yes))
+}
+
+// https://www.w3.org/TR/css-transforms-1/#transform-property
+fn (mut parser Parser) parse_transform_value(mut tokens ComponentValueStream) ?StyleValue {
+	// none | <transform-list>
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if component_value := transaction.peek() {
+		if component_value.is(.ident)
+			&& equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
+			transaction.consume()
+			tokens = transaction
+			return StyleValue(KeywordStyleValue.create(.none_))
+		}
+	}
+
+	transaction = tokens.clone()
+	value := parser.parse_transform_list_value(mut transaction) or { return none }
+	tokens = transaction
+	return value
+}
+
+fn (mut parser Parser) parse_optional_angle_value_without_consuming_on_failure(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	value := parser.parse_angle_value(mut transaction) or { return none }
+	tokens = transaction
+	return value
+}
+
+// https://drafts.csswg.org/css-transforms-2/#propdef-rotate
+fn (mut parser Parser) parse_rotate_value(mut tokens ComponentValueStream) ?StyleValue {
+	// none | <angle> | [ x | y | z ] && <angle> | <number>{3} && <angle>
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if component_value := transaction.peek() {
+		if component_value.is(.ident)
+			&& equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
+			transaction.consume()
+			tokens = transaction
+			return StyleValue(KeywordStyleValue.create(.none_))
+		}
+	}
+
+	transaction = tokens.clone()
+	mut angle := ?StyleValue(none)
+	if angle_value := parser.parse_optional_angle_value_without_consuming_on_failure(mut transaction) {
+		angle = angle_value
+	}
+	transaction.consume_whitespace()
+
+	// <angle>
+	if angle_value := angle {
+		if !transaction.has_more_tokens() {
+			tokens = transaction
+			return StyleValue(TransformationStyleValue.create(.rotate, .rotate, [
+				angle_value,
+			]))
+		}
+	}
+
+	parse_one_of_xyz := fn (mut input ComponentValueStream) ?string {
+		mut axis_transaction := input.clone()
+		axis_transaction.consume_whitespace()
+		axis := axis_transaction.consume() or { return none }
+		if axis.is(.ident) {
+			ident := axis.token().ident()
+			if equals_ignoring_ascii_case(ident, 'x') || equals_ignoring_ascii_case(ident, 'y')
+				|| equals_ignoring_ascii_case(ident, 'z') {
+				input = axis_transaction
+				return to_ascii_lowercase(ident)
+			}
+		}
+		return none
+	}
+
+	// [ x | y | z ] && <angle>
+	if axis := parse_one_of_xyz(mut transaction) {
+		transaction.consume_whitespace()
+		if angle == none {
+			angle = parser.parse_optional_angle_value_without_consuming_on_failure(mut transaction)
+		}
+		if angle_value := angle {
+			tokens = transaction
+			transform_function := match axis {
+				'x' { TransformFunction.rotate_x }
+				'y' { TransformFunction.rotate_y }
+				else { TransformFunction.rotate_z }
+			}
+
+			return StyleValue(TransformationStyleValue.create(.rotate, transform_function, [
+				angle_value,
+			]))
+		}
+		return none
+	}
+
+	parse_three_numbers := fn [mut parser] (mut input ComponentValueStream) ?StyleValueVector {
+		mut numbers_transaction := input.clone()
+		mut numbers := StyleValueVector{}
+		for _ in 0 .. 3 {
+			number := parser.parse_number_value(mut numbers_transaction) or { return none }
+			numbers << number
+		}
+		input = numbers_transaction
+		return numbers
+	}
+
+	// <number>{3} && <angle>
+	if mut numbers := parse_three_numbers(mut transaction) {
+		transaction.consume_whitespace()
+		if angle == none {
+			angle = parser.parse_optional_angle_value_without_consuming_on_failure(mut transaction)
+		}
+		if angle_value := angle {
+			numbers << angle_value
+			tokens = transaction
+			return StyleValue(TransformationStyleValue.create(.rotate, .rotate3d, numbers))
+		}
+	}
+
+	return none
+}
+
+// https://drafts.csswg.org/css-transforms-2/#propdef-translate
+fn (mut parser Parser) parse_translate_value(mut tokens ComponentValueStream) ?StyleValue {
+	// none | <length-percentage> [ <length-percentage> <length>? ]?
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if component_value := transaction.peek() {
+		if component_value.is(.ident)
+			&& equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
+			transaction.consume()
+			tokens = transaction
+			return StyleValue(KeywordStyleValue.create(.none_))
+		}
+	}
+
+	transaction = tokens.clone()
+	maybe_x := parser.parse_length_percentage_value(mut transaction) or { return none }
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		tokens = transaction
+		return StyleValue(TransformationStyleValue.create(.translate, .translate, [
+			maybe_x,
+			StyleValue(LengthStyleValue.create(Length.make_px(0))),
+		]))
+	}
+
+	maybe_y := parser.parse_length_percentage_value(mut transaction) or { return none }
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		tokens = transaction
+		return StyleValue(TransformationStyleValue.create(.translate, .translate, [
+			maybe_x,
+			maybe_y,
+		]))
+	}
+
+	maybe_z := parser.parse_length_value(mut transaction) or { return none }
+	tokens = transaction
+	return StyleValue(TransformationStyleValue.create(.translate, .translate3d, [
+		maybe_x,
+		maybe_y,
+		maybe_z,
+	]))
+}
+
+// https://drafts.csswg.org/css-transforms-2/#propdef-scale
+fn (mut parser Parser) parse_scale_value(mut tokens ComponentValueStream) ?StyleValue {
+	// none | [ <number> | <percentage> ]{1,3}
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if component_value := transaction.peek() {
+		if component_value.is(.ident)
+			&& equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
+			transaction.consume()
+			tokens = transaction
+			return StyleValue(KeywordStyleValue.create(.none_))
+		}
+	}
+
+	transaction = tokens.clone()
+	maybe_x := parser.parse_number_percentage_value(mut transaction) or { return none }
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		tokens = transaction
+		return StyleValue(TransformationStyleValue.create(.scale, .scale, [maybe_x, maybe_x]))
+	}
+
+	maybe_y := parser.parse_number_percentage_value(mut transaction) or { return none }
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		tokens = transaction
+		return StyleValue(TransformationStyleValue.create(.scale, .scale, [
+			maybe_x,
+			maybe_y,
+		]))
+	}
+
+	maybe_z := parser.parse_number_percentage_value(mut transaction) or { return none }
+	tokens = transaction
+	return StyleValue(TransformationStyleValue.create(.scale, .scale3d, [
+		maybe_x,
+		maybe_y,
+		maybe_z,
+	]))
 }
 
 fn (mut parser Parser) parse_linear_gradient_function(function_name string, mut tokens ComponentValueStream) ?LinearGradientStyleValue {

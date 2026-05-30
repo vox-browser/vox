@@ -63,6 +63,10 @@ pub enum PropertyID {
 	shape_image_threshold
 	stop_opacity
 	stroke_opacity
+	rotate
+	scale
+	transform
+	translate
 	word_spacing
 }
 

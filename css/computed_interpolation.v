@@ -871,6 +871,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.stop_opacity, .stroke_opacity {
 			'1'
 		}
+		.rotate, .scale, .transform, .translate {
+			'none'
+		}
 		.word_spacing {
 			'normal'
 		}
@@ -902,7 +905,8 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_opacity, .font_feature_settings, .font_style, .font_variation_settings,
 		.font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .opacity,
-		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .word_spacing {
+		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale,
+		.transform, .translate, .word_spacing {
 			true
 		}
 		.color_scheme, .content_visibility, .math_style {
@@ -927,7 +931,8 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		}
 		.animation_name, .animation_timeline, .color_scheme, .content_visibility, .fill_opacity,
 		.flood_opacity, .font_feature_settings, .font_variation_settings, .line_height,
-		.math_style, .opacity, .shape_image_threshold, .stop_opacity, .stroke_opacity {
+		.math_style, .opacity, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate,
+		.scale, .transform, .translate {
 			false
 		}
 	}
@@ -1915,15 +1920,48 @@ pub fn (mut c ComputedProperties) set_display_before_box_type_transformation(val
 	c.display_before_box_type_transformation_ = value
 }
 
+fn property_id_from_transform_property(property TransformProperty) PropertyID {
+	return match property {
+		.transform { PropertyID.transform }
+		.rotate { PropertyID.rotate }
+		.scale { PropertyID.scale }
+		.translate { PropertyID.translate }
+	}
+}
+
+fn transformation_data_from_transformation_style_value(value TransformationStyleValue) TransformationData {
+	mut values := []&dom.StyleValue{}
+	for item in value.values() {
+		values << dom_style_value_from_value_logic(item)
+	}
+	return TransformationData{
+		property_id: property_id_from_transform_property(value.property_)
+		values:      values
+	}
+}
+
 pub fn ComputedProperties.transformations_for_style_value(value &dom.StyleValue) []TransformationData {
-	_ = value
-	// Boundary: TransformationStyleValue/StyleValueList are not translated to dom.StyleValue yet.
+	parsed_value := parse_css_value_logic(.transform, value.css_text) or {
+		return []TransformationData{}
+	}
+	if parsed_value.is_keyword() && parsed_value.to_keyword() == .none_ {
+		return []TransformationData{}
+	}
+	if parsed_value is StyleValueList {
+		mut transformations := []TransformationData{}
+		for transform_value in parsed_value.values() {
+			if transform_value is TransformationStyleValue {
+				transformations << transformation_data_from_transformation_style_value(transform_value)
+			}
+		}
+		return transformations
+	}
 	return []TransformationData{}
 }
 
 pub fn (c &ComputedProperties) transformations() []TransformationData {
-	_ = c
-	return []TransformationData{}
+	value := c.property(.transform, .yes) or { return []TransformationData{} }
+	return ComputedProperties.transformations_for_style_value(value)
 }
 
 pub fn (c &ComputedProperties) transform_box() TransformBox {
@@ -1942,17 +1980,29 @@ pub fn (c &ComputedProperties) transform_style() TransformStyle {
 }
 
 pub fn (c &ComputedProperties) rotate() ?TransformationData {
-	_ = c
+	value := c.property(.rotate, .yes) or { return none }
+	parsed_value := parse_css_value_logic(.rotate, value.css_text) or { return none }
+	if parsed_value is TransformationStyleValue {
+		return transformation_data_from_transformation_style_value(parsed_value)
+	}
 	return none
 }
 
 pub fn (c &ComputedProperties) translate() ?TransformationData {
-	_ = c
+	value := c.property(.translate, .yes) or { return none }
+	parsed_value := parse_css_value_logic(.translate, value.css_text) or { return none }
+	if parsed_value is TransformationStyleValue {
+		return transformation_data_from_transformation_style_value(parsed_value)
+	}
 	return none
 }
 
 pub fn (c &ComputedProperties) scale() ?TransformationData {
-	_ = c
+	value := c.property(.scale, .yes) or { return none }
+	parsed_value := parse_css_value_logic(.scale, value.css_text) or { return none }
+	if parsed_value is TransformationStyleValue {
+		return transformation_data_from_transformation_style_value(parsed_value)
+	}
 	return none
 }
 
@@ -2306,7 +2356,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_style, .font_weight,
 		.font_width, .letter_spacing, .line_height, .opacity, .outline_width,
-		.shape_image_threshold, .stop_opacity, .stroke_opacity, .word_spacing {
+		.shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform,
+		.translate, .word_spacing {
 			.by_computed_value
 		}
 		.content_visibility {
@@ -3011,7 +3062,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.corner_top_right_shape, .fill_opacity, .flood_opacity, .font_feature_settings,
 		.font_style, .font_variation_settings, .font_weight, .font_width, .line_height,
 		.math_depth, .math_style, .opacity, .outline_width, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity {
+		.stroke_opacity, .rotate, .scale, .transform, .translate {
 			false
 		}
 		.letter_spacing, .word_spacing {
@@ -3025,7 +3076,7 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		// None of the currently translated longhands maps to the C++ generated
 		// affects-stacking-context metadata. ContentVisibility is handled by the
 		// full-invalidation branch above.
-		.opacity {
+		.opacity, .rotate, .scale, .transform, .translate {
 			true
 		}
 		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
@@ -3053,9 +3104,9 @@ fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&d
 
 fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 	return match property_id {
-		// The translated PropertyID enum does not yet include transform,
-		// perspective, clip, mix-blend-mode, or filter.
-		.opacity {
+		// The translated PropertyID enum does not yet include perspective, clip,
+		// mix-blend-mode, or filter.
+		.opacity, .rotate, .scale, .transform, .translate {
 			true
 		}
 		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,

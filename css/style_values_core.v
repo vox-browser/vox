@@ -128,6 +128,10 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'shape-image-threshold' { PropertyID.shape_image_threshold }
 		'stop-opacity' { PropertyID.stop_opacity }
 		'stroke-opacity' { PropertyID.stroke_opacity }
+		'rotate' { PropertyID.rotate }
+		'scale' { PropertyID.scale }
+		'transform' { PropertyID.transform }
+		'translate' { PropertyID.translate }
 		'word-spacing' { PropertyID.word_spacing }
 		else { return none }
 	}
@@ -210,6 +214,12 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.math_style {
 			false
 		}
+		.transform {
+			value_type in [.transform_function, .transform_list]
+		}
+		.rotate, .scale, .translate {
+			value_type == .transform_function
+		}
 	}
 }
 
@@ -275,6 +285,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.stroke_opacity {
 			false
 		}
+		.rotate, .scale, .transform, .translate {
+			lowercase_value == 'none'
+		}
 	}
 }
 
@@ -310,8 +323,8 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
 		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
 		.letter_spacing, .line_height, .math_depth, .math_style, .fill_opacity, .flood_opacity,
-		.opacity, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity,
-		.word_spacing {
+		.opacity, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate,
+		.scale, .transform, .translate, .word_spacing {
 			false
 		}
 	}
@@ -351,8 +364,18 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		SuperellipseStyleValue {
 			property_accepts_type(property_id, .corner_shape)
 		}
+		TransformationStyleValue {
+			property_accepts_type(property_id, .transform_function)
+		}
 		StyleValueList {
 			if property_is_list_valued(property_id) {
+				for item in value.values() {
+					if !property_accepts_style_value(property_id, item) {
+						return false
+					}
+				}
+				true
+			} else if property_accepts_type(property_id, .transform_list) {
 				for item in value.values() {
 					if !property_accepts_style_value(property_id, item) {
 						return false
