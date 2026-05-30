@@ -785,15 +785,152 @@ pub enum CSSTransitionPhase {
 	pending
 }
 
+pub struct CSSTransitionStorageEntry {
+pub mut:
+	abstract_element dom.AbstractElement
+	property_id      PropertyID
+	attributes       ?TransitionTimingAttributes
+	transition       &CSSTransition = unsafe { nil }
+}
+
+pub struct CSSTransitionStorage {
+pub mut:
+	registered_transition_attributes []CSSTransitionStorageEntry
+	associated_transitions           []CSSTransitionStorageEntry
+}
+
 pub struct TransitionTimingAttributes {
 pub mut:
+	delay               f64
+	duration            f64
 	timing_function EasingFunction = EasingFunction.linear()
+	transition_behavior TransitionBehavior
+}
+
+fn style_values_equal(a &dom.StyleValue, b &dom.StyleValue) bool {
+	return a == b
+}
+
+fn transition_attributes_from_transition_properties(properties TransitionProperties) TransitionTimingAttributes {
+	return TransitionTimingAttributes{
+		delay:               properties.delay
+		duration:            properties.duration
+		timing_function:     properties.timing_function
+		transition_behavior: properties.transition_behavior
+	}
+}
+
+pub fn (mut storage CSSTransitionStorage) clear_registered_transitions(abstract_element dom.AbstractElement) {
+	mut kept := []CSSTransitionStorageEntry{}
+	for entry in storage.registered_transition_attributes {
+		if !abstract_elements_equal(entry.abstract_element, abstract_element) {
+			kept << entry
+		}
+	}
+	storage.registered_transition_attributes = kept
+}
+
+pub fn (mut storage CSSTransitionStorage) add_transitioned_properties(abstract_element dom.AbstractElement, transitions []TransitionProperties) {
+	for transition_properties in transitions {
+		attributes := transition_attributes_from_transition_properties(transition_properties)
+		for property_id in transition_properties.properties {
+			storage.registered_transition_attributes << CSSTransitionStorageEntry{
+				abstract_element: abstract_element
+				property_id:      property_id
+				attributes:       attributes
+			}
+		}
+	}
+}
+
+pub fn (storage &CSSTransitionStorage) property_ids_with_matching_transition_property_entry(abstract_element dom.AbstractElement) []PropertyID {
+	mut property_ids := []PropertyID{}
+	for entry in storage.registered_transition_attributes {
+		if abstract_elements_equal(entry.abstract_element, abstract_element)
+			&& entry.property_id !in property_ids {
+			property_ids << entry.property_id
+		}
+	}
+	return property_ids
+}
+
+pub fn (storage &CSSTransitionStorage) property_transition_attributes(abstract_element dom.AbstractElement, property_id PropertyID) ?TransitionTimingAttributes {
+	for entry in storage.registered_transition_attributes {
+		if abstract_elements_equal(entry.abstract_element, abstract_element)
+			&& entry.property_id == property_id {
+			return entry.attributes or { return none }
+		}
+	}
+	return none
+}
+
+pub fn (storage &CSSTransitionStorage) property_ids_with_existing_transitions(abstract_element dom.AbstractElement) []PropertyID {
+	mut property_ids := []PropertyID{}
+	for entry in storage.associated_transitions {
+		if abstract_elements_equal(entry.abstract_element, abstract_element)
+			&& entry.property_id !in property_ids {
+			property_ids << entry.property_id
+		}
+	}
+	return property_ids
+}
+
+pub fn (storage &CSSTransitionStorage) property_transition(abstract_element dom.AbstractElement, property_id PropertyID) ?&CSSTransition {
+	for entry in storage.associated_transitions {
+		if abstract_elements_equal(entry.abstract_element, abstract_element)
+			&& entry.property_id == property_id {
+			return entry.transition
+		}
+	}
+	return none
+}
+
+pub fn (mut storage CSSTransitionStorage) set_transition(abstract_element dom.AbstractElement, property_id PropertyID, transition &CSSTransition) {
+	for entry in storage.associated_transitions {
+		if abstract_elements_equal(entry.abstract_element, abstract_element)
+			&& entry.property_id == property_id {
+			return
+		}
+	}
+	storage.associated_transitions << CSSTransitionStorageEntry{
+		abstract_element: abstract_element
+		property_id:      property_id
+		transition:       transition
+	}
+}
+
+pub fn (mut storage CSSTransitionStorage) remove_transition(abstract_element dom.AbstractElement, property_id PropertyID) {
+	mut kept := []CSSTransitionStorageEntry{}
+	for entry in storage.associated_transitions {
+		if !abstract_elements_equal(entry.abstract_element, abstract_element)
+			|| entry.property_id != property_id {
+			kept << entry
+		}
+	}
+	storage.associated_transitions = kept
+}
+
+pub fn compute_transitioned_properties_for_storage(style &ComputedProperties, abstract_element dom.AbstractElement, mut storage CSSTransitionStorage) {
+	// FIXME: For now we don't bother registering transitions on the first computation since they can't run (because
+	//        there is nothing to transition from) but this will change once we implement @starting-style.
+	if abstract_element.computed_properties() == none {
+		return
+	}
+
+	storage.clear_registered_transitions(abstract_element)
+	storage.add_transitioned_properties(abstract_element, style.transitions())
+}
+
+fn combined_transition_duration(transition_attributes TransitionTimingAttributes) f64 {
+	// Define the combined duration of the transition as the sum of max(matching transition duration, 0s) and the matching transition delay.
+	return math.max(transition_attributes.duration, 0) + transition_attributes.delay
 }
 
 pub fn transition_timing_attributes_for_property(abstract_element dom.AbstractElement, property_id PropertyID) TransitionTimingAttributes {
 	_ = abstract_element
 	_ = property_id
-	// Stub: Element::property_transition_attributes(pseudo_element, property_id) is not translated yet.
+	// Boundary: Element::property_transition_attributes(pseudo_element, property_id) is not translated on DOM::Element.
+	// Callers that translate StyleComputer's transition update flow should pass CSSTransitionStorage explicitly.
 	return TransitionTimingAttributes{}
 }
 
