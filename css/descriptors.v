@@ -120,6 +120,9 @@ fn (mut descriptors CSSDescriptors) set_a_css_declaration(descriptor_id Descript
 
 	for i, descriptor in descriptors.descriptors {
 		if descriptor.descriptor_id == descriptor_id {
+			if serialized_value.len != 0 && descriptor.serialized_value == serialized_value {
+				return false
+			}
 			if descriptor.value == value {
 				return false
 			}
@@ -178,9 +181,7 @@ pub fn (mut descriptors CSSDescriptors) set_property(property string, value stri
 	if descriptors.at_rule_id == .page && descriptor_id == .margin {
 		for expanded_value in expand_page_margin_shorthand_descriptor_value(component_value_list.style_value) {
 			longhand_value := parse_css_descriptor_value_for_cssom(descriptors.at_rule_id,
-				expanded_value.descriptor_id, expanded_value.serialized_value) or {
-				continue
-			}
+				expanded_value.descriptor_id, expanded_value.serialized_value) or { continue }
 			longhand_result := descriptors.set_a_css_declaration(expanded_value.descriptor_id,
 				longhand_value.value, if priority.len == 0 {
 				Important.no
@@ -192,22 +193,8 @@ pub fn (mut descriptors CSSDescriptors) set_property(property string, value stri
 			}
 		}
 	} else if is_descriptor_shorthand(descriptors.at_rule_id, descriptor_id) {
-		for_each_expanded_descriptor_longhand(descriptors.at_rule_id, descriptor_id,
-			component_value_list.value, fn [mut descriptors, priority, mut updated] (longhand_id DescriptorID, longhand_value &dom.StyleValue) {
-			// 1. Let longhand result be the result of set the CSS declaration longhand with the appropriate value(s)
-			//    from component value list, with the important flag set if priority is not the empty string, and unset
-			//    otherwise, and with the list of declarations being the declarations.
-			longhand_result := descriptors.set_a_css_declaration(longhand_id, longhand_value, if priority.len == 0 {
-				Important.no
-			} else {
-				Important.yes
-			}, descriptor_style_value_to_string(longhand_value))
-
-			// 2. If longhand result is true, let updated be true.
-			if longhand_result {
-				updated = true
-			}
-		})
+		// The only translated descriptor shorthand is @page margin, handled above from the parsed CSS-side value.
+		// Other descriptor shorthands should be expanded here once their typed StyleValue representation exists.
 	}
 	// 9. Otherwise, let updated be the result of set the CSS declaration property with value component value list,
 	//    with the important flag set if priority is not the empty string, and unset otherwise, and with the list of
@@ -257,20 +244,7 @@ pub fn (mut descriptors CSSDescriptors) remove_property(property string) !string
 			}
 			descriptors.descriptors = kept
 		} else if is_descriptor_shorthand(descriptors.at_rule_id, id) {
-			for_each_expanded_descriptor_longhand(descriptors.at_rule_id, id, unsafe { nil }, fn [mut descriptors, mut removed] (longhand_id DescriptorID, longhand_value &dom.StyleValue) {
-				_ = longhand_value
-				// 1. If longhand is not a property name of a CSS declaration in the declarations, continue.
-				// 2. Remove that CSS declaration and let removed be true.
-				mut kept := []Descriptor{}
-				for descriptor in descriptors.descriptors {
-					if descriptor.descriptor_id == longhand_id {
-						removed = true
-						continue
-					}
-					kept << descriptor
-				}
-				descriptors.descriptors = kept
-			})
+			// The only translated descriptor shorthand is @page margin, handled above.
 		} else {
 			// 6. Otherwise, if property is a case-sensitive match for a property name of a CSS declaration in the
 			//    declarations, remove that CSS declaration and let removed be true.
@@ -508,8 +482,29 @@ fn parse_descriptor_declaration_block(at_rule_id AtRuleID, text string) []Descri
 		}
 
 		if at_rule_id == .page {
-			if descriptor := convert_to_page_descriptor_for_rule_parsing(declaration) {
-				append_descriptor(mut declarations, descriptor)
+			descriptor_id := descriptor_id_from_string(.page, declaration.name) or { continue }
+			value_text := parser_component_values_to_string(declaration.value).trim_space()
+			value := parse_css_descriptor_value_for_cssom(.page, descriptor_id, value_text) or {
+				continue
+			}
+			if descriptor_id == .margin {
+				for expanded_value in expand_page_margin_shorthand_descriptor_value(value.style_value) {
+					longhand_value := parse_css_descriptor_value_for_cssom(.page,
+						expanded_value.descriptor_id, expanded_value.serialized_value) or {
+						continue
+					}
+					append_descriptor(mut declarations, Descriptor{
+						descriptor_id:    expanded_value.descriptor_id
+						value:            longhand_value.value
+						serialized_value: longhand_value.serialized
+					})
+				}
+			} else {
+				append_descriptor(mut declarations, Descriptor{
+					descriptor_id:    descriptor_id
+					value:            value.value
+					serialized_value: value.serialized
+				})
 			}
 		} else {
 			descriptor_id := descriptor_id_from_string(at_rule_id, declaration.name) or { continue }
