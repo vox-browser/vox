@@ -338,8 +338,41 @@ pub fn media_query_known_media_type_to_string(media_type MediaQueryKnownMediaTyp
 @[heap]
 pub struct MediaQuery {
 pub mut:
-	text    string = 'all'
-	matches bool   = true
+	text            string = 'all'
+	matches         bool   = true
+	negated         bool
+	media_type      MediaQueryType = MediaQueryType.all()
+	media_condition ?&BooleanExpression
+}
+
+pub struct MediaQueryType {
+pub mut:
+	name       string
+	known_type ?MediaQueryKnownMediaType
+}
+
+pub fn MediaQueryType.all() MediaQueryType {
+	return MediaQueryType{
+		name:       'all'
+		known_type: MediaQueryKnownMediaType.all
+	}
+}
+
+pub fn MediaQuery.create_not_all() &MediaQuery {
+	return &MediaQuery{
+		text:       'not all'
+		matches:    false
+		negated:    true
+		media_type: MediaQueryType.all()
+	}
+}
+
+pub fn MediaQuery.create() &MediaQuery {
+	return &MediaQuery{
+		text:       'all'
+		matches:    true
+		media_type: MediaQueryType.all()
+	}
 }
 
 pub fn parse_media_query(context ParsingParams, text string) ?&MediaQuery {
@@ -352,12 +385,50 @@ pub fn parse_media_query(context ParsingParams, text string) ?&MediaQuery {
 }
 
 pub fn (media_query &MediaQuery) evaluate(doc &dom.Document) bool {
-	_ = doc
-	return media_query.matches
+	mut result := media_query_matches_media_type(media_query.media_type)
+	if result != .false_ {
+		if condition := media_query.media_condition {
+			result = match_result_and(result, condition.evaluate(doc))
+		}
+	}
+	if media_query.negated {
+		result = negate_match_result(result)
+	}
+	return result == .true_
 }
 
 pub fn (media_query &MediaQuery) to_string() string {
-	return media_query.text
+	mut builder := strings.new_builder(64)
+
+	if media_query.negated {
+		builder.write_string('not ')
+	}
+
+	known_type_is_all := if known_type := media_query.media_type.known_type {
+		known_type == .all
+	} else {
+		false
+	}
+	if media_query.negated || !known_type_is_all || media_query.media_condition == none {
+		if known_type := media_query.media_type.known_type {
+			builder.write_string(media_query_known_media_type_to_string(known_type))
+		} else {
+			builder.write_string(serialize_an_identifier(media_query.media_type.name.to_lower()))
+		}
+		if media_query.media_condition != none {
+			builder.write_string(' and ')
+		}
+	}
+
+	if condition := media_query.media_condition {
+		builder.write_string(condition.to_string())
+	}
+
+	serialized := builder.str()
+	if serialized.len == 0 {
+		return media_query.text
+	}
+	return serialized
 }
 
 pub fn (media_query &MediaQuery) matches() bool {
@@ -365,7 +436,15 @@ pub fn (media_query &MediaQuery) matches() bool {
 }
 
 pub fn (media_query &MediaQuery) dump(indent_levels int) string {
-	return '${cssom_indent(indent_levels)}Media condition: ${media_query.text} (matches = ${media_query.matches})\n'
+	mut builder := strings.new_builder(96)
+	builder.write_string('${cssom_indent(indent_levels)}Media condition: (matches = ${media_query.matches})\n')
+	builder.write_string('${cssom_indent(indent_levels + 1)}Negated: ${media_query.negated}\n')
+	builder.write_string('${cssom_indent(indent_levels + 1)}Type: ${media_query.media_type.name}\n')
+	if condition := media_query.media_condition {
+		builder.write_string('${cssom_indent(indent_levels + 1)}Condition:\n')
+		builder.write_string(condition.dump(indent_levels + 2))
+	}
+	return builder.str()
 }
 
 pub struct MediaQueryListEntry {
@@ -534,27 +613,15 @@ pub fn serialize_a_media_query_list_entries(media_queries []MediaQueryListEntry)
 }
 
 fn media_query_text_matches_stub(text string) bool {
-	lower := text.to_lower().trim_space()
-	if lower == 'not all' {
-		return false
-	}
-	if lower == 'all' || lower == 'screen' {
-		return true
-	}
-	if lower == 'print' {
-		return false
-	}
-	return true
+	query := parse_media_query_from_text(text) or { return false }
+	return query.matches()
 }
 
 fn parse_media_query_entry_stub(medium string) ?MediaQueryListEntry {
-	trimmed := medium.trim_space()
-	if trimmed.len == 0 {
-		return none
-	}
+	query := parse_media_query_from_text(medium) or { return none }
 	return MediaQueryListEntry{
-		text:    trimmed
-		matches: media_query_text_matches_stub(trimmed)
+		text:    query.to_string()
+		matches: query.matches()
 	}
 }
 
@@ -563,8 +630,8 @@ fn parse_media_query_list_stub(text string) []MediaQueryListEntry {
 }
 
 fn evaluate_media_query_entry_stub(entry MediaQueryListEntry, document &dom.Document) bool {
-	_ = document
-	return media_query_text_matches_stub(entry.text)
+	query := parse_media_query_from_text(entry.text) or { return false }
+	return query.evaluate(document)
 }
 
 fn media_query_entries_from_queries(queries []&MediaQuery) []MediaQueryListEntry {
@@ -576,4 +643,109 @@ fn media_query_entries_from_queries(queries []&MediaQuery) []MediaQueryListEntry
 		}
 	}
 	return entries
+}
+
+pub fn parse_media_query_from_text(text string) ?&MediaQuery {
+	trimmed := text.trim_space()
+	if trimmed.len == 0 {
+		return none
+	}
+
+	lower := trimmed.to_lower()
+	if lower == 'not all' {
+		return MediaQuery.create_not_all()
+	}
+
+	mut remaining := trimmed
+	mut negated := false
+	mut only_modifier := false
+	if starts_with_ascii_word_case_insensitive(remaining, 'not') {
+		negated = true
+		remaining = remaining[3..].trim_space()
+	} else if starts_with_ascii_word_case_insensitive(remaining, 'only') {
+		only_modifier = true
+		remaining = remaining[4..].trim_space()
+	}
+	_ = only_modifier
+
+	media_type_name, rest := consume_first_ascii_word(remaining)
+	if media_type_name.len == 0
+		|| media_type_name.to_lower() in ['layer', 'not', 'and', 'only', 'or'] {
+		return MediaQuery.create_not_all()
+	}
+
+	mut media_type := MediaQueryType{
+		name:       media_type_name
+		known_type: media_type_from_string(media_type_name)
+	}
+	mut condition := ?&BooleanExpression(none)
+	mut condition_text := rest.trim_space()
+	if condition_text.len != 0 {
+		if !starts_with_ascii_word_case_insensitive(condition_text, 'and') {
+			return MediaQuery.create_not_all()
+		}
+		condition_text = condition_text[3..].trim_space()
+		if condition_text.len == 0 {
+			return MediaQuery.create_not_all()
+		}
+		condition = parse_media_condition_stub(condition_text)
+	}
+
+	mut query := MediaQuery{
+		text:            trimmed
+		negated:         negated
+		media_type:      media_type
+		media_condition: condition
+	}
+	query.matches = query.evaluate(unsafe { nil })
+	return &query
+}
+
+fn media_query_matches_media_type(media_type MediaQueryType) MatchResult {
+	known_type := media_type.known_type or { return .false_ }
+	return match known_type {
+		.all {
+			.true_
+		}
+		.print {
+			// FIXME: Enable for printing, when we have printing!
+			.false_
+		}
+		.screen {
+			// FIXME: Disable for printing, when we have printing!
+			.true_
+		}
+	}
+}
+
+fn parse_media_condition_stub(condition_text string) ?&BooleanExpression {
+	trimmed := condition_text.trim_space()
+	if trimmed.len == 0 {
+		return none
+	}
+	// Stub for Parser::parse_media_condition(): media-feature evaluation needs
+	// Window::query_media_feature(). Preserve the parsed condition text and keep
+	// ordinary screen media active until the feature evaluator is ported.
+	return BooleanExpression.create_general_enclosed(trimmed, .true_)
+}
+
+fn starts_with_ascii_word_case_insensitive(text string, word string) bool {
+	if text.len < word.len {
+		return false
+	}
+	if text[..word.len].to_lower() != word {
+		return false
+	}
+	if text.len == word.len {
+		return true
+	}
+	return text[word.len].is_space()
+}
+
+fn consume_first_ascii_word(text string) (string, string) {
+	mut index := 0
+	for index < text.len && !text[index].is_space() {
+		index++
+	}
+	return text[..index], text[index..]
 }

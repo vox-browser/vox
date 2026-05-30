@@ -613,12 +613,7 @@ fn (mut parser Parser) parse_media_query_tokens(mut tokens ComponentValueStream)
 	if text.len == 0 {
 		return none
 	}
-	lower := text.to_lower()
-	matches := !(lower == 'not all' || lower.starts_with('not all '))
-	return &MediaQuery{
-		text:    text
-		matches: matches
-	}
+	return parse_media_query_from_text(text)
 }
 
 fn (mut parser Parser) parse_media_type(mut tokens ComponentValueStream) ?MediaQueryKnownMediaType {
