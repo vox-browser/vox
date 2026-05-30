@@ -2013,11 +2013,11 @@ pub fn interpolate_raw_int(from int, to int, delta f64, accepted_type_range ?Acc
 	return int(clamp_f64(result, min, max))
 }
 
-fn with_keyword_values_resolved_stub(element &dom.Element, property_id PropertyID, value &dom.StyleValue) &dom.StyleValue {
+fn with_keyword_values_resolved_boundary(element &dom.Element, property_id PropertyID, value &dom.StyleValue) &dom.StyleValue {
 	_ = element
 	_ = property_id
-	// Stub: requires GuaranteedInvalidStyleValue, KeywordStyleValue, property_initial_value(),
-	// and StyleComputer::get_non_animated_inherit_value().
+	// Boundary: dom.StyleValue is opaque in this port, so guaranteed-invalid and
+	// CSS-wide keyword resolution cannot inspect the incoming value yet.
 	return unsafe { value }
 }
 
@@ -2044,8 +2044,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 }
 
 pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from &dom.StyleValue, a_to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	from := with_keyword_values_resolved_stub(element, property_id, a_from)
-	to := with_keyword_values_resolved_stub(element, property_id, a_to)
+	from := with_keyword_values_resolved_boundary(element, property_id, a_from)
+	to := with_keyword_values_resolved_boundary(element, property_id, a_to)
 	calculation_context := InterpolationCalculationContext.for_property(property_id)
 
 	match animation_type_from_longhand_property(property_id) {
@@ -2062,7 +2062,7 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 		.custom {
 			if property_id == .content_visibility {
 				// https://drafts.csswg.org/css-contain/#content-visibility-animation
-				// Stub: without KeywordStyleValue we cannot detect hidden/non-hidden; fall back to discrete behavior.
+				// Boundary: without KeywordStyleValue we cannot detect hidden/non-hidden; fall back to discrete behavior.
 				return interpolate_discrete(from, to, delta, allow_discrete)
 			}
 			return interpolate_discrete(from, to, delta, allow_discrete)
@@ -2206,26 +2206,51 @@ pub fn composite_value(property_id PropertyID, underlying_value &dom.StyleValue,
 
 // --- Style invalidation after style changes ---
 
-fn property_affects_layout_stub(property_id PropertyID) bool {
+fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) bool {
 	return match property_id {
-		.content_visibility { true }
-		else { false }
+		// C++ handles ContentVisibility as a full layout-tree rebuild before the
+		// generated property metadata check. For the currently translated
+		// PropertyID set, the missing generated metadata has no remaining
+		// layout-affecting properties.
+		.animation_timeline, .color, .color_scheme, .content_visibility { false }
 	}
 }
 
-fn property_affects_stacking_context_stub(property_id PropertyID) bool {
-	_ = property_id
-	// Stub: generated property metadata is not translated yet.
-	return false
+fn property_affects_stacking_context_generated_metadata_boundary(property_id PropertyID) bool {
+	return match property_id {
+		// None of the currently translated longhands maps to the C++ generated
+		// affects-stacking-context metadata. ContentVisibility is handled by the
+		// full-invalidation branch above.
+		.animation_timeline, .color, .color_scheme, .content_visibility { false }
+	}
 }
 
-fn is_stacking_context_creating_value_stub(property_id PropertyID, value ?&dom.StyleValue) bool {
+fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&dom.StyleValue) bool {
 	_ = property_id
 	if value == none {
 		return false
 	}
-	// Stub: without typed StyleValue APIs, assume present values may create stacking contexts.
+	// Boundary: the C++ implementation checks typed DOM StyleValue subclasses
+	// (opacity numbers, keywords, lists, transforms, filters). The V DOM
+	// StyleValue representation does not expose those queries yet.
 	return true
+}
+
+fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
+	return match property_id {
+		// The translated PropertyID enum does not yet include transform,
+		// perspective, clip, opacity, mix-blend-mode, or filter.
+		.animation_timeline, .color, .color_scheme, .content_visibility { false }
+	}
+}
+
+fn property_requires_full_invalidation(property_id PropertyID) bool {
+	return match property_id {
+		// C++: Display, Position, Content, ContentVisibility.
+		// Only ContentVisibility is currently represented in the V PropertyID enum.
+		.content_visibility { true }
+		else { false }
+	}
 }
 
 pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.StyleValue, new_value ?&dom.StyleValue) RequiredInvalidationAfterStyleChange {
@@ -2238,25 +2263,30 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 
 	// NOTE: If the computed CSS display, position, content, or content-visibility property changes, we have to rebuild the entire layout tree.
 	//       In the future, we should figure out ways to rebuild a smaller part of the tree.
-	if property_id == .content_visibility {
+	if property_requires_full_invalidation(property_id) {
 		invalidation.relayout = true
 		invalidation.rebuild_layout_tree = true
 		invalidation.rebuild_stacking_context_tree = true
 		return invalidation
 	}
 
-	if property_affects_layout_stub(property_id) {
+	if property_affects_layout_generated_metadata_boundary(property_id) {
 		invalidation.relayout = true
 	}
 
-	if property_affects_stacking_context_stub(property_id) {
+	if property_affects_stacking_context_generated_metadata_boundary(property_id) {
 		// OPTIMIZATION: Only rebuild stacking context tree when property crosses from a neutral value
 		// (doesn't create stacking context) to a creating value or vice versa.
-		old_creates := is_stacking_context_creating_value_stub(property_id, old_value)
-		new_creates := is_stacking_context_creating_value_stub(property_id, new_value)
+		old_creates := is_stacking_context_creating_value_boundary(property_id, old_value)
+		new_creates := is_stacking_context_creating_value_boundary(property_id, new_value)
 		if old_creates != new_creates {
 			invalidation.rebuild_stacking_context_tree = true
 		}
+	}
+
+	if property_rebuilds_accumulated_visual_contexts(property_id) {
+		// The C++ struct has a rebuild_accumulated_visual_contexts field; the V
+		// RequiredInvalidationAfterStyleChange has not grown that field yet.
 	}
 
 	// The C++ struct also tracks repaint and accumulated visual context rebuilds. The existing V
