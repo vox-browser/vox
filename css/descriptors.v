@@ -55,8 +55,9 @@ fn descriptor_style_value_to_string(value &dom.StyleValue) string {
 }
 
 struct ParsedCSSDescriptorValue {
-	value      &dom.StyleValue = unsafe { nil }
-	serialized string
+	value       &dom.StyleValue = unsafe { nil }
+	style_value StyleValue
+	serialized  string
 }
 
 fn parse_css_descriptor_value_for_cssom(at_rule_id AtRuleID, descriptor_id DescriptorID, value string) ?ParsedCSSDescriptorValue {
@@ -64,8 +65,9 @@ fn parse_css_descriptor_value_for_cssom(at_rule_id AtRuleID, descriptor_id Descr
 		return none
 	}
 	return ParsedCSSDescriptorValue{
-		value:      dom_style_value_from_value_logic(parsed_value)
-		serialized: parsed_value.serialize(.normal)
+		value:       dom_style_value_from_value_logic(parsed_value)
+		style_value: parsed_value
+		serialized:  parsed_value.serialize(.normal)
 	}
 }
 
@@ -173,7 +175,23 @@ pub fn (mut descriptors CSSDescriptors) set_property(property string, value stri
 	mut updated := false
 
 	// 8. If property is a shorthand property, then for each longhand property longhand that property maps to, in canonical order, follow these substeps:
-	if is_descriptor_shorthand(descriptors.at_rule_id, descriptor_id) {
+	if descriptors.at_rule_id == .page && descriptor_id == .margin {
+		for expanded_value in expand_page_margin_shorthand_descriptor_value(component_value_list.style_value) {
+			longhand_value := parse_css_descriptor_value_for_cssom(descriptors.at_rule_id,
+				expanded_value.descriptor_id, expanded_value.serialized_value) or {
+				continue
+			}
+			longhand_result := descriptors.set_a_css_declaration(expanded_value.descriptor_id,
+				longhand_value.value, if priority.len == 0 {
+				Important.no
+			} else {
+				Important.yes
+			}, longhand_value.serialized)
+			if longhand_result {
+				updated = true
+			}
+		}
+	} else if is_descriptor_shorthand(descriptors.at_rule_id, descriptor_id) {
 		for_each_expanded_descriptor_longhand(descriptors.at_rule_id, descriptor_id,
 			component_value_list.value, fn [mut descriptors, priority, mut updated] (longhand_id DescriptorID, longhand_value &dom.StyleValue) {
 			// 1. Let longhand result be the result of set the CSS declaration longhand with the appropriate value(s)
@@ -323,10 +341,26 @@ pub fn (descriptors &CSSDescriptors) descriptor_or_initial_value(descriptor_id D
 }
 
 fn descriptor_initial_value_stub(at_rule_id AtRuleID, descriptor_id DescriptorID) ?&dom.StyleValue {
-	_ = at_rule_id
-	_ = descriptor_id
-	// Stub: generated descriptor initial values are not translated.
-	return none
+	initial_value := descriptor_initial_value_text(at_rule_id, descriptor_id) or { return none }
+	return parse_css_descriptor_stub(at_rule_id, descriptor_id, initial_value)
+}
+
+fn descriptor_initial_value_text(at_rule_id AtRuleID, descriptor_id DescriptorID) ?string {
+	return match at_rule_id {
+		.page {
+			match descriptor_id {
+				.margin, .margin_top, .margin_right, .margin_bottom, .margin_left { '0' }
+				.size { 'auto' }
+				.page_orientation { 'upright' }
+				.marks { 'none' }
+				.bleed { 'auto' }
+				.unknown { none }
+			}
+		}
+		else {
+			none
+		}
+	}
 }
 
 // https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block
@@ -386,15 +420,66 @@ fn (mut descriptors CSSDescriptors) update_style_attribute() {
 }
 
 pub fn is_descriptor_shorthand(at_rule_id AtRuleID, descriptor_id DescriptorID) bool {
-	_ = at_rule_id
-	_ = descriptor_id
+	if at_rule_id == .page && descriptor_id == .margin {
+		return true
+	}
 	return false
 }
 
 pub fn for_each_expanded_descriptor_longhand(at_rule_id AtRuleID, descriptor_id DescriptorID, value &dom.StyleValue, callback fn (DescriptorID, &dom.StyleValue)) {
-	_ = at_rule_id
-	// Stub: descriptors currently have no shorthand expansion in this V port.
+	if at_rule_id == .page && descriptor_id == .margin {
+		if isnil(value) {
+			callback(.margin_top, unsafe { nil })
+			callback(.margin_right, unsafe { nil })
+			callback(.margin_bottom, unsafe { nil })
+			callback(.margin_left, unsafe { nil })
+			return
+		}
+		// Stub: non-null DOM StyleValue shorthand expansion needs typed ShorthandStyleValue plumbing.
+	}
 	callback(descriptor_id, value)
+}
+
+struct ExpandedDescriptorValue {
+	descriptor_id    DescriptorID
+	serialized_value string
+}
+
+fn expand_page_margin_shorthand_descriptor_value(value StyleValue) []ExpandedDescriptorValue {
+	mut values := []StyleValue{}
+	if value is StyleValueList {
+		values = value.values()
+	} else {
+		values << value
+	}
+
+	if values.len == 0 {
+		return []ExpandedDescriptorValue{}
+	}
+
+	top := values[0]
+	right := if values.len > 1 { values[1] } else { values[0] }
+	bottom := if values.len > 2 { values[2] } else { values[0] }
+	left := if values.len > 3 { values[3] } else { right }
+
+	return [
+		ExpandedDescriptorValue{
+			descriptor_id:    .margin_top
+			serialized_value: top.serialize(.normal)
+		},
+		ExpandedDescriptorValue{
+			descriptor_id:    .margin_right
+			serialized_value: right.serialize(.normal)
+		},
+		ExpandedDescriptorValue{
+			descriptor_id:    .margin_bottom
+			serialized_value: bottom.serialize(.normal)
+		},
+		ExpandedDescriptorValue{
+			descriptor_id:    .margin_left
+			serialized_value: left.serialize(.normal)
+		},
+	]
 }
 
 fn parse_descriptor_declaration_block_stub(at_rule_id AtRuleID, text string) []Descriptor {

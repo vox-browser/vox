@@ -532,11 +532,14 @@ fn (mut parser Parser) parse_descriptor_value_tokens(at_rule_id AtRuleID, descri
 	match at_rule_id {
 		.page {
 			maybe_value = match descriptor_id {
-				.margin, .margin_top, .margin_right, .margin_bottom, .margin_left {
-					parser.parse_length_percentage_value(mut tokens)
+				.margin {
+					parser.parse_page_margin_shorthand_descriptor_value(mut tokens)
+				}
+				.margin_top, .margin_right, .margin_bottom, .margin_left {
+					parser.parse_page_margin_longhand_descriptor_value(mut tokens)
 				}
 				.bleed {
-					parser.parse_length_value(mut tokens)
+					parser.parse_page_bleed_descriptor_value(mut tokens)
 				}
 				.size {
 					parser.parse_page_size_descriptor_value(mut tokens)
@@ -596,6 +599,58 @@ fn is_page_size_keyword(value string) bool {
 
 fn is_page_size_orientation(value string) bool {
 	return value == 'portrait' || value == 'landscape'
+}
+
+fn (mut parser Parser) parse_page_margin_component_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut copy := tokens.clone()
+	if value := parser.parse_length_percentage_value(mut copy) {
+		tokens = copy
+		return value
+	}
+
+	copy = tokens.clone()
+	if value := consume_descriptor_ident(mut copy) {
+		if value == 'auto' {
+			tokens = copy
+			return StyleValue(KeywordStyleValue.create(.auto))
+		}
+	}
+	return none
+}
+
+fn (mut parser Parser) parse_page_margin_longhand_descriptor_value(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_page_margin_component_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_page_margin_shorthand_descriptor_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut values := []StyleValue{}
+	for values.len < 4 {
+		mut copy := tokens.clone()
+		value := parser.parse_page_margin_component_value(mut copy) or { break }
+		values << value
+		tokens = copy
+		if !tokens.has_more_tokens() {
+			break
+		}
+	}
+	if values.len == 0 {
+		return none
+	}
+	if values.len == 1 {
+		return values[0]
+	}
+	return StyleValue(StyleValueList.create(values, .space, .no))
+}
+
+fn (mut parser Parser) parse_page_bleed_descriptor_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut copy := tokens.clone()
+	if value := consume_descriptor_ident(mut copy) {
+		if value == 'auto' {
+			tokens = copy
+			return StyleValue(KeywordStyleValue.create(.auto))
+		}
+	}
+	return parser.parse_length_value(mut tokens)
 }
 
 fn (mut parser Parser) parse_page_marks_descriptor_value(mut tokens ComponentValueStream) ?StyleValue {
