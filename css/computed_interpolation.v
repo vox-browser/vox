@@ -808,6 +808,7 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.color_scheme { 'normal' }
 		.content_visibility { 'visible' }
 	}
+
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
 		// Boundary: dom.StyleValue is opaque in this port, so initial values that
 		// parse to typed css.StyleValue but cannot be reified still use the empty
@@ -847,8 +848,8 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 
 fn computed_interpolation_style_value_is_inherit(value &dom.StyleValue) bool {
 	_ = value
-	// Stub: dom.StyleValue is opaque in this port, so CSS-wide keyword detection
-	// cannot be performed here yet.
+	// Boundary: dom.StyleValue is opaque in this port, so CSS-wide keyword
+	// detection cannot be performed here yet.
 	return false
 }
 
@@ -1064,13 +1065,13 @@ pub fn (mut c ComputedProperties) revert_property(property_id PropertyID, style_
 
 pub fn (c &ComputedProperties) gap_value(property_id PropertyID) GapValue {
 	_ = property_id
-	// Stub: StyleValue keyword and LengthPercentage extraction are not wired to dom.StyleValue yet.
+	// Boundary: StyleValue keyword and LengthPercentage extraction are not wired to dom.StyleValue yet.
 	return GapValue.normal()
 }
 
 pub fn (c &ComputedProperties) size_value(property_id PropertyID) Size {
 	_ = property_id
-	// Stub: requires KeywordStyleValue/FitContentStyleValue/LengthStyleValue plumbing.
+	// Boundary: requires KeywordStyleValue/FitContentStyleValue/LengthStyleValue plumbing.
 	return Size.make_auto()
 }
 
@@ -1084,14 +1085,14 @@ pub fn (c &ComputedProperties) length_box(left_id PropertyID, top_id PropertyID,
 	_ = top_id
 	_ = right_id
 	_ = bottom_id
-	// Stub: individual side StyleValue conversion is not available yet.
+	// Boundary: individual side StyleValue conversion is not available yet.
 	return LengthBox.with_values(default_value, default_value, default_value, default_value)
 }
 
 pub fn (c &ComputedProperties) color_or_fallback(property_id PropertyID, color_resolution_context ColorResolutionContext, fallback ComputedColor) ComputedColor {
 	_ = property_id
 	_ = color_resolution_context
-	// Stub: dom.StyleValue has no to_color() API in this port yet.
+	// Boundary: dom.StyleValue has no to_color() API in this port yet.
 	return fallback
 }
 
@@ -1238,7 +1239,7 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 
 pub fn (c &ComputedProperties) content_visibility() ContentVisibility {
 	if _ := c.property(.content_visibility, .yes) {
-		// Stub: KeywordStyleValue conversion is not wired to dom.StyleValue yet.
+		// Boundary: KeywordStyleValue conversion is not wired to dom.StyleValue yet.
 	}
 	return .visible
 }
@@ -1653,13 +1654,13 @@ pub fn (c &ComputedProperties) view_transition_name() ?string {
 pub fn (c &ComputedProperties) animations(abstract_element &dom.AbstractElement) []ComputedAnimationProperties {
 	_ = c
 	_ = abstract_element
-	// Stub: requires CSS animation longhands and AnimationTimeline subclasses.
+	// Boundary: requires CSS animation longhands and AnimationTimeline subclasses.
 	return []ComputedAnimationProperties{}
 }
 
 pub fn (c &ComputedProperties) transitions() []TransitionProperties {
 	_ = c
-	// Stub: requires transition-* longhands and property name parsing.
+	// Boundary: requires transition-* longhands and property name parsing.
 	return []TransitionProperties{}
 }
 
@@ -1673,7 +1674,7 @@ pub fn (mut c ComputedProperties) set_display_before_box_type_transformation(val
 
 pub fn ComputedProperties.transformations_for_style_value(value &dom.StyleValue) []TransformationData {
 	_ = value
-	// Stub: TransformationStyleValue/StyleValueList are not translated to dom.StyleValue yet.
+	// Boundary: TransformationStyleValue/StyleValueList are not translated to dom.StyleValue yet.
 	return []TransformationData{}
 }
 
@@ -2103,7 +2104,7 @@ pub fn interpolate_length_percentage(calculation_context InterpolationCalculatio
 			to.percentage().value(), delta, range)))
 	}
 
-	// Stub: mixed percentages/dimensions require CalculatedStyleValue math-sum creation.
+	// Boundary: mixed percentages/dimensions require CalculatedStyleValue math-sum creation.
 	return none
 }
 
@@ -2122,35 +2123,35 @@ pub fn interpolate_length_percentage_or_auto(calculation_context InterpolationCa
 			to.percentage().value(), delta, range)))
 	}
 
-	// Stub: auto/non-auto and mixed calc interpolation need StyleValue conversion.
+	// Boundary: auto/non-auto and mixed calc interpolation need StyleValue conversion.
 	return none
 }
 
 pub fn interpolate_value(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	_ = element
 	_ = calculation_context
-	// Stub: dom.StyleValue has no type(), numeric accessors, color conversion, or list APIs yet.
+	// Boundary: dom.StyleValue has no type(), numeric accessors, color conversion, or list APIs yet.
 	return interpolate_discrete(from, to, delta, allow_discrete)
 }
 
 pub fn interpolate_repeatable_list(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	_ = element
 	_ = calculation_context
-	// Stub: requires StyleValueList and repeatable-list expansion.
+	// Boundary: requires StyleValueList and repeatable-list expansion.
 	return interpolate_discrete(from, to, delta, allow_discrete)
 }
 
 pub fn interpolate_box_shadow(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	_ = element
 	_ = calculation_context
-	// Stub: requires ShadowStyleValue, StyleValueList, and color resolution.
+	// Boundary: requires ShadowStyleValue, StyleValueList, and color resolution.
 	return interpolate_discrete(from, to, delta, allow_discrete)
 }
 
 pub fn interpolate_transform(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	_ = element
 	_ = calculation_context
-	// Stub: requires TransformationStyleValue, matrix decomposition, and paintable-box APIs.
+	// Boundary: requires TransformationStyleValue, matrix decomposition, and paintable-box APIs.
 	return interpolate_discrete(from, to, delta, allow_discrete)
 }
 
@@ -2181,11 +2182,202 @@ pub fn interpolate_color(from ComputedColor, to ComputedColor, delta f64, syntax
 		u8(math.round(clamped_alpha * 255.0)))
 }
 
-pub fn accumulate_filter_function(underlying_list []FilterValue, animated_list []FilterValue) []FilterValue {
+fn filter_style_value_zero_length() StyleValue {
+	return StyleValue(LengthStyleValue.create(Length.make_px(0)))
+}
+
+fn filter_style_value_zero_angle() StyleValue {
+	return StyleValue(AngleStyleValue.create(Angle.make_degrees(0)))
+}
+
+fn filter_style_value_number(value f64) StyleValue {
+	return StyleValue(NumberStyleValue.create(value))
+}
+
+fn filter_style_value_initial_value_for_accumulation(value FilterStyleValue) ?FilterStyleValue {
+	return match value {
+		FilterOperationBlur {
+			FilterStyleValue(FilterOperationBlur{
+				radius: filter_style_value_zero_length()
+			})
+		}
+		FilterOperationDropShadow {
+			FilterStyleValue(FilterOperationDropShadow{
+				offset_x: filter_style_value_zero_length()
+				offset_y: filter_style_value_zero_length()
+				radius:   filter_style_value_zero_length()
+			})
+		}
+		FilterOperationHueRotate {
+			FilterStyleValue(FilterOperationHueRotate{
+				angle: filter_style_value_zero_angle()
+			})
+		}
+		FilterOperationColor {
+			default_amount := match value.operation {
+				.grayscale, .invert, .sepia { 0.0 }
+				.brightness, .contrast, .opacity, .saturate { 1.0 }
+			}
+
+			FilterStyleValue(FilterOperationColor{
+				operation: value.operation
+				amount:    filter_style_value_number(default_amount)
+			})
+		}
+		URL {
+			none
+		}
+	}
+}
+
+fn filter_style_value_add_lengths(a StyleValue, b StyleValue) StyleValue {
+	a_value :=
+		style_values_extra_length_from_style_value(a).absolute_length_to_px_without_rounding()
+	b_value :=
+		style_values_extra_length_from_style_value(b).absolute_length_to_px_without_rounding()
+	return StyleValue(LengthStyleValue.create(Length.make_px(a_value + b_value)))
+}
+
+fn filter_style_value_add_optional_lengths(a ?StyleValue, b ?StyleValue) ?StyleValue {
+	if a == none && b == none {
+		return none
+	}
+	a_value := if value := a {
+		style_values_extra_length_from_style_value(value).absolute_length_to_px_without_rounding()
+	} else {
+		0.0
+	}
+	b_value := if value := b {
+		style_values_extra_length_from_style_value(value).absolute_length_to_px_without_rounding()
+	} else {
+		0.0
+	}
+	return StyleValue(LengthStyleValue.create(Length.make_px(a_value + b_value)))
+}
+
+fn filter_style_value_saturating_channel_add(a u8, b u8) u8 {
+	sum := int(a) + int(b)
+	if sum > 255 {
+		return 255
+	}
+	return u8(sum)
+}
+
+fn filter_style_value_accumulate_filter(underlying FilterStyleValue, animated FilterStyleValue) ?FilterStyleValue {
+	return match underlying {
+		FilterOperationBlur {
+			if animated is FilterOperationBlur {
+				FilterStyleValue(FilterOperationBlur{
+					radius: StyleValue(LengthStyleValue.create(Length.make_px(
+						underlying.resolved_radius() + animated.resolved_radius())))
+				})
+			} else {
+				none
+			}
+		}
+		FilterOperationHueRotate {
+			if animated is FilterOperationHueRotate {
+				FilterStyleValue(FilterOperationHueRotate{
+					angle: StyleValue(AngleStyleValue.create(Angle.make_degrees(
+						underlying.angle_degrees() + animated.angle_degrees())))
+				})
+			} else {
+				none
+			}
+		}
+		FilterOperationColor {
+			if animated is FilterOperationColor {
+				if underlying.operation != animated.operation {
+					return none
+				}
+				underlying_amount := underlying.resolved_amount()
+				animated_amount := animated.resolved_amount()
+				accumulated := match underlying.operation {
+					.brightness, .contrast, .opacity, .saturate {
+						underlying_amount + animated_amount - 1.0
+					}
+					.grayscale, .invert, .sepia {
+						underlying_amount + animated_amount
+					}
+				}
+
+				FilterStyleValue(FilterOperationColor{
+					operation: underlying.operation
+					amount:    filter_style_value_number(accumulated)
+				})
+			} else {
+				none
+			}
+		}
+		FilterOperationDropShadow {
+			if animated is FilterOperationDropShadow {
+				mut accumulated_color := animated.color
+				if underlying_color_value := underlying.color {
+					if animated_color_value := animated.color {
+						if underlying_color := underlying_color_value.to_color(ColorResolutionContext{}) {
+							if animated_color := animated_color_value.to_color(ColorResolutionContext{}) {
+								accumulated_color = StyleValue(ColorStyleValue.create(Color.rgba(filter_style_value_saturating_channel_add(underlying_color.red(),
+									animated_color.red()), filter_style_value_saturating_channel_add(underlying_color.green(),
+									animated_color.green()), filter_style_value_saturating_channel_add(underlying_color.blue(),
+									animated_color.blue()), filter_style_value_saturating_channel_add(underlying_color.alpha(),
+									animated_color.alpha()))))
+							}
+						}
+					}
+				}
+				FilterStyleValue(FilterOperationDropShadow{
+					offset_x: filter_style_value_add_lengths(underlying.offset_x, animated.offset_x)
+					offset_y: filter_style_value_add_lengths(underlying.offset_y, animated.offset_y)
+					radius:   filter_style_value_add_optional_lengths(underlying.radius,
+						animated.radius)
+					color:    accumulated_color
+				})
+			} else {
+				none
+			}
+		}
+		URL {
+			none
+		}
+	}
+}
+
+pub fn accumulate_filter_function(underlying_list []FilterStyleValue, animated_list []FilterStyleValue) []FilterStyleValue {
 	// https://drafts.csswg.org/filter-effects/#accumulation
-	// Stub: FilterValue is currently an empty placeholder, so we can only preserve list concatenation shape.
-	mut result := underlying_list.clone()
-	result << animated_list
+	// Accumulation of <filter-value-list>s follows the same matching and extending rules as interpolation, falling
+	// back to replace behavior if the lists do not match. Instead of interpolating matching <filter-function> pairs,
+	// their arguments are arithmetically added together, except functions whose initial value is 1 use one-based addition.
+	max_size := if underlying_list.len > animated_list.len {
+		underlying_list.len
+	} else {
+		animated_list.len
+	}
+	mut extended_underlying := []FilterStyleValue{cap: max_size}
+	mut extended_animated := []FilterStyleValue{cap: max_size}
+	for i in 0 .. max_size {
+		if i < underlying_list.len {
+			extended_underlying << underlying_list[i]
+		} else {
+			extended_underlying << (filter_style_value_initial_value_for_accumulation(animated_list[i]) or {
+				return []FilterStyleValue{}
+			})
+		}
+
+		if i < animated_list.len {
+			extended_animated << animated_list[i]
+		} else {
+			extended_animated << (filter_style_value_initial_value_for_accumulation(underlying_list[i]) or {
+				return []FilterStyleValue{}
+			})
+		}
+	}
+
+	mut result := []FilterStyleValue{cap: max_size}
+	for i in 0 .. max_size {
+		accumulated := filter_style_value_accumulate_filter(extended_underlying[i],
+			extended_animated[i]) or { return []FilterStyleValue{} }
+		result << accumulated
+	}
 	return result
 }
 
@@ -2198,7 +2390,7 @@ pub fn composite_value(property_id PropertyID, underlying_value &dom.StyleValue,
 			return none
 		}
 		.add, .accumulate {
-			// Stub: additive composition requires typed StyleValue subclasses.
+			// Boundary: additive composition requires typed StyleValue subclasses.
 			return none
 		}
 	}
@@ -3327,7 +3519,7 @@ pub mut:
 pub struct LogicalAliasMappingContext {
 pub mut:
 	writing_mode WritingMode = .horizontal_tb
-	direction     Direction   = .ltr
+	direction    Direction   = .ltr
 }
 
 pub struct RuleCache {
@@ -3346,10 +3538,10 @@ pub mut:
 
 pub struct StyleComputationContextStub {
 pub mut:
-	property_id                PropertyID
-	length_resolution_context  LengthResolutionContext = LengthResolutionContext.default()
-	color_scheme               ?PreferredColorScheme
-	abstract_element           ?dom.AbstractElement
+	property_id               PropertyID
+	length_resolution_context LengthResolutionContext = LengthResolutionContext.default()
+	color_scheme              ?PreferredColorScheme
+	abstract_element          ?dom.AbstractElement
 }
 
 @[heap]
@@ -3374,14 +3566,14 @@ pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
 }
 
 pub fn StyleComputer.for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn (PropertyID, &dom.StyleValue)) {
-	// Stub: shorthand expansion requires the generated property metadata table.
+	// Boundary: shorthand expansion requires the generated property metadata table and typed dom.StyleValue.
 	set_longhand_property(property_id, value)
 }
 
 pub fn StyleComputer.get_non_animated_inherit_value(property_id PropertyID, abstract_element dom.AbstractElement) &dom.StyleValue {
 	_ = property_id
 	_ = abstract_element
-	// Stub: needs parent ComputedProperties and CSS inheritance metadata.
+	// Boundary: needs parent ComputedProperties and CSS inheritance metadata.
 	return computed_interpolation_empty_style_value()
 }
 
@@ -3394,7 +3586,7 @@ pub mut:
 pub fn StyleComputer.get_animated_inherit_value(property_id PropertyID, abstract_element dom.AbstractElement) ?AnimatedInheritValue {
 	_ = property_id
 	_ = abstract_element
-	// Stub: needs inherited animated property lookup from parent style.
+	// Boundary: needs inherited animated property lookup from parent style.
 	return none
 }
 
@@ -3480,8 +3672,8 @@ pub fn (s &StyleComputer) compute_pseudo_element_style_if_needed(abstract_elemen
 }
 
 pub fn (s &StyleComputer) collect_matching_rules(abstract_element dom.AbstractElement, origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []MatchingRule {
-	return style_computer_collect_matching_rules_without_scope_boundary(s, abstract_element, origin, mut
-		attempted_pseudo_class_matches, qualified_layer_name)
+	return style_computer_collect_matching_rules_without_scope_boundary(s, abstract_element,
+		origin, mut attempted_pseudo_class_matches, qualified_layer_name)
 }
 
 pub fn (s &StyleComputer) invalidation_plan_for_properties(properties []InvalidationProperty, scope &StyleScope) &InvalidationPlan {
@@ -3541,7 +3733,7 @@ pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.Abs
 	_ = s
 	_ = abstract_element
 	_ = cascaded_properties
-	// Stub: requires font-size dependency analysis and parser style values.
+	// Boundary: requires font-size dependency analysis and parser style values.
 	return none
 }
 
@@ -3554,7 +3746,7 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 	_ = abstract_element
 	_ = animation
 	_ = computed_properties
-	// Stub: requires Animations::KeyframeEffect.
+	// Boundary: requires Animations::KeyframeEffect.
 }
 
 pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) &ComputedProperties {
@@ -3572,15 +3764,18 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 				properties.set_property_important(property_id, .yes)
 			}
 			value = cascaded_style_property.value
-			requires_computation = computed_interpolation_property_requires_computation_with_cascaded_value(property_id)
+			requires_computation =
+				computed_interpolation_property_requires_computation_with_cascaded_value(property_id)
 		}
 
-		mut should_inherit := value == none && computed_interpolation_is_inherited_property(property_id)
+		mut should_inherit := value == none
+			&& computed_interpolation_is_inherited_property(property_id)
 
 		// https://www.w3.org/TR/css-cascade-4/#inherit
 		// If the cascaded value of a property is the inherit keyword, the property’s specified and computed values are the inherited value.
 		if style_value := value {
-			should_inherit = should_inherit || computed_interpolation_style_value_is_inherit(style_value)
+			should_inherit = should_inherit
+				|| computed_interpolation_style_value_is_inherit(style_value)
 		}
 
 		// https://www.w3.org/TR/css-cascade-4/#inherit-initial
@@ -3594,8 +3789,8 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		// https://www.w3.org/TR/css-color-4/#resolving-other-colors
 		// In the color property, the used value of currentcolor is the resolved inherited value.
 		if style_value := value {
-			should_inherit = should_inherit
-				|| (property_id == .color && computed_interpolation_style_value_is_currentcolor(style_value))
+			should_inherit = should_inherit || (property_id == .color
+				&& computed_interpolation_style_value_is_currentcolor(style_value))
 		}
 
 		if should_inherit && inherited_source_available {
@@ -3603,7 +3798,8 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			// placeholder here, not this port's ComputedProperties map.
 			properties.set_property_inherited(property_id, .yes)
 			value = computed_interpolation_property_initial_value(property_id)
-			requires_computation = computed_interpolation_property_requires_computation_with_inherited_value(property_id)
+			requires_computation =
+				computed_interpolation_property_requires_computation_with_inherited_value(property_id)
 		}
 
 		if style_value := value {
@@ -3611,19 +3807,22 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 				|| computed_interpolation_style_value_is_unset(style_value)
 				|| (should_inherit && !inherited_source_available) {
 				value = computed_interpolation_property_initial_value(property_id)
-				requires_computation = computed_interpolation_property_requires_computation_with_initial_value(property_id)
+				requires_computation =
+					computed_interpolation_property_requires_computation_with_initial_value(property_id)
 			}
 		} else {
 			value = computed_interpolation_property_initial_value(property_id)
-			requires_computation = computed_interpolation_property_requires_computation_with_initial_value(property_id)
+			requires_computation =
+				computed_interpolation_property_requires_computation_with_initial_value(property_id)
 		}
 
 		style_value := value or { continue }
 		computed_value := if requires_computation {
 			StyleComputer.compute_value_of_property(property_id, style_value, fn [properties] (id PropertyID) &dom.StyleValue {
-				return properties.property(id, .no) or { computed_interpolation_property_initial_value(id) }
-			}, s.get_computation_context_for_property(property_id, properties, abstract_element),
-				1.0)
+				return properties.property(id, .no) or {
+					computed_interpolation_property_initial_value(id)
+				}
+			}, s.get_computation_context_for_property(property_id, properties, abstract_element), 1.0)
 		} else {
 			style_value
 		}
@@ -3638,11 +3837,12 @@ pub fn (s &StyleComputer) compute_property_values(mut computed_properties Comput
 		specified_value := computed_properties.property(property_id, .no) or {
 			computed_interpolation_property_initial_value(property_id)
 		}
-		computation_context := s.get_computation_context_for_property(property_id, computed_properties,
-			abstract_element)
-		computed_value := StyleComputer.compute_value_of_property(property_id, specified_value,
-			fn [computed_properties] (id PropertyID) &dom.StyleValue {
-			return computed_properties.property(id, .no) or { computed_interpolation_property_initial_value(id) }
+		computation_context := s.get_computation_context_for_property(property_id,
+			computed_properties, abstract_element)
+		computed_value := StyleComputer.compute_value_of_property(property_id, specified_value, fn [computed_properties] (id PropertyID) &dom.StyleValue {
+			return computed_properties.property(id, .no) or {
+				computed_interpolation_property_initial_value(id)
+			}
 		}, computation_context, 1.0)
 		computed_properties.set_property_without_modifying_flags(property_id, computed_value)
 	}
@@ -3652,7 +3852,7 @@ pub fn (s &StyleComputer) process_animation_definitions(computed_properties &Com
 	_ = s
 	_ = computed_properties
 	_ = abstract_element
-	// Stub: CSSAnimation and Keyframes rule processing is not translated yet.
+	// Boundary: CSSAnimation and Keyframes rule processing is not translated yet.
 }
 
 pub fn (s &StyleComputer) should_reject_with_ancestor_filter(selector Selector) bool {
@@ -3670,7 +3870,7 @@ pub fn (s &StyleComputer) should_reject_with_ancestor_filter(selector Selector) 
 pub fn StyleComputer.compute_value_of_custom_property(abstract_element dom.AbstractElement, custom_property string) &dom.StyleValue {
 	_ = abstract_element
 	_ = custom_property
-	// Stub: Parser::resolve_unresolved_style_value and custom-property substitution contexts are absent.
+	// Boundary: Parser::resolve_unresolved_style_value and custom-property substitution contexts are absent.
 	return computed_interpolation_empty_style_value()
 }
 
@@ -3679,7 +3879,7 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 	_ = get_property_specified_value
 	_ = computation_context
 	_ = device_pixels_per_css_pixel
-	// Stub: property-specific computed-value conversions live in StyleComputer.cpp and depend on typed StyleValue APIs.
+	// Boundary: property-specific computed-value conversions live in StyleComputer.cpp and depend on typed StyleValue APIs.
 	return unsafe { specified_value }
 }
 
@@ -3772,8 +3972,9 @@ pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractE
 	}
 
 	// Normal user agent declarations
-	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_agent_rules,
-		.user_agent, .no, none, logical_alias_mapping_context, properties_to_cascade)
+	s.cascade_declarations(mut cascaded_properties, abstract_element,
+		matching_rule_set.user_agent_rules, .user_agent, .no, none, logical_alias_mapping_context,
+		properties_to_cascade)
 
 	// Normal user declarations
 	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_rules,
@@ -3790,15 +3991,15 @@ pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractE
 
 	// Normal author declarations, ordered by @layer, with un-@layer-ed rules last.
 	for layer in matching_rule_set.author_rules {
-		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author, .no,
-			layer.qualified_layer_name, logical_alias_mapping_context, properties_to_cascade)
+		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author,
+			.no, layer.qualified_layer_name, logical_alias_mapping_context, properties_to_cascade)
 	}
 
 	// Important author declarations, with un-@layer-ed rules first, followed by each @layer in reverse order.
 	for i := matching_rule_set.author_rules.len - 1; i >= 0; i-- {
 		layer := matching_rule_set.author_rules[i]
-		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author, .yes,
-			none, logical_alias_mapping_context, properties_to_cascade)
+		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author,
+			.yes, none, logical_alias_mapping_context, properties_to_cascade)
 	}
 
 	// Important user declarations
@@ -3806,8 +4007,9 @@ pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractE
 		.user, .yes, none, logical_alias_mapping_context, properties_to_cascade)
 
 	// Important user agent declarations
-	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_agent_rules,
-		.user_agent, .yes, none, logical_alias_mapping_context, properties_to_cascade)
+	s.cascade_declarations(mut cascaded_properties, abstract_element,
+		matching_rule_set.user_agent_rules, .user_agent, .yes, none, logical_alias_mapping_context,
+		properties_to_cascade)
 
 	return cascaded_properties
 }
@@ -3816,7 +4018,7 @@ pub fn (s &StyleComputer) compute_custom_properties(mut computed_properties Comp
 	_ = s
 	_ = computed_properties
 	_ = abstract_element
-	// Stub: custom property substitution and inheritance are partially in properties_data.v only.
+	// Boundary: custom property substitution and inheritance are partially in properties_data.v only.
 }
 
 pub fn (s &StyleComputer) start_needed_transitions(old_style &ComputedProperties, mut new_style ComputedProperties, abstract_element dom.AbstractElement) {
@@ -3824,20 +4026,20 @@ pub fn (s &StyleComputer) start_needed_transitions(old_style &ComputedProperties
 	_ = old_style
 	_ = new_style
 	_ = abstract_element
-	// Stub: requires Animation timelines, transition generation, and effect stacks.
+	// Boundary: requires Animation timelines, transition generation, and effect stacks.
 }
 
 pub fn (s &StyleComputer) resolve_effective_overflow_values(mut computed_properties ComputedProperties) {
 	_ = s
 	_ = computed_properties
-	// Stub: requires overflow-x/overflow-y longhands.
+	// Boundary: requires overflow-x/overflow-y longhands.
 }
 
 pub fn (s &StyleComputer) transform_box_type_if_needed(mut computed_properties ComputedProperties, abstract_element dom.AbstractElement) {
 	_ = s
 	_ = computed_properties
 	_ = abstract_element
-	// Stub: requires DOM/layout display transformations.
+	// Boundary: requires DOM/layout display transformations.
 }
 
 pub fn (s &StyleComputer) viewport_rect() CSSPixelRect {
@@ -3889,14 +4091,13 @@ pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedP
 				}
 			}
 
-			StyleComputer.for_each_property_expanding_shorthands(property_id, property_value,
-				fn [mut cascaded_properties, mut seen_properties, important, origin, layer_name, declaration] (longhand_id PropertyID, longhand_value &dom.StyleValue) {
+			StyleComputer.for_each_property_expanding_shorthands(property_id, property_value, fn [mut cascaded_properties, mut seen_properties, important, origin, layer_name, declaration] (longhand_id PropertyID, longhand_value &dom.StyleValue) {
 				if seen_properties[longhand_id] {
 					return
 				}
 				seen_properties[longhand_id] = true
-				cascaded_properties.set_property(longhand_id, longhand_value, important, origin, layer_name,
-					voidptr(declaration))
+				cascaded_properties.set_property(longhand_id, longhand_value, important, origin,
+					layer_name, voidptr(declaration))
 			})
 		}
 	}

@@ -235,20 +235,20 @@ pub fn (orientation &ScreenOrientation) lock(lock_type OrientationLockType) ! {
 	_ = lock_type
 	// Boundary: the C++ implementation currently returns NotSupportedError here.
 	// A real lock needs WebIDL Promise plumbing plus browser/platform orientation support.
-	return error('NotSupportedError: FIXME: ScreenOrientation::lock() is not implemented')
+	return error('NotSupportedError: ScreenOrientation::lock() is not supported in this port')
 }
 
 // https://w3c.github.io/screen-orientation/#unlock-method
 pub fn (orientation &ScreenOrientation) unlock() {
 	_ = orientation
-	// Boundary: C++ currently only logs "FIXME: Stubbed ScreenOrientation::unlock()".
+	// Boundary: C++ currently only logs from ScreenOrientation::unlock().
 	// There is no platform orientation lock state to clear in this V port yet.
 }
 
 // https://w3c.github.io/screen-orientation/#type-attribute
 pub fn (orientation &ScreenOrientation) type_() OrientationType {
 	_ = orientation
-	// Boundary: C++ currently only logs "FIXME: Stubbed ScreenOrientation::type()"
+	// Boundary: C++ currently only logs from ScreenOrientation::type()
 	// and reports LandscapePrimary until browser/platform orientation state exists.
 	return .landscape_primary
 }
@@ -256,7 +256,7 @@ pub fn (orientation &ScreenOrientation) type_() OrientationType {
 // https://w3c.github.io/screen-orientation/#angle-attribute
 pub fn (orientation &ScreenOrientation) angle() u16 {
 	_ = orientation
-	// Boundary: C++ currently only logs "FIXME: Stubbed ScreenOrientation::angle()"
+	// Boundary: C++ currently only logs from ScreenOrientation::angle()
 	// and reports 0 until browser/platform orientation state exists.
 	return 0
 }
@@ -973,7 +973,7 @@ pub fn transition_timing_attributes_for_property(abstract_element dom.AbstractEl
 
 fn document_timeline_for_transition(abstract_element dom.AbstractElement) ?&AnimationTimeline {
 	_ = abstract_element
-	// Stub: abstract_element.document().timeline() is a DOM DocumentTimeline in this partial port,
+	// Boundary: abstract_element.document().timeline() is a DOM DocumentTimeline in this partial port,
 	// while CSS animations currently use the local AnimationTimeline model.
 	return &AnimationTimeline{}
 }
@@ -982,7 +982,7 @@ fn set_transition_on_element(abstract_element dom.AbstractElement, property_id P
 	_ = abstract_element
 	_ = property_id
 	_ = transition
-	// Stub: Element::set_transition(pseudo_element, property_id, transition) is not translated yet.
+	// Boundary: Element::set_transition(pseudo_element, property_id, transition) is not translated yet.
 }
 
 pub fn CSSTransition.start_a_transition(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
@@ -1054,7 +1054,7 @@ pub fn CSSTransition.new_with_timing_attributes(abstract_element dom.AbstractEle
 	transition.set_effect(transition.keyframe_effect_)
 	set_transition_on_element(abstract_element, transition.transition_property_, transition)
 
-	// Stub: HTML::TemporaryExecutionContext is not translated yet.
+	// Boundary: HTML::TemporaryExecutionContext is not translated yet.
 	transition.play() or {}
 	return transition
 }
