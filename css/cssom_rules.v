@@ -1432,9 +1432,10 @@ pub mut:
 
 pub struct CSSStyleSheetInit {
 pub mut:
-	base_url ?string
-	media    string
-	disabled bool
+	base_url   ?string
+	media      string
+	media_list ?&MediaList
+	disabled   bool
 }
 
 pub fn CSSStyleSheet.create(rules &CSSRuleList, media &MediaList, location ?string) &CSSStyleSheet {
@@ -1518,7 +1519,13 @@ pub fn css_style_sheet_construct(options ?CSSStyleSheetInit, associated_document
 	// 12. If the media attribute of options is a string, create a MediaList object from the string and assign it as sheet's media.
 	//     Otherwise, serialize a media query list from the attribute and then create a MediaList object from the resulting string and set it as sheet's media.
 	if init := options {
-		sheet.set_media(init.media)
+		if media_list := init.media_list {
+			sheet.base.media = media_list
+			mut mutable_media_list := unsafe { &MediaList(media_list) }
+			mutable_media_list.set_associated_style_sheet(sheet)
+		} else {
+			sheet.set_media(init.media)
+		}
 		// 13. If the disabled attribute of options is true, set sheet's disabled flag.
 		if init.disabled {
 			sheet.base.disabled = true
