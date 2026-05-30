@@ -274,14 +274,12 @@ pub fn (orientation &ScreenOrientation) onchange() ?&dom.CallbackType {
 // https://drafts.csswg.org/cssom-view/#visualviewport
 @[heap]
 pub struct VisualViewport {
+	dom.EventTarget
 pub mut:
 	document_      ?&dom.Document
 	offset_        CSSPixelPoint
 	scale_         f64          = 1.0
 	viewport_rect_ CSSPixelRect = CSSPixelRect.new(0, 0, 800, 600)
-	onresize_      voidptr
-	onscroll_      voidptr
-	onscrollend_   voidptr
 	needs_repaint  bool
 	needs_contexts bool
 }
@@ -290,6 +288,22 @@ pub fn VisualViewport.create(document &dom.Document) &VisualViewport {
 	return &VisualViewport{
 		document_: document
 	}
+}
+
+pub fn (mut viewport VisualViewport) initialize() {
+	// WEB_SET_PROTOTYPE_FOR_INTERFACE(VisualViewport);
+	viewport.EventTarget.initialize()
+}
+
+pub fn (mut viewport VisualViewport) visit_edges(mut visitor dom.CellVisitor) {
+	viewport.EventTarget.visit_edges(mut visitor)
+	if document := viewport.document_ {
+		visitor.visit(document)
+	}
+}
+
+fn (viewport &VisualViewport) event_target() &dom.EventTarget {
+	return unsafe { &dom.EventTarget(viewport) }
 }
 
 pub fn (viewport &VisualViewport) offset() CSSPixelPoint {
@@ -386,28 +400,28 @@ pub fn (viewport &VisualViewport) scale() f64 {
 	return viewport.scale_
 }
 
-pub fn (mut viewport VisualViewport) set_onresize(event_handler voidptr) {
-	viewport.onresize_ = event_handler
+pub fn (viewport &VisualViewport) set_onresize(event_handler ?&dom.CallbackType) {
+	viewport.event_target().set_event_handler_attribute('resize', event_handler)
 }
 
-pub fn (viewport &VisualViewport) onresize() voidptr {
-	return viewport.onresize_
+pub fn (viewport &VisualViewport) onresize() ?&dom.CallbackType {
+	return viewport.event_target().event_handler_attribute('resize')
 }
 
-pub fn (mut viewport VisualViewport) set_onscroll(event_handler voidptr) {
-	viewport.onscroll_ = event_handler
+pub fn (viewport &VisualViewport) set_onscroll(event_handler ?&dom.CallbackType) {
+	viewport.event_target().set_event_handler_attribute('scroll', event_handler)
 }
 
-pub fn (viewport &VisualViewport) onscroll() voidptr {
-	return viewport.onscroll_
+pub fn (viewport &VisualViewport) onscroll() ?&dom.CallbackType {
+	return viewport.event_target().event_handler_attribute('scroll')
 }
 
-pub fn (mut viewport VisualViewport) set_onscrollend(event_handler voidptr) {
-	viewport.onscrollend_ = event_handler
+pub fn (viewport &VisualViewport) set_onscrollend(event_handler ?&dom.CallbackType) {
+	viewport.event_target().set_event_handler_attribute('scrollend', event_handler)
 }
 
-pub fn (viewport &VisualViewport) onscrollend() voidptr {
-	return viewport.onscrollend_
+pub fn (viewport &VisualViewport) onscrollend() ?&dom.CallbackType {
+	return viewport.event_target().event_handler_attribute('scrollend')
 }
 
 pub fn (mut viewport VisualViewport) scroll_by(delta CSSPixelPoint) {
