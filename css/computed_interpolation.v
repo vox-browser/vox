@@ -3932,7 +3932,7 @@ pub mut:
 	cached_generic_computation_context     ?StyleComputationContextStub
 	viewport_rect_                         CSSPixelRect
 	ancestor_filter_                       CountingBloomFilter = CountingBloomFilter.new()
-	has_result_cache_                      map[string]bool
+	has_result_cache_                      map[string]HasMatchResult
 }
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {

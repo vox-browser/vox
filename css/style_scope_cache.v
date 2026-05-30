@@ -1068,11 +1068,12 @@ fn style_scope_slot_node(slot &dom.HTMLSlotElement) &dom.Node {
 }
 
 fn style_scope_has_result_cache_boundary(style_computer &StyleComputer) map[string]HasMatchResult {
-	_ = style_computer
-	// Boundary for StyleComputer::m_has_result_cache. computed_interpolation.v
-	// still stores the cache as map[string]bool, while SelectorEngine's V
-	// MatchContext expects map[string]HasMatchResult.
-	return map[string]HasMatchResult{}
+	return style_computer.has_result_cache_.clone()
+}
+
+fn style_scope_store_has_result_cache_boundary(style_computer &StyleComputer, cache map[string]HasMatchResult) {
+	mut mutable_style_computer := unsafe { &StyleComputer(style_computer) }
+	mutable_style_computer.has_result_cache_ = cache.clone()
 }
 
 fn style_scope_merge_attempted_pseudo_class_matches(mut attempted PseudoClassBitmap, context MatchContext) {
@@ -1261,6 +1262,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 
 		style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches,
 			context)
+		style_scope_store_has_result_cache_boundary(style_computer, context.has_result_cache)
 		if did_match {
 			matching_rules << rule_to_run
 		}
