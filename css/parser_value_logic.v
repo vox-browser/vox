@@ -252,7 +252,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 			return parser.parse_line_height_value(mut tokens)
 		}
 		.opacity {
-			return parser.parse_number_percentage_value(mut tokens)
+			return parser.parse_opacity_value(mut tokens)
 		}
 	}
 
@@ -627,7 +627,7 @@ fn (mut parser Parser) parse_font_variation_settings_value(mut tokens ComponentV
 		serialize_a_series_of_component_values(component_values)))
 }
 
-fn (mut parser Parser) parse_animation_timeline_value(mut tokens ComponentValueStream) ?StyleValue {
+fn (mut parser Parser) parse_single_animation_timeline_value(mut tokens ComponentValueStream) ?StyleValue {
 	// animation-timeline = auto | none | <dashed-ident> | scroll() | view()
 	tokens.consume_whitespace()
 	component_value := tokens.consume() or { return none }
@@ -651,6 +651,26 @@ fn (mut parser Parser) parse_animation_timeline_value(mut tokens ComponentValueS
 		return StyleValue(view_function)
 	}
 	return none
+}
+
+fn (mut parser Parser) parse_animation_timeline_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	component_values := transaction.consume_remaining_component_values()
+	mut timelines := []StyleValue{}
+	for values in parse_a_comma_separated_list_of_component_values_for_value_logic(component_values) {
+		mut value_tokens := ComponentValueStream.new(values)
+		value := parser.parse_single_animation_timeline_value(mut value_tokens) or { return none }
+		value_tokens.consume_whitespace()
+		if value_tokens.has_more_tokens() {
+			return none
+		}
+		timelines << value
+	}
+	if timelines.len == 0 {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(StyleValueList.create(timelines, .comma, .yes))
 }
 
 fn axis_from_identifier_for_value_logic(value string) ?Axis {
@@ -858,6 +878,18 @@ fn (mut parser Parser) parse_number_percentage_value(mut tokens ComponentValueSt
 		return value
 	}
 	return none
+}
+
+// https://drafts.csswg.org/css-color-4/#typedef-opacity-opacity-value
+fn (mut parser Parser) parse_opacity_value(mut tokens ComponentValueStream) ?StyleValue {
+	value := parser.parse_number_percentage_value(mut tokens) or { return none }
+
+	// Percentages map to the range [0,1] for opacity values
+	if value is PercentageStyleValue {
+		return StyleValue(NumberStyleValue.create(value.percentage().as_fraction()))
+	}
+
+	return value
 }
 
 fn (mut parser Parser) parse_number_percentage_none_value(mut tokens ComponentValueStream) ?StyleValue {
