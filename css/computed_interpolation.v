@@ -2904,6 +2904,7 @@ pub enum SelectorCombinator {
 	descendant
 	next_sibling
 	subsequent_sibling
+	column
 }
 
 pub enum InvalidationSimpleSelectorType {
@@ -2937,213 +2938,114 @@ mut:
 	payload             &InvalidationPlan = unsafe { nil }
 }
 
-fn is_selector_name_char(ch u8) bool {
-	return (ch >= `a` && ch <= `z`) || (ch >= `A` && ch <= `Z`)
-		|| (ch >= `0` && ch <= `9`) || ch == `_` || ch == `-`
-}
-
-fn read_selector_name(text string, start int) (string, int) {
-	mut end := start
-	for end < text.len && is_selector_name_char(text[end]) {
-		end++
+fn css_pseudo_class_from_selector_pseudo_class(pseudo_class PseudoClass) CSSPseudoClass {
+	return match pseudo_class {
+		.enabled { .enabled }
+		.disabled { .disabled }
+		.defined { .defined }
+		.placeholder_shown { .placeholder_shown }
+		.checked { .checked }
+		.required { .required }
+		.optional { .optional }
+		.link { .link }
+		.any_link { .any_link }
+		.local_link { .local_link }
+		.default_ { .default_ }
+		.has { .has }
+		.not_ { .not }
+		.is_ { .is_ }
+		.where { .where }
+		.nth_child { .nth_child }
+		.nth_last_child { .nth_last_child }
+		.nth_of_type { .nth_of_type }
+		.nth_last_of_type { .nth_last_of_type }
+		// Boundary: the local invalidation property enum only contains pseudo
+		// classes that StyleInvalidationData.cpp uses for invalidation tracking.
+		else { .other }
 	}
-	return text[start..end], end
 }
 
-fn parse_selector_argument_list(arguments string) []Selector {
-	mut selectors := []Selector{}
-	for raw_part in arguments.split(',') {
-		part := raw_part.trim_space()
-		if part.len != 0 {
-			selectors << Selector{
-				text: part
+fn selector_combinator_for_invalidation(combinator Combinator) SelectorCombinator {
+	return match combinator {
+		.no_combinator { .none_ }
+		.immediate_child { .immediate_child }
+		.descendant { .descendant }
+		.next_sibling { .next_sibling }
+		.subsequent_sibling { .subsequent_sibling }
+		.column { .column }
+	}
+}
+
+fn simple_selector_for_invalidation(simple_selector SimpleSelector) InvalidationSimpleSelector {
+	match simple_selector.type_ {
+		.universal {
+			return InvalidationSimpleSelector{
+				type_: .universal
+			}
+		}
+		.class {
+			return InvalidationSimpleSelector{
+				type_: .class
+				name:  simple_selector.name.name
+			}
+		}
+		.id {
+			return InvalidationSimpleSelector{
+				type_: .id
+				name:  simple_selector.name.name
+			}
+		}
+		.tag_name {
+			return InvalidationSimpleSelector{
+				type_: .tag_name
+				name:  simple_selector.qualified_name.name.lowercase_name
+			}
+		}
+		.attribute {
+			return InvalidationSimpleSelector{
+				type_: .attribute
+				name:  simple_selector.attribute.qualified_name.name.lowercase_name
+			}
+		}
+		.pseudo_class {
+			return InvalidationSimpleSelector{
+				type_:            .pseudo_class
+				name:             selector_pseudo_class_name(simple_selector.pseudo_class.type_)
+				pseudo_class:     css_pseudo_class_from_selector_pseudo_class(simple_selector.pseudo_class.type_)
+				nested_selectors: simple_selector.pseudo_class.argument_selector_list.selectors.clone()
+			}
+		}
+		// Boundary: pseudo-elements, nesting selectors, and parser-invalid pieces
+		// are represented in selectors.v, but this translated invalidation subset
+		// has no property kind for them. Match the C++ default branch by ignoring
+		// them for property collection while keeping the compound non-empty.
+		else {
+			return InvalidationSimpleSelector{
+				type_: .other
 			}
 		}
 	}
-	return selectors
-}
-
-fn parse_simple_selectors_for_invalidation(segment string) []InvalidationSimpleSelector {
-	mut selectors := []InvalidationSimpleSelector{}
-	mut i := 0
-	for i < segment.len {
-		ch := segment[i]
-		match ch {
-			`.` {
-				name, next := read_selector_name(segment, i + 1)
-				if name.len != 0 {
-					selectors << InvalidationSimpleSelector{
-						type_: .class
-						name:  name
-					}
-				}
-				i = next
-			}
-			`#` {
-				name, next := read_selector_name(segment, i + 1)
-				if name.len != 0 {
-					selectors << InvalidationSimpleSelector{
-						type_: .id
-						name:  name
-					}
-				}
-				i = next
-			}
-			`[` {
-				mut end := i + 1
-				for end < segment.len && segment[end] != `]` {
-					end++
-				}
-				raw_attribute := segment[i + 1..end].trim_space()
-				attribute_name := raw_attribute.split_any(' ~=|^$*').first().to_lower()
-				if attribute_name.len != 0 {
-					selectors << InvalidationSimpleSelector{
-						type_: .attribute
-						name:  attribute_name
-					}
-				}
-				i = if end < segment.len { end + 1 } else { end }
-			}
-			`:` {
-				name, mut next := read_selector_name(segment, i + 1)
-				mut nested_selectors := []Selector{}
-				if next < segment.len && segment[next] == `(` {
-					mut depth := 1
-					mut end := next + 1
-					for end < segment.len && depth > 0 {
-						if segment[end] == `(` {
-							depth++
-						} else if segment[end] == `)` {
-							depth--
-						}
-						end++
-					}
-					if end > next + 1 {
-						arguments := segment[next + 1..end - 1]
-						nested_selectors = parse_selector_argument_list(arguments)
-					}
-					next = end
-				}
-				selectors << InvalidationSimpleSelector{
-					type_:            .pseudo_class
-					name:             name
-					pseudo_class:     pseudo_class_from_name(name)
-					nested_selectors: nested_selectors
-				}
-				i = next
-			}
-			`*` {
-				selectors << InvalidationSimpleSelector{
-					type_: .universal
-				}
-				i++
-			}
-			else {
-				if is_selector_name_char(ch) {
-					name, next := read_selector_name(segment, i)
-					if name.len != 0 {
-						selectors << InvalidationSimpleSelector{
-							type_: .tag_name
-							name:  name.to_lower()
-						}
-					}
-					i = next
-				} else {
-					i++
-				}
-			}
-		}
-	}
-	return selectors
 }
 
 fn selector_groups_for_invalidation(selector Selector) []InvalidationSimpleSelectorGroup {
-	// Stub for Selector::compound_selectors(). This recognizes common class/id/tag/attribute/pseudo selectors
-	// and top-level combinators, but does not replace the real parser/selector engine.
-	text := selector.text.trim_space()
-	if text.len == 0 {
+	compound_selectors := selector.compound_selectors()
+	if compound_selectors.len == 0 {
 		return []InvalidationSimpleSelectorGroup{}
 	}
 
-	mut segments := []string{}
-	mut combinators_before_segment := []SelectorCombinator{}
-	mut current := ''
-	mut pending_combinator := SelectorCombinator.none_
-	mut bracket_depth := 0
-	mut paren_depth := 0
-	mut i := 0
-	for i < text.len {
-		ch := text[i]
-		if ch == `[` {
-			bracket_depth++
-			current += ch.ascii_str()
-			i++
-			continue
-		}
-		if ch == `]` {
-			if bracket_depth > 0 {
-				bracket_depth--
-			}
-			current += ch.ascii_str()
-			i++
-			continue
-		}
-		if ch == `(` {
-			paren_depth++
-			current += ch.ascii_str()
-			i++
-			continue
-		}
-		if ch == `)` {
-			if paren_depth > 0 {
-				paren_depth--
-			}
-			current += ch.ascii_str()
-			i++
-			continue
-		}
-		if bracket_depth == 0 && paren_depth == 0 && (ch == `>` || ch == `+` || ch == `~`) {
-			if current.trim_space().len != 0 {
-				segments << current.trim_space()
-				combinators_before_segment << pending_combinator
-				current = ''
-			}
-			pending_combinator = match ch {
-				`>` { SelectorCombinator.immediate_child }
-				`+` { SelectorCombinator.next_sibling }
-				`~` { SelectorCombinator.subsequent_sibling }
-				else { SelectorCombinator.none_ }
-			}
-
-			i++
-			for i < text.len && text[i].is_space() {
-				i++
-			}
-			continue
-		}
-		if bracket_depth == 0 && paren_depth == 0 && ch.is_space() {
-			if current.trim_space().len != 0 {
-				segments << current.trim_space()
-				combinators_before_segment << pending_combinator
-				current = ''
-				pending_combinator = .descendant
-			}
-			i++
-			continue
-		}
-		current += ch.ascii_str()
-		i++
-	}
-	if current.trim_space().len != 0 {
-		segments << current.trim_space()
-		combinators_before_segment << pending_combinator
-	}
-
 	mut groups := []InvalidationSimpleSelectorGroup{}
-	for index := segments.len - 1; index >= 0; index-- {
+	for compound_index := compound_selectors.len - 1; compound_index >= 0; compound_index-- {
+		compound_selector := compound_selectors[compound_index]
+		mut simple_selectors := []InvalidationSimpleSelector{cap: compound_selector.simple_selectors.len}
+		for simple_selector in compound_selector.simple_selectors {
+			simple_selectors << simple_selector_for_invalidation(simple_selector)
+		}
+		if simple_selectors.len == 0 {
+			continue
+		}
 		groups << InvalidationSimpleSelectorGroup{
-			simple_selectors: parse_simple_selectors_for_invalidation(segments[index])
-			combinator:       combinators_before_segment[index]
+			simple_selectors: simple_selectors
+			combinator:       selector_combinator_for_invalidation(compound_selector.combinator)
 		}
 	}
 	return groups
@@ -3321,6 +3223,21 @@ fn selector_contains_pseudo_class(selector Selector, pseudo_class CSSPseudoClass
 	return false
 }
 
+fn add_whole_subtree_invalidation_for_non_subject_complex_selector_properties(selector Selector, mut style_invalidation_data StyleInvalidationData) {
+	groups := selector_groups_for_invalidation(selector)
+	for index, group in groups {
+		rightmost := index == 0
+		if rightmost {
+			continue
+		}
+
+		invalidation_set := build_invalidation_set_for_simple_selectors(group.simple_selectors,
+			.no, mut style_invalidation_data, .no)
+		add_invalidation_plan_for_properties(mut style_invalidation_data, invalidation_set,
+			make_invalidate_whole_subtree_invalidation())
+	}
+}
+
 fn add_invalidation_sets_to_cover_scope_leakage_of_relative_selector_in_has_pseudo_class(selector Selector, mut style_invalidation_data StyleInvalidationData) {
 	// Normally, :has() invalidation scope is limited to ancestors and ancestor siblings, however it could require
 	// descendants invalidation when :is() with complex selector is used inside :has() relative selector.
@@ -3329,23 +3246,14 @@ fn add_invalidation_sets_to_cover_scope_leakage_of_relative_selector_in_has_pseu
 	// property used in non-subject part of complex selector.
 
 	groups := selector_groups_for_invalidation(selector)
-	for index, group in groups {
-		rightmost := index == 0
-		if rightmost {
-			continue
-		}
-		invalidation_set := build_invalidation_set_for_simple_selectors(group.simple_selectors,
-			.no, mut style_invalidation_data, .no)
-		add_invalidation_plan_for_properties(mut style_invalidation_data, invalidation_set,
-			make_invalidate_whole_subtree_invalidation())
-
+	for group in groups {
 		for simple_selector in group.simple_selectors {
 			if simple_selector.type_ != .pseudo_class {
 				continue
 			}
 			if simple_selector.pseudo_class in [.is_, .where, .not] {
 				for nested_selector in simple_selector.nested_selectors {
-					add_invalidation_sets_to_cover_scope_leakage_of_relative_selector_in_has_pseudo_class(nested_selector, mut
+					add_whole_subtree_invalidation_for_non_subject_complex_selector_properties(nested_selector, mut
 						style_invalidation_data)
 				}
 			}
