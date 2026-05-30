@@ -857,7 +857,7 @@ pub fn (mut descriptors CSSFontFaceDescriptors) set_property(property string, va
 		return
 	}
 
-	parsed := parse_font_face_descriptor_stub(id, value) or { return }
+	parsed := parse_font_face_descriptor(id, value) or { return }
 	descriptors.set_descriptor_value(id, parsed)
 
 	if mut rule := descriptors.parent_rule {
@@ -1079,7 +1079,7 @@ fn initial_font_face_descriptor_value(id FontFaceDescriptorID) ?string {
 	}
 }
 
-fn parse_font_face_descriptor_stub(id FontFaceDescriptorID, value string) ?string {
+fn parse_font_face_descriptor(id FontFaceDescriptorID, value string) ?string {
 	trimmed := value.trim_space()
 	if trimmed.len == 0 {
 		return none
@@ -1145,6 +1145,10 @@ fn parse_font_face_descriptor_stub(id FontFaceDescriptorID, value string) ?strin
 	}
 
 	return trimmed
+}
+
+fn parse_font_face_descriptor_stub(id FontFaceDescriptorID, value string) ?string {
+	return parse_font_face_descriptor(id, value)
 }
 
 @[heap]
@@ -1472,7 +1476,7 @@ pub fn ParsedFontFace.from_descriptors(descriptors &CSSFontFaceDescriptors) Pars
 		if value.to_lower() == 'auto' {
 			slope = 0
 		} else {
-			slope = compute_font_style_slope_stub(value)
+			slope = compute_font_style_slope(value)
 		}
 	}
 
@@ -1485,7 +1489,7 @@ pub fn ParsedFontFace.from_descriptors(descriptors &CSSFontFaceDescriptors) Pars
 		if value.to_lower() == 'auto' {
 			width = 100
 		} else {
-			width = compute_font_width_stub(value)
+			width = compute_font_width(value)
 		}
 	}
 
@@ -1749,7 +1753,7 @@ pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descr
 
 	mut parsed_source := ?string(none)
 	if source.kind == .cssom_string {
-		if parsed := parse_font_face_descriptor_stub(.src, source.text) {
+		if parsed := parse_font_face_descriptor(.src, source.text) {
 			parsed_source = parsed
 		} else {
 			font_face.reject_status_promise('FontFace constructor: Invalid src')
@@ -1928,7 +1932,7 @@ pub fn (face &FontFaceObject) font_status_promise_ref() FontPromiseStub {
 }
 
 pub fn (mut face FontFaceObject) set_family(value string) ! {
-	parsed := parse_font_face_descriptor_stub(.font_family, value) or {
+	parsed := parse_font_face_descriptor(.font_family, value) or {
 		return error('SyntaxError: FontFace.family setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
@@ -1943,7 +1947,7 @@ pub fn (mut face FontFaceObject) set_family_impl(value string) {
 }
 
 pub fn (mut face FontFaceObject) set_style(value string) ! {
-	parsed := parse_font_face_descriptor_stub(.font_style, value) or {
+	parsed := parse_font_face_descriptor(.font_style, value) or {
 		return error('SyntaxError: FontFace.style setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
@@ -1958,7 +1962,7 @@ pub fn (mut face FontFaceObject) set_style_impl(value string) {
 }
 
 pub fn (mut face FontFaceObject) set_weight(value string) ! {
-	parsed := parse_font_face_descriptor_stub(.font_weight, value) or {
+	parsed := parse_font_face_descriptor(.font_weight, value) or {
 		return error('SyntaxError: FontFace.weight setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
@@ -1974,7 +1978,7 @@ pub fn (mut face FontFaceObject) set_weight_impl(value string) {
 
 pub fn (mut face FontFaceObject) set_stretch(value string) ! {
 	// NOTE: font-stretch is now an alias for font-width
-	parsed := parse_font_face_descriptor_stub(.font_width, value) or {
+	parsed := parse_font_face_descriptor(.font_width, value) or {
 		return error('SyntaxError: FontFace.stretch setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
@@ -1989,7 +1993,7 @@ pub fn (mut face FontFaceObject) set_stretch_impl(value string) {
 }
 
 pub fn (mut face FontFaceObject) set_unicode_range(value string) ! {
-	parsed := parse_font_face_descriptor_stub(.unicode_range, value) or {
+	parsed := parse_font_face_descriptor(.unicode_range, value) or {
 		return error('SyntaxError: FontFace.unicodeRange setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
@@ -2005,7 +2009,7 @@ pub fn (mut face FontFaceObject) set_unicode_range_impl(value string) {
 }
 
 pub fn (mut face FontFaceObject) set_feature_settings(value string) ! {
-	parsed := parse_font_face_descriptor_stub(.font_feature_settings, value) or {
+	parsed := parse_font_face_descriptor(.font_feature_settings, value) or {
 		return error('SyntaxError: FontFace.featureSettings setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
@@ -2020,7 +2024,7 @@ pub fn (mut face FontFaceObject) set_feature_settings_impl(value string) {
 }
 
 pub fn (mut face FontFaceObject) set_variation_settings(value string) ! {
-	parsed := parse_font_face_descriptor_stub(.font_variation_settings, value) or {
+	parsed := parse_font_face_descriptor(.font_variation_settings, value) or {
 		return error('SyntaxError: FontFace.variationSettings setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
@@ -2035,7 +2039,7 @@ pub fn (mut face FontFaceObject) set_variation_settings_impl(value string) {
 }
 
 pub fn (mut face FontFaceObject) set_display(value string) ! {
-	parsed := parse_font_face_descriptor_stub(.font_display, value) or {
+	parsed := parse_font_face_descriptor(.font_display, value) or {
 		return error('SyntaxError: FontFace.display setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
@@ -2050,7 +2054,7 @@ pub fn (mut face FontFaceObject) set_display_impl(value string) {
 }
 
 pub fn (mut face FontFaceObject) set_ascent_override(value string) ! {
-	parsed := parse_font_face_descriptor_stub(.ascent_override, value) or {
+	parsed := parse_font_face_descriptor(.ascent_override, value) or {
 		return error('SyntaxError: FontFace.ascentOverride setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
@@ -2065,7 +2069,7 @@ pub fn (mut face FontFaceObject) set_ascent_override_impl(value string) {
 }
 
 pub fn (mut face FontFaceObject) set_descent_override(value string) ! {
-	parsed := parse_font_face_descriptor_stub(.descent_override, value) or {
+	parsed := parse_font_face_descriptor(.descent_override, value) or {
 		return error('SyntaxError: FontFace.descentOverride setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
@@ -2080,7 +2084,7 @@ pub fn (mut face FontFaceObject) set_descent_override_impl(value string) {
 }
 
 pub fn (mut face FontFaceObject) set_line_gap_override(value string) ! {
-	parsed := parse_font_face_descriptor_stub(.line_gap_override, value) or {
+	parsed := parse_font_face_descriptor(.line_gap_override, value) or {
 		return error('SyntaxError: FontFace.lineGapOverride setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
@@ -2205,7 +2209,7 @@ fn (mut face FontFaceObject) finish_loading_from_stub(maybe_typeface ?PlatformTy
 }
 
 fn font_face_try_parse_descriptor(mut font_face FontFaceObject, descriptor_id FontFaceDescriptorID, value string) string {
-	result := parse_font_face_descriptor_stub(descriptor_id, value) or {
+	result := parse_font_face_descriptor(descriptor_id, value) or {
 		font_face.reject_status_promise('FontFace constructor: Invalid ${font_face_descriptor_property_name(descriptor_id)}')
 		return ''
 	}
@@ -2407,7 +2411,7 @@ fn find_matching_font_faces(font_face_set &FontFaceSet, font string, text string
 	_ = text
 	// 1. Parse font using the CSS value syntax of the font property. If a syntax error occurs, return a syntax error.
 	// Stub: The CSS font shorthand parser is not translated. Treat the input as a comma-separated family list.
-	font_family_list := parse_font_family_list_stub(font)
+	font_family_list := parse_font_family_list(font)
 	if font_family_list.len == 0 {
 		return error('SyntaxError: Unable to parse font')
 	}
@@ -3332,7 +3336,10 @@ fn parse_font_face_source(input string) ?ParsedFontFaceSource {
 	text := input.trim_space()
 	lower := text.to_lower()
 	if lower.starts_with('local(') && text.ends_with(')') {
-		name := unquote_css_string(text[6..text.len - 1].trim_space())
+		name := string_from_font_family_descriptor(text[6..text.len - 1].trim_space())
+		if name.len == 0 {
+			return none
+		}
 		return ParsedFontFaceSource{
 			kind:  .local
 			value: name
@@ -3360,17 +3367,89 @@ fn parse_font_face_source(input string) ?ParsedFontFaceSource {
 	for modifier in split_css_space_list(rest) {
 		modifier_lower := modifier.to_lower()
 		if modifier_lower.starts_with('format(') && modifier.ends_with(')') {
-			source.format = unquote_css_string(modifier[7..modifier.len - 1].trim_space())
+			format_name := normalize_font_format_name(modifier[7..modifier.len - 1].trim_space()) or {
+				return none
+			}
+			if !font_format_is_supported(format_name.name) {
+				return none
+			}
+			source.format = format_name.name
+			for tech in format_name.implied_tech {
+				source.tech << tech
+			}
 		} else if modifier_lower.starts_with('tech(') && modifier.ends_with(')') {
 			tech_names := split_font_tech_names(modifier[5..modifier.len - 1])
+			if tech_names.len == 0 {
+				return none
+			}
 			for tech_name in tech_names {
 				if tech := font_tech_from_string(tech_name) {
+					if !font_tech_is_supported(tech) {
+						return none
+					}
 					source.tech << tech
+				} else {
+					return none
 				}
 			}
+		} else {
+			return none
 		}
 	}
 	return source
+}
+
+struct NormalizedFontFormatName {
+	name         string
+	implied_tech []FontTech
+}
+
+fn normalize_font_format_name(value string) ?NormalizedFontFormatName {
+	// There's a fixed set of strings allowed here, which we'll assume are case-insensitive:
+	// format("woff2")                 -> format(woff2)
+	// format("woff")                  -> format(woff)
+	// format("truetype")              -> format(truetype)
+	// format("opentype")              -> format(opentype)
+	// format("collection")            -> format(collection)
+	// format("woff2-variations")      -> format(woff2) tech(variations)
+	// format("woff-variations")       -> format(woff) tech(variations)
+	// format("truetype-variations")   -> format(truetype) tech(variations)
+	// format("opentype-variations")   -> format(opentype) tech(variations)
+	lower := unquote_css_string(value).to_lower()
+	return match lower {
+		'woff2', 'woff', 'truetype', 'opentype', 'collection', 'embedded-opentype', 'svg' {
+			NormalizedFontFormatName{
+				name: lower
+			}
+		}
+		'woff2-variations' {
+			NormalizedFontFormatName{
+				name:         'woff2'
+				implied_tech: [FontTech.variations]
+			}
+		}
+		'woff-variations' {
+			NormalizedFontFormatName{
+				name:         'woff'
+				implied_tech: [FontTech.variations]
+			}
+		}
+		'truetype-variations' {
+			NormalizedFontFormatName{
+				name:         'truetype'
+				implied_tech: [FontTech.variations]
+			}
+		}
+		'opentype-variations' {
+			NormalizedFontFormatName{
+				name:         'opentype'
+				implied_tech: [FontTech.variations]
+			}
+		}
+		else {
+			none
+		}
+	}
 }
 
 fn split_font_tech_names(value string) []string {
@@ -3723,7 +3802,7 @@ fn parse_font_face_object_numeric_weight(value string) ?FontWeightRange {
 	}
 }
 
-fn compute_font_style_slope_stub(value string) int {
+fn compute_font_style_slope(value string) int {
 	lower := value.to_lower()
 	if lower.contains('oblique') {
 		parts := lower.split(' ')
@@ -3741,7 +3820,7 @@ fn compute_font_style_slope_stub(value string) int {
 	return 0
 }
 
-fn compute_font_width_stub(value string) int {
+fn compute_font_width(value string) int {
 	lower := value.to_lower().trim_space()
 	if lower.ends_with('%') {
 		parsed := strconv.atof64(lower[..lower.len - 1]) or { return 100 }
@@ -3889,7 +3968,7 @@ fn is_printable_ascii(value string) bool {
 	return true
 }
 
-fn parse_font_family_list_stub(value string) []string {
+fn parse_font_family_list(value string) []string {
 	mut families := []string{}
 	for item in split_css_comma_list(value) {
 		trimmed := item.trim_space()
