@@ -3816,13 +3816,18 @@ pub fn parse_css_rule_with_parser(rule_text string, declared_namespaces map[stri
 }
 
 pub fn parse_css_property_declaration_block_with_parser(block string) &CSSStyleProperties {
+	return parse_css_property_declaration_block_with_params(ParsingParams{
+		rule_context: [RuleContext.style]
+	}, block)
+}
+
+pub fn parse_css_property_declaration_block_with_params(params ParsingParams, block string) &CSSStyleProperties {
 	mut body := block.trim_space()
 	if body.starts_with('{') && body.ends_with('}') {
 		body = body[1..body.len - 1]
 	}
 
-	mut parser := RuleSelectorParser.create(ParsingParams{}, body, 'utf-8')
-	parser.rule_context << .style
+	mut parser := RuleSelectorParser.create(params, body, 'utf-8')
 	mut input := parser.token_stream
 	mut declarations := []Declaration{}
 	for {

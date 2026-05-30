@@ -260,7 +260,10 @@ pub fn (mut rule_list CSSRuleList) insert_a_css_rule_from_text(rule string, inde
 		// 4. If new rule is a syntax error, and nested is set, perform the following substeps:
 		if nested == .yes {
 			// - Set declarations to the results of performing parse a CSS declaration block, on argument rule.
-			declarations := parse_css_property_declaration_block_with_parser(rule)
+			declarations := parse_css_property_declaration_block_with_params(ParsingParams{
+				rule_context:        rule_list.rule_context()
+				declared_namespaces: declared_namespaces.clone()
+			}, rule)
 
 			// - If declarations is empty, throw a SyntaxError exception.
 			if declarations.length() == 0 {
