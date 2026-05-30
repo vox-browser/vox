@@ -2579,7 +2579,9 @@ fn parser_selector_uses_undeclared_namespace(text string, declared_namespaces ma
 fn parser_complex_selector_uses_undeclared_namespace(text string, declared_namespaces map[string]bool) bool {
 	for compound_selector in parse_complex_selector(text) {
 		for simple_selector in compound_selector.simple_selectors {
-			if parser_simple_selector_uses_undeclared_namespace(simple_selector, declared_namespaces) {
+			if parser_simple_selector_uses_undeclared_namespace(simple_selector,
+				declared_namespaces)
+			{
 				return true
 			}
 		}
@@ -2611,11 +2613,13 @@ fn parser_simple_selector_uses_undeclared_namespace(simple_selector SimpleSelect
 		}
 		else {}
 	}
+
 	return false
 }
 
 fn parser_qualified_name_uses_undeclared_namespace(qualified_name SelectorQualifiedName, declared_namespaces map[string]bool) bool {
-	return qualified_name.namespace_type == .named && qualified_name.namespace_ !in declared_namespaces
+	return qualified_name.namespace_type == .named
+		&& qualified_name.namespace_ !in declared_namespaces
 }
 
 fn (parser RuleSelectorParser) is_valid_declaration_in_the_current_context(declaration Declaration) bool {
@@ -3805,14 +3809,26 @@ pub fn parse_css_stylesheet_with_parser(css_text string, location ?string) &CSSS
 	return parser.parse_as_css_stylesheet(location, none)
 }
 
-pub fn parse_css_stylesheet_contents_with_parser(css_text string, declared_namespaces map[string]bool) []&CSSRule {
-	mut parser := RuleSelectorParser.create_with_namespaces(css_text, declared_namespaces)
+pub fn parse_css_stylesheet_contents_with_params(params ParsingParams, css_text string) []&CSSRule {
+	mut parser := RuleSelectorParser.create(params, css_text, 'utf-8')
 	return parser.parse_as_stylesheet_contents()
 }
 
-pub fn parse_css_rule_with_parser(rule_text string, declared_namespaces map[string]bool) ?&CSSRule {
-	mut parser := RuleSelectorParser.create_with_namespaces(rule_text, declared_namespaces)
+pub fn parse_css_stylesheet_contents_with_parser(css_text string, declared_namespaces map[string]bool) []&CSSRule {
+	return parse_css_stylesheet_contents_with_params(ParsingParams{
+		declared_namespaces: declared_namespaces
+	}, css_text)
+}
+
+pub fn parse_css_rule_with_params(params ParsingParams, rule_text string) ?&CSSRule {
+	mut parser := RuleSelectorParser.create(params, rule_text, 'utf-8')
 	return parser.parse_as_css_rule()
+}
+
+pub fn parse_css_rule_with_parser(rule_text string, declared_namespaces map[string]bool) ?&CSSRule {
+	return parse_css_rule_with_params(ParsingParams{
+		declared_namespaces: declared_namespaces
+	}, rule_text)
 }
 
 pub fn parse_css_property_declaration_block_with_parser(block string) &CSSStyleProperties {

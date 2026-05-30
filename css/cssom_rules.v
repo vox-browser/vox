@@ -1558,6 +1558,18 @@ pub fn (mut sheet CSSStyleSheet) set_media(media string) {
 	media_list.set_media_text(media)
 }
 
+pub fn (sheet &CSSStyleSheet) make_parsing_params() ParsingParams {
+	if document := sheet.owning_document() {
+		return ParsingParams{
+			document:            document
+			declared_namespaces: sheet.declared_namespaces()
+		}
+	}
+	return ParsingParams{
+		declared_namespaces: sheet.declared_namespaces()
+	}
+}
+
 // https://www.w3.org/TR/cssom/#dom-cssstylesheet-insertrule
 pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
 	// FIXME: 1. If the origin-clean flag is unset, throw a SecurityError exception.
@@ -1568,7 +1580,7 @@ pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
 	}
 
 	// 3. Let parsed rule be the return value of invoking parse a rule with rule.
-	mut parsed_rule := parse_css_rule_with_parser(rule, sheet.declared_namespaces()) or {
+	mut parsed_rule := parse_css_rule_with_params(sheet.make_parsing_params(), rule) or {
 		// 4. If parsed rule is a syntax error, return parsed rule.
 		return error('SyntaxError: Unable to parse CSS rule')
 	}
@@ -1614,7 +1626,7 @@ pub fn (mut sheet CSSStyleSheet) replace(text string) !&CSSStyleSheet {
 	}
 
 	sheet.disallow_modification = true
-	rules := parse_css_stylesheet_contents_with_parser(text, sheet.declared_namespaces())
+	rules := parse_css_stylesheet_contents_with_params(sheet.make_parsing_params(), text)
 	mut rules_without_import := []&CSSRule{}
 	for parsed_rule in rules {
 		if parsed_rule.type_ != .import_rule {
@@ -1637,7 +1649,7 @@ pub fn (mut sheet CSSStyleSheet) replace_sync(text string) ! {
 	}
 
 	// 2. Let rules be the result of running parse a stylesheet's contents from text.
-	rules := parse_css_stylesheet_contents_with_parser(text, sheet.declared_namespaces())
+	rules := parse_css_stylesheet_contents_with_params(sheet.make_parsing_params(), text)
 
 	// 3. If rules contains one or more @import rules, remove those rules from rules.
 	mut rules_without_import := []&CSSRule{}
