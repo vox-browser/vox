@@ -319,6 +319,117 @@ fn (mut parser Parser) parse_builtin_value(mut tokens ComponentValueStream) ?Sty
 	return none
 }
 
+// https://www.w3.org/TR/css-values-4/#typedefs
+fn (mut parser Parser) parse_value(type_ ValueType, mut tokens ComponentValueStream) ?StyleValue {
+	return match type_ {
+		.angle {
+			parser.parse_angle_value(mut tokens)
+		}
+		.color {
+			parser.parse_color_value(mut tokens)
+		}
+		.corner_shape {
+			parser.parse_corner_shape_value(mut tokens)
+		}
+		.custom_ident {
+			if value := parser.parse_custom_ident_value(mut tokens, []) {
+				StyleValue(value)
+			} else {
+				none
+			}
+		}
+		.dashed_ident {
+			mut transaction := tokens.clone()
+			value := parser.parse_custom_ident_value(mut transaction, []) or { return none }
+			if !value.custom_ident().starts_with('--') {
+				return none
+			}
+			tokens = transaction
+			StyleValue(value)
+		}
+		.easing_function {
+			parser.parse_easing_value(mut tokens)
+		}
+		.flex {
+			parser.parse_flex_value(mut tokens)
+		}
+		.font_style {
+			parser.parse_font_style_value(mut tokens)
+		}
+		.frequency {
+			parser.parse_frequency_value(mut tokens)
+		}
+		.image {
+			parse_image_value_for_syntax(mut tokens)
+		}
+		.integer {
+			parser.parse_integer_value(mut tokens)
+		}
+		.length {
+			parser.parse_length_value(mut tokens)
+		}
+		.length_percentage {
+			parser.parse_length_percentage_value(mut tokens)
+		}
+		.number {
+			parser.parse_number_value(mut tokens)
+		}
+		.opacity {
+			parser.parse_opacity_value(mut tokens)
+		}
+		.percentage {
+			parser.parse_percentage_value(mut tokens)
+		}
+		.ratio {
+			parser.parse_ratio_value(mut tokens)
+		}
+		.resolution {
+			parser.parse_resolution_value(mut tokens)
+		}
+		.scroll_function {
+			mut transaction := tokens.clone()
+			transaction.consume_whitespace()
+			component_value := transaction.consume() or { return none }
+			value := parser.parse_scroll_function_value(component_value) or { return none }
+			tokens = transaction
+			StyleValue(value)
+		}
+		.string {
+			if value := parser.parse_string_value(mut tokens) {
+				StyleValue(value)
+			} else {
+				none
+			}
+		}
+		.time {
+			parser.parse_time_value(mut tokens)
+		}
+		.transform_function {
+			parser.parse_transform_function_value(mut tokens)
+		}
+		.transform_list {
+			parser.parse_transform_list_value(mut tokens)
+		}
+		.url {
+			parse_url_value_for_syntax(mut tokens)
+		}
+		.view_function {
+			mut transaction := tokens.clone()
+			transaction.consume_whitespace()
+			component_value := transaction.consume() or { return none }
+			value := parser.parse_view_function_value(component_value) or { return none }
+			tokens = transaction
+			StyleValue(value)
+		}
+		.view_timeline_inset {
+			parser.parse_view_timeline_inset_value(mut tokens)
+		}
+		else {
+			none
+		}
+	}
+}
+
 fn (mut stream ComponentValueStream) consume_remaining_component_values() []ComponentValue {
 	remaining_values := stream.values[stream.index..].clone()
 	stream.index = stream.values.len

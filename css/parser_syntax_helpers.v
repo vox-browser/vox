@@ -635,63 +635,7 @@ fn parse_value_for_syntax_type(type_ ValueType, mut tokens ComponentValueTokenSt
 fn parse_value_using_existing_parser_for_syntax_type(type_ ValueType, mut tokens ComponentValueTokenStream) ?StyleValue {
 	mut parser := Parser.from_component_values([])
 	mut stream := ComponentValueStream.new(tokens.tokens[tokens.index..])
-	mut result := ?StyleValue(none)
-
-	match type_ {
-		.angle {
-			result = parser.parse_angle_value(mut stream)
-		}
-		.color {
-			result = parser.parse_color_value(mut stream)
-		}
-		.flex {
-			result = parser.parse_flex_value(mut stream)
-		}
-		.frequency {
-			result = parser.parse_frequency_value(mut stream)
-		}
-		.image {
-			result = parse_image_value_for_syntax(mut stream)
-		}
-		.integer {
-			result = parser.parse_integer_value(mut stream)
-		}
-		.length {
-			result = parser.parse_length_value(mut stream)
-		}
-		.length_percentage {
-			result = parser.parse_length_percentage_value(mut stream)
-		}
-		.number {
-			result = parser.parse_number_value(mut stream)
-		}
-		.percentage {
-			result = parser.parse_percentage_value(mut stream)
-		}
-		.resolution {
-			result = parser.parse_resolution_value(mut stream)
-		}
-		.string {
-			if string_value := parser.parse_string_value(mut stream) {
-				result = StyleValue(string_value)
-			}
-		}
-		.time {
-			result = parser.parse_time_value(mut stream)
-		}
-		.url {
-			result = parse_url_value_for_syntax(mut stream)
-		}
-		.transform_function {
-			result = parser.parse_transform_function_value(mut stream)
-		}
-		.transform_list {
-			result = parser.parse_transform_list_value(mut stream)
-		}
-		else {}
-	}
-
-	value := result or { return none }
+	value := parser.parse_value(type_, mut stream) or { return none }
 	tokens.index += stream.index
 	return value
 }
