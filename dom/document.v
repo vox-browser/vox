@@ -10,6 +10,7 @@
 
 module dom
 
+import rand
 import strings
 import time as vtime
 
@@ -7002,12 +7003,7 @@ pub fn (mut d Document) ensure_element_shared_css_random_base_value(key string) 
 	if key in d.element_shared_css_random_base_value_cache {
 		return d.element_shared_css_random_base_value_cache[key]
 	}
-	// Generate a pseudo-random value based on key hash
-	mut h := u64(0)
-	for b in key.bytes() {
-		h = h * 31 + u64(b)
-	}
-	value := f64(h % 10000) / 10000.0
+	value := rand.f64()
 	d.element_shared_css_random_base_value_cache[key] = value
 	return value
 }

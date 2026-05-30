@@ -1999,6 +1999,13 @@ pub mut:
 	element_id ?i64
 }
 
+pub fn (key RandomCachingKey) cache_key_string() string {
+	if element_id := key.element_id {
+		return '${key.name.len}:${key.name}:${element_id}'
+	}
+	return '${key.name.len}:${key.name}:element-shared'
+}
+
 pub struct RandomValueSharingStyleValue {
 pub mut:
 	fixed_value_    ?StyleValue
@@ -2030,7 +2037,6 @@ pub fn RandomValueSharingStyleValue.create_dashed_ident(name string, element_sha
 }
 
 pub fn (style_value RandomValueSharingStyleValue) absolutized(context ComputationContext) StyleValue {
-	_ = context
 	// https://drafts.csswg.org/css-values-5/#random-caching
 	// Each instance of a random function in styles has an associated random base value.
 	// If the random function's <random-value-sharing> is fixed <number>, the random base value is that number.
@@ -2042,9 +2048,42 @@ pub fn (style_value RandomValueSharingStyleValue) absolutized(context Computatio
 		return StyleValue(RandomValueSharingStyleValue.create_fixed(absolutized_fixed_value))
 	}
 
-	// Otherwise, the random base value is a pseudo-random real number in the range [0, 1). The document/element cache
-	// is not translated in this V port, so we use a deterministic explicit fixed value.
-	return StyleValue(RandomValueSharingStyleValue.create_fixed(StyleValue(NumberStyleValue.create(0))))
+	// Otherwise, the random base value is a pseudo-random real number in the range `[0, 1)` (greater than or equal to 0
+	// and less than 1), generated from a uniform distribution, and influenced by the function's random caching key.
+
+	abstract_element := context.abstract_element or {
+		panic('RandomValueSharingStyleValue::absolutized requires ComputationContext.abstract_element')
+	}
+
+	// A random caching key is a tuple of:
+	element_id := if style_value.element_shared_ {
+		none
+	} else {
+		// FIXME: Use the pseudo element's unique_id() when that's accessible
+		abstract_element.element().as_node().unique_id().value()
+	}
+	random_caching_key := style_value.random_caching_key(element_id) or {
+		panic('RandomValueSharingStyleValue::absolutized requires a random caching key name')
+	}
+	cache_key := random_caching_key.cache_key_string()
+
+	// 1. A string name: the value of the <dashed-ident>, if specified in <random-value-sharing>; or else a string
+	//    of the form "PROPERTY N", where PROPERTY is the name of the property the random function is used in
+	//    (before shorthand expansion, if relevant), and N is the index of the random function among other random
+	//    functions in the same property value.
+	// 2. An element ID identifying the element the style is being applied to, or null if element-shared is
+	//    specified in <random-value-sharing>.
+	// 3. A document ID identifying the Document the styles are from.
+	// NB: This is implicit since the cache is stored on the document or the element (which is a child of the document).
+	random_base_value := if style_value.element_shared_ {
+		mut document := unsafe { &dom.Document(abstract_element.document()) }
+		document.ensure_element_shared_css_random_base_value(cache_key)
+	} else {
+		mut element := unsafe { &dom.Element(abstract_element.element()) }
+		element.ensure_css_random_base_value(cache_key)
+	}
+
+	return StyleValue(RandomValueSharingStyleValue.create_fixed(StyleValue(NumberStyleValue.create(random_base_value))))
 }
 
 pub fn (style_value RandomValueSharingStyleValue) random_base_value() f64 {

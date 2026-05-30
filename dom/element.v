@@ -8,6 +8,7 @@
 
 module dom
 
+import rand
 import math
 import strings
 
@@ -3989,10 +3990,10 @@ pub fn (mut e Element) computed_style_map() &StylePropertyMapReadOnly_ {
 // --- CSS random base value ---
 
 pub fn (mut e Element) ensure_css_random_base_value(key string) f64 {
-	if v := e.element_specific_css_random_base_value_cache[key] {
-		return v
+	if key in e.element_specific_css_random_base_value_cache {
+		return e.element_specific_css_random_base_value_cache[key]
 	}
-	val := 0.5
+	val := rand.f64()
 	e.element_specific_css_random_base_value_cache[key] = val
 	return val
 }
