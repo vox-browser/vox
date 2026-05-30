@@ -588,6 +588,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'object-fit' {
 			PropertyID.object_fit
 		}
+		'object-position' {
+			PropertyID.object_position
+		}
 		'opacity' {
 			PropertyID.opacity
 		}
@@ -615,11 +618,47 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'overflow-y' {
 			PropertyID.overflow_y
 		}
+		'overflow-block' {
+			PropertyID.overflow_block
+		}
+		'overflow-clip-margin-block-end' {
+			PropertyID.overflow_clip_margin_block_end
+		}
+		'overflow-clip-margin-block-start' {
+			PropertyID.overflow_clip_margin_block_start
+		}
+		'overflow-clip-margin-bottom' {
+			PropertyID.overflow_clip_margin_bottom
+		}
+		'overflow-clip-margin-inline-end' {
+			PropertyID.overflow_clip_margin_inline_end
+		}
+		'overflow-clip-margin-inline-start' {
+			PropertyID.overflow_clip_margin_inline_start
+		}
+		'overflow-clip-margin-left' {
+			PropertyID.overflow_clip_margin_left
+		}
+		'overflow-clip-margin-right' {
+			PropertyID.overflow_clip_margin_right
+		}
+		'overflow-clip-margin-top' {
+			PropertyID.overflow_clip_margin_top
+		}
+		'overflow-inline' {
+			PropertyID.overflow_inline
+		}
 		'overflow-wrap', 'word-wrap' {
 			PropertyID.overflow_wrap
 		}
 		'paint-order' {
 			PropertyID.paint_order
+		}
+		'perspective' {
+			PropertyID.perspective
+		}
+		'perspective-origin' {
+			PropertyID.perspective_origin
 		}
 		'padding-block-end' {
 			PropertyID.padding_block_end
@@ -653,6 +692,15 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'position-anchor' {
 			PropertyID.position_anchor
+		}
+		'position-area' {
+			PropertyID.position_area
+		}
+		'position-try-fallbacks' {
+			PropertyID.position_try_fallbacks
+		}
+		'position-try-order' {
+			PropertyID.position_try_order
 		}
 		'position-visibility' {
 			PropertyID.position_visibility
@@ -705,6 +753,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'scale' {
 			PropertyID.scale
 		}
+		'scrollbar-color' {
+			PropertyID.scrollbar_color
+		}
+		'scrollbar-gutter' {
+			PropertyID.scrollbar_gutter
+		}
 		'scrollbar-width' {
 			PropertyID.scrollbar_width
 		}
@@ -716,6 +770,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'table-layout' {
 			PropertyID.table_layout
+		}
+		'tab-size' {
+			PropertyID.tab_size
 		}
 		'text-align' {
 			PropertyID.text_align
@@ -737,6 +794,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'text-underline-offset' {
 			PropertyID.text_underline_offset
+		}
+		'text-underline-position' {
+			PropertyID.text_underline_position
 		}
 		'text-indent' {
 			PropertyID.text_indent
@@ -765,6 +825,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'transform-box' {
 			PropertyID.transform_box
 		}
+		'transform-origin' {
+			PropertyID.transform_origin
+		}
 		'transform-style' {
 			PropertyID.transform_style
 		}
@@ -785,6 +848,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'translate' {
 			PropertyID.translate
+		}
+		'timeline-scope' {
+			PropertyID.timeline_scope
 		}
 		'unicode-bidi' {
 			PropertyID.unicode_bidi
@@ -813,8 +879,14 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'visibility' {
 			PropertyID.visibility
 		}
+		'vertical-align' {
+			PropertyID.vertical_align
+		}
 		'width' {
 			PropertyID.width
+		}
+		'will-change' {
+			PropertyID.will_change
 		}
 		'-webkit-text-fill-color' {
 			PropertyID.webkit_text_fill_color
@@ -908,7 +980,8 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.aspect_ratio {
 			value_type == .ratio
 		}
-		.anchor_name, .anchor_scope, .position_anchor, .scroll_timeline_name, .view_timeline_name {
+		.anchor_name, .anchor_scope, .position_anchor, .position_try_fallbacks,
+		.scroll_timeline_name, .timeline_scope, .view_timeline_name {
 			value_type == .dashed_ident
 		}
 		.accent_color, .background_color, .border_block_end_color, .border_block_start_color,
@@ -942,9 +1015,10 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items,
 		.justify_self, .appearance, .column_span, .image_rendering, .transform_box, .touch_action,
 		.writing_mode, .scrollbar_width, .resize, .contain, .container_type, .text_decoration_line,
-		.text_decoration_style, .paint_order, .overflow_wrap, .scroll_behavior, .math_shift,
-		.isolation, .list_style_position, .mask_clip, .mask_composite, .mask_mode, .mask_origin,
-		.mask_repeat, .mask_type {
+		.text_decoration_style, .paint_order, .overflow_block, .overflow_inline, .overflow_wrap,
+		.position_area, .position_try_order, .scroll_behavior, .scrollbar_color, .scrollbar_gutter,
+		.text_underline_position, .math_shift, .isolation, .list_style_position, .mask_clip,
+		.mask_composite, .mask_mode, .mask_origin, .mask_repeat, .mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
@@ -975,6 +1049,24 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.view_timeline_inset {
 			value_type == .view_timeline_inset
+		}
+		.object_position, .perspective_origin {
+			value_type == .position
+		}
+		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
+		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
+		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
+		.overflow_clip_margin_right, .overflow_clip_margin_top, .perspective {
+			value_type == .length
+		}
+		.tab_size {
+			value_type in [.length, .number]
+		}
+		.transform_origin, .vertical_align {
+			value_type in [.length, .percentage]
+		}
+		.will_change {
+			value_type == .custom_ident
 		}
 		.border_block_end_width, .border_block_start_width, .border_bottom_width,
 		.border_inline_end_width, .border_inline_start_width, .border_left_width,
@@ -1074,6 +1166,65 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 			false
 		}
 	}
+}
+
+fn is_position_area_keyword_string(value string) bool {
+	return value in [
+		'left',
+		'center',
+		'right',
+		'span-left',
+		'span-right',
+		'x-start',
+		'x-end',
+		'span-x-start',
+		'span-x-end',
+		'self-x-start',
+		'self-x-end',
+		'span-self-x-start',
+		'span-self-x-end',
+		'span-all',
+		'top',
+		'bottom',
+		'span-top',
+		'span-bottom',
+		'y-start',
+		'y-end',
+		'span-y-start',
+		'span-y-end',
+		'self-y-start',
+		'self-y-end',
+		'span-self-y-start',
+		'span-self-y-end',
+		'block-start',
+		'block-end',
+		'span-block-start',
+		'span-block-end',
+		'inline-start',
+		'inline-end',
+		'span-inline-start',
+		'span-inline-end',
+		'self-block-start',
+		'self-block-end',
+		'span-self-block-start',
+		'span-self-block-end',
+		'self-inline-start',
+		'self-inline-end',
+		'span-self-inline-start',
+		'span-self-inline-end',
+		'start',
+		'end',
+		'span-start',
+		'span-end',
+		'self-start',
+		'self-end',
+		'span-self-start',
+		'span-self-end',
+	]
+}
+
+fn is_try_tactic_keyword_string(value string) bool {
+	return value in ['flip-block', 'flip-inline', 'flip-start']
 }
 
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
@@ -1192,6 +1343,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.background_size, .mask_size {
 			lowercase_value in ['auto', 'cover', 'contain']
 		}
+		.object_position, .perspective_origin, .transform_origin {
+			lowercase_value in ['bottom', 'center', 'left', 'right', 'top']
+		}
 		.color_scheme {
 			// color-scheme = normal | [ light | dark | <custom-ident> ]+ && only?
 			lowercase_value in ['normal', 'light', 'dark']
@@ -1273,8 +1427,26 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value == 'auto'
 		}
 		.border_spacing, .padding_block_end, .padding_block_start, .padding_bottom,
-		.padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top {
+		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
+		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
+		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
+		.overflow_clip_margin_right, .overflow_clip_margin_top, .padding_inline_end,
+		.padding_inline_start, .padding_left, .padding_right, .padding_top, .tab_size {
 			false
+		}
+		.perspective {
+			lowercase_value == 'none'
+		}
+		.position_area {
+			lowercase_value == 'none' || is_position_area_keyword_string(lowercase_value)
+		}
+		.position_try_fallbacks {
+			lowercase_value == 'none' || is_position_area_keyword_string(lowercase_value)
+				|| is_try_tactic_keyword_string(lowercase_value)
+		}
+		.position_try_order {
+			lowercase_value in ['normal', 'most-width', 'most-height', 'most-block-size',
+				'most-inline-size']
 		}
 		.border_collapse {
 			lowercase_value in ['collapse', 'separate']
@@ -1308,7 +1480,7 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['auto', 'none', 'dotted', 'dashed', 'solid', 'double', 'groove',
 				'ridge', 'inset', 'outset']
 		}
-		.overflow_x, .overflow_y {
+		.overflow_block, .overflow_inline, .overflow_x, .overflow_y {
 			lowercase_value in ['auto', 'clip', 'hidden', 'scroll', 'visible', 'overlay']
 		}
 		.overflow_wrap {
@@ -1547,6 +1719,25 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.scroll_behavior {
 			lowercase_value in ['auto', 'smooth']
 		}
+		.scrollbar_color {
+			lowercase_value == 'auto'
+		}
+		.scrollbar_gutter {
+			lowercase_value in ['auto', 'stable', 'both-edges']
+		}
+		.text_underline_position {
+			lowercase_value in ['auto', 'from-font', 'under', 'left', 'right']
+		}
+		.timeline_scope {
+			lowercase_value in ['none', 'all']
+		}
+		.vertical_align {
+			lowercase_value in ['baseline', 'sub', 'super', 'text-top', 'text-bottom', 'middle',
+				'top', 'bottom']
+		}
+		.will_change {
+			lowercase_value in ['auto', 'scroll-position', 'contents']
+		}
 	}
 }
 
@@ -1566,6 +1757,15 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.border_inline_start_style, .border_inline_start_width, .border_start_end_radius,
 		.border_start_start_radius, .corner_end_end_shape, .corner_end_start_shape,
 		.corner_start_end_shape, .corner_start_start_shape {
+			false
+		}
+		.object_position, .overflow_block, .overflow_clip_margin_block_end,
+		.overflow_clip_margin_block_start, .overflow_clip_margin_bottom,
+		.overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start,
+		.overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top,
+		.overflow_inline, .perspective, .perspective_origin, .position_area, .position_try_order,
+		.scrollbar_color, .scrollbar_gutter, .tab_size, .text_underline_position,
+		.transform_origin, .vertical_align {
 			false
 		}
 		.accent_color, .background_attachment, .background_blend_mode, .background_clip,
@@ -1639,7 +1839,8 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.transition_property {
 			lowercase_value != 'none'
 		}
-		.anchor_name, .scroll_timeline_name, .view_timeline_name {
+		.anchor_name, .position_try_fallbacks, .scroll_timeline_name, .timeline_scope,
+		.view_timeline_name {
 			value.starts_with('--') && lowercase_value != 'none'
 		}
 		.anchor_scope {
@@ -1647,6 +1848,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.position_anchor {
 			value.starts_with('--') && lowercase_value != 'auto'
+		}
+		.will_change {
+			lowercase_value !in ['all', 'auto', 'contents', 'none', 'scroll-position', 'will-change']
 		}
 	}
 }
@@ -1715,6 +1919,12 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		RatioStyleValue {
 			property_accepts_type(property_id, .ratio)
 		}
+		ScrollbarColorStyleValue {
+			property_id == .scrollbar_color
+		}
+		ScrollbarGutterStyleValue {
+			property_id == .scrollbar_gutter
+		}
 		StringStyleValue {
 			property_accepts_type(property_id, .string)
 		}
@@ -1753,12 +1963,15 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		TextIndentStyleValue {
 			property_id == .text_indent
 		}
+		TextUnderlinePositionStyleValue {
+			property_id == .text_underline_position
+		}
 		URLStyleValue {
 			property_accepts_type(property_id, .url)
 		}
 		StyleValueList {
 			if property_is_list_valued(property_id)
-				|| property_id in [.border_image_outset, .border_image_repeat, .border_image_width, .border_spacing] {
+				|| property_id in [.border_image_outset, .border_image_repeat, .border_image_width, .border_spacing, .scrollbar_color, .scrollbar_gutter, .transform_origin] {
 				for item in value.values() {
 					if !property_accepts_style_value(property_id, item) {
 						return false
@@ -1795,7 +2008,7 @@ pub fn property_accepts_number(property_id PropertyID, value f64) bool {
 			value >= 1 && value <= 1000
 		}
 		.flex_grow, .flex_shrink, .border_image_outset, .border_image_slice, .border_image_width,
-		.stroke_miterlimit, .stroke_width, .stroke_dashoffset {
+		.stroke_miterlimit, .stroke_width, .stroke_dashoffset, .tab_size {
 			value >= 0
 		}
 		else {
@@ -1858,10 +2071,14 @@ pub fn property_accepts_length(property_id PropertyID, value Length) bool {
 		.border_start_end_radius, .border_start_start_radius, .border_top_left_radius,
 		.border_top_right_radius, .border_top_width, .height, .inline_size, .max_block_size,
 		.max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size,
-		.min_width, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
-		.padding_inline_start, .padding_left, .padding_right, .padding_top, .width, .column_width,
-		.column_height, .column_gap, .row_gap, .shape_margin, .r, .rx, .ry, .stroke_width,
-		.stroke_dashoffset {
+		.min_width, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
+		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
+		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
+		.overflow_clip_margin_right, .overflow_clip_margin_top, .padding_block_end,
+		.padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start,
+		.padding_left, .padding_right, .padding_top, .perspective, .tab_size, .width,
+		.column_width, .column_height, .column_gap, .row_gap, .shape_margin, .r, .rx, .ry,
+		.stroke_width, .stroke_dashoffset {
 			value.raw_value() >= 0
 		}
 		else {

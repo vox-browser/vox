@@ -183,9 +183,20 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.min_width { 'min-width' }
 		.mix_blend_mode { 'mix-blend-mode' }
 		.object_fit { 'object-fit' }
+		.object_position { 'object-position' }
 		.opacity { 'opacity' }
 		.order { 'order' }
 		.orphans { 'orphans' }
+		.overflow_block { 'overflow-block' }
+		.overflow_clip_margin_block_end { 'overflow-clip-margin-block-end' }
+		.overflow_clip_margin_block_start { 'overflow-clip-margin-block-start' }
+		.overflow_clip_margin_bottom { 'overflow-clip-margin-bottom' }
+		.overflow_clip_margin_inline_end { 'overflow-clip-margin-inline-end' }
+		.overflow_clip_margin_inline_start { 'overflow-clip-margin-inline-start' }
+		.overflow_clip_margin_left { 'overflow-clip-margin-left' }
+		.overflow_clip_margin_right { 'overflow-clip-margin-right' }
+		.overflow_clip_margin_top { 'overflow-clip-margin-top' }
+		.overflow_inline { 'overflow-inline' }
 		.overflow_wrap { 'overflow-wrap' }
 		.outline_color { 'outline-color' }
 		.outline_offset { 'outline-offset' }
@@ -193,6 +204,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.outline_width { 'outline-width' }
 		.overflow_x { 'overflow-x' }
 		.overflow_y { 'overflow-y' }
+		.perspective { 'perspective' }
+		.perspective_origin { 'perspective-origin' }
 		.pointer_events { 'pointer-events' }
 		.paint_order { 'paint-order' }
 		.padding_block_end { 'padding-block-end' }
@@ -205,6 +218,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.padding_top { 'padding-top' }
 		.position { 'position' }
 		.position_anchor { 'position-anchor' }
+		.position_area { 'position-area' }
+		.position_try_fallbacks { 'position-try-fallbacks' }
+		.position_try_order { 'position-try-order' }
 		.position_visibility { 'position-visibility' }
 		.shape_margin { 'shape-margin' }
 		.shape_image_threshold { 'shape-image-threshold' }
@@ -220,11 +236,14 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.rotate { 'rotate' }
 		.scale { 'scale' }
 		.scroll_behavior { 'scroll-behavior' }
+		.scrollbar_color { 'scrollbar-color' }
+		.scrollbar_gutter { 'scrollbar-gutter' }
 		.scrollbar_width { 'scrollbar-width' }
 		.right { 'right' }
 		.scroll_timeline_axis { 'scroll-timeline-axis' }
 		.scroll_timeline_name { 'scroll-timeline-name' }
 		.table_layout { 'table-layout' }
+		.tab_size { 'tab-size' }
 		.text_align { 'text-align' }
 		.text_anchor { 'text-anchor' }
 		.text_decoration_color { 'text-decoration-color' }
@@ -232,6 +251,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.text_decoration_style { 'text-decoration-style' }
 		.text_decoration_thickness { 'text-decoration-thickness' }
 		.text_underline_offset { 'text-underline-offset' }
+		.text_underline_position { 'text-underline-position' }
 		.text_indent { 'text-indent' }
 		.text_justify { 'text-justify' }
 		.text_overflow { 'text-overflow' }
@@ -241,6 +261,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.text_wrap_style { 'text-wrap-style' }
 		.transform { 'transform' }
 		.transform_box { 'transform-box' }
+		.transform_origin { 'transform-origin' }
 		.transform_style { 'transform-style' }
 		.transition_behavior { 'transition-behavior' }
 		.transition_delay { 'transition-delay' }
@@ -248,6 +269,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.transition_property { 'transition-property' }
 		.transition_timing_function { 'transition-timing-function' }
 		.translate { 'translate' }
+		.timeline_scope { 'timeline-scope' }
 		.top { 'top' }
 		.unicode_bidi { 'unicode-bidi' }
 		.user_select { 'user-select' }
@@ -257,7 +279,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.view_timeline_name { 'view-timeline-name' }
 		.view_transition_name { 'view-transition-name' }
 		.visibility { 'visibility' }
+		.vertical_align { 'vertical-align' }
 		.width { 'width' }
+		.will_change { 'will-change' }
 		.webkit_text_fill_color { '-webkit-text-fill-color' }
 		.white_space_collapse { 'white-space-collapse' }
 		.white_space_trim { 'white-space-trim' }
@@ -297,8 +321,8 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.font_variation_settings, .mask_image, .mask_clip, .mask_composite, .mask_mode,
 		.mask_origin, .mask_position, .mask_repeat, .mask_size, .scroll_timeline_axis,
 		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .view_timeline_axis,
-		.view_timeline_inset, .view_timeline_name {
+		.transition_property, .transition_timing_function, .view_timeline_axis, .timeline_scope,
+		.view_timeline_inset, .view_timeline_name, .will_change, .position_try_fallbacks {
 			true
 		}
 		else {
@@ -307,14 +331,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 253
+pub const number_of_longhand_properties = 277
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .corner_start_start_shape
+	return .will_change
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -572,6 +596,30 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		250 { PropertyID.corner_end_start_shape }
 		251 { PropertyID.corner_start_end_shape }
 		252 { PropertyID.corner_start_start_shape }
+		253 { PropertyID.object_position }
+		254 { PropertyID.overflow_block }
+		255 { PropertyID.overflow_clip_margin_block_end }
+		256 { PropertyID.overflow_clip_margin_block_start }
+		257 { PropertyID.overflow_clip_margin_bottom }
+		258 { PropertyID.overflow_clip_margin_inline_end }
+		259 { PropertyID.overflow_clip_margin_inline_start }
+		260 { PropertyID.overflow_clip_margin_left }
+		261 { PropertyID.overflow_clip_margin_right }
+		262 { PropertyID.overflow_clip_margin_top }
+		263 { PropertyID.overflow_inline }
+		264 { PropertyID.perspective }
+		265 { PropertyID.perspective_origin }
+		266 { PropertyID.position_area }
+		267 { PropertyID.position_try_fallbacks }
+		268 { PropertyID.position_try_order }
+		269 { PropertyID.scrollbar_color }
+		270 { PropertyID.scrollbar_gutter }
+		271 { PropertyID.tab_size }
+		272 { PropertyID.text_underline_position }
+		273 { PropertyID.timeline_scope }
+		274 { PropertyID.transform_origin }
+		275 { PropertyID.vertical_align }
+		276 { PropertyID.will_change }
 		else { none }
 	}
 }

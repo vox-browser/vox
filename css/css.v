@@ -287,6 +287,30 @@ pub enum PropertyID {
 	corner_end_start_shape
 	corner_start_end_shape
 	corner_start_start_shape
+	object_position
+	overflow_block
+	overflow_clip_margin_block_end
+	overflow_clip_margin_block_start
+	overflow_clip_margin_bottom
+	overflow_clip_margin_inline_end
+	overflow_clip_margin_inline_start
+	overflow_clip_margin_left
+	overflow_clip_margin_right
+	overflow_clip_margin_top
+	overflow_inline
+	perspective
+	perspective_origin
+	position_area
+	position_try_fallbacks
+	position_try_order
+	scrollbar_color
+	scrollbar_gutter
+	tab_size
+	text_underline_position
+	timeline_scope
+	transform_origin
+	vertical_align
+	will_change
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {
