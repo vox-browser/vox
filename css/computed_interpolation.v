@@ -1893,9 +1893,9 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 		.by_computed_value {
 			return interpolate_value(element, calculation_context, from, to, delta, allow_discrete)
 		}
-			.none_ {
+		.none_ {
 			return unsafe { to }
-			}
+		}
 		.repeatable_list {
 			return interpolate_repeatable_list(element, calculation_context, from, to, delta,
 				allow_discrete)
@@ -3009,9 +3009,9 @@ fn build_invalidation_sets_for_selector_impl(mut style_invalidation_data StyleIn
 				subject_matches_any: subject_matches_any
 				payload:             root_plan
 			}
-			} else {
-				righthand := selector_righthand or { break }
-				mut plan := build_invalidation_for_combinator(previous_compound_combinator, righthand)
+		} else {
+			righthand := selector_righthand or { break }
+			mut plan := build_invalidation_for_combinator(previous_compound_combinator, righthand)
 			add_invalidation_plan_for_properties(mut style_invalidation_data,
 				invalidation_properties, plan)
 			selector_righthand = SelectorRighthand{
@@ -3087,7 +3087,18 @@ pub fn (f &CountingBloomFilter) may_contain(hash u32) bool {
 
 pub struct MatchingRule {
 pub mut:
-	selector Selector
+	shadow_root                  ?&dom.ShadowRoot
+	rule                         ?&CSSRule
+	sheet                        ?&CSSStyleSheet
+	default_namespace            ?string
+	selector                     Selector
+	style_sheet_index            usize
+	rule_index                   usize
+	specificity                  u32
+	cascade_origin               CascadeOrigin
+	contains_pseudo_element      bool
+	slotted                      bool
+	contains_part_pseudo_element bool
 }
 
 pub struct LayerMatchingRules {
@@ -3108,11 +3119,35 @@ pub enum ComputeStyleMode {
 	create_pseudo_element_style_if_needed
 }
 
-pub struct StyleScope {}
+pub struct StyleScope {
+pub mut:
+	qualified_layer_names_in_order                              []string
+	selector_insights                                           ?&SelectorInsights
+	pseudo_class_rule_cache                                     map[PseudoClass]&RuleCache
+	style_invalidation_data                                     ?&StyleInvalidationData
+	author_rule_cache                                           ?&RuleCaches
+	user_rule_cache                                             ?&RuleCaches
+	user_agent_rule_cache                                       ?&RuleCaches
+	user_style_sheet                                            ?&CSSStyleSheet
+	pending_nodes_for_style_invalidation_due_to_presence_of_has []&dom.Node
+	node                                                        ?&dom.Node
+}
 
 pub struct LogicalAliasMappingContext {}
 
-pub struct RuleCache {}
+pub struct RuleCache {
+pub mut:
+	rules_by_id                  map[string][]MatchingRule
+	rules_by_class               map[string][]MatchingRule
+	rules_by_tag_name            map[string][]MatchingRule
+	rules_by_attribute_name      map[string][]MatchingRule
+	rules_by_pseudo_element      map[PseudoElement][]MatchingRule
+	root_rules                   []MatchingRule
+	slotted_rules                []MatchingRule
+	part_rules                   []MatchingRule
+	other_rules                  []MatchingRule
+	rules_by_animation_keyframes map[string]bool
+}
 
 pub struct StyleComputationContextStub {
 pub mut:
@@ -3222,36 +3257,19 @@ pub fn (s &StyleComputer) compute_pseudo_element_style_if_needed(abstract_elemen
 	return none
 }
 
-pub fn (s &StyleComputer) collect_matching_rules(abstract_element dom.AbstractElement, origin CascadeOrigin, attempted_pseudo_class_matches map[string]bool, qualified_layer_name ?string) []MatchingRule {
-	_ = s
-	_ = abstract_element
-	_ = origin
-	_ = attempted_pseudo_class_matches
-	_ = qualified_layer_name
-	// Stub: requires RuleCache, StyleScope, SelectorEngine, and cascade origins.
-	return []MatchingRule{}
+pub fn (s &StyleComputer) collect_matching_rules(abstract_element dom.AbstractElement, origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []MatchingRule {
+	return style_computer_collect_matching_rules_without_scope_stub(s, abstract_element, origin, mut
+		attempted_pseudo_class_matches, qualified_layer_name)
 }
 
-pub fn (s &StyleComputer) invalidation_plan_for_properties(properties []InvalidationProperty, scope StyleScope) &InvalidationPlan {
+pub fn (s &StyleComputer) invalidation_plan_for_properties(properties []InvalidationProperty, scope &StyleScope) &InvalidationPlan {
 	_ = s
-	_ = scope
-	mut plan := InvalidationPlan.create()
-	for property in properties {
-		match property.type_ {
-			.invalidate_self { plan.invalidate_self = true }
-			.invalidate_whole_subtree { plan.invalidate_whole_subtree = true }
-			else {}
-		}
-	}
-	return plan
+	return style_computer_invalidation_plan_for_properties_impl(properties, scope)
 }
 
-pub fn (s &StyleComputer) invalidation_property_used_in_has_selector(property InvalidationProperty, scope StyleScope) bool {
+pub fn (s &StyleComputer) invalidation_property_used_in_has_selector(property InvalidationProperty, scope &StyleScope) bool {
 	_ = s
-	_ = property
-	_ = scope
-	// Stub: this needs StyleInvalidationData from active style sheets.
-	return false
+	return style_computer_invalidation_property_used_in_has_selector_impl(property, scope)
 }
 
 pub fn StyleComputer.default_user_font_size() CSSPixels {
@@ -3421,14 +3439,9 @@ pub fn StyleComputer.compute_position_area(absolutized_value &dom.StyleValue) &d
 	return unsafe { absolutized_value }
 }
 
-pub fn (s &StyleComputer) build_matching_rule_set(abstract_element dom.AbstractElement, mut attempted_pseudo_class_matches map[string]bool, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, scope StyleScope) MatchingRuleSet {
-	_ = s
-	_ = abstract_element
-	_ = attempted_pseudo_class_matches
-	_ = did_match_any_pseudo_element_rules
-	_ = mode
-	_ = scope
-	return MatchingRuleSet{}
+pub fn (s &StyleComputer) build_matching_rule_set(abstract_element dom.AbstractElement, mut attempted_pseudo_class_matches PseudoClassBitmap, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, scope &StyleScope) MatchingRuleSet {
+	return style_computer_build_matching_rule_set_impl(s, abstract_element, mut
+		attempted_pseudo_class_matches, did_match_any_pseudo_element_rules, mode, scope)
 }
 
 pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element dom.AbstractElement, mode ComputeStyleMode, matching_rule_set MatchingRuleSet) LogicalAliasMappingContext {
@@ -3439,7 +3452,7 @@ pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element
 	return LogicalAliasMappingContext{}
 }
 
-pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?bool, scope StyleScope) ?&ComputedProperties {
+pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?bool, scope &StyleScope) ?&ComputedProperties {
 	_ = mode
 	_ = did_change_custom_properties
 	_ = scope
@@ -3508,12 +3521,9 @@ pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedP
 	// Stub: requires MatchingRule declarations and shorthand expansion.
 }
 
-pub fn (s &StyleComputer) rule_cache_for_cascade_origin(origin CascadeOrigin, qualified_layer_name ?string, shadow_root voidptr) ?&RuleCache {
-	_ = s
-	_ = origin
-	_ = qualified_layer_name
-	_ = shadow_root
-	return none
+pub fn (s &StyleComputer) rule_cache_for_cascade_origin(origin CascadeOrigin, qualified_layer_name ?string, shadow_root ?&dom.ShadowRoot) ?&RuleCache {
+	return style_computer_rule_cache_for_cascade_origin_without_scope_stub(s, origin,
+		qualified_layer_name, shadow_root)
 }
 
 pub fn (mut s StyleComputer) clear_computation_context_caches() {
