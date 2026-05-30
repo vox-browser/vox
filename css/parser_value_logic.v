@@ -2447,6 +2447,7 @@ fn value_logic_round_to_u8(value f64) u8 {
 }
 
 fn dom_style_value_from_value_logic(value StyleValue) &dom.StyleValue {
-	_ = value
-	return &dom.StyleValue{}
+	return &dom.StyleValue{
+		css_text: value.serialize(.normal)
+	}
 }

@@ -83,9 +83,7 @@ fn css_style_properties_empty_dom_style_value() &dom.StyleValue {
 }
 
 fn dom_style_value_to_css_text(value &dom.StyleValue) string {
-	_ = value
-	// Boundary: dom.StyleValue is currently an opaque DOM-side placeholder in this V port.
-	return ''
+	return value.css_text
 }
 
 fn css_style_properties_length(properties &CSSStyleProperties) int {

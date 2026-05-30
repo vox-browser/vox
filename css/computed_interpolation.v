@@ -814,9 +814,6 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
-		// Boundary: dom.StyleValue is opaque in this port, so initial values that
-		// parse to typed css.StyleValue but cannot be reified still use the empty
-		// placeholder.
 		return computed_interpolation_empty_style_value()
 	}
 }
@@ -850,36 +847,36 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 	}
 }
 
+fn computed_interpolation_style_value_keyword(value &dom.StyleValue) ?Keyword {
+	serialized := value.css_text.trim_space()
+	if serialized.len == 0 {
+		return none
+	}
+	return keyword_from_string(to_ascii_lowercase(serialized))
+}
+
 fn computed_interpolation_style_value_is_inherit(value &dom.StyleValue) bool {
-	_ = value
-	// Boundary: dom.StyleValue is opaque in this port, so CSS-wide keyword
-	// detection cannot be performed here yet.
-	return false
+	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .inherit
 }
 
 fn computed_interpolation_style_value_is_initial(value &dom.StyleValue) bool {
-	_ = value
-	return false
+	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .initial
 }
 
 fn computed_interpolation_style_value_is_unset(value &dom.StyleValue) bool {
-	_ = value
-	return false
+	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .unset
 }
 
 fn computed_interpolation_style_value_is_revert(value &dom.StyleValue) bool {
-	_ = value
-	return false
+	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .revert
 }
 
 fn computed_interpolation_style_value_is_revert_layer(value &dom.StyleValue) bool {
-	_ = value
-	return false
+	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .revert_layer
 }
 
 fn computed_interpolation_style_value_is_currentcolor(value &dom.StyleValue) bool {
-	_ = value
-	return false
+	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .currentcolor
 }
 
 fn property_affects_computed_font_list(id PropertyID) bool {
@@ -1094,10 +1091,74 @@ pub fn (c &ComputedProperties) length_box(left_id PropertyID, top_id PropertyID,
 }
 
 pub fn (c &ComputedProperties) color_or_fallback(property_id PropertyID, color_resolution_context ColorResolutionContext, fallback ComputedColor) ComputedColor {
-	_ = property_id
-	_ = color_resolution_context
-	// Boundary: dom.StyleValue has no to_color() API in this port yet.
-	return fallback
+	value := c.property(property_id, .yes) or { return fallback }
+	parsed_value := parse_css_value_logic(property_id, value.css_text) or { return fallback }
+	if !parsed_value.has_color() {
+		return fallback
+	}
+	color := parsed_value.to_color(color_resolution_context) or { return fallback }
+	return ComputedColor.rgba(color.red(), color.green(), color.blue(), color.alpha())
+}
+
+fn color_scheme_style_value_from_dom_style_value(value &dom.StyleValue) ?ColorSchemeStyleValue {
+	parsed_value := parse_css_value_logic(.color_scheme, value.css_text) or { return none }
+	if parsed_value is ColorSchemeStyleValue {
+		color_scheme := parsed_value
+		return color_scheme
+	}
+	return none
+}
+
+fn first_supported_color_scheme(schemes []string) ?PreferredColorScheme {
+	for scheme in schemes {
+		supported_scheme := preferred_color_scheme_from_string(scheme)
+		if supported_scheme != .auto_ {
+			return supported_scheme
+		}
+	}
+	return none
+}
+
+fn used_color_scheme_from_scheme_list(schemes []string, preferred_scheme PreferredColorScheme) ?PreferredColorScheme {
+	if preferred_scheme != .auto_ && preferred_color_scheme_to_string(preferred_scheme) in schemes {
+		return preferred_scheme
+	}
+	return first_supported_color_scheme(schemes)
+}
+
+fn used_document_color_scheme(document_supported_schemes ?[]string, preferred_scheme PreferredColorScheme) ?PreferredColorScheme {
+	if supported_schemes := document_supported_schemes {
+		return used_color_scheme_from_scheme_list(supported_schemes, preferred_scheme)
+	}
+	return none
+}
+
+fn computed_interpolation_default_color_scheme(preferred_scheme PreferredColorScheme, document_supported_schemes ?[]string) PreferredColorScheme {
+	if document_scheme := used_document_color_scheme(document_supported_schemes, preferred_scheme) {
+		return document_scheme
+	}
+	return .light
+}
+
+pub fn (c &ComputedProperties) color_scheme(preferred_scheme PreferredColorScheme, document_supported_schemes ?[]string) PreferredColorScheme {
+	scheme_property := c.property(.color_scheme, .yes) or {
+		return computed_interpolation_default_color_scheme(preferred_scheme,
+			document_supported_schemes)
+	}
+	scheme_value := color_scheme_style_value_from_dom_style_value(scheme_property) or {
+		return computed_interpolation_default_color_scheme(preferred_scheme,
+			document_supported_schemes)
+	}
+
+	if element_scheme := used_color_scheme_from_scheme_list(scheme_value.schemes(),
+		preferred_scheme)
+	{
+		return element_scheme
+	}
+
+	// FIXME: We don't currently support setting an "overriding preference" for color schemes.
+	// `normal` indicates that the element supports the page's supported color schemes, if they are set.
+	return computed_interpolation_default_color_scheme(preferred_scheme, document_supported_schemes)
 }
 
 pub fn (c &ComputedProperties) assemble_coordinated_value_list(base_property_id PropertyID, property_ids ComputedInterpolationPropertyIDs) map[PropertyID][]&dom.StyleValue {
@@ -1114,26 +1175,6 @@ pub fn (c &ComputedProperties) assemble_coordinated_value_list(base_property_id 
 pub fn (c &ComputedProperties) color_interpolation() ColorInterpolation {
 	_ = c
 	return .auto_
-}
-
-pub fn (c &ComputedProperties) color_scheme(preferred_scheme PreferredColorScheme, document_supported_schemes ?[]string) PreferredColorScheme {
-	_ = c
-	// Boundary: dom.StyleValue does not expose ColorSchemeStyleValue yet, so
-	// element-specific schemes are treated as `normal`. The document fallback
-	// path from ComputedProperties::color_scheme() is still representable.
-	if supported_schemes := document_supported_schemes {
-		if preferred_scheme != .auto_
-			&& preferred_color_scheme_to_string(preferred_scheme) in supported_schemes {
-			return preferred_scheme
-		}
-		for scheme in supported_schemes {
-			supported_scheme := preferred_color_scheme_from_string(scheme)
-			if supported_scheme != .auto_ {
-				return supported_scheme
-			}
-		}
-	}
-	return .light
 }
 
 pub fn (c &ComputedProperties) text_anchor() TextAnchor {

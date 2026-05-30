@@ -856,7 +856,10 @@ pub mut:
 
 pub struct StyleScope {}
 
-pub struct StyleValue {}
+pub struct StyleValue {
+pub mut:
+	css_text string
+}
 
 pub struct CustomPropertyRegistration {
 pub mut:
