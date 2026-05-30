@@ -1038,6 +1038,19 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.background_size {
 			'auto'
 		}
+		.block_size, .height, .inline_size, .min_height, .min_width, .width {
+			'auto'
+		}
+		.max_block_size, .max_height, .max_inline_size, .max_width {
+			'none'
+		}
+		.min_block_size, .min_inline_size {
+			'0'
+		}
+		.bottom, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
+		.left, .right, .top {
+			'auto'
+		}
 		.border_bottom_color, .border_left_color, .border_right_color, .border_top_color {
 			'currentcolor'
 		}
@@ -1068,6 +1081,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		}
 		.border_image_width {
 			'1'
+		}
+		.border_spacing {
+			'0'
 		}
 		.box_sizing {
 			'content-box'
@@ -1198,6 +1214,12 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		}
 		.list_style_position {
 			'outside'
+		}
+		.margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end,
+		.margin_inline_start, .margin_left, .margin_right, .margin_top, .padding_block_end,
+		.padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start,
+		.padding_left, .padding_right, .padding_top {
+			'0'
 		}
 		.mask_clip {
 			'border-box'
@@ -1462,7 +1484,8 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		.stroke_dashoffset, .text_align, .text_anchor, .text_decoration_line, .paint_order,
 		.text_justify, .text_rendering, .text_transform, .text_underline_offset, .text_indent,
 		.text_wrap_mode, .text_wrap_style, .visibility, .webkit_text_fill_color,
-		.white_space_collapse, .word_break, .word_spacing, .writing_mode, .border_collapse {
+		.white_space_collapse, .word_break, .word_spacing, .writing_mode, .border_collapse,
+		.border_spacing {
 			true
 		}
 		else {
@@ -1481,42 +1504,30 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.background_repeat, .background_size, .border_bottom_color, .border_bottom_width,
 		.border_bottom_left_radius, .border_bottom_right_radius, .border_image_outset,
 		.border_image_slice, .border_image_source, .border_image_width, .border_left_color,
-		.border_left_width, .border_right_color, .border_right_width, .border_top_color,
-		.border_top_width, .border_top_left_radius, .border_top_right_radius, .caret_color, .color,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity,
-		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.flex_grow, .flex_shrink, .column_count, .column_width, .column_height, .column_gap,
-		.row_gap, .letter_spacing, .line_height, .list_style_image, .mask_image, .mask_position,
-		.mask_size, .math_depth, .opacity, .order, .orphans, .widows, .outline_color,
-		.outline_offset, .outline_width, .shape_margin, .shape_image_threshold, .stop_color,
-		.stop_opacity, .stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset,
+		.border_left_width, .border_right_color, .border_right_width, .border_spacing,
+		.border_top_color, .border_top_width, .border_top_left_radius, .border_top_right_radius,
+		.block_size, .bottom, .caret_color, .color, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.flood_color, .flood_opacity, .font_feature_settings, .font_style,
+		.font_variation_settings, .font_weight, .font_width, .flex_grow, .flex_shrink,
+		.column_count, .column_width, .column_height, .column_gap, .row_gap, .height, .inline_size,
+		.inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left,
+		.letter_spacing, .line_height, .list_style_image, .margin_block_end, .margin_block_start,
+		.margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right,
+		.margin_top, .mask_image, .mask_position, .mask_size, .math_depth, .max_block_size,
+		.max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size,
+		.min_width, .opacity, .order, .orphans, .widows, .outline_color, .outline_offset,
+		.outline_width, .padding_block_end, .padding_block_start, .padding_bottom,
+		.padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top,
+		.right, .shape_margin, .shape_image_threshold, .stop_color, .stop_opacity,
+		.stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset,
 		.text_decoration_color, .text_decoration_thickness, .text_underline_offset, .text_indent,
-		.cx, .cy, .x, .y, .r, .rx, .ry, .rotate, .scale, .transform, .transition_delay,
-		.transition_duration, .transition_timing_function, .translate, .view_timeline_inset,
-		.webkit_text_fill_color, .word_spacing, .z_index {
+		.top, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate, .scale, .transform,
+		.transition_delay, .transition_duration, .transition_timing_function, .translate,
+		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index {
 			true
 		}
-		.anchor_name, .anchor_scope, .animation_composition, .animation_direction,
-		.animation_fill_mode, .animation_play_state, .border_bottom_style, .border_collapse,
-		.border_image_repeat, .border_left_style, .border_right_style, .border_top_style,
-		.box_sizing, .caption_side, .clear, .clip_rule, .color_interpolation, .color_scheme,
-		.content_visibility, .direction, .contain, .container_type, .empty_cells, .fill_rule,
-		.float_, .font_kerning, .font_language_override, .font_optical_sizing, .font_variant_caps,
-		.font_variant_emoji, .font_variant_position, .flex_direction, .flex_wrap, .align_content,
-		.align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance,
-		.column_span, .image_rendering, .isolation, .list_style_position, .mask_clip,
-		.mask_composite, .mask_mode, .mask_origin, .mask_repeat, .mask_type, .math_style,
-		.math_shift, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
-		.overflow_wrap, .pointer_events, .position, .position_anchor, .position_visibility,
-		.scroll_timeline_axis, .scroll_timeline_name, .scroll_behavior, .shape_rendering,
-		.stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify,
-		.text_overflow, .text_decoration_line, .text_decoration_style, .paint_order,
-		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,
-		.transform_style, .transition_behavior, .transition_property, .touch_action, .unicode_bidi,
-		.user_select, .view_timeline_axis, .view_timeline_name, .view_transition_name, .visibility,
-		.white_space_collapse, .white_space_trim, .word_break, .writing_mode, .scrollbar_width,
-		.resize {
+		else {
 			false
 		}
 	}
@@ -1547,40 +1558,7 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.text_decoration_color, .word_spacing {
 			true
 		}
-		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
-		.animation_direction, .animation_duration, .animation_fill_mode,
-		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
-		.animation_timing_function, .aspect_ratio, .background_image, .border_bottom_color,
-		.border_bottom_style, .border_bottom_left_radius, .border_bottom_right_radius,
-		.border_collapse, .border_image_outset, .border_image_repeat, .border_image_slice,
-		.border_image_source, .border_image_width, .border_left_color, .border_left_style,
-		.border_right_color, .border_right_style, .border_top_color, .border_top_style,
-		.border_top_left_radius, .border_top_right_radius, .box_sizing, .caption_side,
-		.caret_color, .clear, .clip_rule, .color_interpolation, .color_scheme, .content_visibility,
-		.contain, .container_type, .direction, .empty_cells, .fill_opacity, .fill_rule, .float_,
-		.flood_opacity, .font_feature_settings, .font_kerning, .font_language_override,
-		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
-		.font_variation_settings, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap,
-		.align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self,
-		.appearance, .column_span, .column_count, .column_width, .column_height, .column_gap,
-		.row_gap, .image_rendering, .isolation, .line_height, .list_style_image,
-		.list_style_position, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin,
-		.mask_position, .mask_repeat, .mask_size, .mask_type, .math_shift, .math_style,
-		.mix_blend_mode, .object_fit, .opacity, .order, .orphans, .widows, .outline_color,
-		.outline_offset, .outline_style, .overflow_x, .overflow_y, .overflow_wrap, .pointer_events,
-		.position, .position_anchor, .position_visibility, .scroll_timeline_axis,
-		.scroll_timeline_name, .scroll_behavior, .shape_margin, .shape_rendering, .table_layout,
-		.shape_image_threshold, .stop_opacity, .stroke_linecap, .stroke_linejoin,
-		.stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .rotate, .scale,
-		.transform, .transform_box, .transform_style, .text_align, .text_anchor,
-		.text_decoration_line, .text_decoration_style, .text_decoration_thickness,
-		.text_underline_offset, .text_indent, .paint_order, .text_justify, .text_overflow,
-		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.translate, .touch_action, .unicode_bidi, .user_select, .view_timeline_axis,
-		.view_timeline_inset, .view_timeline_name, .view_transition_name, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
-		.writing_mode, .scrollbar_width, .resize, .z_index, .cx, .cy, .x, .y, .r, .rx, .ry {
+		else {
 			false
 		}
 	}
@@ -4565,16 +4543,23 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius,
 		.border_image_outset, .border_image_slice, .border_image_width, .border_left_color,
 		.border_left_width, .border_right_color, .border_right_width, .border_top_color,
-		.border_top_width, .border_top_left_radius, .border_top_right_radius, .caret_color, .color,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity, .font_style,
-		.font_weight, .font_width, .flex_grow, .flex_shrink, .column_count, .column_width,
-		.column_height, .column_gap, .row_gap, .letter_spacing, .line_height, .opacity, .order,
-		.orphans, .widows, .outline_color, .outline_offset, .outline_style, .outline_width,
-		.shape_margin, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_miterlimit,
-		.stroke_opacity, .stroke_width, .stroke_dashoffset, .text_decoration_color,
-		.text_decoration_thickness, .text_underline_offset, .text_indent, .cx, .cy, .x, .y, .r,
-		.rx, .ry, .rotate, .scale, .transform, .translate, .webkit_text_fill_color, .word_spacing,
+		.border_top_width, .border_top_left_radius, .border_top_right_radius, .border_spacing,
+		.block_size, .bottom, .caret_color, .color, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .flex_grow,
+		.flex_shrink, .column_count, .column_width, .column_height, .column_gap, .row_gap, .height,
+		.inline_size, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
+		.left, .letter_spacing, .line_height, .margin_block_end, .margin_block_start,
+		.margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right,
+		.margin_top, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size,
+		.min_height, .min_inline_size, .min_width, .opacity, .order, .orphans, .widows,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .padding_block_end,
+		.padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start,
+		.padding_left, .padding_right, .padding_top, .right, .shape_margin, .shape_image_threshold,
+		.stop_color, .stop_opacity, .stroke_miterlimit, .stroke_opacity, .stroke_width,
+		.stroke_dashoffset, .text_decoration_color, .text_decoration_thickness,
+		.text_underline_offset, .text_indent, .top, .width, .cx, .cy, .x, .y, .r, .rx, .ry,
+		.rotate, .scale, .transform, .translate, .webkit_text_fill_color, .word_spacing,
 		.scrollbar_width, .z_index {
 			.by_computed_value
 		}
@@ -5348,20 +5333,27 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.webkit_text_fill_color, .z_index {
 			false
 		}
-		.anchor_name, .aspect_ratio, .border_bottom_style, .border_bottom_width, .border_collapse,
-		.border_left_style, .border_left_width, .border_right_style, .border_right_width,
-		.border_top_style, .border_top_width, .box_sizing, .caption_side, .clear, .direction,
-		.empty_cells, .float_, .font_kerning, .font_language_override, .font_optical_sizing,
-		.font_style, .font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_grow,
-		.flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self,
-		.justify_content, .justify_items, .justify_self, .appearance, .column_span, .column_count,
-		.column_width, .column_height, .column_gap, .row_gap, .contain, .container_type,
-		.isolation, .letter_spacing, .list_style_image, .list_style_position, .math_shift, .order,
-		.orphans, .widows, .overflow_wrap, .overflow_x, .overflow_y, .paint_order, .position,
-		.position_anchor, .position_visibility, .shape_margin, .shape_rendering, .table_layout,
-		.text_align, .text_anchor, .text_justify, .text_underline_offset, .text_indent,
-		.text_transform, .text_wrap_mode, .text_wrap_style, .transform_style, .unicode_bidi,
-		.visibility, .white_space_collapse, .white_space_trim, .word_break, .word_spacing,
+		.anchor_name, .aspect_ratio, .block_size, .bottom, .border_bottom_style,
+		.border_bottom_width, .border_collapse, .border_left_style, .border_left_width,
+		.border_right_style, .border_right_width, .border_spacing, .border_top_style,
+		.border_top_width, .box_sizing, .caption_side, .clear, .direction, .empty_cells, .float_,
+		.font_kerning, .font_language_override, .font_optical_sizing, .font_style,
+		.font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_grow, .flex_shrink,
+		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
+		.justify_items, .justify_self, .appearance, .column_span, .column_count, .column_width,
+		.column_height, .column_gap, .row_gap, .contain, .container_type, .height, .inline_size,
+		.inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .isolation,
+		.left, .letter_spacing, .list_style_image, .list_style_position, .margin_block_end,
+		.margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start,
+		.margin_left, .margin_right, .margin_top, .math_shift, .max_block_size, .max_height,
+		.max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width,
+		.order, .orphans, .widows, .overflow_wrap, .overflow_x, .overflow_y, .padding_block_end,
+		.padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start,
+		.padding_left, .padding_right, .padding_top, .paint_order, .position, .position_anchor,
+		.position_visibility, .right, .shape_margin, .shape_rendering, .table_layout, .text_align,
+		.text_anchor, .text_justify, .text_underline_offset, .text_indent, .text_transform,
+		.text_wrap_mode, .text_wrap_style, .top, .transform_style, .unicode_bidi, .visibility,
+		.white_space_collapse, .white_space_trim, .width, .word_break, .word_spacing,
 		.writing_mode, .cx, .cy, .x, .y, .r, .rx, .ry {
 			true
 		}
@@ -5416,6 +5408,9 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.view_timeline_name, .view_transition_name, .writing_mode, .scrollbar_width, .resize,
 		.visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim,
 		.word_break, .word_spacing, .cx, .cy, .x, .y, .r, .rx, .ry {
+			false
+		}
+		else {
 			false
 		}
 	}
@@ -5483,6 +5478,9 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.view_timeline_inset, .view_timeline_name, .view_transition_name, .writing_mode,
 		.scrollbar_width, .resize, .visibility, .webkit_text_fill_color, .white_space_collapse,
 		.white_space_trim, .word_break, .word_spacing, .z_index, .cx, .cy, .x, .y, .r, .rx, .ry {
+			false
+		}
+		else {
 			false
 		}
 	}

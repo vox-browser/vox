@@ -284,6 +284,25 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_image_width {
 			return parser.parse_border_image_width_value(mut tokens)
 		}
+		.block_size, .height, .inline_size, .min_block_size, .min_height, .min_inline_size,
+		.min_width, .width, .max_block_size, .max_height, .max_inline_size, .max_width {
+			return parser.parse_sizing_value(property_id, mut tokens)
+		}
+		.bottom, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
+		.left, .right, .top {
+			return parser.parse_inset_value(mut tokens)
+		}
+		.margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end,
+		.margin_inline_start, .margin_left, .margin_right, .margin_top {
+			return parser.parse_margin_value(mut tokens)
+		}
+		.padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
+		.padding_inline_start, .padding_left, .padding_right, .padding_top {
+			return parser.parse_padding_value(mut tokens)
+		}
+		.border_spacing {
+			return parser.parse_border_spacing_value(mut tokens)
+		}
 		.border_collapse {
 			return parser.parse_border_collapse_value(mut tokens)
 		}
@@ -1806,6 +1825,21 @@ fn parse_single_keyword_from_set_for_value_logic(mut tokens ComponentValueStream
 	return keyword
 }
 
+fn parse_stub_keyword_from_set_for_value_logic(mut tokens ComponentValueStream, allowed []string) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is(.ident) {
+		return none
+	}
+	ident := to_ascii_lowercase(component_value.token().ident())
+	if ident !in allowed {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(StubStyleValue.create(.keyword, ident))
+}
+
 fn (mut parser Parser) parse_contain_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	// none | strict | content | [ [size | inline-size] || layout || style || paint ]
@@ -2811,6 +2845,146 @@ fn (mut parser Parser) parse_border_image_width_value(mut tokens ComponentValueS
 		return values[0]
 	}
 	return StyleValue(StyleValueList.create(values, .space, .yes))
+}
+
+fn (mut parser Parser) parse_anchor_function_stub_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is_function_named('anchor') {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(StubStyleValue.create(.anchor, component_value.to_string()))
+}
+
+fn (mut parser Parser) parse_anchor_size_function_stub_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is_function_named('anchor-size') {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(StubStyleValue.create(.anchor_size, component_value.to_string()))
+}
+
+fn (mut parser Parser) parse_fit_content_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if component_value.is(.ident)
+		&& equals_ignoring_ascii_case(component_value.token().ident(), 'fit-content') {
+		tokens = transaction
+		return StyleValue(StubStyleValue.create(.fit_content, 'fit-content'))
+	}
+	if component_value.is_function_named('fit-content') {
+		mut function_tokens := ComponentValueStream.new(component_value.function().value)
+		_ = parser.parse_nonnegative_length_percentage_value(mut function_tokens) or { return none }
+		function_tokens.consume_whitespace()
+		if function_tokens.has_more_tokens() {
+			return none
+		}
+		tokens = transaction
+		return StyleValue(StubStyleValue.create(.fit_content, component_value.to_string()))
+	}
+	return none
+}
+
+fn property_is_max_size_for_value_logic(property_id PropertyID) bool {
+	return property_id in [.max_block_size, .max_height, .max_inline_size, .max_width]
+}
+
+fn (mut parser Parser) parse_sizing_value(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	allowed_keywords := if property_is_max_size_for_value_logic(property_id) {
+		['max-content', 'min-content', 'none']
+	} else {
+		['auto', 'max-content', 'min-content']
+	}
+	if value := parse_property_keyword_value(mut transaction, allowed_keywords) {
+		tokens = transaction
+		return value
+	}
+
+	transaction = tokens.clone()
+	if value := parse_stub_keyword_from_set_for_value_logic(mut transaction, [
+		'max-content',
+		'min-content',
+	])
+	{
+		tokens = transaction
+		return value
+	}
+
+	transaction = tokens.clone()
+	if value := parser.parse_fit_content_value(mut transaction) {
+		tokens = transaction
+		return value
+	}
+
+	transaction = tokens.clone()
+	if value := parser.parse_anchor_size_function_stub_value(mut transaction) {
+		tokens = transaction
+		return value
+	}
+
+	return parser.parse_nonnegative_length_percentage_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_inset_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto']) {
+		tokens = transaction
+		return value
+	}
+
+	transaction = tokens.clone()
+	if value := parser.parse_anchor_function_stub_value(mut transaction) {
+		tokens = transaction
+		return value
+	}
+
+	return parser.parse_length_percentage_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_margin_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto']) {
+		tokens = transaction
+		return value
+	}
+
+	transaction = tokens.clone()
+	if value := parser.parse_anchor_size_function_stub_value(mut transaction) {
+		tokens = transaction
+		return value
+	}
+
+	return parser.parse_length_percentage_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_padding_value(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_nonnegative_length_percentage_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_border_spacing_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	first_value := parser.parse_nonnegative_length_value(mut transaction) or { return none }
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		tokens = transaction
+		return first_value
+	}
+
+	second_value := parser.parse_nonnegative_length_value(mut transaction) or { return none }
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create([first_value, second_value], .space, .yes))
 }
 
 fn (mut parser Parser) parse_border_image_repeat_value(mut tokens ComponentValueStream) ?StyleValue {

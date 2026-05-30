@@ -230,6 +230,43 @@ pub enum PropertyID {
 	border_bottom_right_radius
 	border_top_left_radius
 	border_top_right_radius
+	block_size
+	height
+	inline_size
+	max_block_size
+	max_height
+	max_inline_size
+	max_width
+	min_block_size
+	min_height
+	min_inline_size
+	min_width
+	width
+	bottom
+	left
+	right
+	top
+	inset_block_end
+	inset_block_start
+	inset_inline_end
+	inset_inline_start
+	margin_block_end
+	margin_block_start
+	margin_bottom
+	margin_inline_end
+	margin_inline_start
+	margin_left
+	margin_right
+	margin_top
+	padding_block_end
+	padding_block_start
+	padding_bottom
+	padding_inline_end
+	padding_inline_start
+	padding_left
+	padding_right
+	padding_top
+	border_spacing
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

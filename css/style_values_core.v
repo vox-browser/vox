@@ -186,6 +186,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'background-size' {
 			PropertyID.background_size
 		}
+		'block-size' {
+			PropertyID.block_size
+		}
+		'bottom' {
+			PropertyID.bottom
+		}
 		'border-bottom-color' {
 			PropertyID.border_bottom_color
 		}
@@ -248,6 +254,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'border-image-width' {
 			PropertyID.border_image_width
+		}
+		'border-spacing' {
+			PropertyID.border_spacing
 		}
 		'border-collapse' {
 			PropertyID.border_collapse
@@ -369,6 +378,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'font-width' {
 			PropertyID.font_width
 		}
+		'height' {
+			PropertyID.height
+		}
 		'flex-grow', '-webkit-box-flex', '-webkit-flex-grow' {
 			PropertyID.flex_grow
 		}
@@ -384,8 +396,26 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'image-rendering' {
 			PropertyID.image_rendering
 		}
+		'inline-size' {
+			PropertyID.inline_size
+		}
+		'inset-block-end' {
+			PropertyID.inset_block_end
+		}
+		'inset-block-start' {
+			PropertyID.inset_block_start
+		}
+		'inset-inline-end' {
+			PropertyID.inset_inline_end
+		}
+		'inset-inline-start' {
+			PropertyID.inset_inline_start
+		}
 		'isolation' {
 			PropertyID.isolation
+		}
+		'left' {
+			PropertyID.left
 		}
 		'justify-content', '-webkit-justify-content', '-webkit-box-pack' {
 			PropertyID.justify_content
@@ -435,6 +465,30 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'mask-size' {
 			PropertyID.mask_size
 		}
+		'margin-block-end' {
+			PropertyID.margin_block_end
+		}
+		'margin-block-start' {
+			PropertyID.margin_block_start
+		}
+		'margin-bottom' {
+			PropertyID.margin_bottom
+		}
+		'margin-inline-end' {
+			PropertyID.margin_inline_end
+		}
+		'margin-inline-start' {
+			PropertyID.margin_inline_start
+		}
+		'margin-left' {
+			PropertyID.margin_left
+		}
+		'margin-right' {
+			PropertyID.margin_right
+		}
+		'margin-top' {
+			PropertyID.margin_top
+		}
 		'mask-type' {
 			PropertyID.mask_type
 		}
@@ -443,6 +497,30 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'math-style' {
 			PropertyID.math_style
+		}
+		'max-block-size' {
+			PropertyID.max_block_size
+		}
+		'max-height' {
+			PropertyID.max_height
+		}
+		'max-inline-size' {
+			PropertyID.max_inline_size
+		}
+		'max-width' {
+			PropertyID.max_width
+		}
+		'min-block-size' {
+			PropertyID.min_block_size
+		}
+		'min-height' {
+			PropertyID.min_height
+		}
+		'min-inline-size' {
+			PropertyID.min_inline_size
+		}
+		'min-width' {
+			PropertyID.min_width
 		}
 		'mix-blend-mode' {
 			PropertyID.mix_blend_mode
@@ -482,6 +560,30 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'paint-order' {
 			PropertyID.paint_order
+		}
+		'padding-block-end' {
+			PropertyID.padding_block_end
+		}
+		'padding-block-start' {
+			PropertyID.padding_block_start
+		}
+		'padding-bottom' {
+			PropertyID.padding_bottom
+		}
+		'padding-inline-end' {
+			PropertyID.padding_inline_end
+		}
+		'padding-inline-start' {
+			PropertyID.padding_inline_start
+		}
+		'padding-left' {
+			PropertyID.padding_left
+		}
+		'padding-right' {
+			PropertyID.padding_right
+		}
+		'padding-top' {
+			PropertyID.padding_top
 		}
 		'pointer-events' {
 			PropertyID.pointer_events
@@ -533,6 +635,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'resize' {
 			PropertyID.resize
+		}
+		'right' {
+			PropertyID.right
 		}
 		'scroll-behavior' {
 			PropertyID.scroll_behavior
@@ -630,6 +735,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'touch-action' {
 			PropertyID.touch_action
 		}
+		'top' {
+			PropertyID.top
+		}
 		'view-timeline-inset' {
 			PropertyID.view_timeline_inset
 		}
@@ -644,6 +752,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'visibility' {
 			PropertyID.visibility
+		}
+		'width' {
+			PropertyID.width
 		}
 		'-webkit-text-fill-color' {
 			PropertyID.webkit_text_fill_color
@@ -834,6 +945,25 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.mask_position {
 			value_type == .position
+		}
+		.block_size, .height, .inline_size, .min_block_size, .min_height, .min_inline_size,
+		.min_width, .width, .max_block_size, .max_height, .max_inline_size, .max_width {
+			value_type in [.anchor_size, .fit_content, .length, .percentage]
+		}
+		.bottom, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
+		.left, .right, .top {
+			value_type in [.anchor, .length, .percentage]
+		}
+		.margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end,
+		.margin_inline_start, .margin_left, .margin_right, .margin_top {
+			value_type in [.anchor_size, .length, .percentage]
+		}
+		.padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
+		.padding_inline_start, .padding_left, .padding_right, .padding_top {
+			value_type in [.length, .percentage]
+		}
+		.border_spacing {
+			value_type == .length
 		}
 		.border_bottom_left_radius, .border_bottom_right_radius, .border_top_left_radius,
 		.border_top_right_radius {
@@ -1058,6 +1188,22 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.border_image_width {
 			lowercase_value == 'auto'
+		}
+		.block_size, .height, .inline_size, .min_block_size, .min_height, .min_inline_size,
+		.min_width, .width {
+			lowercase_value in ['auto', 'fit-content', 'max-content', 'min-content']
+		}
+		.max_block_size, .max_height, .max_inline_size, .max_width {
+			lowercase_value in ['fit-content', 'max-content', 'min-content', 'none']
+		}
+		.bottom, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
+		.left, .right, .top, .margin_block_end, .margin_block_start, .margin_bottom,
+		.margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top {
+			lowercase_value == 'auto'
+		}
+		.border_spacing, .padding_block_end, .padding_block_start, .padding_bottom,
+		.padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top {
+			false
 		}
 		.border_collapse {
 			lowercase_value in ['collapse', 'separate']
@@ -1347,25 +1493,32 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.border_collapse, .border_image_outset, .border_image_repeat, .border_image_slice,
 		.border_image_source, .border_image_width, .border_left_color, .border_left_style,
 		.border_right_color, .border_right_style, .border_top_color, .border_top_style,
-		.border_top_left_radius, .border_top_right_radius, .box_sizing, .caption_side,
-		.caret_color, .clear, .clip_rule, .color, .color_interpolation, .direction, .empty_cells,
-		.fill_rule, .float_, .flood_color, .font_kerning, .font_language_override,
-		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
-		.flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items,
-		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
-		.column_count, .column_width, .column_height, .column_gap, .row_gap, .image_rendering,
-		.isolation, .list_style_image, .list_style_position, .mask_clip, .mask_composite,
-		.mask_image, .mask_mode, .mask_origin, .mask_position, .mask_repeat, .mask_size,
-		.mask_type, .mix_blend_mode, .object_fit, .outline_color, .outline_style, .overflow_x,
-		.overflow_y, .overflow_wrap, .paint_order, .pointer_events, .position,
-		.position_visibility, .scroll_timeline_axis, .shape_margin, .shape_rendering, .stop_color,
-		.stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_width, .stroke_dashoffset,
-		.table_layout, .text_align, .text_anchor, .text_decoration_color, .text_decoration_line,
-		.text_decoration_style, .text_decoration_thickness, .text_underline_offset, .text_indent,
-		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
-		.text_wrap_style, .transform_box, .transform_style, .touch_action, .writing_mode,
-		.scrollbar_width, .resize, .scroll_behavior, .math_shift, .contain, .container_type,
-		.unicode_bidi, .user_select, .view_timeline_axis, .view_timeline_inset, .visibility,
+		.border_top_left_radius, .border_top_right_radius, .border_spacing, .block_size, .bottom,
+		.box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation,
+		.direction, .empty_cells, .fill_rule, .float_, .flood_color, .font_kerning,
+		.font_language_override, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
+		.font_variant_position, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap,
+		.align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self,
+		.appearance, .column_span, .column_count, .column_width, .column_height, .column_gap,
+		.row_gap, .height, .image_rendering, .inline_size, .inset_block_end, .inset_block_start,
+		.inset_inline_end, .inset_inline_start, .isolation, .left, .list_style_image,
+		.list_style_position, .margin_block_end, .margin_block_start, .margin_bottom,
+		.margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top,
+		.mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_position,
+		.mask_repeat, .mask_size, .mask_type, .max_block_size, .max_height, .max_inline_size,
+		.max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .mix_blend_mode,
+		.object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y, .overflow_wrap,
+		.padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
+		.padding_inline_start, .padding_left, .padding_right, .padding_top, .paint_order,
+		.pointer_events, .position, .position_visibility, .right, .scroll_timeline_axis,
+		.shape_margin, .shape_rendering, .stop_color, .stroke_linecap, .stroke_linejoin,
+		.stroke_miterlimit, .stroke_width, .stroke_dashoffset, .table_layout, .text_align,
+		.text_anchor, .text_decoration_color, .text_decoration_line, .text_decoration_style,
+		.text_decoration_thickness, .text_underline_offset, .text_indent, .text_justify,
+		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .top,
+		.transform_box, .transform_style, .touch_action, .width, .writing_mode, .scrollbar_width,
+		.resize, .scroll_behavior, .math_shift, .contain, .container_type, .unicode_bidi,
+		.user_select, .view_timeline_axis, .view_timeline_inset, .visibility,
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .widows,
 		.cx, .cy, .x, .y, .r, .rx, .ry {
 			false
@@ -1424,6 +1577,12 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		KeywordStyleValue {
 			property_accepts_keyword_string(property_id, value.to_string())
 		}
+		AnchorSizeStyleValue {
+			property_accepts_type(property_id, .anchor_size)
+		}
+		AnchorStyleValue {
+			property_accepts_type(property_id, .anchor)
+		}
 		CustomIdentStyleValue {
 			property_accepts_custom_ident(property_id, value.custom_ident())
 		}
@@ -1476,6 +1635,25 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		StringStyleValue {
 			property_accepts_type(property_id, .string)
 		}
+		StubStyleValue {
+			match value.type_ {
+				.anchor {
+					property_accepts_type(property_id, .anchor)
+				}
+				.anchor_size {
+					property_accepts_type(property_id, .anchor_size)
+				}
+				.fit_content {
+					property_accepts_type(property_id, .fit_content)
+				}
+				.keyword {
+					property_accepts_keyword_string(property_id, value.serialize(.normal))
+				}
+				else {
+					false
+				}
+			}
+		}
 		SuperellipseStyleValue {
 			property_accepts_type(property_id, .corner_shape)
 		}
@@ -1497,7 +1675,7 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		}
 		StyleValueList {
 			if property_is_list_valued(property_id)
-				|| property_id in [.border_image_outset, .border_image_repeat, .border_image_width] {
+				|| property_id in [.border_image_outset, .border_image_repeat, .border_image_width, .border_spacing] {
 				for item in value.values() {
 					if !property_accepts_style_value(property_id, item) {
 						return false
@@ -1552,10 +1730,13 @@ pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
 
 pub fn property_accepts_percentage(property_id PropertyID, value Percentage) bool {
 	return match property_id {
-		.background_size, .mask_size, .border_bottom_left_radius, .border_bottom_right_radius,
-		.border_image_slice, .border_image_width, .border_top_left_radius,
-		.border_top_right_radius, .column_gap, .row_gap, .shape_margin, .r, .rx, .ry,
-		.stroke_width, .stroke_dashoffset {
+		.background_size, .mask_size, .block_size, .border_bottom_left_radius,
+		.border_bottom_right_radius, .border_image_slice, .border_image_width,
+		.border_top_left_radius, .border_top_right_radius, .height, .inline_size, .max_block_size,
+		.max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size,
+		.min_width, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
+		.padding_inline_start, .padding_left, .padding_right, .padding_top, .width, .column_gap,
+		.row_gap, .shape_margin, .r, .rx, .ry, .stroke_width, .stroke_dashoffset {
 			value.value() >= 0
 		}
 		else {
@@ -1584,10 +1765,14 @@ pub fn property_accepts_frequency(property_id PropertyID, value Frequency) bool 
 
 pub fn property_accepts_length(property_id PropertyID, value Length) bool {
 	return match property_id {
-		.background_size, .mask_size, .border_bottom_left_radius, .border_bottom_right_radius,
-		.border_image_outset, .border_image_width, .border_top_left_radius,
-		.border_top_right_radius, .column_width, .column_height, .column_gap, .row_gap,
-		.shape_margin, .r, .rx, .ry, .stroke_width, .stroke_dashoffset {
+		.background_size, .mask_size, .block_size, .border_bottom_left_radius,
+		.border_bottom_right_radius, .border_image_outset, .border_image_width, .border_spacing,
+		.border_top_left_radius, .border_top_right_radius, .height, .inline_size, .max_block_size,
+		.max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size,
+		.min_width, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
+		.padding_inline_start, .padding_left, .padding_right, .padding_top, .width, .column_width,
+		.column_height, .column_gap, .row_gap, .shape_margin, .r, .rx, .ry, .stroke_width,
+		.stroke_dashoffset {
 			value.raw_value() >= 0
 		}
 		else {
