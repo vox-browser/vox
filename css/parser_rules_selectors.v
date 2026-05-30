@@ -1206,14 +1206,7 @@ fn (mut parser RuleSelectorParser) convert_to_layer_rule(rule AtRule, nested Par
 		}
 		mut child_rules := parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations,
 			nested)
-		mut layer_rule := CSSRule.create_grouping(.layer_block, CSSRuleList.create(child_rules))
-		layer_rule.layer = layer_name
-		layer_rule.layer_internal = if layer_name.len == 0 {
-			next_unique_anonymous_layer_name()
-		} else {
-			layer_name
-		}
-		return layer_rule
+		return CSSRule.create_layer_block(layer_name, CSSRuleList.create(child_rules))
 	}
 
 	mut prelude_tokens := ParserTokenStream.from_values(rule.prelude)
@@ -1233,9 +1226,7 @@ fn (mut parser RuleSelectorParser) convert_to_layer_rule(rule AtRule, nested Par
 	if layer_names.len == 0 {
 		return none
 	}
-	mut layer_rule := CSSRule.create(.layer_statement)
-	layer_rule.layer = layer_names.join(', ')
-	return layer_rule
+	return CSSRule.create_layer_statement(layer_names)
 }
 
 fn (mut parser RuleSelectorParser) convert_to_media_rule(rule AtRule, nested ParserNested) ?&CSSRule {
