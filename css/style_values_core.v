@@ -41,6 +41,28 @@ pub fn (c Color) alpha() u8 {
 	return c.a
 }
 
+pub fn (c Color) luminosity() u8 {
+	return u8(int(math.round(f64(c.red()) * 0.2126 + f64(c.green()) * 0.7152 +
+		f64(c.blue()) * 0.0722)))
+}
+
+pub fn (c Color) contrast_ratio(other Color) f64 {
+	l1 := c.luminosity()
+	l2 := other.luminosity()
+	darkest := f64(if l1 < l2 { l1 } else { l2 }) / 255.0
+	brightest := f64(if l1 > l2 { l1 } else { l2 }) / 255.0
+	return (brightest + 0.05) / (darkest + 0.05)
+}
+
+pub fn (c Color) darkened(amount f64) Color {
+	return Color.rgba(u8(int(f64(c.red()) * amount)), u8(int(f64(c.green()) * amount)),
+		u8(int(f64(c.blue()) * amount)), c.alpha())
+}
+
+pub fn (c Color) inverted() Color {
+	return Color.rgba(~c.red(), ~c.green(), ~c.blue(), c.alpha())
+}
+
 pub fn (c Color) serialize() string {
 	if c.a == 255 {
 		return 'rgb(${c.r} ${c.g} ${c.b})'
@@ -2101,21 +2123,96 @@ pub fn (style_value KeywordStyleValue) has_color() bool {
 }
 
 pub fn (style_value KeywordStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
-	_ = color_resolution_context
-
 	if style_value.keyword() == .currentcolor {
-		// Stub: ColorResolutionContext currently has no current_color field in this V port.
-		return Color.black()
+		return color_resolution_context.current_color or { Color.black() }
+	}
+
+	scheme := color_resolution_context.color_scheme or { PreferredColorScheme.light }
+
+	// Calculate accent_color_text based on contrast to accent_color
+	if style_value.keyword() == .accentcolortext {
+		// min_contrast = 10.2 is a magic number which provides the best accessibility trade-off based on:
+		// 1. https://webaim.org/resources/contrastchecker/
+		// 2. Current implementation of luminosity() and contrast_ratio() methods for Color instances
+		//
+		// the baseline colors with the least contrast from black and white are #757575 and #767676
+		// which score over 4.5 ratio for #fff and #000 accent_color_text values correspondingly
+		min_contrast := 10.2
+		system_accent_text := SystemColor.accent_color_text(scheme)
+
+		accent_color := color_resolution_context.accent_color or { SystemColor.accent_color(scheme) }
+		if accent_color.contrast_ratio(system_accent_text) < min_contrast {
+			return system_accent_text.inverted()
+		}
+
+		return system_accent_text
 	}
 
 	// First, handle <system-color>s, since they do not strictly require a node.
 	// https://www.w3.org/TR/css-color-4/#css-system-colors
 	// https://www.w3.org/TR/css-color-4/#deprecated-system-colors
-	if style_value.has_color() {
-		// Stub: SystemColor, document link colors, and palette colors are not translated yet.
-		return Color.black()
+	match style_value.keyword() {
+		.accentcolor {
+			return color_resolution_context.accent_color or { SystemColor.accent_color(scheme) }
+		}
+		.buttonborder, .activeborder, .inactiveborder, .threeddarkshadow, .threedhighlight,
+		.threedlightshadow, .threedshadow, .windowframe {
+			return SystemColor.button_border(scheme)
+		}
+		.buttonface, .buttonhighlight, .buttonshadow, .threedface {
+			return SystemColor.button_face(scheme)
+		}
+		.buttontext {
+			return SystemColor.button_text(scheme)
+		}
+		.canvas, .appworkspace, .background, .inactivecaption, .infobackground, .menu,
+		.scrollbar, .window {
+			return SystemColor.canvas(scheme)
+		}
+		.canvastext, .activecaption, .captiontext, .infotext, .menutext, .windowtext {
+			return SystemColor.canvas_text(scheme)
+		}
+		.field {
+			return SystemColor.field(scheme)
+		}
+		.fieldtext {
+			return SystemColor.field_text(scheme)
+		}
+		.graytext, .inactivecaptiontext {
+			return SystemColor.gray_text(scheme)
+		}
+		.highlight {
+			return SystemColor.highlight(scheme)
+		}
+		.highlighttext {
+			return SystemColor.highlight_text(scheme)
+		}
+		.mark {
+			return SystemColor.mark(scheme)
+		}
+		.marktext {
+			return SystemColor.mark_text(scheme)
+		}
+		.selecteditem {
+			return SystemColor.selected_item(scheme)
+		}
+		.selecteditemtext {
+			return SystemColor.selected_item_text(scheme)
+		}
+		.libweb_buttonfacedisabled {
+			return SystemColor.button_face(scheme).with_alpha(128)
+		}
+		.libweb_buttonfacehover {
+			return SystemColor.button_face(scheme).darkened(0.8)
+		}
+		else {}
 	}
 
+	// Boundary: C++ resolves link colors and -libweb-palette-* colors through the document/page palette.
+	// The V ColorResolutionContext does not carry a Document yet, so it follows the C++ no-document fallback.
+	if style_value.has_color() {
+		return Color.black()
+	}
 	return none
 }
 
@@ -2131,7 +2228,9 @@ pub fn (style_value KeywordStyleValue) absolutized(context ComputationContext) S
 		return StyleValue(style_value)
 	}
 
-	resolved_color := style_value.to_color(ColorResolutionContext{}) or {
+	resolved_color := style_value.to_color(ColorResolutionContext{
+		color_scheme: context.color_scheme
+	}) or {
 		return StyleValue(style_value)
 	}
 	return StyleValue(ColorStyleValue.create(resolved_color))
