@@ -4391,9 +4391,122 @@ pub fn StyleComputer.compute_corner_shape(absolutized_value &dom.StyleValue) &do
 	return unsafe { absolutized_value }
 }
 
+fn computed_interpolation_parse_opentype_tag_value(mut tokens ComponentValueStream) ?StringStyleValue {
+	// https://drafts.csswg.org/css-fonts/#typedef-opentype-tag
+	// <opentype-tag> = <string>
+	// The <opentype-tag> is a case-sensitive OpenType feature tag.
+	// As specified in the OpenType specification [OPENTYPE], feature tags contain four ASCII characters.
+	// Tag strings longer or shorter than four characters, or containing characters outside the U+20-7E codepoint range are invalid.
+	mut parser := Parser{}
+	string_value := parser.parse_string_value(mut tokens) or { return none }
+	tag := string_value.string_value()
+	if tag.len != 4 {
+		return none
+	}
+	for character in tag {
+		if character < 0x20 || character > 0x7e {
+			return none
+		}
+	}
+	return string_value
+}
+
+fn computed_interpolation_parse_font_feature_settings_entry(values []ComponentValue) ?OpenTypeTaggedStyleValue {
+	// <feature-tag-value> = <opentype-tag> [ <integer [0,∞]> | on | off ]?
+	mut parser := Parser{}
+	mut tag_tokens := ComponentValueStream.new(values)
+	tag_tokens.consume_whitespace()
+	opentype_tag := computed_interpolation_parse_opentype_tag_value(mut tag_tokens) or { return none }
+	tag_tokens.consume_whitespace()
+	value := if tag_tokens.has_more_tokens() {
+		if integer_value := parser.parse_integer_value(mut tag_tokens) {
+			if integer_value is IntegerStyleValue {
+				if integer_value.integer() < 0 {
+					return none
+				}
+			}
+			integer_value
+		} else {
+			component_value := tag_tokens.consume() or { return none }
+			if !component_value.is(.ident) {
+				return none
+			}
+			match to_ascii_lowercase(component_value.token().ident()) {
+				'on' { StyleValue(IntegerStyleValue.create(1)) }
+				'off' { StyleValue(IntegerStyleValue.create(0)) }
+				else { return none }
+			}
+		}
+	} else {
+		// "If the value is omitted, a value of 1 is assumed."
+		StyleValue(IntegerStyleValue.create(1))
+	}
+	tag_tokens.consume_whitespace()
+	if tag_tokens.has_more_tokens() {
+		return none
+	}
+	return OpenTypeTaggedStyleValue.create(.font_feature_settings, opentype_tag.string_value(),
+		value)
+}
+
+fn computed_interpolation_parse_font_variation_settings_entry(values []ComponentValue) ?OpenTypeTaggedStyleValue {
+	mut parser := Parser{}
+	mut tag_tokens := ComponentValueStream.new(values)
+	tag_tokens.consume_whitespace()
+	opentype_tag := computed_interpolation_parse_opentype_tag_value(mut tag_tokens) or { return none }
+	tag_tokens.consume_whitespace()
+	number := parser.parse_number_value(mut tag_tokens) or { return none }
+	tag_tokens.consume_whitespace()
+
+	if tag_tokens.has_more_tokens() {
+		return none
+	}
+
+	return OpenTypeTaggedStyleValue.create(.font_variation_settings, opentype_tag.string_value(),
+		number)
+}
+
+fn computed_interpolation_compute_font_feature_tag_value_list(absolutized_value &dom.StyleValue, mode OpenTypeTaggedStyleValueMode) ?&dom.StyleValue {
+	if equals_ignoring_ascii_case(absolutized_value.css_text.trim_space(), 'normal') {
+		return unsafe { absolutized_value }
+	}
+
+	mut axis_tags_map := map[string]OpenTypeTaggedStyleValue{}
+	for values in parse_a_comma_separated_list_of_component_values_for_value_logic(parse_component_values_for_value_logic(absolutized_value.css_text)) {
+		axis_tag := match mode {
+			.font_feature_settings {
+				computed_interpolation_parse_font_feature_settings_entry(values) or { return none }
+			}
+			.font_variation_settings {
+				computed_interpolation_parse_font_variation_settings_entry(values) or { return none }
+			}
+		}
+		axis_tags_map[axis_tag.tag()] = axis_tag
+	}
+
+	mut tags := []string{}
+	for tag, _ in axis_tags_map {
+		tags << tag
+	}
+	tags.sort()
+
+	mut axis_tags := []StyleValue{}
+	for tag in tags {
+		axis_tags << StyleValue(axis_tags_map[tag] or { return none })
+	}
+
+	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(axis_tags, .comma,
+		.yes)))
+}
+
 pub fn StyleComputer.compute_font_feature_tag_value_list(absolutized_value &dom.StyleValue, computation_context StyleComputationContextStub) &dom.StyleValue {
 	_ = computation_context
-	return unsafe { absolutized_value }
+	// https://drafts.csswg.org/css-fonts-4/#font-variation-settings-def
+	// https://drafts.csswg.org/css-fonts/#font-feature-settings-prop
+	// NB: The computation logic is the same for both font-feature-settings and font-variation-settings, first we
+	//     deduplicate feature tags (with latter taking precedence), then we sort them in ascending order by code unit
+	return computed_interpolation_compute_font_feature_tag_value_list(absolutized_value,
+		.font_feature_settings) or { unsafe { absolutized_value } }
 }
 
 pub fn StyleComputer.compute_math_depth(absolutized_value &dom.StyleValue, inheritance_parent ?dom.AbstractElement) &dom.StyleValue {
@@ -4422,7 +4535,12 @@ pub fn StyleComputer.compute_font_width(absolutized_value &dom.StyleValue) &dom.
 
 pub fn StyleComputer.compute_font_variation_settings(absolutized_value &dom.StyleValue, computation_context StyleComputationContextStub) &dom.StyleValue {
 	_ = computation_context
-	return unsafe { absolutized_value }
+	// https://drafts.csswg.org/css-fonts-4/#font-variation-settings-def
+	// https://drafts.csswg.org/css-fonts/#font-feature-settings-prop
+	// NB: The computation logic is the same for both font-feature-settings and font-variation-settings, first we
+	//     deduplicate feature tags (with latter taking precedence), then we sort them in ascending order by code unit
+	return computed_interpolation_compute_font_feature_tag_value_list(absolutized_value,
+		.font_variation_settings) or { unsafe { absolutized_value } }
 }
 
 pub fn StyleComputer.compute_line_height(absolutized_value &dom.StyleValue, computed_font_size CSSPixels) &dom.StyleValue {
