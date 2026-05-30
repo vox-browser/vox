@@ -1561,7 +1561,12 @@ pub type StyleValue = AddFunctionStyleValue
 	| BorderImageSliceStyleValue
 	| BorderRadiusRectStyleValue
 	| BorderRadiusStyleValue
+	| ColorFunctionStyleValue
+	| ColorInterpolationMethodStyleValue
+	| ColorMixStyleValue
+	| ColorSchemeStyleValue
 	| ColorStyleValue
+	| ConicGradientStyleValue
 	| ContentStyleValue
 	| CursorStyleValue
 	| CustomIdentStyleValue
@@ -1574,18 +1579,29 @@ pub type StyleValue = AddFunctionStyleValue
 	| FontStyleStyleValue
 	| FontVariantAlternatesFunctionStyleValue
 	| FrequencyStyleValue
+	| HSLColorStyleValue
+	| HWBColorStyleValue
+	| ImageStyleValue
 	| IntegerStyleValue
 	| KeywordStyleValue
+	| LabColorStyleValue
+	| LCHColorStyleValue
 	| LengthStyleValue
+	| LightDarkStyleValue
+	| LinearGradientStyleValue
 	| NumberStyleValue
+	| OKLabColorStyleValue
+	| OKLCHColorStyleValue
 	| OpenTypeTaggedStyleValue
 	| PercentageStyleValue
 	| PositionStyleValue
+	| RadialGradientStyleValue
 	| RadialSizeStyleValue
 	| RandomValueSharingStyleValue
 	| RectStyleValue
 	| RepeatStyleStyleValue
 	| ResolutionStyleValue
+	| RGBColorStyleValue
 	| ScrollFunctionStyleValue
 	| ScrollbarColorStyleValue
 	| ScrollbarGutterStyleValue
@@ -1618,7 +1634,12 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		BorderRadiusRectStyleValue { .border_radius_rect }
 		BorderRadiusStyleValue { .border_radius }
 		CalculatedStyleValue { .calculated }
+		ColorFunctionStyleValue { .color }
+		ColorInterpolationMethodStyleValue { .color_interpolation_method }
+		ColorMixStyleValue { .color }
+		ColorSchemeStyleValue { .color_scheme }
 		ColorStyleValue { .color }
+		ConicGradientStyleValue { .conic_gradient }
 		ContentStyleValue { .content }
 		CursorStyleValue { .cursor }
 		CustomIdentStyleValue { .custom_ident }
@@ -1631,18 +1652,29 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		FontStyleStyleValue { .font_style }
 		FontVariantAlternatesFunctionStyleValue { .font_variant_alternates_function }
 		FrequencyStyleValue { .frequency }
+		HSLColorStyleValue { .color }
+		HWBColorStyleValue { .color }
+		ImageStyleValue { .image }
 		IntegerStyleValue { .integer }
 		KeywordStyleValue { .keyword }
+		LabColorStyleValue { .color }
+		LCHColorStyleValue { .color }
 		LengthStyleValue { .length }
+		LightDarkStyleValue { .color }
+		LinearGradientStyleValue { .linear_gradient }
 		NumberStyleValue { .number }
+		OKLabColorStyleValue { .color }
+		OKLCHColorStyleValue { .color }
 		OpenTypeTaggedStyleValue { .open_type_tagged }
 		PercentageStyleValue { .percentage }
 		PositionStyleValue { .position }
+		RadialGradientStyleValue { .radial_gradient }
 		RadialSizeStyleValue { .radial_size }
 		RandomValueSharingStyleValue { .random_value_sharing }
 		RectStyleValue { .rect }
 		RepeatStyleStyleValue { .repeat_style }
 		ResolutionStyleValue { .resolution }
+		RGBColorStyleValue { .color }
 		ScrollFunctionStyleValue { .scroll_function }
 		ScrollbarColorStyleValue { .scrollbar_color }
 		ScrollbarGutterStyleValue { .scrollbar_gutter }
@@ -1805,9 +1837,17 @@ pub fn (style_value StyleValue) has_auto() bool {
 
 pub fn (style_value StyleValue) has_color() bool {
 	return match style_value {
-		KeywordStyleValue { style_value.has_color() }
-		ColorStyleValue { true }
-		else { false }
+		KeywordStyleValue {
+			style_value.has_color()
+		}
+		ColorFunctionStyleValue, ColorMixStyleValue, ColorStyleValue, HSLColorStyleValue,
+		HWBColorStyleValue, LabColorStyleValue, LCHColorStyleValue, LightDarkStyleValue,
+		OKLabColorStyleValue, OKLCHColorStyleValue, RGBColorStyleValue {
+			true
+		}
+		else {
+			false
+		}
 	}
 }
 
@@ -1818,18 +1858,29 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		BasicShapeStyleValue { style_value.absolutized(context) }
 		BorderRadiusRectStyleValue { style_value.absolutized(context) }
 		BorderRadiusStyleValue { style_value.absolutized(context) }
+		ColorFunctionStyleValue { style_value.absolutized(context) }
+		ColorInterpolationMethodStyleValue { StyleValue(style_value.absolutized(context)) }
+		ColorMixStyleValue { style_value.absolutized(context) }
+		ConicGradientStyleValue { StyleValue(style_value.absolutized(context)) }
 		CursorStyleValue { style_value.absolutized(context) }
 		EasingStyleValue { style_value.absolutized(context) }
 		EdgeStyleValue { style_value.absolutized(context) }
 		FilterValueListStyleValue { style_value.absolutized(context) }
 		FontStyleStyleValue { style_value.absolutized(context) }
 		FontVariantAlternatesFunctionStyleValue { style_value.absolutized(context) }
+		HSLColorStyleValue { StyleValue(style_value.absolutized(context)) }
+		HWBColorStyleValue { StyleValue(style_value.absolutized(context)) }
+		ImageStyleValue { StyleValue(style_value.absolutized(context)) }
 		LengthStyleValue { StyleValue(style_value.absolutized(context)) }
+		LightDarkStyleValue { style_value.absolutized(context) }
+		LinearGradientStyleValue { StyleValue(style_value.absolutized(context)) }
 		KeywordStyleValue { style_value.absolutized(context) }
 		OpenTypeTaggedStyleValue { style_value.absolutized(context) }
 		PositionStyleValue { style_value.absolutized(context) }
+		RadialGradientStyleValue { StyleValue(style_value.absolutized(context)) }
 		RadialSizeStyleValue { style_value.absolutized(context) }
 		RandomValueSharingStyleValue { style_value.absolutized(context) }
+		RGBColorStyleValue { StyleValue(style_value.absolutized(context)) }
 		ShadowStyleValue { style_value.absolutized(context) }
 		StyleValueList { style_value.absolutized(context) }
 		SuperellipseStyleValue { style_value.absolutized(context) }
@@ -1843,8 +1894,18 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 
 pub fn (style_value StyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	return match style_value {
+		ColorFunctionStyleValue { style_value.to_color(color_resolution_context) }
+		ColorMixStyleValue { style_value.to_color(color_resolution_context) }
 		KeywordStyleValue { style_value.to_color(color_resolution_context) }
 		ColorStyleValue { style_value.color() }
+		HSLColorStyleValue { style_value.to_color(color_resolution_context) }
+		HWBColorStyleValue { style_value.to_color(color_resolution_context) }
+		LabColorStyleValue { style_value.to_color(color_resolution_context) }
+		LCHColorStyleValue { style_value.to_color(color_resolution_context) }
+		LightDarkStyleValue { style_value.to_color(color_resolution_context) }
+		OKLabColorStyleValue { style_value.to_color(color_resolution_context) }
+		OKLCHColorStyleValue { style_value.to_color(color_resolution_context) }
+		RGBColorStyleValue { style_value.to_color(color_resolution_context) }
 		else { none }
 	}
 }
@@ -1868,7 +1929,12 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		BorderRadiusRectStyleValue { style_value.serialize(mode) }
 		BorderRadiusStyleValue { style_value.serialize(mode) }
 		CalculatedStyleValue { style_value.serialize(mode) }
+		ColorFunctionStyleValue { style_value.serialize(mode) }
+		ColorInterpolationMethodStyleValue { style_value.serialize(mode) }
+		ColorMixStyleValue { style_value.serialize(mode) }
+		ColorSchemeStyleValue { style_value.serialize(mode) }
 		ColorStyleValue { style_value.serialize(mode) }
+		ConicGradientStyleValue { style_value.serialize(mode) }
 		ContentStyleValue { style_value.serialize(mode) }
 		CursorStyleValue { style_value.serialize(mode) }
 		CustomIdentStyleValue { style_value.serialize(mode) }
@@ -1881,18 +1947,29 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		FontStyleStyleValue { style_value.serialize(mode) }
 		FontVariantAlternatesFunctionStyleValue { style_value.serialize(mode) }
 		FrequencyStyleValue { style_value.serialize(mode) }
+		HSLColorStyleValue { style_value.serialize(mode) }
+		HWBColorStyleValue { style_value.serialize(mode) }
+		ImageStyleValue { style_value.serialize(mode) }
 		IntegerStyleValue { style_value.serialize(mode) }
 		KeywordStyleValue { style_value.serialize(mode) }
+		LabColorStyleValue { style_value.serialize(mode) }
+		LCHColorStyleValue { style_value.serialize(mode) }
 		LengthStyleValue { style_value.serialize(mode) }
+		LightDarkStyleValue { style_value.serialize(mode) }
+		LinearGradientStyleValue { style_value.serialize(mode) }
 		NumberStyleValue { style_value.serialize(mode) }
+		OKLabColorStyleValue { style_value.serialize(mode) }
+		OKLCHColorStyleValue { style_value.serialize(mode) }
 		OpenTypeTaggedStyleValue { style_value.serialize(mode) }
 		PercentageStyleValue { style_value.serialize(mode) }
 		PositionStyleValue { style_value.serialize(mode) }
+		RadialGradientStyleValue { style_value.serialize(mode) }
 		RadialSizeStyleValue { style_value.serialize(mode) }
 		RandomValueSharingStyleValue { style_value.serialize(mode) }
 		RectStyleValue { style_value.serialize(mode) }
 		RepeatStyleStyleValue { style_value.serialize(mode) }
 		ResolutionStyleValue { style_value.serialize(mode) }
+		RGBColorStyleValue { style_value.serialize(mode) }
 		ScrollFunctionStyleValue { style_value.serialize(mode) }
 		ScrollbarColorStyleValue { style_value.serialize(mode) }
 		ScrollbarGutterStyleValue { style_value.serialize(mode) }
@@ -2143,6 +2220,7 @@ pub fn (style_value KeywordStyleValue) to_color(color_resolution_context ColorRe
 		accent_color := color_resolution_context.accent_color or {
 			SystemColor.accent_color(scheme)
 		}
+
 		if accent_color.contrast_ratio(system_accent_text) < min_contrast {
 			return system_accent_text.inverted()
 		}

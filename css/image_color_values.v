@@ -811,7 +811,7 @@ pub mut:
 pub struct ColorFunctionStyleValue {
 pub mut:
 	color_type_ ConcreteColorType
-	channels_   [3]StyleValue
+	channels_   []StyleValue
 	alpha_      StyleValue
 }
 
@@ -848,7 +848,7 @@ fn color_space_from_color_type(color_type ConcreteColorType) string {
 pub fn ColorFunctionStyleValue.create(color_space string, c1 StyleValue, c2 StyleValue, c3 StyleValue, alpha ?StyleValue) ColorFunctionStyleValue {
 	return ColorFunctionStyleValue{
 		color_type_: color_type_from_color_space(color_space)
-		channels_:   [c1, c2, c3]!
+		channels_:   [c1, c2, c3]
 		alpha_:      alpha or { StyleValue(NumberStyleValue.create(1)) }
 	}
 }
@@ -880,6 +880,8 @@ fn color_function_convert_percentage(value StyleValue, mode SerializationMode) S
 		return StyleValue(NumberStyleValue.create(value.as_percentage().raw_value() / 100.0))
 	}
 	if mode == .resolved_value && value.is_calculated() {
+		// Boundary: Serialization has no full calculation tree context here, matching the upstream
+		// FIXME path that resolves with an empty CalculationResolutionContext.
 		calculated := value.as_calculated()
 		if calculated.resolves_to_percentage() {
 			if resolved_percentage := calculated.resolve_percentage(CalculationResolutionContext{}) {
@@ -897,6 +899,16 @@ fn color_function_convert_percentage(value StyleValue, mode SerializationMode) S
 	}
 
 	return value
+}
+
+pub fn (style_value ColorFunctionStyleValue) absolutized(context ComputationContext) StyleValue {
+	channel0 := style_value.channels_[0].absolutized(context)
+	channel1 := style_value.channels_[1].absolutized(context)
+	channel2 := style_value.channels_[2].absolutized(context)
+	alpha := style_value.alpha_.absolutized(context)
+
+	return StyleValue(ColorFunctionStyleValue.create(color_space_from_color_type(style_value.color_type_),
+		channel0, channel1, channel2, alpha))
 }
 
 // https://www.w3.org/TR/css-color-4/#serializing-color-function-values
@@ -928,6 +940,7 @@ pub fn (style_value ColorFunctionStyleValue) serialize(mode SerializationMode) s
 
 pub fn (style_value ColorFunctionStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	_ = color_resolution_context
+	// Boundary: ColorResolutionContext does not yet carry CalculationResolutionContext in V.
 	properties := style_value.resolve_properties(CalculationResolutionContext{}) or { return none }
 	c1 := properties.channels[0]
 	c2 := properties.channels[1]
@@ -1061,6 +1074,11 @@ pub fn ColorInterpolationMethodStyleValue.create(color_space ColorInterpolationM
 
 pub fn (style_value ColorInterpolationMethodStyleValue) color_interpolation_method() ColorInterpolationMethod {
 	return style_value.color_interpolation_method_
+}
+
+pub fn (style_value ColorInterpolationMethodStyleValue) absolutized(context ComputationContext) ColorInterpolationMethodStyleValue {
+	_ = context
+	return style_value
 }
 
 pub fn (style_value ColorInterpolationMethodStyleValue) serialize(mode SerializationMode) string {
@@ -1286,6 +1304,50 @@ pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorR
 		interpolated.alpha())
 }
 
+pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) StyleValue {
+	// FIXME: Follow the spec algorithm. https://drafts.csswg.org/css-color-5/#calculate-a-color-mix
+	normalized_percentages := style_value.normalize_percentages()
+	// Boundary: The V ColorResolutionContext does not yet carry Document or a calculation
+	// resolution context. Represent the C++ path with the currently available color-scheme data.
+	color_resolution_context := ColorResolutionContext{
+		color_scheme: context.color_scheme
+	}
+	absolutized_color_interpolation_method := if method := style_value.color_interpolation_method {
+		?ColorInterpolationMethodStyleValue(method)
+	} else {
+		?ColorInterpolationMethodStyleValue(none)
+	}
+	absolutized_first_color := style_value.first_component.color.absolutized(context)
+	absolutized_second_color := style_value.second_component.color.absolutized(context)
+
+	from_color := absolutized_first_color.to_color(color_resolution_context)
+	to_color := absolutized_second_color.to_color(color_resolution_context)
+	delta := normalized_percentages.p2.value() / 100.0
+
+	if from := from_color {
+		if to := to_color {
+			// FIXME: Interpolation should produce a StyleValue of some kind instead of a Color,
+			// and use the interpolation color space.
+			interpolated_color := interpolate_color(ComputedColor.rgba(from.red(), from.green(),
+				from.blue(), from.alpha()), ComputedColor.rgba(to.red(), to.green(), to.blue(),
+				to.alpha()), delta, .modern)
+			return StyleValue(ColorFunctionStyleValue.create('srgb',
+				StyleValue(NumberStyleValue.create(f64(interpolated_color.red()) / 255.0)),
+				StyleValue(NumberStyleValue.create(f64(interpolated_color.green()) / 255.0)),
+				StyleValue(NumberStyleValue.create(f64(interpolated_color.blue()) / 255.0)),
+				StyleValue(NumberStyleValue.create(f64(interpolated_color.alpha()) / 255.0))))
+		}
+	}
+
+	return StyleValue(ColorMixStyleValue.create(absolutized_color_interpolation_method, ColorMixComponent{
+		color:      absolutized_first_color
+		percentage: ?PercentageOrCalculated(PercentageOrCalculated.from_percentage(normalized_percentages.p1))
+	}, ColorMixComponent{
+		color:      absolutized_second_color
+		percentage: ?PercentageOrCalculated(PercentageOrCalculated.from_percentage(normalized_percentages.p2))
+	}))
+}
+
 // --- LightDarkStyleValue ---
 
 pub struct LightDarkStyleValue {
@@ -1319,7 +1381,7 @@ pub fn (style_value LightDarkStyleValue) absolutized(context ComputationContext)
 		return style_value.light.absolutized(context)
 	}
 
-	return style_value.light
+	return StyleValue(style_value)
 }
 
 pub fn (style_value LightDarkStyleValue) serialize(mode SerializationMode) string {
@@ -1375,6 +1437,9 @@ pub fn (style_value ColorSchemeStyleValue) serialize(mode SerializationMode) str
 }
 
 // --- AbstractImageStyleValue and image resources ---
+// Boundary: C++ image StyleValues integrate with HTML::DecodedImageData, timers, layout-driven
+// intrinsic sizing, and DisplayList painting. This V port keeps the representable resource
+// metadata, serialization, and absolutization pieces without painting/layout resource APIs.
 
 pub enum GradientRepeating {
 	yes
@@ -1529,6 +1594,8 @@ pub fn (mut style_value ImageStyleValue) load_any_resources(mut document dom.Doc
 	style_value.resource_request_ = fetch_an_external_image_for_a_stylesheet(StyleResourceURL(style_value.url_),
 		rule_or_declaration, mut document)
 	style_value.did_request_resource = style_value.resource_request_ != none
+	// Boundary: Upstream attaches resource callbacks and animation timers here. Those depend on
+	// GC/timer/image-decoder APIs that are outside this V StyleValue translation.
 }
 
 pub fn (mut style_value ImageStyleValue) animate() {
@@ -1833,9 +1900,14 @@ pub fn (style_value LinearGradientStyleValue) absolutized(context ComputationCon
 	for color_stop in style_value.color_stop_list_ {
 		absolutized_color_stops << color_stop.absolutized(context)
 	}
+	absolutized_color_interpolation_method := if method := style_value.color_interpolation_method_ {
+		?ColorInterpolationMethodStyleValue(method.absolutized(context))
+	} else {
+		?ColorInterpolationMethodStyleValue(none)
+	}
 
 	return LinearGradientStyleValue.create(style_value.direction_, absolutized_color_stops,
-		style_value.gradient_type_, style_value.repeating_, style_value.color_interpolation_method_)
+		style_value.gradient_type_, style_value.repeating_, absolutized_color_interpolation_method)
 }
 
 pub fn (style_value LinearGradientStyleValue) angle_degrees(gradient_size CSSPixelSize) f64 {
@@ -1980,11 +2052,16 @@ pub fn (style_value RadialGradientStyleValue) absolutized(context ComputationCon
 	for color_stop in style_value.color_stop_list_ {
 		absolutized_color_stops << color_stop.absolutized(context)
 	}
+	absolutized_color_interpolation_method := if method := style_value.color_interpolation_method_ {
+		?ColorInterpolationMethodStyleValue(method.absolutized(context))
+	} else {
+		?ColorInterpolationMethodStyleValue(none)
+	}
 
 	return RadialGradientStyleValue.create(style_value.ending_shape_,
 		style_value.size_.absolutized(context),
 		(style_value.position_.absolutized(context) as PositionStyleValue),
-		absolutized_color_stops, style_value.repeating_, style_value.color_interpolation_method_)
+		absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
 }
 
 // --- ConicGradientStyleValue ---
@@ -2078,10 +2155,15 @@ pub fn (style_value ConicGradientStyleValue) absolutized(context ComputationCont
 	} else {
 		?StyleValue(none)
 	}
+	absolutized_color_interpolation_method := if method := style_value.color_interpolation_method_ {
+		?ColorInterpolationMethodStyleValue(method.absolutized(context))
+	} else {
+		?ColorInterpolationMethodStyleValue(none)
+	}
 
 	return ConicGradientStyleValue.create(absolutized_from_angle,
 		(style_value.position_.absolutized(context) as PositionStyleValue),
-		absolutized_color_stops, style_value.repeating_, style_value.color_interpolation_method_)
+		absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
 }
 
 pub fn (style_value ConicGradientStyleValue) angle_degrees() f64 {
