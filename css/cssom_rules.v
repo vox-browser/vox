@@ -235,7 +235,20 @@ pub fn (mut rule_list CSSRuleList) set_owner_rule(owner_rule &CSSRule) {
 }
 
 pub fn (mut rule_list CSSRuleList) set_rules(rules []&CSSRule) {
+	for mut old_rule in rule_list.rules {
+		old_rule.set_parent_rule(none)
+	}
+
 	rule_list.rules = rules
+
+	for mut rule in rule_list.rules {
+		if owner_rule := rule_list.owner_rule {
+			rule.set_parent_rule(owner_rule)
+		} else if parent_style_sheet := rule_list.owner_style_sheet {
+			rule.set_parent_style_sheet(parent_style_sheet)
+		}
+	}
+
 	rule_list.did_change()
 }
 
@@ -483,6 +496,9 @@ fn (mut rule_list CSSRuleList) did_change() {
 	if on_change := rule_list.on_change {
 		on_change()
 	}
+	if mut owner_rule := rule_list.owner_rule {
+		owner_rule.clear_caches()
+	}
 	if mut sheet := rule_list.owner_style_sheet {
 		sheet.recalculate_rule_caches()
 	}
@@ -517,15 +533,15 @@ pub mut:
 	declaration                  ?&CSSStyleProperties
 	style_map_cache              ?&CSSOMStylePropertyMap
 
-	keyframe_key                ?Percentage
-	layer_name_list             []string
-	page_selectors              PageSelectorList
-	page_descriptors            ?&CSSPageDescriptors
-	margin_name                 string
-	property_rule_name          string
-	property_rule_syntax        string
-	property_rule_inherits      bool
-	property_rule_initial_value ?string
+	keyframe_key                      ?Percentage
+	layer_name_list                   []string
+	page_selectors                    PageSelectorList
+	page_descriptors                  ?&CSSPageDescriptors
+	margin_name                       string
+	property_rule_name                string
+	property_rule_syntax              string
+	property_rule_inherits            bool
+	property_rule_initial_value       ?string
 	property_rule_initial_style_value ?StyleValue
 
 	font_face_rule           ?&CSSFontFaceRule
@@ -1047,8 +1063,14 @@ pub fn (mut rule CSSRule) fetch() {
 		}
 	}
 
+	rule.set_loading_state(.loading)
+
 	// Fetch/style-resource integration is outside this V port. Keep the observable loading transition explicit.
-	rule.loading_state = .loaded
+	if loaded_style_sheet := rule.loaded_style_sheet {
+		rule.set_loading_state(loaded_style_sheet.loading_state())
+		return
+	}
+	rule.set_loading_state(.loaded)
 }
 
 pub fn (mut rule CSSRule) set_style_sheet(style_sheet &CSSStyleSheet) {
@@ -1067,6 +1089,7 @@ pub fn (mut rule CSSRule) set_style_sheet(style_sheet &CSSStyleSheet) {
 	}
 
 	mutable_style_sheet.invalidate_owners(dom.StyleInvalidationReason.style_change)
+	rule.set_loading_state(mutable_style_sheet.loading_state())
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssimportrule-media
@@ -1458,6 +1481,7 @@ pub fn css_style_sheet_construct(options ?CSSStyleSheetInit, associated_document
 			resolved_base_url := parsed_base_url or {
 				return error('NotAllowedError: Constructed style sheets must have a valid base URL')
 			}
+
 			sheet.base_url = resolved_base_url.to_string()
 		}
 	}
@@ -1694,6 +1718,22 @@ pub fn (sheet &CSSStyleSheet) for_each_effective_counter_style_at_rule(callback 
 	})
 }
 
+pub fn (sheet &CSSStyleSheet) for_each_effective_property_at_rule(callback fn (&CSSRule)) {
+	sheet.for_each_effective_rule(.preorder, fn [callback] (rule &CSSRule) {
+		if rule.type_ == .property {
+			callback(rule)
+		}
+	})
+}
+
+pub fn (sheet &CSSStyleSheet) registered_properties_from_css_property_rules() map[string]CustomPropertyRegistration {
+	mut registered_properties := map[string]CustomPropertyRegistration{}
+	sheet.for_each_effective_property_at_rule(fn [mut registered_properties] (rule &CSSRule) {
+		registered_properties[rule.property_rule_name()] = rule.property_rule_to_registration()
+	})
+	return registered_properties
+}
+
 pub fn (mut sheet CSSStyleSheet) add_owning_document_or_shadow_root(document_or_shadow_root &dom.Node) {
 	for existing in sheet.owning_documents_or_shadow_roots {
 		if existing == document_or_shadow_root {
@@ -1851,6 +1891,11 @@ pub fn (sheet &CSSStyleSheet) source_text() ?string {
 }
 
 pub fn (mut sheet CSSStyleSheet) add_critical_subresource(subresource &CSSRule) {
+	for existing in sheet.critical_subresources {
+		if existing == subresource {
+			return
+		}
+	}
 	sheet.critical_subresources << subresource
 }
 
@@ -2163,7 +2208,8 @@ pub fn supports_condition(condition_text string) bool {
 // https://www.w3.org/TR/css-properties-values-api-1/#the-registerproperty-function
 pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistration {
 	// 1. Let property set be the value of the current global object's associated Document's [[registeredPropertySet]] slot.
-	// Stub: The Document registered-property set is not present in the V DOM module yet.
+	// Boundary: This V binding has no current-global/Document parameter, so the document-owned property set is handled
+	// by register_property_for_document() below.
 
 	// 2. If name is not a custom property name string, throw a SyntaxError and exit this algorithm.
 	if !is_a_custom_property_name_string(definition.name) {
@@ -2219,6 +2265,29 @@ pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistrat
 		inherit:       definition.inherits
 		initial_value: definition.initial_value
 	}
+}
+
+pub fn register_property_for_document(mut document dom.Document, definition PropertyDefinition) !CustomPropertyRegistration {
+	// 2. If name is not a custom property name string, throw a SyntaxError and exit this algorithm.
+	if !is_a_custom_property_name_string(definition.name) {
+		return error('SyntaxError: Invalid property name')
+	}
+
+	// If property set already contains an entry with name as its property name (compared codepoint-wise),
+	// throw an InvalidModificationError and exit this algorithm.
+	if definition.name in document.registered_property_set {
+		return error('InvalidModificationError: Property is already registered')
+	}
+
+	registration := register_property(definition)!
+
+	document.registered_property_set[registration.property_name] = dom.CustomPropertyRegistration{
+		initial_value: registration.initial_value
+		syntax:        registration.syntax
+		inherits:      registration.inherit
+	}
+
+	return registration
 }
 
 fn cssom_indent(indent_levels int) string {
