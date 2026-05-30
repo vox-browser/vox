@@ -1165,30 +1165,6 @@ pub fn parse_css_media_feature_value_logic(media_feature string, text string) ?S
 	return value
 }
 
-// Explicit local stubs for generated grammar/layout pieces missing from the V
-// port. They preserve the call sites that the translated parser logic expects.
-
-fn generated_property_accepts_style_value_stub(property_id PropertyID, value StyleValue) bool {
-	_ = property_id
-	_ = value
-	return true
-}
-
-fn generated_descriptor_accepts_style_value_stub(at_rule_id AtRuleID, descriptor_id DescriptorID, value StyleValue) bool {
-	_ = at_rule_id
-	_ = descriptor_id
-	_ = value
-	return true
-}
-
-fn parse_calculated_value_stub(component_value ComponentValue) ?StyleValue {
-	if component_value.is_function_named('calc') || component_value.is_function_named('min')
-		|| component_value.is_function_named('max') || component_value.is_function_named('clamp') {
-		return StyleValue(StubStyleValue.create(.calculated, component_value.to_string()))
-	}
-	return none
-}
-
 fn value_logic_round_to_u8(value f64) u8 {
 	return u8(int(math.max(0.0, math.min(255.0, math.round(value)))))
 }
