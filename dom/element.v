@@ -314,6 +314,7 @@ pub mut:
 	content_visibility_ CSSContentVisibility_ = .visible
 	opacity_            f32                   = 1.0
 	visibility_         CSSVisibility_        = .visible
+	font_weight_        f64                   = 400
 }
 
 pub fn (c &CSSComputedProperties_) display() CSSDisplay_ {
@@ -338,6 +339,10 @@ pub fn (c &CSSComputedProperties_) opacity() f32 {
 
 pub fn (c &CSSComputedProperties_) visibility() CSSVisibility_ {
 	return c.visibility_
+}
+
+pub fn (c &CSSComputedProperties_) font_weight() f64 {
+	return c.font_weight_
 }
 
 pub fn (c &CSSComputedProperties_) view_transition_name() ?string {

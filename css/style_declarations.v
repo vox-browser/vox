@@ -30,8 +30,14 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.color { 'color' }
 		.color_scheme { 'color-scheme' }
 		.content_visibility { 'content-visibility' }
+		.corner_bottom_left_shape { 'corner-bottom-left-shape' }
+		.corner_bottom_right_shape { 'corner-bottom-right-shape' }
+		.corner_top_left_shape { 'corner-top-left-shape' }
+		.corner_top_right_shape { 'corner-top-right-shape' }
 		.font_feature_settings { 'font-feature-settings' }
+		.font_style { 'font-style' }
 		.font_variation_settings { 'font-variation-settings' }
+		.font_weight { 'font-weight' }
 		.font_width { 'font-width' }
 		.line_height { 'line-height' }
 		.opacity { 'opacity' }
@@ -49,9 +55,10 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings {
 			false
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.color, .color_scheme, .content_visibility, .font_width, .line_height, .opacity,
-		.outline_width {
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
+		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .font_style, .font_weight, .font_width,
+		.line_height, .opacity, .outline_width {
 			true
 		}
 	}
@@ -62,15 +69,16 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings {
 			true
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.color, .color_scheme, .content_visibility, .font_width, .line_height, .opacity,
-		.outline_width {
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
+		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .font_style, .font_weight, .font_width,
+		.line_height, .opacity, .outline_width {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 15
+pub const number_of_longhand_properties = 21
 
 pub fn first_longhand_property_id() PropertyID {
 	return .animation_name
@@ -91,12 +99,18 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		6 { PropertyID.color }
 		7 { PropertyID.color_scheme }
 		8 { PropertyID.content_visibility }
-		9 { PropertyID.font_feature_settings }
-		10 { PropertyID.font_variation_settings }
-		11 { PropertyID.font_width }
-		12 { PropertyID.line_height }
-		13 { PropertyID.opacity }
-		14 { PropertyID.outline_width }
+		9 { PropertyID.corner_bottom_left_shape }
+		10 { PropertyID.corner_bottom_right_shape }
+		11 { PropertyID.corner_top_left_shape }
+		12 { PropertyID.corner_top_right_shape }
+		13 { PropertyID.font_feature_settings }
+		14 { PropertyID.font_style }
+		15 { PropertyID.font_variation_settings }
+		16 { PropertyID.font_weight }
+		17 { PropertyID.font_width }
+		18 { PropertyID.line_height }
+		19 { PropertyID.opacity }
+		20 { PropertyID.outline_width }
 		else { none }
 	}
 }

@@ -108,8 +108,14 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'color' { PropertyID.color }
 		'color-scheme' { PropertyID.color_scheme }
 		'content-visibility' { PropertyID.content_visibility }
+		'corner-bottom-left-shape' { PropertyID.corner_bottom_left_shape }
+		'corner-bottom-right-shape' { PropertyID.corner_bottom_right_shape }
+		'corner-top-left-shape' { PropertyID.corner_top_left_shape }
+		'corner-top-right-shape' { PropertyID.corner_top_right_shape }
 		'font-feature-settings' { PropertyID.font_feature_settings }
+		'font-style' { PropertyID.font_style }
 		'font-variation-settings' { PropertyID.font_variation_settings }
+		'font-weight' { PropertyID.font_weight }
 		'font-width' { PropertyID.font_width }
 		'line-height' { PropertyID.line_height }
 		'opacity' { PropertyID.opacity }
@@ -156,6 +162,10 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.content_visibility {
 			false
 		}
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape {
+			value_type == .corner_shape
+		}
 		.animation_timeline {
 			value_type in [.dashed_ident, .scroll_function, .view_function]
 		}
@@ -165,6 +175,12 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.font_feature_settings, .font_variation_settings {
 			value_type == .opentype_tag
+		}
+		.font_style {
+			value_type == .font_style
+		}
+		.font_weight {
+			value_type == .number
 		}
 		.font_width {
 			value_type == .percentage
@@ -202,6 +218,10 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			// content-visibility = visible | auto | hidden
 			lowercase_value in ['visible', 'auto', 'hidden']
 		}
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape {
+			lowercase_value in ['round', 'scoop', 'bevel', 'notch', 'square', 'squircle']
+		}
 		.animation_timeline {
 			// animation-timeline = auto | none | <dashed-ident> | scroll() | view()
 			lowercase_value in ['auto', 'none']
@@ -212,6 +232,12 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.font_feature_settings, .font_variation_settings {
 			lowercase_value == 'normal'
+		}
+		.font_style {
+			lowercase_value in ['normal', 'italic', 'left', 'right', 'oblique']
+		}
+		.font_weight {
+			lowercase_value in ['normal', 'bold', 'bolder', 'lighter']
 		}
 		.font_width {
 			lowercase_value in ['ultra-condensed', 'extra-condensed', 'condensed', 'semi-condensed',
@@ -246,14 +272,18 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.content_visibility {
 			false
 		}
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape {
+			false
+		}
 		.animation_timeline {
 			// The named timeline branch is a <dashed-ident>, represented by
 			// CustomIdentStyleValue until a dedicated DashedIdent StyleValue exists.
 			value.starts_with('--')
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.font_feature_settings, .font_variation_settings, .font_width, .line_height, .opacity,
-		.outline_width {
+		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
+		.line_height, .opacity, .outline_width {
 			false
 		}
 	}
@@ -273,11 +303,25 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		ColorStyleValue {
 			property_accepts_type(property_id, .color)
 		}
+		FontStyleStyleValue {
+			property_accepts_type(property_id, .font_style)
+		}
+		NumberStyleValue {
+			property_accepts_type(property_id, .number)
+				&& property_accepts_number(property_id, value.number())
+		}
 		OpenTypeTaggedStyleValue {
 			property_accepts_type(property_id, .opentype_tag)
 		}
+		PercentageStyleValue {
+			property_accepts_type(property_id, .percentage)
+				&& property_accepts_percentage(property_id, value.percentage())
+		}
 		StringStyleValue {
 			property_accepts_type(property_id, .string)
+		}
+		SuperellipseStyleValue {
+			property_accepts_type(property_id, .corner_shape)
 		}
 		StyleValueList {
 			if property_is_list_valued(property_id) {
@@ -302,9 +346,10 @@ pub fn property_accepts_keyword(property_id PropertyID, keyword Keyword) bool {
 }
 
 pub fn property_accepts_number(property_id PropertyID, value f64) bool {
-	_ = property_id
-	_ = value
-	return true
+	return match property_id {
+		.font_weight { value >= 1 && value <= 1000 }
+		else { true }
+	}
 }
 
 pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
@@ -1203,6 +1248,21 @@ pub enum Keyword {
 	visible
 	hidden
 	normal
+	bold
+	bolder
+	lighter
+	italic
+	left
+	right
+	oblique
+	round
+	scoop
+	bevel
+	notch
+	square
+	squircle
+	infinity
+	negative_infinity
 	light
 	dark
 	accentcolor
@@ -1331,6 +1391,21 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.visible { 'visible' }
 		.hidden { 'hidden' }
 		.normal { 'normal' }
+		.bold { 'bold' }
+		.bolder { 'bolder' }
+		.lighter { 'lighter' }
+		.italic { 'italic' }
+		.left { 'left' }
+		.right { 'right' }
+		.oblique { 'oblique' }
+		.round { 'round' }
+		.scoop { 'scoop' }
+		.bevel { 'bevel' }
+		.notch { 'notch' }
+		.square { 'square' }
+		.squircle { 'squircle' }
+		.infinity { 'infinity' }
+		.negative_infinity { '-infinity' }
 		.light { 'light' }
 		.dark { 'dark' }
 		.accentcolor { 'accentcolor' }
@@ -1448,6 +1523,21 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'visible' { Keyword.visible }
 		'hidden' { Keyword.hidden }
 		'normal' { Keyword.normal }
+		'bold' { Keyword.bold }
+		'bolder' { Keyword.bolder }
+		'lighter' { Keyword.lighter }
+		'italic' { Keyword.italic }
+		'left' { Keyword.left }
+		'right' { Keyword.right }
+		'oblique' { Keyword.oblique }
+		'round' { Keyword.round }
+		'scoop' { Keyword.scoop }
+		'bevel' { Keyword.bevel }
+		'notch' { Keyword.notch }
+		'square' { Keyword.square }
+		'squircle' { Keyword.squircle }
+		'infinity' { Keyword.infinity }
+		'-infinity' { Keyword.negative_infinity }
 		'light' { Keyword.light }
 		'dark' { Keyword.dark }
 		'accentcolor' { Keyword.accentcolor }
@@ -3971,9 +4061,12 @@ fn css_numeric_value_reify_math_function(numeric_value ComponentValue) !CSSNumer
 		if arguments.len != 3 {
 			return error('SyntaxError: Unable to parse input as a calculation tree.')
 		}
-		lower := css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[0])!)
-		value := css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[1])!)
-		upper := css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[2])!)
+		lower :=
+			css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[0])!)
+		value :=
+			css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[1])!)
+		upper :=
+			css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[2])!)
 		return CSSNumericValue(CSSMathClamp.construct_impl(lower, value, upper)!)
 	}
 
@@ -4419,6 +4512,7 @@ pub fn (unit_value CSSUnitValue) create_an_internal_representation(property Prop
 			Resolution { primitive.serialize(.normal) }
 			Time { primitive.serialize(.normal) }
 		}
+
 		type_ := NumericType.create_from_unit(match primitive {
 			Number { 'number' }
 			Percentage { 'percent' }

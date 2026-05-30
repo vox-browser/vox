@@ -43,8 +43,14 @@ pub enum PropertyID {
 	color
 	color_scheme
 	content_visibility
+	corner_bottom_left_shape
+	corner_bottom_right_shape
+	corner_top_left_shape
+	corner_top_right_shape
 	font_feature_settings
+	font_style
 	font_variation_settings
+	font_weight
 	font_width
 	line_height
 	opacity

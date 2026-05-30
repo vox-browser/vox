@@ -807,20 +807,52 @@ fn computed_interpolation_property_computation_order() ComputedInterpolationProp
 fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
 	initial_text := match property_id {
-		.animation_name { 'none' }
-		.animation_timeline { 'auto' }
+		.animation_name {
+			'none'
+		}
+		.animation_timeline {
+			'auto'
+		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width {
 			'medium'
 		}
-		.color { 'canvastext' }
-		.color_scheme { 'normal' }
-		.content_visibility { 'visible' }
-		.font_feature_settings { 'normal' }
-		.font_variation_settings { 'normal' }
-		.font_width { 'normal' }
-		.line_height { 'normal' }
-		.opacity { '1' }
-		.outline_width { 'medium' }
+		.color {
+			'canvastext'
+		}
+		.color_scheme {
+			'normal'
+		}
+		.content_visibility {
+			'visible'
+		}
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape {
+			'round'
+		}
+		.font_feature_settings {
+			'normal'
+		}
+		.font_style {
+			'normal'
+		}
+		.font_variation_settings {
+			'normal'
+		}
+		.font_weight {
+			'normal'
+		}
+		.font_width {
+			'normal'
+		}
+		.line_height {
+			'normal'
+		}
+		.opacity {
+			'1'
+		}
+		.outline_width {
+			'medium'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -832,6 +864,7 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
 		.color, .color_scheme { true }
+		.font_style, .font_weight { true }
 		else { false }
 	}
 }
@@ -840,8 +873,10 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
 		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
-		.border_right_width, .border_top_width, .color, .font_feature_settings,
-		.font_variation_settings, .font_width, .line_height, .opacity, .outline_width {
+		.border_right_width, .border_top_width, .color, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape,
+		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
+		.line_height, .opacity, .outline_width {
 			true
 		}
 		.color_scheme, .content_visibility {
@@ -858,8 +893,9 @@ fn computed_interpolation_property_requires_computation_with_inherited_value(pro
 fn computed_interpolation_property_requires_computation_with_initial_value(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.color, .font_width, .outline_width {
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .font_style, .font_weight, .font_width, .outline_width {
 			true
 		}
 		.animation_name, .animation_timeline, .color_scheme, .content_visibility,
@@ -917,9 +953,8 @@ fn computed_interpolation_style_value_is_currentcolor(value &dom.StyleValue) boo
 
 fn property_affects_computed_font_list(id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(id)
-	// The translated PropertyID enum does not yet include FontFamily, FontSize,
-	// FontStyle, FontWeight, FontWidth, or FontVariationSettings.
-	return false
+	// The translated PropertyID enum does not yet include FontFamily or FontSize.
+	return id in [.font_style, .font_weight, .font_width, .font_variation_settings]
 }
 
 // --- ComputedProperties ---
@@ -2009,7 +2044,11 @@ pub fn (c &ComputedProperties) font_size() CSSPixels {
 }
 
 pub fn (c &ComputedProperties) font_weight() f64 {
-	_ = c
+	if value := c.property(.font_weight, .yes) {
+		if number := computed_interpolation_number_from_dom_style_value(value) {
+			return number
+		}
+	}
 	return 400
 }
 
@@ -2205,12 +2244,18 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings {
 			.none_
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.color, .font_width, .line_height, .opacity, .outline_width {
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width, .color,
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .font_style, .font_weight, .font_width, .line_height, .opacity,
+		.outline_width {
 			.by_computed_value
 		}
-		.content_visibility { .custom }
-		.color_scheme { .discrete }
+		.content_visibility {
+			.custom
+		}
+		.color_scheme {
+			.discrete
+		}
 	}
 }
 
@@ -2903,8 +2948,9 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		// layout-affecting properties.
 		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
-		.font_feature_settings, .font_variation_settings, .font_width, .line_height, .opacity,
-		.outline_width {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .font_feature_settings, .font_style, .font_variation_settings,
+		.font_weight, .font_width, .line_height, .opacity, .outline_width {
 			false
 		}
 	}
@@ -2915,11 +2961,14 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		// None of the currently translated longhands maps to the C++ generated
 		// affects-stacking-context metadata. ContentVisibility is handled by the
 		// full-invalidation branch above.
-		.opacity { true }
+		.opacity {
+			true
+		}
 		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
-		.font_feature_settings, .font_variation_settings, .font_width, .line_height,
-		.outline_width {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .font_feature_settings, .font_style, .font_variation_settings,
+		.font_weight, .font_width, .line_height, .outline_width {
 			false
 		}
 	}
@@ -2940,11 +2989,14 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 	return match property_id {
 		// The translated PropertyID enum does not yet include transform,
 		// perspective, clip, mix-blend-mode, or filter.
-		.opacity { true }
+		.opacity {
+			true
+		}
 		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
-		.font_feature_settings, .font_variation_settings, .font_width, .line_height,
-		.outline_width {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .font_feature_settings, .font_style, .font_variation_settings,
+		.font_weight, .font_width, .line_height, .outline_width {
 			false
 		}
 	}
@@ -4308,12 +4360,23 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 			StyleComputer.compute_border_or_outline_width(absolutized_value,
 				device_pixels_per_css_pixel)
 		}
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape {
+			StyleComputer.compute_corner_shape(absolutized_value)
+		}
 		.font_feature_settings {
 			StyleComputer.compute_font_feature_tag_value_list(absolutized_value,
 				computation_context)
 		}
+		.font_style {
+			StyleComputer.compute_font_style(absolutized_value)
+		}
 		.font_variation_settings {
 			StyleComputer.compute_font_variation_settings(absolutized_value, computation_context)
+		}
+		.font_weight {
+			inheritance_parent := style_computation_inheritance_parent(computation_context)
+			StyleComputer.compute_font_weight(absolutized_value, inheritance_parent)
 		}
 		.font_width {
 			StyleComputer.compute_font_width(absolutized_value)
@@ -4331,6 +4394,13 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 	}
 }
 
+fn style_computation_inheritance_parent(computation_context StyleComputationContextStub) ?dom.AbstractElement {
+	if abstract_element := computation_context.abstract_element {
+		return abstract_element.element_to_inherit_style_from()
+	}
+	return none
+}
+
 fn computed_interpolation_compute_style_value_list(style_value &dom.StyleValue, compute_entry fn (StyleValue) ?StyleValue) ?&dom.StyleValue {
 	mut computed_entries := []StyleValue{}
 	for entry_component_values in parse_a_comma_separated_list_of_component_values_for_value_logic(parse_component_values_for_value_logic(style_value.css_text)) {
@@ -4344,8 +4414,8 @@ fn computed_interpolation_compute_style_value_list(style_value &dom.StyleValue, 
 		}
 		computed_entries << (compute_entry(entry) or { return none })
 	}
-	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(computed_entries, .comma,
-		.yes)))
+	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(computed_entries,
+		.comma, .yes)))
 }
 
 fn computed_interpolation_animation_name_entry_from_tokens(mut tokens ComponentValueStream) ?StyleValue {
@@ -4459,7 +4529,54 @@ pub fn StyleComputer.compute_border_or_outline_width(absolutized_value &dom.Styl
 }
 
 pub fn StyleComputer.compute_corner_shape(absolutized_value &dom.StyleValue) &dom.StyleValue {
-	return unsafe { absolutized_value }
+	// https://drafts.csswg.org/css-borders-4/#propdef-corner-top-left-shape
+	// the corresponding superellipse() value
+	mut parser := Parser.from_css_text(absolutized_value.css_text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	parsed_value := parser.parse_corner_shape_value(mut tokens) or {
+		return unsafe { absolutized_value }
+	}
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return unsafe { absolutized_value }
+	}
+
+	if parsed_value is SuperellipseStyleValue {
+		return dom_style_value_from_value_logic(parsed_value)
+	}
+
+	keyword := parsed_value.to_keyword()
+	parameter := match keyword {
+		.round {
+			// The corner shape is a quarter of a convex ellipse. Equivalent to superellipse(1).
+			1.0
+		}
+		.squircle {
+			// The corner shape is a quarter of a "squircle", a convex curve between round and square. Equivalent to superellipse(2).
+			2.0
+		}
+		.square {
+			// The corner shape is a convex 90deg angle. Equivalent to superellipse(infinity).
+			math.inf(1)
+		}
+		.bevel {
+			// The corner shape is a straight diagonal line, neither convex nor concave. Equivalent to superellipse(0).
+			0.0
+		}
+		.scoop {
+			// The corner shape is a concave quarter-ellipse. Equivalent to superellipse(-1).
+			-1.0
+		}
+		.notch {
+			// The corner shape is a concave 90deg angle. Equivalent to superellipse(-infinity).
+			math.inf(-1)
+		}
+		else {
+			return unsafe { absolutized_value }
+		}
+	}
+
+	return dom_style_value_from_value_logic(StyleValue(SuperellipseStyleValue.create(StyleValue(NumberStyleValue.create(parameter)))))
 }
 
 fn computed_interpolation_parse_opentype_tag_value(mut tokens ComponentValueStream) ?StringStyleValue {
@@ -4487,7 +4604,9 @@ fn computed_interpolation_parse_font_feature_settings_entry(values []ComponentVa
 	mut parser := Parser{}
 	mut tag_tokens := ComponentValueStream.new(values)
 	tag_tokens.consume_whitespace()
-	opentype_tag := computed_interpolation_parse_opentype_tag_value(mut tag_tokens) or { return none }
+	opentype_tag := computed_interpolation_parse_opentype_tag_value(mut tag_tokens) or {
+		return none
+	}
 	tag_tokens.consume_whitespace()
 	value := if tag_tokens.has_more_tokens() {
 		if integer_value := parser.parse_integer_value(mut tag_tokens) {
@@ -4524,7 +4643,9 @@ fn computed_interpolation_parse_font_variation_settings_entry(values []Component
 	mut parser := Parser{}
 	mut tag_tokens := ComponentValueStream.new(values)
 	tag_tokens.consume_whitespace()
-	opentype_tag := computed_interpolation_parse_opentype_tag_value(mut tag_tokens) or { return none }
+	opentype_tag := computed_interpolation_parse_opentype_tag_value(mut tag_tokens) or {
+		return none
+	}
 	tag_tokens.consume_whitespace()
 	number := parser.parse_number_value(mut tag_tokens) or { return none }
 	tag_tokens.consume_whitespace()
@@ -4549,9 +4670,12 @@ fn computed_interpolation_compute_font_feature_tag_value_list(absolutized_value 
 				computed_interpolation_parse_font_feature_settings_entry(values) or { return none }
 			}
 			.font_variation_settings {
-				computed_interpolation_parse_font_variation_settings_entry(values) or { return none }
+				computed_interpolation_parse_font_variation_settings_entry(values) or {
+					return none
+				}
 			}
 		}
+
 		axis_tags_map[axis_tag.tag()] = axis_tag
 	}
 
@@ -4592,11 +4716,104 @@ pub fn StyleComputer.compute_font_size(absolutized_value &dom.StyleValue, comput
 }
 
 pub fn StyleComputer.compute_font_style(absolutized_value &dom.StyleValue) &dom.StyleValue {
-	return unsafe { absolutized_value }
+	// https://drafts.csswg.org/css-fonts-4/#font-style-prop
+	// the keyword specified, plus angle in degrees if specified
+
+	// NB: We always parse as a FontStyleStyleValue, but StylePropertyMap is able to set a KeywordStyleValue directly.
+	mut parser := Parser.from_css_text(absolutized_value.css_text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	parsed_value := parser.parse_font_style_value(mut tokens) or {
+		return unsafe { absolutized_value }
+	}
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() || parsed_value !is FontStyleStyleValue {
+		return unsafe { absolutized_value }
+	}
+	return dom_style_value_from_value_logic(parsed_value)
 }
 
 pub fn StyleComputer.compute_font_weight(absolutized_value &dom.StyleValue, inheritance_parent ?dom.AbstractElement) &dom.StyleValue {
-	_ = inheritance_parent
+	// https://drafts.csswg.org/css-fonts-4/#font-weight-prop
+	// a number, see below
+	inherited_font_weight := if parent := inheritance_parent {
+		if computed_properties := parent.computed_properties() {
+			computed_properties.font_weight()
+		} else {
+			400.0
+		}
+	} else {
+		400.0
+	}
+
+	// <number [1,1000]>
+	if number := computed_interpolation_number_from_dom_style_value(absolutized_value) {
+		return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(number)))
+	}
+
+	// AD-HOC: Anywhere we support a numbers we should also support calcs
+	if calculated_number := computed_interpolation_calculated_number_from_dom_style_value(absolutized_value,
+		CSSPixels.nearest_value_for(0))
+	{
+		return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(calculated_number)))
+	}
+
+	keyword := computed_interpolation_style_value_keyword(absolutized_value) or {
+		return unsafe { absolutized_value }
+	}
+
+	// normal
+	// Same as 400.
+	if keyword == .normal {
+		return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(400)))
+	}
+
+	// bold
+	// Same as 700.
+	if keyword == .bold {
+		return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(700)))
+	}
+
+	// Specified values of bolder and lighter indicate weights relative to the weight of the parent element. The
+	// computed weight is calculated based on the inherited font-weight value using the chart below.
+	//
+	// Inherited value (w)  bolder     lighter
+	// w < 100              400        No change
+	// 100 <= w < 350       400        100
+	// 350 <= w < 550       700        100
+	// 550 <= w < 750       900        400
+	// 750 <= w < 900       900        700
+	// 900 <= w             No change  700
+
+	// bolder
+	// Specifies a bolder weight than the inherited value. See Section 2.2.1 Relative Weights.
+	if keyword == .bolder {
+		if inherited_font_weight < 350 {
+			return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(400)))
+		}
+		if inherited_font_weight < 550 {
+			return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(700)))
+		}
+		if inherited_font_weight < 900 {
+			return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(900)))
+		}
+		return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(inherited_font_weight)))
+	}
+
+	// lighter
+	// Specifies a lighter weight than the inherited value. See Section 2.2.1 Relative Weights.
+	if keyword == .lighter {
+		if inherited_font_weight < 100 {
+			return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(inherited_font_weight)))
+		}
+		if inherited_font_weight < 550 {
+			return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(100)))
+		}
+		if inherited_font_weight < 750 {
+			return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(400)))
+		}
+		return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(700)))
+	}
+
 	return unsafe { absolutized_value }
 }
 
@@ -4769,20 +4986,21 @@ pub fn StyleComputer.compute_line_height(absolutized_value &dom.StyleValue, comp
 
 	// NOTE: We also support calc()'d lengths (percentages resolve to lengths so we don't have to handle them separately)
 	if calculated_length := computed_interpolation_calculated_length_from_dom_style_value(absolutized_value,
-		computed_font_size) {
+		computed_font_size)
+	{
 		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(calculated_length)))
 	}
 
 	// NOTE: We also support calc()'d numbers
 	if calculated_number := computed_interpolation_calculated_number_from_dom_style_value(absolutized_value,
-		computed_font_size) {
+		computed_font_size)
+	{
 		return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(calculated_number)))
 	}
 
 	// <percentage [0,∞]>
 	if percentage := computed_interpolation_percentage_from_dom_style_value(absolutized_value) {
-		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(computed_font_size.to_double() *
-			percentage.as_fraction()))))
+		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(computed_font_size.to_double() * percentage.as_fraction()))))
 	}
 
 	return unsafe { absolutized_value }
@@ -5018,8 +5236,8 @@ pub fn (s &StyleComputer) computation_context_cache_is_empty() bool {
 pub fn (s &StyleComputer) get_computation_context_for_property(property_id PropertyID, computed_properties &ComputedProperties, abstract_element ?dom.AbstractElement) StyleComputationContextStub {
 	_ = s
 	_ = computed_properties
-	_ = abstract_element
 	return StyleComputationContextStub{
-		property_id: property_id
+		property_id:      property_id
+		abstract_element: abstract_element
 	}
 }
