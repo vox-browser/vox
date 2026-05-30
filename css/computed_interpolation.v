@@ -4260,8 +4260,66 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 	return unsafe { specified_value }
 }
 
+fn computed_interpolation_compute_style_value_list(style_value &dom.StyleValue, compute_entry fn (StyleValue) ?StyleValue) ?&dom.StyleValue {
+	mut computed_entries := []StyleValue{}
+	for entry_component_values in parse_a_comma_separated_list_of_component_values_for_value_logic(parse_component_values_for_value_logic(style_value.css_text)) {
+		mut entry_tokens := ComponentValueStream.new(entry_component_values)
+		entry := computed_interpolation_animation_name_entry_from_tokens(mut entry_tokens) or {
+			return none
+		}
+		entry_tokens.consume_whitespace()
+		if entry_tokens.has_more_tokens() {
+			return none
+		}
+		computed_entries << (compute_entry(entry) or { return none })
+	}
+	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(computed_entries, .comma,
+		.yes)))
+}
+
+fn computed_interpolation_animation_name_entry_from_tokens(mut tokens ComponentValueStream) ?StyleValue {
+	tokens.consume_whitespace()
+	component_value := tokens.consume() or { return none }
+	if component_value.is(.ident) {
+		ident := component_value.token().ident()
+		if equals_ignoring_ascii_case(ident, 'none') {
+			return StyleValue(KeywordStyleValue.create(.none_))
+		}
+		return StyleValue(CustomIdentStyleValue.create(ident))
+	}
+	if component_value.is(.string) {
+		return StyleValue(StringStyleValue.create(component_value.token().string_value()))
+	}
+	return none
+}
+
+fn computed_interpolation_compute_animation_name_entry(entry StyleValue) ?StyleValue {
+	// none | <custom-ident>
+	if entry.to_keyword() == .none_ || entry.is_custom_ident() {
+		return entry
+	}
+
+	// <string>
+	if entry.is_string() {
+		string_value := entry.as_string().string_value()
+
+		// AD-HOC: We shouldn't convert strings that aren't valid <custom-ident>s
+		if is_css_wide_keyword_string(string_value)
+			|| to_ascii_lowercase(string_value) in ['default', 'none'] {
+			return entry
+		}
+
+		return StyleValue(CustomIdentStyleValue.create(string_value))
+	}
+
+	return none
+}
+
 pub fn StyleComputer.compute_animation_name(absolutized_value &dom.StyleValue) &dom.StyleValue {
-	return unsafe { absolutized_value }
+	// https://drafts.csswg.org/css-animations-1/#animation-name
+	// list, each item either a case-sensitive css identifier or the keyword none
+	return computed_interpolation_compute_style_value_list(absolutized_value,
+		computed_interpolation_compute_animation_name_entry) or { unsafe { absolutized_value } }
 }
 
 fn computed_interpolation_line_width_keyword_to_css_pixels(value string) ?CSSPixels {
