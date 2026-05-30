@@ -82,6 +82,8 @@ pub enum PropertyID {
 	math_depth
 	math_style
 	opacity
+	order
+	orphans
 	outline_color
 	outline_offset
 	outline_style

@@ -69,6 +69,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.math_depth { 'math-depth' }
 		.math_style { 'math-style' }
 		.opacity { 'opacity' }
+		.order { 'order' }
+		.orphans { 'orphans' }
 		.outline_color { 'outline-color' }
 		.outline_offset { 'outline-offset' }
 		.outline_style { 'outline-style' }
@@ -117,10 +119,10 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
-		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .outline_color,
-		.outline_offset, .outline_style, .outline_width, .position_anchor, .shape_image_threshold,
-		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
-		.webkit_text_fill_color, .word_spacing {
+		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .position_anchor,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
+		.transform, .translate, .webkit_text_fill_color, .word_spacing {
 			true
 		}
 	}
@@ -143,16 +145,16 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
-		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .outline_color,
-		.outline_offset, .outline_style, .outline_width, .position_anchor, .shape_image_threshold,
-		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
-		.webkit_text_fill_color, .word_spacing {
+		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .position_anchor,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
+		.transform, .translate, .webkit_text_fill_color, .word_spacing {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 71
+pub const number_of_longhand_properties = 73
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
@@ -212,29 +214,31 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		45 { PropertyID.math_depth }
 		46 { PropertyID.math_style }
 		47 { PropertyID.opacity }
-		48 { PropertyID.outline_color }
-		49 { PropertyID.outline_offset }
-		50 { PropertyID.outline_style }
-		51 { PropertyID.outline_width }
-		52 { PropertyID.position_anchor }
-		53 { PropertyID.shape_image_threshold }
-		54 { PropertyID.stop_color }
-		55 { PropertyID.stop_opacity }
-		56 { PropertyID.stroke_opacity }
-		57 { PropertyID.rotate }
-		58 { PropertyID.scale }
-		59 { PropertyID.scroll_timeline_name }
-		60 { PropertyID.transform }
-		61 { PropertyID.transition_behavior }
-		62 { PropertyID.transition_delay }
-		63 { PropertyID.transition_duration }
-		64 { PropertyID.transition_property }
-		65 { PropertyID.transition_timing_function }
-		66 { PropertyID.translate }
-		67 { PropertyID.view_timeline_inset }
-		68 { PropertyID.view_timeline_name }
-		69 { PropertyID.webkit_text_fill_color }
-		70 { PropertyID.word_spacing }
+		48 { PropertyID.order }
+		49 { PropertyID.orphans }
+		50 { PropertyID.outline_color }
+		51 { PropertyID.outline_offset }
+		52 { PropertyID.outline_style }
+		53 { PropertyID.outline_width }
+		54 { PropertyID.position_anchor }
+		55 { PropertyID.shape_image_threshold }
+		56 { PropertyID.stop_color }
+		57 { PropertyID.stop_opacity }
+		58 { PropertyID.stroke_opacity }
+		59 { PropertyID.rotate }
+		60 { PropertyID.scale }
+		61 { PropertyID.scroll_timeline_name }
+		62 { PropertyID.transform }
+		63 { PropertyID.transition_behavior }
+		64 { PropertyID.transition_delay }
+		65 { PropertyID.transition_duration }
+		66 { PropertyID.transition_property }
+		67 { PropertyID.transition_timing_function }
+		68 { PropertyID.translate }
+		69 { PropertyID.view_timeline_inset }
+		70 { PropertyID.view_timeline_name }
+		71 { PropertyID.webkit_text_fill_color }
+		72 { PropertyID.word_spacing }
 		else { none }
 	}
 }

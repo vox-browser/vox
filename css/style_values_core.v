@@ -246,6 +246,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'opacity' {
 			PropertyID.opacity
 		}
+		'order' {
+			PropertyID.order
+		}
+		'orphans' {
+			PropertyID.orphans
+		}
 		'outline-color' {
 			PropertyID.outline_color
 		}
@@ -396,6 +402,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.animation_timeline {
 			value_type in [.dashed_ident, .scroll_function, .view_function]
 		}
+		.order, .orphans {
+			value_type == .integer
+		}
 		.view_timeline_inset {
 			value_type == .view_timeline_inset
 		}
@@ -541,6 +550,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.outline_offset {
 			false
 		}
+		.order, .orphans {
+			false
+		}
 		.outline_style {
 			lowercase_value in ['auto', 'none', 'dotted', 'dashed', 'solid', 'double', 'groove',
 				'ridge', 'inset', 'outset']
@@ -626,9 +638,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.animation_timing_function, .aspect_ratio, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .font_feature_settings, .font_style,
 		.font_variation_settings, .font_weight, .font_width, .letter_spacing, .line_height,
-		.math_depth, .math_style, .fill_opacity, .flood_opacity, .opacity, .outline_offset,
-		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.transform, .transition_behavior, .transition_delay, .transition_duration,
+		.math_depth, .math_style, .fill_opacity, .flood_opacity, .opacity, .order, .orphans,
+		.outline_offset, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity,
+		.rotate, .scale, .transform, .transition_behavior, .transition_delay, .transition_duration,
 		.transition_timing_function, .translate, .word_spacing {
 			false
 		}
@@ -738,9 +750,10 @@ pub fn property_accepts_number(property_id PropertyID, value f64) bool {
 }
 
 pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
-	_ = property_id
-	_ = value
-	return true
+	return match property_id {
+		.orphans { value >= 1 }
+		else { true }
+	}
 }
 
 pub fn property_accepts_percentage(property_id PropertyID, value Percentage) bool {

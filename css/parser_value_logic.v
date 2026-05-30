@@ -308,6 +308,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.line_height {
 			return parser.parse_line_height_value(mut tokens)
 		}
+		.order, .orphans {
+			return parser.parse_integer_value(mut tokens)
+		}
 		.border_image_source, .list_style_image {
 			return parser.parse_image_or_none_value(mut tokens)
 		}
