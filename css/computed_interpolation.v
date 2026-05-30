@@ -599,17 +599,18 @@ pub fn TouchActionData.none_() TouchActionData {
 
 pub struct Containment {
 pub mut:
-	size    bool
-	layout  bool
-	style   bool
-	paint   bool
-	inline_ bool
+	size_containment        bool
+	inline_size_containment bool
+	layout_containment      bool
+	style_containment       bool
+	paint_containment       bool
 }
 
-pub enum ContainerType {
-	normal
-	size
-	inline_size
+pub struct ContainerType {
+pub mut:
+	is_size_container         bool
+	is_inline_size_container  bool
+	is_scroll_state_container bool
 }
 
 pub enum MixBlendMode {
@@ -974,6 +975,12 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.content_visibility {
 			'visible'
 		}
+		.contain {
+			'none'
+		}
+		.container_type {
+			'normal'
+		}
 		.direction {
 			'ltr'
 		}
@@ -1273,18 +1280,19 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.animation_fill_mode, .animation_play_state, .border_bottom_style, .border_collapse,
 		.border_left_style, .border_right_style, .border_top_style, .box_sizing, .caption_side,
 		.clear, .clip_rule, .color_interpolation, .color_scheme, .content_visibility, .direction,
-		.empty_cells, .fill_rule, .float_, .font_kerning, .font_language_override,
-		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
-		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
-		.list_style_position, .mask_type, .math_style, .mix_blend_mode, .object_fit,
-		.outline_style, .overflow_x, .overflow_y, .pointer_events, .position, .position_anchor,
-		.scroll_timeline_name, .shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout,
-		.text_align, .text_anchor, .text_justify, .text_overflow, .text_rendering, .text_transform,
-		.text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .transition_behavior,
-		.transition_property, .touch_action, .unicode_bidi, .user_select, .view_timeline_name,
-		.view_transition_name, .visibility, .white_space_collapse, .white_space_trim, .word_break,
-		.writing_mode, .scrollbar_width, .resize {
+		.contain, .container_type, .empty_cells, .fill_rule, .float_, .font_kerning,
+		.font_language_override, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
+		.font_variant_position, .flex_direction, .flex_wrap, .align_content, .align_items,
+		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
+		.image_rendering, .isolation, .list_style_position, .mask_type, .math_style,
+		.mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y, .pointer_events,
+		.position, .position_anchor, .scroll_timeline_name, .shape_rendering, .stroke_linecap,
+		.stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,
+		.transform_style, .transition_behavior, .transition_property, .touch_action, .unicode_bidi,
+		.user_select, .view_timeline_name, .view_transition_name, .visibility,
+		.white_space_collapse, .white_space_trim, .word_break, .writing_mode, .scrollbar_width,
+		.resize {
 			false
 		}
 	}
@@ -1311,24 +1319,24 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.border_bottom_style, .border_collapse, .border_image_source, .border_left_color,
 		.border_left_style, .border_right_color, .border_right_style, .border_top_color,
 		.border_top_style, .box_sizing, .caption_side, .caret_color, .clear, .clip_rule,
-		.color_interpolation, .color_scheme, .content_visibility, .direction, .empty_cells,
-		.fill_opacity, .fill_rule, .float_, .flood_opacity, .font_feature_settings, .font_kerning,
-		.font_language_override, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
-		.font_variant_position, .font_variation_settings, .flex_direction, .flex_wrap,
-		.align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self,
-		.appearance, .column_span, .image_rendering, .isolation, .line_height, .list_style_image,
-		.list_style_position, .mask_image, .mask_type, .math_style, .mix_blend_mode, .object_fit,
-		.opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style, .overflow_x,
-		.overflow_y, .pointer_events, .position, .position_anchor, .scroll_timeline_name,
-		.shape_rendering, .table_layout, .shape_image_threshold, .stop_opacity, .stroke_linecap,
-		.stroke_linejoin, .stroke_opacity, .rotate, .scale, .transform, .transform_box,
-		.transform_style, .text_align, .text_anchor, .text_justify, .text_overflow,
-		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.translate, .touch_action, .unicode_bidi, .user_select, .view_timeline_inset,
-		.view_timeline_name, .view_transition_name, .visibility, .webkit_text_fill_color,
-		.white_space_collapse, .white_space_trim, .word_break, .writing_mode, .scrollbar_width,
-		.resize, .z_index {
+		.color_interpolation, .color_scheme, .content_visibility, .contain, .container_type,
+		.direction, .empty_cells, .fill_opacity, .fill_rule, .float_, .flood_opacity,
+		.font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing,
+		.font_variant_caps, .font_variant_emoji, .font_variant_position, .font_variation_settings,
+		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
+		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
+		.line_height, .list_style_image, .list_style_position, .mask_image, .mask_type,
+		.math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color,
+		.outline_offset, .outline_style, .overflow_x, .overflow_y, .pointer_events, .position,
+		.position_anchor, .scroll_timeline_name, .shape_rendering, .table_layout,
+		.shape_image_threshold, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity,
+		.rotate, .scale, .transform, .transform_box, .transform_style, .text_align, .text_anchor,
+		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
+		.text_wrap_style, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .translate, .touch_action,
+		.unicode_bidi, .user_select, .view_timeline_inset, .view_timeline_name,
+		.view_transition_name, .visibility, .webkit_text_fill_color, .white_space_collapse,
+		.white_space_trim, .word_break, .writing_mode, .scrollbar_width, .resize, .z_index {
 			false
 		}
 	}
@@ -2781,13 +2789,110 @@ pub fn (c &ComputedProperties) touch_action() TouchActionData {
 }
 
 pub fn (c &ComputedProperties) contain() Containment {
-	_ = c
-	return Containment{}
+	value := c.property(.contain, .yes) or { return Containment{} }
+	parsed_value := parse_css_value_logic(.contain, value.css_text) or { return Containment{} }
+	mut containment := Containment{}
+
+	if parsed_value is KeywordStyleValue {
+		match parsed_value.keyword() {
+			.none_ {
+				// This value indicates that the property has no effect. The element renders as normal, with no containment effects applied.
+				return Containment{}
+			}
+			.strict {
+				// This value computes to 'size layout paint style', and thus turns on all forms of containment for the element.
+				containment.size_containment = true
+				containment.layout_containment = true
+				containment.paint_containment = true
+				containment.style_containment = true
+			}
+			.content {
+				// This value computes to 'layout paint style', and thus turns on all forms of containment except size containment for the element.
+				containment.layout_containment = true
+				containment.paint_containment = true
+				containment.style_containment = true
+			}
+			.size {
+				containment.size_containment = true
+			}
+			.inline_size {
+				containment.inline_size_containment = true
+			}
+			.layout {
+				containment.layout_containment = true
+			}
+			.style {
+				containment.style_containment = true
+			}
+			.paint {
+				containment.paint_containment = true
+			}
+			else {}
+		}
+
+		return containment
+	}
+
+	if parsed_value is StyleValueList {
+		for item in parsed_value.values() {
+			if item is KeywordStyleValue {
+				match item.keyword() {
+					.size {
+						containment.size_containment = true
+					}
+					.inline_size {
+						containment.inline_size_containment = true
+					}
+					.layout {
+						containment.layout_containment = true
+					}
+					.style {
+						containment.style_containment = true
+					}
+					.paint {
+						containment.paint_containment = true
+					}
+					else {}
+				}
+			}
+		}
+	}
+
+	return containment
 }
 
 pub fn (c &ComputedProperties) container_type() ContainerType {
-	_ = c
-	return .normal
+	value := c.property(.container_type, .yes) or { return ContainerType{} }
+	parsed_value := parse_css_value_logic(.container_type, value.css_text) or {
+		return ContainerType{}
+	}
+	mut container_type := ContainerType{}
+
+	if parsed_value is KeywordStyleValue {
+		if parsed_value.keyword() == .normal {
+			return container_type
+		}
+	}
+	if parsed_value is StyleValueList {
+		for item in parsed_value.values() {
+			if item is KeywordStyleValue {
+				match item.keyword() {
+					.size {
+						container_type.is_size_container = true
+					}
+					.inline_size {
+						container_type.is_inline_size_container = true
+					}
+					.scroll_state {
+						container_type.is_scroll_state_container = true
+					}
+					else {}
+				}
+			}
+		}
+	}
+
+	return container_type
 }
 
 pub fn (c &ComputedProperties) mix_blend_mode() MixBlendMode {
@@ -3664,10 +3769,10 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
 		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
 		.animation_timeline, .animation_timing_function, .direction, .font_feature_settings,
-		.font_variation_settings, .math_depth, .math_style, .scroll_timeline_name,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .unicode_bidi, .view_timeline_inset, .view_timeline_name,
-		.writing_mode, .resize {
+		.font_variation_settings, .math_depth, .math_style, .contain, .container_type,
+		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .unicode_bidi, .view_timeline_inset,
+		.view_timeline_name, .writing_mode, .resize {
 			.none_
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
@@ -4441,12 +4546,12 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.empty_cells, .float_, .font_kerning, .font_language_override, .font_optical_sizing,
 		.font_style, .font_variant_caps, .font_variant_emoji, .font_variant_position,
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .isolation, .letter_spacing,
-		.list_style_image, .list_style_position, .order, .orphans, .overflow_x, .overflow_y,
-		.position, .position_anchor, .shape_rendering, .table_layout, .text_align, .text_anchor,
-		.text_justify, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
-		.unicode_bidi, .visibility, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing, .writing_mode {
+		.justify_items, .justify_self, .appearance, .column_span, .contain, .container_type,
+		.isolation, .letter_spacing, .list_style_image, .list_style_position, .order, .orphans,
+		.overflow_x, .overflow_y, .position, .position_anchor, .shape_rendering, .table_layout,
+		.text_align, .text_anchor, .text_justify, .text_transform, .text_wrap_mode,
+		.text_wrap_style, .transform_style, .unicode_bidi, .visibility, .white_space_collapse,
+		.white_space_trim, .word_break, .word_spacing, .writing_mode {
 			true
 		}
 	}
@@ -4457,7 +4562,8 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		// None of the currently translated longhands maps to the C++ generated
 		// affects-stacking-context metadata. ContentVisibility is handled by the
 		// full-invalidation branch above.
-		.mask_image, .mix_blend_mode, .opacity, .rotate, .scale, .transform, .translate, .z_index {
+		.contain, .container_type, .mask_image, .mix_blend_mode, .opacity, .rotate, .scale,
+		.transform, .translate, .z_index {
 			true
 		}
 		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
@@ -4531,11 +4637,11 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji,
 		.font_variant_position, .font_variation_settings, .font_weight, .font_width,
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
-		.letter_spacing, .line_height, .list_style_image, .list_style_position, .mask_type,
-		.math_depth, .math_style, .object_fit, .order, .orphans, .outline_color, .outline_offset,
-		.outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
-		.shape_rendering, .position, .position_anchor, .scroll_timeline_name,
+		.justify_items, .justify_self, .appearance, .column_span, .contain, .container_type,
+		.image_rendering, .isolation, .letter_spacing, .line_height, .list_style_image,
+		.list_style_position, .mask_type, .math_depth, .math_style, .object_fit, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
+		.pointer_events, .shape_rendering, .position, .position_anchor, .scroll_timeline_name,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
 		.stroke_opacity, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,

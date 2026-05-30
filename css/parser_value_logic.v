@@ -285,6 +285,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.content_visibility {
 			return parser.parse_content_visibility_value(mut tokens)
 		}
+		.contain {
+			return parser.parse_contain_value(mut tokens)
+		}
+		.container_type {
+			return parser.parse_container_type_value(mut tokens)
+		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape {
 			return parser.parse_corner_shape_value(mut tokens)
@@ -1651,6 +1657,178 @@ fn (mut parser Parser) parse_view_transition_name_value(mut tokens ComponentValu
 	}
 	value := parser.parse_custom_ident_value(mut tokens, ['auto', 'none']) or { return none }
 	return StyleValue(value)
+}
+
+fn parse_single_keyword_from_set_for_value_logic(mut tokens ComponentValueStream, allowed []string) ?Keyword {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is(.ident) {
+		return none
+	}
+	ident := to_ascii_lowercase(component_value.token().ident())
+	if ident !in allowed {
+		return none
+	}
+	keyword := keyword_from_string(ident) or { return none }
+	tokens = transaction
+	return keyword
+}
+
+fn (mut parser Parser) parse_contain_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	// none | strict | content | [ [size | inline-size] || layout || style || paint ]
+	if value := parse_property_keyword_value(mut tokens, ['none', 'strict', 'content']) {
+		return value
+	}
+
+	mut transaction := tokens.clone()
+	mut size_value := ?StyleValue(none)
+	mut layout_value := ?StyleValue(none)
+	mut style_value := ?StyleValue(none)
+	mut paint_value := ?StyleValue(none)
+	mut size_value_set := false
+	mut layout_value_set := false
+	mut style_value_set := false
+	mut paint_value_set := false
+
+	for {
+		keyword := parse_single_keyword_from_set_for_value_logic(mut transaction, [
+			'size',
+			'inline-size',
+			'layout',
+			'style',
+			'paint',
+		]) or { break }
+		match keyword {
+			.size, .inline_size {
+				if size_value_set {
+					return none
+				}
+				size_value = StyleValue(KeywordStyleValue.create(keyword))
+				size_value_set = true
+			}
+			.layout {
+				if layout_value_set {
+					return none
+				}
+				layout_value = StyleValue(KeywordStyleValue.create(keyword))
+				layout_value_set = true
+			}
+			.style {
+				if style_value_set {
+					return none
+				}
+				style_value = StyleValue(KeywordStyleValue.create(keyword))
+				style_value_set = true
+			}
+			.paint {
+				if paint_value_set {
+					return none
+				}
+				paint_value = StyleValue(KeywordStyleValue.create(keyword))
+				paint_value_set = true
+			}
+			else {
+				return none
+			}
+		}
+
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			break
+		}
+	}
+
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+
+	mut containment_values := []StyleValue{}
+	if value := size_value {
+		containment_values << value
+	}
+	if value := layout_value {
+		containment_values << value
+	}
+	if value := style_value {
+		containment_values << value
+	}
+	if value := paint_value {
+		containment_values << value
+	}
+	if containment_values.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(containment_values, .space, .yes))
+}
+
+fn (mut parser Parser) parse_container_type_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	// normal | [ [ size | inline-size ] || scroll-state ]
+	if value := parse_property_keyword_value(mut tokens, ['normal']) {
+		return value
+	}
+
+	mut transaction := tokens.clone()
+	mut size_value := ?StyleValue(none)
+	mut scroll_state_value := ?StyleValue(none)
+	mut size_value_set := false
+	mut scroll_state_value_set := false
+
+	for {
+		keyword := parse_single_keyword_from_set_for_value_logic(mut transaction, [
+			'size',
+			'inline-size',
+			'scroll-state',
+		]) or { break }
+		match keyword {
+			.size, .inline_size {
+				if size_value_set {
+					return none
+				}
+				size_value = StyleValue(KeywordStyleValue.create(keyword))
+				size_value_set = true
+			}
+			.scroll_state {
+				if scroll_state_value_set {
+					return none
+				}
+				scroll_state_value = StyleValue(KeywordStyleValue.create(keyword))
+				scroll_state_value_set = true
+			}
+			else {
+				return none
+			}
+		}
+
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			break
+		}
+	}
+
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+
+	mut containment_values := []StyleValue{}
+	if value := size_value {
+		containment_values << value
+	}
+	if value := scroll_state_value {
+		containment_values << value
+	}
+	if containment_values.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(containment_values, .space, .yes))
 }
 
 fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {

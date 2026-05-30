@@ -173,6 +173,8 @@ pub enum PropertyID {
 	view_transition_name
 	scrollbar_width
 	resize
+	contain
+	container_type
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

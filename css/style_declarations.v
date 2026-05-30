@@ -60,6 +60,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.color_interpolation { 'color-interpolation' }
 		.color_scheme { 'color-scheme' }
 		.content_visibility { 'content-visibility' }
+		.contain { 'contain' }
+		.container_type { 'container-type' }
 		.direction { 'direction' }
 		.empty_cells { 'empty-cells' }
 		.corner_bottom_left_shape { 'corner-bottom-left-shape' }
@@ -199,9 +201,9 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.float_, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
 		.transform_box, .transform_style, .translate, .unicode_bidi, .user_select, .touch_action,
-		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing, .z_index {
+		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .contain, .container_type,
+		.visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim,
+		.word_break, .word_spacing, .z_index {
 			true
 		}
 	}
@@ -238,22 +240,22 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.float_, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
 		.transform_box, .transform_style, .translate, .unicode_bidi, .user_select, .touch_action,
-		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing, .z_index {
+		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .contain, .container_type,
+		.visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim,
+		.word_break, .word_spacing, .z_index {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 139
+pub const number_of_longhand_properties = 141
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .resize
+	return .container_type
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -397,6 +399,8 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		136 { PropertyID.view_transition_name }
 		137 { PropertyID.scrollbar_width }
 		138 { PropertyID.resize }
+		139 { PropertyID.contain }
+		140 { PropertyID.container_type }
 		else { none }
 	}
 }

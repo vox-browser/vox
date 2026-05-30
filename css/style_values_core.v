@@ -231,6 +231,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'content-visibility' {
 			PropertyID.content_visibility
 		}
+		'contain' {
+			PropertyID.contain
+		}
+		'container-type' {
+			PropertyID.container_type
+		}
 		'column-span' {
 			PropertyID.column_span
 		}
@@ -595,8 +601,8 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
 		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .transform_box,
-		.touch_action, .writing_mode, .scrollbar_width, .resize, .isolation, .list_style_position,
-		.mask_type {
+		.touch_action, .writing_mode, .scrollbar_width, .resize, .contain, .container_type,
+		.isolation, .list_style_position, .mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
@@ -769,6 +775,13 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.content_visibility {
 			// content-visibility = visible | auto | hidden
 			lowercase_value in ['visible', 'auto', 'hidden']
+		}
+		.contain {
+			lowercase_value in ['none', 'strict', 'content', 'size', 'inline-size', 'layout', 'style',
+				'paint']
+		}
+		.container_type {
+			lowercase_value in ['normal', 'size', 'inline-size', 'scroll-state']
 		}
 		.column_span {
 			lowercase_value in ['none', 'all']
@@ -1043,8 +1056,8 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify,
 		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
 		.transform_box, .transform_style, .touch_action, .writing_mode, .scrollbar_width, .resize,
-		.unicode_bidi, .user_select, .view_timeline_inset, .visibility, .webkit_text_fill_color,
-		.white_space_collapse, .white_space_trim, .word_break {
+		.contain, .container_type, .unicode_bidi, .user_select, .view_timeline_inset, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break {
 			false
 		}
 		.color_scheme {
@@ -2244,6 +2257,14 @@ pub enum Keyword {
 	vertical
 	block
 	inline_
+	strict
+	content
+	size
+	inline_size
+	layout
+	style
+	paint
+	scroll_state
 	separate
 	border_box
 	content_box
@@ -2579,6 +2600,14 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.vertical { 'vertical' }
 		.block { 'block' }
 		.inline_ { 'inline' }
+		.strict { 'strict' }
+		.content { 'content' }
+		.size { 'size' }
+		.inline_size { 'inline-size' }
+		.layout { 'layout' }
+		.style { 'style' }
+		.paint { 'paint' }
+		.scroll_state { 'scroll-state' }
 		.separate { 'separate' }
 		.border_box { 'border-box' }
 		.content_box { 'content-box' }
@@ -2903,6 +2932,14 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'vertical' { Keyword.vertical }
 		'block' { Keyword.block }
 		'inline' { Keyword.inline_ }
+		'strict' { Keyword.strict }
+		'content' { Keyword.content }
+		'size' { Keyword.size }
+		'inline-size' { Keyword.inline_size }
+		'layout' { Keyword.layout }
+		'style' { Keyword.style }
+		'paint' { Keyword.paint }
+		'scroll-state' { Keyword.scroll_state }
 		'separate' { Keyword.separate }
 		'border-box' { Keyword.border_box }
 		'content-box' { Keyword.content_box }
