@@ -8,7 +8,7 @@ import strings
 // font-computer logic into one self-contained V file. The surrounding V port
 // does not yet have the JS realm/promise, fetch, parser descriptor, style scope,
 // or platform font APIs that the C++ code uses, so those integration points are
-// represented by explicit local stubs below.
+// represented by explicit local boundary helpers below.
 //
 // NOTE: css/events_misc.v already owns a zero-field `FontFace` type for
 // FontFaceSetLoadEvent. To keep this file disjoint, the stateful FontFace
@@ -2168,7 +2168,7 @@ fn (face &FontFaceObject) load_first_available_url() ?PlatformTypeface {
 		if source.kind != .url {
 			continue
 		}
-		if typeface := platform_load_font_from_url_stub(source.value) {
+		if typeface := platform_load_font_from_url_boundary(source.value) {
 			return typeface
 		}
 	}
@@ -2183,7 +2183,7 @@ fn (mut face FontFaceObject) start_binary_load() {
 		}
 		font_face_set.loading_fonts << face
 	}
-	typeface := platform_load_font_from_bytes_stub(face.binary_data)
+	typeface := platform_load_font_from_bytes_boundary(face.binary_data)
 	face.finish_loading_from_typeface(typeface)
 }
 
@@ -2819,7 +2819,7 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 	url := loader.urls[0]
 	loader.urls.delete(0)
 
-	typeface := platform_load_font_from_url_stub(url)
+	typeface := platform_load_font_from_url_boundary(url)
 	if typeface == none && loader.urls.len != 0 {
 		loader.start_loading_next_url()
 		return
@@ -2837,7 +2837,7 @@ pub fn (loader &FontLoader) family_name() string {
 
 pub fn (loader &FontLoader) try_load_font(response FontFetchResponseStub, bytes []u8) !PlatformTypeface {
 	_ = response
-	if typeface := platform_load_font_from_bytes_stub(bytes) {
+	if typeface := platform_load_font_from_bytes_boundary(bytes) {
 		return typeface
 	}
 	return error('Automatic format detection failed')
@@ -2907,7 +2907,7 @@ pub fn FontComputer.create() &FontComputer {
 
 pub fn (computer &FontComputer) initial_font() PlatformFont {
 	// FIXME: This is not correct.
-	return platform_default_font_stub(12, FontVariationSettings{}, ShapeFeatures{})
+	return platform_default_font_boundary(12, FontVariationSettings{}, ShapeFeatures{})
 }
 
 pub fn (mut computer FontComputer) clear_computed_font_cache(family_name string) {
@@ -3051,7 +3051,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 	for family in font_family {
 		mut other_font_list := ?FontCascadeList(none)
 		if is_generic_font_family(family) {
-			other_font_list = computer.find_font(platform_generic_font_name_stub(family), weight,
+			other_font_list = computer.find_font(platform_generic_font_name_boundary(family), weight,
 				slope, font_size_in_pt, variation, font_feature_data)
 		} else {
 			other_font_list = computer.find_font(family, weight, slope, font_size_in_pt, variation,
@@ -3064,7 +3064,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 	}
 
 	// NB: @font-feature-values can't apply to the default font since it's not loaded from CSS
-	default_font := platform_default_font_stub(font_size_in_pt, variation,
+	default_font := platform_default_font_boundary(font_size_in_pt, variation,
 		font_feature_data.to_shape_features(map[string][]u32{}))
 	if font_list.is_empty() {
 		// This is needed to make sure we check default font before reaching to emojis.
@@ -3072,7 +3072,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 	}
 
 	// Add emoji and symbol fonts
-	for font_name in platform_symbol_font_names_stub() {
+	for font_name in platform_symbol_font_names_boundary() {
 		if other_font_list := computer.find_font(font_name, weight, slope, font_size_in_pt,
 			variation, font_feature_data)
 		{
@@ -3085,7 +3085,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 	// the requested code point, there is still a font available to provide a fallback glyph.
 	font_list.set_last_resort_font(default_font)
 
-	// Stub: System-font fallback callback is a platform font database integration point.
+	// Boundary: System-font fallback callback is a platform font database integration point.
 	return font_list
 }
 
@@ -3141,7 +3141,7 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 			}
 		}
 	}
-	for typeface in platform_typefaces_with_family_name_stub(family_name) {
+	for typeface in platform_typefaces_with_family_name_boundary(family_name) {
 		matching_family_fonts << MatchingFontCandidate{
 			key:              FontFaceKey{
 				family_name: typeface.family_name
@@ -3343,7 +3343,7 @@ fn merge_font_feature_values(mut target map[string][]u32, source map[string][]u3
 	}
 }
 
-// --- Parsing and platform stubs local to this file ---
+// --- Parsing stubs and platform boundaries local to this file ---
 
 pub struct FontFetchResponseStub {}
 
@@ -4125,19 +4125,19 @@ fn font_face_key_from_id(id string) FontFaceKey {
 	}
 }
 
-fn platform_load_font_from_url_stub(url string) ?PlatformTypeface {
+fn platform_load_font_from_url_boundary(url string) ?PlatformTypeface {
 	_ = url
-	// Stub for fetch + font decoding. Returning none keeps load failure explicit until platform font APIs exist.
+	// Boundary for fetch + font decoding. Returning none keeps load failure explicit until platform font APIs exist.
 	return none
 }
 
-fn platform_load_font_from_bytes_stub(data []u8) ?PlatformTypeface {
+fn platform_load_font_from_bytes_boundary(data []u8) ?PlatformTypeface {
 	_ = data
-	// Stub for Typeface/WOFF/WOFF2 automatic format detection.
+	// Boundary for Typeface/WOFF/WOFF2 automatic format detection.
 	return none
 }
 
-fn platform_default_font_stub(point_size f32, variations FontVariationSettings, shape_features ShapeFeatures) PlatformFont {
+fn platform_default_font_boundary(point_size f32, variations FontVariationSettings, shape_features ShapeFeatures) PlatformFont {
 	return PlatformFont{
 		typeface:   PlatformTypeface{
 			family_name: 'Default'
@@ -4150,16 +4150,16 @@ fn platform_default_font_stub(point_size f32, variations FontVariationSettings, 
 	}
 }
 
-fn platform_symbol_font_names_stub() []string {
+fn platform_symbol_font_names_boundary() []string {
 	return []
 }
 
-fn platform_typefaces_with_family_name_stub(family_name string) []PlatformTypeface {
+fn platform_typefaces_with_family_name_boundary(family_name string) []PlatformTypeface {
 	_ = family_name
 	return []
 }
 
-fn platform_generic_font_name_stub(generic_family string) string {
+fn platform_generic_font_name_boundary(generic_family string) string {
 	return match generic_family.to_lower() {
 		'monospace', 'ui-monospace' { 'Monospace' }
 		'serif', 'ui-serif' { 'Serif' }
