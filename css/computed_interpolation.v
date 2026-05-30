@@ -1113,8 +1113,22 @@ pub fn (c &ComputedProperties) color_interpolation() ColorInterpolation {
 
 pub fn (c &ComputedProperties) color_scheme(preferred_scheme PreferredColorScheme, document_supported_schemes ?[]string) PreferredColorScheme {
 	_ = c
-	_ = document_supported_schemes
-	return preferred_scheme
+	// Boundary: dom.StyleValue does not expose ColorSchemeStyleValue yet, so
+	// element-specific schemes are treated as `normal`. The document fallback
+	// path from ComputedProperties::color_scheme() is still representable.
+	if supported_schemes := document_supported_schemes {
+		if preferred_scheme != .auto_
+			&& preferred_color_scheme_to_string(preferred_scheme) in supported_schemes {
+			return preferred_scheme
+		}
+		for scheme in supported_schemes {
+			supported_scheme := preferred_color_scheme_from_string(scheme)
+			if supported_scheme != .auto_ {
+				return supported_scheme
+			}
+		}
+	}
+	return .light
 }
 
 pub fn (c &ComputedProperties) text_anchor() TextAnchor {
@@ -1967,6 +1981,13 @@ pub fn InterpolationCalculationContext.for_property(property PropertyID) Interpo
 	}
 }
 
+fn interpolation_accepted_type_range(calculation_context InterpolationCalculationContext, value_type InterpolableValueType) ?AcceptedTypeRange {
+	if range := calculation_context.accepted_type_ranges[value_type] {
+		return range
+	}
+	return none
+}
+
 fn clamp_f64(value f64, min f64, max f64) f64 {
 	if value < min {
 		return min
@@ -2072,12 +2093,12 @@ pub fn property_values_are_transitionable(property_id PropertyID, old_value &dom
 
 pub fn interpolate_length_percentage(calculation_context InterpolationCalculationContext, from LengthPercentage, to LengthPercentage, delta f64) ?LengthPercentage {
 	if from.is_length() && to.is_length() {
-		range := calculation_context.accepted_type_ranges[.length] or { return none }
+		range := interpolation_accepted_type_range(calculation_context, .length)
 		return LengthPercentage.from_length(Length.make_px(interpolate_raw(from.length().raw_value(),
 			to.length().raw_value(), delta, range)))
 	}
 	if from.is_percentage() && to.is_percentage() {
-		range := calculation_context.accepted_type_ranges[.percentage] or { return none }
+		range := interpolation_accepted_type_range(calculation_context, .percentage)
 		return LengthPercentage.from_percentage(Percentage.new(interpolate_raw(from.percentage().value(),
 			to.percentage().value(), delta, range)))
 	}
@@ -2091,12 +2112,12 @@ pub fn interpolate_length_percentage_or_auto(calculation_context InterpolationCa
 		return LengthPercentageOrAuto.make_auto()
 	}
 	if from.is_length() && to.is_length() {
-		range := calculation_context.accepted_type_ranges[.length] or { return none }
+		range := interpolation_accepted_type_range(calculation_context, .length)
 		return LengthPercentageOrAuto.from_length(Length.make_px(interpolate_raw(from.length().raw_value(),
 			to.length().raw_value(), delta, range)))
 	}
 	if from.is_percentage() && to.is_percentage() {
-		range := calculation_context.accepted_type_ranges[.percentage] or { return none }
+		range := interpolation_accepted_type_range(calculation_context, .percentage)
 		return LengthPercentageOrAuto.from_percentage(Percentage.new(interpolate_raw(from.percentage().value(),
 			to.percentage().value(), delta, range)))
 	}

@@ -3032,21 +3032,173 @@ fn replace_an_env_function(element ?dom.AbstractElement, mut guarded_contexts Gu
 	return arbitrary_substitution_guaranteed_invalid_value()
 }
 
-fn parse_if_condition_for_arbitrary_substitution_stub(condition []ComponentValue) ?bool {
-	text := parser_component_values_to_string(condition).trim_space()
-	if text.len == 0 {
+fn parse_if_condition_for_arbitrary_substitution(condition []ComponentValue) ?MatchResult {
+	mut else_tokens := SupportsTokenStream.from_values(condition)
+	else_tokens.discard_whitespace()
+	if token := else_tokens.consume_a_token() {
+		else_tokens.discard_whitespace()
+		if !else_tokens.has_next_token() && token.is_ident('else') {
+			// The else keyword represents a condition that is always true.
+			return .true_
+		}
+	}
+
+	mut tokens := SupportsTokenStream.from_values(condition)
+	expression := parse_if_boolean_expression(mut tokens) or { return none }
+	tokens.discard_whitespace()
+	if tokens.has_next_token() {
 		return none
 	}
-	lower := text.to_lower()
-	if lower == 'true' || lower == '1' {
-		return true
+	return expression.evaluate(none)
+}
+
+// https://drafts.csswg.org/css-values-5/#typedef-if-condition
+fn parse_if_boolean_expression(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	return parse_if_boolean_expression_inner(mut tokens, .false_)
+}
+
+fn parse_if_boolean_expression_inner(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+
+	if peeked_token := transaction.next_token() {
+		if peeked_token.is_ident('not') {
+			transaction.discard_a_token()
+			transaction.discard_whitespace()
+			child := parse_if_boolean_expression_group(mut transaction, result_for_general_enclosed) or {
+				return none
+			}
+			transaction.discard_whitespace()
+			tokens = transaction
+			return BooleanExpression.create_not(child)
+		}
 	}
-	if lower == 'false' || lower == '0' {
-		return false
+
+	mut children := []&BooleanExpression{}
+	mut combinator := ?string(none)
+	for transaction.has_next_token() {
+		if children.len != 0 {
+			token := transaction.consume_a_token() or { return none }
+			if !token.is(.ident) {
+				return none
+			}
+			maybe_combinator := token.token().ident().to_lower()
+			if maybe_combinator != 'and' && maybe_combinator != 'or' {
+				return none
+			}
+			if existing := combinator {
+				if existing != maybe_combinator {
+					return none
+				}
+			} else {
+				combinator = maybe_combinator
+			}
+		}
+
+		transaction.discard_whitespace()
+		child := parse_if_boolean_expression_group(mut transaction, result_for_general_enclosed) or {
+			return none
+		}
+		children << child
+		transaction.discard_whitespace()
 	}
-	if supports := parse_css_supports(ParsingParams{}, text) {
-		return supports.matches_condition()
+
+	if children.len == 0 {
+		return none
 	}
+
+	tokens = transaction
+	if children.len == 1 {
+		return children[0]
+	}
+
+	if combinator_value := combinator {
+		if combinator_value == 'and' {
+			return BooleanExpression.create_and(children)
+		}
+		if combinator_value == 'or' {
+			return BooleanExpression.create_or(children)
+		}
+	}
+	return none
+}
+
+fn parse_if_boolean_expression_group(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
+	if first_token := tokens.next_token() {
+		if first_token.is_block() && first_token.block().is_paren() {
+			mut transaction := tokens
+			transaction.discard_a_token()
+			mut child_tokens := SupportsTokenStream.from_values(first_token.block().value)
+			if expression := parse_if_boolean_expression_inner(mut child_tokens,
+				result_for_general_enclosed)
+			{
+				child_tokens.discard_whitespace()
+				if !child_tokens.has_next_token() {
+					tokens = transaction
+					return BooleanExpression.create_in_parens(expression)
+				}
+			}
+		}
+	}
+
+	if test := parse_if_test(mut tokens) {
+		return test
+	}
+
+	return none
+}
+
+fn parse_if_test(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	maybe_function_token := transaction.consume_a_token() or { return none }
+	if !maybe_function_token.is_function() {
+		return none
+	}
+
+	function := maybe_function_token.function()
+	function_name := function.name.to_lower()
+
+	if function_name == 'supports' {
+		mut declaration_tokens := ParserTokenStream.from_values(function.value)
+		if supports_declaration := parse_supports_declaration_from_parser_tokens(mut declaration_tokens) {
+			tokens = transaction
+			return supports_declaration
+		}
+
+		mut condition_tokens := SupportsTokenStream.from_values(function.value)
+		if supports_condition := parse_supports_condition(mut condition_tokens) {
+			condition_tokens.discard_whitespace()
+			if !condition_tokens.has_next_token() {
+				tokens = transaction
+				return supports_condition
+			}
+		}
+		return none
+	}
+
+	if function_name == 'media' {
+		mut feature_tokens := SupportsTokenStream.from_values(function.value)
+		if media_feature := parse_media_feature(mut feature_tokens) {
+			feature_tokens.discard_whitespace()
+			if !feature_tokens.has_next_token() {
+				tokens = transaction
+				return media_feature
+			}
+		}
+
+		mut condition_tokens := SupportsTokenStream.from_values(function.value)
+		if media_condition := parse_media_condition(mut condition_tokens) {
+			condition_tokens.discard_whitespace()
+			if !condition_tokens.has_next_token() {
+				tokens = transaction
+				return media_condition
+			}
+		}
+		return none
+	}
+
+	// FIXME: Support style().
 	return none
 }
 
@@ -3059,10 +3211,10 @@ fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 	for branch in if_args.branches {
 		substituted_condition := substitute_arbitrary_substitution_functions_with_optional_element(element,
 			mut guarded_contexts, branch.condition, none)
-		condition_result := parse_if_condition_for_arbitrary_substitution_stub(substituted_condition) or {
+		condition_result := parse_if_condition_for_arbitrary_substitution(substituted_condition) or {
 			continue
 		}
-		if !condition_result {
+		if condition_result == .false_ {
 			continue
 		}
 		value := branch.value or { return []ComponentValue{} }

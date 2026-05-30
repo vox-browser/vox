@@ -1781,9 +1781,9 @@ pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descr
 		return font_face
 	}
 
-	// Stub: The C++ queues a font-loading task and parses bytes asynchronously. In this V port, binary data is passed
-	// through the platform font loader stub synchronously while preserving the same status/list transitions.
-	font_face.start_binary_load_stub()
+	// The C++ queues a font-loading task and parses bytes asynchronously. In this V port, binary data crosses the
+	// explicit platform font-decoding boundary synchronously while preserving the same status/list transitions.
+	font_face.start_binary_load()
 	return font_face
 }
 
@@ -2100,29 +2100,30 @@ pub fn (mut face FontFaceObject) load() FontPromiseStub {
 
 	// 2. If font face's [[Urls]] slot is null, or its status attribute is anything other than "unloaded",
 	//    return font face's [[FontStatusPromise]] and abort these steps.
-	if face.urls.len == 0 || face.status_ != .unloaded {
+	if !face.begin_url_load() {
 		return face.loaded()
 	}
 
 	// 3. Otherwise, set font face's status attribute to "loading", return font face's [[FontStatusPromise]],
 	//    and continue executing the rest of this algorithm asynchronously.
-	face.status_ = .loading
-	if mut rule := face.css_font_face_rule {
-		rule.set_loading_state(.loading)
+	face.finish_loading_from_typeface(face.load_first_available_url())
+	return face.loaded()
+}
+
+pub fn (mut face FontFaceObject) load_with_font_computer(font_computer &FontComputer) FontPromiseStub {
+	if !face.begin_url_load() {
+		return face.loaded()
 	}
 
-	// Stub: Real URL fetch/decode is not present. Try platform_load_font_from_url_stub synchronously.
-	mut maybe_typeface := ?PlatformTypeface(none)
-	for source in face.urls {
-		if source.kind != .url {
-			continue
-		}
-		if typeface := platform_load_font_from_url_stub(source.value) {
-			maybe_typeface = typeface
-			break
-		}
+	mut mutable_computer := unsafe { &FontComputer(font_computer) }
+	loader := mutable_computer.load_font_face(face.parsed_font_face(), none) or {
+		face.finish_loading_from_typeface(none)
+		return face.loaded()
 	}
-	face.finish_loading_from_stub(maybe_typeface)
+
+	mut mutable_loader := unsafe { &FontLoader(loader) }
+	mutable_loader.start_loading_next_url()
+	face.finish_loading_from_typeface(mutable_loader.typeface)
 	return face.loaded()
 }
 
@@ -2150,7 +2151,31 @@ fn (mut face FontFaceObject) reject_status_promise(reason string) {
 	}
 }
 
-fn (mut face FontFaceObject) start_binary_load_stub() {
+fn (mut face FontFaceObject) begin_url_load() bool {
+	if face.urls.len == 0 || face.status_ != .unloaded {
+		return false
+	}
+
+	face.status_ = .loading
+	if mut rule := face.css_font_face_rule {
+		rule.set_loading_state(.loading)
+	}
+	return true
+}
+
+fn (face &FontFaceObject) load_first_available_url() ?PlatformTypeface {
+	for source in face.urls {
+		if source.kind != .url {
+			continue
+		}
+		if typeface := platform_load_font_from_url_stub(source.value) {
+			return typeface
+		}
+	}
+	return none
+}
+
+fn (mut face FontFaceObject) start_binary_load() {
 	face.status_ = .loading
 	for mut font_face_set in face.containing_sets {
 		if font_face_set.loading_fonts.len == 0 {
@@ -2159,10 +2184,10 @@ fn (mut face FontFaceObject) start_binary_load_stub() {
 		font_face_set.loading_fonts << face
 	}
 	typeface := platform_load_font_from_bytes_stub(face.binary_data)
-	face.finish_loading_from_stub(typeface)
+	face.finish_loading_from_typeface(typeface)
 }
 
-fn (mut face FontFaceObject) finish_loading_from_stub(maybe_typeface ?PlatformTypeface) {
+fn (mut face FontFaceObject) finish_loading_from_typeface(maybe_typeface ?PlatformTypeface) {
 	if typeface := maybe_typeface {
 		// 1. If the load was successful, font face now represents the parsed font;
 		//    fulfill font face's [[FontStatusPromise]] with font face, and set its status attribute to "loaded".
@@ -2230,35 +2255,34 @@ fn is_unsupported_source(source ParsedFontFaceSource) bool {
 
 pub fn font_format_is_supported(name string) bool {
 	// https://drafts.csswg.org/css-fonts-4/#font-format-definitions
-	lower := name.to_lower()
-	if lower == 'collection' {
-		return platform_font_format_is_supported_stub('collection')
+	return match name.to_lower() {
+		'collection', 'opentype', 'truetype', 'woff', 'woff2' {
+			true
+		}
+		// LibGfx::font_format_is_supported currently reports these as unsupported.
+		'embedded-opentype', 'svg' {
+			false
+		}
+		else {
+			false
+		}
 	}
-	if lower == 'embedded-opentype' {
-		return platform_font_format_is_supported_stub('embedded-opentype')
-	}
-	if lower == 'opentype' {
-		return platform_font_format_is_supported_stub('opentype')
-	}
-	if lower == 'svg' {
-		return platform_font_format_is_supported_stub('svg')
-	}
-	if lower == 'truetype' {
-		return platform_font_format_is_supported_stub('truetype')
-	}
-	if lower == 'woff' {
-		return platform_font_format_is_supported_stub('woff')
-	}
-	if lower == 'woff2' {
-		return platform_font_format_is_supported_stub('woff2')
-	}
-	return false
 }
 
 pub fn font_tech_is_supported(font_tech FontTech) bool {
 	// https://drafts.csswg.org/css-fonts-4/#font-tech-definitions
 	// https://drafts.csswg.org/css-fonts-5/#font-tech-definitions
-	return platform_font_tech_is_supported_stub(font_tech)
+	return match font_tech {
+		.features_opentype, .features_aat, .color_colrv0, .color_colrv1, .color_svg, .color_sbix,
+		.color_cbdt, .palettes, .avar2 {
+			true
+		}
+		// The C++ implementation makes Graphite support depend on the HarfBuzz build flag. This standalone V port has
+		// no such capability check, so keep the boundary conservative.
+		.features_graphite, .variations, .incremental {
+			false
+		}
+	}
 }
 
 pub fn font_tech_is_supported_name(name string) bool {
@@ -2703,6 +2727,19 @@ pub fn (key OwnFontFaceKey) as_font_face_key() FontFaceKey {
 	}
 }
 
+fn font_face_key_for_parsed_font_face(font_face ParsedFontFace) FontFaceKey {
+	return FontFaceKey{
+		family_name: font_face.font_family()
+		weight:      font_face.weight() or {
+			FontWeightRange{
+				min: 0
+				max: 0
+			}
+		}
+		slope:       font_face.slope() or { 0 }
+	}
+}
+
 pub struct ComputedFontCacheKey {
 pub mut:
 	font_family             []string
@@ -2899,16 +2936,7 @@ pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_l
 		return none
 	}
 
-	key := FontFaceKey{
-		family_name: font_face.font_family()
-		weight:      font_face.weight() or {
-			FontWeightRange{
-				min: 0
-				max: 0
-			}
-		}
-		slope:       font_face.slope() or { 0 }
-	}
+	key := font_face_key_for_parsed_font_face(font_face)
 
 	// FIXME: Handle local() font sources.
 	mut urls := []string{}
@@ -2949,17 +2977,18 @@ pub fn (mut computer FontComputer) load_fonts_from_font_face_rules(rules []&CSSF
 		// necessary to render something on the page. When this happens, they must act as if they had called the
 		// corresponding FontFace's load() method described here.
 		mut mutable_face := unsafe { &FontFaceObject(font_face) }
-		mutable_face.load()
+		mutable_face.load_with_font_computer(computer)
 	}
 }
 
 pub fn (mut computer FontComputer) unload_fonts_from_font_face_rules(rules []&CSSFontFaceRule) {
 	// FIXME: Handle @font-face and @font-feature-values within grouping rules (@media, @supports, etc)
-	computer.loaded_fonts.clear()
-
 	// https://drafts.csswg.org/css-font-loading/#font-face-css-connection
 	// If a @font-face rule is removed from the document, its connected FontFace object is no longer CSS-connected.
 	for rule in rules {
+		if rule.is_valid() {
+			computer.loaded_fonts.delete(font_face_key_for_parsed_font_face(rule.font_face()).id())
+		}
 		mut mutable_rule := unsafe { &CSSFontFaceRule(rule) }
 		mutable_rule.disconnect_font_face()
 	}
@@ -3366,18 +3395,12 @@ fn parse_font_face_source(input string) ?ParsedFontFaceSource {
 			format_name := normalize_font_format_name(modifier[7..modifier.len - 1].trim_space()) or {
 				return none
 			}
-			if !font_format_is_supported(format_name.name) {
-				return none
-			}
 			source.format = format_name.name
 			for tech in format_name.implied_tech {
 				source.tech << tech
 			}
 		} else if modifier_lower.starts_with('tech(') && modifier.ends_with(')') {
-			tech_names := split_font_tech_names(modifier[5..modifier.len - 1])
-			if tech_names.len == 0 {
-				return none
-			}
+			tech_names := split_font_tech_names(modifier[5..modifier.len - 1]) or { return none }
 			for tech_name in tech_names {
 				if tech := font_tech_from_string(tech_name) {
 					if !font_tech_is_supported(tech) {
@@ -3401,7 +3424,7 @@ struct NormalizedFontFormatName {
 }
 
 fn normalize_font_format_name(value string) ?NormalizedFontFormatName {
-	// There's a fixed set of strings allowed here, which we'll assume are case-insensitive:
+	// Quoted legacy format strings are normalized before support is checked:
 	// format("woff2")                 -> format(woff2)
 	// format("woff")                  -> format(woff)
 	// format("truetype")              -> format(truetype)
@@ -3411,52 +3434,83 @@ fn normalize_font_format_name(value string) ?NormalizedFontFormatName {
 	// format("woff-variations")       -> format(woff) tech(variations)
 	// format("truetype-variations")   -> format(truetype) tech(variations)
 	// format("opentype-variations")   -> format(opentype) tech(variations)
-	lower := unquote_css_string(value).to_lower()
-	return match lower {
-		'woff2', 'woff', 'truetype', 'opentype', 'collection', 'embedded-opentype', 'svg' {
-			NormalizedFontFormatName{
-				name: lower
+	trimmed := value.trim_space()
+	lower := unquote_css_string(trimmed).to_lower()
+	if is_quoted_css_string(trimmed) {
+		return match lower {
+			'woff2', 'woff', 'truetype', 'opentype', 'collection' {
+				if !font_format_is_supported(lower) {
+					none
+				} else {
+					NormalizedFontFormatName{
+						name: lower
+					}
+				}
 			}
-		}
-		'woff2-variations' {
-			NormalizedFontFormatName{
-				name:         'woff2'
-				implied_tech: [FontTech.variations]
+			'woff2-variations' {
+				if !font_format_is_supported('woff2') {
+					none
+				} else {
+					NormalizedFontFormatName{
+						name:         'woff2'
+						implied_tech: [FontTech.variations]
+					}
+				}
 			}
-		}
-		'woff-variations' {
-			NormalizedFontFormatName{
-				name:         'woff'
-				implied_tech: [FontTech.variations]
+			'woff-variations' {
+				if !font_format_is_supported('woff') {
+					none
+				} else {
+					NormalizedFontFormatName{
+						name:         'woff'
+						implied_tech: [FontTech.variations]
+					}
+				}
 			}
-		}
-		'truetype-variations' {
-			NormalizedFontFormatName{
-				name:         'truetype'
-				implied_tech: [FontTech.variations]
+			'truetype-variations' {
+				if !font_format_is_supported('truetype') {
+					none
+				} else {
+					NormalizedFontFormatName{
+						name:         'truetype'
+						implied_tech: [FontTech.variations]
+					}
+				}
 			}
-		}
-		'opentype-variations' {
-			NormalizedFontFormatName{
-				name:         'opentype'
-				implied_tech: [FontTech.variations]
+			'opentype-variations' {
+				if !font_format_is_supported('opentype') {
+					none
+				} else {
+					NormalizedFontFormatName{
+						name:         'opentype'
+						implied_tech: [FontTech.variations]
+					}
+				}
 			}
-		}
-		else {
-			none
+			else {
+				none
+			}
 		}
 	}
+	if font_format_is_supported(lower) {
+		return NormalizedFontFormatName{
+			name: lower
+		}
+	}
+	return none
 }
 
-fn split_font_tech_names(value string) []string {
+fn split_font_tech_names(value string) ?[]string {
 	mut names := []string{}
 	for comma_part in split_css_comma_list(value) {
-		for space_part in split_css_space_list(comma_part) {
-			name := unquote_css_string(space_part)
-			if name.len != 0 {
-				names << name
-			}
+		name := comma_part.trim_space()
+		if name.len == 0 || is_quoted_css_string(name) || split_css_space_list(name).len != 1 {
+			return none
 		}
+		names << name
+	}
+	if names.len == 0 {
+		return none
 	}
 	return names
 }
@@ -4069,17 +4123,6 @@ fn font_face_key_from_id(id string) FontFaceKey {
 		}
 		slope:       strconv.atoi(parts[2]) or { 0 }
 	}
-}
-
-fn platform_font_format_is_supported_stub(name string) bool {
-	// Stub for Gfx::font_format_is_supported().
-	return name in ['collection', 'opentype', 'svg', 'truetype', 'woff', 'woff2']
-}
-
-fn platform_font_tech_is_supported_stub(font_tech FontTech) bool {
-	_ = font_tech
-	// Stub for Gfx::font_tech_is_supported().
-	return true
 }
 
 fn platform_load_font_from_url_stub(url string) ?PlatformTypeface {
