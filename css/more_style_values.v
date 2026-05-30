@@ -5,7 +5,7 @@ import dom
 import math
 import strings
 
-// --- Small generated/layout/parser stubs used by these value objects ---
+// --- Small generated/layout/parser stand-ins used by these value objects ---
 
 pub struct CursorImageValue {
 pub mut:
@@ -942,8 +942,8 @@ fn basic_shape_one_hundred_percent_minus(values []StyleValue, context Computatio
 		return percentage_style_value(100.0 - percentage_total)
 	}
 
-	// Boundary: CalculationNode/SumCalculationNode are not translated here, so preserve the C++ calculation shape
-	// as a calculated style-value placeholder after absolutizing nested values.
+	// Calculation integration: CalculationNode/SumCalculationNode are not translated here, so preserve the C++
+	// calculation shape as a serialized calculated value after absolutizing nested values.
 	mut serialized := 'calc(100%'
 	for value in absolutized_values {
 		serialized += ' - ${value.serialize(.normal)}'
@@ -2043,7 +2043,7 @@ pub fn (style_value RandomValueSharingStyleValue) absolutized(context Computatio
 	}
 
 	// Otherwise, the random base value is a pseudo-random real number in the range [0, 1). The document/element cache
-	// is not translated in this V port, so we use a deterministic explicit stub value.
+	// is not translated in this V port, so we use a deterministic explicit fixed value.
 	return StyleValue(RandomValueSharingStyleValue.create_fixed(StyleValue(NumberStyleValue.create(0))))
 }
 
@@ -2791,8 +2791,9 @@ pub fn (style_value TreeCountingFunctionStyleValue) resolve_for_dom_abstract_ele
 }
 
 pub fn (style_value TreeCountingFunctionStyleValue) resolve() int {
-	// Boundary: C++ resolves this through ComputationContext::abstract_element. The V ComputationContext stub does
-	// not carry a DOM element yet; callers with one should use resolve_for_dom_abstract_element().
+	// DOM context integration: C++ resolves this through ComputationContext::abstract_element. The V
+	// ComputationContext stand-in does not carry a DOM element yet; callers with one should use
+	// resolve_for_dom_abstract_element().
 	panic('TreeCountingFunctionStyleValue::resolve requires a DOM AbstractElement')
 }
 

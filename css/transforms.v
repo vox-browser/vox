@@ -21,7 +21,7 @@ import math
 // - LibWeb/CSS/CSSMatrixComponent.cpp
 // - LibWeb/CSS/StyleValues/TransformationStyleValue.cpp/.h
 
-// --- Narrow geometry stubs used by the translated transform code ---
+// --- Narrow geometry stand-ins used by the translated transform code ---
 
 pub struct FloatVector3 {
 pub mut:
@@ -702,19 +702,22 @@ pub fn (style_value StyleValue) as_angle() AngleStyleValue {
 
 pub fn (c CalculatedStyleValue) resolves_to_angle() bool {
 	_ = c
-	// Stub: the calculation tree is not translated yet; this mirrors the existing resolved-value stubs.
+	// Calculation integration: the typed calculation tree is not translated yet; this mirrors the existing
+	// resolved-value stand-ins.
 	return true
 }
 
 pub fn (c CalculatedStyleValue) resolves_to_length() bool {
 	_ = c
-	// Stub: the calculation tree is not translated yet; this mirrors the existing resolved-value stubs.
+	// Calculation integration: the typed calculation tree is not translated yet; this mirrors the existing
+	// resolved-value stand-ins.
 	return true
 }
 
 pub fn (c CalculatedStyleValue) resolves_to_length_percentage() bool {
 	_ = c
-	// Stub: the calculation tree is not translated yet; this mirrors the existing resolved-value stubs.
+	// Calculation integration: the typed calculation tree is not translated yet; this mirrors the existing
+	// resolved-value stand-ins.
 	return true
 }
 

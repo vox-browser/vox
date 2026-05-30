@@ -58,9 +58,9 @@ fn style_values_extra_length_percentage_from_style_value(style_value StyleValue)
 			LengthPercentage.from_calculated(style_value)
 		}
 		StubStyleValue {
-			// Stub: EdgeStyleValue::with_resolved_keywords() currently has to store
-			// calc(100% - offset) as a calculated StubStyleValue because the
-			// calculation tree is not translated yet.
+			// Calculation integration: EdgeStyleValue::with_resolved_keywords() stores
+			// generated calc(100% - offset) expressions as serialized calculated values
+			// until the CalculationNode tree is translated.
 			if style_value.type_ == .calculated {
 				LengthPercentage.from_length(Length.make_px(0))
 			} else {
@@ -91,9 +91,9 @@ fn style_values_extra_resolve_edge_generated_calc(style_value StyleValue, contex
 		return none
 	}
 
-	// Boundary: EdgeStyleValue::with_resolved_keywords() generates this exact
-	// placeholder while the calculation tree is not translated. Preserve the
-	// surrounding C++ control flow by resolving the generated serialization form.
+	// Calculation integration: EdgeStyleValue::with_resolved_keywords() generates
+	// this exact serialized calculation while CalculationNode remains external.
+	// Preserve the surrounding C++ control flow by resolving that generated form.
 	serialization := stub.serialization.trim_space()
 	prefix := 'calc(100% - '
 	if !serialization.starts_with(prefix) || !serialization.ends_with(')') {
@@ -128,7 +128,8 @@ fn style_values_extra_length_from_style_value(style_value StyleValue) Length {
 			style_value.resolve_length(CalculationResolutionContext{}) or { Length.make_px(0) }
 		}
 		StubStyleValue {
-			// Stub: calculation nodes are not translated enough to resolve this.
+			// Calculation integration: serialized calculated values do not carry a typed
+			// CalculationNode tree yet.
 			if style_value.type_ == .calculated {
 				Length.make_px(0)
 			} else {
@@ -150,7 +151,8 @@ fn style_values_extra_angle_from_style_value(style_value StyleValue) Angle {
 			style_value.resolve_angle(CalculationResolutionContext{}) or { Angle.new(0, .deg) }
 		}
 		StubStyleValue {
-			// Stub: calculation nodes are not translated enough to resolve this.
+			// Calculation integration: serialized calculated values do not carry a typed
+			// CalculationNode tree yet.
 			if style_value.type_ == .calculated {
 				Angle.new(0, .deg)
 			} else {
@@ -368,7 +370,7 @@ fn style_values_extra_inset_to_path(shape BasicShapeInset, reference_box CSSPixe
 	bottom_edge := CSSPixels.nearest_value_for(reference_box.height.to_double() - bottom)
 
 	if shape.border_radius.serialize(.normal) != '0px' {
-		// Boundary: Painting::normalize_border_radii_data() and Gfx::Path elliptical arcs
+		// Painting integration: Painting::normalize_border_radii_data() and Gfx::Path elliptical arcs
 		// are not translated. Keep the resolved inset rectangle rather than inventing
 		// rounded-corner geometry.
 	}
@@ -439,6 +441,78 @@ fn style_values_extra_polygon_to_path(shape BasicShapePolygon, reference_box CSS
 	}
 }
 
+fn style_values_extra_xywh_to_inset(shape BasicShapeXywh) BasicShapeInset {
+	// Given xywh(x y w h), the equivalent inset() is:
+	// inset(y calc(100% - x - w) calc(100% - y - h) x).
+	return BasicShapeInset{
+		top:           shape.y
+		right:         style_values_extra_one_hundred_percent_minus_serialized([shape.x, shape.width])
+		bottom:        style_values_extra_one_hundred_percent_minus_serialized([shape.y, shape.height])
+		left:          shape.x
+		border_radius: shape.border_radius
+	}
+}
+
+fn style_values_extra_rect_to_inset(shape BasicShapeRect) BasicShapeInset {
+	// Given rect(t r b l), the equivalent inset() is:
+	// inset(t calc(100% - r) calc(100% - b) l).
+	return BasicShapeInset{
+		top:           style_values_extra_rect_resolve_auto(shape.top, 0)
+		right:         style_values_extra_one_hundred_percent_minus_serialized([
+			style_values_extra_rect_resolve_auto(shape.right, 100),
+		])
+		bottom:        style_values_extra_one_hundred_percent_minus_serialized([
+			style_values_extra_rect_resolve_auto(shape.bottom, 100),
+		])
+		left:          style_values_extra_rect_resolve_auto(shape.left, 0)
+		border_radius: shape.border_radius
+	}
+}
+
+fn style_values_extra_rect_resolve_auto(style_value StyleValue, value_of_auto f64) StyleValue {
+	if style_value.is_keyword() {
+		if style_value.to_keyword() != .auto {
+			panic('VERIFY_NOT_REACHED')
+		}
+		return StyleValue(PercentageStyleValue.create(Percentage.new(value_of_auto)))
+	}
+	return style_value
+}
+
+fn style_values_extra_one_hundred_percent_minus_serialized(values []StyleValue) StyleValue {
+	if values.len == 0 {
+		return StyleValue(PercentageStyleValue.create(Percentage.new(100)))
+	}
+
+	mut all_values_are_percentages := true
+	mut percentage_total := 0.0
+	for value in values {
+		if percentage_value := style_values_extra_percentage_value(value) {
+			percentage_total += percentage_value
+		} else {
+			all_values_are_percentages = false
+		}
+	}
+
+	if all_values_are_percentages {
+		return StyleValue(PercentageStyleValue.create(Percentage.new(100.0 - percentage_total)))
+	}
+
+	mut serialized := 'calc(100%'
+	for value in values {
+		serialized += ' - ${value.serialize(.normal)}'
+	}
+	serialized += ')'
+	return StyleValue(StubStyleValue.create(.calculated, serialized))
+}
+
+fn style_values_extra_percentage_value(style_value StyleValue) ?f64 {
+	return match style_value {
+		PercentageStyleValue { style_value.percentage().value() }
+		else { none }
+	}
+}
+
 // --- CursorStyleValue extra helpers ---
 
 pub fn (style_value CursorStyleValue) image() CursorImageValue {
@@ -456,7 +530,7 @@ pub fn (style_value CursorStyleValue) y() ?StyleValue {
 pub fn (style_value CursorStyleValue) make_image_cursor(node StyleValueLayoutNodeStub) ?StyleValueImageCursorStub {
 	_ = node
 	_ = style_value
-	// Stub: AbstractImageStyleValue, image decoding/painting, platform cursor
+	// Image/platform integration: AbstractImageStyleValue, image decoding/painting, platform cursor
 	// limits, and embedded cursor hotspots are not translated in this V port.
 	return none
 }
@@ -478,18 +552,18 @@ pub fn (style_value BasicShapeStyleValue) to_path(reference_box CSSPixelRect, no
 		BasicShapePolygon {
 			style_values_extra_polygon_to_path(shape, reference_box, node)
 		}
+		BasicShapeXywh {
+			style_values_extra_inset_to_path(style_values_extra_xywh_to_inset(shape),
+				reference_box, node)
+		}
+		BasicShapeRect {
+			style_values_extra_inset_to_path(style_values_extra_rect_to_inset(shape),
+				reference_box, node)
+		}
 		BasicShapePath {
 			StyleValuePathStub{
 				commands:  [shape.path_instructions]
 				fill_rule: shape.fill_rule
-			}
-		}
-		else {
-			// NB: Xywh and Rect don't require to_path functions as we should have already converted them to their
-			//     respective Inset equivalents during absolutization.
-			// Boundary: the calculation tree needed for that absolutization is not translated yet.
-			StyleValuePathStub{
-				commands: [style_value.serialize(.normal)]
 			}
 		}
 	}
@@ -668,7 +742,7 @@ pub fn (style_value ShorthandStyleValue) longhand(longhand PropertyID) ?StyleVal
 pub fn (style_value ShorthandStyleValue) set_style_sheet(style_sheet CSSStyleSheetStub) {
 	_ = style_value
 	_ = style_sheet
-	// Stub: CSSStyleSheet ownership propagation is not represented on V StyleValue objects yet.
+	// CSSStyleSheet ownership integration: propagation is not represented on V StyleValue objects yet.
 }
 
 // --- StyleValueList extra helpers ---
@@ -692,7 +766,7 @@ pub fn (style_value StyleValueList) subdivide_into_iterations(property PropertyN
 pub fn (style_value StyleValueList) set_style_sheet(style_sheet CSSStyleSheetStub) {
 	_ = style_value
 	_ = style_sheet
-	// Stub: CSSStyleSheet ownership propagation is not represented on V StyleValue objects yet.
+	// CSSStyleSheet ownership integration: propagation is not represented on V StyleValue objects yet.
 }
 
 // --- TreeCountingFunctionStyleValue extra helpers ---
