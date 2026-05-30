@@ -504,6 +504,7 @@ pub enum UserSelect {
 	text
 	none_
 	all
+	contain
 }
 
 pub enum Isolation {
@@ -872,11 +873,20 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.border_bottom_color, .border_left_color, .border_right_color, .border_top_color {
 			'currentcolor'
 		}
+		.border_bottom_style, .border_left_style, .border_right_style, .border_top_style {
+			'none'
+		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width {
 			'medium'
 		}
+		.border_collapse {
+			'separate'
+		}
 		.border_image_source {
 			'none'
+		}
+		.box_sizing {
+			'content-box'
 		}
 		.caption_side {
 			'top'
@@ -939,6 +949,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.font_width {
 			'normal'
 		}
+		.isolation {
+			'auto'
+		}
 		.letter_spacing {
 			'normal'
 		}
@@ -947,6 +960,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		}
 		.list_style_image, .mask_image {
 			'none'
+		}
+		.list_style_position {
+			'outside'
 		}
 		.mask_type {
 			'luminance'
@@ -1026,6 +1042,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.text_anchor {
 			'start'
 		}
+		.transform_style {
+			'flat'
+		}
 		.transition_behavior {
 			'normal'
 		}
@@ -1040,6 +1059,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		}
 		.unicode_bidi {
 			'normal'
+		}
+		.user_select {
+			'auto'
 		}
 		.webkit_text_fill_color {
 			'currentcolor'
@@ -1071,9 +1093,10 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
 		.accent_color, .caption_side, .caret_color, .clip_rule, .color, .color_interpolation,
 		.color_scheme, .direction, .empty_cells, .fill_opacity, .fill_rule, .font_style,
-		.font_weight, .letter_spacing, .list_style_image, .math_depth, .math_style, .orphans,
-		.pointer_events, .shape_rendering, .stroke_linecap, .stroke_linejoin, .stroke_opacity,
-		.text_anchor, .visibility, .webkit_text_fill_color, .word_spacing {
+		.font_weight, .letter_spacing, .list_style_image, .list_style_position, .math_depth,
+		.math_style, .orphans, .pointer_events, .shape_rendering, .stroke_linecap,
+		.stroke_linejoin, .stroke_opacity, .text_anchor, .visibility, .webkit_text_fill_color,
+		.word_spacing, .border_collapse {
 			true
 		}
 		else {
@@ -1101,12 +1124,14 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 			true
 		}
 		.anchor_name, .anchor_scope, .animation_composition, .animation_direction,
-		.animation_fill_mode, .animation_play_state, .caption_side, .clear, .clip_rule,
-		.color_interpolation, .color_scheme, .content_visibility, .direction, .empty_cells,
-		.fill_rule, .float_, .mask_type, .math_style, .mix_blend_mode, .object_fit, .outline_style,
-		.overflow_x, .overflow_y, .pointer_events, .position, .position_anchor,
-		.scroll_timeline_name, .shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout,
-		.text_anchor, .transition_behavior, .transition_property, .unicode_bidi,
+		.animation_fill_mode, .animation_play_state, .border_bottom_style, .border_collapse,
+		.border_left_style, .border_right_style, .border_top_style, .box_sizing, .caption_side,
+		.clear, .clip_rule, .color_interpolation, .color_scheme, .content_visibility, .direction,
+		.empty_cells, .fill_rule, .float_, .isolation, .list_style_position, .mask_type,
+		.math_style, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
+		.pointer_events, .position, .position_anchor, .scroll_timeline_name, .shape_rendering,
+		.stroke_linecap, .stroke_linejoin, .table_layout, .text_anchor, .transform_style,
+		.transition_behavior, .transition_property, .unicode_bidi, .user_select,
 		.view_timeline_name, .visibility {
 			false
 		}
@@ -1131,18 +1156,20 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .aspect_ratio, .background_image, .border_bottom_color,
-		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
-		.caption_side, .caret_color, .clear, .clip_rule, .color_interpolation, .color_scheme,
-		.content_visibility, .direction, .empty_cells, .fill_opacity, .fill_rule, .float_,
-		.flood_opacity, .font_feature_settings, .font_variation_settings, .line_height,
-		.list_style_image, .mask_image, .mask_type, .math_style, .mix_blend_mode, .object_fit,
+		.border_bottom_style, .border_collapse, .border_image_source, .border_left_color,
+		.border_left_style, .border_right_color, .border_right_style, .border_top_color,
+		.border_top_style, .box_sizing, .caption_side, .caret_color, .clear, .clip_rule,
+		.color_interpolation, .color_scheme, .content_visibility, .direction, .empty_cells,
+		.fill_opacity, .fill_rule, .float_, .flood_opacity, .font_feature_settings,
+		.font_variation_settings, .isolation, .line_height, .list_style_image,
+		.list_style_position, .mask_image, .mask_type, .math_style, .mix_blend_mode, .object_fit,
 		.opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style, .overflow_x,
 		.overflow_y, .pointer_events, .position, .position_anchor, .scroll_timeline_name,
 		.shape_rendering, .table_layout, .shape_image_threshold, .stop_opacity, .stroke_linecap,
-		.stroke_linejoin, .stroke_opacity, .rotate, .scale, .transform, .text_anchor,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .translate, .unicode_bidi, .view_timeline_inset,
-		.view_timeline_name, .visibility, .webkit_text_fill_color, .z_index {
+		.stroke_linejoin, .stroke_opacity, .rotate, .scale, .transform, .transform_style,
+		.text_anchor, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .translate, .unicode_bidi, .user_select,
+		.view_timeline_inset, .view_timeline_name, .visibility, .webkit_text_fill_color, .z_index {
 			false
 		}
 	}
@@ -1776,10 +1803,26 @@ pub fn (c &ComputedProperties) letter_spacing() CSSPixels {
 	return CSSPixels{}
 }
 
+fn keyword_to_line_style_for_computed_properties(keyword Keyword) ?LineStyle {
+	return match keyword {
+		.none_ { LineStyle.none_ }
+		.hidden { LineStyle.hidden }
+		.dotted { LineStyle.dotted }
+		.dashed { LineStyle.dashed }
+		.solid { LineStyle.solid }
+		.double_ { LineStyle.double_ }
+		.groove { LineStyle.groove }
+		.ridge { LineStyle.ridge }
+		.inset { LineStyle.inset }
+		.outset { LineStyle.outset }
+		else { none }
+	}
+}
+
 pub fn (c &ComputedProperties) line_style(property_id PropertyID) LineStyle {
-	_ = c
-	_ = property_id
-	return .none_
+	value := c.property(property_id, .yes) or { return .none_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .none_ }
+	return keyword_to_line_style_for_computed_properties(keyword) or { LineStyle.none_ }
 }
 
 pub fn (c &ComputedProperties) outline_offset() Length {
@@ -1853,8 +1896,13 @@ pub fn (c &ComputedProperties) list_style_type(registered_counter_styles map[str
 }
 
 pub fn (c &ComputedProperties) list_style_position() ListStylePosition {
-	_ = c
-	return .outside
+	value := c.property(.list_style_position, .yes) or { return .outside }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .outside }
+	return match keyword {
+		.outside { ListStylePosition.outside }
+		.inside { ListStylePosition.inside }
+		else { ListStylePosition.outside }
+	}
 }
 
 pub fn (c &ComputedProperties) flex_direction() FlexDirection {
@@ -2009,8 +2057,13 @@ pub fn (c &ComputedProperties) box_shadow(layout_node &dom.LayoutNode) []ShadowD
 }
 
 pub fn (c &ComputedProperties) box_sizing() BoxSizing {
-	_ = c
-	return .content_box
+	value := c.property(.box_sizing, .yes) or { return .content_box }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .content_box }
+	return match keyword {
+		.content_box { BoxSizing.content_box }
+		.border_box { BoxSizing.border_box }
+		else { BoxSizing.content_box }
+	}
 }
 
 fn keyword_to_pointer_events_for_computed_properties(keyword Keyword) ?PointerEvents {
@@ -2139,8 +2192,13 @@ pub fn (c &ComputedProperties) grid_row_start() GridTrackPlacement {
 }
 
 pub fn (c &ComputedProperties) border_collapse() BorderCollapse {
-	_ = c
-	return .separate
+	value := c.property(.border_collapse, .yes) or { return .separate }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .separate }
+	return match keyword {
+		.separate { BorderCollapse.separate }
+		.collapse { BorderCollapse.collapse }
+		else { BorderCollapse.separate }
+	}
 }
 
 pub fn (c &ComputedProperties) empty_cells() EmptyCells {
@@ -2216,13 +2274,26 @@ pub fn (c &ComputedProperties) writing_mode() WritingMode {
 }
 
 pub fn (c &ComputedProperties) user_select() UserSelect {
-	_ = c
-	return .auto_
+	value := c.property(.user_select, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { UserSelect.auto_ }
+		.text { UserSelect.text }
+		.none_ { UserSelect.none_ }
+		.all { UserSelect.all }
+		.contain { UserSelect.contain }
+		else { UserSelect.auto_ }
+	}
 }
 
 pub fn (c &ComputedProperties) isolation() Isolation {
-	_ = c
-	return .auto_
+	value := c.property(.isolation, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { Isolation.auto_ }
+		.isolate { Isolation.isolate }
+		else { Isolation.auto_ }
+	}
 }
 
 pub fn (c &ComputedProperties) touch_action() TouchActionData {
@@ -2642,8 +2713,13 @@ pub fn (c &ComputedProperties) transform_origin() TransformOrigin {
 }
 
 pub fn (c &ComputedProperties) transform_style() TransformStyle {
-	_ = c
-	return .flat
+	value := c.property(.transform_style, .yes) or { return .flat }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .flat }
+	return match keyword {
+		.flat { TransformStyle.flat }
+		.preserve_3d { TransformStyle.preserve_3d }
+		else { TransformStyle.flat }
+	}
 }
 
 pub fn (c &ComputedProperties) rotate() ?TransformationData {
@@ -3096,11 +3172,13 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.content_visibility, .visibility {
 			.custom
 		}
-		.anchor_name, .anchor_scope, .background_image, .border_image_source, .caption_side,
-		.clear, .clip_rule, .color_interpolation, .color_scheme, .empty_cells, .fill_rule, .float_,
-		.list_style_image, .mask_image, .mask_type, .mix_blend_mode, .object_fit, .overflow_x,
-		.overflow_y, .pointer_events, .position, .position_anchor, .shape_rendering,
-		.stroke_linecap, .stroke_linejoin, .table_layout, .text_anchor {
+		.anchor_name, .anchor_scope, .background_image, .border_bottom_style, .border_collapse,
+		.border_image_source, .border_left_style, .border_right_style, .border_top_style,
+		.box_sizing, .caption_side, .clear, .clip_rule, .color_interpolation, .color_scheme,
+		.empty_cells, .fill_rule, .float_, .isolation, .list_style_image, .list_style_position,
+		.mask_image, .mask_type, .mix_blend_mode, .object_fit, .overflow_x, .overflow_y,
+		.pointer_events, .position, .position_anchor, .shape_rendering, .stroke_linecap,
+		.stroke_linejoin, .table_layout, .text_anchor, .transform_style, .user_select {
 			.discrete
 		}
 	}
@@ -3824,8 +3902,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .background_color, .background_image, .border_bottom_color,
-		.border_bottom_width, .border_image_source, .border_left_color, .border_left_width,
-		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
+		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
 		.caret_color, .clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity,
@@ -3835,14 +3912,17 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.pointer_events, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap,
 		.stroke_linejoin, .stroke_opacity, .rotate, .scale, .scroll_timeline_name, .transform,
 		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .translate, .view_timeline_inset, .view_timeline_name,
-		.webkit_text_fill_color, .z_index {
+		.transition_timing_function, .translate, .user_select, .view_timeline_inset,
+		.view_timeline_name, .webkit_text_fill_color, .z_index {
 			false
 		}
-		.anchor_name, .aspect_ratio, .caption_side, .clear, .direction, .empty_cells, .float_,
-		.letter_spacing, .list_style_image, .order, .orphans, .overflow_x, .overflow_y, .position,
-		.position_anchor, .shape_rendering, .table_layout, .text_anchor, .unicode_bidi,
-		.visibility, .word_spacing {
+		.anchor_name, .aspect_ratio, .border_bottom_style, .border_bottom_width, .border_collapse,
+		.border_left_style, .border_left_width, .border_right_style, .border_right_width,
+		.border_top_style, .border_top_width, .box_sizing, .caption_side, .clear, .direction,
+		.empty_cells, .float_, .isolation, .letter_spacing, .list_style_image,
+		.list_style_position, .order, .orphans, .overflow_x, .overflow_y, .position,
+		.position_anchor, .shape_rendering, .table_layout, .text_anchor, .transform_style,
+		.unicode_bidi, .visibility, .word_spacing {
 			true
 		}
 	}
@@ -3860,21 +3940,23 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .aspect_ratio, .background_color, .background_image,
-		.border_bottom_color, .border_bottom_width, .border_image_source, .border_left_color,
-		.border_left_width, .border_right_color, .border_right_width, .border_top_color,
-		.border_top_width, .caption_side, .caret_color, .clear, .clip_rule, .color,
-		.color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.fill_rule, .flood_color, .flood_opacity, .float_, .direction, .empty_cells,
-		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.letter_spacing, .line_height, .list_style_image, .mask_type, .math_depth, .math_style,
-		.object_fit, .order, .orphans, .outline_color, .outline_offset, .outline_style,
-		.outline_width, .overflow_x, .overflow_y, .pointer_events, .shape_rendering, .position,
-		.position_anchor, .scroll_timeline_name, .shape_image_threshold, .stop_color,
-		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .table_layout,
-		.text_anchor, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .unicode_bidi, .view_timeline_inset,
-		.view_timeline_name, .visibility, .webkit_text_fill_color, .word_spacing {
+		.border_bottom_color, .border_bottom_style, .border_bottom_width, .border_collapse,
+		.border_image_source, .border_left_color, .border_left_style, .border_left_width,
+		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
+		.border_top_style, .border_top_width, .box_sizing, .caption_side, .caret_color, .clear,
+		.clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility,
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .float_,
+		.direction, .empty_cells, .font_feature_settings, .font_style, .font_variation_settings,
+		.font_weight, .font_width, .isolation, .letter_spacing, .line_height, .list_style_image,
+		.list_style_position, .mask_type, .math_depth, .math_style, .object_fit, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
+		.pointer_events, .shape_rendering, .position, .position_anchor, .scroll_timeline_name,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
+		.stroke_opacity, .table_layout, .text_anchor, .transform_style, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
+		.unicode_bidi, .user_select, .view_timeline_inset, .view_timeline_name, .visibility,
+		.webkit_text_fill_color, .word_spacing {
 			false
 		}
 	}
@@ -3907,21 +3989,23 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .aspect_ratio, .background_color, .background_image,
-		.border_bottom_color, .border_bottom_width, .border_image_source, .border_left_color,
-		.border_left_width, .border_right_color, .border_right_width, .border_top_color,
-		.border_top_width, .caption_side, .caret_color, .clear, .clip_rule, .color,
-		.color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.fill_rule, .flood_color, .flood_opacity, .float_, .direction, .empty_cells,
-		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.letter_spacing, .line_height, .list_style_image, .mask_type, .math_depth, .math_style,
-		.object_fit, .order, .orphans, .outline_color, .outline_offset, .outline_style,
-		.outline_width, .overflow_x, .overflow_y, .pointer_events, .shape_rendering, .position,
-		.position_anchor, .scroll_timeline_name, .shape_image_threshold, .stop_color,
-		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .table_layout,
-		.text_anchor, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .unicode_bidi, .view_timeline_inset,
-		.view_timeline_name, .visibility, .webkit_text_fill_color, .word_spacing, .z_index {
+		.border_bottom_color, .border_bottom_style, .border_bottom_width, .border_collapse,
+		.border_image_source, .border_left_color, .border_left_style, .border_left_width,
+		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
+		.border_top_style, .border_top_width, .box_sizing, .caption_side, .caret_color, .clear,
+		.clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility,
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .float_,
+		.direction, .empty_cells, .font_feature_settings, .font_style, .font_variation_settings,
+		.font_weight, .font_width, .isolation, .letter_spacing, .line_height, .list_style_image,
+		.list_style_position, .mask_type, .math_depth, .math_style, .object_fit, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
+		.pointer_events, .shape_rendering, .position, .position_anchor, .scroll_timeline_name,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
+		.stroke_opacity, .table_layout, .text_anchor, .transform_style, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
+		.unicode_bidi, .user_select, .view_timeline_inset, .view_timeline_name, .visibility,
+		.webkit_text_fill_color, .word_spacing, .z_index {
 			false
 		}
 	}

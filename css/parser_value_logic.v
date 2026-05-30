@@ -247,6 +247,15 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.outline_width {
 			return parser.parse_border_or_outline_width_value(mut tokens)
 		}
+		.border_bottom_style, .border_left_style, .border_right_style, .border_top_style {
+			return parser.parse_line_style_value(mut tokens)
+		}
+		.border_collapse {
+			return parser.parse_border_collapse_value(mut tokens)
+		}
+		.box_sizing {
+			return parser.parse_box_sizing_value(mut tokens)
+		}
 		.outline_offset {
 			return parser.parse_length_value(mut tokens)
 		}
@@ -311,11 +320,17 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.font_width {
 			return parser.parse_font_width_value(mut tokens)
 		}
+		.isolation {
+			return parser.parse_isolation_value(mut tokens)
+		}
 		.letter_spacing, .word_spacing {
 			return parser.parse_letter_or_word_spacing_value(mut tokens)
 		}
 		.line_height {
 			return parser.parse_line_height_value(mut tokens)
+		}
+		.list_style_position {
+			return parser.parse_list_style_position_value(mut tokens)
 		}
 		.order, .orphans {
 			return parser.parse_integer_value(mut tokens)
@@ -389,6 +404,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.transform {
 			return parser.parse_transform_value(mut tokens)
 		}
+		.transform_style {
+			return parser.parse_transform_style_value(mut tokens)
+		}
 		.transition_behavior {
 			return parser.parse_transition_behavior_value(mut tokens)
 		}
@@ -409,6 +427,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.unicode_bidi {
 			return parser.parse_unicode_bidi_value(mut tokens)
+		}
+		.user_select {
+			return parser.parse_user_select_value(mut tokens)
 		}
 		.view_timeline_inset {
 			return parser.parse_view_timeline_inset_list_value(mut tokens)
@@ -1150,6 +1171,12 @@ fn (mut parser Parser) parse_outline_style_value(mut tokens ComponentValueStream
 		'double', 'groove', 'ridge', 'inset', 'outset'])
 }
 
+fn (mut parser Parser) parse_line_style_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['none', 'hidden', 'dotted', 'dashed', 'solid',
+		'double', 'groove', 'ridge', 'inset', 'outset'])
+}
+
 fn (mut parser Parser) parse_overflow_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'clip', 'hidden', 'scroll', 'visible',
@@ -1184,6 +1211,16 @@ fn (mut parser Parser) parse_caption_side_value(mut tokens ComponentValueStream)
 	return parse_property_keyword_value(mut tokens, ['top', 'bottom'])
 }
 
+fn (mut parser Parser) parse_border_collapse_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['collapse', 'separate'])
+}
+
+fn (mut parser Parser) parse_box_sizing_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['border-box', 'content-box'])
+}
+
 fn (mut parser Parser) parse_fill_rule_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['nonzero', 'evenodd'])
@@ -1202,6 +1239,16 @@ fn (mut parser Parser) parse_direction_value(mut tokens ComponentValueStream) ?S
 fn (mut parser Parser) parse_empty_cells_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['show', 'hide'])
+}
+
+fn (mut parser Parser) parse_isolation_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'isolate'])
+}
+
+fn (mut parser Parser) parse_list_style_position_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['inside', 'outside'])
 }
 
 fn (mut parser Parser) parse_mask_type_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -1235,10 +1282,20 @@ fn (mut parser Parser) parse_text_anchor_value(mut tokens ComponentValueStream) 
 	return parse_property_keyword_value(mut tokens, ['start', 'middle', 'end'])
 }
 
+fn (mut parser Parser) parse_transform_style_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['flat', 'preserve-3d'])
+}
+
 fn (mut parser Parser) parse_unicode_bidi_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['bidi-override', 'embed', 'isolate',
 		'isolate-override', 'normal', 'plaintext'])
+}
+
+fn (mut parser Parser) parse_user_select_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['all', 'auto', 'contain', 'none', 'text'])
 }
 
 fn (mut parser Parser) parse_visibility_value(mut tokens ComponentValueStream) ?StyleValue {

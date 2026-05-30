@@ -38,14 +38,20 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.background_color { 'background-color' }
 		.background_image { 'background-image' }
 		.border_bottom_color { 'border-bottom-color' }
+		.border_bottom_style { 'border-bottom-style' }
 		.border_bottom_width { 'border-bottom-width' }
+		.border_collapse { 'border-collapse' }
 		.border_left_color { 'border-left-color' }
+		.border_left_style { 'border-left-style' }
 		.border_left_width { 'border-left-width' }
 		.border_right_color { 'border-right-color' }
+		.border_right_style { 'border-right-style' }
 		.border_right_width { 'border-right-width' }
 		.border_top_color { 'border-top-color' }
+		.border_top_style { 'border-top-style' }
 		.border_top_width { 'border-top-width' }
 		.border_image_source { 'border-image-source' }
+		.box_sizing { 'box-sizing' }
 		.caption_side { 'caption-side' }
 		.caret_color { 'caret-color' }
 		.clear { 'clear' }
@@ -70,9 +76,11 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.font_variation_settings { 'font-variation-settings' }
 		.font_weight { 'font-weight' }
 		.font_width { 'font-width' }
+		.isolation { 'isolation' }
 		.letter_spacing { 'letter-spacing' }
 		.line_height { 'line-height' }
 		.list_style_image { 'list-style-image' }
+		.list_style_position { 'list-style-position' }
 		.mask_image { 'mask-image' }
 		.mask_type { 'mask-type' }
 		.math_depth { 'math-depth' }
@@ -104,6 +112,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.table_layout { 'table-layout' }
 		.text_anchor { 'text-anchor' }
 		.transform { 'transform' }
+		.transform_style { 'transform-style' }
 		.transition_behavior { 'transition-behavior' }
 		.transition_delay { 'transition-delay' }
 		.transition_duration { 'transition-duration' }
@@ -111,6 +120,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.transition_timing_function { 'transition-timing-function' }
 		.translate { 'translate' }
 		.unicode_bidi { 'unicode-bidi' }
+		.user_select { 'user-select' }
 		.view_timeline_inset { 'view-timeline-inset' }
 		.view_timeline_name { 'view-timeline-name' }
 		.visibility { 'visibility' }
@@ -137,19 +147,21 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 			false
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
-		.border_bottom_width, .border_image_source, .border_left_color, .border_left_width,
-		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
-		.caption_side, .caret_color, .clip_rule, .color, .color_interpolation, .color_scheme,
-		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .direction,
-		.empty_cells, .flood_color, .flood_opacity, .font_style, .font_weight, .font_width,
-		.letter_spacing, .clear, .line_height, .list_style_image, .mask_type, .math_depth,
-		.math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color,
-		.outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
+		.border_bottom_style, .border_bottom_width, .border_collapse, .border_image_source,
+		.border_left_color, .border_left_style, .border_left_width, .border_right_color,
+		.border_right_style, .border_right_width, .border_top_color, .border_top_style,
+		.border_top_width, .box_sizing, .caption_side, .caret_color, .clip_rule, .color,
+		.color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.fill_rule, .direction, .empty_cells, .flood_color, .flood_opacity, .font_style,
+		.font_weight, .font_width, .isolation, .letter_spacing, .clear, .line_height,
+		.list_style_image, .list_style_position, .mask_type, .math_depth, .math_style,
+		.mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color, .outline_offset,
+		.outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
 		.position_anchor, .position, .shape_image_threshold, .shape_rendering, .stop_color,
 		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale,
-		.float_, .table_layout, .text_anchor, .transform, .translate, .unicode_bidi, .visibility,
-		.webkit_text_fill_color, .word_spacing, .z_index {
+		.float_, .table_layout, .text_anchor, .transform, .transform_style, .translate,
+		.unicode_bidi, .user_select, .visibility, .webkit_text_fill_color, .word_spacing, .z_index {
 			true
 		}
 	}
@@ -167,32 +179,34 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 			true
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
-		.border_bottom_width, .border_image_source, .border_left_color, .border_left_width,
-		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
-		.caption_side, .caret_color, .clip_rule, .color, .color_interpolation, .color_scheme,
-		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .direction,
-		.empty_cells, .flood_color, .flood_opacity, .font_style, .font_weight, .font_width,
-		.letter_spacing, .clear, .line_height, .list_style_image, .mask_type, .math_depth,
-		.math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color,
-		.outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
+		.border_bottom_style, .border_bottom_width, .border_collapse, .border_image_source,
+		.border_left_color, .border_left_style, .border_left_width, .border_right_color,
+		.border_right_style, .border_right_width, .border_top_color, .border_top_style,
+		.border_top_width, .box_sizing, .caption_side, .caret_color, .clip_rule, .color,
+		.color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.fill_rule, .direction, .empty_cells, .flood_color, .flood_opacity, .font_style,
+		.font_weight, .font_width, .isolation, .letter_spacing, .clear, .line_height,
+		.list_style_image, .list_style_position, .mask_type, .math_depth, .math_style,
+		.mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color, .outline_offset,
+		.outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
 		.position_anchor, .position, .shape_image_threshold, .shape_rendering, .stop_color,
 		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale,
-		.float_, .table_layout, .text_anchor, .transform, .translate, .unicode_bidi, .visibility,
-		.webkit_text_fill_color, .word_spacing, .z_index {
+		.float_, .table_layout, .text_anchor, .transform, .transform_style, .translate,
+		.unicode_bidi, .user_select, .visibility, .webkit_text_fill_color, .word_spacing, .z_index {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 96
+pub const number_of_longhand_properties = 106
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .text_anchor
+	return .transform_style
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -293,6 +307,16 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		93 { PropertyID.stroke_linecap }
 		94 { PropertyID.stroke_linejoin }
 		95 { PropertyID.text_anchor }
+		96 { PropertyID.border_bottom_style }
+		97 { PropertyID.border_left_style }
+		98 { PropertyID.border_right_style }
+		99 { PropertyID.border_top_style }
+		100 { PropertyID.isolation }
+		101 { PropertyID.border_collapse }
+		102 { PropertyID.user_select }
+		103 { PropertyID.box_sizing }
+		104 { PropertyID.list_style_position }
+		105 { PropertyID.transform_style }
 		else { none }
 	}
 }

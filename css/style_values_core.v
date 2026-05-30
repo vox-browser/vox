@@ -156,11 +156,17 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'border-bottom-width' {
 			PropertyID.border_bottom_width
 		}
+		'border-bottom-style' {
+			PropertyID.border_bottom_style
+		}
 		'border-left-color' {
 			PropertyID.border_left_color
 		}
 		'border-left-width' {
 			PropertyID.border_left_width
+		}
+		'border-left-style' {
+			PropertyID.border_left_style
 		}
 		'border-right-color' {
 			PropertyID.border_right_color
@@ -168,14 +174,26 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'border-right-width' {
 			PropertyID.border_right_width
 		}
+		'border-right-style' {
+			PropertyID.border_right_style
+		}
 		'border-top-color' {
 			PropertyID.border_top_color
 		}
 		'border-top-width' {
 			PropertyID.border_top_width
 		}
+		'border-top-style' {
+			PropertyID.border_top_style
+		}
 		'border-image-source' {
 			PropertyID.border_image_source
+		}
+		'border-collapse' {
+			PropertyID.border_collapse
+		}
+		'box-sizing' {
+			PropertyID.box_sizing
 		}
 		'caption-side' {
 			PropertyID.caption_side
@@ -249,11 +267,17 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'font-width' {
 			PropertyID.font_width
 		}
+		'isolation' {
+			PropertyID.isolation
+		}
 		'letter-spacing' {
 			PropertyID.letter_spacing
 		}
 		'line-height' {
 			PropertyID.line_height
+		}
+		'list-style-position' {
+			PropertyID.list_style_position
 		}
 		'list-style-image' {
 			PropertyID.list_style_image
@@ -351,6 +375,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'transform' {
 			PropertyID.transform
 		}
+		'transform-style' {
+			PropertyID.transform_style
+		}
 		'transition-behavior' {
 			PropertyID.transition_behavior
 		}
@@ -371,6 +398,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'unicode-bidi' {
 			PropertyID.unicode_bidi
+		}
+		'user-select' {
+			PropertyID.user_select
 		}
 		'view-timeline-inset' {
 			PropertyID.view_timeline_inset
@@ -454,13 +484,15 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.color_scheme {
 			value_type == .custom_ident
 		}
-		.caption_side, .clip_rule, .color_interpolation, .content_visibility, .direction,
-		.empty_cells, .fill_rule, .mask_type {
+		.border_bottom_style, .border_collapse, .border_left_style, .border_right_style,
+		.border_top_style, .box_sizing, .caption_side, .clip_rule, .color_interpolation,
+		.content_visibility, .direction, .empty_cells, .fill_rule, .isolation,
+		.list_style_position, .mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
 		.pointer_events, .position, .shape_rendering, .stroke_linecap, .stroke_linejoin,
-		.table_layout, .text_anchor, .unicode_bidi, .visibility {
+		.table_layout, .text_anchor, .transform_style, .unicode_bidi, .user_select, .visibility {
 			false
 		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
@@ -634,6 +666,16 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.outline_width {
 			lowercase_value in ['thin', 'medium', 'thick']
 		}
+		.border_bottom_style, .border_left_style, .border_right_style, .border_top_style {
+			lowercase_value in ['none', 'hidden', 'dotted', 'dashed', 'solid', 'double', 'groove',
+				'ridge', 'inset', 'outset']
+		}
+		.border_collapse {
+			lowercase_value in ['collapse', 'separate']
+		}
+		.box_sizing {
+			lowercase_value in ['border-box', 'content-box']
+		}
 		.outline_offset {
 			false
 		}
@@ -680,6 +722,12 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.object_fit {
 			lowercase_value in ['fill', 'contain', 'cover', 'none', 'scale-down']
 		}
+		.isolation {
+			lowercase_value in ['auto', 'isolate']
+		}
+		.list_style_position {
+			lowercase_value in ['inside', 'outside']
+		}
 		.mask_type {
 			lowercase_value in ['luminance', 'alpha']
 		}
@@ -694,6 +742,12 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.text_anchor {
 			lowercase_value in ['start', 'middle', 'end']
+		}
+		.transform_style {
+			lowercase_value in ['flat', 'preserve-3d']
+		}
+		.user_select {
+			lowercase_value in ['all', 'auto', 'contain', 'none', 'text']
 		}
 		.font_feature_settings, .font_variation_settings {
 			lowercase_value == 'normal'
@@ -749,13 +803,15 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 			lowercase_value !in ['default', 'none']
 		}
 		.accent_color, .background_color, .background_image, .border_bottom_color,
-		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
-		.caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation, .direction,
-		.empty_cells, .fill_rule, .float_, .flood_color, .list_style_image, .mask_image,
-		.mask_type, .mix_blend_mode, .object_fit, .outline_color, .outline_style, .overflow_x,
-		.overflow_y, .pointer_events, .position, .shape_rendering, .stop_color, .stroke_linecap,
-		.stroke_linejoin, .table_layout, .text_anchor, .unicode_bidi, .view_timeline_inset,
-		.visibility, .webkit_text_fill_color {
+		.border_bottom_style, .border_collapse, .border_image_source, .border_left_color,
+		.border_left_style, .border_right_color, .border_right_style, .border_top_color,
+		.border_top_style, .box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color,
+		.color_interpolation, .direction, .empty_cells, .fill_rule, .float_, .flood_color,
+		.isolation, .list_style_image, .list_style_position, .mask_image, .mask_type,
+		.mix_blend_mode, .object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y,
+		.pointer_events, .position, .shape_rendering, .stop_color, .stroke_linecap,
+		.stroke_linejoin, .table_layout, .text_anchor, .transform_style, .unicode_bidi,
+		.user_select, .view_timeline_inset, .visibility, .webkit_text_fill_color {
 			false
 		}
 		.color_scheme {
@@ -1853,6 +1909,14 @@ pub enum Keyword {
 	start
 	middle
 	end_
+	separate
+	border_box
+	content_box
+	inside
+	outside
+	flat
+	preserve_3d
+	text
 	absolute
 	fixed
 	relative
@@ -2081,6 +2145,14 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.start { 'start' }
 		.middle { 'middle' }
 		.end_ { 'end' }
+		.separate { 'separate' }
+		.border_box { 'border-box' }
+		.content_box { 'content-box' }
+		.inside { 'inside' }
+		.outside { 'outside' }
+		.flat { 'flat' }
+		.preserve_3d { 'preserve-3d' }
+		.text { 'text' }
 		.absolute { 'absolute' }
 		.fixed { 'fixed' }
 		.relative { 'relative' }
@@ -2298,6 +2370,14 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'start' { Keyword.start }
 		'middle' { Keyword.middle }
 		'end' { Keyword.end_ }
+		'separate' { Keyword.separate }
+		'border-box' { Keyword.border_box }
+		'content-box' { Keyword.content_box }
+		'inside' { Keyword.inside }
+		'outside' { Keyword.outside }
+		'flat' { Keyword.flat }
+		'preserve-3d' { Keyword.preserve_3d }
+		'text' { Keyword.text }
 		'absolute' { Keyword.absolute }
 		'fixed' { Keyword.fixed }
 		'relative' { Keyword.relative }

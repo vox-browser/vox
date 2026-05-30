@@ -130,6 +130,16 @@ pub enum PropertyID {
 	stroke_linecap
 	stroke_linejoin
 	text_anchor
+	border_bottom_style
+	border_left_style
+	border_right_style
+	border_top_style
+	isolation
+	border_collapse
+	user_select
+	box_sizing
+	list_style_position
+	transform_style
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {
