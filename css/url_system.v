@@ -167,11 +167,24 @@ pub fn (value ReferrerPolicyModifierValue) to_string() string {
 
 pub enum CSSRequestMode {
 	cors
+	no_cors
 }
 
 pub enum CSSRequestCredentialsMode {
 	include
 	same_origin
+}
+
+pub enum CSSRequestDestination {
+	empty
+	image
+	font
+	style
+}
+
+pub enum CSSRequestInitiatorType {
+	css
+	script
 }
 
 pub enum CSSReferrerPolicy {
@@ -187,10 +200,17 @@ pub enum CSSReferrerPolicy {
 
 pub struct CSSRequest {
 pub mut:
-	mode               ?CSSRequestMode
-	credentials_mode   ?CSSRequestCredentialsMode
-	integrity_metadata string
-	referrer_policy    ?CSSReferrerPolicy
+	mode                ?CSSRequestMode
+	credentials_mode    ?CSSRequestCredentialsMode
+	integrity_metadata  string
+	referrer_policy     ?CSSReferrerPolicy
+	url                 string
+	destination         CSSRequestDestination
+	origin              string
+	use_url_credentials bool
+	client_base_url     string
+	referrer            string
+	initiator_type      ?CSSRequestInitiatorType
 }
 
 pub type RequestURLModifierValue = CrossOriginModifierValue
