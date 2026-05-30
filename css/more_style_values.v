@@ -2537,6 +2537,42 @@ pub fn (style_value StyleValueList) tokenize() []ComponentValue {
 	return component_values
 }
 
+// https://drafts.css-houdini.org/css-typed-om-1/#reify-a-transform-list
+fn reify_a_transform_list(values []StyleValue) !CSSTransformValue {
+	mut transform_components := []CSSTransformComponent{cap: values.len}
+	for transform in values {
+		if transform !is TransformationStyleValue {
+			return error('Not a transform list')
+		}
+		transformation := transform as TransformationStyleValue
+		// NB: Not all transform functions are reifiable, in which case we give up
+		// reifying as a transform list.
+		transform_components << transformation.reify_a_transform_function()!
+	}
+	return CSSTransformValue.create(transform_components)
+}
+
+pub fn (style_value StyleValueList) reify(associated_property string) CSSStyleValue {
+	_ = associated_property
+	// NB: <transform-list> is a StyleValueList that contains TransformStyleValues. If that is what we are, follow the
+	//     steps for reifying that.
+	mut all_transformations := style_value.values_.len != 0
+	for value in style_value.values_ {
+		if value !is TransformationStyleValue {
+			all_transformations = false
+			break
+		}
+	}
+	if all_transformations {
+		if transform_list := reify_a_transform_list(style_value.values_) {
+			return CSSStyleValue.from_transform(transform_list)
+		}
+	}
+
+	// NB: Otherwise, there is not an equivalent CSSStyleValue for StyleValueList, so just use the default.
+	return CSSStyleValue.create(associated_property, StyleValue(style_value))
+}
+
 pub fn (style_value StyleValueList) to_string() string {
 	return style_value.serialize(.normal)
 }

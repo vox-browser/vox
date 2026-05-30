@@ -1614,6 +1614,7 @@ pub type StyleValue = AddFunctionStyleValue
 	| TextIndentStyleValue
 	| TextUnderlinePositionStyleValue
 	| TimeStyleValue
+	| TransformationStyleValue
 	| TreeCountingFunctionStyleValue
 	| TupleStyleValue
 	| UnicodeRangeStyleValue
@@ -1687,6 +1688,7 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		TextIndentStyleValue { .text_indent }
 		TextUnderlinePositionStyleValue { .text_underline_position }
 		TimeStyleValue { .time }
+		TransformationStyleValue { .transformation }
 		TreeCountingFunctionStyleValue { .tree_counting_function }
 		TupleStyleValue { .tuple }
 		UnicodeRangeStyleValue { .unicode_range }
@@ -1885,6 +1887,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		StyleValueList { style_value.absolutized(context) }
 		SuperellipseStyleValue { style_value.absolutized(context) }
 		TextIndentStyleValue { style_value.absolutized(context) }
+		TransformationStyleValue { StyleValue(style_value.absolutized(context)) }
 		TreeCountingFunctionStyleValue { style_value.absolutized(context) }
 		TupleStyleValue { style_value.absolutized(context) }
 		ViewFunctionStyleValue { style_value.absolutized(context) }
@@ -1982,6 +1985,7 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		TextIndentStyleValue { style_value.serialize(mode) }
 		TextUnderlinePositionStyleValue { style_value.serialize(mode) }
 		TimeStyleValue { style_value.serialize(mode) }
+		TransformationStyleValue { style_value.serialize(mode) }
 		TreeCountingFunctionStyleValue { style_value.serialize(mode) }
 		TupleStyleValue { style_value.serialize(mode) }
 		UnicodeRangeStyleValue { style_value.serialize(mode) }
@@ -2001,24 +2005,63 @@ pub fn (style_value StyleValue) to_string_with_mode(mode SerializationMode) stri
 pub fn (style_value StyleValue) tokenize() []ComponentValue {
 	// This is an inefficient way of producing ComponentValues, but it is guaranteed to work for types that round-trip.
 	// FIXME: Implement better versions in the subclasses.
+	if style_value.is_dimension() {
+		return style_value.as_dimension().tokenize()
+	}
+	if style_value is KeywordStyleValue {
+		return style_value.tokenize()
+	}
+	if style_value is NumberStyleValue {
+		return style_value.tokenize()
+	}
+	if style_value is IntegerStyleValue {
+		return style_value.tokenize()
+	}
+	if style_value is StyleValueList {
+		return style_value.tokenize()
+	}
+	if style_value is UnresolvedStyleValue {
+		return style_value.tokenize()
+	}
 	return [component_value_from_text(style_value.to_string())]
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#reify-as-a-cssstylevalue
 pub fn (style_value StyleValue) reify(associated_property string) CSSStyleValue {
 	// 1. Return a new CSSStyleValue object representing value whose [[associatedProperty]] internal slot is set to property.
+	if style_value.is_dimension() {
+		return style_value.as_dimension().reify(associated_property)
+	}
+	if style_value is KeywordStyleValue {
+		return style_value.reify(associated_property)
+	}
+	if style_value is NumberStyleValue {
+		return style_value.reify(associated_property)
+	}
+	if style_value is IntegerStyleValue {
+		return style_value.reify(associated_property)
+	}
+	if style_value is StyleValueList {
+		return style_value.reify(associated_property)
+	}
 	return CSSStyleValue.create(associated_property, style_value)
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#subdivide-into-iterations
 pub fn (style_value StyleValue) subdivide_into_iterations(property PropertyNameAndID) StyleValueVector {
-	_ = property
 	// To subdivide into iterations a CSS value whole value for a property property, execute the following steps:
 	// 1. If property is a single-valued property, return a list containing whole value.
 	// 2. Otherwise, divide whole value into individual iterations, as appropriate for property, and return a list
 	//    containing the iterations in order.
 	// NB: We do this by type. By default, we assume step 1 applies. For step 2, override this method.
-	return [style_value]
+	return match style_value {
+		StyleValueList {
+			style_value.subdivide_into_iterations(property)
+		}
+		else {
+			[style_value]
+		}
+	}
 }
 
 pub fn (style_value StyleValue) equals(other StyleValue) bool {
@@ -2778,6 +2821,7 @@ pub enum CSSStyleValueKind {
 	style
 	keyword
 	numeric
+	transform
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#cssstylevalue
@@ -2788,6 +2832,7 @@ pub mut:
 	source_value_       ?StyleValue
 	keyword_value_      ?CSSKeywordValue
 	numeric_value_      ?CSSNumericValue
+	transform_value_    ?CSSTransformValue
 }
 
 pub fn CSSStyleValue.create(associated_property string, source_value StyleValue) CSSStyleValue {
@@ -2816,6 +2861,13 @@ pub fn CSSStyleValue.from_numeric(value CSSNumericValue) CSSStyleValue {
 	return CSSStyleValue{
 		kind_:          .numeric
 		numeric_value_: value
+	}
+}
+
+pub fn CSSStyleValue.from_transform(value CSSTransformValue) CSSStyleValue {
+	return CSSStyleValue{
+		kind_:            .transform
+		transform_value_: value
 	}
 }
 
@@ -2901,6 +2953,9 @@ pub fn (value CSSStyleValue) to_string() !string {
 	if numeric_value := value.numeric_value_ {
 		return numeric_value.to_string()
 	}
+	if transform_value := value.transform_value_ {
+		return transform_value.to_string()!
+	}
 	{
 		// the serialization is specified in section 6.7 Serialization from CSSOM Values below.
 	}
@@ -2915,6 +2970,9 @@ pub fn (value CSSStyleValue) create_an_internal_representation(property Property
 	//     Return value's associated value.
 	if source_value := value.source_value_ {
 		return source_value
+	}
+	if transform_value := value.transform_value_ {
+		return transform_value.create_an_internal_representation(property, perform_type_check)!
 	}
 	return error('Missing CSSStyleValue.create_an_internal_representation() overload')
 }

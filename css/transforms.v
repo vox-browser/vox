@@ -2197,11 +2197,8 @@ pub fn (value CSSTransformValue) to_string() !string {
 	return parts.join(' ')
 }
 
-pub type CSSTransformInternalRepresentation = TransformationStyleValue
-	| TransformationStyleValueList
-
 // https://drafts.css-houdini.org/css-typed-om-1/#create-an-internal-representation
-pub fn (value CSSTransformValue) create_an_internal_representation(property PropertyNameAndID, perform_type_check PerformTypeCheck) !CSSTransformInternalRepresentation {
+pub fn (value CSSTransformValue) create_an_internal_representation(property PropertyNameAndID, perform_type_check PerformTypeCheck) !StyleValue {
 	// NB: This can become <transform-function> or <transform-list>, and we don't know which is wanted without performing the type checking.
 	//     We can worry about that if and when we ever do have a CSSTransformValue that isn't top-level.
 	if perform_type_check != .yes {
@@ -2219,16 +2216,15 @@ pub fn (value CSSTransformValue) create_an_internal_representation(property Prop
 
 	// NB: We match <transform-function> if we have 1 transform. We match <transform-list> always.
 	if value.transforms_.len == 1 && transform_property_accepts_type(property, .transform_function) {
-		return CSSTransformInternalRepresentation(value.transforms_[0].create_style_value(property)!)
+		return StyleValue(value.transforms_[0].create_style_value(property)!)
 	}
 
 	if transform_property_accepts_type(property, .transform_list) {
-		mut transforms := []TransformationStyleValue{cap: value.transforms_.len}
+		mut transforms := []StyleValue{cap: value.transforms_.len}
 		for transform in value.transforms_ {
-			transforms << transform.create_style_value(property)!
+			transforms << StyleValue(transform.create_style_value(property)!)
 		}
-		return CSSTransformInternalRepresentation(TransformationStyleValueList.create(transforms,
-			.space))
+		return StyleValue(StyleValueList.create(transforms, .space, .yes))
 	}
 
 	return error('Property does not accept values of this type.')
