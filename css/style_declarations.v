@@ -72,7 +72,13 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.flood_opacity { 'flood-opacity' }
 		.float_ { 'float' }
 		.font_feature_settings { 'font-feature-settings' }
+		.font_kerning { 'font-kerning' }
+		.font_language_override { 'font-language-override' }
+		.font_optical_sizing { 'font-optical-sizing' }
 		.font_style { 'font-style' }
+		.font_variant_caps { 'font-variant-caps' }
+		.font_variant_emoji { 'font-variant-emoji' }
+		.font_variant_position { 'font-variant-position' }
 		.font_variation_settings { 'font-variation-settings' }
 		.font_weight { 'font-weight' }
 		.font_width { 'font-width' }
@@ -163,14 +169,15 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.border_top_width, .box_sizing, .caption_side, .caret_color, .clip_rule, .color,
 		.color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape,
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.fill_rule, .direction, .empty_cells, .flood_color, .flood_opacity, .font_style,
-		.font_weight, .font_width, .isolation, .letter_spacing, .clear, .line_height,
-		.list_style_image, .list_style_position, .mask_type, .math_depth, .math_style,
-		.mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color, .outline_offset,
-		.outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
-		.position_anchor, .position, .shape_image_threshold, .shape_rendering, .stop_color,
-		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale,
-		.float_, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
+		.fill_rule, .direction, .empty_cells, .flood_color, .flood_opacity, .font_kerning,
+		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
+		.font_variant_emoji, .font_variant_position, .font_weight, .font_width, .isolation,
+		.letter_spacing, .clear, .line_height, .list_style_image, .list_style_position, .mask_type,
+		.math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
+		.pointer_events, .position_anchor, .position, .shape_image_threshold, .shape_rendering,
+		.stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate,
+		.scale, .float_, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
 		.transform_style, .translate, .unicode_bidi, .user_select, .visibility,
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
@@ -198,14 +205,15 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.border_top_width, .box_sizing, .caption_side, .caret_color, .clip_rule, .color,
 		.color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape,
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.fill_rule, .direction, .empty_cells, .flood_color, .flood_opacity, .font_style,
-		.font_weight, .font_width, .isolation, .letter_spacing, .clear, .line_height,
-		.list_style_image, .list_style_position, .mask_type, .math_depth, .math_style,
-		.mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color, .outline_offset,
-		.outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
-		.position_anchor, .position, .shape_image_threshold, .shape_rendering, .stop_color,
-		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale,
-		.float_, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
+		.fill_rule, .direction, .empty_cells, .flood_color, .flood_opacity, .font_kerning,
+		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
+		.font_variant_emoji, .font_variant_position, .font_weight, .font_width, .isolation,
+		.letter_spacing, .clear, .line_height, .list_style_image, .list_style_position, .mask_type,
+		.math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
+		.pointer_events, .position_anchor, .position, .shape_image_threshold, .shape_rendering,
+		.stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate,
+		.scale, .float_, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
 		.transform_style, .translate, .unicode_bidi, .user_select, .visibility,
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
@@ -215,14 +223,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 116
+pub const number_of_longhand_properties = 122
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .word_break
+	return .font_variant_position
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -343,6 +351,12 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		113 { PropertyID.white_space_collapse }
 		114 { PropertyID.white_space_trim }
 		115 { PropertyID.word_break }
+		116 { PropertyID.font_kerning }
+		117 { PropertyID.font_language_override }
+		118 { PropertyID.font_optical_sizing }
+		119 { PropertyID.font_variant_caps }
+		120 { PropertyID.font_variant_emoji }
+		121 { PropertyID.font_variant_position }
 		else { none }
 	}
 }

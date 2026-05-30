@@ -150,6 +150,12 @@ pub enum PropertyID {
 	white_space_collapse
 	white_space_trim
 	word_break
+	font_kerning
+	font_language_override
+	font_optical_sizing
+	font_variant_caps
+	font_variant_emoji
+	font_variant_position
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

@@ -308,8 +308,26 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.font_feature_settings {
 			return parser.parse_font_feature_settings_value(mut tokens)
 		}
+		.font_kerning {
+			return parser.parse_font_kerning_value(mut tokens)
+		}
+		.font_language_override {
+			return parser.parse_font_language_override_value(mut tokens)
+		}
+		.font_optical_sizing {
+			return parser.parse_font_optical_sizing_value(mut tokens)
+		}
 		.font_style {
 			return parser.parse_font_style_value(mut tokens)
+		}
+		.font_variant_caps {
+			return parser.parse_font_variant_caps_value(mut tokens)
+		}
+		.font_variant_emoji {
+			return parser.parse_font_variant_emoji_value(mut tokens)
+		}
+		.font_variant_position {
+			return parser.parse_font_variant_position_value(mut tokens)
 		}
 		.font_variation_settings {
 			return parser.parse_font_variation_settings_value(mut tokens)
@@ -1566,6 +1584,44 @@ fn font_style_keyword_from_string(value string) ?FontStyleKeyword {
 		'oblique' { FontStyleKeyword.oblique }
 		else { none }
 	}
+}
+
+fn (mut parser Parser) parse_font_kerning_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'normal', 'none'])
+}
+
+fn (mut parser Parser) parse_font_language_override_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['normal']) {
+		tokens = transaction
+		return value
+	}
+	if value := parser.parse_string_value(mut tokens) {
+		return StyleValue(value)
+	}
+	return none
+}
+
+fn (mut parser Parser) parse_font_optical_sizing_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'none'])
+}
+
+fn (mut parser Parser) parse_font_variant_caps_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['normal', 'small-caps', 'all-small-caps',
+		'petite-caps', 'all-petite-caps', 'unicase', 'titling-caps'])
+}
+
+fn (mut parser Parser) parse_font_variant_emoji_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['normal', 'text', 'emoji', 'unicode'])
+}
+
+fn (mut parser Parser) parse_font_variant_position_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['normal', 'sub', 'super'])
 }
 
 fn (mut parser Parser) parse_font_style_value(mut tokens ComponentValueStream) ?StyleValue {

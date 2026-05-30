@@ -255,8 +255,26 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'font-feature-settings' {
 			PropertyID.font_feature_settings
 		}
+		'font-kerning' {
+			PropertyID.font_kerning
+		}
+		'font-language-override' {
+			PropertyID.font_language_override
+		}
+		'font-optical-sizing' {
+			PropertyID.font_optical_sizing
+		}
 		'font-style' {
 			PropertyID.font_style
+		}
+		'font-variant-caps' {
+			PropertyID.font_variant_caps
+		}
+		'font-variant-emoji' {
+			PropertyID.font_variant_emoji
+		}
+		'font-variant-position' {
+			PropertyID.font_variant_position
 		}
 		'font-variation-settings' {
 			PropertyID.font_variation_settings
@@ -514,10 +532,14 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.color_scheme {
 			value_type == .custom_ident
 		}
+		.font_language_override {
+			value_type == .string
+		}
 		.border_bottom_style, .border_collapse, .border_left_style, .border_right_style,
 		.border_top_style, .box_sizing, .caption_side, .clip_rule, .color_interpolation,
-		.content_visibility, .direction, .empty_cells, .fill_rule, .isolation,
-		.list_style_position, .mask_type {
+		.content_visibility, .direction, .empty_cells, .fill_rule, .font_kerning,
+		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
+		.isolation, .list_style_position, .mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
@@ -817,8 +839,27 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.font_feature_settings, .font_variation_settings {
 			lowercase_value == 'normal'
 		}
+		.font_kerning {
+			lowercase_value in ['auto', 'normal', 'none']
+		}
+		.font_language_override {
+			lowercase_value == 'normal'
+		}
+		.font_optical_sizing {
+			lowercase_value in ['auto', 'none']
+		}
 		.font_style {
 			lowercase_value in ['normal', 'italic', 'left', 'right', 'oblique']
+		}
+		.font_variant_caps {
+			lowercase_value in ['normal', 'small-caps', 'all-small-caps', 'petite-caps',
+				'all-petite-caps', 'unicase', 'titling-caps']
+		}
+		.font_variant_emoji {
+			lowercase_value in ['normal', 'text', 'emoji', 'unicode']
+		}
+		.font_variant_position {
+			lowercase_value in ['normal', 'sub', 'super']
 		}
 		.font_weight {
 			lowercase_value in ['normal', 'bold', 'bolder', 'lighter']
@@ -872,13 +913,15 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.border_left_style, .border_right_color, .border_right_style, .border_top_color,
 		.border_top_style, .box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color,
 		.color_interpolation, .direction, .empty_cells, .fill_rule, .float_, .flood_color,
-		.isolation, .list_style_image, .list_style_position, .mask_image, .mask_type,
-		.mix_blend_mode, .object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y,
-		.pointer_events, .position, .shape_rendering, .stop_color, .stroke_linecap,
-		.stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
-		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
-		.unicode_bidi, .user_select, .view_timeline_inset, .visibility, .webkit_text_fill_color,
-		.white_space_collapse, .white_space_trim, .word_break {
+		.font_kerning, .font_language_override, .font_optical_sizing, .font_variant_caps,
+		.font_variant_emoji, .font_variant_position, .isolation, .list_style_image,
+		.list_style_position, .mask_image, .mask_type, .mix_blend_mode, .object_fit,
+		.outline_color, .outline_style, .overflow_x, .overflow_y, .pointer_events, .position,
+		.shape_rendering, .stop_color, .stroke_linecap, .stroke_linejoin, .table_layout,
+		.text_align, .text_anchor, .text_justify, .text_overflow, .text_rendering, .text_transform,
+		.text_wrap_mode, .text_wrap_style, .transform_style, .unicode_bidi, .user_select,
+		.view_timeline_inset, .visibility, .webkit_text_fill_color, .white_space_collapse,
+		.white_space_trim, .word_break {
 			false
 		}
 		.color_scheme {
@@ -2009,6 +2052,16 @@ pub enum Keyword {
 	keep_all
 	break_all
 	break_word
+	small_caps
+	all_small_caps
+	petite_caps
+	all_petite_caps
+	unicase
+	titling_caps
+	emoji
+	unicode
+	sub
+	super
 	separate
 	border_box
 	content_box
@@ -2278,6 +2331,16 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.keep_all { 'keep-all' }
 		.break_all { 'break-all' }
 		.break_word { 'break-word' }
+		.small_caps { 'small-caps' }
+		.all_small_caps { 'all-small-caps' }
+		.petite_caps { 'petite-caps' }
+		.all_petite_caps { 'all-petite-caps' }
+		.unicase { 'unicase' }
+		.titling_caps { 'titling-caps' }
+		.emoji { 'emoji' }
+		.unicode { 'unicode' }
+		.sub { 'sub' }
+		.super { 'super' }
 		.separate { 'separate' }
 		.border_box { 'border-box' }
 		.content_box { 'content-box' }
@@ -2536,6 +2599,16 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'keep-all' { Keyword.keep_all }
 		'break-all' { Keyword.break_all }
 		'break-word' { Keyword.break_word }
+		'small-caps' { Keyword.small_caps }
+		'all-small-caps' { Keyword.all_small_caps }
+		'petite-caps' { Keyword.petite_caps }
+		'all-petite-caps' { Keyword.all_petite_caps }
+		'unicase' { Keyword.unicase }
+		'titling-caps' { Keyword.titling_caps }
+		'emoji' { Keyword.emoji }
+		'unicode' { Keyword.unicode }
+		'sub' { Keyword.sub }
+		'super' { Keyword.super }
 		'separate' { Keyword.separate }
 		'border-box' { Keyword.border_box }
 		'content-box' { Keyword.content_box }
