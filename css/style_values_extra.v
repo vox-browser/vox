@@ -3,6 +3,7 @@
 module css
 
 import math
+import strconv
 
 // These local stand-ins make missing LibWeb DOM/layout/platform dependencies
 // explicit at call sites while keeping the translated StyleValue logic usable.
@@ -73,8 +74,49 @@ fn style_values_extra_length_percentage_from_style_value(style_value StyleValue)
 }
 
 fn style_values_extra_length_percentage_to_px(style_value StyleValue, context LengthResolutionContext, reference_value CSSPixels) CSSPixels {
+	if stub := style_values_extra_resolve_edge_generated_calc(style_value, context, reference_value) {
+		return stub
+	}
 	return style_values_extra_length_percentage_from_style_value(style_value).to_px(context,
 		reference_value)
+}
+
+fn style_values_extra_resolve_edge_generated_calc(style_value StyleValue, context LengthResolutionContext, reference_value CSSPixels) ?CSSPixels {
+	stub := match style_value {
+		StubStyleValue { style_value }
+		else { return none }
+	}
+
+	if stub.type_ != .calculated {
+		return none
+	}
+
+	// Boundary: EdgeStyleValue::with_resolved_keywords() generates this exact
+	// placeholder while the calculation tree is not translated. Preserve the
+	// surrounding C++ control flow by resolving the generated serialization form.
+	serialization := stub.serialization.trim_space()
+	prefix := 'calc(100% - '
+	if !serialization.starts_with(prefix) || !serialization.ends_with(')') {
+		return none
+	}
+	inner := serialization[prefix.len..serialization.len - 1].trim_space()
+	offset := style_values_extra_simple_length_percentage_serialization_to_px(inner, context,
+		reference_value) or { return none }
+	return reference_value.minus(offset)
+}
+
+fn style_values_extra_simple_length_percentage_serialization_to_px(serialization string, context LengthResolutionContext, reference_value CSSPixels) ?CSSPixels {
+	trimmed := serialization.trim_space()
+	if trimmed.ends_with('%') {
+		value := strconv.atof64(trimmed[..trimmed.len - 1].trim_space()) or { return none }
+		return LengthPercentage.from_percentage(Percentage.new(value)).to_px(context,
+			reference_value)
+	}
+	if trimmed.ends_with('px') {
+		value := strconv.atof64(trimmed[..trimmed.len - 2].trim_space()) or { return none }
+		return LengthPercentage.from_length(Length.make_px(value)).to_px(context, reference_value)
+	}
+	return none
 }
 
 fn style_values_extra_length_from_style_value(style_value StyleValue) Length {
@@ -244,6 +286,159 @@ fn style_values_extra_ellipse_corner_shape(center CSSPixelPoint, reference_box C
 	return CSSPixelSize.from_values(radius_a, radius_b)
 }
 
+fn style_values_extra_path_coord(value CSSPixels) string {
+	return '${value.to_double()}'
+}
+
+fn style_values_extra_path_from_resolved_rect(top CSSPixels, right CSSPixels, bottom CSSPixels, left CSSPixels) StyleValuePathStub {
+	return StyleValuePathStub{
+		commands: [
+			'M ${style_values_extra_path_coord(left)} ${style_values_extra_path_coord(top)}',
+			'L ${style_values_extra_path_coord(right)} ${style_values_extra_path_coord(top)}',
+			'L ${style_values_extra_path_coord(right)} ${style_values_extra_path_coord(bottom)}',
+			'L ${style_values_extra_path_coord(left)} ${style_values_extra_path_coord(bottom)}',
+			'Z',
+		]
+	}
+}
+
+fn style_values_extra_translated_to_origin(reference_box CSSPixelRect) CSSPixelRect {
+	return CSSPixelRect{
+		x:      CSSPixels.new(0)
+		y:      CSSPixels.new(0)
+		width:  reference_box.width
+		height: reference_box.height
+	}
+}
+
+fn style_values_extra_radial_size_from_style_value(style_value StyleValue) ?RadialSizeStyleValue {
+	return match style_value {
+		RadialSizeStyleValue { style_value }
+		else { none }
+	}
+}
+
+fn style_values_extra_position_from_style_value(style_value ?StyleValue) PositionStyleValue {
+	if value := style_value {
+		return value.as_position()
+	}
+	return PositionStyleValue.create_computed_center()
+}
+
+fn style_values_extra_inset_to_path(shape BasicShapeInset, reference_box CSSPixelRect, node StyleValueLayoutNodeStub) StyleValuePathStub {
+	resolved_top := style_values_extra_length_percentage_to_px(shape.top,
+		node.length_resolution_context, reference_box.height)
+	resolved_right := style_values_extra_length_percentage_to_px(shape.right,
+		node.length_resolution_context, reference_box.width)
+	resolved_bottom := style_values_extra_length_percentage_to_px(shape.bottom,
+		node.length_resolution_context, reference_box.height)
+	resolved_left := style_values_extra_length_percentage_to_px(shape.left,
+		node.length_resolution_context, reference_box.width)
+
+	mut top := resolved_top.to_double()
+	mut right := resolved_right.to_double()
+	mut bottom := resolved_bottom.to_double()
+	mut left := resolved_left.to_double()
+
+	// A pair of insets in either dimension that add up to more than the used dimension
+	// (such as left and right insets of 75% apiece) use the CSS Backgrounds 3 4.5 Overlapping Curves rules
+	// to proportionally reduce the inset effect to 100%.
+	if top + bottom > reference_box.height.to_double()
+		|| left + right > reference_box.width.to_double() {
+		// https://drafts.csswg.org/css-backgrounds-3/#corner-overlap
+		// Let f = min(Li/Si), where i in {top, right, bottom, left}, Si is the sum of the two corresponding radii of the
+		// corners on side i, and Ltop = Lbottom = the width of the box, and Lleft = Lright = the height of the box. If
+		// f < 1, then all corner radii are reduced by multiplying them by f.
+
+		// NB: We only care about vertical and horizontal here as top = bottom and left = right
+		s_vertical := top + bottom
+		s_horizontal := left + right
+		f := math.min(reference_box.height.to_double() / s_vertical,
+			reference_box.width.to_double() / s_horizontal)
+
+		top *= f
+		right *= f
+		bottom *= f
+		left *= f
+	}
+
+	left_edge := CSSPixels.nearest_value_for(left)
+	top_edge := CSSPixels.nearest_value_for(top)
+	right_edge := CSSPixels.nearest_value_for(reference_box.width.to_double() - right)
+	bottom_edge := CSSPixels.nearest_value_for(reference_box.height.to_double() - bottom)
+
+	if shape.border_radius.serialize(.normal) != '0px' {
+		// Boundary: Painting::normalize_border_radii_data() and Gfx::Path elliptical arcs
+		// are not translated. Keep the resolved inset rectangle rather than inventing
+		// rounded-corner geometry.
+	}
+
+	return style_values_extra_path_from_resolved_rect(top_edge, right_edge, bottom_edge, left_edge)
+}
+
+fn style_values_extra_circle_to_path(shape BasicShapeCircle, reference_box CSSPixelRect, node StyleValueLayoutNodeStub) StyleValuePathStub {
+	translated_reference_box := style_values_extra_translated_to_origin(reference_box)
+
+	// https://www.w3.org/TR/css-shapes/#funcdef-basic-shape-circle
+	// The <position> argument defines the center of the circle. Unless otherwise specified, this defaults to center if omitted.
+	resolved_position := style_values_extra_position_from_style_value(shape.position)
+	center := resolved_position.resolved(node, translated_reference_box)
+	radius := style_values_extra_radial_size_from_style_value(shape.radius) or {
+		return StyleValuePathStub{
+			commands: [shape.serialize(.normal)]
+		}
+	}
+	radius_px := radius.resolve_circle_size(center, translated_reference_box, node)
+
+	return StyleValuePathStub{
+		commands: [
+			'M ${style_values_extra_path_coord(center.x())} ${style_values_extra_path_coord(center.y().plus(radius_px))}',
+			'A ${style_values_extra_path_coord(radius_px)} ${style_values_extra_path_coord(radius_px)} 0 1 1 ${style_values_extra_path_coord(center.x())} ${style_values_extra_path_coord(center.y().minus(radius_px))}',
+			'A ${style_values_extra_path_coord(radius_px)} ${style_values_extra_path_coord(radius_px)} 0 1 1 ${style_values_extra_path_coord(center.x())} ${style_values_extra_path_coord(center.y().plus(radius_px))}',
+		]
+	}
+}
+
+fn style_values_extra_ellipse_to_path(shape BasicShapeEllipse, reference_box CSSPixelRect, node StyleValueLayoutNodeStub) StyleValuePathStub {
+	translated_reference_box := style_values_extra_translated_to_origin(reference_box)
+
+	// https://www.w3.org/TR/css-shapes/#funcdef-basic-shape-circle
+	// The <position> argument defines the center of the ellipse. Unless otherwise specified, this defaults to center if omitted.
+	resolved_position := style_values_extra_position_from_style_value(shape.position)
+	center := resolved_position.resolved(node, translated_reference_box)
+	radius := style_values_extra_radial_size_from_style_value(shape.radius) or {
+		return StyleValuePathStub{
+			commands: [shape.serialize(.normal)]
+		}
+	}
+	size := radius.resolve_ellipse_size(center, translated_reference_box, node)
+
+	return StyleValuePathStub{
+		commands: [
+			'M ${style_values_extra_path_coord(center.x())} ${style_values_extra_path_coord(center.y().plus(size.height()))}',
+			'A ${style_values_extra_path_coord(size.width())} ${style_values_extra_path_coord(size.height())} 0 1 1 ${style_values_extra_path_coord(center.x())} ${style_values_extra_path_coord(center.y().minus(size.height()))}',
+			'A ${style_values_extra_path_coord(size.width())} ${style_values_extra_path_coord(size.height())} 0 1 1 ${style_values_extra_path_coord(center.x())} ${style_values_extra_path_coord(center.y().plus(size.height()))}',
+		]
+	}
+}
+
+fn style_values_extra_polygon_to_path(shape BasicShapePolygon, reference_box CSSPixelRect, node StyleValueLayoutNodeStub) StyleValuePathStub {
+	mut commands := []string{}
+	for index, point in shape.points {
+		x := style_values_extra_length_percentage_to_px(point.x, node.length_resolution_context,
+			reference_box.width)
+		y := style_values_extra_length_percentage_to_px(point.y, node.length_resolution_context,
+			reference_box.height)
+		verb := if index == 0 { 'M' } else { 'L' }
+		commands << '${verb} ${style_values_extra_path_coord(x)} ${style_values_extra_path_coord(y)}'
+	}
+	commands << 'Z'
+	return StyleValuePathStub{
+		commands:  commands
+		fill_rule: shape.fill_rule
+	}
+}
+
 // --- CursorStyleValue extra helpers ---
 
 pub fn (style_value CursorStyleValue) image() CursorImageValue {
@@ -269,21 +464,19 @@ pub fn (style_value CursorStyleValue) make_image_cursor(node StyleValueLayoutNod
 // --- BasicShapeStyleValue extra helpers ---
 
 pub fn (style_value BasicShapeStyleValue) to_path(reference_box CSSPixelRect, node StyleValueLayoutNodeStub) StyleValuePathStub {
-	_ = reference_box
-	_ = node
 	shape := style_value.basic_shape_
 	return match shape {
+		BasicShapeInset {
+			style_values_extra_inset_to_path(shape, reference_box, node)
+		}
+		BasicShapeCircle {
+			style_values_extra_circle_to_path(shape, reference_box, node)
+		}
+		BasicShapeEllipse {
+			style_values_extra_ellipse_to_path(shape, reference_box, node)
+		}
 		BasicShapePolygon {
-			mut commands := []string{}
-			for index, point in shape.points {
-				verb := if index == 0 { 'M' } else { 'L' }
-				commands << '${verb} ${point.x.serialize(.normal)} ${point.y.serialize(.normal)}'
-			}
-			commands << 'Z'
-			StyleValuePathStub{
-				commands:  commands
-				fill_rule: shape.fill_rule
-			}
+			style_values_extra_polygon_to_path(shape, reference_box, node)
 		}
 		BasicShapePath {
 			StyleValuePathStub{
@@ -292,9 +485,9 @@ pub fn (style_value BasicShapeStyleValue) to_path(reference_box CSSPixelRect, no
 			}
 		}
 		else {
-			// Stub: Gfx::Path, Painting::BorderRadiiData, and Layout::Node
-			// geometry are not translated. Serialization preserves the source
-			// shape until those dependencies exist.
+			// NB: Xywh and Rect don't require to_path functions as we should have already converted them to their
+			//     respective Inset equivalents during absolutization.
+			// Boundary: the calculation tree needed for that absolutization is not translated yet.
 			StyleValuePathStub{
 				commands: [style_value.serialize(.normal)]
 			}
@@ -410,12 +603,18 @@ fn (style_value RadialSizeStyleValue) resolve_ellipse_component(component Radial
 	return match component {
 		RadialExtentComponent {
 			match component.extent {
-				.closest_side { style_values_extra_closest_side_shape(center, reference_box) }
-				.farthest_side { style_values_extra_farthest_side_shape(center, reference_box) }
-				.closest_corner { style_values_extra_ellipse_corner_shape(center, reference_box,
-						false) }
-				.farthest_corner { style_values_extra_ellipse_corner_shape(center, reference_box,
-						true) }
+				.closest_side {
+					style_values_extra_closest_side_shape(center, reference_box)
+				}
+				.farthest_side {
+					style_values_extra_farthest_side_shape(center, reference_box)
+				}
+				.closest_corner {
+					style_values_extra_ellipse_corner_shape(center, reference_box, false)
+				}
+				.farthest_corner {
+					style_values_extra_ellipse_corner_shape(center, reference_box, true)
+				}
 			}
 		}
 		StyleValue {

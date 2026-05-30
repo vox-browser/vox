@@ -530,11 +530,96 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 		})
 
 		// Loosely based on https://drafts.csswg.org/css-animations-2/#keyframe-processing
-		// Stub: Animations::KeyframeEffect::KeyFrameSet and CSSKeyframeRule are not
-		// translated into the CSS module yet, so @keyframes rules cannot be resolved
-		// into animation keyframe sets here.
+		sheet.for_each_effective_keyframes_at_rule(fn [mut rule_caches] (rule &CSSRule) {
+			style_scope_add_keyframes_rule_to_cache(mut rule_caches.main, rule)
+		})
 		style_sheet_index++
 	}
+}
+
+fn style_scope_keyframe_property_value(property CSSStyleProperty, property_id PropertyID) ?&dom.StyleValue {
+	if value := property.style_value {
+		return value
+	}
+	return parse_css_value(ParsingParams{}, property.value, property_id)
+}
+
+fn style_scope_keyframe_property_is_animatable(property_id PropertyID) bool {
+	return match property_id {
+		.color { true }
+		else { false }
+	}
+}
+
+fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
+	mut keyframe_set := &KeyFrameSet{
+		keyframes_by_key: map[int]ResolvedKeyFrame{}
+	}
+	mut animated_properties := map[PropertyID]bool{}
+	rules := rule.css_rules() or { return keyframe_set }
+
+	// Forwards pass, resolve all the user-specified keyframe properties.
+	for keyframe_rule in rules.rules {
+		if keyframe_rule.type_ != .keyframe {
+			continue
+		}
+		keyframe_key := keyframe_rule.keyframe_key or { continue }
+		key := int(keyframe_key.value() * animation_key_frame_key_scale_factor)
+		keyframe_style := keyframe_rule.style() or { continue }
+		mut resolved_keyframe := ResolvedKeyFrame{
+			properties: map[PropertyID]&dom.StyleValue{}
+		}
+
+		for property in keyframe_style.properties {
+			property_id := property_id_from_string(property.name) or { continue }
+
+			if property_id == .animation_timeline {
+				// Boundary: the current V PropertyID set does not contain
+				// animation-timing-function or animation-composition yet, so the
+				// C++ easing/composite special cases cannot be represented here.
+				continue
+			}
+			if !style_scope_keyframe_property_is_animatable(property_id) {
+				continue
+			}
+
+			property_value := style_scope_keyframe_property_value(property, property_id) or { continue }
+			// Unresolved properties will be resolved in collect_animation_into()
+			StyleComputer.for_each_property_expanding_shorthands(property_id, property_value, fn [mut animated_properties, mut resolved_keyframe] (shorthand_id PropertyID, shorthand_value &dom.StyleValue) {
+				animated_properties[shorthand_id] = true
+				resolved_keyframe.properties[shorthand_id] = unsafe { shorthand_value }
+			})
+		}
+
+		if key !in keyframe_set.keyframes_by_key {
+			keyframe_set.keyframes_by_key[key] = resolved_keyframe
+		}
+	}
+
+	style_scope_generate_initial_and_final_keyframes(mut keyframe_set, animated_properties)
+	return keyframe_set
+}
+
+fn style_scope_generate_initial_and_final_keyframes(mut keyframe_set KeyFrameSet, animated_properties map[PropertyID]bool) {
+	_ = keyframe_set
+	_ = animated_properties
+	// Boundary: Animations::KeyframeEffect::generate_initial_and_final_frames()
+	// needs the animated element's computed style in the full engine. This cache
+	// builder only has the @keyframes rule, so it preserves user-specified frames
+	// and leaves synthesized 0%/100% values to the animation application path.
+}
+
+fn style_scope_add_keyframes_rule_to_cache(mut rule_cache RuleCache, rule &CSSRule) {
+	if rule.type_ != .keyframes {
+		return
+	}
+	keyframe_set := style_scope_resolve_keyframe_set_from_rule(rule)
+	_ = keyframe_set
+	// Boundary: RuleCache::rules_by_animation_keyframes is still map[string]bool
+	// in the shared V type, while C++ stores KeyFrameSet. Mark the rule as
+	// present here; callers can switch this to the resolved set once the shared
+	// RuleCache field is widened.
+	rule_cache.rules_by_animation_keyframes[rule.keyframes_name()] = true
 }
 
 fn (mut scope StyleScope) rule_caches_for_origin_mut(cascade_origin CascadeOrigin) ?&RuleCaches {
@@ -1032,8 +1117,19 @@ fn style_scope_add_part_rules_for_available_scopes(style_computer &StyleComputer
 		style_scope_add_rules_to_run(style_computer, abstract_element, rule_cache.part_rules,
 			shadow_root, element_shadow_root, mut rules_to_run)
 	}
-	// Stub: first_flat_tree_ancestor_of_type<DOM::ShadowRoot>() is not exposed
-	// across the DOM/CSS split, so ancestor style scopes cannot be reached here.
+	for part_shadow_root in style_scope_flat_tree_ancestor_shadow_roots(abstract_element.element().as_node()) {
+		if style_scope_shadow_root_matches_current_scope_stub(scope, part_shadow_root) {
+			if rule_cache := scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name) {
+				style_scope_add_rules_to_run(style_computer, abstract_element, rule_cache.part_rules,
+					shadow_root, element_shadow_root, mut rules_to_run)
+			}
+		}
+	}
+	// Boundary: C++ then also checks ancestor shadow-root style scopes and the
+	// document style scope through StyleComputer::rule_cache_for_cascade_origin().
+	// The V DOM currently exposes DOM-local StyleScope placeholders rather than
+	// css.StyleScope, so this in-scope helper can only add caches reachable from
+	// the StyleScope passed by the caller.
 }
 
 fn style_scope_shadow_root_matches_current_scope_stub(scope &StyleScope, shadow_root ?&dom.ShadowRoot) bool {
@@ -1044,6 +1140,19 @@ fn style_scope_shadow_root_matches_current_scope_stub(scope &StyleScope, shadow_
 	node := scope.node or { return false }
 	scope_root := node.as_shadow_root() or { return false }
 	return scope_root == root
+}
+
+fn style_scope_flat_tree_ancestor_shadow_roots(node &dom.Node) []&dom.ShadowRoot {
+	mut roots := []&dom.ShadowRoot{}
+	mut ancestor := node.flat_tree_parent()
+	for {
+		current := ancestor or { break }
+		if shadow_root := current.as_shadow_root() {
+			roots << shadow_root
+		}
+		ancestor = current.flat_tree_parent()
+	}
+	return roots
 }
 
 pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string, scope &StyleScope) []MatchingRule {

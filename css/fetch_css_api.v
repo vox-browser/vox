@@ -123,22 +123,182 @@ pub fn resolve_a_style_resource_url(url_value StyleResourceURL, css_rule_or_decl
 }
 
 fn resolve_css_url_with_base_stub(url_string string, base string) ?string {
-	if url_string.trim_space().len == 0 {
-		return none
+	// FIXME: Use DOMURL::parse() once the URL module is ported. This mirrors the URL parser behavior that CSS fetch
+	// needs with the local string-backed URL type: absolute URLs are preserved, relative URLs resolve against the style
+	// resource base URL, fragment/query-only references attach to the base, and path dot segments are normalized.
+	input := url_string.trim_space()
+	if input.len == 0 {
+		if base.len == 0 {
+			return none
+		}
+		return strip_url_fragment(base)
 	}
-	// Stub for DOMURL::parse(). This preserves absolute URLs and handles simple relative URLs against the stylesheet
-	// base URL so callers can observe the same request-construction flow.
-	if url_string.contains('://') || url_string.starts_with('data:')
-		|| url_string.starts_with('about:') {
-		return url_string
+	if is_absolute_url(input) {
+		return input
+	}
+	if input.starts_with('//') {
+		scheme := url_scheme(base) or { return none }
+		return '${scheme}:${input}'
 	}
 	if base.len == 0 {
-		return url_string
+		return none
 	}
-	if base.ends_with('/') {
-		return base + url_string
+	return resolve_relative_url(input, base)
+}
+
+fn is_url_scheme_start(c u8) bool {
+	return (c >= `A` && c <= `Z`) || (c >= `a` && c <= `z`)
+}
+
+fn is_url_scheme_char(c u8) bool {
+	return is_url_scheme_start(c) || (c >= `0` && c <= `9`) || c == `+` || c == `-` || c == `.`
+}
+
+fn is_absolute_url(value string) bool {
+	colon := value.index_u8(`:`)
+	if colon <= 0 {
+		return false
 	}
-	return '${base}/${url_string}'
+	if !is_url_scheme_start(value[0]) {
+		return false
+	}
+	for c in value[..colon].bytes() {
+		if !is_url_scheme_char(c) {
+			return false
+		}
+	}
+	return true
+}
+
+fn url_scheme(value string) ?string {
+	colon := value.index_u8(`:`)
+	if colon <= 0 || !is_absolute_url(value) {
+		return none
+	}
+	return value[..colon]
+}
+
+fn strip_url_fragment(value string) string {
+	fragment_index := value.index_u8(`#`)
+	if fragment_index < 0 {
+		return value
+	}
+	return value[..fragment_index]
+}
+
+fn strip_url_query_and_fragment(value string) string {
+	query_index := value.index_u8(`?`)
+	fragment_index := value.index_u8(`#`)
+	if query_index < 0 && fragment_index < 0 {
+		return value
+	}
+	if query_index < 0 {
+		return value[..fragment_index]
+	}
+	if fragment_index < 0 {
+		return value[..query_index]
+	}
+	return value[..int_min(query_index, fragment_index)]
+}
+
+fn int_min(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+fn split_authority_and_path(value string) (string, string) {
+	scheme_end := value.index('://') or { return '', value }
+	authority_start := scheme_end + 3
+	after_authority := value[authority_start..]
+	path_offset := after_authority.index_u8(`/`)
+	if path_offset < 0 {
+		return value, ''
+	}
+	path_start := authority_start + path_offset
+	return value[..path_start], value[path_start..]
+}
+
+fn normalize_url_path(path string) string {
+	mut suffix := ''
+	mut path_only := path
+	fragment_index := path_only.index_u8(`#`)
+	if fragment_index >= 0 {
+		suffix = path_only[fragment_index..]
+		path_only = path_only[..fragment_index]
+	}
+	query_index := path_only.index_u8(`?`)
+	if query_index >= 0 {
+		suffix = path_only[query_index..] + suffix
+		path_only = path_only[..query_index]
+	}
+
+	is_absolute_path := path_only.starts_with('/')
+	trailing_slash := path_only.ends_with('/') || path_only.ends_with('/.')
+		|| path_only.ends_with('/..')
+	mut segments := []string{}
+	for segment in path_only.split('/') {
+		if segment.len == 0 || segment == '.' {
+			continue
+		}
+		if segment == '..' {
+			if segments.len > 0 {
+				segments.delete(segments.len - 1)
+			}
+			continue
+		}
+		segments << segment
+	}
+
+	mut normalized := segments.join('/')
+	if is_absolute_path {
+		normalized = '/${normalized}'
+	}
+	if normalized.len == 0 && is_absolute_path {
+		normalized = '/'
+	}
+	if trailing_slash && !normalized.ends_with('/') {
+		normalized += '/'
+	}
+	return normalized + suffix
+}
+
+fn resolve_relative_url(input string, base string) ?string {
+	base_without_fragment := strip_url_fragment(base)
+	if input.starts_with('#') {
+		return base_without_fragment + input
+	}
+	if input.starts_with('?') {
+		return strip_url_query_and_fragment(base) + input
+	}
+
+	base_for_path := strip_url_query_and_fragment(base_without_fragment)
+	authority, base_path := split_authority_and_path(base_for_path)
+	if input.starts_with('/') {
+		if authority.len == 0 {
+			return normalize_url_path(input)
+		}
+		return authority + normalize_url_path(input)
+	}
+
+	base_directory := if base_path.len == 0 {
+		'/'
+	} else if base_path.ends_with('/') {
+		base_path
+	} else {
+		slash_index := base_path.last_index_u8(`/`)
+		if slash_index < 0 {
+			''
+		} else {
+			base_path[..slash_index + 1]
+		}
+	}
+
+	if authority.len == 0 {
+		return normalize_url_path(base_directory + input)
+	}
+	return authority + normalize_url_path(base_directory + input)
 }
 
 pub enum CorsMode {
@@ -239,12 +399,18 @@ pub fn fetch_an_external_image_for_a_stylesheet(url_value StyleResourceURL, decl
 	request := fetch_a_style_resource_impl(url_value, declaration, .image, .no_cors) or {
 		return none
 	}
-	_ = request
 
-	// Stub: HTML::SharedResourceRequest is currently an empty DOM-side placeholder. Keep the document notification side
-	// effect from the C++ callback path.
+	// Stub: HTML::SharedResourceRequest is currently an empty DOM-side placeholder. Preserve the get-or-create shape and
+	// document notification callback side effect from the C++ path.
+	mut shared_resource_requests := document.shared_resource_requests()
+	if shared_resource_request := shared_resource_requests[request.url] {
+		document.notify_css_background_image_loaded()
+		return shared_resource_request
+	}
+	shared_resource_request := &dom.SharedResourceRequest{}
+	shared_resource_requests[request.url] = shared_resource_request
 	document.notify_css_background_image_loaded()
-	return &dom.SharedResourceRequest{}
+	return shared_resource_request
 }
 
 // https://drafts.csswg.org/css-values-5/#apply-request-modifiers-from-url-value
