@@ -4264,9 +4264,69 @@ pub fn StyleComputer.compute_animation_name(absolutized_value &dom.StyleValue) &
 	return unsafe { absolutized_value }
 }
 
+fn computed_interpolation_line_width_keyword_to_css_pixels(value string) ?CSSPixels {
+	// https://drafts.csswg.org/css-backgrounds/#typedef-line-width
+	// The thin, medium, and thick keywords are equivalent to 1px, 3px, and 5px, respectively.
+	return match to_ascii_lowercase(value.trim_space()) {
+		'thin' { CSSPixels.new(1) }
+		'medium' { CSSPixels.new(3) }
+		'thick' { CSSPixels.new(5) }
+		else { none }
+	}
+}
+
+// https://www.w3.org/TR/css-values-4/#snap-a-length-as-a-border-width
+fn computed_interpolation_snap_a_length_as_a_border_width(device_pixels_per_css_pixel f64, length CSSPixels) CSSPixels {
+	// 1. Assert: len is non-negative.
+	if length.raw_value() < 0 {
+		panic('VERIFY(length >= 0)')
+	}
+
+	// 2. If len is an integer number of device pixels, do nothing.
+	device_pixels := length.to_double() * device_pixels_per_css_pixel
+	if device_pixels == math.trunc(device_pixels) {
+		return length
+	}
+
+	// 3. If len is greater than zero, but less than 1 device pixel, round len up to 1 device pixel.
+	if device_pixels > 0 && device_pixels < 1 {
+		return CSSPixels.nearest_value_for(1 / device_pixels_per_css_pixel)
+	}
+
+	// 4. If len is greater than 1 device pixel, round it down to the nearest integer number of device pixels.
+	if device_pixels > 1 {
+		return CSSPixels.nearest_value_for(math.floor(device_pixels) / device_pixels_per_css_pixel)
+	}
+
+	return length
+}
+
+fn computed_interpolation_length_from_dom_style_value(style_value &dom.StyleValue) ?Length {
+	mut parser := Parser.from_css_text(style_value.css_text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	parsed_value := parser.parse_length_value(mut tokens) or { return none }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return none
+	}
+	if parsed_value is LengthStyleValue {
+		return parsed_value.length()
+	}
+	return none
+}
+
 pub fn StyleComputer.compute_border_or_outline_width(absolutized_value &dom.StyleValue, device_pixels_per_css_pixel f64) &dom.StyleValue {
-	_ = device_pixels_per_css_pixel
-	return unsafe { absolutized_value }
+	// https://drafts.csswg.org/css-backgrounds/#border-width
+	// absolute length, snapped as a border width
+	absolute_length := computed_interpolation_line_width_keyword_to_css_pixels(absolutized_value.css_text) or {
+		length := computed_interpolation_length_from_dom_style_value(absolutized_value) or {
+			return unsafe { absolutized_value }
+		}
+		length.absolute_length_to_px()
+	}
+	snapped_length := computed_interpolation_snap_a_length_as_a_border_width(device_pixels_per_css_pixel,
+		absolute_length)
+	return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_css_px(snapped_length))))
 }
 
 pub fn StyleComputer.compute_corner_shape(absolutized_value &dom.StyleValue) &dom.StyleValue {
