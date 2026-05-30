@@ -812,6 +812,7 @@ pub struct CSSFontFaceDescriptors {
 pub mut:
 	descriptors []FontFaceDescriptor
 	parent_rule ?&CSSFontFaceRule
+	readonly    bool
 }
 
 pub fn CSSFontFaceDescriptors.create(descriptors []FontFaceDescriptor) &CSSFontFaceDescriptors {
@@ -841,18 +842,43 @@ pub fn (descriptors &CSSFontFaceDescriptors) descriptor_or_initial_value(id Font
 }
 
 pub fn (mut descriptors CSSFontFaceDescriptors) set_property(property string, value string, priority string) ! {
-	_ = priority
-	id := font_face_descriptor_id_from_property(property) or {
-		return error("SyntaxError: Unknown @font-face descriptor '${property}'")
+	if descriptors.readonly {
+		return error('NoModificationAllowedError: Cannot modify properties of readonly CSSStyleDeclaration')
 	}
-	parsed := parse_font_face_descriptor_stub(id, value) or {
-		return error("SyntaxError: Invalid @font-face descriptor '${property}'")
+
+	id := font_face_descriptor_id_from_property(property) or { return }
+
+	if value.len == 0 {
+		descriptors.remove_property(property)!
+		return
 	}
+
+	if priority.len != 0 && priority.to_lower() != 'important' {
+		return
+	}
+
+	parsed := parse_font_face_descriptor_stub(id, value) or { return }
 	descriptors.set_descriptor_value(id, parsed)
 
 	if mut rule := descriptors.parent_rule {
 		rule.handle_descriptor_change(property)
 	}
+}
+
+pub fn (mut descriptors CSSFontFaceDescriptors) remove_property(property string) !string {
+	if descriptors.readonly {
+		return error('NoModificationAllowedError: Cannot modify properties of readonly CSSStyleDeclaration')
+	}
+
+	id := font_face_descriptor_id_from_property(property) or { return '' }
+	old_value := descriptors.descriptor(id) or { return '' }
+	descriptors.remove_descriptor(id)
+
+	if mut rule := descriptors.parent_rule {
+		rule.handle_descriptor_change(property)
+	}
+
+	return old_value
 }
 
 fn (mut descriptors CSSFontFaceDescriptors) set_descriptor_value(id FontFaceDescriptorID, value string) {
@@ -866,6 +892,16 @@ fn (mut descriptors CSSFontFaceDescriptors) set_descriptor_value(id FontFaceDesc
 		id:    id
 		value: value
 	}
+}
+
+fn (mut descriptors CSSFontFaceDescriptors) remove_descriptor(id FontFaceDescriptorID) {
+	mut kept := []FontFaceDescriptor{}
+	for descriptor in descriptors.descriptors {
+		if descriptor.id != id {
+			kept << descriptor
+		}
+	}
+	descriptors.descriptors = kept
 }
 
 pub fn (mut descriptors CSSFontFaceDescriptors) set_ascent_override(value string) ! {
@@ -1070,6 +1106,41 @@ fn parse_font_face_descriptor_stub(id FontFaceDescriptorID, value string) ?strin
 				return none
 			}
 		}
+		.font_weight {
+			if !is_valid_font_weight_descriptor(trimmed) {
+				return none
+			}
+		}
+		.font_style {
+			if !is_valid_font_style_descriptor(trimmed) {
+				return none
+			}
+		}
+		.font_width {
+			if !is_valid_font_width_descriptor(trimmed) {
+				return none
+			}
+		}
+		.font_feature_settings {
+			if !is_valid_font_feature_settings_descriptor(trimmed) {
+				return none
+			}
+		}
+		.font_variation_settings {
+			if !is_valid_font_variation_settings_descriptor(trimmed) {
+				return none
+			}
+		}
+		.font_language_override {
+			if !is_valid_font_language_override_descriptor(trimmed) {
+				return none
+			}
+		}
+		.font_named_instance {
+			if !is_valid_font_named_instance_descriptor(trimmed) {
+				return none
+			}
+		}
 		else {}
 	}
 
@@ -1240,24 +1311,30 @@ pub fn (mut rule CSSFontFaceRule) handle_src_descriptor_change() {
 	// If a @font-face rule has its src descriptor changed to a new value, the original connected FontFace object must
 	// stop being CSS-connected. A new FontFace reflecting its new src must be created and CSS-connected to the
 	// @font-face.
-	if rule.css_connected_font_face == none {
-		return
-	}
+	old_font_face := rule.css_connected_font_face or { return }
+	containing_sets := old_font_face.containing_sets.clone()
 
 	rule.disconnect_font_face()
 
-	// Stub: The V DOM/CSSStyleSheet path does not expose document.fonts() yet, so the new CSS-connected FontFace is
-	// created and connected to the rule but not inserted into a document FontFaceSet.
 	new_font_face := FontFaceObject.create_css_connected(rule)
 	rule.css_connected_font_face = new_font_face
+
+	for set in containing_sets {
+		mut mutable_set := unsafe { &FontFaceSet(set) }
+		mutable_set.add_css_connected_font(new_font_face)
+	}
 }
 
 pub fn (mut rule CSSFontFaceRule) disconnect_font_face() {
 	if mut font_face := rule.css_connected_font_face {
+		containing_sets := font_face.containing_sets.clone()
 		font_face.disconnect_from_css_rule()
+		for set in containing_sets {
+			mut mutable_set := unsafe { &FontFaceSet(set) }
+			mutable_set.delete_(font_face)
+		}
 	}
 
-	// Stub: CSSFontFaceRule::disconnect_font_face normally deletes the face from document.fonts().
 	rule.css_connected_font_face = none
 }
 
@@ -1769,19 +1846,19 @@ pub fn (face &FontFaceObject) parsed_font_face() ParsedFontFace {
 	// FIXME: The ParsedFontFace is kind of expensive to create. We should be using a shared sub-object for the data
 	return ParsedFontFace{
 		// Create a dummy CSSFontFaceRule so that we load relative to the document's base URL.
-		parent_rule:          CSSFontFaceRule.create(CSSFontFaceDescriptors.create([]FontFaceDescriptor{}))
-		font_family_:         face.family_
+		parent_rule:  CSSFontFaceRule.create(CSSFontFaceDescriptors.create([]FontFaceDescriptor{}))
+		font_family_: face.family_
 		// FIXME: Actually parse this as we're supposed to.
 		weight_:              parse_font_face_object_numeric_weight(face.weight_)
-		slope_:               0 // FIXME: slope
+		slope_:               0   // FIXME: slope
 		width_:               100 // FIXME: width
 		sources_:             face.urls.clone()
 		unicode_ranges_:      face.unicode_ranges_.clone()
 		font_display_:        .auto_ // FIXME: font_display
-		font_named_instance_: none // font-named-instance doesn't exist in FontFace
+		font_named_instance_: none   // font-named-instance doesn't exist in FontFace
 		// font-language-override doesn't exist in FontFace
-		font_language_override_: none
-		font_feature_settings_:  none // FIXME: feature_settings
+		font_language_override_:  none
+		font_feature_settings_:   none // FIXME: feature_settings
 		font_variation_settings_: none // FIXME: variation_settings
 	}
 }
@@ -3503,6 +3580,141 @@ fn parse_font_weight_range(value string) ?FontWeightRange {
 	return none
 }
 
+fn is_valid_font_weight_descriptor(value string) bool {
+	lower := value.to_lower().trim_space()
+	if lower in ['auto', 'normal', 'bold'] {
+		return true
+	}
+	parts := split_css_space_list(lower)
+	if parts.len == 0 || parts.len > 2 {
+		return false
+	}
+	for part in parts {
+		if !is_valid_css_integer(part) {
+			return false
+		}
+		weight := strconv.atoi(part) or { return false }
+		if weight < 1 || weight > 1000 {
+			return false
+		}
+	}
+	return true
+}
+
+fn is_valid_font_style_descriptor(value string) bool {
+	lower := value.to_lower().trim_space()
+	if lower in ['auto', 'normal', 'italic'] {
+		return true
+	}
+	parts := split_css_space_list(lower)
+	if parts.len == 0 || parts[0] != 'oblique' || parts.len > 3 {
+		return false
+	}
+	if parts.len == 1 {
+		return true
+	}
+	for part in parts[1..] {
+		if !is_valid_css_angle(part) {
+			return false
+		}
+	}
+	return true
+}
+
+fn is_valid_font_width_descriptor(value string) bool {
+	lower := value.to_lower().trim_space()
+	if lower in ['auto', 'ultra-condensed', 'extra-condensed', 'condensed', 'semi-condensed',
+		'normal', 'semi-expanded', 'expanded', 'extra-expanded', 'ultra-expanded'] {
+		return true
+	}
+	parts := split_css_space_list(lower)
+	if parts.len == 0 || parts.len > 2 {
+		return false
+	}
+	for part in parts {
+		if !is_valid_css_percentage(part) {
+			return false
+		}
+		percentage := strconv.atof64(part[..part.len - 1]) or { return false }
+		if percentage < 0 {
+			return false
+		}
+	}
+	return true
+}
+
+fn is_valid_font_feature_settings_descriptor(value string) bool {
+	if value.to_lower().trim_space() == 'normal' {
+		return true
+	}
+	items := split_css_comma_list(value)
+	if items.len == 0 {
+		return false
+	}
+	for item in items {
+		tag, setting_value := parse_open_type_setting(item) or { return false }
+		if !is_valid_open_type_tag(tag) {
+			return false
+		}
+		parts := split_css_space_list(item)
+		if parts.len == 0 || parts.len > 2 || !is_quoted_css_string(parts[0]) {
+			return false
+		}
+		if parts.len == 2 {
+			lower := parts[1].to_lower()
+			if lower !in ['on', 'off'] {
+				if !is_valid_css_integer(parts[1]) {
+					return false
+				}
+				if setting_value < 0 {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+fn is_valid_font_variation_settings_descriptor(value string) bool {
+	if value.to_lower().trim_space() == 'normal' {
+		return true
+	}
+	items := split_css_comma_list(value)
+	if items.len == 0 {
+		return false
+	}
+	for item in items {
+		tag, _ := parse_open_type_setting(item) or { return false }
+		if !is_valid_open_type_tag(tag) {
+			return false
+		}
+		parts := split_css_space_list(item)
+		if parts.len != 2 || !is_quoted_css_string(parts[0]) || !is_valid_css_number(parts[1]) {
+			return false
+		}
+	}
+	return true
+}
+
+fn is_valid_font_language_override_descriptor(value string) bool {
+	lower := value.to_lower().trim_space()
+	if lower == 'normal' {
+		return true
+	}
+	if !is_quoted_css_string(value) {
+		return false
+	}
+	tag := unquote_css_string(value)
+	return tag.len != 0 && tag.len <= 4 && is_printable_ascii(tag)
+}
+
+fn is_valid_font_named_instance_descriptor(value string) bool {
+	if value.to_lower().trim_space() == 'none' {
+		return true
+	}
+	return is_quoted_css_string(value) && unquote_css_string(value).len != 0
+}
+
 fn parse_font_face_object_numeric_weight(value string) ?FontWeightRange {
 	weight := strconv.atoi(value.trim_space()) or { return none }
 	return FontWeightRange{
@@ -3606,6 +3818,75 @@ fn unquote_css_string(value string) string {
 		}
 	}
 	return trimmed
+}
+
+fn is_quoted_css_string(value string) bool {
+	trimmed := value.trim_space()
+	return trimmed.len >= 2 && ((trimmed[0] == `"` && trimmed[trimmed.len - 1] == `"`)
+		|| (trimmed[0] == `'` && trimmed[trimmed.len - 1] == `'`))
+}
+
+fn is_valid_css_integer(value string) bool {
+	trimmed := value.trim_space()
+	if trimmed.len == 0 {
+		return false
+	}
+	mut start := 0
+	if trimmed[0] == `+` || trimmed[0] == `-` {
+		start = 1
+	}
+	if start == trimmed.len {
+		return false
+	}
+	for ch in trimmed[start..] {
+		if ch < `0` || ch > `9` {
+			return false
+		}
+	}
+	return true
+}
+
+fn is_valid_css_number(value string) bool {
+	trimmed := value.trim_space()
+	if trimmed.len == 0 || trimmed.to_lower().contains('inf') || trimmed.to_lower().contains('nan') {
+		return false
+	}
+	_ := strconv.atof64(trimmed) or { return false }
+	return true
+}
+
+fn is_valid_css_percentage(value string) bool {
+	trimmed := value.trim_space()
+	if trimmed.len < 2 || !trimmed.ends_with('%') {
+		return false
+	}
+	return is_valid_css_number(trimmed[..trimmed.len - 1])
+}
+
+fn is_valid_css_angle(value string) bool {
+	lower := value.to_lower().trim_space()
+	for unit in ['deg', 'grad', 'rad', 'turn'] {
+		if lower.ends_with(unit) && lower.len > unit.len {
+			return is_valid_css_number(lower[..lower.len - unit.len])
+		}
+	}
+	return false
+}
+
+fn is_valid_open_type_tag(tag string) bool {
+	if tag.len != 4 {
+		return false
+	}
+	return is_printable_ascii(tag)
+}
+
+fn is_printable_ascii(value string) bool {
+	for ch in value {
+		if ch < 0x20 || ch > 0x7e {
+			return false
+		}
+	}
+	return true
 }
 
 fn parse_font_family_list_stub(value string) []string {

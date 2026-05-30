@@ -528,22 +528,24 @@ pub fn (mut parser Parser) parse_descriptor_value(at_rule_id AtRuleID, descripto
 }
 
 fn (mut parser Parser) parse_descriptor_value_tokens(at_rule_id AtRuleID, descriptor_id DescriptorID, mut tokens ComponentValueStream) ?StyleValue {
-	if value := parser.parse_css_wide_keyword_value(mut tokens) {
-		if !tokens.has_more_tokens() {
-			return value
-		}
-		return none
-	}
-
 	mut maybe_value := ?StyleValue(none)
 	match at_rule_id {
 		.page {
 			maybe_value = match descriptor_id {
-				.margin, .margin_top, .margin_right, .margin_bottom, .margin_left, .bleed {
+				.margin, .margin_top, .margin_right, .margin_bottom, .margin_left {
 					parser.parse_length_percentage_value(mut tokens)
 				}
-				.size, .page_orientation, .marks {
-					parser.parse_builtin_value(mut tokens)
+				.bleed {
+					parser.parse_length_value(mut tokens)
+				}
+				.size {
+					parser.parse_page_size_descriptor_value(mut tokens)
+				}
+				.page_orientation {
+					parser.parse_page_orientation_descriptor_value(mut tokens)
+				}
+				.marks {
+					parser.parse_page_marks_descriptor_value(mut tokens)
 				}
 				.unknown {
 					?StyleValue(none)
@@ -556,12 +558,136 @@ fn (mut parser Parser) parse_descriptor_value_tokens(at_rule_id AtRuleID, descri
 	}
 
 	value := maybe_value or { return none }
+	if value.is_css_wide_keyword() || value.type_() == .unresolved {
+		return none
+	}
 
 	tokens.consume_whitespace()
 	if !tokens.is_empty() {
 		return none
 	}
 	return value
+}
+
+fn descriptor_ident_style_value(value string) StyleValue {
+	return StyleValue(StubStyleValue.create(.custom_ident, value))
+}
+
+fn descriptor_ident_list_style_value(values []string) StyleValue {
+	mut style_values := []StyleValue{}
+	for value in values {
+		style_values << descriptor_ident_style_value(value)
+	}
+	return StyleValue(StyleValueList.create(style_values, .space, .yes))
+}
+
+fn consume_descriptor_ident(mut tokens ComponentValueStream) ?string {
+	tokens.consume_whitespace()
+	component_value := tokens.consume() or { return none }
+	if !component_value.is(.ident) {
+		return none
+	}
+	return component_value.token().ident().to_lower()
+}
+
+fn is_page_size_keyword(value string) bool {
+	return value in ['a5', 'a4', 'a3', 'b5', 'b4', 'jis-b5', 'jis-b4', 'letter', 'legal', 'ledger']
+}
+
+fn is_page_size_orientation(value string) bool {
+	return value == 'portrait' || value == 'landscape'
+}
+
+fn (mut parser Parser) parse_page_marks_descriptor_value(mut tokens ComponentValueStream) ?StyleValue {
+	first := consume_descriptor_ident(mut tokens) or { return none }
+	if first == 'none' {
+		return descriptor_ident_style_value('none')
+	}
+	if first != 'crop' && first != 'cross' {
+		return none
+	}
+
+	tokens.consume_whitespace()
+	if !tokens.has_more_tokens() {
+		return descriptor_ident_style_value(first)
+	}
+
+	second := consume_descriptor_ident(mut tokens) or { return none }
+	if second != 'crop' && second != 'cross' {
+		return none
+	}
+	if second == first {
+		return none
+	}
+
+	return descriptor_ident_list_style_value(['crop', 'cross'])
+}
+
+fn (mut parser Parser) parse_page_orientation_descriptor_value(mut tokens ComponentValueStream) ?StyleValue {
+	value := consume_descriptor_ident(mut tokens) or { return none }
+	if value !in ['upright', 'rotate-left', 'rotate-right'] {
+		return none
+	}
+	return descriptor_ident_style_value(value)
+}
+
+fn (mut parser Parser) parse_page_size_descriptor_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut copy := tokens.clone()
+	if first_length := parser.parse_length_value(mut copy) {
+		if first_length.is_length() && first_length.as_length().raw_value() < 0 {
+			return none
+		}
+
+		copy.consume_whitespace()
+		if second_length := parser.parse_length_value(mut copy) {
+			if second_length.is_length() && second_length.as_length().raw_value() < 0 {
+				return none
+			}
+			tokens = copy
+			return StyleValue(StyleValueList.create([first_length, second_length], .space, .yes))
+		}
+
+		tokens = copy
+		return first_length
+	}
+
+	first := consume_descriptor_ident(mut tokens) or { return none }
+	if first == 'auto' {
+		return StyleValue(KeywordStyleValue.create(.auto))
+	}
+
+	mut page_size := ''
+	mut orientation := ''
+	if is_page_size_orientation(first) {
+		orientation = first
+	} else if is_page_size_keyword(first) {
+		page_size = first
+	} else {
+		return none
+	}
+
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		second := consume_descriptor_ident(mut tokens) or { return none }
+		if orientation.len == 0 && is_page_size_orientation(second) {
+			orientation = second
+		} else if page_size.len == 0 && is_page_size_keyword(second) {
+			page_size = second
+		} else {
+			return none
+		}
+
+		// Portrait is considered the default orientation, so don't include it.
+		if orientation == 'portrait' {
+			return descriptor_ident_style_value(page_size)
+		}
+		return descriptor_ident_list_style_value([page_size, orientation])
+	}
+
+	if page_size.len != 0 {
+		return descriptor_ident_style_value(page_size)
+	}
+	return descriptor_ident_style_value(orientation)
 }
 
 pub fn parse_css_descriptor_value_logic(at_rule_id AtRuleID, descriptor_id DescriptorID, value string) ?StyleValue {

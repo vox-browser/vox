@@ -2145,10 +2145,13 @@ fn parse_page_selector_list_for_rule_parsing(mut tokens ParserTokenStream) ?Page
 fn convert_to_page_descriptor_for_rule_parsing(declaration Declaration) ?Descriptor {
 	descriptor_id := descriptor_id_from_string(.page, declaration.name) or { return none }
 	value_text := parser_component_values_to_string(declaration.value).trim_space()
-	value := parse_css_descriptor_stub(.page, descriptor_id, value_text) or { return none }
+	value := parse_css_descriptor_value_for_cssom(.page, descriptor_id, value_text) or {
+		return none
+	}
 	return Descriptor{
-		descriptor_id: descriptor_id
-		value:         value
+		descriptor_id:    descriptor_id
+		value:            value.value
+		serialized_value: value.serialized
 	}
 }
 

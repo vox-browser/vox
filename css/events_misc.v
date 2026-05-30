@@ -254,8 +254,9 @@ pub enum DescriptorID {
 
 pub struct Descriptor {
 pub mut:
-	descriptor_id DescriptorID
-	value         &dom.StyleValue = unsafe { nil }
+	descriptor_id    DescriptorID
+	value            &dom.StyleValue = unsafe { nil }
+	serialized_value string
 }
 
 // --- PageSelector ---

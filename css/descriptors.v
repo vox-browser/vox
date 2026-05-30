@@ -54,11 +54,25 @@ fn descriptor_style_value_to_string(value &dom.StyleValue) string {
 	return ''
 }
 
-fn parse_css_descriptor_stub(at_rule_id AtRuleID, descriptor_id DescriptorID, value string) ?&dom.StyleValue {
+struct ParsedCSSDescriptorValue {
+	value      &dom.StyleValue = unsafe { nil }
+	serialized string
+}
+
+fn parse_css_descriptor_value_for_cssom(at_rule_id AtRuleID, descriptor_id DescriptorID, value string) ?ParsedCSSDescriptorValue {
 	parsed_value := parse_css_descriptor_value_logic(at_rule_id, descriptor_id, value) or {
 		return none
 	}
-	return dom_style_value_from_value_logic(parsed_value)
+	return ParsedCSSDescriptorValue{
+		value:      dom_style_value_from_value_logic(parsed_value)
+		serialized: parsed_value.serialize(.normal)
+	}
+}
+
+fn parse_css_descriptor_stub(at_rule_id AtRuleID, descriptor_id DescriptorID, value string) ?&dom.StyleValue {
+	return (parse_css_descriptor_value_for_cssom(at_rule_id, descriptor_id, value) or {
+		return none
+	}).value
 }
 
 // A non-spec base class for descriptor-list classes.
@@ -96,7 +110,7 @@ pub fn (descriptors &CSSDescriptors) item(index usize) string {
 }
 
 // https://drafts.csswg.org/cssom/#set-a-css-declaration
-fn (mut descriptors CSSDescriptors) set_a_css_declaration(descriptor_id DescriptorID, value &dom.StyleValue, important Important) bool {
+fn (mut descriptors CSSDescriptors) set_a_css_declaration(descriptor_id DescriptorID, value &dom.StyleValue, important Important, serialized_value string) bool {
 	_ = important
 	if descriptors.computed {
 		panic('Cannot set computed CSSDescriptors')
@@ -109,6 +123,7 @@ fn (mut descriptors CSSDescriptors) set_a_css_declaration(descriptor_id Descript
 			}
 			unsafe {
 				descriptors.descriptors[i].value = value
+				descriptors.descriptors[i].serialized_value = serialized_value
 			}
 			return true
 		}
@@ -116,8 +131,9 @@ fn (mut descriptors CSSDescriptors) set_a_css_declaration(descriptor_id Descript
 
 	unsafe {
 		descriptors.descriptors << Descriptor{
-			descriptor_id: descriptor_id
-			value:         value
+			descriptor_id:    descriptor_id
+			value:            value
+			serialized_value: serialized_value
 		}
 	}
 	return true
@@ -147,7 +163,8 @@ pub fn (mut descriptors CSSDescriptors) set_property(property string, value stri
 	}
 
 	// 5. Let component value list be the result of parsing value for property property.
-	component_value_list := parse_css_descriptor_stub(descriptors.at_rule_id, descriptor_id, value) or {
+	component_value_list := parse_css_descriptor_value_for_cssom(descriptors.at_rule_id,
+		descriptor_id, value) or {
 		// 6. If component value list is null, then return.
 		return
 	}
@@ -158,7 +175,7 @@ pub fn (mut descriptors CSSDescriptors) set_property(property string, value stri
 	// 8. If property is a shorthand property, then for each longhand property longhand that property maps to, in canonical order, follow these substeps:
 	if is_descriptor_shorthand(descriptors.at_rule_id, descriptor_id) {
 		for_each_expanded_descriptor_longhand(descriptors.at_rule_id, descriptor_id,
-			component_value_list, fn [mut descriptors, priority, mut updated] (longhand_id DescriptorID, longhand_value &dom.StyleValue) {
+			component_value_list.value, fn [mut descriptors, priority, mut updated] (longhand_id DescriptorID, longhand_value &dom.StyleValue) {
 			// 1. Let longhand result be the result of set the CSS declaration longhand with the appropriate value(s)
 			//    from component value list, with the important flag set if priority is not the empty string, and unset
 			//    otherwise, and with the list of declarations being the declarations.
@@ -166,7 +183,7 @@ pub fn (mut descriptors CSSDescriptors) set_property(property string, value stri
 				Important.no
 			} else {
 				Important.yes
-			})
+			}, descriptor_style_value_to_string(longhand_value))
 
 			// 2. If longhand result is true, let updated be true.
 			if longhand_result {
@@ -178,11 +195,11 @@ pub fn (mut descriptors CSSDescriptors) set_property(property string, value stri
 	//    with the important flag set if priority is not the empty string, and unset otherwise, and with the list of
 	//    declarations being the declarations.
 	else {
-		updated = descriptors.set_a_css_declaration(descriptor_id, component_value_list, if priority.len != 0 {
+		updated = descriptors.set_a_css_declaration(descriptor_id, component_value_list.value, if priority.len != 0 {
 			Important.yes
 		} else {
 			Important.no
-		})
+		}, component_value_list.serialized)
 	}
 
 	// 10. If updated is true, update style attribute for the CSS declaration block.
@@ -210,7 +227,18 @@ pub fn (mut descriptors CSSDescriptors) remove_property(property string) !string
 
 	// 5. If property is a shorthand property, for each longhand property longhand that property maps to:
 	if id := descriptor_id {
-		if is_descriptor_shorthand(descriptors.at_rule_id, id) {
+		if descriptors.at_rule_id == .page && id == .margin {
+			mut kept := []Descriptor{}
+			for descriptor in descriptors.descriptors {
+				if descriptor.descriptor_id in [.margin, .margin_top, .margin_right, .margin_bottom,
+					.margin_left] {
+					removed = true
+					continue
+				}
+				kept << descriptor
+			}
+			descriptors.descriptors = kept
+		} else if is_descriptor_shorthand(descriptors.at_rule_id, id) {
 			for_each_expanded_descriptor_longhand(descriptors.at_rule_id, id, unsafe { nil }, fn [mut descriptors, mut removed] (longhand_id DescriptorID, longhand_value &dom.StyleValue) {
 				_ = longhand_value
 				// 1. If longhand is not a property name of a CSS declaration in the declarations, continue.
@@ -259,6 +287,9 @@ pub fn (descriptors &CSSDescriptors) get_property_value(property string) string 
 	descriptor_id := descriptor_id_from_string(descriptors.at_rule_id, property) or { return '' }
 	for descriptor in descriptors.descriptors {
 		if descriptor.descriptor_id == descriptor_id {
+			if descriptor.serialized_value.len != 0 {
+				return descriptor.serialized_value
+			}
 			return descriptor_style_value_to_string(descriptor.value)
 		}
 	}
@@ -319,7 +350,11 @@ pub fn (descriptors &CSSDescriptors) serialized() string {
 		// NB: Descriptors can't be shorthands.
 
 		// 5. Let value be the result of invoking serialize a CSS value of declaration.
-		value := descriptor_style_value_to_string(descriptor.value)
+		value := if descriptor.serialized_value.len != 0 {
+			descriptor.serialized_value
+		} else {
+			descriptor_style_value_to_string(descriptor.value)
+		}
 
 		// 6. Let serialized declaration be the result of invoking serialize a CSS declaration with property name property, value value, and the important flag set if declaration has its important flag set.
 		serialized_declaration := serialize_a_css_declaration(property, value, .no)
@@ -342,7 +377,6 @@ pub fn (mut descriptors CSSDescriptors) set_css_text(value string) ! {
 		return error('NoModificationAllowedError: Cannot modify properties of readonly CSSStyleDeclaration')
 	}
 
-	// Stub: Parser::parse_css_style_declaration() for descriptors is not translated yet.
 	descriptors.descriptors = parse_descriptor_declaration_block_stub(descriptors.at_rule_id, value)
 	descriptors.update_style_attribute()
 }
@@ -364,29 +398,45 @@ pub fn for_each_expanded_descriptor_longhand(at_rule_id AtRuleID, descriptor_id 
 }
 
 fn parse_descriptor_declaration_block_stub(at_rule_id AtRuleID, text string) []Descriptor {
-	mut declarations := []Descriptor{}
 	mut block := text.trim_space()
 	if block.starts_with('{') && block.ends_with('}') {
 		block = block[1..block.len - 1]
 	}
 
-	for declaration_text in block.split(';') {
-		declaration := declaration_text.trim_space()
-		if declaration.len == 0 || !declaration.contains(':') {
+	mut parser := RuleSelectorParser.create(ParsingParams{}, block, 'utf-8')
+	mut input := parser.token_stream
+	mut declarations := []Descriptor{}
+
+	for {
+		input.discard_whitespace()
+		if !input.has_next_token() {
+			break
+		}
+		if input.next_token().is(.semicolon) {
+			input.discard_a_token()
 			continue
 		}
-		parts := declaration.split_nth(':', 2)
-		if parts.len != 2 {
+
+		declaration := parser.consume_a_declaration(mut input, .no, .yes) or {
+			parser.consume_the_remnants_of_a_bad_declaration(mut input, .no)
 			continue
 		}
-		descriptor_id := descriptor_id_from_string(at_rule_id, parts[0].trim_space()) or {
-			continue
-		}
-		value_text := parts[1].trim_space()
-		value := parse_css_descriptor_stub(at_rule_id, descriptor_id, value_text) or { continue }
-		declarations << Descriptor{
-			descriptor_id: descriptor_id
-			value:         value
+
+		if at_rule_id == .page {
+			if descriptor := convert_to_page_descriptor_for_rule_parsing(declaration) {
+				append_descriptor(mut declarations, descriptor)
+			}
+		} else {
+			descriptor_id := descriptor_id_from_string(at_rule_id, declaration.name) or { continue }
+			value_text := parser_component_values_to_string(declaration.value).trim_space()
+			value := parse_css_descriptor_value_for_cssom(at_rule_id, descriptor_id, value_text) or {
+				continue
+			}
+			append_descriptor(mut declarations, Descriptor{
+				descriptor_id:    descriptor_id
+				value:            value.value
+				serialized_value: value.serialized
+			})
 		}
 	}
 
