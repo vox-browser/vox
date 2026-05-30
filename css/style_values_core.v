@@ -1,6 +1,7 @@
 // Translated from core LibWeb/CSS StyleValue and Typed OM classes.
 module css
 
+import dom
 import math
 
 // --- Small local stubs for parser/JS/WebIDL-only pieces ---
@@ -74,6 +75,7 @@ pub struct ComputationContext {
 pub mut:
 	length_resolution_context LengthResolutionContext = LengthResolutionContext.default()
 	color_scheme              ?PreferredColorScheme
+	abstract_element          ?&dom.AbstractElement
 }
 
 pub enum PerformTypeCheck {

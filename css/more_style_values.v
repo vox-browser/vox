@@ -2827,9 +2827,8 @@ pub fn (style_value TreeCountingFunctionStyleValue) resolve_for_dom_abstract_ele
 }
 
 pub fn (style_value TreeCountingFunctionStyleValue) resolve() int {
-	// DOM context integration: C++ resolves this through ComputationContext::abstract_element. The V
-	// ComputationContext stand-in does not carry a DOM element yet; callers with one should use
-	// resolve_for_dom_abstract_element().
+	// DOM context integration: C++ resolves this through ComputationContext::abstract_element. Callers with a DOM
+	// element should use resolve_for_dom_abstract_element().
 	panic('TreeCountingFunctionStyleValue::resolve requires a DOM AbstractElement')
 }
 
@@ -2841,9 +2840,12 @@ fn tree_counting_computed_style_value(value int, computed_type TreeCountingCompu
 }
 
 pub fn (style_value TreeCountingFunctionStyleValue) absolutized(context ComputationContext) StyleValue {
-	_ = context
 	// FIXME: We should clamp this value in case it falls outside the valid range for the context it is in.
-	value := style_value.resolve()
+	abstract_element := context.abstract_element or {
+		panic('TreeCountingFunctionStyleValue::absolutized requires ComputationContext.abstract_element')
+	}
+
+	value := style_value.resolve_for_dom_abstract_element(abstract_element)
 	return tree_counting_computed_style_value(value, style_value.computed_type_)
 }
 
