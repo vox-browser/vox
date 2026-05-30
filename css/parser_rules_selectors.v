@@ -572,7 +572,12 @@ fn (mut parser RuleSelectorParser) consume_a_qualified_rule(mut input ParserToke
 	}
 
 	// NOTE: Qualified rules inside @keyframes are a keyframe rule. We'll assume all others are style rules.
-	type_of_qualified_rule := RuleContext.style
+	type_of_qualified_rule := if parser.rule_context.len > 0
+		&& parser.rule_context[parser.rule_context.len - 1] == .keyframes {
+		RuleContext.keyframe
+	} else {
+		RuleContext.style
+	}
 
 	// Process input:
 	for {
@@ -889,7 +894,17 @@ fn (mut parser RuleSelectorParser) consume_a_declaration(mut input ParserTokenSt
 	}
 
 	// 9. If decl is valid in the current context, return it; otherwise return nothing.
-	if parser.is_valid_declaration_in_the_current_context(declaration) {
+	// Boundary: supports-declaration parsing lives in media_queries.v and constructs a parser directly for an
+	// already-isolated declaration. save_full_text is only used by that path, so validate it as SupportsCondition.
+	validate_as_supports_condition := save_full_text == .yes && parser.rule_context.len == 0
+	if validate_as_supports_condition {
+		parser.rule_context << .supports_condition
+	}
+	is_valid_declaration := parser.is_valid_declaration_in_the_current_context(declaration)
+	if validate_as_supports_condition {
+		parser.rule_context.delete(parser.rule_context.len - 1)
+	}
+	if is_valid_declaration {
 		if save_full_text == .yes {
 			declaration.original_full_text =
 				parser_component_values_to_string(input.tokens_since(start_token_index))
@@ -2386,27 +2401,110 @@ fn parser_selector_uses_undeclared_namespace(text string, declared_namespaces ma
 }
 
 fn (parser RuleSelectorParser) is_valid_declaration_in_the_current_context(declaration Declaration) bool {
-	_ = parser
 	if declaration.name.len == 0 {
 		return false
 	}
-	return true
+
+	if parser.rule_context.len == 0 {
+		return false
+	}
+
+	last_context := parser.rule_context[parser.rule_context.len - 1]
+	return match last_context {
+		.unknown { false }
+		.style, .keyframe { true }
+		.layer, .media, .supports { rule_context_contains(parser.rule_context, .style) }
+		.font_feature_value { true }
+		.counter_style, .font_face, .font_feature_values, .page, .property, .margin { true }
+		.keyframes { false }
+		.supports_condition { true }
+	}
 }
 
 fn (parser RuleSelectorParser) is_valid_at_rule_in_the_current_context(rule AtRule) bool {
-	_ = parser
-	_ = rule
-	return true
+	if parser.rule_context.len == 0 {
+		return !is_margin_rule_name(rule.name)
+	}
+
+	if rule_context_contains(parser.rule_context, .style) {
+		return ascii_case_insensitive_name_is_one_of(rule.name, ['layer', 'media', 'supports'])
+	}
+
+	last_context := parser.rule_context[parser.rule_context.len - 1]
+	return match last_context {
+		.unknown {
+			false
+		}
+		.style {
+			false
+		}
+		.layer, .media, .supports {
+			!ascii_case_insensitive_name_is_one_of(rule.name, ['import', 'namespace'])
+		}
+		.supports_condition {
+			false
+		}
+		.page {
+			is_margin_rule_name(rule.name)
+		}
+		.counter_style, .font_face, .font_feature_value, .keyframes, .keyframe, .property, .margin {
+			false
+		}
+		.font_feature_values {
+			is_font_feature_value_type_at_keyword_local(rule.name)
+		}
+	}
 }
 
 fn (parser RuleSelectorParser) is_valid_qualified_rule_in_the_current_context(rule QualifiedRule) bool {
-	_ = parser
-	return rule.prelude.len > 0
+	_ = rule
+	if parser.rule_context.len == 0 {
+		return true
+	}
+
+	last_context := parser.rule_context[parser.rule_context.len - 1]
+	return match last_context {
+		.unknown {
+			false
+		}
+		.style {
+			true
+		}
+		.layer, .media, .supports {
+			true
+		}
+		.keyframes {
+			true
+		}
+		.supports_condition {
+			false
+		}
+		.counter_style, .font_face, .font_feature_values, .font_feature_value, .page, .property,
+		.keyframe, .margin {
+			false
+		}
+	}
 }
 
 fn rule_context_type_for_at_rule_local(name string) RuleContext {
 	if equals_ignoring_ascii_case(name, 'media') {
 		return .media
+	}
+	if equals_ignoring_ascii_case(name, 'counter-style') {
+		return .counter_style
+	}
+	if equals_ignoring_ascii_case(name, 'font-face') {
+		return .font_face
+	}
+	if equals_ignoring_ascii_case(name, 'keyframes')
+		|| equals_ignoring_ascii_case(name, '-webkit-keyframes') {
+		return .keyframes
+	}
+	if equals_ignoring_ascii_case(name, 'font-feature-values') {
+		return .font_feature_values
+	}
+	if is_font_feature_value_type_at_keyword_local(name) {
+		return .font_feature_value
 	}
 	if equals_ignoring_ascii_case(name, 'supports') {
 		return .supports
@@ -2414,10 +2512,46 @@ fn rule_context_type_for_at_rule_local(name string) RuleContext {
 	if equals_ignoring_ascii_case(name, 'layer') {
 		return .layer
 	}
+	if equals_ignoring_ascii_case(name, 'property') {
+		return .property
+	}
 	if equals_ignoring_ascii_case(name, 'page') {
 		return .page
 	}
-	return .top_level
+	if is_margin_rule_name(name) {
+		return .margin
+	}
+	return .unknown
+}
+
+fn ascii_case_insensitive_name_is_one_of(name string, names []string) bool {
+	for candidate in names {
+		if equals_ignoring_ascii_case(name, candidate) {
+			return true
+		}
+	}
+	return false
+}
+
+fn rule_context_contains(context []RuleContext, target RuleContext) bool {
+	for item in context {
+		if item == target {
+			return true
+		}
+	}
+	return false
+}
+
+fn is_font_feature_value_type_at_keyword_local(name string) bool {
+	return ascii_case_insensitive_name_is_one_of(name, [
+		'stylistic',
+		'historical-forms',
+		'styleset',
+		'character-variant',
+		'swash',
+		'ornaments',
+		'annotation',
+	])
 }
 
 fn parser_log_parse_error() {}
@@ -3466,6 +3600,7 @@ pub fn parse_css_property_declaration_block_with_parser(block string) &CSSStyleP
 	}
 
 	mut parser := RuleSelectorParser.create(ParsingParams{}, body, 'utf-8')
+	parser.rule_context << .style
 	mut input := parser.token_stream
 	mut declarations := []Declaration{}
 	for {

@@ -2131,22 +2131,38 @@ fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {
 }
 
 pub enum RuleContext {
-	top_level
+	unknown
 	style
+	counter_style
 	media
+	font_face
+	font_feature_values
+	font_feature_value
+	keyframes
+	keyframe
 	supports
+	supports_condition
 	layer
+	property
 	page
+	margin
 }
 
 fn rule_context_type_for_rule(rule_type CSSRuleType) RuleContext {
 	return match rule_type {
 		.style, .nested_declarations { .style }
+		.counter_style { .counter_style }
 		.media { .media }
+		.font_face { .font_face }
+		.font_feature_values { .font_feature_values }
+		.keyframes { .keyframes }
+		.keyframe { .keyframe }
 		.supports { .supports }
 		.layer_block { .layer }
-		.page, .margin { .page }
-		else { .top_level }
+		.property { .property }
+		.page { .page }
+		.margin { .margin }
+		else { .unknown }
 	}
 }
 
