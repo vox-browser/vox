@@ -58,8 +58,15 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.border_top_color { 'border-top-color' }
 		.border_top_style { 'border-top-style' }
 		.border_top_width { 'border-top-width' }
+		.border_bottom_left_radius { 'border-bottom-left-radius' }
+		.border_bottom_right_radius { 'border-bottom-right-radius' }
+		.border_top_left_radius { 'border-top-left-radius' }
+		.border_top_right_radius { 'border-top-right-radius' }
+		.border_image_outset { 'border-image-outset' }
 		.border_image_repeat { 'border-image-repeat' }
+		.border_image_slice { 'border-image-slice' }
 		.border_image_source { 'border-image-source' }
+		.border_image_width { 'border-image-width' }
 		.box_sizing { 'box-sizing' }
 		.caption_side { 'caption-side' }
 		.caret_color { 'caret-color' }
@@ -234,11 +241,13 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 			false
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
-		.border_bottom_style, .border_bottom_width, .border_collapse, .border_image_repeat,
-		.border_image_source, .border_left_color, .border_left_style, .border_left_width,
-		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
-		.border_top_style, .border_top_width, .box_sizing, .caption_side, .caret_color, .clip_rule,
-		.color, .color_interpolation, .color_scheme, .content_visibility,
+		.border_bottom_style, .border_bottom_width, .border_bottom_left_radius,
+		.border_bottom_right_radius, .border_collapse, .border_image_outset, .border_image_repeat,
+		.border_image_slice, .border_image_source, .border_image_width, .border_left_color,
+		.border_left_style, .border_left_width, .border_right_color, .border_right_style,
+		.border_right_width, .border_top_color, .border_top_style, .border_top_width,
+		.border_top_left_radius, .border_top_right_radius, .box_sizing, .caption_side,
+		.caret_color, .clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .fill_rule, .direction, .empty_cells, .flood_color,
 		.flood_opacity, .font_kerning, .font_language_override, .font_optical_sizing, .font_style,
@@ -283,11 +292,13 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 			true
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
-		.border_bottom_style, .border_bottom_width, .border_collapse, .border_image_repeat,
-		.border_image_source, .border_left_color, .border_left_style, .border_left_width,
-		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
-		.border_top_style, .border_top_width, .box_sizing, .caption_side, .caret_color, .clip_rule,
-		.color, .color_interpolation, .color_scheme, .content_visibility,
+		.border_bottom_style, .border_bottom_width, .border_bottom_left_radius,
+		.border_bottom_right_radius, .border_collapse, .border_image_outset, .border_image_repeat,
+		.border_image_slice, .border_image_source, .border_image_width, .border_left_color,
+		.border_left_style, .border_left_width, .border_right_color, .border_right_style,
+		.border_right_width, .border_top_color, .border_top_style, .border_top_width,
+		.border_top_left_radius, .border_top_right_radius, .box_sizing, .caption_side,
+		.caret_color, .clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .fill_rule, .direction, .empty_cells, .flood_color,
 		.flood_opacity, .font_kerning, .font_language_override, .font_optical_sizing, .font_style,
@@ -316,14 +327,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 189
+pub const number_of_longhand_properties = 196
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .mask_size
+	return .border_top_right_radius
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -517,6 +528,13 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		186 { PropertyID.background_size }
 		187 { PropertyID.mask_position }
 		188 { PropertyID.mask_size }
+		189 { PropertyID.border_image_outset }
+		190 { PropertyID.border_image_slice }
+		191 { PropertyID.border_image_width }
+		192 { PropertyID.border_bottom_left_radius }
+		193 { PropertyID.border_bottom_right_radius }
+		194 { PropertyID.border_top_left_radius }
+		195 { PropertyID.border_top_right_radius }
 		else { none }
 	}
 }

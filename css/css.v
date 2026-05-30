@@ -223,6 +223,13 @@ pub enum PropertyID {
 	background_size
 	mask_position
 	mask_size
+	border_image_outset
+	border_image_slice
+	border_image_width
+	border_bottom_left_radius
+	border_bottom_right_radius
+	border_top_left_radius
+	border_top_right_radius
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

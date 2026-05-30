@@ -1047,14 +1047,27 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width {
 			'medium'
 		}
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_top_left_radius,
+		.border_top_right_radius {
+			'0'
+		}
 		.border_collapse {
 			'separate'
+		}
+		.border_image_outset {
+			'0'
 		}
 		.border_image_repeat {
 			'stretch'
 		}
+		.border_image_slice {
+			'100%'
+		}
 		.border_image_source {
 			'none'
+		}
+		.border_image_width {
+			'1'
 		}
 		.box_sizing {
 			'content-box'
@@ -1466,8 +1479,10 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.background_color, .background_image, .background_attachment, .background_blend_mode,
 		.background_clip, .background_origin, .background_position_x, .background_position_y,
 		.background_repeat, .background_size, .border_bottom_color, .border_bottom_width,
-		.border_image_source, .border_left_color, .border_left_width, .border_right_color,
-		.border_right_width, .border_top_color, .border_top_width, .caret_color, .color,
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_image_outset,
+		.border_image_slice, .border_image_source, .border_image_width, .border_left_color,
+		.border_left_width, .border_right_color, .border_right_width, .border_top_color,
+		.border_top_width, .border_top_left_radius, .border_top_right_radius, .caret_color, .color,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity,
 		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
@@ -1536,11 +1551,13 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .aspect_ratio, .background_image, .border_bottom_color,
-		.border_bottom_style, .border_collapse, .border_image_repeat, .border_image_source,
-		.border_left_color, .border_left_style, .border_right_color, .border_right_style,
-		.border_top_color, .border_top_style, .box_sizing, .caption_side, .caret_color, .clear,
-		.clip_rule, .color_interpolation, .color_scheme, .content_visibility, .contain,
-		.container_type, .direction, .empty_cells, .fill_opacity, .fill_rule, .float_,
+		.border_bottom_style, .border_bottom_left_radius, .border_bottom_right_radius,
+		.border_collapse, .border_image_outset, .border_image_repeat, .border_image_slice,
+		.border_image_source, .border_image_width, .border_left_color, .border_left_style,
+		.border_right_color, .border_right_style, .border_top_color, .border_top_style,
+		.border_top_left_radius, .border_top_right_radius, .box_sizing, .caption_side,
+		.caret_color, .clear, .clip_rule, .color_interpolation, .color_scheme, .content_visibility,
+		.contain, .container_type, .direction, .empty_cells, .fill_opacity, .fill_rule, .float_,
 		.flood_opacity, .font_feature_settings, .font_kerning, .font_language_override,
 		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
 		.font_variation_settings, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap,
@@ -4545,8 +4562,10 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 			.none_
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
-		.border_bottom_width, .border_left_color, .border_left_width, .border_right_color,
-		.border_right_width, .border_top_color, .border_top_width, .caret_color, .color,
+		.border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius,
+		.border_image_outset, .border_image_slice, .border_image_width, .border_left_color,
+		.border_left_width, .border_right_color, .border_right_width, .border_top_color,
+		.border_top_width, .border_top_left_radius, .border_top_right_radius, .caret_color, .color,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity, .font_style,
 		.font_weight, .font_width, .flex_grow, .flex_shrink, .column_count, .column_width,
@@ -5307,8 +5326,10 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.animation_timing_function, .background_attachment, .background_blend_mode,
 		.background_clip, .background_color, .background_image, .background_origin,
 		.background_position_x, .background_position_y, .background_repeat, .background_size,
-		.border_bottom_color, .border_image_repeat, .border_image_source, .border_left_color,
-		.border_right_color, .border_top_color, .caret_color, .clip_rule, .color,
+		.border_bottom_color, .border_bottom_left_radius, .border_bottom_right_radius,
+		.border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source,
+		.border_image_width, .border_left_color, .border_right_color, .border_top_color,
+		.border_top_left_radius, .border_top_right_radius, .caret_color, .clip_rule, .color,
 		.color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape,
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.fill_rule, .flood_color, .flood_opacity, .font_feature_settings, .font_variation_settings,
@@ -5362,12 +5383,14 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.animation_timing_function, .aspect_ratio, .background_attachment, .background_blend_mode,
 		.background_clip, .background_color, .background_image, .background_origin,
 		.background_position_x, .background_position_y, .background_repeat, .background_size,
-		.border_bottom_color, .border_bottom_style, .border_bottom_width, .border_collapse,
-		.border_image_repeat, .border_image_source, .border_left_color, .border_left_style,
-		.border_left_width, .border_right_color, .border_right_style, .border_right_width,
-		.border_top_color, .border_top_style, .border_top_width, .box_sizing, .caption_side,
-		.caret_color, .clear, .clip_rule, .color, .color_interpolation, .color_scheme,
-		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.border_bottom_color, .border_bottom_style, .border_bottom_width,
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_collapse,
+		.border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source,
+		.border_image_width, .border_left_color, .border_left_style, .border_left_width,
+		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
+		.border_top_style, .border_top_width, .border_top_left_radius, .border_top_right_radius,
+		.box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation,
+		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color,
 		.flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_kerning,
 		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
@@ -5427,12 +5450,14 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.animation_timing_function, .aspect_ratio, .background_attachment, .background_blend_mode,
 		.background_clip, .background_color, .background_image, .background_origin,
 		.background_position_x, .background_position_y, .background_repeat, .background_size,
-		.border_bottom_color, .border_bottom_style, .border_bottom_width, .border_collapse,
-		.border_image_repeat, .border_image_source, .border_left_color, .border_left_style,
-		.border_left_width, .border_right_color, .border_right_style, .border_right_width,
-		.border_top_color, .border_top_style, .border_top_width, .box_sizing, .caption_side,
-		.caret_color, .clear, .clip_rule, .color, .color_interpolation, .color_scheme,
-		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.border_bottom_color, .border_bottom_style, .border_bottom_width,
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_collapse,
+		.border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source,
+		.border_image_width, .border_left_color, .border_left_style, .border_left_width,
+		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
+		.border_top_style, .border_top_width, .border_top_left_radius, .border_top_right_radius,
+		.box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation,
+		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color,
 		.flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_kerning,
 		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,

@@ -268,8 +268,21 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_bottom_style, .border_left_style, .border_right_style, .border_top_style {
 			return parser.parse_line_style_value(mut tokens)
 		}
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_top_left_radius,
+		.border_top_right_radius {
+			return parser.parse_border_radius_value(mut tokens)
+		}
+		.border_image_outset {
+			return parser.parse_border_image_outset_value(mut tokens)
+		}
 		.border_image_repeat {
 			return parser.parse_border_image_repeat_value(mut tokens)
+		}
+		.border_image_slice {
+			return parser.parse_border_image_slice_value(mut tokens)
+		}
+		.border_image_width {
+			return parser.parse_border_image_width_value(mut tokens)
 		}
 		.border_collapse {
 			return parser.parse_border_collapse_value(mut tokens)
@@ -2628,6 +2641,176 @@ fn (mut parser Parser) parse_background_size_list_value(property_id PropertyID, 
 
 	tokens = transaction
 	return StyleValue(StyleValueList.create(sizes, .comma, .yes))
+}
+
+fn parse_border_image_fill_for_value_logic(mut tokens ComponentValueStream) bool {
+	mut transaction := tokens.clone()
+	component_value := transaction.consume() or { return false }
+	if !component_value.is(.ident) {
+		return false
+	}
+	if !equals_ignoring_ascii_case(component_value.token().ident(), 'fill') {
+		return false
+	}
+	tokens = transaction
+	return true
+}
+
+// https://drafts.csswg.org/css-backgrounds/#border-image-slice
+fn (mut parser Parser) parse_border_image_slice_value(mut tokens ComponentValueStream) ?StyleValue {
+	// [<number [0,+infinity]> | <percentage [0,+infinity]>]{1,4} && fill?
+	mut transaction := tokens.clone()
+	mut fill := false
+
+	transaction.consume_whitespace()
+	if parse_border_image_fill_for_value_logic(mut transaction) {
+		fill = true
+	}
+	transaction.consume_whitespace()
+
+	mut number_percentages := []StyleValue{}
+	for number_percentages.len <= 4 && transaction.has_more_tokens() {
+		number_percentage := parser.parse_number_percentage_value(mut transaction) or { break }
+		if style_value_numeric_component_is_negative_for_value_logic(number_percentage) {
+			return none
+		}
+		number_percentages << number_percentage
+		transaction.consume_whitespace()
+	}
+
+	mut expanded_values := []StyleValue{}
+	match number_percentages.len {
+		1 {
+			expanded_values = [
+				number_percentages[0],
+				number_percentages[0],
+				number_percentages[0],
+				number_percentages[0],
+			]
+		}
+		2 {
+			expanded_values = [
+				number_percentages[0],
+				number_percentages[1],
+				number_percentages[0],
+				number_percentages[1],
+			]
+		}
+		3 {
+			expanded_values = [
+				number_percentages[0],
+				number_percentages[1],
+				number_percentages[2],
+				number_percentages[1],
+			]
+		}
+		4 {
+			expanded_values = number_percentages.clone()
+		}
+		else {
+			return none
+		}
+	}
+
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() && parse_border_image_fill_for_value_logic(mut transaction) {
+		if fill {
+			return none
+		}
+		fill = true
+		transaction.consume_whitespace()
+	}
+
+	tokens = transaction
+	return StyleValue(BorderImageSliceStyleValue.create(expanded_values[0], expanded_values[1],
+		expanded_values[2], expanded_values[3], fill))
+}
+
+fn (mut parser Parser) parse_border_radius_value(mut tokens ComponentValueStream) ?StyleValue {
+	// https://drafts.csswg.org/css-borders-4/#typedef-border-radius
+	// <border-radius> = <slash-separated-border-radius-syntax> | <legacy-border-radius-syntax>
+	// <slash-separated-border-radius-syntax> = <length-percentage [0,+infinity]> [ / <length-percentage [0,+infinity]> ]?
+	// <legacy-border-radius-syntax> = <length-percentage [0,+infinity]>{1,2}
+	// NB: So, 1 or 2 `<length-percentage>`s, optionally separated with a `/`.
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	horizontal := parser.parse_nonnegative_length_percentage_value(mut transaction) or {
+		return none
+	}
+	transaction.consume_whitespace()
+
+	if next_token := transaction.peek() {
+		if next_token.is_delim(u32(`/`)) {
+			transaction.consume()
+			transaction.consume_whitespace()
+		}
+	}
+
+	if vertical := parser.parse_nonnegative_length_percentage_value(mut transaction) {
+		tokens = transaction
+		return StyleValue(BorderRadiusStyleValue.create(horizontal, vertical))
+	}
+
+	tokens = transaction
+	return StyleValue(BorderRadiusStyleValue.create(horizontal, horizontal))
+}
+
+fn (mut parser Parser) parse_border_image_outset_component_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parser.parse_nonnegative_length_value(mut transaction) {
+		tokens = transaction
+		return value
+	}
+	return parser.parse_nonnegative_number_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_border_image_width_component_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto']) {
+		tokens = transaction
+		return value
+	}
+	if value := parser.parse_nonnegative_length_percentage_value(mut transaction) {
+		tokens = transaction
+		return value
+	}
+	return parser.parse_nonnegative_number_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_border_image_outset_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	mut values := []StyleValue{}
+	for values.len < 4 && transaction.has_more_tokens() {
+		value := parser.parse_border_image_outset_component_value(mut transaction) or { break }
+		values << value
+		transaction.consume_whitespace()
+	}
+	if values.len == 0 {
+		return none
+	}
+	tokens = transaction
+	if values.len == 1 {
+		return values[0]
+	}
+	return StyleValue(StyleValueList.create(values, .space, .yes))
+}
+
+fn (mut parser Parser) parse_border_image_width_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	mut values := []StyleValue{}
+	for values.len < 4 && transaction.has_more_tokens() {
+		value := parser.parse_border_image_width_component_value(mut transaction) or { break }
+		values << value
+		transaction.consume_whitespace()
+	}
+	if values.len == 0 {
+		return none
+	}
+	tokens = transaction
+	if values.len == 1 {
+		return values[0]
+	}
+	return StyleValue(StyleValueList.create(values, .space, .yes))
 }
 
 fn (mut parser Parser) parse_border_image_repeat_value(mut tokens ComponentValueStream) ?StyleValue {
