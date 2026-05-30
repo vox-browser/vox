@@ -1147,10 +1147,6 @@ fn parse_font_face_descriptor(id FontFaceDescriptorID, value string) ?string {
 	return trimmed
 }
 
-fn parse_font_face_descriptor_stub(id FontFaceDescriptorID, value string) ?string {
-	return parse_font_face_descriptor(id, value)
-}
-
 @[heap]
 pub struct CSSFontFaceRule {
 pub mut:

@@ -1910,7 +1910,7 @@ fn append_font_face_descriptor(mut descriptors []FontFaceDescriptor, descriptor 
 }
 
 fn parse_font_face_descriptor_for_rule_parsing(id FontFaceDescriptorID, value string) ?string {
-	return parse_font_face_descriptor_stub(id, value)
+	return parse_font_face_descriptor(id, value)
 }
 
 fn parse_font_family_name_for_rule_parsing(values []ComponentValue) ?string {
