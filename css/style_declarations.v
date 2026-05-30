@@ -34,13 +34,17 @@ pub fn property_is_shorthand(property_id PropertyID) bool {
 }
 
 pub fn property_is_single_valued(property_id PropertyID) bool {
-	_ = property_id
-	return true
+	return match property_id {
+		.animation_timeline { false }
+		.color, .color_scheme, .content_visibility { true }
+	}
 }
 
 pub fn property_is_list_valued(property_id PropertyID) bool {
-	_ = property_id
-	return false
+	return match property_id {
+		.animation_timeline { true }
+		.color, .color_scheme, .content_visibility { false }
+	}
 }
 
 pub const number_of_longhand_properties = 4
@@ -75,6 +79,39 @@ fn dom_style_value_to_css_text(value &dom.StyleValue) string {
 	_ = value
 	// Stub: dom.StyleValue is currently an opaque DOM-side placeholder in this V port.
 	return ''
+}
+
+fn css_style_properties_length(properties &CSSStyleProperties) int {
+	if properties.is_computed() {
+		if properties.owner_node == none {
+			return 0
+		}
+		return number_of_longhand_properties
+	}
+	return properties.length()
+}
+
+fn custom_property_is_important(serialized_value string) bool {
+	return serialized_value.trim_space().to_lower().ends_with('!important')
+}
+
+fn custom_property_value_without_priority(serialized_value string) string {
+	trimmed := serialized_value.trim_space()
+	if !custom_property_is_important(trimmed) {
+		return trimmed
+	}
+	mut without_priority := trimmed[..trimmed.len - '!important'.len].trim_space()
+	if without_priority.ends_with('!') {
+		without_priority = without_priority[..without_priority.len - 1].trim_space()
+	}
+	return without_priority
+}
+
+fn serialized_text_from_mutable_style_property_map_value(value MutableStylePropertyMapValue) !string {
+	return match value {
+		CSSStyleValue { value.to_string()! }
+		string { value }
+	}
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssstylerule-style
@@ -213,7 +250,10 @@ pub fn (mut properties CSSStyleProperties) update_style_attribute() {
 	properties.set_is_updating(true)
 
 	// 5. Set an attribute value for owner node using "style" and the result of serializing declaration block.
-	// Stub: the DOM AbstractElement V surface does not expose set_attribute_value on the contained element yet.
+	if owner_node := properties.owner_node {
+		mut element := unsafe { &dom.Element(owner_node.element()) }
+		element.set_attribute_value('style', properties.serialized())
+	}
 
 	// 6. Unset declaration block's updating flag.
 	properties.set_is_updating(false)
@@ -235,7 +275,7 @@ pub fn (properties &CSSStyleProperties) item(index usize) string {
 	// If there is no indexth object in the collection, then the method must return the empty string.
 	custom_properties_count := properties.custom_properties.len
 
-	if int(index) >= properties.length() {
+	if int(index) >= css_style_properties_length(properties) {
 		return ''
 	}
 
@@ -277,7 +317,7 @@ pub fn (properties &CSSStyleProperties) custom_property(custom_property_name str
 		return StyleProperty{
 			property_id: .color
 			value:       css_style_properties_empty_dom_style_value()
-			important:   if value.to_lower().contains('!important') {
+			important:   if custom_property_is_important(value) {
 				Important.yes
 			} else {
 				Important.no
@@ -319,10 +359,28 @@ pub fn (mut properties CSSStyleProperties) set_property_internal(property Proper
 		return
 	}
 
+	if property.is_custom_property() {
+		mut serialized := value
+		if priority.len != 0 {
+			serialized += ' !important'
+		}
+		properties.custom_properties[property.name()] = serialized
+		properties.update_style_attribute()
+		properties.invalidate_owners(.style_sheet_changed)
+		return
+	}
+
+	property_id := property.id() or { return }
+
 	// 5. Let component value list be the result of parsing value for property property.
-	component_value_list := parse_css_value(ParsingParams{}, value, property.id() or {
-		PropertyID.color
-	}) or {
+	context := if owner_node := properties.owner_node {
+		ParsingParams{
+			document: owner_node.element().document()
+		}
+	} else {
+		ParsingParams{}
+	}
+	component_value_list := parse_css_value(context, value, property_id) or {
 		// 6. If component value list is null, then return.
 		return
 	}
@@ -331,9 +389,9 @@ pub fn (mut properties CSSStyleProperties) set_property_internal(property Proper
 	mut updated := false
 
 	// 8. If property is a shorthand property,
-	if property_is_shorthand(property.id() or { PropertyID.color }) {
+	if property_is_shorthand(property_id) {
 		// then for each longhand property longhand that property maps to, in canonical order, follow these substeps:
-		StyleComputer.for_each_property_expanding_shorthands(property.id() or { PropertyID.color },
+		StyleComputer.for_each_property_expanding_shorthands(property_id,
 			component_value_list, fn [priority, mut properties, mut updated] (longhand_property_id PropertyID, longhand_value &dom.StyleValue) {
 			// 1. Let longhand result be the result of set the CSS declaration longhand with the appropriate value(s) from component value list,
 			//    with the important flag set if priority is not the empty string, and unset otherwise, and with the list of declarations being the declarations.
@@ -345,20 +403,11 @@ pub fn (mut properties CSSStyleProperties) set_property_internal(property Proper
 	}
 	// 9. Otherwise,
 	else {
-		if property.is_custom_property() {
-			mut serialized := value
-			if priority.len != 0 {
-				serialized += ' !important'
-			}
-			properties.custom_properties[property.name()] = serialized
-			updated = true
-		} else {
-			// let updated be the result of set the CSS declaration property with value component value list,
-			// with the important flag set if priority is not the empty string, and unset otherwise,
-			// and with the list of declarations being the declarations.
-			updated = properties.set_a_css_declaration(property.id() or { PropertyID.color },
-				component_value_list, if priority.len != 0 { Important.yes } else { Important.no })
-		}
+		// let updated be the result of set the CSS declaration property with value component value list,
+		// with the important flag set if priority is not the empty string, and unset otherwise,
+		// and with the list of declarations being the declarations.
+		updated = properties.set_a_css_declaration_with_serialized(property_id, component_value_list,
+			if priority.len != 0 { Important.yes } else { Important.no }, value)
 	}
 
 	// 10. If updated is true, update style attribute for the CSS declaration block.
@@ -375,9 +424,14 @@ pub fn (mut properties CSSStyleProperties) set_property_by_id(property_id Proper
 }
 
 pub fn (mut properties CSSStyleProperties) set_a_css_declaration(property_id PropertyID, value &dom.StyleValue, important Important) bool {
+	return properties.set_a_css_declaration_with_serialized(property_id, value, important,
+		dom_style_value_to_css_text(value))
+}
+
+fn (mut properties CSSStyleProperties) set_a_css_declaration_with_serialized(property_id PropertyID, value &dom.StyleValue, important Important, serialized_value string) bool {
 	mut new_property := CSSStyleProperty{
 		name:        string_from_property_id(property_id)
-		value:       dom_style_value_to_css_text(value)
+		value:       serialized_value
 		important:   important == .yes
 		style_value: unsafe { value }
 	}
@@ -409,7 +463,7 @@ pub fn (mut properties CSSStyleProperties) remove_property_internal(property Pro
 	mut removed_value := ''
 	if property.is_custom_property() {
 		if value := properties.custom_properties[property.name()] {
-			removed_value = value
+			removed_value = custom_property_value_without_priority(value)
 			properties.custom_properties.delete(property.name())
 		}
 	} else {
@@ -473,6 +527,19 @@ pub fn (properties &CSSStyleProperties) has_property(property PropertyNameAndID)
 
 pub fn (properties &CSSStyleProperties) property_value(property_name string) string {
 	property := PropertyNameAndID.from_name(property_name) or { return '' }
+	if property.is_custom_property() {
+		if value := properties.custom_properties[property.name()] {
+			return custom_property_value_without_priority(value)
+		}
+		return ''
+	}
+	property_id := property.id() or { return '' }
+	property_id_name := string_from_property_id(property_id)
+	for existing in properties.properties {
+		if existing.name == property_id_name {
+			return existing.value
+		}
+	}
 	if style_property := properties.get_property_internal(property) {
 		return dom_style_value_to_css_text(style_property.value)
 	}
@@ -481,6 +548,14 @@ pub fn (properties &CSSStyleProperties) property_value(property_name string) str
 
 pub fn (properties &CSSStyleProperties) property_priority(property_name string) string {
 	property := PropertyNameAndID.from_name(property_name) or { return '' }
+	if property.is_custom_property() {
+		if value := properties.custom_properties[property.name()] {
+			if custom_property_is_important(value) {
+				return 'important'
+			}
+		}
+		return ''
+	}
 	if style_property := properties.get_property_internal(property) {
 		if style_property.important == .yes {
 			return 'important'
@@ -524,10 +599,12 @@ pub fn (mut property_map StylePropertyMapReadOnly) get(property_name string) ?CS
 
 	// 3. Let props be the value of this's [[declarations]] internal slot.
 	// 4. If props[property] exists, subdivide into iterations props[property], then reify the first item of the result and return it.
+	if serialized_value := property_map.get_serialized_style_value(property) {
+		return StyleValue(StubStyleValue.create(.unresolved, serialized_value)).reify(property.name())
+	}
 	if property_value := property_map.get_style_value(property) {
 		_ = property_value
-		return CSSStyleValue.from_source(StyleValue(StubStyleValue.create(.unresolved,
-			property.name())))
+		return StyleValue(StubStyleValue.create(.unresolved, '')).reify(property.name())
 	}
 
 	// 5. Otherwise, return undefined.
@@ -544,11 +621,12 @@ pub fn (mut property_map StylePropertyMapReadOnly) get_all(property_name string)
 
 	// 3. Let props be the value of this's [[declarations]] internal slot.
 	// 4. If props[property] exists, subdivide into iterations props[property], then reify each item of the result, and return the list.
+	if serialized_value := property_map.get_serialized_style_value(property) {
+		return [StyleValue(StubStyleValue.create(.unresolved, serialized_value)).reify(property.name())]
+	}
 	if property_value := property_map.get_style_value(property) {
 		_ = property_value
-		return [
-			CSSStyleValue.from_source(StyleValue(StubStyleValue.create(.unresolved, property.name()))),
-		]
+		return [StyleValue(StubStyleValue.create(.unresolved, '')).reify(property.name())]
 	}
 
 	// 5. Otherwise, return an empty list.
@@ -570,8 +648,16 @@ pub fn (mut property_map StylePropertyMapReadOnly) has(property_name string) boo
 		// "the name and computed value of every longhand CSS property supported by the User Agent, every
 		// registered custom property, and every non-registered custom property which is not set to its initial
 		// value on this"
-		// Stub: computed style maps expose all known longhand properties.
-		return !property.is_custom_property()
+		if property.is_custom_property() {
+			element := property_map.element or { return false }
+			if data := element.custom_property_data() {
+				if _ := data.get(property.name()) {
+					return true
+				}
+			}
+			return element.document().get_registered_custom_property(property.name()) != none
+		}
+		return true
 	}
 	if declaration := property_map.declaration {
 		return declaration.has_property(property)
@@ -589,7 +675,17 @@ pub fn (property_map &StylePropertyMapReadOnly) size() u32 {
 		// "the name and computed value of every longhand CSS property supported by the User Agent, every
 		// registered custom property, and every non-registered custom property which is not set to its initial
 		// value on this"
-		return number_of_longhand_properties
+		element := property_map.element or { return number_of_longhand_properties }
+		mut custom_properties := map[string]bool{}
+		if data := element.custom_property_data() {
+			for name, _ in data.properties {
+				custom_properties[name] = true
+			}
+		}
+		for name, _ in element.document().registered_property_set() {
+			custom_properties[name] = true
+		}
+		return number_of_longhand_properties + u32(custom_properties.len)
 	}
 	if declaration := property_map.declaration {
 		return u32(declaration.length())
@@ -599,14 +695,30 @@ pub fn (property_map &StylePropertyMapReadOnly) size() u32 {
 
 pub fn (mut property_map StylePropertyMapReadOnly) get_style_value(property PropertyNameAndID) ?&dom.StyleValue {
 	if _ := property_map.element {
-		// Stub: computed property extraction from DOM::Element requires the style tree.
-		if property.is_custom_property() {
-			return none
-		}
-		return css_style_properties_empty_dom_style_value()
+		_ = property
+		// Stub: computed property extraction from DOM::Element requires computed style values to expose CSS::StyleValue.
+		return none
 	}
 	if declaration := property_map.declaration {
 		return declaration.get_property_style_value(property)
+	}
+	return none
+}
+
+fn (mut property_map StylePropertyMapReadOnly) get_serialized_style_value(property PropertyNameAndID) ?string {
+	if declaration := property_map.declaration {
+		if property.is_custom_property() {
+			if value := declaration.custom_properties[property.name()] {
+				return custom_property_value_without_priority(value)
+			}
+			return none
+		}
+		property_name := string_from_property_id(property.id() or { return none })
+		for existing in declaration.properties {
+			if existing.name == property_name {
+				return existing.value
+			}
+		}
 	}
 	return none
 }
@@ -643,17 +755,21 @@ fn create_an_internal_representation(property PropertyNameAndID, value MutableSt
 	// To create an internal representation, given a string property and a string or CSSStyleValue value:
 	return match value {
 		CSSStyleValue {
-			_ = value.create_an_internal_representation(property, .yes)!
-			css_style_properties_empty_dom_style_value()
+			internal_representation := value.create_an_internal_representation(property, .yes)!
+			dom_style_value_from_value_logic(internal_representation)
 		}
 		string {
 			// If value is a USVString,
 			//     Parse a CSSStyleValue with property property, cssText value, and parseMultiple set to false, and
 			//     return the result.
-			// FIXME: Avoid passing name as a string, as it gets immediately converted back to PropertyNameAndID.
-			_ = CSSStyleValue.parse_a_css_style_value(property.name(), value, false)!
-			// AD-HOC: Result is a CSSStyleValue but we want an internal representation, so... convert it again I guess?
-			css_style_properties_empty_dom_style_value()
+			if property.is_custom_property() {
+				// Stub: custom properties need an UnresolvedStyleValue backed by parser component values.
+				css_style_properties_empty_dom_style_value()
+			} else {
+				parse_css_value(ParsingParams{}, value, property.id() or { PropertyID.color }) or {
+					return error("Could not parse '${value}' for '${property.name()}'")
+				}
+			}
 		}
 	}
 }
@@ -697,19 +813,30 @@ pub fn (mut property_map MutableStylePropertyMap) set(property_name string, valu
 	mut values_to_set := []&dom.StyleValue{}
 
 	// 9. For each value in values, create an internal representation for property and value, and append the result to values to set.
+	mut serialized_values := []string{}
 	for value in values {
 		internal_representation := create_an_internal_representation(property, value)!
 		values_to_set << internal_representation
+		serialized_values << serialized_text_from_mutable_style_property_map_value(value)!
 	}
 
 	// 10. Set props[property] to values to set.
 	// NOTE: The property is deleted then added back so that it gets put at the end of the ordered map, which gives the
 	//       expected behavior in the face of shorthand properties.
-	if values_to_set.len == 1 {
-		props.set_a_css_declaration(property.id() or { PropertyID.color }, values_to_set[0], .no)
+	if property.is_custom_property() {
+		props.custom_properties[property.name()] = serialized_values.join(', ')
+		props.update_style_attribute()
+		props.invalidate_owners(.style_sheet_changed)
+	} else if values_to_set.len == 1 {
+		props.set_a_css_declaration_with_serialized(property.id() or { PropertyID.color }, values_to_set[0],
+			.no, serialized_values[0])
+		props.update_style_attribute()
+		props.invalidate_owners(.style_sheet_changed)
 	} else {
-		props.set_a_css_declaration(property.id() or { PropertyID.color },
-			css_style_properties_empty_dom_style_value(), .no)
+		props.set_a_css_declaration_with_serialized(property.id() or { PropertyID.color },
+			css_style_properties_empty_dom_style_value(), .no, serialized_values.join(', '))
+		props.update_style_attribute()
+		props.invalidate_owners(.style_sheet_changed)
 	}
 }
 
@@ -750,13 +877,26 @@ pub fn (mut property_map MutableStylePropertyMap) append(property_name string, v
 	}
 
 	// 10. For each value in values, create an internal representation with property and value, and append the returned value to temp values.
+	mut serialized_values := []string{}
 	for value in values {
 		value_list << create_an_internal_representation(property, value)!
+		serialized_values << serialized_text_from_mutable_style_property_map_value(value)!
 	}
 
 	// 11. Append the entries of temp values to props[property].
-	props.set_a_css_declaration(property.id() or { PropertyID.color },
-		css_style_properties_empty_dom_style_value(), .no)
+	mut serialized_value := ''
+	existing := props.property_value(property.name())
+	if existing.len != 0 {
+		serialized_value = existing
+	}
+	if serialized_value.len != 0 && serialized_values.len != 0 {
+		serialized_value += ', '
+	}
+	serialized_value += serialized_values.join(', ')
+	props.set_a_css_declaration_with_serialized(property.id() or { PropertyID.color },
+		css_style_properties_empty_dom_style_value(), .no, serialized_value)
+	props.update_style_attribute()
+	props.invalidate_owners(.style_sheet_changed)
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-delete
