@@ -198,6 +198,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'border-top-style' {
 			PropertyID.border_top_style
 		}
+		'border-image-repeat' {
+			PropertyID.border_image_repeat
+		}
 		'border-image-source' {
 			PropertyID.border_image_source
 		}
@@ -342,8 +345,17 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'math-shift' {
 			PropertyID.math_shift
 		}
+		'mask-composite', '-webkit-mask-composite' {
+			PropertyID.mask_composite
+		}
 		'mask-image' {
 			PropertyID.mask_image
+		}
+		'mask-mode' {
+			PropertyID.mask_mode
+		}
+		'mask-origin', '-webkit-mask-origin' {
+			PropertyID.mask_origin
 		}
 		'mask-type' {
 			PropertyID.mask_type
@@ -402,6 +414,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'position-anchor' {
 			PropertyID.position_anchor
 		}
+		'position-visibility' {
+			PropertyID.position_visibility
+		}
 		'shape-image-threshold' {
 			PropertyID.shape_image_threshold
 		}
@@ -437,6 +452,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'scrollbar-width' {
 			PropertyID.scrollbar_width
+		}
+		'scroll-timeline-axis' {
+			PropertyID.scroll_timeline_axis
 		}
 		'scroll-timeline-name' {
 			PropertyID.scroll_timeline_name
@@ -512,6 +530,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'view-timeline-inset' {
 			PropertyID.view_timeline_inset
+		}
+		'view-timeline-axis' {
+			PropertyID.view_timeline_axis
 		}
 		'view-timeline-name' {
 			PropertyID.view_timeline_name
@@ -613,22 +634,24 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.font_language_override {
 			value_type == .string
 		}
-		.border_bottom_style, .border_collapse, .border_left_style, .border_right_style,
-		.border_top_style, .box_sizing, .caption_side, .clip_rule, .color_interpolation,
-		.content_visibility, .direction, .empty_cells, .fill_rule, .font_kerning,
-		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
-		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .transform_box,
-		.touch_action, .writing_mode, .scrollbar_width, .resize, .contain, .container_type,
-		.text_decoration_line, .text_decoration_style, .paint_order, .overflow_wrap,
-		.scroll_behavior, .math_shift, .isolation, .list_style_position, .mask_type {
+		.border_bottom_style, .border_collapse, .border_image_repeat, .border_left_style,
+		.border_right_style, .border_top_style, .box_sizing, .caption_side, .clip_rule,
+		.color_interpolation, .content_visibility, .direction, .empty_cells, .fill_rule,
+		.font_kerning, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
+		.font_variant_position, .flex_direction, .flex_wrap, .align_content, .align_items,
+		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
+		.image_rendering, .transform_box, .touch_action, .writing_mode, .scrollbar_width, .resize,
+		.contain, .container_type, .text_decoration_line, .text_decoration_style, .paint_order,
+		.overflow_wrap, .scroll_behavior, .math_shift, .isolation, .list_style_position,
+		.mask_composite, .mask_mode, .mask_origin, .mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
-		.pointer_events, .position, .shape_rendering, .stroke_linecap, .stroke_linejoin,
-		.table_layout, .text_align, .text_anchor, .text_justify, .text_overflow, .text_rendering,
-		.text_transform, .text_wrap_mode, .text_wrap_style, .transform_style, .unicode_bidi,
-		.user_select, .visibility, .white_space_collapse, .white_space_trim, .word_break {
+		.pointer_events, .position, .position_visibility, .scroll_timeline_axis, .shape_rendering,
+		.stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify,
+		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
+		.transform_style, .unicode_bidi, .user_select, .view_timeline_axis, .visibility,
+		.white_space_collapse, .white_space_trim, .word_break {
 			false
 		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
@@ -836,6 +859,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['none', 'hidden', 'dotted', 'dashed', 'solid', 'double', 'groove',
 				'ridge', 'inset', 'outset']
 		}
+		.border_image_repeat {
+			lowercase_value in ['stretch', 'repeat', 'round', 'space']
+		}
 		.border_collapse {
 			lowercase_value in ['collapse', 'separate']
 		}
@@ -902,6 +928,22 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.mask_type {
 			lowercase_value in ['luminance', 'alpha']
+		}
+		.mask_composite {
+			lowercase_value in ['add', 'subtract', 'intersect', 'exclude']
+		}
+		.mask_mode {
+			lowercase_value in ['alpha', 'luminance', 'match-source']
+		}
+		.mask_origin {
+			lowercase_value in ['content-box', 'padding-box', 'border-box', 'fill-box', 'stroke-box',
+				'view-box']
+		}
+		.scroll_timeline_axis, .view_timeline_axis {
+			lowercase_value in ['block', 'inline', 'x', 'y']
+		}
+		.position_visibility {
+			lowercase_value in ['always', 'anchors-valid', 'anchors-visible', 'no-overflow']
 		}
 		.shape_rendering {
 			lowercase_value in ['auto', 'optimizespeed', 'crispedges', 'geometricprecision']
@@ -1081,23 +1123,24 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 			lowercase_value !in ['default', 'none']
 		}
 		.accent_color, .background_color, .background_image, .border_bottom_color,
-		.border_bottom_style, .border_collapse, .border_image_source, .border_left_color,
-		.border_left_style, .border_right_color, .border_right_style, .border_top_color,
-		.border_top_style, .box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color,
-		.color_interpolation, .direction, .empty_cells, .fill_rule, .float_, .flood_color,
-		.font_kerning, .font_language_override, .font_optical_sizing, .font_variant_caps,
-		.font_variant_emoji, .font_variant_position, .flex_direction, .flex_wrap, .align_content,
-		.align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance,
-		.column_span, .image_rendering, .isolation, .list_style_image, .list_style_position,
-		.mask_image, .mask_type, .mix_blend_mode, .object_fit, .outline_color, .outline_style,
-		.overflow_x, .overflow_y, .overflow_wrap, .paint_order, .pointer_events, .position,
-		.shape_rendering, .stop_color, .stroke_linecap, .stroke_linejoin, .table_layout,
-		.text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify,
-		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
-		.transform_box, .transform_style, .touch_action, .writing_mode, .scrollbar_width, .resize,
-		.scroll_behavior, .math_shift, .contain, .container_type, .unicode_bidi, .user_select,
-		.view_timeline_inset, .visibility, .webkit_text_fill_color, .white_space_collapse,
-		.white_space_trim, .word_break {
+		.border_bottom_style, .border_collapse, .border_image_repeat, .border_image_source,
+		.border_left_color, .border_left_style, .border_right_color, .border_right_style,
+		.border_top_color, .border_top_style, .box_sizing, .caption_side, .caret_color, .clear,
+		.clip_rule, .color, .color_interpolation, .direction, .empty_cells, .fill_rule, .float_,
+		.flood_color, .font_kerning, .font_language_override, .font_optical_sizing,
+		.font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_direction,
+		.flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items,
+		.justify_self, .appearance, .column_span, .image_rendering, .isolation, .list_style_image,
+		.list_style_position, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_type,
+		.mix_blend_mode, .object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y,
+		.overflow_wrap, .paint_order, .pointer_events, .position, .position_visibility,
+		.scroll_timeline_axis, .shape_rendering, .stop_color, .stroke_linecap, .stroke_linejoin,
+		.table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style,
+		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
+		.text_wrap_style, .transform_box, .transform_style, .touch_action, .writing_mode,
+		.scrollbar_width, .resize, .scroll_behavior, .math_shift, .contain, .container_type,
+		.unicode_bidi, .user_select, .view_timeline_axis, .view_timeline_inset, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break {
 			false
 		}
 		.color_scheme {
@@ -2149,6 +2192,7 @@ pub enum Keyword {
 	outset
 	clip
 	scroll
+	repeat
 	fill
 	stroke
 	markers
@@ -2192,6 +2236,7 @@ pub enum Keyword {
 	srgb
 	luminance
 	alpha
+	match_source
 	optimizespeed
 	crispedges
 	geometricprecision
@@ -2300,6 +2345,8 @@ pub enum Keyword {
 	vertical
 	block
 	inline_
+	x
+	y
 	strict
 	content
 	size
@@ -2310,6 +2357,7 @@ pub enum Keyword {
 	scroll_state
 	separate
 	border_box
+	padding_box
 	content_box
 	inside
 	outside
@@ -2343,6 +2391,7 @@ pub enum Keyword {
 	right
 	oblique
 	round
+	space
 	scoop
 	bevel
 	notch
@@ -2362,9 +2411,16 @@ pub enum Keyword {
 	infinite
 	replace
 	add
+	subtract
+	intersect
+	exclude
 	accumulate
 	light
 	dark
+	always
+	anchors_valid
+	anchors_visible
+	no_overflow
 	accentcolor
 	accentcolortext
 	activeborder
@@ -2502,6 +2558,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.outset { 'outset' }
 		.clip { 'clip' }
 		.scroll { 'scroll' }
+		.repeat { 'repeat' }
 		.fill { 'fill' }
 		.stroke { 'stroke' }
 		.markers { 'markers' }
@@ -2545,6 +2602,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.srgb { 'srgb' }
 		.luminance { 'luminance' }
 		.alpha { 'alpha' }
+		.match_source { 'match-source' }
 		.optimizespeed { 'optimizespeed' }
 		.crispedges { 'crispedges' }
 		.geometricprecision { 'geometricprecision' }
@@ -2653,6 +2711,8 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.vertical { 'vertical' }
 		.block { 'block' }
 		.inline_ { 'inline' }
+		.x { 'x' }
+		.y { 'y' }
 		.strict { 'strict' }
 		.content { 'content' }
 		.size { 'size' }
@@ -2663,6 +2723,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.scroll_state { 'scroll-state' }
 		.separate { 'separate' }
 		.border_box { 'border-box' }
+		.padding_box { 'padding-box' }
 		.content_box { 'content-box' }
 		.inside { 'inside' }
 		.outside { 'outside' }
@@ -2696,6 +2757,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.right { 'right' }
 		.oblique { 'oblique' }
 		.round { 'round' }
+		.space { 'space' }
 		.scoop { 'scoop' }
 		.bevel { 'bevel' }
 		.notch { 'notch' }
@@ -2715,9 +2777,16 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.infinite { 'infinite' }
 		.replace { 'replace' }
 		.add { 'add' }
+		.subtract { 'subtract' }
+		.intersect { 'intersect' }
+		.exclude { 'exclude' }
 		.accumulate { 'accumulate' }
 		.light { 'light' }
 		.dark { 'dark' }
+		.always { 'always' }
+		.anchors_valid { 'anchors-valid' }
+		.anchors_visible { 'anchors-visible' }
+		.no_overflow { 'no-overflow' }
 		.accentcolor { 'accentcolor' }
 		.accentcolortext { 'accentcolortext' }
 		.activeborder { 'activeborder' }
@@ -2844,6 +2913,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'outset' { Keyword.outset }
 		'clip' { Keyword.clip }
 		'scroll' { Keyword.scroll }
+		'repeat' { Keyword.repeat }
 		'fill' { Keyword.fill }
 		'stroke' { Keyword.stroke }
 		'markers' { Keyword.markers }
@@ -2887,6 +2957,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'srgb' { Keyword.srgb }
 		'luminance' { Keyword.luminance }
 		'alpha' { Keyword.alpha }
+		'match-source' { Keyword.match_source }
 		'optimizespeed' { Keyword.optimizespeed }
 		'crispedges' { Keyword.crispedges }
 		'geometricprecision' { Keyword.geometricprecision }
@@ -2995,6 +3066,8 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'vertical' { Keyword.vertical }
 		'block' { Keyword.block }
 		'inline' { Keyword.inline_ }
+		'x' { Keyword.x }
+		'y' { Keyword.y }
 		'strict' { Keyword.strict }
 		'content' { Keyword.content }
 		'size' { Keyword.size }
@@ -3005,6 +3078,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'scroll-state' { Keyword.scroll_state }
 		'separate' { Keyword.separate }
 		'border-box' { Keyword.border_box }
+		'padding-box' { Keyword.padding_box }
 		'content-box' { Keyword.content_box }
 		'inside' { Keyword.inside }
 		'outside' { Keyword.outside }
@@ -3038,6 +3112,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'right' { Keyword.right }
 		'oblique' { Keyword.oblique }
 		'round' { Keyword.round }
+		'space' { Keyword.space }
 		'scoop' { Keyword.scoop }
 		'bevel' { Keyword.bevel }
 		'notch' { Keyword.notch }
@@ -3057,9 +3132,16 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'infinite' { Keyword.infinite }
 		'replace' { Keyword.replace }
 		'add' { Keyword.add }
+		'subtract' { Keyword.subtract }
+		'intersect' { Keyword.intersect }
+		'exclude' { Keyword.exclude }
 		'accumulate' { Keyword.accumulate }
 		'light' { Keyword.light }
 		'dark' { Keyword.dark }
+		'always' { Keyword.always }
+		'anchors-valid' { Keyword.anchors_valid }
+		'anchors-visible' { Keyword.anchors_visible }
+		'no-overflow' { Keyword.no_overflow }
 		'accentcolor' { Keyword.accentcolor }
 		'accentcolortext' { Keyword.accentcolortext }
 		'activeborder' { Keyword.activeborder }

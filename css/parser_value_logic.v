@@ -250,6 +250,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_bottom_style, .border_left_style, .border_right_style, .border_top_style {
 			return parser.parse_line_style_value(mut tokens)
 		}
+		.border_image_repeat {
+			return parser.parse_border_image_repeat_value(mut tokens)
+		}
 		.border_collapse {
 			return parser.parse_border_collapse_value(mut tokens)
 		}
@@ -279,6 +282,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.position_anchor {
 			return parser.parse_position_anchor_value(mut tokens)
+		}
+		.position_visibility {
+			return parser.parse_position_visibility_value(mut tokens)
 		}
 		.background_color, .border_bottom_color, .border_left_color, .border_right_color,
 		.border_top_color, .color, .flood_color, .outline_color, .stop_color,
@@ -437,6 +443,15 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.mask_type {
 			return parser.parse_mask_type_value(mut tokens)
 		}
+		.mask_composite {
+			return parser.parse_mask_composite_value(mut tokens)
+		}
+		.mask_mode {
+			return parser.parse_mask_mode_value(mut tokens)
+		}
+		.mask_origin {
+			return parser.parse_mask_origin_value(mut tokens)
+		}
 		.mix_blend_mode {
 			return parser.parse_mix_blend_mode_value(mut tokens)
 		}
@@ -457,6 +472,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.scroll_timeline_name {
 			return parser.parse_timeline_name_value(mut tokens)
+		}
+		.scroll_timeline_axis, .view_timeline_axis {
+			return parser.parse_timeline_axis_value(mut tokens)
 		}
 		.scroll_behavior {
 			return parser.parse_scroll_behavior_value(mut tokens)
@@ -2094,6 +2112,156 @@ fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keyword
 			return none} }
 	tokens = transaction
 	return StyleValue(KeywordStyleValue.create(keyword))
+}
+
+fn parse_simple_comma_separated_keyword_list_for_value_logic(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {
+	return parse_animation_keyword_list_for_value_logic(mut tokens, allowed_keywords)
+}
+
+fn (mut parser Parser) parse_border_image_repeat_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	mut transaction := tokens.clone()
+	first_keyword := parse_single_keyword_from_set_for_value_logic(mut transaction, [
+		'stretch',
+		'repeat',
+		'round',
+		'space',
+	]) or { return none }
+	first_value := StyleValue(KeywordStyleValue.create(first_keyword))
+
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		tokens = transaction
+		return first_value
+	}
+
+	second_keyword := parse_single_keyword_from_set_for_value_logic(mut transaction, [
+		'stretch',
+		'repeat',
+		'round',
+		'space',
+	]) or { return none }
+	second_value := StyleValue(KeywordStyleValue.create(second_keyword))
+
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create([first_value, second_value], .space, .yes))
+}
+
+fn (mut parser Parser) parse_mask_composite_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_simple_comma_separated_keyword_list_for_value_logic(mut tokens, [
+		'add',
+		'subtract',
+		'intersect',
+		'exclude',
+	])
+}
+
+fn (mut parser Parser) parse_mask_mode_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_simple_comma_separated_keyword_list_for_value_logic(mut tokens, [
+		'alpha',
+		'luminance',
+		'match-source',
+	])
+}
+
+fn (mut parser Parser) parse_mask_origin_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_simple_comma_separated_keyword_list_for_value_logic(mut tokens, [
+		'content-box',
+		'padding-box',
+		'border-box',
+		'fill-box',
+		'stroke-box',
+		'view-box',
+	])
+}
+
+fn (mut parser Parser) parse_timeline_axis_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_simple_comma_separated_keyword_list_for_value_logic(mut tokens, [
+		'block',
+		'inline',
+		'x',
+		'y',
+	])
+}
+
+fn (mut parser Parser) parse_position_visibility_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	// always | [ anchors-valid || anchors-visible || no-overflow ]
+	if always := parse_property_keyword_value(mut tokens, ['always']) {
+		return always
+	}
+
+	mut transaction := tokens.clone()
+	mut anchors_valid_value := ?StyleValue(none)
+	mut anchors_visible_value := ?StyleValue(none)
+	mut no_overflow_value := ?StyleValue(none)
+	mut has_anchors_valid := false
+	mut has_anchors_visible := false
+	mut has_no_overflow := false
+
+	transaction.consume_whitespace()
+	for transaction.has_more_tokens() {
+		keyword := parse_single_keyword_from_set_for_value_logic(mut transaction, [
+			'anchors-valid',
+			'anchors-visible',
+			'no-overflow',
+		]) or { return none }
+
+		match keyword {
+			.anchors_valid {
+				if has_anchors_valid {
+					return none
+				}
+				anchors_valid_value = StyleValue(KeywordStyleValue.create(keyword))
+				has_anchors_valid = true
+			}
+			.anchors_visible {
+				if has_anchors_visible {
+					return none
+				}
+				anchors_visible_value = StyleValue(KeywordStyleValue.create(keyword))
+				has_anchors_visible = true
+			}
+			.no_overflow {
+				if has_no_overflow {
+					return none
+				}
+				no_overflow_value = StyleValue(KeywordStyleValue.create(keyword))
+				has_no_overflow = true
+			}
+			else {
+				return none
+			}
+		}
+
+		transaction.consume_whitespace()
+	}
+
+	mut values := []StyleValue{}
+	if value := anchors_valid_value {
+		values << value
+	}
+	if value := anchors_visible_value {
+		values << value
+	}
+	if value := no_overflow_value {
+		values << value
+	}
+	if values.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(values, .space, .yes))
 }
 
 fn parse_touch_action_single_keyword_for_value_logic(mut tokens ComponentValueStream) ?Keyword {

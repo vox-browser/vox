@@ -50,6 +50,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.border_top_color { 'border-top-color' }
 		.border_top_style { 'border-top-style' }
 		.border_top_width { 'border-top-width' }
+		.border_image_repeat { 'border-image-repeat' }
 		.border_image_source { 'border-image-source' }
 		.box_sizing { 'box-sizing' }
 		.caption_side { 'caption-side' }
@@ -100,7 +101,10 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.line_height { 'line-height' }
 		.list_style_image { 'list-style-image' }
 		.list_style_position { 'list-style-position' }
+		.mask_composite { 'mask-composite' }
 		.mask_image { 'mask-image' }
+		.mask_mode { 'mask-mode' }
+		.mask_origin { 'mask-origin' }
 		.mask_type { 'mask-type' }
 		.math_depth { 'math-depth' }
 		.math_shift { 'math-shift' }
@@ -121,6 +125,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.paint_order { 'paint-order' }
 		.position { 'position' }
 		.position_anchor { 'position-anchor' }
+		.position_visibility { 'position-visibility' }
 		.shape_image_threshold { 'shape-image-threshold' }
 		.shape_rendering { 'shape-rendering' }
 		.stop_color { 'stop-color' }
@@ -132,6 +137,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.scale { 'scale' }
 		.scroll_behavior { 'scroll-behavior' }
 		.scrollbar_width { 'scrollbar-width' }
+		.scroll_timeline_axis { 'scroll-timeline-axis' }
 		.scroll_timeline_name { 'scroll-timeline-name' }
 		.table_layout { 'table-layout' }
 		.text_align { 'text-align' }
@@ -157,6 +163,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.user_select { 'user-select' }
 		.touch_action { 'touch-action' }
 		.view_timeline_inset { 'view-timeline-inset' }
+		.view_timeline_axis { 'view-timeline-axis' }
 		.view_timeline_name { 'view-timeline-name' }
 		.view_transition_name { 'view-transition-name' }
 		.visibility { 'visibility' }
@@ -182,35 +189,37 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .background_image, .font_feature_settings,
-		.font_variation_settings, .mask_image, .scroll_timeline_name, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.view_timeline_inset, .view_timeline_name {
+		.font_variation_settings, .mask_image, .mask_composite, .mask_mode, .mask_origin,
+		.scroll_timeline_axis, .scroll_timeline_name, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function,
+		.view_timeline_axis, .view_timeline_inset, .view_timeline_name {
 			false
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
-		.border_bottom_style, .border_bottom_width, .border_collapse, .border_image_source,
-		.border_left_color, .border_left_style, .border_left_width, .border_right_color,
-		.border_right_style, .border_right_width, .border_top_color, .border_top_style,
-		.border_top_width, .box_sizing, .caption_side, .caret_color, .clip_rule, .color,
-		.color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.fill_rule, .direction, .empty_cells, .flood_color, .flood_opacity, .font_kerning,
-		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
-		.font_variant_emoji, .font_variant_position, .font_weight, .font_width, .flex_direction,
-		.flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items,
-		.justify_self, .appearance, .column_span, .image_rendering, .isolation, .letter_spacing,
-		.clear, .line_height, .list_style_image, .list_style_position, .mask_type, .math_depth,
-		.math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color,
-		.outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
-		.position_anchor, .position, .shape_image_threshold, .shape_rendering, .stop_color,
-		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale,
-		.float_, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
-		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
-		.transform_box, .transform_style, .translate, .unicode_bidi, .user_select, .touch_action,
-		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .contain, .container_type,
-		.text_decoration_line, .text_decoration_style, .paint_order, .overflow_wrap,
-		.scroll_behavior, .math_shift, .visibility, .webkit_text_fill_color, .white_space_collapse,
-		.white_space_trim, .word_break, .word_spacing, .z_index {
+		.border_bottom_style, .border_bottom_width, .border_collapse, .border_image_repeat,
+		.border_image_source, .border_left_color, .border_left_style, .border_left_width,
+		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
+		.border_top_style, .border_top_width, .box_sizing, .caption_side, .caret_color, .clip_rule,
+		.color, .color_interpolation, .color_scheme, .content_visibility,
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .fill_opacity, .fill_rule, .direction, .empty_cells, .flood_color,
+		.flood_opacity, .font_kerning, .font_language_override, .font_optical_sizing, .font_style,
+		.font_variant_caps, .font_variant_emoji, .font_variant_position, .font_weight, .font_width,
+		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
+		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
+		.letter_spacing, .clear, .line_height, .list_style_image, .list_style_position, .mask_type,
+		.math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
+		.pointer_events, .position_anchor, .position, .position_visibility, .shape_image_threshold,
+		.shape_rendering, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
+		.stroke_opacity, .rotate, .scale, .float_, .table_layout, .text_align, .text_anchor,
+		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
+		.text_wrap_style, .transform, .transform_box, .transform_style, .translate, .unicode_bidi,
+		.user_select, .touch_action, .writing_mode, .view_transition_name, .scrollbar_width,
+		.resize, .contain, .container_type, .text_decoration_line, .text_decoration_style,
+		.paint_order, .overflow_wrap, .scroll_behavior, .math_shift, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing, .z_index {
 			true
 		}
 	}
@@ -222,48 +231,50 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .background_image, .font_feature_settings,
-		.font_variation_settings, .mask_image, .scroll_timeline_name, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.view_timeline_inset, .view_timeline_name {
+		.font_variation_settings, .mask_image, .mask_composite, .mask_mode, .mask_origin,
+		.scroll_timeline_axis, .scroll_timeline_name, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function,
+		.view_timeline_axis, .view_timeline_inset, .view_timeline_name {
 			true
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
-		.border_bottom_style, .border_bottom_width, .border_collapse, .border_image_source,
-		.border_left_color, .border_left_style, .border_left_width, .border_right_color,
-		.border_right_style, .border_right_width, .border_top_color, .border_top_style,
-		.border_top_width, .box_sizing, .caption_side, .caret_color, .clip_rule, .color,
-		.color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.fill_rule, .direction, .empty_cells, .flood_color, .flood_opacity, .font_kerning,
-		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
-		.font_variant_emoji, .font_variant_position, .font_weight, .font_width, .flex_direction,
-		.flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items,
-		.justify_self, .appearance, .column_span, .image_rendering, .isolation, .letter_spacing,
-		.clear, .line_height, .list_style_image, .list_style_position, .mask_type, .math_depth,
-		.math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color,
-		.outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
-		.position_anchor, .position, .shape_image_threshold, .shape_rendering, .stop_color,
-		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale,
-		.float_, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
-		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
-		.transform_box, .transform_style, .translate, .unicode_bidi, .user_select, .touch_action,
-		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .contain, .container_type,
-		.text_decoration_line, .text_decoration_style, .paint_order, .overflow_wrap,
-		.scroll_behavior, .math_shift, .visibility, .webkit_text_fill_color, .white_space_collapse,
-		.white_space_trim, .word_break, .word_spacing, .z_index {
+		.border_bottom_style, .border_bottom_width, .border_collapse, .border_image_repeat,
+		.border_image_source, .border_left_color, .border_left_style, .border_left_width,
+		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
+		.border_top_style, .border_top_width, .box_sizing, .caption_side, .caret_color, .clip_rule,
+		.color, .color_interpolation, .color_scheme, .content_visibility,
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .fill_opacity, .fill_rule, .direction, .empty_cells, .flood_color,
+		.flood_opacity, .font_kerning, .font_language_override, .font_optical_sizing, .font_style,
+		.font_variant_caps, .font_variant_emoji, .font_variant_position, .font_weight, .font_width,
+		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
+		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
+		.letter_spacing, .clear, .line_height, .list_style_image, .list_style_position, .mask_type,
+		.math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
+		.pointer_events, .position_anchor, .position, .position_visibility, .shape_image_threshold,
+		.shape_rendering, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
+		.stroke_opacity, .rotate, .scale, .float_, .table_layout, .text_align, .text_anchor,
+		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
+		.text_wrap_style, .transform, .transform_box, .transform_style, .translate, .unicode_bidi,
+		.user_select, .touch_action, .writing_mode, .view_transition_name, .scrollbar_width,
+		.resize, .contain, .container_type, .text_decoration_line, .text_decoration_style,
+		.paint_order, .overflow_wrap, .scroll_behavior, .math_shift, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing, .z_index {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 147
+pub const number_of_longhand_properties = 154
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .math_shift
+	return .position_visibility
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -415,6 +426,13 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		144 { PropertyID.overflow_wrap }
 		145 { PropertyID.scroll_behavior }
 		146 { PropertyID.math_shift }
+		147 { PropertyID.border_image_repeat }
+		148 { PropertyID.mask_composite }
+		149 { PropertyID.mask_mode }
+		150 { PropertyID.mask_origin }
+		151 { PropertyID.scroll_timeline_axis }
+		152 { PropertyID.view_timeline_axis }
+		153 { PropertyID.position_visibility }
 		else { none }
 	}
 }

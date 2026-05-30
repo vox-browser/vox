@@ -181,6 +181,13 @@ pub enum PropertyID {
 	overflow_wrap
 	scroll_behavior
 	math_shift
+	border_image_repeat
+	mask_composite
+	mask_mode
+	mask_origin
+	scroll_timeline_axis
+	view_timeline_axis
+	position_visibility
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

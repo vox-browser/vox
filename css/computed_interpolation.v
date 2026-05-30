@@ -674,6 +674,49 @@ pub enum MaskType {
 	alpha
 }
 
+pub enum MaskComposite {
+	add
+	subtract
+	intersect
+	exclude
+}
+
+pub enum MaskMode {
+	alpha
+	luminance
+	match_source
+}
+
+pub enum MaskOrigin {
+	content_box
+	padding_box
+	border_box
+	fill_box
+	stroke_box
+	view_box
+}
+
+pub enum BorderImageRepeat {
+	stretch
+	repeat
+	round
+	space
+}
+
+pub enum TimelineAxis {
+	block
+	inline_
+	x
+	y
+}
+
+pub enum PositionVisibility {
+	always
+	anchors_valid
+	anchors_visible
+	no_overflow
+}
+
 pub struct StrokeDasharrayItem {
 pub mut:
 	is_length_percentage bool
@@ -970,6 +1013,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.border_collapse {
 			'separate'
 		}
+		.border_image_repeat {
+			'stretch'
+		}
 		.border_image_source {
 			'none'
 		}
@@ -1094,6 +1140,15 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.mask_type {
 			'luminance'
 		}
+		.mask_composite {
+			'add'
+		}
+		.mask_mode {
+			'match-source'
+		}
+		.mask_origin {
+			'border-box'
+		}
 		.math_depth {
 			'0'
 		}
@@ -1148,6 +1203,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.position_anchor {
 			'auto'
 		}
+		.position_visibility {
+			'anchors-visible'
+		}
 		.shape_image_threshold {
 			'0'
 		}
@@ -1171,6 +1229,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		}
 		.scroll_timeline_name {
 			'none'
+		}
+		.scroll_timeline_axis {
+			'block'
 		}
 		.table_layout {
 			'auto'
@@ -1253,6 +1314,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.view_timeline_inset {
 			'auto'
 		}
+		.view_timeline_axis {
+			'block'
+		}
 		.view_timeline_name {
 			'none'
 		}
@@ -1322,22 +1386,24 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		}
 		.anchor_name, .anchor_scope, .animation_composition, .animation_direction,
 		.animation_fill_mode, .animation_play_state, .border_bottom_style, .border_collapse,
-		.border_left_style, .border_right_style, .border_top_style, .box_sizing, .caption_side,
-		.clear, .clip_rule, .color_interpolation, .color_scheme, .content_visibility, .direction,
-		.contain, .container_type, .empty_cells, .fill_rule, .float_, .font_kerning,
-		.font_language_override, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
-		.font_variant_position, .flex_direction, .flex_wrap, .align_content, .align_items,
-		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
-		.image_rendering, .isolation, .list_style_position, .mask_type, .math_style, .math_shift,
-		.mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y, .overflow_wrap,
-		.pointer_events, .position, .position_anchor, .scroll_timeline_name, .scroll_behavior,
-		.shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align,
-		.text_anchor, .text_justify, .text_overflow, .text_decoration_line, .text_decoration_style,
-		.paint_order, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
-		.transform_box, .transform_style, .transition_behavior, .transition_property,
-		.touch_action, .unicode_bidi, .user_select, .view_timeline_name, .view_transition_name,
-		.visibility, .white_space_collapse, .white_space_trim, .word_break, .writing_mode,
-		.scrollbar_width, .resize {
+		.border_image_repeat, .border_left_style, .border_right_style, .border_top_style,
+		.box_sizing, .caption_side, .clear, .clip_rule, .color_interpolation, .color_scheme,
+		.content_visibility, .direction, .contain, .container_type, .empty_cells, .fill_rule,
+		.float_, .font_kerning, .font_language_override, .font_optical_sizing, .font_variant_caps,
+		.font_variant_emoji, .font_variant_position, .flex_direction, .flex_wrap, .align_content,
+		.align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance,
+		.column_span, .image_rendering, .isolation, .list_style_position, .mask_composite,
+		.mask_mode, .mask_origin, .mask_type, .math_style, .math_shift, .mix_blend_mode,
+		.object_fit, .outline_style, .overflow_x, .overflow_y, .overflow_wrap, .pointer_events,
+		.position, .position_anchor, .position_visibility, .scroll_timeline_axis,
+		.scroll_timeline_name, .scroll_behavior, .shape_rendering, .stroke_linecap,
+		.stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
+		.text_decoration_line, .text_decoration_style, .paint_order, .text_rendering,
+		.text_transform, .text_wrap_mode, .text_wrap_style, .transform_box, .transform_style,
+		.transition_behavior, .transition_property, .touch_action, .unicode_bidi, .user_select,
+		.view_timeline_axis, .view_timeline_name, .view_transition_name, .visibility,
+		.white_space_collapse, .white_space_trim, .word_break, .writing_mode, .scrollbar_width,
+		.resize {
 			false
 		}
 	}
@@ -1361,28 +1427,30 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .aspect_ratio, .background_image, .border_bottom_color,
-		.border_bottom_style, .border_collapse, .border_image_source, .border_left_color,
-		.border_left_style, .border_right_color, .border_right_style, .border_top_color,
-		.border_top_style, .box_sizing, .caption_side, .caret_color, .clear, .clip_rule,
-		.color_interpolation, .color_scheme, .content_visibility, .contain, .container_type,
-		.direction, .empty_cells, .fill_opacity, .fill_rule, .float_, .flood_opacity,
-		.font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing,
-		.font_variant_caps, .font_variant_emoji, .font_variant_position, .font_variation_settings,
-		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
-		.line_height, .list_style_image, .list_style_position, .mask_image, .mask_type,
-		.math_shift, .math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans,
-		.outline_color, .outline_offset, .outline_style, .overflow_x, .overflow_y, .overflow_wrap,
-		.pointer_events, .position, .position_anchor, .scroll_timeline_name, .scroll_behavior,
-		.shape_rendering, .table_layout, .shape_image_threshold, .stop_opacity, .stroke_linecap,
-		.stroke_linejoin, .stroke_opacity, .rotate, .scale, .transform, .transform_box,
-		.transform_style, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style,
-		.paint_order, .text_justify, .text_overflow, .text_rendering, .text_transform,
-		.text_wrap_mode, .text_wrap_style, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function, .translate,
-		.touch_action, .unicode_bidi, .user_select, .view_timeline_inset, .view_timeline_name,
-		.view_transition_name, .visibility, .webkit_text_fill_color, .white_space_collapse,
-		.white_space_trim, .word_break, .writing_mode, .scrollbar_width, .resize, .z_index {
+		.border_bottom_style, .border_collapse, .border_image_repeat, .border_image_source,
+		.border_left_color, .border_left_style, .border_right_color, .border_right_style,
+		.border_top_color, .border_top_style, .box_sizing, .caption_side, .caret_color, .clear,
+		.clip_rule, .color_interpolation, .color_scheme, .content_visibility, .contain,
+		.container_type, .direction, .empty_cells, .fill_opacity, .fill_rule, .float_,
+		.flood_opacity, .font_feature_settings, .font_kerning, .font_language_override,
+		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
+		.font_variation_settings, .flex_direction, .flex_wrap, .align_content, .align_items,
+		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
+		.image_rendering, .isolation, .line_height, .list_style_image, .list_style_position,
+		.mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_type, .math_shift,
+		.math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color,
+		.outline_offset, .outline_style, .overflow_x, .overflow_y, .overflow_wrap, .pointer_events,
+		.position, .position_anchor, .position_visibility, .scroll_timeline_axis,
+		.scroll_timeline_name, .scroll_behavior, .shape_rendering, .table_layout,
+		.shape_image_threshold, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity,
+		.rotate, .scale, .transform, .transform_box, .transform_style, .text_align, .text_anchor,
+		.text_decoration_line, .text_decoration_style, .paint_order, .text_justify, .text_overflow,
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
+		.translate, .touch_action, .unicode_bidi, .user_select, .view_timeline_axis,
+		.view_timeline_inset, .view_timeline_name, .view_transition_name, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
+		.writing_mode, .scrollbar_width, .resize, .z_index {
 			false
 		}
 	}
@@ -3477,6 +3545,178 @@ pub fn (c &ComputedProperties) mask_type() MaskType {
 	}
 }
 
+fn computed_interpolation_keyword_list_property(c &ComputedProperties, property_id PropertyID, default_keywords []Keyword) []Keyword {
+	value := c.property(property_id, .yes) or { return default_keywords.clone() }
+	parsed_value := parse_css_value_logic(property_id, value.css_text) or {
+		return default_keywords.clone()
+	}
+
+	if parsed_value is KeywordStyleValue {
+		return [parsed_value.keyword()]
+	}
+	if parsed_value is StyleValueList {
+		mut keywords := []Keyword{}
+		for item in parsed_value.values() {
+			if item is KeywordStyleValue {
+				keywords << item.keyword()
+			} else {
+				return default_keywords.clone()
+			}
+		}
+		if keywords.len > 0 {
+			return keywords
+		}
+	}
+	return default_keywords.clone()
+}
+
+fn keyword_to_mask_composite_for_computed_properties(keyword Keyword) ?MaskComposite {
+	return match keyword {
+		.add { MaskComposite.add }
+		.subtract { MaskComposite.subtract }
+		.intersect { MaskComposite.intersect }
+		.exclude { MaskComposite.exclude }
+		else { none }
+	}
+}
+
+pub fn (c &ComputedProperties) mask_composite() []MaskComposite {
+	keywords := computed_interpolation_keyword_list_property(c, .mask_composite, [
+		Keyword.add,
+	])
+	mut values := []MaskComposite{}
+	for keyword in keywords {
+		values << (keyword_to_mask_composite_for_computed_properties(keyword) or {
+			return [MaskComposite.add]
+		})
+	}
+	return values
+}
+
+fn keyword_to_mask_mode_for_computed_properties(keyword Keyword) ?MaskMode {
+	return match keyword {
+		.alpha { MaskMode.alpha }
+		.luminance { MaskMode.luminance }
+		.match_source { MaskMode.match_source }
+		else { none }
+	}
+}
+
+pub fn (c &ComputedProperties) mask_mode() []MaskMode {
+	keywords := computed_interpolation_keyword_list_property(c, .mask_mode, [
+		Keyword.match_source,
+	])
+	mut values := []MaskMode{}
+	for keyword in keywords {
+		values << (keyword_to_mask_mode_for_computed_properties(keyword) or {
+			return [MaskMode.match_source]
+		})
+	}
+	return values
+}
+
+fn keyword_to_mask_origin_for_computed_properties(keyword Keyword) ?MaskOrigin {
+	return match keyword {
+		.content_box { MaskOrigin.content_box }
+		.padding_box { MaskOrigin.padding_box }
+		.border_box { MaskOrigin.border_box }
+		.fill_box { MaskOrigin.fill_box }
+		.stroke_box { MaskOrigin.stroke_box }
+		.view_box { MaskOrigin.view_box }
+		else { none }
+	}
+}
+
+pub fn (c &ComputedProperties) mask_origin() []MaskOrigin {
+	keywords := computed_interpolation_keyword_list_property(c, .mask_origin, [
+		Keyword.border_box,
+	])
+	mut values := []MaskOrigin{}
+	for keyword in keywords {
+		values << (keyword_to_mask_origin_for_computed_properties(keyword) or {
+			return [MaskOrigin.border_box]
+		})
+	}
+	return values
+}
+
+fn keyword_to_border_image_repeat_for_computed_properties(keyword Keyword) ?BorderImageRepeat {
+	return match keyword {
+		.stretch { BorderImageRepeat.stretch }
+		.repeat { BorderImageRepeat.repeat }
+		.round { BorderImageRepeat.round }
+		.space { BorderImageRepeat.space }
+		else { none }
+	}
+}
+
+pub fn (c &ComputedProperties) border_image_repeat() []BorderImageRepeat {
+	keywords := computed_interpolation_keyword_list_property(c, .border_image_repeat, [
+		Keyword.stretch,
+	])
+	mut values := []BorderImageRepeat{}
+	for keyword in keywords {
+		values << (keyword_to_border_image_repeat_for_computed_properties(keyword) or {
+			return [BorderImageRepeat.stretch]
+		})
+	}
+	return values
+}
+
+fn keyword_to_timeline_axis_for_computed_properties(keyword Keyword) ?TimelineAxis {
+	return match keyword {
+		.block { TimelineAxis.block }
+		.inline_ { TimelineAxis.inline_ }
+		.x { TimelineAxis.x }
+		.y { TimelineAxis.y }
+		else { none }
+	}
+}
+
+fn computed_interpolation_timeline_axis_property(c &ComputedProperties, property_id PropertyID) []TimelineAxis {
+	keywords := computed_interpolation_keyword_list_property(c, property_id, [
+		Keyword.block,
+	])
+	mut values := []TimelineAxis{}
+	for keyword in keywords {
+		values << (keyword_to_timeline_axis_for_computed_properties(keyword) or {
+			return [TimelineAxis.block]
+		})
+	}
+	return values
+}
+
+pub fn (c &ComputedProperties) scroll_timeline_axis() []TimelineAxis {
+	return computed_interpolation_timeline_axis_property(c, .scroll_timeline_axis)
+}
+
+pub fn (c &ComputedProperties) view_timeline_axis() []TimelineAxis {
+	return computed_interpolation_timeline_axis_property(c, .view_timeline_axis)
+}
+
+fn keyword_to_position_visibility_for_computed_properties(keyword Keyword) ?PositionVisibility {
+	return match keyword {
+		.always { PositionVisibility.always }
+		.anchors_valid { PositionVisibility.anchors_valid }
+		.anchors_visible { PositionVisibility.anchors_visible }
+		.no_overflow { PositionVisibility.no_overflow }
+		else { none }
+	}
+}
+
+pub fn (c &ComputedProperties) position_visibility() []PositionVisibility {
+	keywords := computed_interpolation_keyword_list_property(c, .position_visibility, [
+		Keyword.anchors_visible,
+	])
+	mut values := []PositionVisibility{}
+	for keyword in keywords {
+		values << (keyword_to_position_visibility_for_computed_properties(keyword) or {
+			return [PositionVisibility.anchors_visible]
+		})
+	}
+	return values
+}
+
 fn (c &ComputedProperties) opacity_property(property_id PropertyID, default_value f32) f32 {
 	if value := c.property(property_id, .yes) {
 		if number := computed_interpolation_number_from_dom_style_value(value) {
@@ -3988,9 +4228,10 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
 		.animation_timeline, .animation_timing_function, .direction, .font_feature_settings,
 		.font_variation_settings, .math_depth, .math_style, .contain, .container_type, .math_shift,
-		.scroll_behavior, .scroll_timeline_name, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
-		.view_timeline_inset, .view_timeline_name, .writing_mode, .resize {
+		.scroll_behavior, .scroll_timeline_axis, .scroll_timeline_name, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
+		.unicode_bidi, .view_timeline_axis, .view_timeline_inset, .view_timeline_name,
+		.writing_mode, .resize {
 			.none_
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
@@ -4008,19 +4249,20 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 			.custom
 		}
 		.anchor_name, .anchor_scope, .background_image, .border_bottom_style, .border_collapse,
-		.border_image_source, .border_left_style, .border_right_style, .border_top_style,
-		.box_sizing, .caption_side, .clear, .clip_rule, .color_interpolation, .color_scheme,
-		.empty_cells, .fill_rule, .float_, .font_kerning, .font_language_override,
+		.border_image_repeat, .border_image_source, .border_left_style, .border_right_style,
+		.border_top_style, .box_sizing, .caption_side, .clear, .clip_rule, .color_interpolation,
+		.color_scheme, .empty_cells, .fill_rule, .float_, .font_kerning, .font_language_override,
 		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
 		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
-		.list_style_image, .list_style_position, .mask_image, .mask_type, .mix_blend_mode,
-		.object_fit, .overflow_x, .overflow_y, .overflow_wrap, .pointer_events, .position,
-		.position_anchor, .paint_order, .shape_rendering, .stroke_linecap, .stroke_linejoin,
-		.table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style,
-		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
-		.text_wrap_style, .transform_box, .transform_style, .touch_action, .user_select,
-		.view_transition_name, .white_space_collapse, .white_space_trim, .word_break {
+		.list_style_image, .list_style_position, .mask_composite, .mask_image, .mask_mode,
+		.mask_origin, .mask_type, .mix_blend_mode, .object_fit, .overflow_x, .overflow_y,
+		.overflow_wrap, .pointer_events, .position, .position_anchor, .position_visibility,
+		.paint_order, .shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout,
+		.text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify,
+		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
+		.transform_box, .transform_style, .touch_action, .user_select, .view_transition_name,
+		.white_space_collapse, .white_space_trim, .word_break {
 			.discrete
 		}
 	}
@@ -4744,20 +4986,21 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .background_color, .background_image, .border_bottom_color,
-		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
-		.caret_color, .clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity,
-		.font_feature_settings, .font_variation_settings, .font_weight, .font_width,
-		.image_rendering, .line_height, .mask_image, .mask_type, .math_depth, .math_style,
-		.mix_blend_mode, .object_fit, .opacity, .outline_color, .outline_offset, .outline_style,
-		.outline_width, .pointer_events, .shape_image_threshold, .stop_color, .stop_opacity,
-		.stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale, .scroll_timeline_name,
-		.transform, .transform_box, .transition_behavior, .transition_delay, .transition_duration,
+		.border_image_repeat, .border_image_source, .border_left_color, .border_right_color,
+		.border_top_color, .caret_color, .clip_rule, .color, .color_interpolation, .color_scheme,
+		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color,
+		.flood_opacity, .font_feature_settings, .font_variation_settings, .font_weight,
+		.font_width, .image_rendering, .line_height, .mask_composite, .mask_image, .mask_mode,
+		.mask_origin, .mask_type, .math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .pointer_events,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
+		.stroke_opacity, .rotate, .scale, .scroll_timeline_axis, .scroll_timeline_name, .transform,
+		.transform_box, .transition_behavior, .transition_delay, .transition_duration,
 		.transition_property, .transition_timing_function, .translate, .touch_action, .user_select,
-		.view_timeline_inset, .view_timeline_name, .view_transition_name, .scrollbar_width,
-		.scroll_behavior, .resize, .text_decoration_line, .text_decoration_style, .text_overflow,
-		.text_rendering, .webkit_text_fill_color, .z_index {
+		.view_timeline_axis, .view_timeline_inset, .view_timeline_name, .view_transition_name,
+		.scrollbar_width, .scroll_behavior, .resize, .text_decoration_line, .text_decoration_style,
+		.text_overflow, .text_rendering, .webkit_text_fill_color, .z_index {
 			false
 		}
 		.anchor_name, .aspect_ratio, .border_bottom_style, .border_bottom_width, .border_collapse,
@@ -4769,10 +5012,10 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.justify_items, .justify_self, .appearance, .column_span, .contain, .container_type,
 		.isolation, .letter_spacing, .list_style_image, .list_style_position, .math_shift, .order,
 		.orphans, .overflow_wrap, .overflow_x, .overflow_y, .paint_order, .position,
-		.position_anchor, .shape_rendering, .table_layout, .text_align, .text_anchor,
-		.text_justify, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
-		.unicode_bidi, .visibility, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing, .writing_mode {
+		.position_anchor, .position_visibility, .shape_rendering, .table_layout, .text_align,
+		.text_anchor, .text_justify, .text_transform, .text_wrap_mode, .text_wrap_style,
+		.transform_style, .unicode_bidi, .visibility, .white_space_collapse, .white_space_trim,
+		.word_break, .word_spacing, .writing_mode {
 			true
 		}
 	}
@@ -4792,30 +5035,32 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .aspect_ratio, .background_color, .background_image,
 		.border_bottom_color, .border_bottom_style, .border_bottom_width, .border_collapse,
-		.border_image_source, .border_left_color, .border_left_style, .border_left_width,
-		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
-		.border_top_style, .border_top_width, .box_sizing, .caption_side, .caret_color, .clear,
-		.clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .float_,
-		.direction, .empty_cells, .font_feature_settings, .font_kerning, .font_language_override,
-		.font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji,
-		.font_variant_position, .font_variation_settings, .font_weight, .font_width,
-		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
-		.letter_spacing, .line_height, .list_style_image, .list_style_position, .mask_type,
-		.math_depth, .math_shift, .math_style, .object_fit, .order, .orphans, .outline_color,
-		.outline_offset, .outline_style, .outline_width, .overflow_wrap, .overflow_x, .overflow_y,
-		.pointer_events, .paint_order, .scroll_behavior, .shape_rendering, .position,
-		.position_anchor, .scroll_timeline_name, .shape_image_threshold, .stop_color,
-		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .table_layout,
-		.text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify,
-		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
-		.transform_box, .transform_style, .touch_action, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
-		.user_select, .view_timeline_inset, .view_timeline_name, .view_transition_name,
-		.writing_mode, .scrollbar_width, .resize, .visibility, .webkit_text_fill_color,
-		.white_space_collapse, .white_space_trim, .word_break, .word_spacing {
+		.border_image_repeat, .border_image_source, .border_left_color, .border_left_style,
+		.border_left_width, .border_right_color, .border_right_style, .border_right_width,
+		.border_top_color, .border_top_style, .border_top_width, .box_sizing, .caption_side,
+		.caret_color, .clear, .clip_rule, .color, .color_interpolation, .color_scheme,
+		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color,
+		.flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_kerning,
+		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
+		.font_variant_emoji, .font_variant_position, .font_variation_settings, .font_weight,
+		.font_width, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self,
+		.justify_content, .justify_items, .justify_self, .appearance, .column_span,
+		.image_rendering, .isolation, .letter_spacing, .line_height, .list_style_image,
+		.list_style_position, .mask_composite, .mask_mode, .mask_origin, .mask_type, .math_depth,
+		.math_shift, .math_style, .object_fit, .order, .orphans, .outline_color, .outline_offset,
+		.outline_style, .outline_width, .overflow_wrap, .overflow_x, .overflow_y, .pointer_events,
+		.paint_order, .scroll_behavior, .scroll_timeline_axis, .shape_rendering, .position,
+		.position_anchor, .position_visibility, .scroll_timeline_name, .shape_image_threshold,
+		.stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity,
+		.table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style,
+		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
+		.text_wrap_style, .transform_box, .transform_style, .touch_action, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
+		.unicode_bidi, .user_select, .view_timeline_axis, .view_timeline_inset,
+		.view_timeline_name, .view_transition_name, .writing_mode, .scrollbar_width, .resize,
+		.visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim,
+		.word_break, .word_spacing {
 			false
 		}
 	}
@@ -4849,31 +5094,32 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .aspect_ratio, .background_color, .background_image,
 		.border_bottom_color, .border_bottom_style, .border_bottom_width, .border_collapse,
-		.border_image_source, .border_left_color, .border_left_style, .border_left_width,
-		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
-		.border_top_style, .border_top_width, .box_sizing, .caption_side, .caret_color, .clear,
-		.clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .float_,
-		.direction, .empty_cells, .font_feature_settings, .font_kerning, .font_language_override,
-		.font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji,
-		.font_variant_position, .font_variation_settings, .font_weight, .font_width,
-		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .contain, .container_type,
-		.image_rendering, .isolation, .letter_spacing, .line_height, .list_style_image,
-		.list_style_position, .mask_type, .math_depth, .math_shift, .math_style, .object_fit,
-		.order, .orphans, .outline_color, .outline_offset, .outline_style, .outline_width,
-		.overflow_wrap, .overflow_x, .overflow_y, .pointer_events, .scroll_behavior,
-		.shape_rendering, .position, .position_anchor, .scroll_timeline_name,
+		.border_image_repeat, .border_image_source, .border_left_color, .border_left_style,
+		.border_left_width, .border_right_color, .border_right_style, .border_right_width,
+		.border_top_color, .border_top_style, .border_top_width, .box_sizing, .caption_side,
+		.caret_color, .clear, .clip_rule, .color, .color_interpolation, .color_scheme,
+		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color,
+		.flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_kerning,
+		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
+		.font_variant_emoji, .font_variant_position, .font_variation_settings, .font_weight,
+		.font_width, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self,
+		.justify_content, .justify_items, .justify_self, .appearance, .column_span, .contain,
+		.container_type, .image_rendering, .isolation, .letter_spacing, .line_height,
+		.list_style_image, .list_style_position, .mask_composite, .mask_mode, .mask_origin,
+		.mask_type, .math_depth, .math_shift, .math_style, .object_fit, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_wrap,
+		.overflow_x, .overflow_y, .pointer_events, .scroll_behavior, .scroll_timeline_axis,
+		.shape_rendering, .position, .position_anchor, .position_visibility, .scroll_timeline_name,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
 		.stroke_opacity, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
 		.text_decoration_line, .text_decoration_style, .paint_order, .text_rendering,
 		.text_transform, .text_wrap_mode, .text_wrap_style, .transform_box, .transform_style,
 		.touch_action, .transition_behavior, .transition_delay, .transition_duration,
 		.transition_property, .transition_timing_function, .unicode_bidi, .user_select,
-		.view_timeline_inset, .view_timeline_name, .view_transition_name, .writing_mode,
-		.scrollbar_width, .resize, .visibility, .webkit_text_fill_color, .white_space_collapse,
-		.white_space_trim, .word_break, .word_spacing, .z_index {
+		.view_timeline_axis, .view_timeline_inset, .view_timeline_name, .view_transition_name,
+		.writing_mode, .scrollbar_width, .resize, .visibility, .webkit_text_fill_color,
+		.white_space_collapse, .white_space_trim, .word_break, .word_spacing, .z_index {
 			false
 		}
 	}
