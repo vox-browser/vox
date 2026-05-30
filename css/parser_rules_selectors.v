@@ -2559,17 +2559,56 @@ fn parser_balanced_selector_text(text string) bool {
 }
 
 fn parser_selector_uses_undeclared_namespace(text string, declared_namespaces map[string]bool) bool {
-	// Stub for parse_selector_qualified_name(): recognizes the common `prefix|name` spelling and applies the
-	// Selectors invalid-namespace rule. Full namespace tokenization belongs in the future selector AST port.
-	for part in text.fields() {
-		if part.contains('|') && !part.starts_with('|') && !part.starts_with('*|') {
-			prefix := part.all_before('|').trim_left('>+~,.#[:')
-			if prefix.len > 0 && prefix !in declared_namespaces {
+	for selector_text in split_selector_list_text(text) {
+		if parser_complex_selector_uses_undeclared_namespace(selector_text.trim_space(),
+			declared_namespaces)
+		{
+			return true
+		}
+	}
+	return false
+}
+
+fn parser_complex_selector_uses_undeclared_namespace(text string, declared_namespaces map[string]bool) bool {
+	for compound_selector in parse_complex_selector(text) {
+		for simple_selector in compound_selector.simple_selectors {
+			if parser_simple_selector_uses_undeclared_namespace(simple_selector, declared_namespaces) {
 				return true
 			}
 		}
 	}
 	return false
+}
+
+fn parser_simple_selector_uses_undeclared_namespace(simple_selector SimpleSelector, declared_namespaces map[string]bool) bool {
+	match simple_selector.type_ {
+		.tag_name, .universal {
+			return parser_qualified_name_uses_undeclared_namespace(simple_selector.qualified_name,
+				declared_namespaces)
+		}
+		.attribute {
+			return parser_qualified_name_uses_undeclared_namespace(simple_selector.attribute.qualified_name,
+				declared_namespaces)
+		}
+		.pseudo_class {
+			for selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+				if parser_selector_uses_undeclared_namespace(selector.text, declared_namespaces) {
+					return true
+				}
+			}
+		}
+		.pseudo_element {
+			if selector := simple_selector.pseudo_element.compound_selector {
+				return parser_selector_uses_undeclared_namespace(selector.text, declared_namespaces)
+			}
+		}
+		else {}
+	}
+	return false
+}
+
+fn parser_qualified_name_uses_undeclared_namespace(qualified_name SelectorQualifiedName, declared_namespaces map[string]bool) bool {
+	return qualified_name.namespace_type == .named && qualified_name.namespace_ !in declared_namespaces
 }
 
 fn (parser RuleSelectorParser) is_valid_declaration_in_the_current_context(declaration Declaration) bool {
