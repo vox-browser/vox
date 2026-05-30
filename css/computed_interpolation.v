@@ -1175,14 +1175,97 @@ pub fn (c &ComputedProperties) color_scheme(preferred_scheme PreferredColorSchem
 	return computed_interpolation_default_color_scheme(preferred_scheme, document_supported_schemes)
 }
 
-pub fn (c &ComputedProperties) assemble_coordinated_value_list(base_property_id PropertyID, property_ids ComputedInterpolationPropertyIDs) map[PropertyID][]&dom.StyleValue {
-	_ = base_property_id
-	mut result := map[PropertyID][]&dom.StyleValue{}
-	for property_id in property_ids {
-		if value := c.property(property_id, .yes) {
-			result[property_id] = [value]
+fn computed_interpolation_split_coordinating_list_value(value &dom.StyleValue) []&dom.StyleValue {
+	// Boundary: DOM::StyleValue is currently an opaque DOM-side placeholder in this V port, so we subdivide the
+	// serialized value list here. Coordinating list properties are comma-separated, and commas inside nested CSS
+	// functions or strings are part of the item.
+	text := value.css_text
+	mut values := []&dom.StyleValue{}
+	mut start := 0
+	mut nesting := 0
+	mut quote := u8(0)
+	mut escaped := false
+
+	for i, ch in text.bytes() {
+		if escaped {
+			escaped = false
+			continue
+		}
+		if quote != 0 {
+			if ch == `\\` {
+				escaped = true
+			} else if ch == quote {
+				quote = 0
+			}
+			continue
+		}
+		match ch {
+			`'`, `"` {
+				quote = ch
+			}
+			`(`, `[`, `{` {
+				nesting++
+			}
+			`)`, `]`, `}` {
+				if nesting > 0 {
+					nesting--
+				}
+			}
+			`,` {
+				if nesting == 0 {
+					values << &dom.StyleValue{
+						css_text: text[start..i].trim_space()
+					}
+					start = i + 1
+				}
+			}
+			else {}
 		}
 	}
+
+	if values.len == 0 {
+		return [value]
+	}
+
+	values << &dom.StyleValue{
+		css_text: text[start..].trim_space()
+	}
+	return values
+}
+
+pub fn (c &ComputedProperties) assemble_coordinated_value_list(base_property_id PropertyID, property_ids ComputedInterpolationPropertyIDs) map[PropertyID][]&dom.StyleValue {
+	// A coordinating list property group creates a coordinated value list, which has, for each entry, a value from each
+	// property in the group; these are used together to define a single effect, such as a background image layer or an
+	// animation. The coordinated value list is assembled as follows:
+	// - The length of the coordinated value list is determined by the number of items specified in one particular
+	//   coordinating list property, the coordinating list base property. (In the case of backgrounds, this is the
+	//   background-image property.)
+	// - The Nth value of the coordinated value list is constructed by collecting the Nth use value of each coordinating
+	//   list property
+	// - If a coordinating list property has too many values specified, excess values at the end of its list are not
+	//   used.
+	// - If a coordinating list property has too few values specified, its value list is repeated to add more used
+	//   values.
+	// - The computed values of the coordinating list properties are not affected by such truncation or repetition.
+	mut result := map[PropertyID][]&dom.StyleValue{}
+
+	base_property := c.property(base_property_id, .yes) or { return result }
+	base_list := computed_interpolation_split_coordinating_list_value(base_property)
+
+	for i := 0; i < base_list.len; i++ {
+		for property_id in property_ids {
+			value := c.property(property_id, .yes) or { continue }
+			list := computed_interpolation_split_coordinating_list_value(value)
+			if list.len == 0 {
+				continue
+			}
+
+			mut property_values := result[property_id] or { []&dom.StyleValue{} }
+			property_values << list[i % list.len]
+			result[property_id] = property_values
+		}
+	}
+
 	return result
 }
 
@@ -4237,7 +4320,7 @@ pub fn StyleComputer.compute_position_area(absolutized_value &dom.StyleValue) &d
 	return unsafe { absolutized_value }
 }
 
-pub fn (s &StyleComputer) build_matching_rule_set(abstract_element dom.AbstractElement, mut attempted_pseudo_class_matches PseudoClassBitmap, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, scope &StyleScope) MatchingRuleSet {
+pub fn (s &StyleComputer) build_matching_rule_set(abstract_element dom.AbstractElement, mut attempted_pseudo_class_matches PseudoClassBitmap, did_match_any_pseudo_element_rules &bool, mode ComputeStyleMode, scope &StyleScope) MatchingRuleSet {
 	return style_computer_build_matching_rule_set_impl(s, abstract_element, mut
 		attempted_pseudo_class_matches, did_match_any_pseudo_element_rules, mode, scope)
 }

@@ -1305,7 +1305,7 @@ pub fn sort_matching_rules(mut matching_rules []MatchingRule) {
 	}
 }
 
-pub fn style_computer_build_matching_rule_set_impl(style_computer &StyleComputer, abstract_element dom.AbstractElement, mut attempted_pseudo_class_matches PseudoClassBitmap, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, scope &StyleScope) MatchingRuleSet {
+pub fn style_computer_build_matching_rule_set_impl(style_computer &StyleComputer, abstract_element dom.AbstractElement, mut attempted_pseudo_class_matches PseudoClassBitmap, did_match_any_pseudo_element_rules &bool, mode ComputeStyleMode, scope &StyleScope) MatchingRuleSet {
 	// First, we collect all the CSS rules whose selectors match `element`:
 	mut matching_rule_set := MatchingRuleSet{}
 	matching_rule_set.user_agent_rules = style_computer_collect_matching_rules_in_scope(style_computer,
@@ -1342,11 +1342,11 @@ pub fn style_computer_build_matching_rule_set_impl(style_computer &StyleComputer
 				break
 			}
 		}
-		mut did_match_any_pseudo_element_rules_result := author_rules_has_any_rules
-			|| matching_rule_set.user_rules.len != 0 || matching_rule_set.user_agent_rules.len != 0
-		_ = did_match_any_pseudo_element_rules_result
+		unsafe {
+			*did_match_any_pseudo_element_rules = author_rules_has_any_rules
+				|| matching_rule_set.user_rules.len != 0 || matching_rule_set.user_agent_rules.len != 0
+		}
 	}
-	_ = did_match_any_pseudo_element_rules
 
 	return matching_rule_set
 }
