@@ -473,6 +473,69 @@ fn cssom_unquote_css_string_if_wrapped(value string) string {
 	return value
 }
 
+// --- CSSFontFaceRule / CSSFontFeatureValuesRule / CSSCounterStyleRule storage ---
+
+pub fn CSSRule.create_font_face_rule(font_face_rule &CSSFontFaceRule) &CSSRule {
+	mut rule := CSSRule.create(.font_face)
+	rule.font_face_rule = font_face_rule
+	return rule
+}
+
+pub fn (rule &CSSRule) font_face_rule_ref() ?&CSSFontFaceRule {
+	if rule.type_ != .font_face {
+		return none
+	}
+	return rule.font_face_rule
+}
+
+fn (rule &CSSRule) serialized_font_face_rule() string {
+	if font_face_rule := rule.font_face_rule {
+		return font_face_rule.serialized()
+	}
+	return '@font-face { }'
+}
+
+pub fn CSSRule.create_font_feature_values_rule(font_feature_values_rule &CSSFontFeatureValuesRule) &CSSRule {
+	mut rule := CSSRule.create(.font_feature_values)
+	rule.font_feature_values_rule = font_feature_values_rule
+	return rule
+}
+
+pub fn (rule &CSSRule) font_feature_values_rule_ref() ?&CSSFontFeatureValuesRule {
+	if rule.type_ != .font_feature_values {
+		return none
+	}
+	return rule.font_feature_values_rule
+}
+
+fn (rule &CSSRule) serialized_font_feature_values_rule() string {
+	if font_feature_values_rule := rule.font_feature_values_rule {
+		return font_feature_values_rule.serialized()
+	}
+	return '@font-feature-values { }'
+}
+
+pub fn CSSRule.create_counter_style_rule(counter_style_rule CSSCounterStyleRule) &CSSRule {
+	mut rule := CSSRule.create(.counter_style)
+	rule.counter_style_rule = counter_style_rule
+	rule.url = counter_style_rule.name()
+	return rule
+}
+
+pub fn (rule &CSSRule) counter_style_rule_value() ?CSSCounterStyleRule {
+	if rule.type_ != .counter_style {
+		return none
+	}
+	return rule.counter_style_rule
+}
+
+fn (rule &CSSRule) serialized_counter_style_rule() string {
+	if counter_style_rule := rule.counter_style_rule {
+		return counter_style_rule.serialized()
+	}
+	return '@counter-style ${serialize_an_identifier(rule.url)} { }'
+}
+
 // --- CSSPageRule ---
 
 pub fn CSSRule.create_page(selectors PageSelectorList, descriptors &CSSPageDescriptors, rules &CSSRuleList) &CSSRule {

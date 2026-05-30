@@ -525,6 +525,10 @@ pub mut:
 	property_rule_syntax        string
 	property_rule_inherits      bool
 	property_rule_initial_value ?string
+
+	font_face_rule           ?&CSSFontFaceRule
+	font_feature_values_rule ?&CSSFontFeatureValuesRule
+	counter_style_rule       ?CSSCounterStyleRule
 }
 
 pub fn CSSRule.create(type_ CSSRuleType) &CSSRule {
@@ -805,6 +809,15 @@ pub fn (rule &CSSRule) serialized() string {
 		.keyframe {
 			rule.serialized_keyframe_rule()
 		}
+		.font_face {
+			rule.serialized_font_face_rule()
+		}
+		.font_feature_values {
+			rule.serialized_font_feature_values_rule()
+		}
+		.counter_style {
+			rule.serialized_counter_style_rule()
+		}
 		.page {
 			rule.serialized_page_rule()
 		}
@@ -820,9 +833,6 @@ pub fn (rule &CSSRule) serialized() string {
 			} else {
 				''
 			}
-		}
-		else {
-			''
 		}
 	}
 }

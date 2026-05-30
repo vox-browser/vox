@@ -1004,11 +1004,23 @@ fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNeste
 			if has_ignored_vendor_prefix_local(rule.name) {
 				return none
 			}
+			if equals_ignoring_ascii_case(rule.name, 'counter-style') {
+				return parser.convert_to_counter_style_rule(rule)
+			}
+			if equals_ignoring_ascii_case(rule.name, 'font-face') {
+				return parser.convert_to_font_face_rule(rule)
+			}
+			if equals_ignoring_ascii_case(rule.name, 'font-feature-values') {
+				return parser.convert_to_font_feature_values_rule(rule)
+			}
 			if equals_ignoring_ascii_case(rule.name, 'import') {
 				return parser.convert_to_import_rule(rule)
 			}
 			if equals_ignoring_ascii_case(rule.name, 'layer') {
 				return parser.convert_to_layer_rule(rule, nested)
+			}
+			if is_margin_rule_name(rule.name) {
+				return parser.convert_to_margin_rule(rule)
 			}
 			if equals_ignoring_ascii_case(rule.name, 'media') {
 				return parser.convert_to_media_rule(rule, nested)
@@ -1019,17 +1031,11 @@ fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNeste
 			if equals_ignoring_ascii_case(rule.name, 'supports') {
 				return parser.convert_to_supports_rule(rule, nested)
 			}
-			if equals_ignoring_ascii_case(rule.name, 'font-face') {
-				return CSSRule.create_grouping(.font_face, CSSRuleList.create_empty())
-			}
 			if equals_ignoring_ascii_case(rule.name, 'page') {
-				return CSSRule.create_grouping(.page, CSSRuleList.create_empty())
+				return parser.convert_to_page_rule(rule)
 			}
 			if equals_ignoring_ascii_case(rule.name, 'property') {
-				return CSSRule.create(.property)
-			}
-			if equals_ignoring_ascii_case(rule.name, 'counter-style') {
-				return CSSRule.create(.counter_style)
+				return parser.convert_to_property_rule(rule)
 			}
 			parser_report_error(ParsingError(UnknownRuleError{
 				rule_name: '@${rule.name}'
@@ -1256,6 +1262,456 @@ fn (mut parser RuleSelectorParser) convert_to_keyframes_rule(rule AtRule) ?&CSSR
 	return keyframes_rule
 }
 
+fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRule {
+	// https://drafts.css-houdini.org/css-properties-values-api-1/#at-ruledef-property
+	// @property <custom-property-name> {
+	// <declaration-list>
+	// }
+	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
+	if !rule.is_block_rule {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@property'
+			prelude:     prelude_stream.dump_string()
+			description: 'Must be a block, not a statement.'
+		}))
+		return none
+	}
+
+	if rule.prelude.len == 0 {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@property'
+			prelude:     prelude_stream.dump_string()
+			description: 'Empty prelude.'
+		}))
+		return none
+	}
+
+	prelude_stream.discard_whitespace()
+	token := prelude_stream.consume_a_token()
+	if !token.is(.ident) {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@property'
+			prelude:     prelude_stream.dump_string()
+			description: 'Name must be an ident.'
+		}))
+		return none
+	}
+
+	name := token.token().ident()
+	prelude_stream.discard_whitespace()
+	if prelude_stream.has_next_token() {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@property'
+			prelude:     prelude_stream.dump_string()
+			description: 'Trailing tokens after name in prelude.'
+		}))
+		return none
+	}
+
+	if !is_a_custom_property_name_string(name) {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@property'
+			prelude:     prelude_stream.dump_string()
+			description: "Name must be an ident starting with '--'."
+		}))
+		return none
+	}
+
+	mut syntax_maybe := ?string(none)
+	mut inherits_maybe := ?bool(none)
+	mut initial_value_maybe := ?string(none)
+	rule.for_each_as_declaration_list(fn [mut syntax_maybe, mut inherits_maybe, mut initial_value_maybe] (declaration Declaration) {
+		value := parser_component_values_to_string(declaration.value).trim_space()
+		match declaration.name.to_lower() {
+			'syntax' {
+				if declaration.value.len == 1 && declaration.value[0].is(.string) {
+					syntax_maybe = declaration.value[0].token().string_value()
+				}
+			}
+			'inherits' {
+				if value.to_lower() == 'true' {
+					inherits_maybe = true
+				} else if value.to_lower() == 'false' {
+					inherits_maybe = false
+				}
+			}
+			'initial-value' {
+				initial_value_maybe = value
+			}
+			else {}
+		}
+	})
+
+	// @property rules require a syntax and inherits descriptor; if either are missing, the entire rule is invalid and must be ignored.
+	syntax := syntax_maybe or { return none }
+	if syntax.len == 0 {
+		return none
+	}
+	inherits := inherits_maybe or { return none }
+
+	syntax_component_values := parse_component_values_for_value_logic(syntax)
+	maybe_syntax := parse_as_syntax(syntax_component_values) or { return none }
+
+	// The initial-value descriptor is optional only if the syntax is the universal syntax definition,
+	// otherwise the descriptor is required; if it's missing, the entire rule is invalid and must be ignored.
+	if initial_value_maybe == none && maybe_syntax.type() != .universal {
+		return none
+	}
+
+	if initial_value := initial_value_maybe {
+		initial_value_component_values := parse_component_values_for_value_logic(initial_value)
+		parsed_initial_value := parse_with_a_syntax(initial_value_component_values, maybe_syntax)
+		// Otherwise, if the value of the syntax descriptor is not the universal syntax definition,
+		// the following conditions must be met for the @property rule to be valid:
+		//  - The initial-value descriptor must be present.
+		//  - The initial-value descriptor's value must parse successfully according to the grammar specified by the syntax definition.
+		//  - FIXME: The initial-value must be computationally independent.
+		if parsed_initial_value.type_() == .guaranteed_invalid {
+			return none
+		}
+	}
+
+	return CSSRule.create_property_rule(name, syntax, inherits, initial_value_maybe)
+}
+
+fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&CSSRule {
+	// https://drafts.csswg.org/css-counter-styles-3/#the-counter-style-rule
+	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
+	if !rule.is_block_rule {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@counter-style'
+			prelude:     prelude_stream.dump_string()
+			description: 'Must be a block, not a statement.'
+		}))
+		return none
+	}
+
+	if rule.prelude.len == 0 {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@counter-style'
+			prelude:     prelude_stream.dump_string()
+			description: 'Empty prelude.'
+		}))
+		return none
+	}
+
+	name := parser.parse_counter_style_name(mut prelude_stream) or {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@counter-style'
+			prelude:     prelude_stream.dump_string()
+			description: 'Missing counter style name.'
+		}))
+		return none
+	}
+
+	prelude_stream.discard_whitespace()
+	if prelude_stream.has_next_token() {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@counter-style'
+			prelude:     prelude_stream.dump_string()
+			description: 'Trailing tokens after name in prelude.'
+		}))
+		return none
+	}
+
+	// https://drafts.csswg.org/css-counter-styles-3/#typedef-counter-style-name
+	// When used here, to define a counter style, it also cannot be any of the non-overridable counter-style names
+	// FIXME: We should allow these in the UA stylesheet in order to initially define them.
+	if css_counter_style_rule_matches_non_overridable_counter_style_name(name) {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@counter-style'
+			prelude:     prelude_stream.dump_string()
+			description: 'Non-overridable counter style name.'
+		}))
+		return none
+	}
+
+	mut system := ?CounterStyleSystemStyleValue(none)
+	mut negative := ?CounterStyleSymbolListStyleValue(none)
+	mut prefix := ?StyleValue(none)
+	mut suffix := ?StyleValue(none)
+	mut range := ?CounterStyleRangeStyleValue(none)
+	mut pad := ?CounterStylePadStyleValue(none)
+	mut fallback := ?StyleValue(none)
+	mut symbols := ?CounterStyleSymbolListStyleValue(none)
+	mut additive_symbols := ?CounterStyleAdditiveSymbolsStyleValue(none)
+	mut speak_as := ?StyleValue(none)
+
+	rule.for_each_as_declaration_list(fn [mut system, mut negative, mut prefix, mut suffix, mut range, mut pad, mut fallback, mut symbols, mut additive_symbols, mut speak_as] (declaration Declaration) {
+		value_text := parser_component_values_to_string(declaration.value).trim_space()
+		match declaration.name.to_lower() {
+			'system' {
+				system = parse_counter_style_system_descriptor_value(value_text)
+			}
+			'negative' {
+				negative = parse_counter_style_symbol_list_descriptor_value(value_text)
+			}
+			'prefix' {
+				prefix = parse_counter_style_generic_descriptor_value(value_text)
+			}
+			'suffix' {
+				suffix = parse_counter_style_generic_descriptor_value(value_text)
+			}
+			'range' {
+				range = parse_counter_style_range_descriptor_value(value_text)
+			}
+			'pad' {
+				pad = parse_counter_style_pad_descriptor_value(value_text)
+			}
+			'fallback' {
+				fallback = parse_counter_style_generic_descriptor_value(value_text)
+			}
+			'symbols' {
+				symbols = parse_counter_style_symbol_list_descriptor_value(value_text)
+			}
+			'additive-symbols' {
+				additive_symbols = parse_counter_style_additive_symbols_descriptor_value(value_text)
+			}
+			'speak-as' {
+				speak_as = parse_counter_style_generic_descriptor_value(value_text)
+			}
+			else {}
+		}
+	})
+
+	return CSSRule.create_counter_style_rule(CSSCounterStyleRule.create(name, system, negative,
+		prefix, suffix, range, pad, fallback, symbols, additive_symbols, speak_as))
+}
+
+fn (mut parser RuleSelectorParser) convert_to_font_face_rule(rule AtRule) ?&CSSRule {
+	// https://drafts.csswg.org/css-fonts/#font-face-rule
+	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
+	if !rule.is_block_rule {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@font-face'
+			prelude:     prelude_stream.dump_string()
+			description: 'Must be a block, not a statement.'
+		}))
+		return none
+	}
+
+	prelude_stream.discard_whitespace()
+	if prelude_stream.has_next_token() {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@font-face'
+			prelude:     prelude_stream.dump_string()
+			description: 'Prelude is not allowed.'
+		}))
+		return none
+	}
+
+	mut descriptors := []FontFaceDescriptor{}
+	rule.for_each_as_declaration_list(fn [mut descriptors] (declaration Declaration) {
+		id := font_face_descriptor_id_from_property(declaration.name) or { return }
+		value := parser_component_values_to_string(declaration.value).trim_space()
+		parsed := parse_font_face_descriptor_for_rule_parsing(id, value) or { return }
+		append_font_face_descriptor(mut descriptors, FontFaceDescriptor{
+			id:    id
+			value: parsed
+		})
+	})
+
+	return CSSRule.create_font_face_rule(CSSFontFaceRule.create(CSSFontFaceDescriptors.create(descriptors)))
+}
+
+fn (mut parser RuleSelectorParser) parse_comma_separated_family_name_list(mut tokens ParserTokenStream) ?[]string {
+	mut family_names := []string{}
+	comma_separated_families := parser.parse_a_comma_separated_list_of_component_values(mut tokens)
+
+	if comma_separated_families.len == 0 {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@font-feature-values'
+			prelude:     tokens.dump_string()
+			description: 'Empty family name list.'
+		}))
+		return none
+	}
+
+	for family_component_values in comma_separated_families {
+		family_name := parse_font_family_name_for_rule_parsing(family_component_values) or {
+			parser_report_error(ParsingError(InvalidRuleError{
+				rule_name:   '@font-feature-values'
+				prelude:     parser_component_values_to_string(family_component_values)
+				description: 'Invalid family name.'
+			}))
+			return none
+		}
+
+		family_names << family_name
+	}
+
+	return family_names
+}
+
+fn (mut parser RuleSelectorParser) convert_to_font_feature_values_rule(rule AtRule) ?&CSSRule {
+	// https://drafts.csswg.org/css-fonts-4/#font-feature-values-syntax
+	// @font-feature-values = @font-feature-values <family-name># { <declaration-rule-list> }
+	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
+	if !rule.is_block_rule {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@font-feature-values'
+			prelude:     prelude_stream.dump_string()
+			description: 'Must be a block, not a statement.'
+		}))
+		return none
+	}
+
+	family_names := parser.parse_comma_separated_family_name_list(mut prelude_stream) or {
+		return none
+	}
+
+	mut font_feature_values_rule := CSSFontFeatureValuesRule.create(family_names)
+
+	rule.for_each_as_declaration_rule_list(fn [mut font_feature_values_rule] (at_rule AtRule) {
+		// <font-feature-value-type> = <@stylistic> | <@historical-forms> | <@styleset> | <@character-variant> | <@swash> | <@ornaments> | <@annotation>
+		// @stylistic = @stylistic { <declaration-list> }
+		// @historical-forms = @historical-forms { <declaration-list> }
+		// @styleset = @styleset { <declaration-list> }
+		// @character-variant = @character-variant { <declaration-list> }
+		// @swash = @swash { <declaration-list> }
+		// @ornaments = @ornaments { <declaration-list> }
+		// @annotation = @annotation { <declaration-list> }
+		mut feature_values_map := ?&CSSFontFeatureValuesMap(none)
+		mut max_value_count := usize(1)
+
+		if equals_ignoring_ascii_case(at_rule.name, 'stylistic') {
+			feature_values_map = font_feature_values_rule.stylistic()
+		} else if equals_ignoring_ascii_case(at_rule.name, 'historical-forms') {
+			feature_values_map = font_feature_values_rule.historical_forms()
+		} else if equals_ignoring_ascii_case(at_rule.name, 'styleset') {
+			feature_values_map = font_feature_values_rule.styleset()
+			max_value_count = max_u32_as_usize()
+		} else if equals_ignoring_ascii_case(at_rule.name, 'character-variant') {
+			feature_values_map = font_feature_values_rule.character_variant()
+			max_value_count = 2
+		} else if equals_ignoring_ascii_case(at_rule.name, 'swash') {
+			feature_values_map = font_feature_values_rule.swash()
+		} else if equals_ignoring_ascii_case(at_rule.name, 'ornaments') {
+			feature_values_map = font_feature_values_rule.ornaments()
+		} else if equals_ignoring_ascii_case(at_rule.name, 'annotation') {
+			feature_values_map = font_feature_values_rule.annotation()
+		} else {
+			return
+		}
+
+		target_map := feature_values_map or { return }
+		at_rule.for_each_as_declaration_list(fn [target_map, max_value_count, at_rule] (declaration Declaration) {
+			if declaration.important == .yes {
+				parser_report_error(ParsingError(InvalidRuleError{
+					rule_name:   '@${at_rule.name}'
+					prelude:     parser_component_values_to_string(declaration.value)
+					description: 'Declarations in @font-feature-values rules cannot be marked !important.'
+				}))
+				return
+			}
+
+			values := parse_font_feature_values_declaration_values(declaration.value) or {
+				parser_report_error(ParsingError(InvalidRuleError{
+					rule_name:   '@${at_rule.name}'
+					prelude:     parser_component_values_to_string(declaration.value)
+					description: 'Feature value entry must be a non-negative integer.'
+				}))
+				return
+			}
+
+			if values.len == 0 {
+				parser_report_error(ParsingError(InvalidRuleError{
+					rule_name:   '@${at_rule.name}'
+					prelude:     parser_component_values_to_string(declaration.value)
+					description: 'Empty feature value.'
+				}))
+				return
+			}
+
+			if usize(values.len) > max_value_count {
+				parser_report_error(ParsingError(InvalidRuleError{
+					rule_name:   '@${at_rule.name}'
+					prelude:     parser_component_values_to_string(declaration.value)
+					description: 'Too many feature values provided (maximum ${max_value_count}).'
+				}))
+				return
+			}
+
+			mut mutable_map := unsafe { &CSSFontFeatureValuesMap(target_map) }
+			mutable_map.set(declaration.name, values) or {}
+		})
+	}, fn (_ Declaration) {
+		// FIXME: Handle the `font-display` descriptor here, see
+		//        https://drafts.csswg.org/css-fonts-4/#font-display-font-feature-values
+	})
+
+	return CSSRule.create_font_feature_values_rule(font_feature_values_rule)
+}
+
+fn (mut parser RuleSelectorParser) convert_to_page_rule(page_rule AtRule) ?&CSSRule {
+	// https://drafts.csswg.org/css-page-3/#syntax-page-selector
+	// @page = @page <page-selector-list>? { <declaration-rule-list> }
+	mut tokens := ParserTokenStream.from_values(page_rule.prelude)
+	if !page_rule.is_block_rule {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@page'
+			prelude:     tokens.dump_string()
+			description: 'Must be a block, not a statement.'
+		}))
+		return none
+	}
+
+	page_selectors := parse_page_selector_list_for_rule_parsing(mut tokens) or { return none }
+	mut child_rules := []&CSSRule{}
+	mut descriptors := []Descriptor{}
+	page_rule.for_each_as_declaration_rule_list(fn [mut child_rules, mut descriptors, mut parser] (at_rule AtRule) {
+		if converted_rule := parser.convert_to_rule(Rule(at_rule), .no) {
+			if converted_rule.type_ == .margin {
+				child_rules << converted_rule
+			} else {
+				parser_report_error(ParsingError(InvalidRuleLocationError{
+					outer_rule_name: '@page'
+					inner_rule_name: converted_rule.type_.class_name()
+				}))
+			}
+		}
+	}, fn [mut descriptors] (declaration Declaration) {
+		if descriptor := convert_to_page_descriptor_for_rule_parsing(declaration) {
+			append_descriptor(mut descriptors, descriptor)
+		}
+	})
+
+	return CSSRule.create_page(page_selectors, CSSPageDescriptors.create(descriptors),
+		CSSRuleList.create(child_rules))
+}
+
+fn (mut parser RuleSelectorParser) convert_to_margin_rule(rule AtRule) ?&CSSRule {
+	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
+	if !rule.is_block_rule {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@${rule.name}'
+			prelude:     prelude_stream.dump_string()
+			description: 'Must be a block, not a statement.'
+		}))
+		return none
+	}
+
+	prelude_stream.discard_whitespace()
+	if prelude_stream.has_next_token() {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name:   '@${rule.name}'
+			prelude:     prelude_stream.dump_string()
+			description: 'Prelude is not allowed.'
+		}))
+		return none
+	}
+
+	// https://drafts.csswg.org/css-page-3/#syntax-page-selector
+	// There are lots of these, but they're all in the format:
+	// @foo = @foo { <declaration-list> };
+	//
+	// FIXME: The declaration list should be a CSSMarginDescriptors, but that has no spec definition:
+	//        https://github.com/w3c/csswg-drafts/issues/10106
+	//        So, we just parse a CSSStyleProperties instead for now.
+	style := parser.convert_to_style_declaration(declarations_from_at_rule(rule))
+	return CSSRule.create_margin(rule.name, style)
+}
+
 fn (mut parser RuleSelectorParser) convert_child_rule_list(children []RuleOrListOfDeclarations, nested ParserNested) []&CSSRule {
 	mut child_rules := []&CSSRule{}
 	for child in children {
@@ -1293,6 +1749,277 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations []D
 		}
 	}
 	return style
+}
+
+fn append_descriptor(mut descriptors []Descriptor, descriptor Descriptor) {
+	for index, existing in descriptors {
+		if existing.descriptor_id == descriptor.descriptor_id {
+			descriptors.delete(index)
+			break
+		}
+	}
+	descriptors << descriptor
+}
+
+fn append_font_face_descriptor(mut descriptors []FontFaceDescriptor, descriptor FontFaceDescriptor) {
+	for index, existing in descriptors {
+		if existing.id == descriptor.id {
+			descriptors.delete(index)
+			break
+		}
+	}
+	descriptors << descriptor
+}
+
+fn parse_font_face_descriptor_for_rule_parsing(id FontFaceDescriptorID, value string) ?string {
+	return parse_font_face_descriptor_stub(id, value)
+}
+
+fn parse_font_family_name_for_rule_parsing(values []ComponentValue) ?string {
+	mut tokens := ParserTokenStream.from_values(values)
+	tokens.discard_whitespace()
+	first := tokens.next_token()
+	if first.is(.string) {
+		tokens.discard_a_token()
+		tokens.discard_whitespace()
+		if tokens.has_next_token() {
+			return none
+		}
+		return first.token().string_value()
+	}
+
+	mut parts := []string{}
+	for tokens.has_next_token() {
+		tokens.discard_whitespace()
+		if !tokens.next_token().is(.ident) {
+			break
+		}
+		parts << tokens.consume_a_token().token().ident()
+	}
+	tokens.discard_whitespace()
+	if parts.len == 0 || tokens.has_next_token() {
+		return none
+	}
+	if parts.len == 1 {
+		if is_css_wide_keyword_string(parts[0]) || equals_ignoring_ascii_case(parts[0], 'default') {
+			return none
+		}
+		if is_generic_font_family_name_stub(parts[0]) {
+			return none
+		}
+	}
+	return parts.join(' ')
+}
+
+fn is_generic_font_family_name_stub(name string) bool {
+	return name.to_lower() in ['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui',
+		'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded', 'math', 'emoji', 'fangsong']
+}
+
+fn parse_font_feature_values_declaration_values(values []ComponentValue) ?[]u32 {
+	mut tokens := ParserTokenStream.from_values(values)
+	tokens.discard_whitespace()
+	mut result := []u32{}
+	for tokens.has_next_token() {
+		token := tokens.consume_a_token()
+		if !token.is(.number) || !token.token().number().is_integer()
+			|| token.token().number().integer_value() < 0 {
+			return none
+		}
+		result << u32(token.token().number().integer_value())
+		tokens.discard_whitespace()
+	}
+	return result
+}
+
+fn (mut parser RuleSelectorParser) parse_counter_style_name(mut tokens ParserTokenStream) ?string {
+	// https://drafts.csswg.org/css-counter-styles-3/#typedef-counter-style-name
+	// <counter-style-name> is a <custom-ident> that is not an ASCII case-insensitive match for none.
+	transaction_index := tokens.index
+	tokens.discard_whitespace()
+	token := tokens.consume_a_token()
+	if !token.is(.ident) || equals_ignoring_ascii_case(token.token().ident(), 'none') {
+		tokens.index = transaction_index
+		return none
+	}
+	mut custom_ident := token.token().ident()
+
+	// https://drafts.csswg.org/css-counter-styles-3/#the-counter-style-rule
+	// Counter style names are case-sensitive. However, the names defined in this specification are ASCII lowercased
+	// on parse wherever they are used as counter styles, e.g. in the list-style set of properties, in the
+	// @counter-style rule, and in the counter() functions.
+	if is_predefined_counter_style_name_stub(custom_ident) {
+		custom_ident = custom_ident.to_lower()
+	}
+
+	return custom_ident
+}
+
+fn is_predefined_counter_style_name_stub(name string) bool {
+	return name.to_lower() in ['decimal', 'disc', 'square', 'circle', 'disclosure-open',
+		'disclosure-closed']
+}
+
+fn css_counter_style_rule_matches_non_overridable_counter_style_name(name string) bool {
+	// The non-overridable counter-style names are the keywords decimal, disc, square, circle, disclosure-open, and disclosure-closed.
+	return name.to_lower() in ['decimal', 'disc', 'square', 'circle', 'disclosure-open',
+		'disclosure-closed']
+}
+
+fn parse_counter_style_generic_descriptor_value(value string) ?StyleValue {
+	trimmed := value.trim_space()
+	if trimmed.len == 0 {
+		return none
+	}
+	mut parser := Parser.from_css_text(trimmed)
+	parsed := parser.parse_descriptor_value(.counter_style, .unknown) or {
+		return StyleValue(StubStyleValue.create(.custom_ident, trimmed))
+	}
+	return parsed
+}
+
+fn parse_counter_style_system_descriptor_value(value string) ?CounterStyleSystemStyleValue {
+	mut tokens := ParserTokenStream.from_values(parse_component_values_for_value_logic(value))
+	tokens.discard_whitespace()
+	if !tokens.has_next_token() {
+		return none
+	}
+	first := tokens.consume_a_token()
+	if !first.is(.ident) {
+		return none
+	}
+	lower := first.token().ident().to_lower()
+	if lower == 'fixed' {
+		tokens.discard_whitespace()
+		mut first_symbol := ?StyleValue(none)
+		if tokens.has_next_token() {
+			first_symbol = StyleValue(StubStyleValue.create(.custom_ident,
+				parser_component_values_to_string(tokens.values[tokens.index..tokens.values.len - 1]).trim_space()))
+			tokens.index = tokens.values.len - 1
+		}
+		return CounterStyleSystemStyleValue.create_fixed(first_symbol)
+	}
+	if lower == 'extends' {
+		tokens.discard_whitespace()
+		name := tokens.consume_a_token()
+		tokens.discard_whitespace()
+		if !name.is(.ident) || tokens.has_next_token() {
+			return none
+		}
+		return CounterStyleSystemStyleValue.create_extends(name.token().ident())
+	}
+	tokens.discard_whitespace()
+	if tokens.has_next_token() {
+		return none
+	}
+	return match lower {
+		'cyclic' { CounterStyleSystemStyleValue.create(.cyclic) }
+		'numeric' { CounterStyleSystemStyleValue.create(.numeric) }
+		'alphabetic' { CounterStyleSystemStyleValue.create(.alphabetic) }
+		'symbolic' { CounterStyleSystemStyleValue.create(.symbolic) }
+		'additive' { CounterStyleSystemStyleValue.create(.additive) }
+		else { none }
+	}
+}
+
+fn parse_counter_style_symbol_list_descriptor_value(value string) ?CounterStyleSymbolListStyleValue {
+	component_values := parse_component_values_for_value_logic(value)
+	mut tokens := ParserTokenStream.from_values(component_values)
+	mut symbols := []StyleValue{}
+	tokens.discard_whitespace()
+	for tokens.has_next_token() {
+		token := tokens.consume_a_token()
+		if token.is(.whitespace) || token.is(.comma) {
+			continue
+		}
+		symbols << StyleValue(StubStyleValue.create(.custom_ident, token.to_string()))
+		tokens.discard_whitespace()
+	}
+	if symbols.len == 0 {
+		return none
+	}
+	return CounterStyleSymbolListStyleValue.create(symbols)
+}
+
+fn parse_counter_style_range_bound(value string) CounterStyleRangeBound {
+	if value.to_lower() == 'infinite' {
+		return CounterStyleRangeBound(CounterStyleInfinite{})
+	}
+	return CounterStyleRangeBound(StyleValue(StubStyleValue.create(.custom_ident, value)))
+}
+
+fn parse_counter_style_range_descriptor_value(value string) ?CounterStyleRangeStyleValue {
+	trimmed := value.trim_space()
+	if trimmed.len == 0 {
+		return none
+	}
+	if trimmed.to_lower() == 'auto' {
+		return CounterStyleRangeStyleValue.create_auto()
+	}
+	mut entries := []CounterStyleRangeStyleValueEntry{}
+	for entry_text in trimmed.split(',') {
+		parts := entry_text.trim_space().fields()
+		if parts.len != 2 {
+			return none
+		}
+		entries << CounterStyleRangeStyleValueEntry{
+			start: parse_counter_style_range_bound(parts[0])
+			end:   parse_counter_style_range_bound(parts[1])
+		}
+	}
+	return CounterStyleRangeStyleValue.create(entries)
+}
+
+fn parse_counter_style_pad_descriptor_value(value string) ?CounterStylePadStyleValue {
+	parts := value.trim_space().fields()
+	if parts.len < 2 {
+		return none
+	}
+	minimum_length := StyleValue(StubStyleValue.create(.integer, parts[0]))
+	symbol := StyleValue(StubStyleValue.create(.custom_ident, parts[1..].join(' ')))
+	return CounterStylePadStyleValue.create(minimum_length, symbol)
+}
+
+fn parse_counter_style_additive_symbols_descriptor_value(value string) ?CounterStyleAdditiveSymbolsStyleValue {
+	mut tuples := []CounterStyleAdditiveSymbolTupleStyleValue{}
+	for tuple_text in value.split(',') {
+		parts := tuple_text.trim_space().fields()
+		if parts.len < 2 {
+			return none
+		}
+		tuples << CounterStyleAdditiveSymbolTupleStyleValue{
+			weight: StyleValue(StubStyleValue.create(.integer, parts[0]))
+			symbol: StyleValue(StubStyleValue.create(.custom_ident, parts[1..].join(' ')))
+		}
+	}
+	if tuples.len == 0 {
+		return none
+	}
+	return CounterStyleAdditiveSymbolsStyleValue.create(tuples)
+}
+
+fn parse_page_selector_list_for_rule_parsing(mut tokens ParserTokenStream) ?PageSelectorList {
+	text := tokens.dump_string().trim_space()
+	tokens.index = tokens.values.len - 1
+	return parse_page_selector_list_stub(text)
+}
+
+fn convert_to_page_descriptor_for_rule_parsing(declaration Declaration) ?Descriptor {
+	descriptor_id := descriptor_id_from_string(.page, declaration.name) or { return none }
+	value_text := parser_component_values_to_string(declaration.value).trim_space()
+	value := parse_css_descriptor_stub(.page, descriptor_id, value_text) or { return none }
+	return Descriptor{
+		descriptor_id: descriptor_id
+		value:         value
+	}
+}
+
+fn declarations_from_at_rule(rule AtRule) []Declaration {
+	mut declarations := []Declaration{}
+	rule.for_each_as_declaration_list(fn [mut declarations] (declaration Declaration) {
+		declarations << declaration
+	})
+	return declarations
 }
 
 fn (mut parser RuleSelectorParser) parse_layer_name(mut tokens ParserTokenStream, allow_blank_layer_name AllowBlankLayerName) ?string {

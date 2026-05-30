@@ -2070,9 +2070,10 @@ pub mut:
 	fallback_style_value_         ?StyleValue
 	symbols_style_value_          ?CounterStyleSymbolListStyleValue
 	additive_symbols_style_value_ ?CounterStyleAdditiveSymbolsStyleValue
+	speak_as_style_value_         ?StyleValue
 }
 
-pub fn CSSCounterStyleRule.create(name string, system ?CounterStyleSystemStyleValue, negative ?CounterStyleSymbolListStyleValue, prefix ?StyleValue, suffix ?StyleValue, range ?CounterStyleRangeStyleValue, pad ?CounterStylePadStyleValue, fallback ?StyleValue, symbols ?CounterStyleSymbolListStyleValue, additive_symbols ?CounterStyleAdditiveSymbolsStyleValue) CSSCounterStyleRule {
+pub fn CSSCounterStyleRule.create(name string, system ?CounterStyleSystemStyleValue, negative ?CounterStyleSymbolListStyleValue, prefix ?StyleValue, suffix ?StyleValue, range ?CounterStyleRangeStyleValue, pad ?CounterStylePadStyleValue, fallback ?StyleValue, symbols ?CounterStyleSymbolListStyleValue, additive_symbols ?CounterStyleAdditiveSymbolsStyleValue, speak_as ?StyleValue) CSSCounterStyleRule {
 	return CSSCounterStyleRule{
 		name_:                         name
 		system_style_value_:           system
@@ -2084,6 +2085,7 @@ pub fn CSSCounterStyleRule.create(name string, system ?CounterStyleSystemStyleVa
 		fallback_style_value_:         fallback
 		symbols_style_value_:          symbols
 		additive_symbols_style_value_: additive_symbols
+		speak_as_style_value_:         speak_as
 	}
 }
 
@@ -2125,6 +2127,48 @@ pub fn (rule CSSCounterStyleRule) symbols_style_value() ?CounterStyleSymbolListS
 
 pub fn (rule CSSCounterStyleRule) additive_symbols_style_value() ?CounterStyleAdditiveSymbolsStyleValue {
 	return rule.additive_symbols_style_value_
+}
+
+pub fn (rule CSSCounterStyleRule) speak_as_style_value() ?StyleValue {
+	return rule.speak_as_style_value_
+}
+
+pub fn (rule CSSCounterStyleRule) serialized() string {
+	mut parts := []string{}
+	if value := rule.system_style_value_ {
+		parts << 'system: ${value.serialize(.normal)};'
+	}
+	if value := rule.negative_style_value_ {
+		parts << 'negative: ${value.serialize(.normal)};'
+	}
+	if value := rule.prefix_style_value_ {
+		parts << 'prefix: ${value.to_string()};'
+	}
+	if value := rule.suffix_style_value_ {
+		parts << 'suffix: ${value.to_string()};'
+	}
+	if value := rule.range_style_value_ {
+		parts << 'range: ${value.serialize(.normal)};'
+	}
+	if value := rule.pad_style_value_ {
+		parts << 'pad: ${value.serialize(.normal)};'
+	}
+	if value := rule.fallback_style_value_ {
+		parts << 'fallback: ${value.to_string()};'
+	}
+	if value := rule.symbols_style_value_ {
+		parts << 'symbols: ${value.serialize(.normal)};'
+	}
+	if value := rule.additive_symbols_style_value_ {
+		parts << 'additive-symbols: ${value.serialize(.normal)};'
+	}
+	if value := rule.speak_as_style_value_ {
+		parts << 'speak-as: ${value.to_string()};'
+	}
+	if parts.len == 0 {
+		return '@counter-style ${serialize_an_identifier(rule.name_)} { }'
+	}
+	return '@counter-style ${serialize_an_identifier(rule.name_)} { ${parts.join(' ')} }'
 }
 
 fn serialize_counter_style_range_bound(bound CounterStyleRangeBound, mode SerializationMode) string {
