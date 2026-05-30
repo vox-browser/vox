@@ -33,9 +33,9 @@ pub fn (supports &Supports) dump(indent_levels int) string {
 }
 
 pub fn parse_css_supports(context ParsingParams, condition_text string) ?&Supports {
-	_ = context
 	mut tokens :=
-		SupportsTokenStream.from_values(parse_component_values_for_value_logic(condition_text))
+		SupportsTokenStream.from_values_with_namespaces(parse_component_values_for_value_logic(condition_text),
+			context.declared_namespaces)
 	condition := parse_supports_condition(mut tokens) or { return none }
 	tokens.discard_whitespace()
 	if tokens.has_next_token() {
@@ -46,13 +46,22 @@ pub fn parse_css_supports(context ParsingParams, condition_text string) ?&Suppor
 
 struct SupportsTokenStream {
 mut:
-	values []ComponentValue
-	index  int
+	values              []ComponentValue
+	index               int
+	declared_namespaces map[string]bool
 }
 
 fn SupportsTokenStream.from_values(values []ComponentValue) SupportsTokenStream {
 	return SupportsTokenStream{
-		values: values.clone()
+		values:              values.clone()
+		declared_namespaces: map[string]bool{}
+	}
+}
+
+fn SupportsTokenStream.from_values_with_namespaces(values []ComponentValue, declared_namespaces map[string]bool) SupportsTokenStream {
+	return SupportsTokenStream{
+		values:              values.clone()
+		declared_namespaces: declared_namespaces.clone()
 	}
 }
 
@@ -168,7 +177,8 @@ fn parse_supports_boolean_expression_group(mut tokens SupportsTokenStream, resul
 		if first_token.is_block() && first_token.block().is_paren() {
 			mut transaction := tokens
 			transaction.discard_a_token()
-			mut child_tokens := SupportsTokenStream.from_values(first_token.block().value)
+			mut child_tokens := SupportsTokenStream.from_values_with_namespaces(first_token.block().value,
+				tokens.declared_namespaces)
 			if expression := parse_supports_boolean_expression(mut child_tokens,
 				result_for_general_enclosed)
 			{
@@ -211,7 +221,7 @@ fn parse_supports_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
 	// `<supports-selector-fn> = selector( <complex-selector> )`
 	if first_token.is_function_named('selector') {
 		selector := supports_component_values_to_string(first_token.function().value)
-		matches := parse_selector_with_parser(selector, map[string]bool{}) != none
+		matches := parse_selector_with_parser(selector, transaction.declared_namespaces) != none
 			&& !supports_selector_contains_unknown_webkit_pseudo_element(selector)
 		tokens = transaction
 		return BooleanExpression.create_supports_selector(selector, matches)

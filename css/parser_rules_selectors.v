@@ -61,12 +61,12 @@ pub mut:
 }
 
 pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding string) RuleSelectorParser {
-	_ = params
 	tokens := Tokenizer.tokenize(input, encoding)
 	return RuleSelectorParser{
 		tokens:              tokens
 		token_stream:        ParserTokenStream.from_tokens(tokens)
-		declared_namespaces: map[string]bool{}
+		rule_context:        params.rule_context.clone()
+		declared_namespaces: params.declared_namespaces.clone()
 	}
 }
 
@@ -76,6 +76,13 @@ pub fn RuleSelectorParser.create_with_namespaces(input string, declared_namespac
 		tokens:              tokens
 		token_stream:        ParserTokenStream.from_tokens(tokens)
 		declared_namespaces: declared_namespaces.clone()
+	}
+}
+
+fn (parser RuleSelectorParser) parsing_params() ParsingParams {
+	return ParsingParams{
+		rule_context:        parser.rule_context.clone()
+		declared_namespaces: parser.declared_namespaces.clone()
 	}
 }
 
@@ -1169,7 +1176,7 @@ fn (mut parser RuleSelectorParser) convert_to_import_rule(rule AtRule) ?&CSSRule
 	if tokens.next_token().is_function_named('supports') {
 		supports_function := tokens.consume_a_token().function()
 		condition := parser_component_values_to_string(supports_function.value)
-		supports = parse_css_supports(ParsingParams{}, condition)
+		supports = parse_css_supports(parser.parsing_params(), condition)
 		if supports == none {
 			mut supports_tokens := ParserTokenStream.from_values(supports_function.value)
 			if supports_declaration := parse_supports_declaration_from_parser_tokens(mut supports_tokens) {
@@ -1268,7 +1275,7 @@ fn (mut parser RuleSelectorParser) convert_to_supports_rule(rule AtRule, nested 
 		return none
 	}
 	condition := supports_tokens.dump_string()
-	supports := parse_css_supports(ParsingParams{}, condition) or { return none }
+	supports := parse_css_supports(parser.parsing_params(), condition) or { return none }
 	return CSSRule.create_supports(supports, CSSRuleList.create(parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations,
 		nested)))
 }

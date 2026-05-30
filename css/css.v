@@ -28,7 +28,9 @@ pub fn invalidate_style(doc &dom.Document, reason StyleInvalidationReason) {
 
 pub struct ParsingParams {
 pub:
-	document &dom.Document = unsafe { nil }
+	document            &dom.Document = unsafe { nil }
+	rule_context        []RuleContext
+	declared_namespaces map[string]bool
 }
 
 pub enum PropertyID {
