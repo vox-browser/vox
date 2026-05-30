@@ -1135,6 +1135,10 @@ pub enum Keyword {
 	none_
 	visible
 	hidden
+	normal
+	light
+	dark
+	only
 	accentcolor
 	accentcolortext
 	activeborder
@@ -1260,6 +1264,10 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.none_ { 'none' }
 		.visible { 'visible' }
 		.hidden { 'hidden' }
+		.normal { 'normal' }
+		.light { 'light' }
+		.dark { 'dark' }
+		.only { 'only' }
 		.accentcolor { 'accentcolor' }
 		.accentcolortext { 'accentcolortext' }
 		.activeborder { 'activeborder' }
@@ -1374,6 +1382,10 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'none' { Keyword.none_ }
 		'visible' { Keyword.visible }
 		'hidden' { Keyword.hidden }
+		'normal' { Keyword.normal }
+		'light' { Keyword.light }
+		'dark' { Keyword.dark }
+		'only' { Keyword.only }
 		'accentcolor' { Keyword.accentcolor }
 		'accentcolortext' { Keyword.accentcolortext }
 		'activeborder' { Keyword.activeborder }
