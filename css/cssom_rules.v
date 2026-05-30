@@ -1,0 +1,2635 @@
+module css
+
+import dom
+import strings
+
+// This file ports the CSSOM rule/list/style-sheet layer from Ladybird's LibWeb/CSS.
+// Parser, selector-engine, fetch, JS realm/promise, style-value resource loading, and
+// detailed media-feature evaluation are represented by explicit local stubs until the
+// surrounding V modules grow those subsystems.
+
+pub enum CSSRuleType {
+	style
+	import_rule
+	media
+	font_face
+	page
+	keyframes
+	keyframe
+	margin
+	namespace_rule
+	counter_style
+	supports
+	font_feature_values
+	layer_block
+	layer_statement
+	nested_declarations
+	property
+}
+
+pub fn (t CSSRuleType) type_for_bindings() u16 {
+	// NOTE: Types that aren't defined in the spec must return 0.
+	// To do this, Ladybird arbitrarily makes non-spec ones start at 100.
+	return match t {
+		.style { 1 }
+		.import_rule { 3 }
+		.media { 4 }
+		.font_face { 5 }
+		.page { 6 }
+		.keyframes { 7 }
+		.keyframe { 8 }
+		.margin { 9 }
+		.namespace_rule { 10 }
+		.counter_style { 11 }
+		.supports { 12 }
+		.font_feature_values { 14 }
+		.layer_block, .layer_statement, .nested_declarations, .property { 0 }
+	}
+}
+
+pub fn (t CSSRuleType) class_name() string {
+	return match t {
+		.style { 'CSSStyleRule' }
+		.import_rule { 'CSSImportRule' }
+		.media { 'CSSMediaRule' }
+		.font_face { 'CSSFontFaceRule' }
+		.page { 'CSSPageRule' }
+		.keyframes { 'CSSKeyframesRule' }
+		.keyframe { 'CSSKeyframeRule' }
+		.margin { 'CSSMarginRule' }
+		.namespace_rule { 'CSSNamespaceRule' }
+		.counter_style { 'CSSCounterStyleRule' }
+		.supports { 'CSSSupportsRule' }
+		.font_feature_values { 'CSSFontFeatureValuesRule' }
+		.layer_block { 'CSSLayerBlockRule' }
+		.layer_statement { 'CSSLayerStatementRule' }
+		.nested_declarations { 'CSSNestedDeclarations' }
+		.property { 'CSSPropertyRule' }
+	}
+}
+
+pub enum TraversalOrder {
+	preorder
+	postorder
+}
+
+pub enum CSSRuleListNested {
+	no
+	yes
+}
+
+pub enum CSSStyleSheetLoadingState {
+	unloaded
+	loading
+	loaded
+	error
+}
+
+pub fn css_style_sheet_loading_state_name(loading_state CSSStyleSheetLoadingState) string {
+	return match loading_state {
+		.unloaded { 'Unloaded' }
+		.loading { 'Loading' }
+		.loaded { 'Loaded' }
+		.error { 'Error' }
+	}
+}
+
+pub struct Selector {
+pub mut:
+	text string
+}
+
+pub fn (selector Selector) contains_the_nesting_selector() bool {
+	return selector.text.contains('&')
+}
+
+pub fn (selector Selector) absolutized(parent_selector Selector) ?Selector {
+	if !selector.contains_the_nesting_selector() {
+		return selector
+	}
+	return Selector{
+		text: selector.text.replace('&', parent_selector.text)
+	}
+}
+
+pub struct SelectorList {
+pub mut:
+	selectors []Selector
+}
+
+pub fn (list SelectorList) len() int {
+	return list.selectors.len
+}
+
+pub fn (list SelectorList) is_empty() bool {
+	return list.selectors.len == 0
+}
+
+pub fn serialize_a_group_of_selectors(selectors SelectorList) string {
+	mut serialized := []string{}
+	for selector in selectors.selectors {
+		if selector.text.trim_space().len == 0 {
+			continue
+		}
+		serialized << selector.text.trim_space()
+	}
+	return serialized.join(', ')
+}
+
+pub struct CSSStyleProperty {
+pub mut:
+	name        string
+	value       string
+	important   bool
+	style_value ?&dom.StyleValue
+}
+
+@[heap]
+pub struct CSSStyleProperties {
+pub mut:
+	properties        []CSSStyleProperty
+	custom_properties map[string]string
+	parent_rule       ?&CSSRule
+}
+
+pub fn CSSStyleProperties.create() &CSSStyleProperties {
+	return &CSSStyleProperties{
+		custom_properties: map[string]string{}
+	}
+}
+
+pub fn (properties &CSSStyleProperties) length() int {
+	return properties.properties.len + properties.custom_properties.len
+}
+
+pub fn (properties &CSSStyleProperties) serialized() string {
+	mut declarations := []string{}
+	for property in properties.properties {
+		mut declaration := '${property.name}: ${property.value}'
+		if property.important {
+			declaration += ' !important'
+		}
+		declarations << '${declaration};'
+	}
+	for name, value in properties.custom_properties {
+		declarations << '${name}: ${value};'
+	}
+	return declarations.join(' ')
+}
+
+pub fn (mut properties CSSStyleProperties) set_parent_rule(rule &CSSRule) {
+	properties.parent_rule = rule
+}
+
+@[heap]
+pub struct CSSOMStylePropertyMap {
+pub mut:
+	declaration &CSSStyleProperties = unsafe { nil }
+}
+
+pub fn CSSOMStylePropertyMap.create(declaration &CSSStyleProperties) &CSSOMStylePropertyMap {
+	return &CSSOMStylePropertyMap{
+		declaration: declaration
+	}
+}
+
+@[heap]
+pub struct Supports {
+pub mut:
+	text    string
+	matches bool = true
+}
+
+pub fn (supports &Supports) to_string() string {
+	return supports.text
+}
+
+pub fn (supports &Supports) matches_condition() bool {
+	return supports.matches
+}
+
+pub fn (supports &Supports) dump(indent_levels int) string {
+	return '${cssom_indent(indent_levels)}Supports: ${supports.text}\n'
+}
+
+pub struct MediaQueryListEntry {
+pub mut:
+	text    string
+	matches bool
+}
+
+@[heap]
+pub struct MediaList {
+pub mut:
+	media                  []MediaQueryListEntry
+	associated_style_sheet ?&CSSStyleSheet
+}
+
+pub fn MediaList.create(media []MediaQueryListEntry) &MediaList {
+	return &MediaList{
+		media: media
+	}
+}
+
+pub fn MediaList.create_empty() &MediaList {
+	return MediaList.create([]MediaQueryListEntry{})
+}
+
+// https://www.w3.org/TR/cssom-1/#dom-medialist-mediatext
+pub fn (media_list &MediaList) media_text() string {
+	return serialize_a_media_query_list_entries(media_list.media)
+}
+
+// https://www.w3.org/TR/cssom-1/#dom-medialist-mediatext
+pub fn (mut media_list MediaList) set_media_text(text string) {
+	media_list.media.clear()
+	if text.trim_space().len != 0 {
+		media_list.media = parse_media_query_list_stub(text)
+	}
+	media_list.invalidate_associated_style_sheet()
+}
+
+pub fn (media_list &MediaList) length() int {
+	return media_list.media.len
+}
+
+// https://www.w3.org/TR/cssom-1/#dom-medialist-item
+pub fn (media_list &MediaList) item(index u32) ?string {
+	if int(index) >= media_list.media.len {
+		return none
+	}
+	return media_list.media[index].text
+}
+
+// https://www.w3.org/TR/cssom-1/#dom-medialist-appendmedium
+pub fn (mut media_list MediaList) append_medium(medium string) {
+	// 1. Let m be the result of parsing the given value.
+	parsed := parse_media_query_entry_stub(medium) or { return }
+
+	// 2. If m is null, then return.
+	serialized := parsed.text
+
+	// 3. If comparing m with any of the media queries in the collection of media queries returns true, then return.
+	for existing_medium in media_list.media {
+		if existing_medium.text == serialized {
+			return
+		}
+	}
+
+	// 4. Append m to the collection of media queries.
+	media_list.media << parsed
+	media_list.invalidate_associated_style_sheet()
+}
+
+// https://www.w3.org/TR/cssom-1/#dom-medialist-deletemedium
+pub fn (mut media_list MediaList) delete_medium(medium string) ! {
+	// 1. Let m be the result of parsing the given value.
+	parsed := parse_media_query_entry_stub(medium) or { return }
+
+	// 2. If m is null, then return.
+	serialized := parsed.text
+
+	// 3. Remove any media query from the collection of media queries for which comparing the media query with m
+	//    returns true. If nothing was removed, then throw a NotFoundError exception.
+	mut was_removed := false
+	mut kept := []MediaQueryListEntry{}
+	for existing in media_list.media {
+		if existing.text == serialized {
+			was_removed = true
+			continue
+		}
+		kept << existing
+	}
+	if !was_removed {
+		return error('NotFoundError: Media query not found in list')
+	}
+
+	media_list.media = kept
+	media_list.invalidate_associated_style_sheet()
+}
+
+pub fn (mut media_list MediaList) evaluate(document &dom.Document) bool {
+	for i in 0 .. media_list.media.len {
+		media_list.media[i].matches = evaluate_media_query_entry_stub(media_list.media[i], document)
+	}
+	return media_list.matches()
+}
+
+pub fn (media_list &MediaList) matches() bool {
+	if media_list.media.len == 0 {
+		return true
+	}
+
+	for media in media_list.media {
+		if media.matches {
+			return true
+		}
+	}
+	return false
+}
+
+pub fn (mut media_list MediaList) set_associated_style_sheet(style_sheet &CSSStyleSheet) {
+	media_list.associated_style_sheet = style_sheet
+}
+
+fn (media_list &MediaList) invalidate_associated_style_sheet() {
+	if sheet := media_list.associated_style_sheet {
+		mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
+		mutable_sheet.invalidate_owners(dom.StyleInvalidationReason.style_change)
+	}
+}
+
+pub fn (media_list &MediaList) dump(indent_levels int) string {
+	mut builder := strings.new_builder(64)
+	builder.write_string('${cssom_indent(indent_levels)}Media list (${media_list.media.len}):\n')
+	for media in media_list.media {
+		builder.write_string('${cssom_indent(indent_levels + 1)}${media.text} (matches = ${media.matches})\n')
+	}
+	return builder.str()
+}
+
+// Existing css.v owns the MediaQuery type and its evaluate() stub. These helper
+// methods provide the CSSOM-facing serialization/match surface without redefining it.
+pub fn (media_query &MediaQuery) to_string() string {
+	_ = media_query
+	return 'all'
+}
+
+pub fn (media_query &MediaQuery) matches() bool {
+	_ = media_query
+	return true
+}
+
+pub fn (media_query &MediaQuery) dump(indent_levels int) string {
+	_ = media_query
+	return '${cssom_indent(indent_levels)}Media condition: (matches = true)\n'
+}
+
+pub enum MediaQueryKnownMediaType {
+	all
+	print
+	screen
+}
+
+pub fn media_type_from_string(name string) ?MediaQueryKnownMediaType {
+	if name.to_lower() == 'all' {
+		return .all
+	}
+	if name.to_lower() == 'print' {
+		return .print
+	}
+	if name.to_lower() == 'screen' {
+		return .screen
+	}
+	return none
+}
+
+pub fn media_query_known_media_type_to_string(media_type MediaQueryKnownMediaType) string {
+	return match media_type {
+		.all { 'all' }
+		.print { 'print' }
+		.screen { 'screen' }
+	}
+}
+
+pub fn serialize_a_media_query_list(media_queries []&MediaQuery) string {
+	// 1. If the media query list is empty, then return the empty string.
+	if media_queries.len == 0 {
+		return ''
+	}
+
+	// 2. Serialize each media query in the list of media queries, in the same order as they
+	// appear in the media query list, and then serialize the list.
+	mut serialized := []string{}
+	for media_query in media_queries {
+		serialized << media_query.to_string()
+	}
+	return serialized.join(', ')
+}
+
+pub fn serialize_a_media_query_list_entries(media_queries []MediaQueryListEntry) string {
+	if media_queries.len == 0 {
+		return ''
+	}
+	mut serialized := []string{}
+	for media_query in media_queries {
+		serialized << media_query.text
+	}
+	return serialized.join(', ')
+}
+
+@[heap]
+pub struct CSSRuleList {
+pub mut:
+	rules             []&CSSRule
+	owner_rule        ?&CSSRule
+	owner_style_sheet ?&CSSStyleSheet
+	on_change         ?fn ()
+}
+
+pub fn CSSRuleList.create(rules []&CSSRule) &CSSRuleList {
+	mut rule_list := &CSSRuleList{}
+	for rule in rules {
+		rule_list.rules << rule
+	}
+	return rule_list
+}
+
+pub fn CSSRuleList.create_empty() &CSSRuleList {
+	return CSSRuleList.create([]&CSSRule{})
+}
+
+pub fn (rule_list &CSSRuleList) item(index usize) ?&CSSRule {
+	if index >= usize(rule_list.rules.len) {
+		return none
+	}
+	return rule_list.rules[index]
+}
+
+pub fn (rule_list &CSSRuleList) length() int {
+	return rule_list.rules.len
+}
+
+pub fn (mut rule_list CSSRuleList) set_owner_rule(owner_rule &CSSRule) {
+	rule_list.owner_rule = owner_rule
+}
+
+pub fn (mut rule_list CSSRuleList) set_rules(rules []&CSSRule) {
+	rule_list.rules = rules
+	rule_list.did_change()
+}
+
+// AD-HOC: The spec doesn't include a declared_namespaces parameter, but Ladybird needs it to handle parsing of namespaced selectors.
+// https://drafts.csswg.org/cssom/#insert-a-css-rule
+pub fn (mut rule_list CSSRuleList) insert_a_css_rule_from_text(rule string, index u32, nested CSSRuleListNested, declared_namespaces map[string]bool) !u32 {
+	// 3. Set new rule to the results of performing parse a CSS rule on argument rule.
+	mut new_rule := parse_css_rule_stub(rule, declared_namespaces) or {
+		// 4. If new rule is a syntax error, and nested is set, perform the following substeps:
+		if nested == .yes {
+			// - Set declarations to the results of performing parse a CSS declaration block, on argument rule.
+			declarations := parse_css_property_declaration_block_stub(rule)
+
+			// - If declarations is empty, throw a SyntaxError exception.
+			if declarations.length() == 0 {
+				return error('SyntaxError: Unable to parse CSS declarations block')
+			}
+
+			// - Otherwise, set new rule to a new nested declarations rule with declarations as it contents.
+			CSSRule.create_nested_declarations(declarations)
+		} else {
+			return error('SyntaxError: Unable to parse CSS rule')
+		}
+	}
+
+	return rule_list.insert_a_css_rule(new_rule, index, nested, declared_namespaces)
+}
+
+// https://drafts.csswg.org/cssom/#insert-a-css-rule
+pub fn (mut rule_list CSSRuleList) insert_a_css_rule(new_rule &CSSRule, index u32, nested CSSRuleListNested, declared_namespaces map[string]bool) !u32 {
+	_ = declared_namespaces
+
+	// 1. Set length to the number of items in list.
+	length := rule_list.rules.len
+
+	// 2. If index is greater than length, then throw an IndexSizeError exception.
+	if int(index) > length {
+		return error('IndexSizeError: CSS rule index out of bounds')
+	}
+
+	// 5. If new rule is a syntax error, throw a SyntaxError exception.
+	// NB: A null rule cannot be passed to this V overload.
+
+	// 6. If new rule cannot be inserted into list at the zero-indexed position index due to constraints specified by CSS, then throw a HierarchyRequestError exception. [CSS21]
+	// "Any @import rules must precede all other valid at-rules and style rules in a style sheet
+	// (ignoring @charset and @layer statement rules) and must not have any other valid at-rules
+	// or style rules between it and previous @import rules, or else the @import rule is invalid."
+	// https://drafts.csswg.org/css-cascade-5/#at-import
+	//
+	// "Any @namespace rules must follow all @charset and @import rules and precede all other
+	// non-ignored at-rules and style rules in a style sheet.
+	mut rule_is_disallowed := false
+	match new_rule.type_ {
+		.layer_statement {}
+		.import_rule {
+			rule_is_disallowed = rule_list.has_rule_of_type_other_than_specified_before_index([
+				CSSRuleType.import_rule,
+				.layer_statement,
+			], index)
+		}
+		.namespace_rule {
+			rule_is_disallowed = rule_list.has_rule_of_type_at_or_after_index(.import_rule, index)
+				|| rule_list.has_rule_of_type_other_than_specified_before_index([CSSRuleType.import_rule, .namespace_rule, .layer_statement], index)
+		}
+		else {
+			rule_is_disallowed = rule_list.has_rule_of_type_at_or_after_index(.import_rule, index)
+				|| rule_list.has_rule_of_type_at_or_after_index(.namespace_rule, index)
+		}
+	}
+
+	// FIXME: There are more constraints that we should check here - Parser::is_valid_in_the_current_context is probably a good reference for that.
+	if rule_is_disallowed || (nested == .yes && new_rule.type_ in [.import_rule, .namespace_rule]) {
+		return error('HierarchyRequestError: Cannot insert rule at specified index')
+	}
+
+	// 7. If new rule is an @namespace at-rule, and list contains anything other than @import at-rules, and @namespace at-rules, throw an InvalidStateError exception.
+	if new_rule.type_ == .namespace_rule {
+		for existing_rule in rule_list.rules {
+			if existing_rule.type_ !in [.import_rule, .namespace_rule] {
+				return error('InvalidStateError: Cannot insert @namespace rule into a stylesheet with non-namespace/import rules')
+			}
+		}
+	}
+
+	// 8. Insert new rule into list at the zero-indexed position index.
+	rule_list.rules.insert(int(index), new_rule)
+
+	// FIXME: Load font faces for inserted @font-face rules
+
+	// 9. Return index.
+	rule_list.did_change()
+	return index
+}
+
+// https://www.w3.org/TR/cssom/#remove-a-css-rule
+pub fn (mut rule_list CSSRuleList) remove_a_css_rule(index u32) ! {
+	// 1. Set length to the number of items in list.
+	length := rule_list.rules.len
+
+	// 2. If index is greater than or equal to length, then throw an IndexSizeError exception.
+	if int(index) >= length {
+		return error('IndexSizeError: CSS rule index out of bounds')
+	}
+
+	// 3. Set old rule to the indexth item in list.
+	mut old_rule := rule_list.rules[index]
+
+	// 4. If old rule is an @namespace at-rule, and list contains anything other than @import at-rules, and @namespace at-rules, throw an InvalidStateError exception.
+	if old_rule.type_ == .namespace_rule {
+		for rule in rule_list.rules {
+			if rule.type_ != .import_rule && rule.type_ != .namespace_rule {
+				return error('InvalidStateError: Cannot remove @namespace rule from a stylesheet with non-namespace/import rules')
+			}
+		}
+	}
+
+	// https://drafts.csswg.org/css-font-loading/#font-face-css-connection
+	// If a @font-face rule is removed from the document, its connected FontFace object is no longer CSS-connected.
+	// Stub: FontFace objects are not translated in this file.
+
+	// 5. Remove rule old rule from list at the zero-indexed position index.
+	rule_list.rules.delete(int(index))
+
+	// 6. Set old rule's parent CSS rule and parent CSS style sheet to null.
+	// NOTE: We set the parent stylesheet to null within set_parent_rule.
+	old_rule.set_parent_rule(none)
+
+	rule_list.did_change()
+}
+
+pub fn (rule_list &CSSRuleList) for_each_effective_rule(order TraversalOrder, callback fn (&CSSRule)) {
+	for rule in rule_list.rules {
+		if order == .preorder {
+			callback(rule)
+		}
+
+		match rule.type_ {
+			.import_rule {
+				if loaded_style_sheet := rule.loaded_style_sheet {
+					loaded_style_sheet.for_each_effective_rule(order, callback)
+				}
+			}
+			.layer_block, .media, .page, .style, .supports {
+				rule.for_each_effective_rule(order, callback)
+			}
+			.counter_style, .font_face, .font_feature_values, .keyframe, .keyframes,
+			.layer_statement, .margin, .namespace_rule, .nested_declarations, .property {}
+		}
+
+		if order == .postorder {
+			callback(rule)
+		}
+	}
+}
+
+// Returns whether the match state of any media queries changed after evaluation.
+pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document) bool {
+	mut any_media_queries_changed_match_state := false
+
+	for mut rule in rule_list.rules {
+		match rule.type_ {
+			.import_rule {
+				if mut loaded_style_sheet := rule.loaded_style_sheet {
+					if loaded_style_sheet.evaluate_media_queries(document) {
+						any_media_queries_changed_match_state = true
+					}
+				}
+			}
+			.layer_block {
+				if mut child_rules := rule.rules {
+					if child_rules.evaluate_media_queries(document) {
+						any_media_queries_changed_match_state = true
+					}
+				}
+			}
+			.media {
+				did_match := rule.condition_matches()
+				now_matches := rule.evaluate_media(document)
+				if did_match != now_matches {
+					any_media_queries_changed_match_state = true
+				}
+				if now_matches {
+					if mut child_rules := rule.rules {
+						if child_rules.evaluate_media_queries(document) {
+							any_media_queries_changed_match_state = true
+						}
+					}
+				}
+			}
+			.supports {
+				if rule.condition_matches() {
+					if mut child_rules := rule.rules {
+						if child_rules.evaluate_media_queries(document) {
+							any_media_queries_changed_match_state = true
+						}
+					}
+				}
+			}
+			.style {
+				if mut child_rules := rule.rules {
+					if child_rules.evaluate_media_queries(document) {
+						any_media_queries_changed_match_state = true
+					}
+				}
+			}
+			.counter_style, .font_face, .font_feature_values, .keyframe, .keyframes,
+			.layer_statement, .margin, .namespace_rule, .nested_declarations, .property, .page {}
+		}
+	}
+
+	return any_media_queries_changed_match_state
+}
+
+fn (rule_list &CSSRuleList) rule_context() []RuleContext {
+	mut context := []RuleContext{}
+	mut current := rule_list.owner_rule
+	for {
+		rule := current or { break }
+		context << rule_context_type_for_rule(rule.type_)
+		current = rule.parent_rule
+	}
+	context.reverse_in_place()
+	return context
+}
+
+fn (rule_list &CSSRuleList) has_rule_of_type_other_than_specified_before_index(types []CSSRuleType, index u32) bool {
+	for i in 0 .. int(index) {
+		if rule_list.rules[i].type_ !in types {
+			return true
+		}
+	}
+	return false
+}
+
+fn (rule_list &CSSRuleList) has_rule_of_type_at_or_after_index(type_ CSSRuleType, index u32) bool {
+	for i in int(index) .. rule_list.rules.len {
+		if rule_list.rules[i].type_ == type_ {
+			return true
+		}
+	}
+	return false
+}
+
+fn (mut rule_list CSSRuleList) did_change() {
+	if on_change := rule_list.on_change {
+		on_change()
+	}
+	if mut sheet := rule_list.owner_style_sheet {
+		sheet.recalculate_rule_caches()
+	}
+}
+
+@[heap]
+pub struct CSSRule {
+pub mut:
+	type_ CSSRuleType
+
+	parent_rule        ?&CSSRule
+	parent_style_sheet ?&CSSStyleSheet
+	cached_layer_name  ?string
+
+	rules ?&CSSRuleList
+
+	media    ?&MediaList
+	supports ?&Supports
+
+	url                string
+	document           ?&dom.Document
+	layer              ?string
+	layer_internal     ?string
+	loaded_style_sheet ?&CSSStyleSheet
+	loading_state      CSSStyleSheetLoadingState = .unloaded
+
+	namespace_uri string
+	prefix        string
+
+	selectors                    SelectorList
+	cached_absolutized_selectors ?SelectorList
+	declaration                  ?&CSSStyleProperties
+	style_map_cache              ?&CSSOMStylePropertyMap
+}
+
+pub fn CSSRule.create(type_ CSSRuleType) &CSSRule {
+	return &CSSRule{
+		type_: type_
+	}
+}
+
+pub fn CSSRule.create_grouping(type_ CSSRuleType, rules &CSSRuleList) &CSSRule {
+	mut rule := CSSRule.create(type_)
+	rule.rules = rules
+	mut mutable_rules := unsafe { &CSSRuleList(rules) }
+	mutable_rules.set_owner_rule(rule)
+	for mut child_rule in mutable_rules.rules {
+		child_rule.set_parent_rule(rule)
+	}
+	return rule
+}
+
+pub fn CSSRule.create_media(media &MediaList, rules &CSSRuleList) &CSSRule {
+	mut rule := CSSRule.create_grouping(.media, rules)
+	rule.media = media
+	return rule
+}
+
+pub fn CSSRule.create_supports(supports &Supports, rules &CSSRuleList) &CSSRule {
+	mut rule := CSSRule.create_grouping(.supports, rules)
+	rule.supports = supports
+	return rule
+}
+
+pub fn CSSRule.create_import(url string, document ?&dom.Document, layer ?string, supports ?&Supports, media &MediaList) &CSSRule {
+	mut rule := CSSRule.create(.import_rule)
+	rule.url = url
+	rule.document = document
+	rule.layer = layer
+	rule.supports = supports
+	rule.media = media
+	if layer_name := layer {
+		if layer_name.len == 0 {
+			rule.layer_internal = next_unique_anonymous_layer_name_stub()
+		} else {
+			rule.layer_internal = layer_name
+		}
+	}
+	return rule
+}
+
+pub fn CSSRule.create_namespace(prefix ?string, namespace_uri string) &CSSRule {
+	return &CSSRule{
+		type_:         .namespace_rule
+		namespace_uri: namespace_uri
+		prefix:        prefix or { '' }
+	}
+}
+
+pub fn CSSRule.create_style(selectors SelectorList, declaration &CSSStyleProperties, nested_rules &CSSRuleList) &CSSRule {
+	mut rule := CSSRule.create_grouping(.style, nested_rules)
+	rule.selectors = selectors
+	rule.declaration = declaration
+	mut mutable_declaration := unsafe { &CSSStyleProperties(declaration) }
+	mutable_declaration.set_parent_rule(rule)
+	return rule
+}
+
+pub fn CSSRule.create_nested_declarations(declaration &CSSStyleProperties) &CSSRule {
+	mut rule := CSSRule.create(.nested_declarations)
+	rule.declaration = declaration
+	mut mutable_declaration := unsafe { &CSSStyleProperties(declaration) }
+	mutable_declaration.set_parent_rule(rule)
+	return rule
+}
+
+pub fn (rule &CSSRule) type_for_bindings() u16 {
+	return rule.type_.type_for_bindings()
+}
+
+// https://www.w3.org/TR/cssom/#dom-cssrule-csstext
+pub fn (rule &CSSRule) css_text() string {
+	// The cssText attribute must return a serialization of the CSS rule.
+	return rule.serialized()
+}
+
+// https://www.w3.org/TR/cssom/#dom-cssrule-csstext
+pub fn (mut rule CSSRule) set_css_text(text string) {
+	_ = text
+	// On setting the cssText attribute must do nothing.
+}
+
+pub fn (mut rule CSSRule) set_parent_rule(parent_rule ?&CSSRule) {
+	rule.clear_caches()
+	rule.parent_rule = parent_rule
+
+	if parent := parent_rule {
+		rule.set_parent_style_sheet(parent.parent_style_sheet)
+	} else {
+		rule.set_parent_style_sheet(none)
+	}
+	rule.clear_caches()
+}
+
+pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSheet) {
+	if rule.type_ == .import_rule {
+		if mut old_parent_style_sheet := rule.parent_style_sheet {
+			old_parent_style_sheet.remove_critical_subresource(rule)
+		}
+	}
+
+	rule.clear_caches()
+	rule.parent_style_sheet = parent_style_sheet
+	rule.clear_caches()
+
+	if rule.type_ == .import_rule {
+		if mut parent := rule.parent_style_sheet {
+			parent.add_critical_subresource(rule)
+			if rule.loading_state == .unloaded {
+				rule.fetch()
+			}
+		}
+		if mut loaded := rule.loaded_style_sheet {
+			if parent := parent_style_sheet {
+				for owner in parent.owning_documents_or_shadow_roots {
+					loaded.add_owning_document_or_shadow_root(owner)
+				}
+			}
+		}
+	}
+
+	if child_rules := rule.rules {
+		mut mutable_child_rules := unsafe { &CSSRuleList(child_rules) }
+		for mut child_rule in mutable_child_rules.rules {
+			child_rule.set_parent_style_sheet(parent_style_sheet)
+		}
+	}
+
+	if rule.type_ == .style {
+		// This is annoying: Style values that request resources need to know their CSSStyleSheet in order to fetch them.
+		// Stub: StyleValue resource loading is outside this file.
+	}
+}
+
+pub fn (rule &CSSRule) dump(indent_levels int) string {
+	mut builder := strings.new_builder(128)
+	builder.write_string('${cssom_indent(indent_levels)}${rule.type_.class_name()}:\n')
+	match rule.type_ {
+		.media {
+			if media := rule.media {
+				builder.write_string(media.dump(indent_levels + 1))
+			}
+		}
+		.supports {
+			if supports := rule.supports {
+				builder.write_string(supports.dump(indent_levels + 1))
+			}
+		}
+		.import_rule {
+			builder.write_string('${cssom_indent(indent_levels + 1)}Document URL: ${rule.url}\n')
+			builder.write_string('${cssom_indent(indent_levels + 1)}Loading state: ${css_style_sheet_loading_state_name(rule.loading_state)}\n')
+		}
+		.namespace_rule {
+			builder.write_string('${cssom_indent(indent_levels + 1)}Namespace: ${rule.namespace_uri}\n')
+			if rule.prefix.len != 0 {
+				builder.write_string('${cssom_indent(indent_levels + 1)}Prefix: ${rule.prefix}\n')
+			}
+		}
+		.style {
+			for selector in rule.selectors.selectors {
+				builder.write_string('${cssom_indent(indent_levels + 1)}Selector: ${selector.text}\n')
+			}
+		}
+		else {}
+	}
+
+	if child_rules := rule.rules {
+		builder.write_string('${cssom_indent(indent_levels + 1)}Rules (${child_rules.length()}):\n')
+		for child_rule in child_rules.rules {
+			builder.write_string(child_rule.dump(indent_levels + 2))
+		}
+	}
+	return builder.str()
+}
+
+pub fn (mut rule CSSRule) clear_caches() {
+	rule.cached_layer_name = none
+	if rule.type_ == .style {
+		rule.cached_absolutized_selectors = none
+	}
+	if child_rules := rule.rules {
+		mut mutable_child_rules := unsafe { &CSSRuleList(child_rules) }
+		for mut child_rule in mutable_child_rules.rules {
+			child_rule.clear_caches()
+		}
+	}
+}
+
+pub fn (mut rule CSSRule) parent_layer_internal_qualified_name() string {
+	if cached := rule.cached_layer_name {
+		return cached
+	}
+	value := rule.parent_layer_internal_qualified_name_slow_case()
+	rule.cached_layer_name = value
+	return value
+}
+
+pub fn (rule &CSSRule) parent_layer_internal_qualified_name_slow_case() string {
+	mut layer_names := []string{}
+	mut current_rule := rule.parent_rule
+	for {
+		parent := current_rule or { break }
+		match parent.type_ {
+			.import_rule {
+				// @import is only a parent to style sheets, not to rules directly. It's handled below this loop.
+				break
+			}
+			.layer_block {
+				if internal_name := parent.layer_internal {
+					layer_names << internal_name
+				}
+			}
+			else {
+				// Ignore everything else
+				// Note that LayerStatement cannot have child rules so we still ignore it here.
+			}
+		}
+
+		current_rule = parent.parent_rule
+	}
+
+	// If this style sheet is owned by a rule, include its qualified layer name.
+	if style_sheet := rule.parent_style_sheet {
+		if owner_rule := style_sheet.owner_rule {
+			if owner_rule.type_ == .import_rule {
+				if layer_name := owner_rule.layer_internal {
+					if owner_rule.matches() {
+						layer_names << layer_name
+						mut mutable_owner := unsafe { &CSSRule(owner_rule) }
+						parent_qualified_layer_name :=
+							mutable_owner.parent_layer_internal_qualified_name()
+						if parent_qualified_layer_name.len != 0 {
+							layer_names << parent_qualified_layer_name
+						}
+					}
+				}
+			}
+		}
+	}
+
+	layer_names.reverse_in_place()
+	return layer_names.join('.')
+}
+
+pub fn (rule &CSSRule) serialized() string {
+	return match rule.type_ {
+		.media {
+			rule.serialized_media_rule()
+		}
+		.supports {
+			rule.serialized_supports_rule()
+		}
+		.import_rule {
+			rule.serialized_import_rule()
+		}
+		.namespace_rule {
+			rule.serialized_namespace_rule()
+		}
+		.style {
+			rule.serialized_style_rule()
+		}
+		.nested_declarations {
+			if declaration := rule.declaration {
+				declaration.serialized()
+			} else {
+				''
+			}
+		}
+		else {
+			''
+		}
+	}
+}
+
+pub fn (rule &CSSRule) css_rules() ?&CSSRuleList {
+	return rule.rules
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssgroupingrule-insertrule
+pub fn (mut rule CSSRule) insert_rule(rule_text string, index u32) !u32 {
+	if mut rules := rule.rules {
+		parent_sheet := rule.parent_style_sheet or {
+			return error('InvalidStateError: Grouping rule has no parent stylesheet')
+		}
+
+		// The insertRule(rule, index) method must return the result of invoking insert a CSS rule rule into the child CSS
+		// rules at index, with the nested flag set.
+		result := rules.insert_a_css_rule_from_text(rule_text, index, .yes,
+			parent_sheet.declared_namespaces())!
+
+		// AD-HOC: The spec doesn't say where to set the parent rule, so we'll do it here.
+		if mut inserted_rule := rules.item(usize(index)) {
+			inserted_rule.set_parent_rule(rule)
+		}
+		return result
+	}
+	return error('InvalidStateError: Rule has no child rule list')
+}
+
+pub fn (mut rule CSSRule) delete_rule(index u32) ! {
+	if mut rules := rule.rules {
+		return rules.remove_a_css_rule(index)
+	}
+	return error('InvalidStateError: Rule has no child rule list')
+}
+
+pub fn (rule &CSSRule) for_each_effective_rule(order TraversalOrder, callback fn (&CSSRule)) {
+	if rule.type_ in [.media, .supports] && !rule.condition_matches() {
+		return
+	}
+	if rules := rule.rules {
+		rules.for_each_effective_rule(order, callback)
+	}
+}
+
+pub fn (rule &CSSRule) condition_text() string {
+	return match rule.type_ {
+		.media {
+			if media := rule.media {
+				media.media_text()
+			} else {
+				''
+			}
+		}
+		.supports {
+			if supports := rule.supports {
+				supports.to_string()
+			} else {
+				''
+			}
+		}
+		else {
+			''
+		}
+	}
+}
+
+pub fn (rule &CSSRule) condition_matches() bool {
+	return match rule.type_ {
+		.media {
+			if media := rule.media {
+				media.matches()
+			} else {
+				true
+			}
+		}
+		.supports {
+			if supports := rule.supports {
+				supports.matches_condition()
+			} else {
+				false
+			}
+		}
+		else {
+			true
+		}
+	}
+}
+
+pub fn (mut rule CSSRule) evaluate_media(document &dom.Document) bool {
+	if mut media := rule.media {
+		return media.evaluate(document)
+	}
+	return true
+}
+
+// https://www.w3.org/TR/cssom-1/#serialize-a-css-rule
+fn (rule &CSSRule) serialized_media_rule() string {
+	// The result of concatenating the following:
+	mut builder := strings.new_builder(128)
+
+	// 1. The string "@media", followed by a single SPACE (U+0020).
+	builder.write_string('@media ')
+	// 2. The result of performing serialize a media query list on rule's media query list.
+	builder.write_string(rule.condition_text())
+	// 3. A single SPACE (U+0020), followed by the string "{", i.e., LEFT CURLY BRACKET (U+007B), followed by a newline.
+	builder.write_string(' {\n')
+	// 4. The result of performing serialize a CSS rule on each rule in the rule's cssRules list,
+	//    filtering out empty strings, indenting each item with two spaces, all joined with newline.
+	if rules := rule.rules {
+		for i in 0 .. rules.length() {
+			child_rule := rules.item(usize(i)) or { continue }
+			result := child_rule.css_text()
+
+			if result.len == 0 {
+				continue
+			}
+
+			builder.write_string('  ')
+			builder.write_string(result)
+			builder.write_u8(`\n`)
+		}
+	}
+	// 5. A newline, followed by the string "}", i.e., RIGHT CURLY BRACKET (U+007D)
+	// AD-HOC: All modern browsers omit the ending newline if there are no CSS rules, so Ladybird does the same.
+	//         If there are rules, the required newline will be appended in the for-loop above.
+	builder.write_u8(`}`)
+
+	return builder.str()
+}
+
+// https://www.w3.org/TR/cssom-1/#serialize-a-css-rule
+fn (rule &CSSRule) serialized_supports_rule() string {
+	// Note: The spec doesn't cover this yet, so Ladybird roughly follows the spec for the @media rule.
+	// It should be pretty close!
+	mut builder := strings.new_builder(128)
+
+	builder.write_string('@supports ')
+	builder.write_string(rule.condition_text())
+	builder.write_string(' {\n')
+	if rules := rule.rules {
+		for i in 0 .. rules.length() {
+			child_rule := rules.item(usize(i)) or { continue }
+			if i != 0 {
+				builder.write_u8(`\n`)
+			}
+			builder.write_string('  ')
+			builder.write_string(child_rule.css_text())
+		}
+	}
+	builder.write_string('\n}')
+
+	return builder.str()
+}
+
+// https://www.w3.org/TR/cssom/#serialize-a-css-rule
+fn (rule &CSSRule) serialized_import_rule() string {
+	mut builder := strings.new_builder(128)
+	// The result of concatenating the following:
+
+	// 1. The string "@import" followed by a single SPACE (U+0020).
+	builder.write_string('@import ')
+
+	// 2. The result of performing serialize a URL on the rule's location.
+	builder.write_string(rule.url)
+
+	// AD-HOC: Serialize the rule's layer if it exists.
+	if layer := rule.layer {
+		if layer.len == 0 {
+			builder.write_string(' layer')
+		} else {
+			builder.write_string(' layer(${layer})')
+		}
+	}
+
+	// AD-HOC: Serialize the rule's supports condition if it exists.
+	//         This isn't currently specified, but major browsers include this in their serialization of import rules.
+	if supports := rule.supports {
+		builder.write_string(' supports(${supports.to_string()})')
+	}
+
+	// 3. If the rule's associated media list is not empty, a single SPACE (U+0020) followed by the result of performing serialize a media query list on the media list.
+	if media := rule.media {
+		if media.length() != 0 {
+			builder.write_string(' ${media.media_text()}')
+		}
+	}
+
+	// 4. The string ";", i.e., SEMICOLON (U+003B).
+	builder.write_u8(`;`)
+
+	return builder.str()
+}
+
+// https://drafts.csswg.org/css-cascade-4/#fetch-an-import
+pub fn (mut rule CSSRule) fetch() {
+	// To fetch an @import, given an @import rule rule:
+
+	// 1. Let parentStylesheet be rule's parent CSS style sheet. [CSSOM]
+	if rule.parent_style_sheet == none {
+		return
+	}
+
+	// 2. If rule has a <supports-condition>, and that condition is not true, return.
+	if supports := rule.supports {
+		if !supports.matches_condition() {
+			return
+		}
+	}
+
+	// Fetch/style-resource integration is outside this V port. Keep the observable loading transition explicit.
+	rule.loading_state = .loaded
+}
+
+pub fn (mut rule CSSRule) set_style_sheet(style_sheet &CSSStyleSheet) {
+	rule.loaded_style_sheet = style_sheet
+	mut mutable_style_sheet := unsafe { &CSSStyleSheet(style_sheet) }
+	mutable_style_sheet.set_owner_css_rule(rule)
+
+	if parent_style_sheet := rule.parent_style_sheet {
+		for owner in parent_style_sheet.owning_documents_or_shadow_roots {
+			mutable_style_sheet.add_owning_document_or_shadow_root(owner)
+		}
+	}
+
+	if document := mutable_style_sheet.owning_document() {
+		mutable_style_sheet.load_pending_image_resources(document)
+	}
+
+	mutable_style_sheet.invalidate_owners(dom.StyleInvalidationReason.style_change)
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssimportrule-media
+pub fn (rule &CSSRule) import_media() ?&MediaList {
+	// The media attribute must return the value of the media attribute of the associated CSS style sheet.
+	// AD-HOC: Return our own MediaList.
+	//         https://github.com/w3c/csswg-drafts/issues/12063
+	return rule.media
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssimportrule-layername
+pub fn (rule &CSSRule) layer_name() ?string {
+	// The layerName attribute must return the layer name declared in the at-rule itself, or an empty string if the
+	// layer is anonymous, or null if the at-rule does not declare a layer.
+	return rule.layer
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssimportrule-supportstext
+pub fn (rule &CSSRule) supports_text() ?string {
+	// The supportsText attribute must return the <supports-condition> declared in the at-rule itself, or null if the
+	// at-rule does not declare a supports condition.
+	if supports := rule.supports {
+		return supports.to_string()
+	}
+	return none
+}
+
+pub fn (mut rule CSSRule) internal_qualified_layer_name() ?string {
+	if rule.layer == none {
+		return none
+	}
+
+	parent_name := rule.parent_layer_internal_qualified_name()
+	internal := rule.layer_internal or { return none }
+	if parent_name.len == 0 {
+		return internal
+	}
+	return '${parent_name}.${internal}'
+}
+
+pub fn (rule &CSSRule) matches() bool {
+	if supports := rule.supports {
+		if !supports.matches_condition() {
+			return false
+		}
+	}
+	if media := rule.media {
+		return media.matches()
+	}
+	return true
+}
+
+// https://www.w3.org/TR/cssom/#serialize-a-css-rule
+fn (rule &CSSRule) serialized_namespace_rule() string {
+	mut builder := strings.new_builder(64)
+	// The literal string "@namespace", followed by a single SPACE (U+0020),
+	builder.write_string('@namespace ')
+
+	// followed by the serialization as an identifier of the prefix attribute (if any),
+	if rule.prefix.len != 0 {
+		builder.write_string(serialize_an_identifier(rule.prefix))
+		// followed by a single SPACE (U+0020) if there is a prefix,
+		builder.write_u8(` `)
+	}
+
+	//  followed by the serialization as URL of the namespaceURI attribute,
+	builder.write_string(serialize_a_url(rule.namespace_uri))
+
+	// followed the character ";" (U+003B).
+	builder.write_u8(`;`)
+
+	return builder.str()
+}
+
+// https://drafts.csswg.org/cssom-1/#dom-cssstylerule-style
+pub fn (rule &CSSRule) style() ?&CSSStyleProperties {
+	return rule.declaration
+}
+
+// https://drafts.css-houdini.org/css-typed-om-1/#dom-cssstylerule-stylemap
+pub fn (mut rule CSSRule) style_map() ?&CSSOMStylePropertyMap {
+	if rule.style_map_cache == none {
+		if declaration := rule.declaration {
+			rule.style_map_cache = CSSOMStylePropertyMap.create(declaration)
+		}
+	}
+	return rule.style_map_cache
+}
+
+// https://drafts.csswg.org/cssom-1/#serialize-a-css-rule
+fn (rule &CSSRule) serialized_style_rule() string {
+	mut builder := strings.new_builder(128)
+
+	// 1. Let s initially be the result of performing serialize a group of selectors on the rule's associated selectors,
+	//    followed by the string " {", i.e., a single SPACE (U+0020), followed by LEFT CURLY BRACKET (U+007B).
+	builder.write_string(serialize_a_group_of_selectors(rule.selectors))
+	builder.write_string(' {')
+
+	// 2. Let decls be the result of performing serialize a CSS declaration block on the rule's associated declarations,
+	//    or null if there are no such declarations.
+	mut decls := ?string(none)
+	if declaration := rule.declaration {
+		if declaration.length() > 0 {
+			decls = declaration.serialized()
+		}
+	}
+
+	// 3. Let rules be the result of performing serialize a CSS rule on each rule in the rule's cssRules list,
+	//    or null if there are no such rules.
+	mut rules := []string{}
+	if child_rules := rule.rules {
+		for child_rule in child_rules.rules {
+			rules << child_rule.serialized()
+		}
+	}
+
+	// 4. If decls and rules are both null, append " }" to s (i.e. a single SPACE (U+0020) followed by RIGHT CURLY BRACKET (U+007D)) and return s.
+	if decls == none && rules.len == 0 {
+		builder.write_string(' }')
+		return builder.str()
+	}
+
+	// 5. If rules is null:
+	if rules.len == 0 {
+		// 1. Append a single SPACE (U+0020) to s
+		builder.write_u8(` `)
+		// 2. Append decls to s
+		if declarations := decls {
+			builder.write_string(declarations)
+		}
+		// 3. Append " }" to s (i.e. a single SPACE (U+0020) followed by RIGHT CURLY BRACKET (U+007D)).
+		builder.write_string(' }')
+		// 4. Return s.
+		return builder.str()
+	}
+
+	// 6. Otherwise:
+	// 1. If decls is not null, prepend it to rules.
+	if declarations := decls {
+		rules.prepend(declarations)
+	}
+
+	// 2. For each rule in rules:
+	for child_rule in rules {
+		// * If rule is the empty string, do nothing.
+		if child_rule.len == 0 {
+			continue
+		}
+
+		// * Otherwise:
+		// 1. Append a newline followed by two spaces to s.
+		// 2. Append rule to s.
+		builder.write_string('\n  ${child_rule}')
+	}
+
+	// 3. Append a newline followed by RIGHT CURLY BRACKET (U+007D) to s.
+	builder.write_string('\n}')
+
+	// 4. Return s.
+	return builder.str()
+}
+
+// https://drafts.csswg.org/cssom-1/#dom-cssstylerule-selectortext
+pub fn (rule &CSSRule) selector_text() string {
+	// The selectorText attribute, on getting, must return the result of serializing the associated group of selectors.
+	return serialize_a_group_of_selectors(rule.selectors)
+}
+
+// https://drafts.csswg.org/cssom-1/#dom-cssstylerule-selectortext
+pub fn (mut rule CSSRule) set_selector_text(selector_text string) {
+	rule.clear_caches()
+
+	// 1. Run the parse a group of selectors algorithm on the given value.
+	mut declared_namespaces := map[string]bool{}
+	if parent_style_sheet := rule.parent_style_sheet {
+		declared_namespaces = parent_style_sheet.declared_namespaces()
+	}
+
+	mut parsed_selectors := ?SelectorList(none)
+	if rule.parent_style_rule() != none {
+		// AD-HOC: If we're a nested style rule, then we need to parse the selector as relative and then adapt it with implicit &s.
+		parsed_selectors = parse_selector_for_nested_style_rule_stub(selector_text,
+			declared_namespaces)
+	} else {
+		parsed_selectors = parse_selector_stub(selector_text, declared_namespaces)
+	}
+
+	// 2. If the algorithm returns a non-null value replace the associated group of selectors with the returned value.
+	if selectors := parsed_selectors {
+		// NOTE: If we have a parent style rule, we need to update the selectors to add any implicit `&`s
+		rule.selectors = selectors
+		if mut sheet := rule.parent_style_sheet {
+			sheet.invalidate_owners(dom.StyleInvalidationReason.style_change)
+		}
+	}
+
+	// 3. Otherwise, if the algorithm returns a null value, do nothing.
+}
+
+pub fn (mut rule CSSRule) absolutized_selectors() SelectorList {
+	if cached := rule.cached_absolutized_selectors {
+		return cached
+	}
+
+	// Replace all occurrences of `&` with the nearest ancestor style rule's selector list wrapped in `:is(...)`,
+	// or if we have no such ancestor, with `:scope`.
+
+	// If we don't have any nesting selectors, we can just use our selectors as they are.
+	mut has_any_nesting := false
+	for selector in rule.selectors.selectors {
+		if selector.contains_the_nesting_selector() {
+			has_any_nesting = true
+			break
+		}
+	}
+
+	if !has_any_nesting {
+		rule.cached_absolutized_selectors = rule.selectors
+		return rule.selectors
+	}
+
+	// Otherwise, build up a new list of selectors with the `&` replaced.
+
+	// First, figure out what we should replace `&` with.
+	// "When used in the selector of a nested style rule, the nesting selector represents the elements matched by the parent rule.
+	// When used in any other context, it represents the same elements as :scope in that context (unless otherwise defined)."
+	// https://drafts.csswg.org/css-nesting-1/#nest-selector
+	if parent_style_rule := rule.parent_style_rule() {
+		// TODO: If there's only 1, we don't have to use `:is()` for it
+		mut mutable_parent := unsafe { &CSSRule(parent_style_rule) }
+		parent_selector := Selector{
+			text: ':is(${serialize_a_group_of_selectors(mutable_parent.absolutized_selectors())})'
+		}
+		mut absolutized_selectors := SelectorList{}
+		for selector in rule.selectors.selectors {
+			if absolutized := selector.absolutized(parent_selector) {
+				absolutized_selectors.selectors << absolutized
+			}
+		}
+		rule.cached_absolutized_selectors = absolutized_selectors
+		return absolutized_selectors
+	} else {
+		// NOTE: We can't actually replace & with :scope, because & has to have 0 specificity.
+		//       So Ladybird leaves it, and treats & like :scope during matching.
+		rule.cached_absolutized_selectors = rule.selectors
+		return rule.selectors
+	}
+}
+
+pub fn (rule &CSSRule) parent_style_rule() ?&CSSRule {
+	mut current_parent := rule.parent_rule
+	for {
+		parent := current_parent or { break }
+		if parent.type_ == .style {
+			return parent
+		}
+		current_parent = parent.parent_rule
+	}
+	return none
+}
+
+pub fn (mut rule CSSRule) qualified_layer_name() string {
+	return rule.parent_layer_internal_qualified_name()
+}
+
+pub struct StyleSheet {
+pub mut:
+	media              &MediaList = unsafe { nil }
+	owner_node         ?&dom.Element
+	parent_style_sheet ?&CSSStyleSheet
+	location           ?string
+	title              string
+	type_string        string
+	disabled           bool
+	alternate          bool
+	origin_clean       bool = true
+}
+
+pub fn StyleSheet.create(media &MediaList) StyleSheet {
+	return StyleSheet{
+		media:        media
+		origin_clean: true
+	}
+}
+
+pub fn (sheet &StyleSheet) href() ?string {
+	if location := sheet.location {
+		return location
+	}
+	return none
+}
+
+pub fn (mut sheet StyleSheet) set_owner_node(element ?&dom.Element) {
+	sheet.owner_node = element
+}
+
+pub fn (mut sheet StyleSheet) set_parent_css_style_sheet(parent ?&CSSStyleSheet) {
+	sheet.parent_style_sheet = parent
+}
+
+// https://drafts.csswg.org/cssom/#dom-stylesheet-title
+pub fn (sheet &StyleSheet) title_for_bindings() ?string {
+	// The title attribute must return the title or null if title is the empty string.
+	if sheet.title.len == 0 {
+		return none
+	}
+
+	return sheet.title
+}
+
+@[heap]
+pub struct CSSStyleSheet {
+pub mut:
+	base StyleSheet
+
+	rules &CSSRuleList = unsafe { nil }
+
+	default_namespace_rule ?&CSSRule
+	namespace_rules        map[string]&CSSRule
+	import_rules           []&CSSRule
+
+	owner_rule ?&CSSRule
+
+	base_url                         ?string
+	constructor_document             ?&dom.Document
+	owning_documents_or_shadow_roots []&dom.Node
+	constructed                      bool
+	disallow_modification            bool
+	did_match                        ?bool
+
+	critical_subresources []&CSSRule
+	pending_image_values  []&dom.StyleValue
+	source_text_          ?string
+}
+
+pub struct CSSStyleSheetInit {
+pub mut:
+	base_url ?string
+	media    string
+	disabled bool
+}
+
+pub fn CSSStyleSheet.create(rules &CSSRuleList, media &MediaList, location ?string) &CSSStyleSheet {
+	mut sheet := &CSSStyleSheet{
+		base:            StyleSheet.create(media)
+		rules:           rules
+		namespace_rules: map[string]&CSSRule{}
+	}
+	sheet.base.location = location
+	mut mutable_media := unsafe { &MediaList(media) }
+	mutable_media.set_associated_style_sheet(sheet)
+
+	for mut rule in sheet.rules.rules {
+		rule.set_parent_style_sheet(sheet)
+	}
+
+	sheet.recalculate_rule_caches()
+
+	mut mutable_rules := unsafe { &CSSRuleList(rules) }
+	mutable_rules.owner_style_sheet = sheet
+	return sheet
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssstylesheet
+pub fn css_style_sheet_construct(options ?CSSStyleSheetInit, associated_document ?&dom.Document) !&CSSStyleSheet {
+	// 1. Construct a new CSSStyleSheet object sheet.
+	mut sheet := CSSStyleSheet.create(CSSRuleList.create_empty(), MediaList.create_empty(), none)
+
+	// 2. Set sheet's location to the base URL of the associated Document for the current principal global object.
+	if document := associated_document {
+		sheet.base.location = document.url.to_string()
+	}
+
+	// 3. Set sheet's stylesheet base URL to the baseURL attribute value from options.
+	if init := options {
+		if base_url := init.base_url {
+			if base_url.len == 0 {
+				return error('NotAllowedError: Constructed style sheets must have a valid base URL')
+			}
+			sheet.base_url = base_url
+		}
+	}
+
+	// 4. Set sheet's parent CSS style sheet to null.
+	sheet.set_parent_css_style_sheet(none)
+
+	// 5. Set sheet's owner node to null.
+	sheet.set_owner_node(none)
+
+	// 6. Set sheet's owner CSS rule to null.
+	sheet.set_owner_css_rule(none)
+
+	// 7. Set sheet's title to the empty string.
+	sheet.base.title = ''
+
+	// 8. Unset sheet's alternate flag.
+	sheet.base.alternate = false
+
+	// 9. Set sheet's origin-clean flag.
+	sheet.base.origin_clean = true
+
+	// 10. Set sheet's constructed flag.
+	sheet.constructed = true
+
+	// 11. Set sheet's Constructor document to the associated Document for the current global object.
+	sheet.constructor_document = associated_document
+
+	// 12. If the media attribute of options is a string, create a MediaList object from the string and assign it as sheet's media.
+	//     Otherwise, serialize a media query list from the attribute and then create a MediaList object from the resulting string and set it as sheet's media.
+	if init := options {
+		sheet.set_media(init.media)
+		// 13. If the disabled attribute of options is true, set sheet's disabled flag.
+		if init.disabled {
+			sheet.base.disabled = true
+		}
+	}
+
+	// 14. Return sheet
+	return sheet
+}
+
+pub fn (sheet &CSSStyleSheet) type_() string {
+	return 'text/css'
+}
+
+pub fn (sheet &CSSStyleSheet) css_rules() &CSSRuleList {
+	return sheet.rules
+}
+
+pub fn (sheet &CSSStyleSheet) href() ?string {
+	return sheet.base.href()
+}
+
+pub fn (mut sheet CSSStyleSheet) set_owner_node(element ?&dom.Element) {
+	sheet.base.set_owner_node(element)
+}
+
+pub fn (mut sheet CSSStyleSheet) set_parent_css_style_sheet(parent ?&CSSStyleSheet) {
+	sheet.base.set_parent_css_style_sheet(parent)
+}
+
+pub fn (mut sheet CSSStyleSheet) set_owner_css_rule(rule ?&CSSRule) {
+	sheet.owner_rule = rule
+}
+
+pub fn (mut sheet CSSStyleSheet) set_media(media string) {
+	mut media_list := unsafe { &MediaList(sheet.base.media) }
+	media_list.set_media_text(media)
+}
+
+// https://www.w3.org/TR/cssom/#dom-cssstylesheet-insertrule
+pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
+	// FIXME: 1. If the origin-clean flag is unset, throw a SecurityError exception.
+
+	// If the disallow modification flag is set, throw a NotAllowedError DOMException.
+	if sheet.disallow_modification {
+		return error("NotAllowedError: Can't call insert_rule() on non-modifiable stylesheets")
+	}
+
+	// 3. Let parsed rule be the return value of invoking parse a rule with rule.
+	mut parsed_rule := parse_css_rule_stub(rule, sheet.declared_namespaces()) or {
+		// 4. If parsed rule is a syntax error, return parsed rule.
+		return error('SyntaxError: Unable to parse CSS rule')
+	}
+
+	// 5. If parsed rule is an @import rule, and the constructed flag is set, throw a SyntaxError DOMException.
+	if sheet.constructed && parsed_rule.type_ == .import_rule {
+		return error("SyntaxError: Can't insert @import rules into a constructed stylesheet")
+	}
+
+	// 6. Return the result of invoking insert a CSS rule rule in the CSS rules at index.
+	result := sheet.rules.insert_a_css_rule(parsed_rule, index, .no, sheet.declared_namespaces())!
+
+	// NOTE: The spec doesn't say where to set the parent style sheet, so Ladybird does it here.
+	parsed_rule.set_parent_style_sheet(sheet)
+
+	sheet.invalidate_owners(dom.StyleInvalidationReason.style_change)
+	return result
+}
+
+// https://www.w3.org/TR/cssom/#dom-cssstylesheet-deleterule
+pub fn (mut sheet CSSStyleSheet) delete_rule(index u32) ! {
+	// FIXME: 1. If the origin-clean flag is unset, throw a SecurityError exception.
+
+	// 2. If the disallow modification flag is set, throw a NotAllowedError DOMException.
+	if sheet.disallow_modification {
+		return error("NotAllowedError: Can't call delete_rule() on non-modifiable stylesheets")
+	}
+
+	// 3. Remove a CSS rule in the CSS rules at index.
+	sheet.rules.remove_a_css_rule(index)!
+	sheet.invalidate_owners(dom.StyleInvalidationReason.style_change)
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace
+pub fn (mut sheet CSSStyleSheet) replace(text string) !&CSSStyleSheet {
+	// Promise/parallel execution is a JS integration point. This V port performs the same rule replacement synchronously.
+	if !sheet.constructed {
+		return error("NotAllowedError: Can't call replace() on non-constructed stylesheets")
+	}
+
+	if sheet.disallow_modification {
+		return error("NotAllowedError: Can't call replace() on non-modifiable stylesheets")
+	}
+
+	sheet.disallow_modification = true
+	rules := parse_css_stylesheet_contents_stub(text, sheet.declared_namespaces())
+	mut rules_without_import := []&CSSRule{}
+	for parsed_rule in rules {
+		if parsed_rule.type_ != .import_rule {
+			rules_without_import << parsed_rule
+		}
+	}
+	sheet.rules.set_rules(rules_without_import)
+	sheet.disallow_modification = false
+	return sheet
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssstylesheet-replacesync
+pub fn (mut sheet CSSStyleSheet) replace_sync(text string) ! {
+	// 1. If the constructed flag is not set, or the disallow modification flag is set, throw a NotAllowedError exception.
+	if !sheet.constructed {
+		return error("NotAllowedError: Can't call replaceSync() on non-constructed stylesheets")
+	}
+	if sheet.disallow_modification {
+		return error("NotAllowedError: Can't call replaceSync() on non-modifiable stylesheets")
+	}
+
+	// 2. Let rules be the result of running parse a stylesheet's contents from text.
+	rules := parse_css_stylesheet_contents_stub(text, sheet.declared_namespaces())
+
+	// 3. If rules contains one or more @import rules, remove those rules from rules.
+	mut rules_without_import := []&CSSRule{}
+	for parsed_rule in rules {
+		if parsed_rule.type_ != .import_rule {
+			rules_without_import << parsed_rule
+		}
+	}
+
+	// NOTE: The spec doesn't say where to set the parent style sheet, so Ladybird does it here.
+	for mut parsed_rule in rules_without_import {
+		parsed_rule.set_parent_style_sheet(sheet)
+	}
+
+	// 4. Set sheet's CSS rules to rules.
+	sheet.rules.set_rules(rules_without_import)
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule
+pub fn (mut sheet CSSStyleSheet) add_rule(selector ?string, style ?string, index ?u32) !int {
+	// 1. Let rule be an empty string.
+	mut rule := strings.new_builder(64)
+
+	// 2. Append selector to rule.
+	if selector_value := selector {
+		rule.write_string(selector_value)
+	}
+
+	// 3. Append " { " to rule.
+	rule.write_u8(`{`)
+
+	// 4. If block is not empty, append block, followed by a space, to rule.
+	if style_value := style {
+		if style_value.len != 0 {
+			rule.write_string('${style_value} ')
+		}
+	}
+
+	// 5. Append "}" to rule.
+	rule.write_u8(`}`)
+
+	// 6. Let index be optionalIndex if provided, or the number of CSS rules in the stylesheet otherwise.
+	// 7. Call insertRule(), with rule and index as arguments.
+	sheet.insert_rule(rule.str(), index or { u32(sheet.rules.length()) })!
+
+	// 8. Return -1.
+	return -1
+}
+
+// https://www.w3.org/TR/cssom/#dom-cssstylesheet-removerule
+pub fn (mut sheet CSSStyleSheet) remove_rule(index ?u32) ! {
+	// The removeRule(index) method must run the same steps as deleteRule().
+	return sheet.delete_rule(index or { u32(0) })
+}
+
+pub fn (sheet &CSSStyleSheet) for_each_effective_rule(order TraversalOrder, callback fn (&CSSRule)) {
+	if sheet.base.media.matches() {
+		sheet.rules.for_each_effective_rule(order, callback)
+	}
+}
+
+pub fn (sheet &CSSStyleSheet) for_each_effective_style_producing_rule(callback fn (&CSSRule)) {
+	sheet.for_each_effective_rule(.preorder, fn [callback] (rule &CSSRule) {
+		if rule.type_ == .style || rule.type_ == .nested_declarations {
+			callback(rule)
+		}
+	})
+}
+
+pub fn (sheet &CSSStyleSheet) for_each_effective_keyframes_at_rule(callback fn (&CSSRule)) {
+	sheet.for_each_effective_rule(.preorder, fn [callback] (rule &CSSRule) {
+		if rule.type_ == .keyframes {
+			callback(rule)
+		}
+	})
+}
+
+pub fn (sheet &CSSStyleSheet) for_each_effective_counter_style_at_rule(callback fn (&CSSRule)) {
+	sheet.for_each_effective_rule(.preorder, fn [callback] (rule &CSSRule) {
+		if rule.type_ == .counter_style {
+			callback(rule)
+		}
+	})
+}
+
+pub fn (mut sheet CSSStyleSheet) add_owning_document_or_shadow_root(document_or_shadow_root &dom.Node) {
+	for existing in sheet.owning_documents_or_shadow_roots {
+		if existing == document_or_shadow_root {
+			return
+		}
+	}
+	sheet.owning_documents_or_shadow_roots << document_or_shadow_root
+
+	// All owning documents or shadow roots must be part of the same document so Ladybird only needs to load this style
+	// sheet's fonts against the document of the first.
+	// Stub: Font loading is outside this file.
+
+	for import_rule in sheet.import_rules {
+		if mut loaded_style_sheet := import_rule.loaded_style_sheet {
+			loaded_style_sheet.add_owning_document_or_shadow_root(document_or_shadow_root)
+		}
+	}
+}
+
+pub fn (mut sheet CSSStyleSheet) remove_owning_document_or_shadow_root(document_or_shadow_root &dom.Node) {
+	mut kept := []&dom.Node{}
+	for existing in sheet.owning_documents_or_shadow_roots {
+		if existing != document_or_shadow_root {
+			kept << existing
+		}
+	}
+	sheet.owning_documents_or_shadow_roots = kept
+
+	// All owning documents or shadow roots must be part of the same document so Ladybird only unloads this style
+	// sheet's fonts once none remain.
+	// Stub: Font unloading is outside this file.
+
+	for import_rule in sheet.import_rules {
+		if mut loaded_style_sheet := import_rule.loaded_style_sheet {
+			loaded_style_sheet.remove_owning_document_or_shadow_root(document_or_shadow_root)
+		}
+	}
+}
+
+pub fn (mut sheet CSSStyleSheet) invalidate_owners(reason dom.StyleInvalidationReason) {
+	sheet.did_match = none
+	for owner in sheet.owning_documents_or_shadow_roots {
+		mut mutable_owner := unsafe { &dom.Node(owner) }
+		mutable_owner.invalidate_style(reason)
+		// Stub: StyleScope::invalidate_rule_cache() is outside this file.
+	}
+}
+
+pub fn (sheet &CSSStyleSheet) owning_document() ?&dom.Document {
+	if sheet.owning_documents_or_shadow_roots.len != 0 {
+		return sheet.owning_documents_or_shadow_roots[0].document()
+	}
+
+	if owner_node := sheet.base.owner_node {
+		return owner_node.document()
+	}
+
+	return none
+}
+
+pub fn (mut sheet CSSStyleSheet) load_pending_image_resources(document &dom.Document) {
+	_ = document
+	// Stub: ImageStyleValue::load_any_resources is outside this file.
+	sheet.pending_image_values.clear()
+}
+
+// Returns whether the match state of any media queries changed after evaluation.
+pub fn (mut sheet CSSStyleSheet) evaluate_media_queries(document &dom.Document) bool {
+	mut any_media_queries_changed_match_state := false
+
+	mut media := unsafe { &MediaList(sheet.base.media) }
+	now_matches := media.evaluate(document)
+	if sheet.did_match == none || sheet.did_match or { false } != now_matches {
+		any_media_queries_changed_match_state = true
+	}
+	if now_matches && sheet.rules.evaluate_media_queries(document) {
+		any_media_queries_changed_match_state = true
+	}
+
+	sheet.did_match = now_matches
+
+	return any_media_queries_changed_match_state
+}
+
+pub fn (sheet &CSSStyleSheet) default_namespace() ?string {
+	if namespace_rule := sheet.default_namespace_rule {
+		return namespace_rule.namespace_uri
+	}
+
+	return none
+}
+
+pub fn (sheet &CSSStyleSheet) declared_namespaces() map[string]bool {
+	mut declared_namespaces := map[string]bool{}
+
+	for namespace_, _ in sheet.namespace_rules {
+		declared_namespaces[namespace_] = true
+	}
+
+	return declared_namespaces
+}
+
+pub fn (sheet &CSSStyleSheet) namespace_uri(namespace_prefix string) ?string {
+	if namespace_rule := sheet.namespace_rules[namespace_prefix] {
+		return namespace_rule.namespace_uri
+	}
+	return none
+}
+
+pub fn (mut sheet CSSStyleSheet) recalculate_rule_caches() {
+	sheet.default_namespace_rule = none
+	sheet.namespace_rules.clear()
+	sheet.import_rules.clear()
+
+	for rule in sheet.rules.rules {
+		// "Any @import rules must precede all other valid at-rules and style rules in a style sheet
+		// (ignoring @charset and @layer statement rules) and must not have any other valid at-rules
+		// or style rules between it and previous @import rules, or else the @import rule is invalid."
+		// https://drafts.csswg.org/css-cascade-5/#at-import
+		//
+		// "Any @namespace rules must follow all @charset and @import rules and precede all other
+		// non-ignored at-rules and style rules in a style sheet.
+		// ...
+		// A syntactically invalid @namespace rule (whether malformed or misplaced) must be ignored."
+		// https://drafts.csswg.org/css-namespaces/#syntax
+		match rule.type_ {
+			.import_rule {
+				// @import rules must appear before @namespace rules, so skip this if we've seen @namespace.
+				if sheet.namespace_rules.len != 0 {
+					continue
+				}
+				sheet.import_rules << rule
+			}
+			.namespace_rule {
+				if rule.namespace_uri.len != 0 && rule.prefix.len == 0 {
+					sheet.default_namespace_rule = rule
+				}
+
+				sheet.namespace_rules[rule.prefix] = rule
+			}
+			else {
+				// Any other types mean that further @namespace rules are invalid, so we can stop here.
+				return
+			}
+		}
+	}
+}
+
+pub fn (mut sheet CSSStyleSheet) set_source_text(source string) {
+	sheet.source_text_ = source
+}
+
+pub fn (sheet &CSSStyleSheet) source_text() ?string {
+	return sheet.source_text_
+}
+
+pub fn (mut sheet CSSStyleSheet) add_critical_subresource(subresource &CSSRule) {
+	for existing in sheet.critical_subresources {
+		if existing == subresource {
+			return
+		}
+	}
+	sheet.critical_subresources << subresource
+}
+
+pub fn (mut sheet CSSStyleSheet) remove_critical_subresource(subresource &CSSRule) {
+	mut kept := []&CSSRule{}
+	for existing in sheet.critical_subresources {
+		if existing != subresource {
+			kept << existing
+		}
+	}
+	sheet.critical_subresources = kept
+	sheet.check_if_loading_completed()
+}
+
+pub fn (sheet &CSSStyleSheet) loading_state() CSSStyleSheetLoadingState {
+	mut any_loading := false
+	mut any_errors := false
+
+	for subresource in sheet.critical_subresources {
+		match subresource.loading_state {
+			.unloaded, .loading {
+				any_loading = true
+			}
+			.loaded {}
+			.error {
+				any_errors = true
+			}
+		}
+	}
+
+	if any_loading {
+		return .loading
+	}
+
+	if any_errors {
+		return .error
+	}
+
+	return .loaded
+}
+
+pub fn (mut sheet CSSStyleSheet) check_if_loading_completed() {
+	state := sheet.loading_state()
+	if state == .loaded || state == .error {
+		// We're finished loading, so propagate that to our owner.
+		if mut import_rule := sheet.owner_rule {
+			if import_rule.type_ == .import_rule {
+				import_rule.set_loading_state(state)
+			}
+		}
+		// Stub: StyleElementBase/HTMLLinkElement load completion callbacks are outside this file.
+	}
+}
+
+pub fn (mut rule CSSRule) set_loading_state(loading_state CSSStyleSheetLoadingState) {
+	rule.loading_state = loading_state
+	if loading_state == .loaded || loading_state == .error {
+		if mut parent := rule.parent_style_sheet {
+			parent.check_if_loading_completed()
+		}
+	}
+}
+
+pub enum StyleSheetListAlternate {
+	no
+	yes
+}
+
+pub enum StyleSheetListOriginClean {
+	no
+	yes
+}
+
+@[heap]
+pub struct StyleSheetList {
+pub mut:
+	document_or_shadow_root &dom.Node = unsafe { nil }
+	sheets                  []&CSSStyleSheet
+
+	// https://www.w3.org/TR/cssom/#preferred-css-style-sheet-set-name
+	preferred_css_style_sheet_set_name string
+	// https://www.w3.org/TR/cssom/#last-css-style-sheet-set-name
+	last_css_style_sheet_set_name ?string
+}
+
+pub fn StyleSheetList.create(document_or_shadow_root &dom.Node) &StyleSheetList {
+	return &StyleSheetList{
+		document_or_shadow_root: document_or_shadow_root
+	}
+}
+
+// https://www.w3.org/TR/cssom/#remove-a-css-style-sheet
+pub fn (mut list StyleSheetList) remove_a_css_style_sheet(mut sheet CSSStyleSheet) {
+	// 1. Remove the CSS style sheet from the list of document or shadow root CSS style sheets.
+	list.remove_sheet(sheet)
+
+	// 2. Set the CSS style sheet's parent CSS style sheet, owner node and owner CSS rule to null.
+	sheet.set_parent_css_style_sheet(none)
+	sheet.set_owner_node(none)
+	sheet.set_owner_css_rule(none)
+}
+
+// https://www.w3.org/TR/cssom/#add-a-css-style-sheet
+pub fn (mut list StyleSheetList) add_a_css_style_sheet(mut sheet CSSStyleSheet) {
+	// 1. Add the CSS style sheet to the list of document or shadow root CSS style sheets at the appropriate location. The remainder of these steps deal with the disabled flag.
+	list.add_sheet(sheet)
+
+	// 2. If the disabled flag is set, then return.
+	if sheet.base.disabled {
+		return
+	}
+
+	// 3. If the title is not the empty string, the alternate flag is unset, and preferred CSS style sheet set name is the empty string change the preferred CSS style sheet set name to the title.
+	if sheet.base.title.len != 0 && !sheet.base.alternate
+		&& list.preferred_css_style_sheet_set_name.len == 0 {
+		list.preferred_css_style_sheet_set_name = sheet.base.title
+	}
+
+	// 4. If any of the following is true, then unset the disabled flag and return:
+	//    - The title is the empty string.
+	//    - The last CSS style sheet set name is null and the title is a case-sensitive match for the preferred CSS style sheet set name.
+	//    - The title is a case-sensitive match for the last CSS style sheet set name.
+	// NOTE: We don't enable alternate sheets with an empty title.  This isn't directly mentioned in the algorithm steps, but the
+	// HTML specification says that the title element must be specified with a non-empty value for alternative style sheets.
+	// See: https://html.spec.whatwg.org/multipage/links.html#the-link-is-an-alternative-stylesheet
+	if (sheet.base.title.len == 0 && !sheet.base.alternate) || (list.last_css_style_sheet_set_name == none && sheet.base.title.to_lower() == list.preferred_css_style_sheet_set_name.to_lower()) || (list.last_css_style_sheet_set_name != none && sheet.base.title.to_lower() == (list.last_css_style_sheet_set_name or {
+		''
+	}).to_lower()) {
+		sheet.base.disabled = false
+		return
+	}
+
+	// 5. Set the disabled flag.
+	sheet.base.disabled = true
+}
+
+// https://www.w3.org/TR/cssom/#create-a-css-style-sheet
+pub fn (mut list StyleSheetList) create_a_css_style_sheet(css_text string, type_ string, owner_node ?&dom.Element, media string, title string, alternate StyleSheetListAlternate, origin_clean StyleSheetListOriginClean, location ?string, parent_style_sheet ?&CSSStyleSheet, owner_rule ?&CSSRule) &CSSStyleSheet {
+	// 1. Create a new CSS style sheet object and set its properties as specified.
+	// AD-HOC: The spec never tells us when to parse this style sheet, but the most logical place is here.
+	mut sheet := parse_css_stylesheet_stub(css_text, location)
+
+	sheet.set_parent_css_style_sheet(parent_style_sheet)
+	sheet.set_owner_css_rule(owner_rule)
+	sheet.set_owner_node(owner_node)
+	sheet.base.type_string = type_
+	sheet.set_media(media)
+	sheet.base.title = title
+	sheet.base.alternate = alternate == .yes
+	sheet.base.origin_clean = origin_clean == .yes
+
+	// 2. Then run the add a CSS style sheet steps for the newly created CSS style sheet.
+	list.add_a_css_style_sheet(mut sheet)
+
+	return sheet
+}
+
+pub fn (list &StyleSheetList) item(index usize) ?&CSSStyleSheet {
+	if index >= usize(list.sheets.len) {
+		return none
+	}
+	return list.sheets[index]
+}
+
+pub fn (list &StyleSheetList) length() int {
+	return list.sheets.len
+}
+
+pub fn (list &StyleSheetList) document() &dom.Document {
+	return list.document_or_shadow_root.document()
+}
+
+fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
+	mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
+	mutable_sheet.add_owning_document_or_shadow_root(list.document_or_shadow_root)
+
+	mutable_sheet.load_pending_image_resources(list.document())
+
+	if list.sheets.len == 0 {
+		// This is the first sheet, append it to the list.
+		list.sheets << sheet
+	} else {
+		// We have sheets from before. Insert the new sheet in the correct position (DOM tree order).
+		// Stub: DOM tree order sorting is not available here, so preserve insertion order.
+		list.sheets << sheet
+	}
+
+	// NOTE: We evaluate media queries immediately when adding a new sheet.
+	//       This coalesces the full document style invalidations.
+	//       If we don't do this, we invalidate now, and then again when Document updates media rules.
+	mutable_sheet.evaluate_media_queries(list.document())
+
+	if mutable_sheet.rules.length() == 0 {
+		// NOTE: If the added sheet has no rules, we don't have to invalidate anything.
+		return
+	}
+
+	// Stub: StyleScope invalidation and selector invalidation sets are outside this file.
+	mut mutable_root := unsafe { &dom.Node(list.document_or_shadow_root) }
+	mutable_root.invalidate_style(dom.StyleInvalidationReason.style_change)
+}
+
+fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {
+	mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
+	mutable_sheet.remove_owning_document_or_shadow_root(list.document_or_shadow_root)
+	mut did_remove := false
+	mut kept := []&CSSStyleSheet{}
+	for existing in list.sheets {
+		if existing == sheet {
+			did_remove = true
+			continue
+		}
+		kept << existing
+	}
+	list.sheets = kept
+	if !did_remove {
+		return
+	}
+
+	if mutable_sheet.rules.length() == 0 {
+		// NOTE: If the removed sheet had no rules, we don't have to invalidate anything.
+		return
+	}
+
+	mut mutable_root := unsafe { &dom.Node(list.document_or_shadow_root) }
+	mutable_root.invalidate_style(dom.StyleInvalidationReason.style_change)
+	// Stub: StyleScope::invalidate_rule_cache() is outside this file.
+}
+
+pub enum RuleContext {
+	top_level
+	style
+	media
+	supports
+	layer
+	page
+}
+
+fn rule_context_type_for_rule(rule_type CSSRuleType) RuleContext {
+	return match rule_type {
+		.style, .nested_declarations { .style }
+		.media { .media }
+		.supports { .supports }
+		.layer_block { .layer }
+		.page, .margin { .page }
+		else { .top_level }
+	}
+}
+
+pub struct PropertyDefinition {
+pub mut:
+	name          string
+	syntax        string
+	inherits      bool
+	initial_value ?string
+}
+
+pub struct CustomPropertyRegistration {
+pub mut:
+	property_name string
+	syntax        string
+	inherit       bool
+	initial_value ?string
+}
+
+// https://www.w3.org/TR/cssom-1/#dom-css-escape
+pub fn escape(identifier string) string {
+	// The escape(ident) operation must return the result of invoking serialize an identifier of ident.
+	return serialize_an_identifier(identifier)
+}
+
+// https://www.w3.org/TR/css-conditional-3/#dom-css-supports
+pub fn supports_property(property_name string, value string) bool {
+	// 1. If property is an ASCII case-insensitive match for any defined CSS property that the UA supports, or is a
+	//    custom property name string, and value successfully parses according to that property's grammar, return true.
+	if property := property_id_from_name_stub(property_name) {
+		if parse_css_value(ParsingParams{}, value, property) != none {
+			return true
+		}
+	}
+	if is_a_custom_property_name_string(property_name) && value.trim_space().len != 0 {
+		return true
+	}
+
+	// 2. Otherwise, return false.
+	return false
+}
+
+// https://www.w3.org/TR/css-conditional-3/#dom-css-supports
+pub fn supports_condition(condition_text string) bool {
+	// 1. If conditionText, parsed and evaluated as a <supports-condition>, would return true, return true.
+	if supports := parse_css_supports_stub(condition_text) {
+		if supports.matches_condition() {
+			return true
+		}
+	}
+
+	// 2. Otherwise, If conditionText, wrapped in parentheses and then parsed and evaluated as a <supports-condition>, would return true, return true.
+	wrapped_condition_text := '(${condition_text})'
+
+	if supports := parse_css_supports_stub(wrapped_condition_text) {
+		if supports.matches_condition() {
+			return true
+		}
+	}
+
+	// 3. Otherwise, return false.
+	return false
+}
+
+// https://www.w3.org/TR/css-properties-values-api-1/#the-registerproperty-function
+pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistration {
+	// 1. Let property set be the value of the current global object's associated Document's [[registeredPropertySet]] slot.
+	// Stub: The Document registered-property set is not present in the V DOM module yet.
+
+	// 2. If name is not a custom property name string, throw a SyntaxError and exit this algorithm.
+	if !is_a_custom_property_name_string(definition.name) {
+		return error('SyntaxError: Invalid property name')
+	}
+
+	// If property set already contains an entry with name as its property name (compared codepoint-wise),
+	// throw an InvalidModificationError and exit this algorithm.
+	// Stub: No global registered-property set is available to check duplicates.
+
+	// 3. Attempt to consume a syntax definition from syntax. If it returns failure, throw a SyntaxError.
+	//    Otherwise, let syntax definition be the returned syntax definition.
+	if !parse_syntax_definition_stub(definition.syntax) {
+		return error('SyntaxError: Invalid syntax definition')
+	}
+
+	// 4. If syntax definition is the universal syntax definition, and initialValue is not present,
+	// let parsed initial value be empty. Otherwise validate the supplied initial value.
+	if definition.syntax != '*' && definition.initial_value == none {
+		// Otherwise, if initialValue is not present, throw a SyntaxError and exit this algorithm.
+		return error('SyntaxError: Initial value must be provided for non-universal syntax')
+	}
+	if initial_value := definition.initial_value {
+		if initial_value.trim_space().len == 0 {
+			return error('SyntaxError: Invalid initial value')
+		}
+	}
+
+	// 5. Set inherit flag to the value of inherits.
+	// NB: Combined with 6.
+
+	// 6. Let registered property be a struct with a property name of name, a syntax of syntax definition,
+	//    an initial value of parsed initial value, and an inherit flag of inherit flag.
+	return CustomPropertyRegistration{
+		property_name: definition.name
+		syntax:        definition.syntax
+		inherit:       definition.inherits
+		initial_value: definition.initial_value
+	}
+}
+
+fn cssom_indent(indent_levels int) string {
+	if indent_levels <= 0 {
+		return ''
+	}
+	return '  '.repeat(indent_levels)
+}
+
+fn next_unique_anonymous_layer_name_stub() string {
+	// Stub for CSSLayerBlockRule::next_unique_anonymous_layer_name().
+	return '<anonymous-layer>'
+}
+
+fn property_id_from_name_stub(property_name string) ?PropertyID {
+	return match property_name.to_lower() {
+		'color' { PropertyID.color }
+		'color-scheme' { PropertyID.color_scheme }
+		'content-visibility' { PropertyID.content_visibility }
+		else { none }
+	}
+}
+
+fn is_a_custom_property_name_string(name string) bool {
+	return name.starts_with('--') && name.len > 2
+}
+
+fn parse_syntax_definition_stub(syntax string) bool {
+	// Stub for consume a syntax definition.
+	return syntax.trim_space().len != 0
+}
+
+fn parse_css_supports_stub(condition_text string) ?&Supports {
+	trimmed := condition_text.trim_space()
+	if trimmed.len == 0 {
+		return none
+	}
+	return &Supports{
+		text:    trimmed
+		matches: true
+	}
+}
+
+fn parse_media_query_entry_stub(medium string) ?MediaQueryListEntry {
+	trimmed := medium.trim_space()
+	if trimmed.len == 0 {
+		return none
+	}
+	lower := trimmed.to_lower()
+	return MediaQueryListEntry{
+		text:    trimmed
+		matches: lower != 'not all' && lower != 'print'
+	}
+}
+
+fn parse_media_query_list_stub(text string) []MediaQueryListEntry {
+	mut media := []MediaQueryListEntry{}
+	for part in text.split(',') {
+		if entry := parse_media_query_entry_stub(part) {
+			media << entry
+		}
+	}
+	return media
+}
+
+fn evaluate_media_query_entry_stub(entry MediaQueryListEntry, document &dom.Document) bool {
+	_ = document
+	lower := entry.text.to_lower()
+	if lower == 'not all' || lower == 'print' {
+		return false
+	}
+	return true
+}
+
+fn parse_selector_stub(selector_text string, declared_namespaces map[string]bool) ?SelectorList {
+	_ = declared_namespaces
+	trimmed := selector_text.trim_space()
+	if trimmed.len == 0 {
+		return none
+	}
+	mut selectors := SelectorList{}
+	for part in trimmed.split(',') {
+		selector := part.trim_space()
+		if selector.len != 0 {
+			selectors.selectors << Selector{
+				text: selector
+			}
+		}
+	}
+	if selectors.selectors.len == 0 {
+		return none
+	}
+	return selectors
+}
+
+fn parse_selector_for_nested_style_rule_stub(selector_text string, declared_namespaces map[string]bool) ?SelectorList {
+	return parse_selector_stub(selector_text, declared_namespaces)
+}
+
+fn parse_css_property_declaration_block_stub(block string) &CSSStyleProperties {
+	mut declarations := CSSStyleProperties.create()
+	mut text := block.trim_space()
+	if text.starts_with('{') && text.ends_with('}') {
+		text = text[1..text.len - 1]
+	}
+	for declaration_text in text.split(';') {
+		declaration := declaration_text.trim_space()
+		if declaration.len == 0 || !declaration.contains(':') {
+			continue
+		}
+		parts := declaration.split_nth(':', 2)
+		if parts.len != 2 {
+			continue
+		}
+		name := parts[0].trim_space()
+		mut value := parts[1].trim_space()
+		if name.len == 0 || value.len == 0 {
+			continue
+		}
+		mut important := false
+		if value.to_lower().ends_with('!important') {
+			important = true
+			value = value[..value.len - '!important'.len].trim_space()
+		}
+		if name.starts_with('--') {
+			declarations.custom_properties[name] = value
+		} else {
+			declarations.properties << CSSStyleProperty{
+				name:      name
+				value:     value
+				important: important
+			}
+		}
+	}
+	return declarations
+}
+
+fn parse_css_rule_stub(rule_text string, declared_namespaces map[string]bool) ?&CSSRule {
+	text := rule_text.trim_space()
+	if text.len == 0 {
+		return none
+	}
+
+	if text.starts_with('@namespace') {
+		body := text['@namespace'.len..].trim_space().trim_right(';').trim_space()
+		if body.len == 0 {
+			return none
+		}
+		parts := body.split(' ')
+		if parts.len == 1 {
+			return CSSRule.create_namespace(none, parse_css_url_token_stub(parts[0]))
+		}
+		return CSSRule.create_namespace(parts[0], parse_css_url_token_stub(parts[1..].join(' ')))
+	}
+
+	if text.starts_with('@import') {
+		body := text['@import'.len..].trim_space().trim_right(';').trim_space()
+		if body.len == 0 {
+			return none
+		}
+		parts := body.split(' ')
+		url := parse_css_url_token_stub(parts[0])
+		mut media := MediaList.create_empty()
+		if parts.len > 1 {
+			mut mutable_media := unsafe { &MediaList(media) }
+			mutable_media.set_media_text(parts[1..].join(' '))
+		}
+		return CSSRule.create_import(url, none, none, none, media)
+	}
+
+	if text.starts_with('@media') {
+		condition, inner := split_condition_rule_stub(text, '@media') or { return none }
+		mut media := MediaList.create_empty()
+		mut mutable_media := unsafe { &MediaList(media) }
+		mutable_media.set_media_text(condition)
+		return CSSRule.create_media(media, CSSRuleList.create(parse_css_stylesheet_contents_stub(inner,
+			declared_namespaces)))
+	}
+
+	if text.starts_with('@supports') {
+		condition, inner := split_condition_rule_stub(text, '@supports') or { return none }
+		supports := parse_css_supports_stub(condition) or { return none }
+		return CSSRule.create_supports(supports, CSSRuleList.create(parse_css_stylesheet_contents_stub(inner,
+			declared_namespaces)))
+	}
+
+	if text.contains('{') && text.ends_with('}') {
+		open := text.index('{') or { return none }
+		selector_text := text[..open].trim_space()
+		body := text[open + 1..text.len - 1]
+		selectors := parse_selector_stub(selector_text, declared_namespaces) or { return none }
+		declarations := parse_css_property_declaration_block_stub(body)
+		return CSSRule.create_style(selectors, declarations, CSSRuleList.create_empty())
+	}
+
+	return none
+}
+
+fn parse_css_stylesheet_stub(css_text string, location ?string) &CSSStyleSheet {
+	rules := CSSRuleList.create(parse_css_stylesheet_contents_stub(css_text, map[string]bool{}))
+	return CSSStyleSheet.create(rules, MediaList.create_empty(), location)
+}
+
+fn parse_css_stylesheet_contents_stub(css_text string, declared_namespaces map[string]bool) []&CSSRule {
+	mut rules := []&CSSRule{}
+	mut remaining := css_text.trim_space()
+	for remaining.len != 0 {
+		next_end := find_next_rule_end_stub(remaining) or { break }
+		rule_text := remaining[..next_end].trim_space()
+		if rule := parse_css_rule_stub(rule_text, declared_namespaces) {
+			rules << rule
+		}
+		remaining = remaining[next_end..].trim_space()
+	}
+	if rules.len == 0 {
+		if rule := parse_css_rule_stub(css_text, declared_namespaces) {
+			rules << rule
+		}
+	}
+	return rules
+}
+
+fn find_next_rule_end_stub(text string) ?int {
+	mut depth := 0
+	for index, ch in text {
+		if ch == `{` {
+			depth++
+		} else if ch == `}` {
+			depth--
+			if depth == 0 {
+				return index + 1
+			}
+		} else if ch == `;` && depth == 0 {
+			return index + 1
+		}
+	}
+	return none
+}
+
+fn split_condition_rule_stub(text string, at_rule_name string) ?(string, string) {
+	open := text.index('{') or { return none }
+	if !text.ends_with('}') {
+		return none
+	}
+	condition := text[at_rule_name.len..open].trim_space()
+	inner := text[open + 1..text.len - 1].trim_space()
+	return condition, inner
+}
+
+fn parse_css_url_token_stub(token string) string {
+	mut value := token.trim_space()
+	if value.starts_with('url(') && value.ends_with(')') {
+		value = value[4..value.len - 1].trim_space()
+	}
+	if (value.starts_with('"') && value.ends_with('"'))
+		|| (value.starts_with("'") && value.ends_with("'")) {
+		value = value[1..value.len - 1]
+	}
+	return value
+}
