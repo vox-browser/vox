@@ -11,6 +11,13 @@ pub mut:
 	a u8 = 255
 }
 
+pub struct Oklab {
+pub mut:
+	l f64
+	a f64
+	b f64
+}
+
 pub fn Color.rgb(r u8, g u8, b u8) Color {
 	return Color{
 		r: r
@@ -74,8 +81,7 @@ fn color_format_to_8bit_compatible(value u8) string {
 
 	rounded_to_one_digit := (three_digits + 50) / 100 * 100
 	if ((rounded_to_one_digit * 255 / 100 + 5) / 10) != u32(value) {
-		return [color_nth_digit(rounded_to_two_digits, 3),
-			color_nth_digit(rounded_to_two_digits, 2)].bytestr()
+		return [color_nth_digit(rounded_to_two_digits, 3), color_nth_digit(rounded_to_two_digits, 2)].bytestr()
 	}
 
 	return [color_nth_digit(rounded_to_one_digit, 3)].bytestr()
@@ -350,6 +356,40 @@ pub fn Color.from_oklab(l_value f64, a_value f64, b_value f64, alpha f64) Color 
 	blue := -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
 
 	return Color.from_linear_srgb(red, green, blue, alpha)
+}
+
+// https://bottosson.github.io/posts/oklab/
+pub fn (color Color) to_oklab() Oklab {
+	srgb_to_linear := fn (c f64) f64 {
+		if c >= 0.04045 {
+			return math.pow((c + 0.055) / 1.055, 2.4)
+		}
+		return c / 12.92
+	}
+
+	r := srgb_to_linear(f64(color.red()) / 255.0)
+	g := srgb_to_linear(f64(color.green()) / 255.0)
+	b := srgb_to_linear(f64(color.blue()) / 255.0)
+
+	l := math.pow(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b, 1.0 / 3.0)
+	m := math.pow(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b, 1.0 / 3.0)
+	s := math.pow(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b, 1.0 / 3.0)
+
+	return Oklab{
+		l: 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s
+		a: 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s
+		b: 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+	}
+}
+
+pub fn (color Color) to_premultiplied_oklab() Oklab {
+	oklab := color.to_oklab()
+	alpha := f64(color.alpha()) / 255.0
+	return Oklab{
+		l: oklab.l * alpha
+		a: oklab.a * alpha
+		b: oklab.b * alpha
+	}
 }
 
 pub enum ValueType {

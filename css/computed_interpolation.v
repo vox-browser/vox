@@ -768,7 +768,11 @@ fn style_value_option_changed(old_value ?&dom.StyleValue, new_value ?&dom.StyleV
 	return new_value != none
 }
 
-fn computed_interpolation_longhand_property_ids() []PropertyID {
+type ComputedInterpolationPropertyIDs = []PropertyID
+
+type ComputedInterpolationInvalidationProperties = []InvalidationProperty
+
+fn computed_interpolation_longhand_property_ids() ComputedInterpolationPropertyIDs {
 	mut ids := []PropertyID{cap: number_of_longhand_properties}
 	for index in 0 .. number_of_longhand_properties {
 		if property_id := property_id_from_longhand_index(index) {
@@ -793,7 +797,7 @@ fn computed_interpolation_verify_longhand_property(property_id PropertyID) {
 	}
 }
 
-fn computed_interpolation_property_computation_order() []PropertyID {
+fn computed_interpolation_property_computation_order() ComputedInterpolationPropertyIDs {
 	// C++ uses the generated `property_computation_order()` table. The V port
 	// currently exposes only the translated longhand range, so canonical enum order
 	// is the available computation order.
@@ -1096,7 +1100,7 @@ pub fn (c &ComputedProperties) color_or_fallback(property_id PropertyID, color_r
 	return fallback
 }
 
-pub fn (c &ComputedProperties) assemble_coordinated_value_list(base_property_id PropertyID, property_ids []PropertyID) map[PropertyID][]&dom.StyleValue {
+pub fn (c &ComputedProperties) assemble_coordinated_value_list(base_property_id PropertyID, property_ids ComputedInterpolationPropertyIDs) map[PropertyID][]&dom.StyleValue {
 	_ = base_property_id
 	mut result := map[PropertyID][]&dom.StyleValue{}
 	for property_id in property_ids {
@@ -1873,12 +1877,6 @@ pub fn (c &ComputedProperties) equals(other &ComputedProperties) bool {
 		if value != other_value {
 			return false
 		}
-		if c.is_property_important(property_id) != other.is_property_important(property_id) {
-			return false
-		}
-		if c.is_property_inherited(property_id) != other.is_property_inherited(property_id) {
-			return false
-		}
 	}
 	return true
 }
@@ -1958,6 +1956,7 @@ pub enum CompositeOperation {
 }
 
 pub enum InterpolableValueType {
+	angle
 	length
 	percentage
 	number
@@ -2127,10 +2126,292 @@ pub fn interpolate_length_percentage_or_auto(calculation_context InterpolationCa
 	return none
 }
 
+pub fn interpolate_discrete_style_value(from StyleValue, to StyleValue, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
+	if from.equals(to) {
+		return from
+	}
+	if allow_discrete == .no {
+		return none
+	}
+	if delta >= 0.5 {
+		return to
+	}
+	return from
+}
+
+pub fn interpolate_css_color(from Color, to Color, delta f64, syntax ColorSyntax) Color {
+	// https://drafts.csswg.org/css-color/#interpolation
+	// FIXME: Handle all interpolation methods.
+	// FIXME: Handle "analogous", "missing", and "powerless" components, somehow.
+	// FIXME: Remove duplicated code with Color::mixed_with(Color other, float weight)
+
+	from_alpha := f64(from.alpha()) / 255.0
+	to_alpha := f64(to.alpha()) / 255.0
+	interpolated_alpha := interpolate_raw(from_alpha, to_alpha, delta, none)
+	clamped_alpha := clamp_f64(interpolated_alpha, 0.0, 1.0)
+	if clamped_alpha == 0 {
+		return Color.rgba(0, 0, 0, 0)
+	}
+
+	if syntax == .modern {
+		from_oklab := from.to_premultiplied_oklab()
+		to_oklab := to.to_premultiplied_oklab()
+		return Color.from_oklab(interpolate_raw(from_oklab.l, to_oklab.l, delta, none) / clamped_alpha, interpolate_raw(from_oklab.a,
+			to_oklab.a, delta, none) / clamped_alpha, interpolate_raw(from_oklab.b, to_oklab.b,
+			delta, none) / clamped_alpha, clamped_alpha)
+	}
+
+	premultiply_interpolate_unpremultiply := fn [delta, clamped_alpha, from_alpha, to_alpha] (from_channel u8, to_channel u8) u8 {
+		pre_from := f64(from_channel) * from_alpha
+		pre_to := f64(to_channel) * to_alpha
+		interpolated := interpolate_raw(pre_from, pre_to, delta, none)
+		return u8(clamp_f64(math.round(interpolated / clamped_alpha), 0, 255))
+	}
+
+	return Color.rgba(premultiply_interpolate_unpremultiply(from.red(), to.red()), premultiply_interpolate_unpremultiply(from.green(),
+		to.green()), premultiply_interpolate_unpremultiply(from.blue(), to.blue()),
+		u8(math.round(clamped_alpha * 255.0)))
+}
+
+fn interpolate_raw_i64(from i64, to i64, delta f64, accepted_type_range ?AcceptedTypeRange) i64 {
+	min := if range := accepted_type_range { range.min } else { f64(-9223372036854775808) }
+	max := if range := accepted_type_range { range.max } else { f64(9223372036854775807) }
+	result := math.round(f64(from) + (f64(to) - f64(from)) * delta)
+	return i64(clamp_f64(result, min, max))
+}
+
+fn interpolate_style_value_impl(calculation_context InterpolationCalculationContext, from StyleValue, to StyleValue, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
+	if from.type_() != to.type_() || from.is_calculated() || to.is_calculated() {
+		// Boundary: mixed percentages/dimensions and CalculatedStyleValue interpolation require CalculationNode math-sum creation.
+		return none
+	}
+
+	if from.type_() == .color {
+		// Boundary: DOM/layout color resolution context is unavailable to this CSS-side helper, so unresolved colors use the default context.
+		color_resolution_context := ColorResolutionContext{}
+		from_color := from.to_color(color_resolution_context)
+		to_color := to.to_color(color_resolution_context)
+		mut interpolated_color := Color.black()
+		if resolved_from_color := from_color {
+			if resolved_to_color := to_color {
+				interpolated_color = interpolate_css_color(resolved_from_color, resolved_to_color,
+					delta, .modern)
+			}
+		}
+		return StyleValue(ColorStyleValue.create(interpolated_color))
+	}
+
+	return match from {
+		AngleStyleValue {
+			if to is AngleStyleValue {
+				range := interpolation_accepted_type_range(calculation_context, .angle)
+				interpolated_value := interpolate_raw(from.angle().to_degrees(),
+					to.angle().to_degrees(), delta, range)
+				StyleValue(AngleStyleValue.create(Angle.make_degrees(interpolated_value)))
+			} else {
+				none
+			}
+		}
+		BorderRadiusStyleValue {
+			if to is BorderRadiusStyleValue {
+				interpolated_horizontal_radius := interpolate_style_value_impl(calculation_context,
+					from.horizontal_radius_(), to.horizontal_radius_(), delta, allow_discrete) or {
+					return none
+				}
+				interpolated_vertical_radius := interpolate_style_value_impl(calculation_context,
+					from.vertical_radius_(), to.vertical_radius_(), delta, allow_discrete) or {
+					return none
+				}
+				StyleValue(BorderRadiusStyleValue.create(interpolated_horizontal_radius,
+					interpolated_vertical_radius))
+			} else {
+				none
+			}
+		}
+		BorderRadiusRectStyleValue {
+			if to is BorderRadiusRectStyleValue {
+				mut border_radius_rect_context := calculation_context
+				border_radius_rect_context.accepted_type_ranges[.length] = AcceptedTypeRange{
+					min: 0
+					max: math.max_f64
+				}
+				border_radius_rect_context.accepted_type_ranges[.percentage] = AcceptedTypeRange{
+					min: 0
+					max: math.max_f64
+				}
+				interpolated_top_left := interpolate_style_value_impl(border_radius_rect_context,
+					from.top_left(), to.top_left(), delta, allow_discrete) or { return none }
+				interpolated_top_right := interpolate_style_value_impl(border_radius_rect_context,
+					from.top_right(), to.top_right(), delta, allow_discrete) or { return none }
+				interpolated_bottom_right := interpolate_style_value_impl(border_radius_rect_context,
+					from.bottom_right(), to.bottom_right(), delta, allow_discrete) or {
+					return none
+				}
+				interpolated_bottom_left := interpolate_style_value_impl(border_radius_rect_context,
+					from.bottom_left(), to.bottom_left(), delta, allow_discrete) or { return none }
+				StyleValue(BorderRadiusRectStyleValue.create(interpolated_top_left,
+					interpolated_top_right, interpolated_bottom_right, interpolated_bottom_left))
+			} else {
+				none
+			}
+		}
+		IntegerStyleValue {
+			if to is IntegerStyleValue {
+				// https://drafts.csswg.org/css-values/#combine-integers
+				// Interpolation of <integer> is defined as Vresult = round((1 - p) x VA + p x VB);
+				// that is, interpolation happens in the real number space as for <number>s, and the result is converted to an <integer> by rounding to the nearest integer.
+				range := interpolation_accepted_type_range(calculation_context, .integer)
+				StyleValue(IntegerStyleValue.create(interpolate_raw_i64(from.integer(),
+					to.integer(), delta, range)))
+			} else {
+				none
+			}
+		}
+		LengthStyleValue {
+			if to is LengthStyleValue {
+				from_length := from.length()
+				to_length := to.length()
+				range := interpolation_accepted_type_range(calculation_context, .length)
+				interpolated_value := interpolate_raw(from_length.raw_value(),
+					to_length.raw_value(), delta, range)
+				StyleValue(LengthStyleValue.create(Length.new(interpolated_value,
+					from_length.unit())))
+			} else {
+				none
+			}
+		}
+		NumberStyleValue {
+			if to is NumberStyleValue {
+				range := interpolation_accepted_type_range(calculation_context, .number)
+				StyleValue(NumberStyleValue.create(interpolate_raw(from.number(), to.number(),
+					delta, range)))
+			} else {
+				none
+			}
+		}
+		PercentageStyleValue {
+			if to is PercentageStyleValue {
+				range := interpolation_accepted_type_range(calculation_context, .percentage)
+				StyleValue(PercentageStyleValue.create(Percentage.new(interpolate_raw(from.percentage().value(),
+					to.percentage().value(), delta, range))))
+			} else {
+				none
+			}
+		}
+		StyleValueList {
+			if to is StyleValueList {
+				if from.size() != to.size() {
+					return none
+				}
+				mut interpolated_values := []StyleValue{cap: from.size()}
+				for i in 0 .. from.size() {
+					interpolated := interpolate_style_value(calculation_context, from.values()[i],
+						to.values()[i], delta, .no) or { return none }
+					interpolated_values << interpolated
+				}
+				StyleValue(StyleValueList.create(interpolated_values, from.separator(), .yes))
+			} else {
+				none
+			}
+		}
+		TextIndentStyleValue {
+			if to is TextIndentStyleValue {
+				if from.each_line() != to.each_line() || from.hanging() != to.hanging() {
+					return none
+				}
+				interpolated_length_percentage := interpolate_style_value(calculation_context,
+					from.length_percentage(), to.length_percentage(), delta, allow_discrete) or {
+					return none
+				}
+				StyleValue(TextIndentStyleValue.create(interpolated_length_percentage, if from.hanging() {
+					TextIndentHanging.yes
+				} else {
+					TextIndentHanging.no
+				}, if from.each_line() { TextIndentEachLine.yes } else { TextIndentEachLine.no }))
+			} else {
+				none
+			}
+		}
+		else {
+			none
+		}
+	}
+}
+
+pub fn interpolate_style_value(calculation_context InterpolationCalculationContext, from StyleValue, to StyleValue, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
+	if result := interpolate_style_value_impl(calculation_context, from, to, delta, allow_discrete) {
+		return result
+	}
+	return interpolate_discrete_style_value(from, to, delta, allow_discrete)
+}
+
+fn interpolation_gcd(a int, b int) int {
+	mut x := if a < 0 { -a } else { a }
+	mut y := if b < 0 { -b } else { b }
+	for y != 0 {
+		remainder := x % y
+		x = y
+		y = remainder
+	}
+	return x
+}
+
+fn interpolation_lcm(a int, b int) int {
+	if a == 0 || b == 0 {
+		return 0
+	}
+	return (a / interpolation_gcd(a, b)) * b
+}
+
+fn interpolation_make_single_value_list(value StyleValue, size int, separator StyleValueListSeparator) StyleValueList {
+	mut values := []StyleValue{cap: size}
+	for _ in 0 .. size {
+		values << value
+	}
+	return StyleValueList.create(values, separator, .yes)
+}
+
+fn interpolate_repeatable_style_value_lists(calculation_context InterpolationCalculationContext, from_list StyleValueList, to_list StyleValueList, from_original StyleValue, to_original StyleValue, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
+	repeated_size := interpolation_lcm(from_list.size(), to_list.size())
+	if repeated_size == 0 {
+		return none
+	}
+	mut interpolated_values := []StyleValue{cap: repeated_size}
+	for i in 0 .. repeated_size {
+		value := interpolate_style_value(calculation_context, from_list.value_at(i, true),
+			to_list.value_at(i, true), delta, .no) or {
+			return interpolate_discrete_style_value(from_original, to_original, delta,
+				allow_discrete)
+		}
+		interpolated_values << value
+	}
+	return StyleValue(StyleValueList.create(interpolated_values, from_list.separator(), .yes))
+}
+
+pub fn interpolate_repeatable_style_value_list(calculation_context InterpolationCalculationContext, from StyleValue, to StyleValue, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
+	// https://www.w3.org/TR/web-animations/#repeatable-list
+	// Same as by computed value except that if the two lists have differing numbers of items, they are first repeated to the least common multiple number of items.
+	if from is StyleValueList {
+		if to is StyleValueList {
+			return interpolate_repeatable_style_value_lists(calculation_context, from, to, from,
+				to, delta, allow_discrete)
+		}
+		to_list := interpolation_make_single_value_list(to, from.size(), from.separator())
+		return interpolate_repeatable_style_value_lists(calculation_context, from, to_list, from,
+			to, delta, allow_discrete)
+	}
+	if to is StyleValueList {
+		from_list := interpolation_make_single_value_list(from, to.size(), to.separator())
+		return interpolate_repeatable_style_value_lists(calculation_context, from_list, to, from,
+			to, delta, allow_discrete)
+	}
+	return interpolate_style_value(calculation_context, from, to, delta, allow_discrete)
+}
+
 pub fn interpolate_value(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	_ = element
 	_ = calculation_context
-	// Boundary: dom.StyleValue has no type(), numeric accessors, color conversion, or list APIs yet.
+	// Boundary: dom.StyleValue has no bridge to the CSS StyleValue union yet; typed interpolation is implemented in interpolate_style_value().
 	return interpolate_discrete(from, to, delta, allow_discrete)
 }
 
@@ -2160,7 +2441,6 @@ pub fn interpolate_color(from ComputedColor, to ComputedColor, delta f64, syntax
 	// FIXME: Handle all interpolation methods.
 	// FIXME: Handle "analogous", "missing", and "powerless" components, somehow.
 	// FIXME: Remove duplicated code with Color::mixed_with(Color other, float weight)
-	_ = syntax
 
 	from_alpha := f64(from.alpha()) / 255.0
 	to_alpha := f64(to.alpha()) / 255.0
@@ -2168,6 +2448,17 @@ pub fn interpolate_color(from ComputedColor, to ComputedColor, delta f64, syntax
 	clamped_alpha := clamp_f64(interpolated_alpha, 0.0, 1.0)
 	if clamped_alpha == 0 {
 		return ComputedColor.transparent()
+	}
+
+	if syntax == .modern {
+		from_oklab :=
+			Color.rgba(from.red(), from.green(), from.blue(), from.alpha()).to_premultiplied_oklab()
+		to_oklab := Color.rgba(to.red(), to.green(), to.blue(), to.alpha()).to_premultiplied_oklab()
+		interpolated := Color.from_oklab(interpolate_raw(from_oklab.l, to_oklab.l, delta, none) / clamped_alpha, interpolate_raw(from_oklab.a,
+			to_oklab.a, delta, none) / clamped_alpha, interpolate_raw(from_oklab.b, to_oklab.b,
+			delta, none) / clamped_alpha, clamped_alpha)
+		return ComputedColor.rgba(interpolated.red(), interpolated.green(), interpolated.blue(),
+			interpolated.alpha())
 	}
 
 	premultiply_interpolate_unpremultiply := fn [delta, clamped_alpha, from_alpha, to_alpha] (from_channel u8, to_channel u8) u8 {
@@ -2745,7 +3036,7 @@ pub fn (s &InvalidationSet) has_properties() bool {
 	return s.properties_.len != 0
 }
 
-pub fn (s &InvalidationSet) properties() []InvalidationProperty {
+pub fn (s &InvalidationSet) properties() ComputedInterpolationInvalidationProperties {
 	return s.properties_.clone()
 }
 
@@ -3584,7 +3875,7 @@ pub fn (s &StyleComputer) collect_matching_rules(abstract_element dom.AbstractEl
 		origin, mut attempted_pseudo_class_matches, qualified_layer_name)
 }
 
-pub fn (s &StyleComputer) invalidation_plan_for_properties(properties []InvalidationProperty, scope &StyleScope) &InvalidationPlan {
+pub fn (s &StyleComputer) invalidation_plan_for_properties(properties ComputedInterpolationInvalidationProperties, scope &StyleScope) &InvalidationPlan {
 	_ = s
 	return style_computer_invalidation_plan_for_properties_impl(properties, scope)
 }
@@ -3871,7 +4162,7 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 	return s.compute_style(abstract_element)
 }
 
-pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) &CascadedProperties {
+pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) &CascadedProperties {
 	mut cascaded_properties := CascadedProperties.new()
 	if mode == .create_pseudo_element_style_if_needed {
 		if !did_match_any_pseudo_element_rules {
@@ -3964,7 +4255,7 @@ fn style_computer_css_wide_keyword_from_declaration_text(value string) ?Keyword 
 	return keyword_from_string(value.trim_space()) or { none }
 }
 
-pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, rules []MatchingRule, origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
+pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, rules []MatchingRule, origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) {
 	_ = s
 	_ = logical_alias_mapping_context
 	for match_rule in rules {
