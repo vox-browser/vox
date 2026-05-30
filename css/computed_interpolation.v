@@ -3450,7 +3450,7 @@ pub fn (s &StyleComputer) compute_pseudo_element_style_if_needed(abstract_elemen
 }
 
 pub fn (s &StyleComputer) collect_matching_rules(abstract_element dom.AbstractElement, origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []MatchingRule {
-	return style_computer_collect_matching_rules_without_scope_stub(s, abstract_element, origin, mut
+	return style_computer_collect_matching_rules_without_scope_boundary(s, abstract_element, origin, mut
 		attempted_pseudo_class_matches, qualified_layer_name)
 }
 
@@ -3878,7 +3878,7 @@ pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedP
 }
 
 pub fn (s &StyleComputer) rule_cache_for_cascade_origin(origin CascadeOrigin, qualified_layer_name ?string, shadow_root ?&dom.ShadowRoot) ?&RuleCache {
-	return style_computer_rule_cache_for_cascade_origin_without_scope_stub(s, origin,
+	return style_computer_rule_cache_for_cascade_origin_without_scope_boundary(s, origin,
 		qualified_layer_name, shadow_root)
 }
 

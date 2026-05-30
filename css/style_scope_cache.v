@@ -7,10 +7,10 @@ import dom
 // - the RuleCache and rule matching cache parts of LibWeb/CSS/StyleComputer.cpp
 //
 // DOM owns document/shadow-root style sheet lists in the C++ engine. The current
-// V module split has DOM-side CSS stubs, so the css.CSSStyleSheet lists are not
-// reachable from dom.Document/dom.ShadowRoot yet. Those integration points are
-// represented by explicit local stubs below; the cache-building and selector
-// bucketing logic itself follows the C++ structure.
+// V module split has DOM-side stylesheet placeholders, so the css.CSSStyleSheet
+// lists are not reachable from dom.Document/dom.ShadowRoot yet. Those
+// integration points are represented by explicit boundary helpers below; the
+// cache-building and selector bucketing logic itself follows the C++ structure.
 
 pub enum RuleCacheIterationDecision {
 	continue_
@@ -350,7 +350,7 @@ pub fn (mut scope StyleScope) build_rule_cache() {
 	scope.style_invalidation_data = StyleInvalidationData.new()
 
 	if document := scope.document() {
-		if user_style_source := style_scope_user_style_source_stub(document) {
+		if user_style_source := style_scope_user_style_source_boundary(document) {
 			scope.user_style_sheet = parse_css_stylesheet_with_parser(user_style_source, none)
 		}
 	}
@@ -426,7 +426,7 @@ pub fn (scope &StyleScope) stylesheets_for_cascade_origin(cascade_origin Cascade
 			}
 		}
 		.author {
-			style_scope_for_each_active_css_style_sheet_stub(scope, fn [mut sheets] (sheet &CSSStyleSheet) {
+			style_scope_for_each_active_css_style_sheet_boundary(scope, fn [mut sheets] (sheet &CSSStyleSheet) {
 				sheets << sheet
 			})
 		}
@@ -779,7 +779,7 @@ pub fn (scope &StyleScope) get_pseudo_class_rule_cache(pseudo_class PseudoClass)
 }
 
 pub fn (scope &StyleScope) for_each_active_css_style_sheet(callback fn (&CSSStyleSheet)) {
-	style_scope_for_each_active_css_style_sheet_stub(scope, callback)
+	style_scope_for_each_active_css_style_sheet_boundary(scope, callback)
 }
 
 pub fn (mut scope StyleScope) schedule_ancestors_style_invalidation_due_to_presence_of_has(node &dom.Node) {
@@ -911,20 +911,20 @@ fn style_scope_set_needs_invalidation_of_elements_affected_by_has(document &dom.
 	mutable_document.needs_invalidation_of_elements_affected_by_has = true
 }
 
-fn style_scope_user_style_source_stub(document &dom.Document) ?string {
+fn style_scope_user_style_source_boundary(document &dom.Document) ?string {
 	_ = document
-	// Stub for C++ document().page().user_style(). The V Page/UserStyle plumbing
-	// is not connected to css.StyleScope yet.
+	// Boundary for C++ document().page().user_style(). The V Page/UserStyle
+	// plumbing is not connected to css.StyleScope yet.
 	return none
 }
 
-fn style_scope_for_each_active_css_style_sheet_stub(scope &StyleScope, callback fn (&CSSStyleSheet)) {
+fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callback fn (&CSSStyleSheet)) {
 	_ = scope
 	_ = callback
-	// Stub for C++ StyleScope::for_each_active_css_style_sheet(), which calls
-	// DOM::ShadowRoot::for_each_active_css_style_sheet() or
+	// Boundary for C++ StyleScope::for_each_active_css_style_sheet(), which
+	// calls DOM::ShadowRoot::for_each_active_css_style_sheet() or
 	// DOM::Document::for_each_active_css_style_sheet(). DOM currently exposes
-	// DOM-local CSSStyleSheet stubs, not css.CSSStyleSheet objects.
+	// DOM-local CSSStyleSheet placeholders, not css.CSSStyleSheet objects.
 }
 
 fn style_scope_pseudo_element_from_dom(pseudo_element dom.PseudoElement) PseudoElement {
@@ -1067,10 +1067,10 @@ fn style_scope_slot_node(slot &dom.HTMLSlotElement) &dom.Node {
 	return unsafe { &dom.Node(slot) }
 }
 
-fn style_scope_has_result_cache_stub(style_computer &StyleComputer) map[string]HasMatchResult {
+fn style_scope_has_result_cache_boundary(style_computer &StyleComputer) map[string]HasMatchResult {
 	_ = style_computer
-	// Stub for StyleComputer::m_has_result_cache. computed_interpolation.v still
-	// stores the placeholder cache as map[string]bool, while SelectorEngine's V
+	// Boundary for StyleComputer::m_has_result_cache. computed_interpolation.v
+	// still stores the cache as map[string]bool, while SelectorEngine's V
 	// MatchContext expects map[string]HasMatchResult.
 	return map[string]HasMatchResult{}
 }
@@ -1089,7 +1089,7 @@ fn style_scope_add_slotted_rules_for_available_scopes(style_computer &StyleCompu
 	for {
 		current_slot := slot or { break }
 		slot_shadow_root := style_scope_slot_node(current_slot).root().as_shadow_root()
-		if style_scope_shadow_root_matches_current_scope_stub(scope, slot_shadow_root) {
+		if style_scope_shadow_root_matches_current_scope(scope, slot_shadow_root) {
 			if rule_cache := scope.rule_cache_for_cascade_origin(cascade_origin,
 				qualified_layer_name)
 			{
@@ -1118,7 +1118,7 @@ fn style_scope_add_part_rules_for_available_scopes(style_computer &StyleComputer
 			shadow_root, element_shadow_root, mut rules_to_run)
 	}
 	for part_shadow_root in style_scope_flat_tree_ancestor_shadow_roots(abstract_element.element().as_node()) {
-		if style_scope_shadow_root_matches_current_scope_stub(scope, part_shadow_root) {
+		if style_scope_shadow_root_matches_current_scope(scope, part_shadow_root) {
 			if rule_cache := scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name) {
 				style_scope_add_rules_to_run(style_computer, abstract_element, rule_cache.part_rules,
 					shadow_root, element_shadow_root, mut rules_to_run)
@@ -1132,10 +1132,10 @@ fn style_scope_add_part_rules_for_available_scopes(style_computer &StyleComputer
 	// the StyleScope passed by the caller.
 }
 
-fn style_scope_shadow_root_matches_current_scope_stub(scope &StyleScope, shadow_root ?&dom.ShadowRoot) bool {
-	// Partial stand-in for obtaining shadow_root->style_scope(). If this
-	// StyleScope was constructed with the same shadow root node, the current
-	// scope is usable; otherwise DOM's StyleScope placeholder is not the css one.
+fn style_scope_shadow_root_matches_current_scope(scope &StyleScope, shadow_root ?&dom.ShadowRoot) bool {
+	// Local fallback for obtaining shadow_root->style_scope(). If this StyleScope
+	// was constructed with the same shadow root node, the current scope is
+	// usable; otherwise DOM's StyleScope placeholder is not the css one.
 	root := shadow_root or { return false }
 	node := scope.node or { return false }
 	scope_root := node.as_shadow_root() or { return false }
@@ -1213,7 +1213,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 			subject:                                           abstract_element.element()
 			rule_shadow_root:                                  rule_shadow_root_for_context
 			collect_per_element_selector_involvement_metadata: true
-			has_result_cache:                                  style_scope_has_result_cache_stub(style_computer)
+			has_result_cache:                                  style_scope_has_result_cache_boundary(style_computer)
 		}
 
 		mut did_match := false
@@ -1269,13 +1269,13 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 	return matching_rules
 }
 
-pub fn style_computer_collect_matching_rules_without_scope_stub(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []MatchingRule {
+pub fn style_computer_collect_matching_rules_without_scope_boundary(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []MatchingRule {
 	_ = style_computer
 	_ = abstract_element
 	_ = cascade_origin
 	_ = attempted_pseudo_class_matches
 	_ = qualified_layer_name
-	// Stub for C++ StyleComputer::rule_cache_for_cascade_origin() fetching
+	// Boundary for C++ StyleComputer::rule_cache_for_cascade_origin() fetching
 	// document().style_scope() or shadow_root->style_scope(). DOM currently has
 	// a DOM-local StyleScope placeholder, not css.StyleScope.
 	return []MatchingRule{}
@@ -1399,12 +1399,12 @@ pub fn style_computer_invalidation_property_used_in_has_selector_impl(property I
 	return false
 }
 
-pub fn style_computer_rule_cache_for_cascade_origin_without_scope_stub(style_computer &StyleComputer, cascade_origin CascadeOrigin, qualified_layer_name ?string, shadow_root ?&dom.ShadowRoot) ?&RuleCache {
+pub fn style_computer_rule_cache_for_cascade_origin_without_scope_boundary(style_computer &StyleComputer, cascade_origin CascadeOrigin, qualified_layer_name ?string, shadow_root ?&dom.ShadowRoot) ?&RuleCache {
 	_ = style_computer
 	_ = cascade_origin
 	_ = qualified_layer_name
 	_ = shadow_root
-	// Stub for C++ StyleComputer::rule_cache_for_cascade_origin(). The missing
+	// Boundary for C++ StyleComputer::rule_cache_for_cascade_origin(). The missing
 	// dependency is the css.StyleScope reachable from DOM::Document/ShadowRoot.
 	return none
 }
