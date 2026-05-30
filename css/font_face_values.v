@@ -1106,7 +1106,7 @@ fn parse_font_face_descriptor(id FontFaceDescriptorID, value string) ?string {
 			}
 		}
 		.ascent_override, .descent_override, .line_gap_override {
-			if trimmed.to_lower() != 'normal' && !trimmed.ends_with('%') {
+			if trimmed.to_lower() != 'normal' && !is_valid_non_negative_css_percentage(trimmed) {
 				return none
 			}
 		}
@@ -4092,6 +4092,15 @@ fn is_valid_css_percentage(value string) bool {
 		return false
 	}
 	return is_valid_css_number(trimmed[..trimmed.len - 1])
+}
+
+fn is_valid_non_negative_css_percentage(value string) bool {
+	trimmed := value.trim_space()
+	if !is_valid_css_percentage(trimmed) {
+		return false
+	}
+	number := strconv.atof64(trimmed[..trimmed.len - 1]) or { return false }
+	return number >= 0
 }
 
 fn is_valid_css_angle(value string) bool {
