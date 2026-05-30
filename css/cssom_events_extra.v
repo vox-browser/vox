@@ -24,31 +24,28 @@ pub fn (event &FontFaceSetLoadEvent) base_event() &dom.Event {
 	return event.event
 }
 
-// --- StyleSheetIdentifier IPC substitute ---
+// --- StyleSheetIdentifier wire conversion ---
 
 pub struct StyleSheetIdentifierWire {
 pub mut:
-	type_                 string
+	type_                 StyleSheetIdentifierType
 	dom_element_unique_id ?u64
 	url                   ?string
 	rule_count            usize
 }
 
-pub fn (identifier StyleSheetIdentifier) encode_for_ipc_stub() StyleSheetIdentifierWire {
-	// Stub: LibIPC::Encoder is not available in this V port. Preserve the same fields in
-	// a plain value object so callers can still round-trip the translated wrapper data.
+pub fn (identifier StyleSheetIdentifier) encode_for_ipc() StyleSheetIdentifierWire {
 	return StyleSheetIdentifierWire{
-		type_:                 style_sheet_identifier_type_to_string(identifier.type_)
+		type_:                 identifier.type_
 		dom_element_unique_id: identifier.dom_element_unique_id
 		url:                   identifier.url
 		rule_count:            identifier.rule_count
 	}
 }
 
-pub fn style_sheet_identifier_decode_from_ipc_stub(wire StyleSheetIdentifierWire) ?StyleSheetIdentifier {
-	type_ := style_sheet_identifier_type_from_string(wire.type_) or { return none }
+pub fn style_sheet_identifier_decode_from_ipc(wire StyleSheetIdentifierWire) StyleSheetIdentifier {
 	return StyleSheetIdentifier{
-		type_:                 type_
+		type_:                 wire.type_
 		dom_element_unique_id: wire.dom_element_unique_id
 		url:                   wire.url
 		rule_count:            wire.rule_count
