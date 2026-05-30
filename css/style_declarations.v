@@ -62,6 +62,22 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.border_top_width { 'border-top-width' }
 		.border_bottom_left_radius { 'border-bottom-left-radius' }
 		.border_bottom_right_radius { 'border-bottom-right-radius' }
+		.border_block_end_color { 'border-block-end-color' }
+		.border_block_end_style { 'border-block-end-style' }
+		.border_block_end_width { 'border-block-end-width' }
+		.border_block_start_color { 'border-block-start-color' }
+		.border_block_start_style { 'border-block-start-style' }
+		.border_block_start_width { 'border-block-start-width' }
+		.border_end_end_radius { 'border-end-end-radius' }
+		.border_end_start_radius { 'border-end-start-radius' }
+		.border_inline_end_color { 'border-inline-end-color' }
+		.border_inline_end_style { 'border-inline-end-style' }
+		.border_inline_end_width { 'border-inline-end-width' }
+		.border_inline_start_color { 'border-inline-start-color' }
+		.border_inline_start_style { 'border-inline-start-style' }
+		.border_inline_start_width { 'border-inline-start-width' }
+		.border_start_end_radius { 'border-start-end-radius' }
+		.border_start_start_radius { 'border-start-start-radius' }
 		.border_top_left_radius { 'border-top-left-radius' }
 		.border_top_right_radius { 'border-top-right-radius' }
 		.border_image_outset { 'border-image-outset' }
@@ -85,6 +101,10 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.empty_cells { 'empty-cells' }
 		.corner_bottom_left_shape { 'corner-bottom-left-shape' }
 		.corner_bottom_right_shape { 'corner-bottom-right-shape' }
+		.corner_end_end_shape { 'corner-end-end-shape' }
+		.corner_end_start_shape { 'corner-end-start-shape' }
+		.corner_start_end_shape { 'corner-start-end-shape' }
+		.corner_start_start_shape { 'corner-start-start-shape' }
 		.corner_top_left_shape { 'corner-top-left-shape' }
 		.corner_top_right_shape { 'corner-top-right-shape' }
 		.fill_opacity { 'fill-opacity' }
@@ -287,14 +307,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 233
+pub const number_of_longhand_properties = 253
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .border_spacing
+	return .corner_start_start_shape
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -532,6 +552,26 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		230 { PropertyID.padding_right }
 		231 { PropertyID.padding_top }
 		232 { PropertyID.border_spacing }
+		233 { PropertyID.border_block_end_color }
+		234 { PropertyID.border_block_end_style }
+		235 { PropertyID.border_block_end_width }
+		236 { PropertyID.border_block_start_color }
+		237 { PropertyID.border_block_start_style }
+		238 { PropertyID.border_block_start_width }
+		239 { PropertyID.border_inline_end_color }
+		240 { PropertyID.border_inline_end_style }
+		241 { PropertyID.border_inline_end_width }
+		242 { PropertyID.border_inline_start_color }
+		243 { PropertyID.border_inline_start_style }
+		244 { PropertyID.border_inline_start_width }
+		245 { PropertyID.border_end_end_radius }
+		246 { PropertyID.border_end_start_radius }
+		247 { PropertyID.border_start_end_radius }
+		248 { PropertyID.border_start_start_radius }
+		249 { PropertyID.corner_end_end_shape }
+		250 { PropertyID.corner_end_start_shape }
+		251 { PropertyID.corner_start_end_shape }
+		252 { PropertyID.corner_start_start_shape }
 		else { none }
 	}
 }

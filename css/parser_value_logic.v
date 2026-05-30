@@ -261,15 +261,19 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.animation_play_state {
 			return parser.parse_animation_play_state_value(mut tokens)
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.outline_width {
+		.border_block_end_width, .border_block_start_width, .border_bottom_width,
+		.border_inline_end_width, .border_inline_start_width, .border_left_width,
+		.border_right_width, .border_top_width, .outline_width {
 			return parser.parse_border_or_outline_width_value(mut tokens)
 		}
-		.border_bottom_style, .border_left_style, .border_right_style, .border_top_style {
+		.border_block_end_style, .border_block_start_style, .border_bottom_style,
+		.border_inline_end_style, .border_inline_start_style, .border_left_style,
+		.border_right_style, .border_top_style {
 			return parser.parse_line_style_value(mut tokens)
 		}
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_top_left_radius,
-		.border_top_right_radius {
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius,
+		.border_end_start_radius, .border_start_end_radius, .border_start_start_radius,
+		.border_top_left_radius, .border_top_right_radius {
 			return parser.parse_border_radius_value(mut tokens)
 		}
 		.border_image_outset {
@@ -336,9 +340,10 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.position_visibility {
 			return parser.parse_position_visibility_value(mut tokens)
 		}
-		.background_color, .border_bottom_color, .border_left_color, .border_right_color,
-		.border_top_color, .color, .flood_color, .outline_color, .stop_color,
-		.webkit_text_fill_color {
+		.background_color, .border_block_end_color, .border_block_start_color,
+		.border_bottom_color, .border_inline_end_color, .border_inline_start_color,
+		.border_left_color, .border_right_color, .border_top_color, .color, .flood_color,
+		.outline_color, .stop_color, .webkit_text_fill_color {
 			return parser.parse_color_value(mut tokens)
 		}
 		.color_scheme {
@@ -353,8 +358,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.container_type {
 			return parser.parse_container_type_value(mut tokens)
 		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape,
+		.corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape,
+		.corner_top_left_shape, .corner_top_right_shape {
 			return parser.parse_corner_shape_value(mut tokens)
 		}
 		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,

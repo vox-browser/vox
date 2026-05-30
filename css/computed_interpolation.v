@@ -1051,17 +1051,24 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.left, .right, .top {
 			'auto'
 		}
-		.border_bottom_color, .border_left_color, .border_right_color, .border_top_color {
+		.border_block_end_color, .border_block_start_color, .border_bottom_color,
+		.border_inline_end_color, .border_inline_start_color, .border_left_color,
+		.border_right_color, .border_top_color {
 			'currentcolor'
 		}
-		.border_bottom_style, .border_left_style, .border_right_style, .border_top_style {
+		.border_block_end_style, .border_block_start_style, .border_bottom_style,
+		.border_inline_end_style, .border_inline_start_style, .border_left_style,
+		.border_right_style, .border_top_style {
 			'none'
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width {
+		.border_block_end_width, .border_block_start_width, .border_bottom_width,
+		.border_inline_end_width, .border_inline_start_width, .border_left_width,
+		.border_right_width, .border_top_width {
 			'medium'
 		}
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_top_left_radius,
-		.border_top_right_radius {
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius,
+		.border_end_start_radius, .border_start_end_radius, .border_start_start_radius,
+		.border_top_left_radius, .border_top_right_radius {
 			'0'
 		}
 		.border_collapse {
@@ -1124,8 +1131,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.empty_cells {
 			'show'
 		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape,
+		.corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape,
+		.corner_top_left_shape, .corner_top_right_shape {
 			'round'
 		}
 		.fill_opacity, .flood_opacity {
@@ -1501,13 +1509,18 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.animation_name, .animation_timeline, .animation_timing_function, .aspect_ratio,
 		.background_color, .background_image, .background_attachment, .background_blend_mode,
 		.background_clip, .background_origin, .background_position_x, .background_position_y,
-		.background_repeat, .background_size, .border_bottom_color, .border_bottom_width,
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_image_outset,
-		.border_image_slice, .border_image_source, .border_image_width, .border_left_color,
-		.border_left_width, .border_right_color, .border_right_width, .border_spacing,
-		.border_top_color, .border_top_width, .border_top_left_radius, .border_top_right_radius,
-		.block_size, .bottom, .caret_color, .color, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.background_repeat, .background_size, .border_block_end_color, .border_block_end_width,
+		.border_block_start_color, .border_block_start_width, .border_bottom_color,
+		.border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius,
+		.border_end_end_radius, .border_end_start_radius, .border_image_outset,
+		.border_image_slice, .border_image_source, .border_image_width, .border_inline_end_color,
+		.border_inline_end_width, .border_inline_start_color, .border_inline_start_width,
+		.border_left_color, .border_left_width, .border_right_color, .border_right_width,
+		.border_spacing, .border_start_end_radius, .border_start_start_radius, .border_top_color,
+		.border_top_width, .border_top_left_radius, .border_top_right_radius, .block_size, .bottom,
+		.caret_color, .color, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape,
+		.corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_feature_settings, .font_style,
 		.font_variation_settings, .font_weight, .font_width, .flex_grow, .flex_shrink,
 		.column_count, .column_width, .column_height, .column_gap, .row_gap, .height, .inline_size,
@@ -1551,11 +1564,14 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 	return match property_id {
 		.background_attachment, .background_blend_mode, .background_clip, .background_color,
 		.background_origin, .background_position_x, .background_position_y, .background_repeat,
-		.background_size, .border_bottom_width, .border_left_width, .border_right_width,
-		.border_top_width, .color, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_top_left_shape, .corner_top_right_shape, .flood_color, .font_style, .font_weight,
-		.font_width, .letter_spacing, .math_depth, .outline_width, .stop_color,
-		.text_decoration_color, .word_spacing {
+		.background_size, .border_block_end_width, .border_block_start_width, .border_bottom_width,
+		.border_inline_end_width, .border_inline_start_width, .border_left_width,
+		.border_right_width, .border_top_width, .color, .corner_bottom_left_shape,
+		.corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape,
+		.corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .flood_color, .font_style, .font_weight, .font_width,
+		.letter_spacing, .math_depth, .outline_width, .stop_color, .text_decoration_color,
+		.word_spacing {
 			true
 		}
 		else {
@@ -4539,13 +4555,18 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.writing_mode, .resize {
 			.none_
 		}
-		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
-		.border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius,
-		.border_image_outset, .border_image_slice, .border_image_width, .border_left_color,
-		.border_left_width, .border_right_color, .border_right_width, .border_top_color,
-		.border_top_width, .border_top_left_radius, .border_top_right_radius, .border_spacing,
-		.block_size, .bottom, .caret_color, .color, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
+		.accent_color, .aspect_ratio, .background_color, .border_block_end_color,
+		.border_block_end_width, .border_block_start_color, .border_block_start_width,
+		.border_bottom_color, .border_bottom_width, .border_bottom_left_radius,
+		.border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius,
+		.border_image_outset, .border_image_slice, .border_image_width, .border_inline_end_color,
+		.border_inline_end_width, .border_inline_start_color, .border_inline_start_width,
+		.border_left_color, .border_left_width, .border_right_color, .border_right_width,
+		.border_start_end_radius, .border_start_start_radius, .border_top_color, .border_top_width,
+		.border_top_left_radius, .border_top_right_radius, .border_spacing, .block_size, .bottom,
+		.caret_color, .color, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape,
+		.corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .flex_grow,
 		.flex_shrink, .column_count, .column_width, .column_height, .column_gap, .row_gap, .height,
 		.inline_size, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
@@ -4571,21 +4592,23 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 			.repeatable_list
 		}
 		.anchor_name, .anchor_scope, .background_attachment, .background_blend_mode,
-		.background_image, .background_repeat, .border_bottom_style, .border_collapse,
-		.border_image_repeat, .border_image_source, .border_left_style, .border_right_style,
-		.border_top_style, .box_sizing, .caption_side, .clear, .clip_rule, .color_interpolation,
-		.color_scheme, .empty_cells, .fill_rule, .float_, .font_kerning, .font_language_override,
-		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
-		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
-		.list_style_image, .list_style_position, .mask_clip, .mask_composite, .mask_image,
-		.mask_mode, .mask_origin, .mask_repeat, .mask_type, .mix_blend_mode, .object_fit,
-		.overflow_x, .overflow_y, .overflow_wrap, .pointer_events, .position, .position_anchor,
-		.position_visibility, .paint_order, .shape_rendering, .stroke_linecap, .stroke_linejoin,
-		.table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style,
-		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
-		.text_wrap_style, .transform_box, .transform_style, .touch_action, .user_select,
-		.view_transition_name, .white_space_collapse, .white_space_trim, .word_break {
+		.background_image, .background_repeat, .border_block_end_style, .border_block_start_style,
+		.border_bottom_style, .border_collapse, .border_image_repeat, .border_image_source,
+		.border_inline_end_style, .border_inline_start_style, .border_left_style,
+		.border_right_style, .border_top_style, .box_sizing, .caption_side, .clear, .clip_rule,
+		.color_interpolation, .color_scheme, .empty_cells, .fill_rule, .float_, .font_kerning,
+		.font_language_override, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
+		.font_variant_position, .flex_direction, .flex_wrap, .align_content, .align_items,
+		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
+		.image_rendering, .isolation, .list_style_image, .list_style_position, .mask_clip,
+		.mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_repeat, .mask_type,
+		.mix_blend_mode, .object_fit, .overflow_x, .overflow_y, .overflow_wrap, .pointer_events,
+		.position, .position_anchor, .position_visibility, .paint_order, .shape_rendering,
+		.stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor,
+		.text_decoration_line, .text_decoration_style, .text_justify, .text_overflow,
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,
+		.transform_style, .touch_action, .user_select, .view_transition_name,
+		.white_space_collapse, .white_space_trim, .word_break {
 			.discrete
 		}
 	}
@@ -5311,39 +5334,47 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.animation_timing_function, .background_attachment, .background_blend_mode,
 		.background_clip, .background_color, .background_image, .background_origin,
 		.background_position_x, .background_position_y, .background_repeat, .background_size,
-		.border_bottom_color, .border_bottom_left_radius, .border_bottom_right_radius,
-		.border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source,
-		.border_image_width, .border_left_color, .border_right_color, .border_top_color,
+		.border_block_end_color, .border_block_start_color, .border_bottom_color,
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius,
+		.border_end_start_radius, .border_image_outset, .border_image_repeat, .border_image_slice,
+		.border_image_source, .border_image_width, .border_inline_end_color,
+		.border_inline_start_color, .border_left_color, .border_right_color,
+		.border_start_end_radius, .border_start_start_radius, .border_top_color,
 		.border_top_left_radius, .border_top_right_radius, .caret_color, .clip_rule, .color,
 		.color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.fill_rule, .flood_color, .flood_opacity, .font_feature_settings, .font_variation_settings,
-		.font_weight, .font_width, .image_rendering, .line_height, .mask_clip, .mask_composite,
-		.mask_image, .mask_mode, .mask_origin, .mask_position, .mask_repeat, .mask_size,
-		.mask_type, .math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity,
-		.outline_color, .outline_offset, .outline_style, .outline_width, .pointer_events,
-		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
-		.stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .rotate, .scale,
-		.scroll_timeline_axis, .scroll_timeline_name, .transform, .transform_box,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .translate, .touch_action, .user_select, .view_timeline_axis,
-		.view_timeline_inset, .view_timeline_name, .view_transition_name, .scrollbar_width,
-		.scroll_behavior, .resize, .text_decoration_color, .text_decoration_line,
-		.text_decoration_style, .text_decoration_thickness, .text_overflow, .text_rendering,
-		.webkit_text_fill_color, .z_index {
+		.corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape,
+		.corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity,
+		.font_feature_settings, .font_variation_settings, .font_weight, .font_width,
+		.image_rendering, .line_height, .mask_clip, .mask_composite, .mask_image, .mask_mode,
+		.mask_origin, .mask_position, .mask_repeat, .mask_size, .mask_type, .math_depth,
+		.math_style, .mix_blend_mode, .object_fit, .opacity, .outline_color, .outline_offset,
+		.outline_style, .outline_width, .pointer_events, .shape_image_threshold, .stop_color,
+		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity,
+		.stroke_width, .stroke_dashoffset, .rotate, .scale, .scroll_timeline_axis,
+		.scroll_timeline_name, .transform, .transform_box, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .translate,
+		.touch_action, .user_select, .view_timeline_axis, .view_timeline_inset,
+		.view_timeline_name, .view_transition_name, .scrollbar_width, .scroll_behavior, .resize,
+		.text_decoration_color, .text_decoration_line, .text_decoration_style,
+		.text_decoration_thickness, .text_overflow, .text_rendering, .webkit_text_fill_color,
+		.z_index {
 			false
 		}
-		.anchor_name, .aspect_ratio, .block_size, .bottom, .border_bottom_style,
-		.border_bottom_width, .border_collapse, .border_left_style, .border_left_width,
-		.border_right_style, .border_right_width, .border_spacing, .border_top_style,
-		.border_top_width, .box_sizing, .caption_side, .clear, .direction, .empty_cells, .float_,
-		.font_kerning, .font_language_override, .font_optical_sizing, .font_style,
-		.font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_grow, .flex_shrink,
-		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .column_count, .column_width,
-		.column_height, .column_gap, .row_gap, .contain, .container_type, .height, .inline_size,
-		.inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .isolation,
-		.left, .letter_spacing, .list_style_image, .list_style_position, .margin_block_end,
+		.anchor_name, .aspect_ratio, .block_size, .bottom, .border_block_end_style,
+		.border_block_end_width, .border_block_start_style, .border_block_start_width,
+		.border_bottom_style, .border_bottom_width, .border_collapse, .border_inline_end_style,
+		.border_inline_end_width, .border_inline_start_style, .border_inline_start_width,
+		.border_left_style, .border_left_width, .border_right_style, .border_right_width,
+		.border_spacing, .border_top_style, .border_top_width, .box_sizing, .caption_side, .clear,
+		.direction, .empty_cells, .float_, .font_kerning, .font_language_override,
+		.font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji,
+		.font_variant_position, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap,
+		.align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self,
+		.appearance, .column_span, .column_count, .column_width, .column_height, .column_gap,
+		.row_gap, .contain, .container_type, .height, .inline_size, .inset_block_end,
+		.inset_block_start, .inset_inline_end, .inset_inline_start, .isolation, .left,
+		.letter_spacing, .list_style_image, .list_style_position, .margin_block_end,
 		.margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start,
 		.margin_left, .margin_right, .margin_top, .math_shift, .max_block_size, .max_height,
 		.max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width,
@@ -6881,13 +6912,15 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 		.animation_name {
 			StyleComputer.compute_animation_name(absolutized_value)
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.outline_width {
+		.border_block_end_width, .border_block_start_width, .border_bottom_width,
+		.border_inline_end_width, .border_inline_start_width, .border_left_width,
+		.border_right_width, .border_top_width, .outline_width {
 			StyleComputer.compute_border_or_outline_width(absolutized_value,
 				device_pixels_per_css_pixel)
 		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape,
+		.corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape,
+		.corner_top_left_shape, .corner_top_right_shape {
 			StyleComputer.compute_corner_shape(absolutized_value)
 		}
 		.font_feature_settings {

@@ -207,6 +207,30 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'border-bottom-right-radius' {
 			PropertyID.border_bottom_right_radius
 		}
+		'border-block-end-color' {
+			PropertyID.border_block_end_color
+		}
+		'border-block-end-style' {
+			PropertyID.border_block_end_style
+		}
+		'border-block-end-width' {
+			PropertyID.border_block_end_width
+		}
+		'border-block-start-color' {
+			PropertyID.border_block_start_color
+		}
+		'border-block-start-style' {
+			PropertyID.border_block_start_style
+		}
+		'border-block-start-width' {
+			PropertyID.border_block_start_width
+		}
+		'border-end-end-radius' {
+			PropertyID.border_end_end_radius
+		}
+		'border-end-start-radius' {
+			PropertyID.border_end_start_radius
+		}
 		'border-left-color' {
 			PropertyID.border_left_color
 		}
@@ -215,6 +239,24 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'border-left-style' {
 			PropertyID.border_left_style
+		}
+		'border-inline-end-color' {
+			PropertyID.border_inline_end_color
+		}
+		'border-inline-end-style' {
+			PropertyID.border_inline_end_style
+		}
+		'border-inline-end-width' {
+			PropertyID.border_inline_end_width
+		}
+		'border-inline-start-color' {
+			PropertyID.border_inline_start_color
+		}
+		'border-inline-start-style' {
+			PropertyID.border_inline_start_style
+		}
+		'border-inline-start-width' {
+			PropertyID.border_inline_start_width
 		}
 		'border-right-color' {
 			PropertyID.border_right_color
@@ -239,6 +281,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'border-top-right-radius' {
 			PropertyID.border_top_right_radius
+		}
+		'border-start-end-radius' {
+			PropertyID.border_start_end_radius
+		}
+		'border-start-start-radius' {
+			PropertyID.border_start_start_radius
 		}
 		'border-image-outset' {
 			PropertyID.border_image_outset
@@ -323,6 +371,18 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'corner-bottom-right-shape' {
 			PropertyID.corner_bottom_right_shape
+		}
+		'corner-end-end-shape' {
+			PropertyID.corner_end_end_shape
+		}
+		'corner-end-start-shape' {
+			PropertyID.corner_end_start_shape
+		}
+		'corner-start-end-shape' {
+			PropertyID.corner_start_end_shape
+		}
+		'corner-start-start-shape' {
+			PropertyID.corner_start_start_shape
 		}
 		'corner-top-left-shape' {
 			PropertyID.corner_top_left_shape
@@ -851,9 +911,10 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.anchor_name, .anchor_scope, .position_anchor, .scroll_timeline_name, .view_timeline_name {
 			value_type == .dashed_ident
 		}
-		.accent_color, .background_color, .border_bottom_color, .border_left_color,
-		.border_right_color, .border_top_color, .caret_color, .color, .flood_color, .outline_color,
-		.stop_color, .text_decoration_color, .webkit_text_fill_color {
+		.accent_color, .background_color, .border_block_end_color, .border_block_start_color,
+		.border_bottom_color, .border_inline_end_color, .border_inline_start_color,
+		.border_left_color, .border_right_color, .border_top_color, .caret_color, .color,
+		.flood_color, .outline_color, .stop_color, .text_decoration_color, .webkit_text_fill_color {
 			value_type == .color
 		}
 		.background_image, .border_image_source, .list_style_image {
@@ -872,16 +933,18 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 			value_type == .string
 		}
 		.background_attachment, .background_blend_mode, .background_clip, .background_origin,
-		.background_repeat, .border_bottom_style, .border_collapse, .border_image_repeat,
-		.border_left_style, .border_right_style, .border_top_style, .box_sizing, .caption_side,
-		.clip_rule, .color_interpolation, .content_visibility, .direction, .empty_cells,
-		.fill_rule, .font_kerning, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
-		.font_variant_position, .flex_direction, .flex_wrap, .align_content, .align_items,
-		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
-		.image_rendering, .transform_box, .touch_action, .writing_mode, .scrollbar_width, .resize,
-		.contain, .container_type, .text_decoration_line, .text_decoration_style, .paint_order,
-		.overflow_wrap, .scroll_behavior, .math_shift, .isolation, .list_style_position,
-		.mask_clip, .mask_composite, .mask_mode, .mask_origin, .mask_repeat, .mask_type {
+		.background_repeat, .border_block_end_style, .border_block_start_style,
+		.border_bottom_style, .border_collapse, .border_image_repeat, .border_inline_end_style,
+		.border_inline_start_style, .border_left_style, .border_right_style, .border_top_style,
+		.box_sizing, .caption_side, .clip_rule, .color_interpolation, .content_visibility,
+		.direction, .empty_cells, .fill_rule, .font_kerning, .font_optical_sizing,
+		.font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_direction,
+		.flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items,
+		.justify_self, .appearance, .column_span, .image_rendering, .transform_box, .touch_action,
+		.writing_mode, .scrollbar_width, .resize, .contain, .container_type, .text_decoration_line,
+		.text_decoration_style, .paint_order, .overflow_wrap, .scroll_behavior, .math_shift,
+		.isolation, .list_style_position, .mask_clip, .mask_composite, .mask_mode, .mask_origin,
+		.mask_repeat, .mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
@@ -892,8 +955,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.white_space_collapse, .white_space_trim, .word_break {
 			false
 		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape,
+		.corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape,
+		.corner_top_left_shape, .corner_top_right_shape {
 			value_type == .corner_shape
 		}
 		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,
@@ -912,8 +976,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.view_timeline_inset {
 			value_type == .view_timeline_inset
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.outline_offset, .outline_width {
+		.border_block_end_width, .border_block_start_width, .border_bottom_width,
+		.border_inline_end_width, .border_inline_start_width, .border_left_width,
+		.border_right_width, .border_top_width, .outline_offset, .outline_width {
 			value_type == .length
 		}
 		.column_width, .column_height {
@@ -965,8 +1030,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.border_spacing {
 			value_type == .length
 		}
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_top_left_radius,
-		.border_top_right_radius {
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius,
+		.border_end_start_radius, .border_start_end_radius, .border_start_start_radius,
+		.border_top_left_radius, .border_top_right_radius {
 			value_type in [.length, .percentage]
 		}
 		.border_image_outset {
@@ -1090,9 +1156,10 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 				false
 			}
 		}
-		.background_color, .border_bottom_color, .border_left_color, .border_right_color,
-		.border_top_color, .color, .flood_color, .outline_color, .stop_color,
-		.text_decoration_color, .webkit_text_fill_color {
+		.background_color, .border_block_end_color, .border_block_start_color,
+		.border_bottom_color, .border_inline_end_color, .border_inline_start_color,
+		.border_left_color, .border_right_color, .border_top_color, .color, .flood_color,
+		.outline_color, .stop_color, .text_decoration_color, .webkit_text_fill_color {
 			if keyword := keyword_from_string(lowercase_value) {
 				KeywordStyleValue.is_color(keyword)
 			} else {
@@ -1164,19 +1231,23 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.empty_cells {
 			lowercase_value in ['show', 'hide']
 		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape,
+		.corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape,
+		.corner_top_left_shape, .corner_top_right_shape {
 			lowercase_value in ['round', 'scoop', 'bevel', 'notch', 'square', 'squircle']
 		}
 		.animation_timeline {
 			// animation-timeline = auto | none | <dashed-ident> | scroll() | view()
 			lowercase_value in ['auto', 'none']
 		}
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.outline_width {
+		.border_block_end_width, .border_block_start_width, .border_bottom_width,
+		.border_inline_end_width, .border_inline_start_width, .border_left_width,
+		.border_right_width, .border_top_width, .outline_width {
 			lowercase_value in ['thin', 'medium', 'thick']
 		}
-		.border_bottom_style, .border_left_style, .border_right_style, .border_top_style {
+		.border_block_end_style, .border_block_start_style, .border_bottom_style,
+		.border_inline_end_style, .border_inline_start_style, .border_left_style,
+		.border_right_style, .border_top_style {
 			lowercase_value in ['none', 'hidden', 'dotted', 'dashed', 'solid', 'double', 'groove',
 				'ridge', 'inset', 'outset']
 		}
@@ -1217,9 +1288,11 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.order, .orphans, .widows {
 			false
 		}
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_image_outset,
-		.border_top_left_radius, .border_top_right_radius, .flex_grow, .flex_shrink,
-		.stroke_miterlimit, .stroke_width, .stroke_dashoffset, .shape_margin, .cx, .cy, .x, .y, .r {
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius,
+		.border_end_start_radius, .border_image_outset, .border_start_end_radius,
+		.border_start_start_radius, .border_top_left_radius, .border_top_right_radius, .flex_grow,
+		.flex_shrink, .stroke_miterlimit, .stroke_width, .stroke_dashoffset, .shape_margin, .cx,
+		.cy, .x, .y, .r {
 			false
 		}
 		.rx, .ry, .text_underline_offset {
@@ -1486,6 +1559,15 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.animation_name {
 			lowercase_value !in ['default', 'none']
 		}
+		.border_block_end_color, .border_block_end_style, .border_block_end_width,
+		.border_block_start_color, .border_block_start_style, .border_block_start_width,
+		.border_end_end_radius, .border_end_start_radius, .border_inline_end_color,
+		.border_inline_end_style, .border_inline_end_width, .border_inline_start_color,
+		.border_inline_start_style, .border_inline_start_width, .border_start_end_radius,
+		.border_start_start_radius, .corner_end_end_shape, .corner_end_start_shape,
+		.corner_start_end_shape, .corner_start_start_shape {
+			false
+		}
 		.accent_color, .background_attachment, .background_blend_mode, .background_clip,
 		.background_color, .background_image, .background_origin, .background_position_x,
 		.background_position_y, .background_repeat, .background_size, .border_bottom_color,
@@ -1600,7 +1682,8 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		}
 		BorderRadiusStyleValue {
 			property_id in [.border_bottom_left_radius, .border_bottom_right_radius,
-				.border_top_left_radius, .border_top_right_radius]
+				.border_end_end_radius, .border_end_start_radius, .border_start_end_radius,
+				.border_start_start_radius, .border_top_left_radius, .border_top_right_radius]
 		}
 		EdgeStyleValue {
 			property_id in [.background_position_x, .background_position_y]
@@ -1731,12 +1814,14 @@ pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
 pub fn property_accepts_percentage(property_id PropertyID, value Percentage) bool {
 	return match property_id {
 		.background_size, .mask_size, .block_size, .border_bottom_left_radius,
-		.border_bottom_right_radius, .border_image_slice, .border_image_width,
-		.border_top_left_radius, .border_top_right_radius, .height, .inline_size, .max_block_size,
-		.max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size,
-		.min_width, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
-		.padding_inline_start, .padding_left, .padding_right, .padding_top, .width, .column_gap,
-		.row_gap, .shape_margin, .r, .rx, .ry, .stroke_width, .stroke_dashoffset {
+		.border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius,
+		.border_image_slice, .border_image_width, .border_start_end_radius,
+		.border_start_start_radius, .border_top_left_radius, .border_top_right_radius, .height,
+		.inline_size, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size,
+		.min_height, .min_inline_size, .min_width, .padding_block_end, .padding_block_start,
+		.padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right,
+		.padding_top, .width, .column_gap, .row_gap, .shape_margin, .r, .rx, .ry, .stroke_width,
+		.stroke_dashoffset {
 			value.value() >= 0
 		}
 		else {
@@ -1765,9 +1850,13 @@ pub fn property_accepts_frequency(property_id PropertyID, value Frequency) bool 
 
 pub fn property_accepts_length(property_id PropertyID, value Length) bool {
 	return match property_id {
-		.background_size, .mask_size, .block_size, .border_bottom_left_radius,
-		.border_bottom_right_radius, .border_image_outset, .border_image_width, .border_spacing,
-		.border_top_left_radius, .border_top_right_radius, .height, .inline_size, .max_block_size,
+		.background_size, .mask_size, .block_size, .border_block_end_width,
+		.border_block_start_width, .border_bottom_left_radius, .border_bottom_right_radius,
+		.border_bottom_width, .border_end_end_radius, .border_end_start_radius,
+		.border_image_outset, .border_image_width, .border_inline_end_width,
+		.border_inline_start_width, .border_left_width, .border_right_width, .border_spacing,
+		.border_start_end_radius, .border_start_start_radius, .border_top_left_radius,
+		.border_top_right_radius, .border_top_width, .height, .inline_size, .max_block_size,
 		.max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size,
 		.min_width, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
 		.padding_inline_start, .padding_left, .padding_right, .padding_top, .width, .column_width,

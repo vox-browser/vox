@@ -267,6 +267,26 @@ pub enum PropertyID {
 	padding_right
 	padding_top
 	border_spacing
+	border_block_end_color
+	border_block_end_style
+	border_block_end_width
+	border_block_start_color
+	border_block_start_style
+	border_block_start_width
+	border_inline_end_color
+	border_inline_end_style
+	border_inline_end_width
+	border_inline_start_color
+	border_inline_start_style
+	border_inline_start_width
+	border_end_end_radius
+	border_end_start_radius
+	border_start_end_radius
+	border_start_start_radius
+	corner_end_end_shape
+	corner_end_start_shape
+	corner_start_end_shape
+	corner_start_start_shape
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {
