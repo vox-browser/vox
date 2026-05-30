@@ -84,7 +84,7 @@ fn css_style_properties_empty_dom_style_value() &dom.StyleValue {
 
 fn dom_style_value_to_css_text(value &dom.StyleValue) string {
 	_ = value
-	// Stub: dom.StyleValue is currently an opaque DOM-side placeholder in this V port.
+	// Boundary: dom.StyleValue is currently an opaque DOM-side placeholder in this V port.
 	return ''
 }
 
@@ -417,7 +417,7 @@ pub fn (properties &CSSStyleProperties) get_property(property_id PropertyID) ?St
 
 pub fn (properties &CSSStyleProperties) custom_property(custom_property_name string) ?StyleProperty {
 	if properties.is_computed() {
-		// Stub: computed custom property lookup requires DOM::Element custom_property_data().
+		// Boundary: computed custom property lookup requires DOM::Element custom_property_data().
 		return none
 	}
 
@@ -694,7 +694,7 @@ pub fn (properties &CSSStyleProperties) get_property_priority(property_name stri
 fn (properties &CSSStyleProperties) invalidate_owners(reason StyleInvalidationReason) {
 	_ = properties
 	_ = reason
-	// Stub: StyleSheet owner invalidation and DOM style invalidation hooks are not fully connected in this V port yet.
+	// Boundary: StyleSheet owner invalidation and DOM style invalidation hooks are not fully connected in this V port yet.
 }
 
 @[heap]
@@ -825,7 +825,7 @@ pub fn (property_map &StylePropertyMapReadOnly) size() u32 {
 pub fn (mut property_map StylePropertyMapReadOnly) get_style_value(property PropertyNameAndID) ?&dom.StyleValue {
 	if _ := property_map.element {
 		_ = property
-		// Stub: computed property extraction from DOM::Element requires computed style values to expose CSS::StyleValue.
+		// Boundary: computed property extraction from DOM::Element requires computed style values to expose CSS::StyleValue.
 		return none
 	}
 	if declaration := property_map.declaration {

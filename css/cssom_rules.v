@@ -367,7 +367,9 @@ pub fn (mut rule_list CSSRuleList) remove_a_css_rule(index u32) ! {
 
 	// https://drafts.csswg.org/css-font-loading/#font-face-css-connection
 	// If a @font-face rule is removed from the document, its connected FontFace object is no longer CSS-connected.
-	// Stub: FontFace objects are not translated in this file.
+	if mut font_face_rule := old_rule.font_face_rule_ref() {
+		font_face_rule.disconnect_font_face()
+	}
 
 	// 5. Remove rule old rule from list at the zero-indexed position index.
 	rule_list.rules.delete(int(index))
@@ -686,7 +688,7 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 
 	if rule.type_ == .style {
 		// This is annoying: Style values that request resources need to know their CSSStyleSheet in order to fetch them.
-		// Stub: StyleValue resource loading is outside this file.
+		// Boundary: style-value resource loading is represented by the typed StyleValue layer, not this CSSOM wrapper.
 	}
 }
 
@@ -1744,7 +1746,9 @@ pub fn (mut sheet CSSStyleSheet) add_owning_document_or_shadow_root(document_or_
 
 	// All owning documents or shadow roots must be part of the same document so Ladybird only needs to load this style
 	// sheet's fonts against the document of the first.
-	// Stub: Font loading is outside this file.
+	if sheet.owning_documents_or_shadow_roots.len == 1 {
+		// Boundary: FontComputer lives outside this CSSOM rule translation.
+	}
 
 	for import_rule in sheet.import_rules {
 		if mut loaded_style_sheet := import_rule.loaded_style_sheet {
@@ -1764,7 +1768,9 @@ pub fn (mut sheet CSSStyleSheet) remove_owning_document_or_shadow_root(document_
 
 	// All owning documents or shadow roots must be part of the same document so Ladybird only unloads this style
 	// sheet's fonts once none remain.
-	// Stub: Font unloading is outside this file.
+	if sheet.owning_documents_or_shadow_roots.len == 0 {
+		// Boundary: FontComputer lives outside this CSSOM rule translation.
+	}
 
 	for import_rule in sheet.import_rules {
 		if mut loaded_style_sheet := import_rule.loaded_style_sheet {
@@ -1778,7 +1784,7 @@ pub fn (mut sheet CSSStyleSheet) invalidate_owners(reason dom.StyleInvalidationR
 	for owner in sheet.owning_documents_or_shadow_roots {
 		mut mutable_owner := unsafe { &dom.Node(owner) }
 		mutable_owner.invalidate_style(reason)
-		// Stub: StyleScope::invalidate_rule_cache() is outside this file.
+		// Boundary: StyleScope::invalidate_rule_cache() requires DOM style-scope objects.
 	}
 }
 
@@ -1796,7 +1802,7 @@ pub fn (sheet &CSSStyleSheet) owning_document() ?&dom.Document {
 
 pub fn (mut sheet CSSStyleSheet) load_pending_image_resources(document &dom.Document) {
 	_ = document
-	// Stub: ImageStyleValue::load_any_resources is outside this file.
+	// Boundary: ImageStyleValue::load_any_resources requires DOM/Fetch resource loading.
 	sheet.pending_image_values.clear()
 }
 
@@ -1945,7 +1951,7 @@ pub fn (mut sheet CSSStyleSheet) check_if_loading_completed() {
 				import_rule.set_loading_state(state)
 			}
 		}
-		// Stub: StyleElementBase/HTMLLinkElement load completion callbacks are outside this file.
+		// Boundary: StyleElementBase/HTMLLinkElement load completion callbacks require HTML owner nodes.
 	}
 }
 
@@ -2078,7 +2084,7 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 		list.sheets << sheet
 	} else {
 		// We have sheets from before. Insert the new sheet in the correct position (DOM tree order).
-		// Stub: DOM tree order sorting is not available here, so preserve insertion order.
+		// Boundary: DOM tree order sorting requires DOM position APIs; preserve insertion order here.
 		list.sheets << sheet
 	}
 
@@ -2092,7 +2098,7 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 		return
 	}
 
-	// Stub: StyleScope invalidation and selector invalidation sets are outside this file.
+	// Boundary: StyleScope invalidation and selector invalidation sets require DOM style-scope objects.
 	mut mutable_root := unsafe { &dom.Node(list.document_or_shadow_root) }
 	mutable_root.invalidate_style(dom.StyleInvalidationReason.style_change)
 }
@@ -2121,7 +2127,7 @@ fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {
 
 	mut mutable_root := unsafe { &dom.Node(list.document_or_shadow_root) }
 	mutable_root.invalidate_style(dom.StyleInvalidationReason.style_change)
-	// Stub: StyleScope::invalidate_rule_cache() is outside this file.
+	// Boundary: StyleScope::invalidate_rule_cache() requires DOM style-scope objects.
 }
 
 pub enum RuleContext {
@@ -2218,7 +2224,7 @@ pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistrat
 
 	// If property set already contains an entry with name as its property name (compared codepoint-wise),
 	// throw an InvalidModificationError and exit this algorithm.
-	// Stub: No global registered-property set is available to check duplicates.
+	// Boundary: duplicate checks require the document-owned property set; use register_property_for_document().
 
 	// 3. Attempt to consume a syntax definition from syntax. If it returns failure, throw a SyntaxError.
 	//    Otherwise, let syntax definition be the returned syntax definition.

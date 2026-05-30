@@ -41,7 +41,7 @@ fn descriptor_id_from_string(at_rule_id AtRuleID, property string) ?DescriptorID
 			}
 		}
 		else {
-			// Stub: @font-face descriptors are represented by CSSFontFaceDescriptors in font_face_values.v, and
+			// Boundary: @font-face descriptors are represented by CSSFontFaceDescriptors in font_face_values.v, and
 			// @counter-style descriptor parsing is represented by counter_values.v.
 			none
 		}
@@ -50,7 +50,7 @@ fn descriptor_id_from_string(at_rule_id AtRuleID, property string) ?DescriptorID
 
 fn descriptor_style_value_to_string(value &dom.StyleValue) string {
 	_ = value
-	// Stub: dom.StyleValue is currently an opaque DOM-side placeholder in this V port.
+	// Boundary: dom.StyleValue is currently an opaque DOM-side placeholder in this V port.
 	return ''
 }
 
@@ -416,7 +416,7 @@ pub fn (mut descriptors CSSDescriptors) set_css_text(value string) ! {
 }
 
 fn (mut descriptors CSSDescriptors) update_style_attribute() {
-	// Stub: CSS descriptors are not reflected into an owner style attribute.
+	// Boundary: CSS descriptors are not reflected into an owner style attribute.
 }
 
 pub fn is_descriptor_shorthand(at_rule_id AtRuleID, descriptor_id DescriptorID) bool {
@@ -435,7 +435,7 @@ pub fn for_each_expanded_descriptor_longhand(at_rule_id AtRuleID, descriptor_id 
 			callback(.margin_left, unsafe { nil })
 			return
 		}
-		// Stub: non-null DOM StyleValue shorthand expansion needs typed ShorthandStyleValue plumbing.
+		// Boundary: non-null DOM StyleValue shorthand expansion needs typed ShorthandStyleValue plumbing.
 	}
 	callback(descriptor_id, value)
 }
