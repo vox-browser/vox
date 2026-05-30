@@ -488,7 +488,7 @@ pub fn (mut properties CSSStyleProperties) set_css_text(css_text string) ! {
 	if properties.is_readonly() {
 		return error('NoModificationAllowedError: Cannot modify readonly CSSStyleProperties')
 	}
-	new_properties := parse_css_property_declaration_block_stub(css_text)
+	new_properties := parse_css_property_declaration_block_with_parser(css_text)
 	properties.properties = new_properties.properties
 	properties.custom_properties = new_properties.custom_properties.clone()
 	properties.update_style_attribute()

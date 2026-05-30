@@ -5,8 +5,8 @@ import strings
 
 // This file ports the CSSOM rule/list/style-sheet layer from Ladybird's LibWeb/CSS.
 // It includes folded translations of CSSConditionRule.cpp and CSSGroupingRule.cpp.
-// Parser, selector-engine, fetch, JS realm/promise, style-value resource loading, and
-// detailed media-feature evaluation are represented by explicit local stubs until the
+// Fetch, JS realm/promise, style-value resource loading, and some DOM/style-scope
+// integration points are represented by explicit local boundaries until the
 // surrounding V modules grow those subsystems.
 
 pub enum CSSRuleType {
@@ -256,11 +256,11 @@ pub fn (mut rule_list CSSRuleList) set_rules(rules []&CSSRule) {
 // https://drafts.csswg.org/cssom/#insert-a-css-rule
 pub fn (mut rule_list CSSRuleList) insert_a_css_rule_from_text(rule string, index u32, nested CSSRuleListNested, declared_namespaces map[string]bool) !u32 {
 	// 3. Set new rule to the results of performing parse a CSS rule on argument rule.
-	mut new_rule := parse_css_rule_stub(rule, declared_namespaces) or {
+	mut new_rule := parse_css_rule_with_parser(rule, declared_namespaces) or {
 		// 4. If new rule is a syntax error, and nested is set, perform the following substeps:
 		if nested == .yes {
 			// - Set declarations to the results of performing parse a CSS declaration block, on argument rule.
-			declarations := parse_css_property_declaration_block_stub(rule)
+			declarations := parse_css_property_declaration_block_with_parser(rule)
 
 			// - If declarations is empty, throw a SyntaxError exception.
 			if declarations.length() == 0 {
@@ -1271,10 +1271,10 @@ pub fn (mut rule CSSRule) set_selector_text(selector_text string) {
 	mut parsed_selectors := ?SelectorList(none)
 	if rule.parent_style_rule() != none {
 		// AD-HOC: If we're a nested style rule, then we need to parse the selector as relative and then adapt it with implicit &s.
-		parsed_selectors = parse_selector_for_nested_style_rule_stub(selector_text,
+		parsed_selectors = parse_selector_for_nested_style_rule_with_parser(selector_text,
 			declared_namespaces)
 	} else {
-		parsed_selectors = parse_selector_stub(selector_text, declared_namespaces)
+		parsed_selectors = parse_selector_with_parser(selector_text, declared_namespaces)
 	}
 
 	// 2. If the algorithm returns a non-null value replace the associated group of selectors with the returned value.
@@ -1563,7 +1563,7 @@ pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
 	}
 
 	// 3. Let parsed rule be the return value of invoking parse a rule with rule.
-	mut parsed_rule := parse_css_rule_stub(rule, sheet.declared_namespaces()) or {
+	mut parsed_rule := parse_css_rule_with_parser(rule, sheet.declared_namespaces()) or {
 		// 4. If parsed rule is a syntax error, return parsed rule.
 		return error('SyntaxError: Unable to parse CSS rule')
 	}
@@ -1609,7 +1609,7 @@ pub fn (mut sheet CSSStyleSheet) replace(text string) !&CSSStyleSheet {
 	}
 
 	sheet.disallow_modification = true
-	rules := parse_css_stylesheet_contents_stub(text, sheet.declared_namespaces())
+	rules := parse_css_stylesheet_contents_with_parser(text, sheet.declared_namespaces())
 	mut rules_without_import := []&CSSRule{}
 	for parsed_rule in rules {
 		if parsed_rule.type_ != .import_rule {
@@ -1632,7 +1632,7 @@ pub fn (mut sheet CSSStyleSheet) replace_sync(text string) ! {
 	}
 
 	// 2. Let rules be the result of running parse a stylesheet's contents from text.
-	rules := parse_css_stylesheet_contents_stub(text, sheet.declared_namespaces())
+	rules := parse_css_stylesheet_contents_with_parser(text, sheet.declared_namespaces())
 
 	// 3. If rules contains one or more @import rules, remove those rules from rules.
 	mut rules_without_import := []&CSSRule{}
@@ -2035,7 +2035,7 @@ pub fn (mut list StyleSheetList) add_a_css_style_sheet(mut sheet CSSStyleSheet) 
 pub fn (mut list StyleSheetList) create_a_css_style_sheet(css_text string, type_ string, owner_node ?&dom.Element, media string, title string, alternate StyleSheetListAlternate, origin_clean StyleSheetListOriginClean, location ?string, parent_style_sheet ?&CSSStyleSheet, owner_rule ?&CSSRule) &CSSStyleSheet {
 	// 1. Create a new CSS style sheet object and set its properties as specified.
 	// AD-HOC: The spec never tells us when to parse this style sheet, but the most logical place is here.
-	mut sheet := parse_css_stylesheet_stub(css_text, location)
+	mut sheet := parse_css_stylesheet_with_parser(css_text, location)
 
 	sheet.set_parent_css_style_sheet(parent_style_sheet)
 	sheet.set_owner_css_rule(owner_rule)
@@ -2170,7 +2170,7 @@ pub fn escape(identifier string) string {
 pub fn supports_property(property_name string, value string) bool {
 	// 1. If property is an ASCII case-insensitive match for any defined CSS property that the UA supports, or is a
 	//    custom property name string, and value successfully parses according to that property's grammar, return true.
-	if property := property_id_from_name_stub(property_name) {
+	if property := property_id_from_string(property_name) {
 		if parse_css_value(ParsingParams{}, value, property) != none {
 			return true
 		}
@@ -2302,39 +2302,6 @@ fn next_unique_anonymous_layer_name_stub() string {
 	return '<anonymous-layer>'
 }
 
-fn property_id_from_name_stub(property_name string) ?PropertyID {
-	return property_id_from_string(property_name)
-}
-
 fn is_a_custom_property_name_string(name string) bool {
 	return name.starts_with('--') && name.len > 2
-}
-
-fn parse_syntax_definition_stub(syntax string) bool {
-	component_values := parse_component_values_for_value_logic(syntax)
-	return parse_as_syntax(component_values) != none
-}
-
-fn parse_selector_stub(selector_text string, declared_namespaces map[string]bool) ?SelectorList {
-	return parse_selector_with_parser(selector_text, declared_namespaces)
-}
-
-fn parse_selector_for_nested_style_rule_stub(selector_text string, declared_namespaces map[string]bool) ?SelectorList {
-	return parse_selector_for_nested_style_rule_with_parser(selector_text, declared_namespaces)
-}
-
-fn parse_css_property_declaration_block_stub(block string) &CSSStyleProperties {
-	return parse_css_property_declaration_block_with_parser(block)
-}
-
-fn parse_css_rule_stub(rule_text string, declared_namespaces map[string]bool) ?&CSSRule {
-	return parse_css_rule_with_parser(rule_text, declared_namespaces)
-}
-
-fn parse_css_stylesheet_stub(css_text string, location ?string) &CSSStyleSheet {
-	return parse_css_stylesheet_with_parser(css_text, location)
-}
-
-fn parse_css_stylesheet_contents_stub(css_text string, declared_namespaces map[string]bool) []&CSSRule {
-	return parse_css_stylesheet_contents_with_parser(css_text, declared_namespaces)
 }

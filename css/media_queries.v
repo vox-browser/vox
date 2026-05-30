@@ -44,14 +44,6 @@ pub fn parse_css_supports(context ParsingParams, condition_text string) ?&Suppor
 	return Supports.create(condition)
 }
 
-fn parse_css_supports_stub(condition_text string) ?&Supports {
-	trimmed := condition_text.trim_space()
-	if trimmed.len == 0 {
-		return none
-	}
-	return Supports.create(BooleanExpression.create_general_enclosed(trimmed, .true_))
-}
-
 struct SupportsTokenStream {
 mut:
 	values []ComponentValue
@@ -220,7 +212,7 @@ fn parse_supports_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
 	if first_token.is_function_named('selector') {
 		selector := supports_component_values_to_string(first_token.function().value)
 		matches := parse_selector_with_parser(selector, map[string]bool{}) != none
-			&& !supports_selector_contains_unknown_webkit_pseudo_element_stub(selector)
+			&& !supports_selector_contains_unknown_webkit_pseudo_element(selector)
 		tokens = transaction
 		return BooleanExpression.create_supports_selector(selector, matches)
 	}
@@ -306,7 +298,7 @@ fn supports_component_values_to_string(values []ComponentValue) string {
 	return builder.str()
 }
 
-fn supports_selector_contains_unknown_webkit_pseudo_element_stub(selector string) bool {
+fn supports_selector_contains_unknown_webkit_pseudo_element(selector string) bool {
 	selector_list := parse_selector_with_parser(selector, map[string]bool{}) or { return false }
 	for item in selector_list.selectors {
 		if item.contains_unknown_webkit_pseudo_element() {
@@ -658,7 +650,7 @@ pub fn (media_list &MediaList) item(index u32) ?string {
 // https://www.w3.org/TR/cssom-1/#dom-medialist-appendmedium
 pub fn (mut media_list MediaList) append_medium(medium string) {
 	// 1. Let m be the result of parsing the given value.
-	parsed := parse_media_query_entry_stub(medium) or { return }
+	parsed := parse_media_query_entry(medium) or { return }
 
 	// 2. If m is null, then return.
 	serialized := parsed.text
@@ -678,7 +670,7 @@ pub fn (mut media_list MediaList) append_medium(medium string) {
 // https://www.w3.org/TR/cssom-1/#dom-medialist-deletemedium
 pub fn (mut media_list MediaList) delete_medium(medium string) ! {
 	// 1. Let m be the result of parsing the given value.
-	parsed := parse_media_query_entry_stub(medium) or { return }
+	parsed := parse_media_query_entry(medium) or { return }
 
 	// 2. If m is null, then return.
 	serialized := parsed.text
@@ -704,7 +696,7 @@ pub fn (mut media_list MediaList) delete_medium(medium string) ! {
 
 pub fn (mut media_list MediaList) evaluate(document &dom.Document) bool {
 	for i in 0 .. media_list.media.len {
-		media_list.media[i].matches = evaluate_media_query_entry_stub(media_list.media[i], document)
+		media_list.media[i].matches = evaluate_media_query_entry(media_list.media[i], document)
 	}
 	return media_list.matches()
 }
@@ -770,12 +762,7 @@ pub fn serialize_a_media_query_list_entries(media_queries []MediaQueryListEntry)
 	return serialized.join(', ')
 }
 
-fn media_query_text_matches_stub(text string) bool {
-	query := parse_media_query_from_text(text) or { return false }
-	return query.matches()
-}
-
-fn parse_media_query_entry_stub(medium string) ?MediaQueryListEntry {
+fn parse_media_query_entry(medium string) ?MediaQueryListEntry {
 	query := parse_media_query_from_text(medium) or { return none }
 	return MediaQueryListEntry{
 		text:    query.to_string()
@@ -783,11 +770,7 @@ fn parse_media_query_entry_stub(medium string) ?MediaQueryListEntry {
 	}
 }
 
-fn parse_media_query_list_stub(text string) []MediaQueryListEntry {
-	return media_query_entries_from_queries(parse_css_media_query_list_value_logic(text))
-}
-
-fn evaluate_media_query_entry_stub(entry MediaQueryListEntry, document &dom.Document) bool {
+fn evaluate_media_query_entry(entry MediaQueryListEntry, document &dom.Document) bool {
 	query := parse_media_query_from_text(entry.text) or { return false }
 	return query.evaluate(document)
 }
@@ -1096,7 +1079,7 @@ fn parse_media_feature_boolean(mut tokens SupportsTokenStream) ?&BooleanExpressi
 	}
 	tokens = transaction
 	text := '(${name.name})'
-	return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window_stub(name.name,
+	return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(name.name,
 		.is_true, none, none, none, none))
 }
 
@@ -1119,19 +1102,19 @@ fn parse_media_feature_plain(mut tokens SupportsTokenStream) ?&BooleanExpression
 		.normal {
 			text := '(${name.name}: ${value.text})'
 			return BooleanExpression.create_general_enclosed(text,
-				evaluate_media_feature_without_window_stub(name.name, .exact_value, value,
+				evaluate_media_feature_without_window(name.name, .exact_value, value,
 				none, none, none))
 		}
 		.min {
 			text := '(min-${name.name}: ${value.text})'
 			return BooleanExpression.create_general_enclosed(text,
-				evaluate_media_feature_without_window_stub(name.name, .min_value, value,
+				evaluate_media_feature_without_window(name.name, .min_value, value,
 				none, none, none))
 		}
 		.max {
 			text := '(max-${name.name}: ${value.text})'
 			return BooleanExpression.create_general_enclosed(text,
-				evaluate_media_feature_without_window_stub(name.name, .max_value, value,
+				evaluate_media_feature_without_window(name.name, .max_value, value,
 				none, none, none))
 		}
 	}
@@ -1151,7 +1134,7 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 					tokens = transaction
 					text := '(${name.name} ${media_feature_comparison_to_string(comparison)} ${value.text})'
 					return BooleanExpression.create_general_enclosed(text,
-						evaluate_media_feature_without_window_stub(name.name, .half_range_query_left,
+						evaluate_media_feature_without_window(name.name, .half_range_query_left,
 						value, comparison, none, none))
 				}
 			}
@@ -1179,7 +1162,7 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 		tokens = transaction
 		text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name})'
 		return BooleanExpression.create_general_enclosed(text,
-			evaluate_media_feature_without_window_stub(maybe_name.name, .half_range_query_right,
+			evaluate_media_feature_without_window(maybe_name.name, .half_range_query_right,
 			left_value, left_comparison, none, none))
 	}
 
@@ -1195,7 +1178,7 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 	tokens = transaction
 	text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name} ${media_feature_comparison_to_string(right_comparison)} ${right_value.text})'
 	return BooleanExpression.create_general_enclosed(text,
-		evaluate_media_feature_without_window_stub(maybe_name.name, .range, left_value,
+		evaluate_media_feature_without_window(maybe_name.name, .range, left_value,
 		left_comparison, right_comparison, right_value))
 }
 
@@ -1490,8 +1473,8 @@ enum MediaFeatureEvalKind {
 	range
 }
 
-fn evaluate_media_feature_without_window_stub(feature_name string, kind MediaFeatureEvalKind, value ?MediaFeatureValueLocal, comparison ?MediaFeatureComparison, right_comparison ?MediaFeatureComparison, right_value ?MediaFeatureValueLocal) MatchResult {
-	queried_value := query_media_feature_without_window_stub(feature_name) or { return .unknown }
+fn evaluate_media_feature_without_window(feature_name string, kind MediaFeatureEvalKind, value ?MediaFeatureValueLocal, comparison ?MediaFeatureComparison, right_comparison ?MediaFeatureComparison, right_value ?MediaFeatureValueLocal) MatchResult {
+	queried_value := query_media_feature_without_window(feature_name) or { return .unknown }
 	match kind {
 		.is_true {
 			return evaluate_media_feature_value_as_boolean(feature_name, queried_value)
@@ -1532,7 +1515,7 @@ fn evaluate_media_feature_without_window_stub(feature_name string, kind MediaFea
 	}
 }
 
-fn query_media_feature_without_window_stub(feature_name string) ?MediaFeatureValueLocal {
+fn query_media_feature_without_window(feature_name string) ?MediaFeatureValueLocal {
 	return match feature_name {
 		'any-hover', 'hover' { media_feature_ident_value('hover') }
 		'any-pointer', 'pointer' { media_feature_ident_value('fine') }
