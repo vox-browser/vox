@@ -587,7 +587,7 @@ pub fn CSSRule.create_import(url string, document ?&dom.Document, layer ?string,
 	rule.media = media
 	if layer_name := layer {
 		if layer_name.len == 0 {
-			rule.layer_internal = next_unique_anonymous_layer_name_stub()
+			rule.layer_internal = next_unique_anonymous_layer_name()
 		} else {
 			rule.layer_internal = layer_name
 		}
@@ -2297,9 +2297,12 @@ fn cssom_indent(indent_levels int) string {
 	return '  '.repeat(indent_levels)
 }
 
-fn next_unique_anonymous_layer_name_stub() string {
-	// Stub for CSSLayerBlockRule::next_unique_anonymous_layer_name().
-	return '<anonymous-layer>'
+fn next_unique_anonymous_layer_name() string {
+	unsafe {
+		static anonymous_layer_id := u64(0)
+		anonymous_layer_id++
+		return '#${anonymous_layer_id}'
+	}
 }
 
 fn is_a_custom_property_name_string(name string) bool {

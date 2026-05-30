@@ -1185,7 +1185,7 @@ fn (mut parser RuleSelectorParser) convert_to_layer_rule(rule AtRule, nested Par
 		mut layer_rule := CSSRule.create_grouping(.layer_block, CSSRuleList.create(child_rules))
 		layer_rule.layer = layer_name
 		layer_rule.layer_internal = if layer_name.len == 0 {
-			next_unique_anonymous_layer_name_stub()
+			next_unique_anonymous_layer_name()
 		} else {
 			layer_name
 		}

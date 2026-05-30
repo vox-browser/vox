@@ -283,7 +283,7 @@ pub fn CSSRule.create_layer_block(name string, rules &CSSRuleList) &CSSRule {
 	mut rule := CSSRule.create_grouping(.layer_block, rules)
 	rule.layer = name
 	rule.layer_internal = if name.len == 0 {
-		next_unique_anonymous_layer_name_stub()
+		next_unique_anonymous_layer_name()
 	} else {
 		name
 	}
