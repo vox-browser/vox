@@ -103,12 +103,14 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.mask_image { 'mask-image' }
 		.mask_type { 'mask-type' }
 		.math_depth { 'math-depth' }
+		.math_shift { 'math-shift' }
 		.math_style { 'math-style' }
 		.mix_blend_mode { 'mix-blend-mode' }
 		.object_fit { 'object-fit' }
 		.opacity { 'opacity' }
 		.order { 'order' }
 		.orphans { 'orphans' }
+		.overflow_wrap { 'overflow-wrap' }
 		.outline_color { 'outline-color' }
 		.outline_offset { 'outline-offset' }
 		.outline_style { 'outline-style' }
@@ -128,6 +130,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.stroke_opacity { 'stroke-opacity' }
 		.rotate { 'rotate' }
 		.scale { 'scale' }
+		.scroll_behavior { 'scroll-behavior' }
 		.scrollbar_width { 'scrollbar-width' }
 		.scroll_timeline_name { 'scroll-timeline-name' }
 		.table_layout { 'table-layout' }
@@ -205,9 +208,9 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
 		.transform_box, .transform_style, .translate, .unicode_bidi, .user_select, .touch_action,
 		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .contain, .container_type,
-		.text_decoration_line, .text_decoration_style, .paint_order, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing, .z_index {
+		.text_decoration_line, .text_decoration_style, .paint_order, .overflow_wrap,
+		.scroll_behavior, .math_shift, .visibility, .webkit_text_fill_color, .white_space_collapse,
+		.white_space_trim, .word_break, .word_spacing, .z_index {
 			true
 		}
 	}
@@ -245,22 +248,22 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform,
 		.transform_box, .transform_style, .translate, .unicode_bidi, .user_select, .touch_action,
 		.writing_mode, .view_transition_name, .scrollbar_width, .resize, .contain, .container_type,
-		.text_decoration_line, .text_decoration_style, .paint_order, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing, .z_index {
+		.text_decoration_line, .text_decoration_style, .paint_order, .overflow_wrap,
+		.scroll_behavior, .math_shift, .visibility, .webkit_text_fill_color, .white_space_collapse,
+		.white_space_trim, .word_break, .word_spacing, .z_index {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 144
+pub const number_of_longhand_properties = 147
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .paint_order
+	return .math_shift
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -409,6 +412,9 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		141 { PropertyID.text_decoration_line }
 		142 { PropertyID.text_decoration_style }
 		143 { PropertyID.paint_order }
+		144 { PropertyID.overflow_wrap }
+		145 { PropertyID.scroll_behavior }
+		146 { PropertyID.math_shift }
 		else { none }
 	}
 }

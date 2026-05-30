@@ -241,6 +241,12 @@ pub enum WordBreak {
 	break_word
 }
 
+pub enum OverflowWrap {
+	normal
+	anywhere
+	break_word
+}
+
 pub enum LineStyle {
 	none_
 	hidden
@@ -737,6 +743,11 @@ pub enum MathStyle {
 	compact
 }
 
+pub enum MathShift {
+	normal
+	compact
+}
+
 pub enum Positioning {
 	static_
 	relative
@@ -767,6 +778,11 @@ pub enum ScrollbarWidth {
 	auto_
 	thin
 	none_
+}
+
+pub enum ScrollBehavior {
+	auto_
+	smooth
 }
 
 pub enum Resize {
@@ -1081,6 +1097,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.math_depth {
 			'0'
 		}
+		.math_shift {
+			'normal'
+		}
 		.math_style {
 			'normal'
 		}
@@ -1113,6 +1132,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		}
 		.overflow_x, .overflow_y {
 			'visible'
+		}
+		.overflow_wrap {
+			'normal'
 		}
 		.pointer_events {
 			'auto'
@@ -1222,6 +1244,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.resize {
 			'none'
 		}
+		.scroll_behavior {
+			'auto'
+		}
 		.webkit_text_fill_color {
 			'currentcolor'
 		}
@@ -1264,11 +1289,11 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
 		.font_variant_emoji, .font_variant_position, .font_weight, .letter_spacing,
 		.image_rendering, .list_style_image, .list_style_position, .math_depth, .math_style,
-		.orphans, .pointer_events, .shape_rendering, .stroke_linecap, .stroke_linejoin,
-		.stroke_opacity, .text_align, .text_anchor, .text_decoration_line, .paint_order,
-		.text_justify, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
-		.visibility, .webkit_text_fill_color, .white_space_collapse, .word_break, .word_spacing,
-		.writing_mode, .border_collapse {
+		.math_shift, .orphans, .overflow_wrap, .pointer_events, .shape_rendering, .stroke_linecap,
+		.stroke_linejoin, .stroke_opacity, .text_align, .text_anchor, .text_decoration_line,
+		.paint_order, .text_justify, .text_rendering, .text_transform, .text_wrap_mode,
+		.text_wrap_style, .visibility, .webkit_text_fill_color, .white_space_collapse, .word_break,
+		.word_spacing, .writing_mode, .border_collapse {
 			true
 		}
 		else {
@@ -1303,15 +1328,16 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.font_language_override, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
 		.font_variant_position, .flex_direction, .flex_wrap, .align_content, .align_items,
 		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
-		.image_rendering, .isolation, .list_style_position, .mask_type, .math_style,
-		.mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y, .pointer_events,
-		.position, .position_anchor, .scroll_timeline_name, .shape_rendering, .stroke_linecap,
-		.stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
-		.text_decoration_line, .text_decoration_style, .paint_order, .text_rendering,
-		.text_transform, .text_wrap_mode, .text_wrap_style, .transform_box, .transform_style,
-		.transition_behavior, .transition_property, .touch_action, .unicode_bidi, .user_select,
-		.view_timeline_name, .view_transition_name, .visibility, .white_space_collapse,
-		.white_space_trim, .word_break, .writing_mode, .scrollbar_width, .resize {
+		.image_rendering, .isolation, .list_style_position, .mask_type, .math_style, .math_shift,
+		.mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y, .overflow_wrap,
+		.pointer_events, .position, .position_anchor, .scroll_timeline_name, .scroll_behavior,
+		.shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align,
+		.text_anchor, .text_justify, .text_overflow, .text_decoration_line, .text_decoration_style,
+		.paint_order, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
+		.transform_box, .transform_style, .transition_behavior, .transition_property,
+		.touch_action, .unicode_bidi, .user_select, .view_timeline_name, .view_transition_name,
+		.visibility, .white_space_collapse, .white_space_trim, .word_break, .writing_mode,
+		.scrollbar_width, .resize {
 			false
 		}
 	}
@@ -1345,18 +1371,18 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
 		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
 		.line_height, .list_style_image, .list_style_position, .mask_image, .mask_type,
-		.math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color,
-		.outline_offset, .outline_style, .overflow_x, .overflow_y, .pointer_events, .position,
-		.position_anchor, .scroll_timeline_name, .shape_rendering, .table_layout,
-		.shape_image_threshold, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity,
-		.rotate, .scale, .transform, .transform_box, .transform_style, .text_align, .text_anchor,
-		.text_decoration_line, .text_decoration_style, .paint_order, .text_justify, .text_overflow,
-		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.translate, .touch_action, .unicode_bidi, .user_select, .view_timeline_inset,
-		.view_timeline_name, .view_transition_name, .visibility, .webkit_text_fill_color,
-		.white_space_collapse, .white_space_trim, .word_break, .writing_mode, .scrollbar_width,
-		.resize, .z_index {
+		.math_shift, .math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .overflow_x, .overflow_y, .overflow_wrap,
+		.pointer_events, .position, .position_anchor, .scroll_timeline_name, .scroll_behavior,
+		.shape_rendering, .table_layout, .shape_image_threshold, .stop_opacity, .stroke_linecap,
+		.stroke_linejoin, .stroke_opacity, .rotate, .scale, .transform, .transform_box,
+		.transform_style, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style,
+		.paint_order, .text_justify, .text_overflow, .text_rendering, .text_transform,
+		.text_wrap_mode, .text_wrap_style, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .translate,
+		.touch_action, .unicode_bidi, .user_select, .view_timeline_inset, .view_timeline_name,
+		.view_transition_name, .visibility, .webkit_text_fill_color, .white_space_collapse,
+		.white_space_trim, .word_break, .writing_mode, .scrollbar_width, .resize, .z_index {
 			false
 		}
 	}
@@ -2045,6 +2071,17 @@ pub fn (c &ComputedProperties) word_break() WordBreak {
 		.break_all { WordBreak.break_all }
 		.break_word { WordBreak.break_word }
 		else { WordBreak.normal }
+	}
+}
+
+pub fn (c &ComputedProperties) overflow_wrap() OverflowWrap {
+	value := c.property(.overflow_wrap, .yes) or { return .normal }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .normal }
+	return match keyword {
+		.normal { OverflowWrap.normal }
+		.anywhere { OverflowWrap.anywhere }
+		.break_word { OverflowWrap.break_word }
+		else { OverflowWrap.normal }
 	}
 }
 
@@ -3663,6 +3700,16 @@ pub fn (c &ComputedProperties) math_style() MathStyle {
 	return .normal
 }
 
+pub fn (c &ComputedProperties) math_shift() MathShift {
+	value := c.property(.math_shift, .yes) or { return .normal }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .normal }
+	return match keyword {
+		.normal { MathShift.normal }
+		.compact { MathShift.compact }
+		else { MathShift.normal }
+	}
+}
+
 pub fn (c &ComputedProperties) math_depth() int {
 	if value := c.property(.math_depth, .yes) {
 		if integer := computed_interpolation_integer_from_dom_style_value(value) {
@@ -3786,6 +3833,16 @@ pub fn (c &ComputedProperties) scrollbar_width() ScrollbarWidth {
 		.thin { ScrollbarWidth.thin }
 		.none_ { ScrollbarWidth.none_ }
 		else { ScrollbarWidth.auto_ }
+	}
+}
+
+pub fn (c &ComputedProperties) scroll_behavior() ScrollBehavior {
+	value := c.property(.scroll_behavior, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { ScrollBehavior.auto_ }
+		.smooth { ScrollBehavior.smooth }
+		else { ScrollBehavior.auto_ }
 	}
 }
 
@@ -3930,10 +3987,10 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
 		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
 		.animation_timeline, .animation_timing_function, .direction, .font_feature_settings,
-		.font_variation_settings, .math_depth, .math_style, .contain, .container_type,
-		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .unicode_bidi, .view_timeline_inset,
-		.view_timeline_name, .writing_mode, .resize {
+		.font_variation_settings, .math_depth, .math_style, .contain, .container_type, .math_shift,
+		.scroll_behavior, .scroll_timeline_name, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
+		.view_timeline_inset, .view_timeline_name, .writing_mode, .resize {
 			.none_
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
@@ -3958,12 +4015,12 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
 		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
 		.list_style_image, .list_style_position, .mask_image, .mask_type, .mix_blend_mode,
-		.object_fit, .overflow_x, .overflow_y, .pointer_events, .position, .position_anchor,
-		.paint_order, .shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout,
-		.text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify,
-		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
-		.transform_box, .transform_style, .touch_action, .user_select, .view_transition_name,
-		.white_space_collapse, .white_space_trim, .word_break {
+		.object_fit, .overflow_x, .overflow_y, .overflow_wrap, .pointer_events, .position,
+		.position_anchor, .paint_order, .shape_rendering, .stroke_linecap, .stroke_linejoin,
+		.table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style,
+		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
+		.text_wrap_style, .transform_box, .transform_style, .touch_action, .user_select,
+		.view_transition_name, .white_space_collapse, .white_space_trim, .word_break {
 			.discrete
 		}
 	}
@@ -4699,7 +4756,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.transform, .transform_box, .transition_behavior, .transition_delay, .transition_duration,
 		.transition_property, .transition_timing_function, .translate, .touch_action, .user_select,
 		.view_timeline_inset, .view_timeline_name, .view_transition_name, .scrollbar_width,
-		.resize, .text_decoration_line, .text_decoration_style, .paint_order, .text_overflow,
+		.scroll_behavior, .resize, .text_decoration_line, .text_decoration_style, .text_overflow,
 		.text_rendering, .webkit_text_fill_color, .z_index {
 			false
 		}
@@ -4710,11 +4767,12 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.font_style, .font_variant_caps, .font_variant_emoji, .font_variant_position,
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
 		.justify_items, .justify_self, .appearance, .column_span, .contain, .container_type,
-		.isolation, .letter_spacing, .list_style_image, .list_style_position, .order, .orphans,
-		.overflow_x, .overflow_y, .position, .position_anchor, .shape_rendering, .table_layout,
-		.text_align, .text_anchor, .text_justify, .text_transform, .text_wrap_mode,
-		.text_wrap_style, .transform_style, .unicode_bidi, .visibility, .white_space_collapse,
-		.white_space_trim, .word_break, .word_spacing, .writing_mode {
+		.isolation, .letter_spacing, .list_style_image, .list_style_position, .math_shift, .order,
+		.orphans, .overflow_wrap, .overflow_x, .overflow_y, .paint_order, .position,
+		.position_anchor, .shape_rendering, .table_layout, .text_align, .text_anchor,
+		.text_justify, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
+		.unicode_bidi, .visibility, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing, .writing_mode {
 			true
 		}
 	}
@@ -4746,18 +4804,18 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
 		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
 		.letter_spacing, .line_height, .list_style_image, .list_style_position, .mask_type,
-		.math_depth, .math_style, .object_fit, .order, .orphans, .outline_color, .outline_offset,
-		.outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events, .paint_order,
-		.shape_rendering, .position, .position_anchor, .scroll_timeline_name,
-		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
-		.stroke_opacity, .table_layout, .text_align, .text_anchor, .text_decoration_line,
-		.text_decoration_style, .text_justify, .text_overflow, .text_rendering, .text_transform,
-		.text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .touch_action,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .unicode_bidi, .user_select, .view_timeline_inset,
-		.view_timeline_name, .view_transition_name, .writing_mode, .scrollbar_width, .resize,
-		.visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim,
-		.word_break, .word_spacing {
+		.math_depth, .math_shift, .math_style, .object_fit, .order, .orphans, .outline_color,
+		.outline_offset, .outline_style, .outline_width, .overflow_wrap, .overflow_x, .overflow_y,
+		.pointer_events, .paint_order, .scroll_behavior, .shape_rendering, .position,
+		.position_anchor, .scroll_timeline_name, .shape_image_threshold, .stop_color,
+		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .table_layout,
+		.text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify,
+		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
+		.transform_box, .transform_style, .touch_action, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
+		.user_select, .view_timeline_inset, .view_timeline_name, .view_transition_name,
+		.writing_mode, .scrollbar_width, .resize, .visibility, .webkit_text_fill_color,
+		.white_space_collapse, .white_space_trim, .word_break, .word_spacing {
 			false
 		}
 	}
@@ -4803,9 +4861,10 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
 		.justify_items, .justify_self, .appearance, .column_span, .contain, .container_type,
 		.image_rendering, .isolation, .letter_spacing, .line_height, .list_style_image,
-		.list_style_position, .mask_type, .math_depth, .math_style, .object_fit, .order, .orphans,
-		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
-		.pointer_events, .shape_rendering, .position, .position_anchor, .scroll_timeline_name,
+		.list_style_position, .mask_type, .math_depth, .math_shift, .math_style, .object_fit,
+		.order, .orphans, .outline_color, .outline_offset, .outline_style, .outline_width,
+		.overflow_wrap, .overflow_x, .overflow_y, .pointer_events, .scroll_behavior,
+		.shape_rendering, .position, .position_anchor, .scroll_timeline_name,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
 		.stroke_opacity, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
 		.text_decoration_line, .text_decoration_style, .paint_order, .text_rendering,

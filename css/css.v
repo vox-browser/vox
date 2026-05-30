@@ -178,6 +178,9 @@ pub enum PropertyID {
 	text_decoration_line
 	text_decoration_style
 	paint_order
+	overflow_wrap
+	scroll_behavior
+	math_shift
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

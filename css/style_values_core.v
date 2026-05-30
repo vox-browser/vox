@@ -339,6 +339,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'list-style-image' {
 			PropertyID.list_style_image
 		}
+		'math-shift' {
+			PropertyID.math_shift
+		}
 		'mask-image' {
 			PropertyID.mask_image
 		}
@@ -384,6 +387,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'overflow-y' {
 			PropertyID.overflow_y
 		}
+		'overflow-wrap', 'word-wrap' {
+			PropertyID.overflow_wrap
+		}
 		'paint-order' {
 			PropertyID.paint_order
 		}
@@ -422,6 +428,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'resize' {
 			PropertyID.resize
+		}
+		'scroll-behavior' {
+			PropertyID.scroll_behavior
 		}
 		'scale' {
 			PropertyID.scale
@@ -611,8 +620,8 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
 		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .transform_box,
 		.touch_action, .writing_mode, .scrollbar_width, .resize, .contain, .container_type,
-		.text_decoration_line, .text_decoration_style, .paint_order, .isolation,
-		.list_style_position, .mask_type {
+		.text_decoration_line, .text_decoration_style, .paint_order, .overflow_wrap,
+		.scroll_behavior, .math_shift, .isolation, .list_style_position, .mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
@@ -846,6 +855,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.overflow_x, .overflow_y {
 			lowercase_value in ['auto', 'clip', 'hidden', 'scroll', 'visible', 'overlay']
 		}
+		.overflow_wrap {
+			lowercase_value in ['anywhere', 'break-word', 'normal']
+		}
 		.pointer_events {
 			lowercase_value in ['auto', 'all', 'none']
 		}
@@ -1031,6 +1043,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.math_style {
 			lowercase_value in ['normal', 'compact']
 		}
+		.math_shift {
+			lowercase_value in ['normal', 'compact']
+		}
 		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,
 		.stroke_opacity {
 			false
@@ -1049,6 +1064,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.transition_delay, .transition_duration {
 			false
+		}
+		.scroll_behavior {
+			lowercase_value in ['auto', 'smooth']
 		}
 	}
 }
@@ -1072,13 +1090,14 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance,
 		.column_span, .image_rendering, .isolation, .list_style_image, .list_style_position,
 		.mask_image, .mask_type, .mix_blend_mode, .object_fit, .outline_color, .outline_style,
-		.overflow_x, .overflow_y, .paint_order, .pointer_events, .position, .shape_rendering,
-		.stop_color, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor,
-		.text_decoration_line, .text_decoration_style, .text_justify, .text_overflow,
-		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,
-		.transform_style, .touch_action, .writing_mode, .scrollbar_width, .resize, .contain,
-		.container_type, .unicode_bidi, .user_select, .view_timeline_inset, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break {
+		.overflow_x, .overflow_y, .overflow_wrap, .paint_order, .pointer_events, .position,
+		.shape_rendering, .stop_color, .stroke_linecap, .stroke_linejoin, .table_layout,
+		.text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify,
+		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
+		.transform_box, .transform_style, .touch_action, .writing_mode, .scrollbar_width, .resize,
+		.scroll_behavior, .math_shift, .contain, .container_type, .unicode_bidi, .user_select,
+		.view_timeline_inset, .visibility, .webkit_text_fill_color, .white_space_collapse,
+		.white_space_trim, .word_break {
 			false
 		}
 		.color_scheme {
@@ -2214,6 +2233,7 @@ pub enum Keyword {
 	keep_all
 	break_all
 	break_word
+	anywhere
 	small_caps
 	all_small_caps
 	petite_caps
@@ -2566,6 +2586,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.keep_all { 'keep-all' }
 		.break_all { 'break-all' }
 		.break_word { 'break-word' }
+		.anywhere { 'anywhere' }
 		.small_caps { 'small-caps' }
 		.all_small_caps { 'all-small-caps' }
 		.petite_caps { 'petite-caps' }
@@ -2907,6 +2928,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'keep-all' { Keyword.keep_all }
 		'break-all' { Keyword.break_all }
 		'break-word' { Keyword.break_word }
+		'anywhere' { Keyword.anywhere }
 		'small-caps' { Keyword.small_caps }
 		'all-small-caps' { Keyword.all_small_caps }
 		'petite-caps' { Keyword.petite_caps }

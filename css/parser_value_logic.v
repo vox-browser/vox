@@ -265,6 +265,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.overflow_x, .overflow_y {
 			return parser.parse_overflow_value(mut tokens)
 		}
+		.overflow_wrap {
+			return parser.parse_overflow_wrap_value(mut tokens)
+		}
 		.paint_order {
 			return parser.parse_paint_order_value(mut tokens)
 		}
@@ -425,6 +428,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
+		.math_shift {
+			return parser.parse_math_shift_value(mut tokens)
+		}
 		.math_style {
 			return parser.parse_math_style_value(mut tokens)
 		}
@@ -451,6 +457,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.scroll_timeline_name {
 			return parser.parse_timeline_name_value(mut tokens)
+		}
+		.scroll_behavior {
+			return parser.parse_scroll_behavior_value(mut tokens)
 		}
 		.stroke_linecap {
 			return parser.parse_stroke_linecap_value(mut tokens)
@@ -1297,6 +1306,11 @@ fn (mut parser Parser) parse_overflow_value(mut tokens ComponentValueStream) ?St
 		'overlay'])
 }
 
+fn (mut parser Parser) parse_overflow_wrap_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['anywhere', 'break-word', 'normal'])
+}
+
 fn (mut parser Parser) parse_pointer_events_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'all', 'none'])
@@ -1652,6 +1666,11 @@ fn (mut parser Parser) parse_writing_mode_value(mut tokens ComponentValueStream)
 fn (mut parser Parser) parse_scrollbar_width_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'thin', 'none'])
+}
+
+fn (mut parser Parser) parse_scroll_behavior_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'smooth'])
 }
 
 fn (mut parser Parser) parse_resize_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -2493,6 +2512,11 @@ fn (mut parser Parser) parse_math_style_value(mut tokens ComponentValueStream) ?
 	}
 	tokens = transaction
 	return StyleValue(KeywordStyleValue.create(keyword))
+}
+
+fn (mut parser Parser) parse_math_shift_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['normal', 'compact'])
 }
 
 fn (mut parser Parser) parse_font_feature_settings_value(mut tokens ComponentValueStream) ?StyleValue {
