@@ -646,15 +646,17 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 	if rule.type_ == .import_rule {
 		if mut parent := rule.parent_style_sheet {
 			parent.add_critical_subresource(rule)
-			if rule.loading_state == .unloaded {
-				rule.fetch()
-			}
 		}
 		if mut loaded := rule.loaded_style_sheet {
 			if parent := parent_style_sheet {
 				for owner in parent.owning_documents_or_shadow_roots {
 					loaded.add_owning_document_or_shadow_root(owner)
 				}
+			}
+		}
+		if rule.loading_state == .unloaded {
+			if _ := parent_style_sheet {
+				rule.fetch()
 			}
 		}
 	}
@@ -1435,7 +1437,7 @@ pub fn css_style_sheet_construct(options ?CSSStyleSheetInit, associated_document
 
 	// 2. Set sheet's location to the base URL of the associated Document for the current principal global object.
 	if document := associated_document {
-		sheet.base.location = document.url.to_string()
+		sheet.base.location = document.base_url().to_string()
 	}
 
 	// 3. Set sheet's stylesheet base URL to the baseURL attribute value from options.
@@ -1444,7 +1446,19 @@ pub fn css_style_sheet_construct(options ?CSSStyleSheetInit, associated_document
 			if base_url.len == 0 {
 				return error('NotAllowedError: Constructed style sheets must have a valid base URL')
 			}
-			sheet.base_url = base_url
+			parsed_base_url := if location := sheet.base.location {
+				dom.dom_url_parse(base_url, dom.URL{
+					value: location
+				}, 'utf-8')
+			} else {
+				dom.dom_url_parse(base_url, dom.URL{
+					value: ''
+				}, 'utf-8')
+			}
+			resolved_base_url := parsed_base_url or {
+				return error('NotAllowedError: Constructed style sheets must have a valid base URL')
+			}
+			sheet.base_url = resolved_base_url.to_string()
 		}
 	}
 
@@ -1837,22 +1851,16 @@ pub fn (sheet &CSSStyleSheet) source_text() ?string {
 }
 
 pub fn (mut sheet CSSStyleSheet) add_critical_subresource(subresource &CSSRule) {
-	for existing in sheet.critical_subresources {
-		if existing == subresource {
-			return
-		}
-	}
 	sheet.critical_subresources << subresource
 }
 
 pub fn (mut sheet CSSStyleSheet) remove_critical_subresource(subresource &CSSRule) {
-	mut kept := []&CSSRule{}
-	for existing in sheet.critical_subresources {
-		if existing != subresource {
-			kept << existing
+	for index, existing in sheet.critical_subresources {
+		if existing == subresource {
+			sheet.critical_subresources.delete(index)
+			break
 		}
 	}
-	sheet.critical_subresources = kept
 	sheet.check_if_loading_completed()
 }
 
