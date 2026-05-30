@@ -186,7 +186,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 			false
 		}
 		.color_scheme {
-			lowercase_value !in ['normal', 'only']
+			// color-scheme accepts `light` and `dark` as keywords, but excludes
+			// them from the <custom-ident> branch.
+			lowercase_value !in ['normal', 'light', 'dark', 'only']
 		}
 		.content_visibility {
 			false
