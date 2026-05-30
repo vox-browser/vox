@@ -237,6 +237,9 @@ fn (mut parser Parser) parse_css_wide_keyword_value(mut tokens ComponentValueStr
 }
 
 fn (mut parser Parser) parse_builtin_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parser.parse_easing_value(mut tokens) {
+		return value
+	}
 	if value := parser.parse_keyword_value(mut tokens) {
 		return value
 	}
@@ -297,6 +300,11 @@ fn (mut parser Parser) parse_number(mut tokens ComponentValueStream) ?Number {
 		return none
 	}
 	return component_value.token().number()
+}
+
+fn (mut parser Parser) parse_easing_number_value(mut tokens ComponentValueStream) ?StyleValue {
+	number := parser.parse_number(mut tokens) or { return none }
+	return StyleValue(NumberStyleValue.create(number.value()))
 }
 
 fn (mut parser Parser) parse_percentage_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -431,6 +439,255 @@ fn (mut parser Parser) parse_string_value(mut tokens ComponentValueStream) ?Stri
 		return none
 	}
 	return StringStyleValue.create(component_value.token().string_value())
+}
+
+fn parse_a_comma_separated_list_of_component_values_for_value_logic(values []ComponentValue) [][]ComponentValue {
+	mut lists := [][]ComponentValue{}
+	mut current := []ComponentValue{}
+	for value in values {
+		if value.is(.comma) {
+			lists << current
+			current = []ComponentValue{}
+			continue
+		}
+		current << value
+	}
+	lists << current
+	return lists
+}
+
+fn remove_whitespace_from_component_values(values []ComponentValue) []ComponentValue {
+	mut result := []ComponentValue{}
+	for value in values {
+		if value.is(.whitespace) {
+			continue
+		}
+		result << value
+	}
+	return result
+}
+
+fn keyword_to_step_position_for_value_logic(name string) ?StepPosition {
+	return match to_ascii_lowercase(name) {
+		'jump-start' { StepPosition.jump_start }
+		'jump-end' { StepPosition.jump_end }
+		'jump-none' { StepPosition.jump_none }
+		'jump-both' { StepPosition.jump_both }
+		'start' { StepPosition.start }
+		'end' { StepPosition.end }
+		else { none }
+	}
+}
+
+fn easing_integer_from_style_value(value StyleValue) ?i64 {
+	return match value {
+		IntegerStyleValue { value.integer() }
+		else { none }
+	}
+}
+
+fn easing_number_from_style_value(value StyleValue) ?f64 {
+	return match value {
+		NumberStyleValue { value.number() }
+		else { none }
+	}
+}
+
+fn (mut parser Parser) parse_easing_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+
+	transaction.consume_whitespace()
+
+	part := transaction.consume() or { return none }
+
+	if part.is(.ident) {
+		name := part.token().ident()
+		maybe_simple_easing := if equals_ignoring_ascii_case(name, 'step-start') {
+			?EasingStyleValue(EasingStyleValue.create(EasingStyleValueFunction(EasingSteps{
+				number_of_intervals: StyleValue(IntegerStyleValue.create(1))
+				position:            .start
+			})))
+		} else if equals_ignoring_ascii_case(name, 'step-end') {
+			?EasingStyleValue(EasingStyleValue.create(EasingStyleValueFunction(EasingSteps{
+				number_of_intervals: StyleValue(IntegerStyleValue.create(1))
+				position:            .end
+			})))
+		} else {
+			?EasingStyleValue(none)
+		}
+
+		easing := maybe_simple_easing or { return none }
+
+		tokens = transaction
+		return StyleValue(easing)
+	}
+
+	if !part.is_function() {
+		return none
+	}
+
+	mut comma_separated_arguments :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(part.function().value)
+
+	// Remove whitespace
+	for i in 0 .. comma_separated_arguments.len {
+		comma_separated_arguments[i] =
+			remove_whitespace_from_component_values(comma_separated_arguments[i])
+	}
+
+	name := part.function().name
+
+	if equals_ignoring_ascii_case(name, 'linear') {
+		// linear() = linear( [ <number> && <percentage>{0,2} ]# )
+		mut stops := []EasingLinearStop{}
+		for argument in comma_separated_arguments {
+			mut argument_tokens := ComponentValueStream.new(argument)
+
+			mut output := ?StyleValue(none)
+			mut first_input := ?StyleValue(none)
+			mut second_input := ?StyleValue(none)
+
+			if maybe_output := parser.parse_easing_number_value(mut argument_tokens) {
+				output = maybe_output
+			}
+
+			if maybe_first_input := parser.parse_percentage_value(mut argument_tokens) {
+				first_input = maybe_first_input
+				if maybe_second_input := parser.parse_percentage_value(mut argument_tokens) {
+					second_input = maybe_second_input
+				}
+			}
+
+			if maybe_output := parser.parse_easing_number_value(mut argument_tokens) {
+				if _ := output {
+					return none
+				}
+				output = maybe_output
+			}
+
+			resolved_output := output or { return none }
+			if argument_tokens.has_more_tokens() {
+				return none
+			}
+
+			stops << EasingLinearStop{
+				output: resolved_output
+				input:  first_input
+			}
+			if resolved_second_input := second_input {
+				stops << EasingLinearStop{
+					output: resolved_output
+					input:  resolved_second_input
+				}
+			}
+		}
+
+		if stops.len == 0 {
+			return none
+		}
+
+		tokens = transaction
+		return StyleValue(EasingStyleValue.create(EasingStyleValueFunction(EasingLinear{
+			stops: stops
+		})))
+	}
+
+	if equals_ignoring_ascii_case(name, 'cubic-bezier') {
+		if comma_separated_arguments.len != 4 {
+			return none
+		}
+
+		for argument in comma_separated_arguments {
+			if argument.len != 1 {
+				return none
+			}
+		}
+
+		mut argument_tokens_0 := ComponentValueStream.new(comma_separated_arguments[0])
+		mut argument_tokens_1 := ComponentValueStream.new(comma_separated_arguments[1])
+		mut argument_tokens_2 := ComponentValueStream.new(comma_separated_arguments[2])
+		mut argument_tokens_3 := ComponentValueStream.new(comma_separated_arguments[3])
+		x1 := parser.parse_easing_number_value(mut argument_tokens_0) or { return none }
+		y1 := parser.parse_easing_number_value(mut argument_tokens_1) or { return none }
+		x2 := parser.parse_easing_number_value(mut argument_tokens_2) or { return none }
+		y2 := parser.parse_easing_number_value(mut argument_tokens_3) or { return none }
+		x1_number := easing_number_from_style_value(x1) or { return none }
+		x2_number := easing_number_from_style_value(x2) or { return none }
+		if x1_number < 0.0 || x1_number > 1.0 {
+			return none
+		}
+		if x2_number < 0.0 || x2_number > 1.0 {
+			return none
+		}
+
+		bezier := EasingCubicBezier{
+			x1: x1
+			y1: y1
+			x2: x2
+			y2: y2
+		}
+
+		tokens = transaction
+		return StyleValue(EasingStyleValue.create(EasingStyleValueFunction(bezier)))
+	}
+
+	if equals_ignoring_ascii_case(name, 'steps') {
+		if comma_separated_arguments.len == 0 || comma_separated_arguments.len > 2 {
+			return none
+		}
+
+		for argument in comma_separated_arguments {
+			if argument.len != 1 {
+				return none
+			}
+		}
+
+		mut position := StepPosition.end
+
+		if comma_separated_arguments.len == 2 {
+			if comma_separated_arguments[1].len != 1 {
+				return none
+			}
+
+			token := comma_separated_arguments[1][0]
+
+			if !token.is(.ident) {
+				return none
+			}
+
+			step_position := keyword_to_step_position_for_value_logic(token.token().ident()) or {
+				return none
+			}
+
+			position = step_position
+		}
+
+		intervals_argument := comma_separated_arguments[0][0]
+		mut intervals_token := ComponentValueStream.new([intervals_argument])
+		intervals := parser.parse_integer_value(mut intervals_token) or { return none }
+
+		// Perform extra validation
+		// https://drafts.csswg.org/css-easing/#step-easing-functions
+		// If the <step-position> is jump-none, the <integer> must be at least 2, or the function is invalid.
+		// Otherwise, the <integer> must be at least 1, or the function is invalid.
+		if integer := easing_integer_from_style_value(intervals) {
+			if position == .jump_none {
+				if integer <= 1 {
+					return none
+				}
+			} else if integer <= 0 {
+				return none
+			}
+		}
+
+		tokens = transaction
+		return StyleValue(EasingStyleValue.create(EasingStyleValueFunction(EasingSteps{
+			number_of_intervals: intervals
+			position:            position
+		})))
+	}
+
+	return none
 }
 
 fn (mut parser Parser) parse_color_value(mut tokens ComponentValueStream) ?StyleValue {
