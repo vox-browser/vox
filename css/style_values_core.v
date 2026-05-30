@@ -3841,10 +3841,7 @@ fn css_numeric_value_reify_component_value(numeric_value ComponentValue) !CSSNum
 	// To reify a numeric value num:
 	// 1. If num is a math function, reify a math expression from num and return the result.
 	if numeric_value.is_function() {
-		// Calculation integration: C++ parses the function as a CalculatedStyleValue and reifies the
-		// CalculationNode tree. That parser/reifier is not translated in this V port yet, so preserve
-		// CSSNumericValue.parse()'s SyntaxError boundary for un-reifiable math functions.
-		return error('SyntaxError: Unable to parse input as a calculation tree.')
+		return css_numeric_value_reify_math_function(numeric_value)!
 	}
 
 	// 2. If num is the unitless value 0 and num is a <dimension>, return a new CSSUnitValue with its value internal
@@ -3869,6 +3866,53 @@ fn css_numeric_value_reify_component_value(numeric_value ComponentValue) !CSSNum
 	}
 	return CSSNumericValue(CSSUnitValue.create(numeric_value.token().dimension_value(),
 		numeric_value.token().dimension_unit()))
+}
+
+fn css_numeric_value_reify_single_component(values []ComponentValue) !CSSNumericValue {
+	components := remove_whitespace_from_component_values(values)
+	if components.len != 1 {
+		return error('SyntaxError: Unable to parse input as a calculation tree.')
+	}
+	return css_numeric_value_reify_component_value(components[0])!
+}
+
+fn css_numeric_value_reify_math_function(numeric_value ComponentValue) !CSSNumericValue {
+	function := numeric_value.function()
+	name := to_ascii_lowercase(function.name)
+
+	// The C++ implementation parses every math function through CalculatedStyleValue and then reifies the resulting
+	// CalculationNode tree. This port has the Typed OM math classes but not the full calculation parser yet, so wire the
+	// directly representable functions and keep the upstream SyntaxError behavior for the remaining function grammar.
+	if name == 'calc' {
+		return css_numeric_value_reify_single_component(function.value)!
+	}
+
+	arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function.value)
+	if name == 'min' || name == 'max' {
+		if arguments.len == 0 {
+			return error('SyntaxError: Unable to parse input as a calculation tree.')
+		}
+		mut values := []CSSNumericValue{}
+		for argument in arguments {
+			values << css_numeric_value_reify_single_component(argument)!
+		}
+		if name == 'min' {
+			return CSSNumericValue(CSSMathMin.add_all_types_into_math_min(values)!)
+		}
+		return CSSNumericValue(CSSMathMax.add_all_types_into_math_max(values)!)
+	}
+
+	if name == 'clamp' {
+		if arguments.len != 3 {
+			return error('SyntaxError: Unable to parse input as a calculation tree.')
+		}
+		lower := css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[0])!)
+		value := css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[1])!)
+		upper := css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[2])!)
+		return CSSNumericValue(CSSMathClamp.construct_impl(lower, value, upper)!)
+	}
+
+	return error('SyntaxError: Unable to parse input as a calculation tree.')
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#rectify-a-numberish-value
