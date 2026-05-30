@@ -3480,7 +3480,14 @@ pub fn (value CSSNumericValue) invert() !CSSNumberish {
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-min
 pub fn (value CSSNumericValue) min(initial_values []CSSNumberish) !CSSNumericValue {
 	// 1. Replace each item of values with the result of rectifying a numberish value for the item.
-	mut values := [value]
+	// 2. If this is a CSSMathMin object, prepend the items in this's values internal slot to values.
+	//    Otherwise, prepend this to values.
+	mut values := []CSSNumericValue{}
+	if value is CSSMathMin {
+		values << value.values().values()
+	} else {
+		values << value
+	}
 	for item in initial_values {
 		values << rectify_a_numberish_value(item)
 	}
@@ -3509,7 +3516,14 @@ pub fn (value CSSNumericValue) min(initial_values []CSSNumberish) !CSSNumericVal
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-max
 pub fn (value CSSNumericValue) max(initial_values []CSSNumberish) !CSSNumericValue {
 	// 1. Replace each item of values with the result of rectifying a numberish value for the item.
-	mut values := [value]
+	// 2. If this is a CSSMathMax object, prepend the items in this's values internal slot to values.
+	//    Otherwise, prepend this to values.
+	mut values := []CSSNumericValue{}
+	if value is CSSMathMax {
+		values << value.values().values()
+	} else {
+		values << value
+	}
 	for item in initial_values {
 		values << rectify_a_numberish_value(item)
 	}
@@ -4083,6 +4097,9 @@ pub fn (unit_value CSSUnitValue) converted_to_unit(unit string) ?CSSUnitValue {
 			.length {
 				from := string_to_length_unit(old_unit) or { return none }
 				to := string_to_length_unit(new_unit) or { return none }
+				if !is_absolute_length_unit(from) || !is_absolute_length_unit(to) {
+					return none
+				}
 				ratio = ratio_between_length_units(from, to)
 			}
 			.resolution {
@@ -4154,7 +4171,8 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.length {
 				length_unit := string_to_length_unit(unit) or { return none }
 				canonical_unit := canonical_length_unit()
-				if length_unit != canonical_unit {
+				if length_unit != canonical_unit && is_absolute_length_unit(length_unit)
+					&& is_absolute_length_unit(canonical_unit) {
 					value *= ratio_between_length_units(length_unit, canonical_unit)
 					unit = length_unit_name(canonical_unit)
 				}
