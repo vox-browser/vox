@@ -4357,7 +4357,6 @@ pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedP
 		rule := match_rule.rule or { continue }
 		declaration := rule.style() or { continue }
 
-		mut seen_properties := map[PropertyID]bool{}
 		for property in declaration.properties {
 			property_id := property_id_from_string(property.name) or { continue }
 			if properties_to_cascade.len != 0 && property_id !in properties_to_cascade {
@@ -4385,11 +4384,10 @@ pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedP
 				}
 			}
 
-			StyleComputer.for_each_property_expanding_shorthands(property_id, property_value, fn [mut cascaded_properties, mut seen_properties, important, origin, layer_name, declaration] (longhand_id PropertyID, longhand_value &dom.StyleValue) {
-				if seen_properties[longhand_id] {
-					return
-				}
-				seen_properties[longhand_id] = true
+			StyleComputer.for_each_property_expanding_shorthands(property_id, property_value, fn [mut cascaded_properties, important, origin, layer_name, declaration] (longhand_id PropertyID, longhand_value &dom.StyleValue) {
+				// Upstream only suppresses a previously-seen longhand when the later declaration is a
+				// PendingSubstitutionStyleValue. DOM-side StyleValue does not expose that typed state here yet,
+				// so concrete later declarations keep overriding earlier ones.
 				cascaded_properties.set_property(longhand_id, longhand_value, important, origin,
 					layer_name, voidptr(declaration))
 			})
