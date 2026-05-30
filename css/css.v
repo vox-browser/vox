@@ -38,7 +38,10 @@ pub fn parse_css_value(context ParsingParams, text string, property PropertyID) 
 
 // --- Color resolution ---
 
-pub struct ColorResolutionContext {}
+pub struct ColorResolutionContext {
+pub mut:
+	color_scheme ?PreferredColorScheme
+}
 
 pub fn color_resolution_context_for_layout_node(node &dom.LayoutNode) ColorResolutionContext {
 	return ColorResolutionContext{}
