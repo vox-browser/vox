@@ -832,7 +832,7 @@ pub mut:
 }
 
 fn style_values_equal(a &dom.StyleValue, b &dom.StyleValue) bool {
-	return a == b
+	return a.css_text == b.css_text
 }
 
 fn transition_attributes_from_transition_properties(properties TransitionProperties) TransitionTimingAttributes {

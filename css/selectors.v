@@ -1,6 +1,7 @@
 module css
 
 import dom
+import strconv
 import strings
 
 // This file ports the LibWeb/CSS selector data model and selector-engine logic.
@@ -2335,6 +2336,13 @@ fn parse_pseudo_element_selector(name string, argument string) SimpleSelector {
 	}
 }
 
+fn invalid_simple_selector(text string) SimpleSelector {
+	return SimpleSelector{
+		type_:        .invalid
+		invalid_text: text
+	}
+}
+
 fn parse_pseudo_class_selector(name string, argument string) SimpleSelector {
 	pseudo_class_type := pseudo_class_from_string(name)
 	mut pseudo_class := PseudoClassSelector{
@@ -2350,8 +2358,13 @@ fn parse_pseudo_class_selector(name string, argument string) SimpleSelector {
 		}
 		.nth_child, .nth_last_child, .nth_of_type, .nth_last_of_type {
 			anb, selector_list_text := split_an_plus_b_of_selector(argument)
-			pseudo_class.an_plus_b_pattern = parse_an_plus_b(anb)
+			pseudo_class.an_plus_b_pattern = parse_an_plus_b(anb) or {
+				return invalid_simple_selector(':${name}(${argument})')
+			}
 			if selector_list_text.len != 0 {
+				if pseudo_class_type !in [.nth_child, .nth_last_child] {
+					return invalid_simple_selector(':${name}(${argument})')
+				}
 				pseudo_class.argument_selector_list = selector_list_from_text(selector_list_text,
 					false)
 			}
@@ -2410,7 +2423,7 @@ fn selector_list_from_text(text string, relative bool) SelectorList {
 	return list
 }
 
-fn parse_an_plus_b(text string) ANPlusBPattern {
+fn parse_an_plus_b(text string) ?ANPlusBPattern {
 	mut input := text.to_lower().replace(' ', '').replace('\t', '').replace('\n', '')
 	if input == 'odd' {
 		return ANPlusBPattern{
@@ -2424,24 +2437,51 @@ fn parse_an_plus_b(text string) ANPlusBPattern {
 		}
 	}
 	if !input.contains('n') {
+		offset := parse_selector_signed_integer(input) or { return none }
 		return ANPlusBPattern{
-			offset: input.int()
+			offset: offset
 		}
 	}
 	n_index := input.index('n') or { -1 }
+	if n_index < 0 || input[n_index + 1..].contains('n') {
+		return none
+	}
 	a_text := input[..n_index]
 	b_text := input[n_index + 1..]
 	step_size := match a_text {
 		'', '+' { 1 }
 		'-' { -1 }
-		else { a_text.int() }
+		else { parse_selector_signed_integer(a_text) or { return none } }
 	}
 
-	offset := if b_text.len == 0 { 0 } else { b_text.int() }
+	offset := if b_text.len == 0 {
+		0
+	} else {
+		if !(b_text.starts_with('+') || b_text.starts_with('-')) {
+			return none
+		}
+		parse_selector_signed_integer(b_text) or { return none }
+	}
 	return ANPlusBPattern{
 		step_size: step_size
 		offset:    offset
 	}
+}
+
+fn parse_selector_signed_integer(text string) ?int {
+	if text.len == 0 {
+		return none
+	}
+	if text == '+' || text == '-' {
+		return none
+	}
+	start := if text[0] == `+` || text[0] == `-` { 1 } else { 0 }
+	for i := start; i < text.len; i++ {
+		if text[i] < `0` || text[i] > `9` {
+			return none
+		}
+	}
+	return strconv.atoi(text) or { none }
 }
 
 fn split_an_plus_b_of_selector(argument string) (string, string) {
