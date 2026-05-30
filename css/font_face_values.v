@@ -1077,9 +1077,9 @@ pub fn font_face_descriptor_property_name(id FontFaceDescriptorID) string {
 
 fn initial_font_face_descriptor_value(id FontFaceDescriptorID) ?string {
 	return match id {
-		.font_style { 'normal' }
-		.font_weight { 'normal' }
-		.font_width { 'normal' }
+		.font_style { 'auto' }
+		.font_weight { 'auto' }
+		.font_width { 'auto' }
 		.unicode_range { 'U+0-10FFFF' }
 		.font_feature_settings { 'normal' }
 		.font_variation_settings { 'normal' }
@@ -1088,7 +1088,7 @@ fn initial_font_face_descriptor_value(id FontFaceDescriptorID) ?string {
 		.descent_override { 'normal' }
 		.line_gap_override { 'normal' }
 		.font_language_override { 'normal' }
-		.font_named_instance { 'none' }
+		.font_named_instance { 'auto' }
 		else { none }
 	}
 }
@@ -1535,7 +1535,7 @@ pub fn ParsedFontFace.from_descriptors(descriptors &CSSFontFaceDescriptors) Pars
 
 	mut font_named_instance := ?string(none)
 	if value := descriptors.descriptor_or_initial_value(.font_named_instance) {
-		if value.to_lower() != 'none' {
+		if value.to_lower() != 'auto' {
 			font_named_instance = unquote_css_string(value)
 		}
 	}
@@ -1828,9 +1828,9 @@ pub fn (mut face FontFaceObject) reparse_connected_css_font_face_rule_descriptor
 	if value := descriptors.descriptor(.font_family) {
 		face.set_family_impl(value)
 	}
-	face.set_style_impl(descriptors.descriptor_or_initial_value(.font_style) or { 'normal' })
-	face.set_weight_impl(descriptors.descriptor_or_initial_value(.font_weight) or { 'normal' })
-	face.set_stretch_impl(descriptors.descriptor_or_initial_value(.font_width) or { 'normal' })
+	face.set_style_impl(descriptors.descriptor_or_initial_value(.font_style) or { 'auto' })
+	face.set_weight_impl(descriptors.descriptor_or_initial_value(.font_weight) or { 'auto' })
+	face.set_stretch_impl(descriptors.descriptor_or_initial_value(.font_width) or { 'auto' })
 	face.set_unicode_range_impl(descriptors.descriptor_or_initial_value(.unicode_range) or {
 		'U+0-10FFFF'
 	})
@@ -3940,7 +3940,7 @@ fn is_valid_font_language_override_descriptor(value string) bool {
 }
 
 fn is_valid_font_named_instance_descriptor(value string) bool {
-	if value.to_lower().trim_space() == 'none' {
+	if value.to_lower().trim_space() == 'auto' {
 		return true
 	}
 	return is_quoted_css_string(value) && unquote_css_string(value).len != 0
