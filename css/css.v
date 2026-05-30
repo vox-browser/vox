@@ -1623,8 +1623,23 @@ pub fn (c CalculatedStyleValue) resolve_length(context CalculationResolutionCont
 	return Length.make_px(0)
 }
 
+fn parsed_length_percentage_style_value_from_dom_style_value(style_value &dom.StyleValue) ?StyleValue {
+	if style_value.css_text.len == 0 {
+		return none
+	}
+	mut parser := Parser.from_css_text(style_value.css_text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	value := parser.parse_length_percentage_value(mut tokens) or { return none }
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return value
+}
+
 pub fn Length.from_style_value(style_value &dom.StyleValue, percentage_basis ?Length) Length {
-	_ = style_value
+	if parsed_value := parsed_length_percentage_style_value_from_dom_style_value(style_value) {
+		return Length.from_style_value_logic(parsed_value, percentage_basis)
+	}
 	if basis := percentage_basis {
 		return basis
 	}
@@ -1879,7 +1894,9 @@ pub fn LengthPercentage.from_calculated(calculated CalculatedStyleValue) LengthP
 }
 
 pub fn LengthPercentage.from_style_value(style_value &dom.StyleValue) LengthPercentage {
-	_ = style_value
+	if parsed_value := parsed_length_percentage_style_value_from_dom_style_value(style_value) {
+		return LengthPercentage.from_style_value_logic(parsed_value)
+	}
 	return LengthPercentage.from_length(Length.make_px(0))
 }
 
@@ -1994,7 +2011,14 @@ pub fn LengthPercentageOrAuto.make_auto() LengthPercentageOrAuto {
 }
 
 pub fn LengthPercentageOrAuto.from_style_value(style_value &dom.StyleValue) LengthPercentageOrAuto {
-	_ = style_value
+	if keyword := computed_interpolation_style_value_keyword(style_value) {
+		if keyword == .auto {
+			return LengthPercentageOrAuto.make_auto()
+		}
+	}
+	if parsed_value := parsed_length_percentage_style_value_from_dom_style_value(style_value) {
+		return LengthPercentageOrAuto.from_style_value_logic(parsed_value)
+	}
 	return LengthPercentageOrAuto.make_auto()
 }
 

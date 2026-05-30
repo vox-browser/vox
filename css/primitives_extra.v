@@ -83,9 +83,8 @@ pub fn (length Length) to_px_slow_case_for_layout_node(layout_node &dom.LayoutNo
 }
 
 // StyleValue-backed equivalents of Angle::from_style_value(),
-// Length::from_style_value(), and Time::from_style_value(). The existing
-// dom.StyleValue entry points are opaque stubs, while the translated parser and
-// style value layer use the css.StyleValue sum type.
+// Length::from_style_value(), and Time::from_style_value(). DOM-facing wrappers
+// parse through the same translated style value layer when css_text is present.
 pub fn Angle.from_style_value(style_value StyleValue, percentage_basis ?Angle) Angle {
 	return match style_value {
 		AngleStyleValue {
