@@ -302,6 +302,18 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.aspect_ratio {
 			return parser.parse_aspect_ratio_value(mut tokens)
 		}
+		.align_content {
+			return parser.parse_align_content_value(mut tokens)
+		}
+		.align_items {
+			return parser.parse_align_items_value(mut tokens)
+		}
+		.align_self {
+			return parser.parse_align_self_value(mut tokens)
+		}
+		.appearance {
+			return parser.parse_appearance_value(mut tokens)
+		}
 		.background_image, .mask_image {
 			return parser.parse_image_or_none_list_value(mut tokens)
 		}
@@ -337,6 +349,27 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.font_width {
 			return parser.parse_font_width_value(mut tokens)
+		}
+		.flex_direction {
+			return parser.parse_flex_direction_value(mut tokens)
+		}
+		.flex_wrap {
+			return parser.parse_flex_wrap_value(mut tokens)
+		}
+		.column_span {
+			return parser.parse_column_span_value(mut tokens)
+		}
+		.image_rendering {
+			return parser.parse_image_rendering_value(mut tokens)
+		}
+		.justify_content {
+			return parser.parse_justify_content_value(mut tokens)
+		}
+		.justify_items {
+			return parser.parse_justify_items_value(mut tokens)
+		}
+		.justify_self {
+			return parser.parse_justify_self_value(mut tokens)
 		}
 		.isolation {
 			return parser.parse_isolation_value(mut tokens)
@@ -443,6 +476,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.transform {
 			return parser.parse_transform_value(mut tokens)
 		}
+		.transform_box {
+			return parser.parse_transform_box_value(mut tokens)
+		}
 		.transform_style {
 			return parser.parse_transform_style_value(mut tokens)
 		}
@@ -463,6 +499,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.translate {
 			return parser.parse_translate_value(mut tokens)
+		}
+		.touch_action {
+			return parser.parse_touch_action_value(mut tokens)
 		}
 		.unicode_bidi {
 			return parser.parse_unicode_bidi_value(mut tokens)
@@ -1503,6 +1542,80 @@ fn (mut parser Parser) parse_object_fit_value(mut tokens ComponentValueStream) ?
 		['fill', 'contain', 'cover', 'none', 'scale-down'])
 }
 
+fn (mut parser Parser) parse_align_content_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['normal', 'start', 'flex-start', 'end',
+		'flex-end', 'center', 'space-between', 'space-around', 'space-evenly', 'stretch'])
+}
+
+fn (mut parser Parser) parse_align_items_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['baseline', 'center', 'end', 'flex-end',
+		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe'])
+}
+
+fn (mut parser Parser) parse_align_self_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'baseline', 'center', 'end', 'flex-end',
+		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe'])
+}
+
+fn (mut parser Parser) parse_appearance_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'button', 'checkbox', 'listbox',
+		'menulist', 'meter', 'menulist-button', 'none', 'push-button', 'progress-bar', 'radio',
+		'searchfield', 'slider-horizontal', 'square-button', 'textarea', 'textfield'])
+}
+
+fn (mut parser Parser) parse_column_span_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['none', 'all'])
+}
+
+fn (mut parser Parser) parse_flex_direction_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens,
+		['row', 'row-reverse', 'column', 'column-reverse'])
+}
+
+fn (mut parser Parser) parse_flex_wrap_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['nowrap', 'wrap', 'wrap-reverse'])
+}
+
+fn (mut parser Parser) parse_image_rendering_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'crisp-edges', 'high-quality',
+		'pixelated', 'smooth', 'optimizespeed', 'optimizequality'])
+}
+
+fn (mut parser Parser) parse_justify_content_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['normal', 'start', 'end', 'flex-start',
+		'flex-end', 'center', 'space-between', 'space-around', 'space-evenly', 'stretch', 'left',
+		'right'])
+}
+
+fn (mut parser Parser) parse_justify_items_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['baseline', 'center', 'end', 'flex-end',
+		'flex-start', 'legacy', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch',
+		'unsafe', 'left', 'right'])
+}
+
+fn (mut parser Parser) parse_justify_self_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'baseline', 'center', 'end', 'flex-end',
+		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe',
+		'left', 'right'])
+}
+
+fn (mut parser Parser) parse_transform_box_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['content-box', 'border-box', 'fill-box',
+		'stroke-box', 'view-box'])
+}
+
 fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
@@ -1523,6 +1636,80 @@ fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keyword
 			return none} }
 	tokens = transaction
 	return StyleValue(KeywordStyleValue.create(keyword))
+}
+
+fn parse_touch_action_single_keyword_for_value_logic(mut tokens ComponentValueStream) ?Keyword {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is(.ident) {
+		return none
+	}
+	ident := to_ascii_lowercase(component_value.token().ident())
+	if ident !in ['pan-x', 'pan-left', 'pan-right', 'pan-y', 'pan-up', 'pan-down'] {
+		return none
+	}
+	keyword := keyword_from_string(ident) or { return none }
+	tokens = transaction
+	return keyword
+}
+
+fn (mut parser Parser) parse_touch_action_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	// https://www.w3.org/TR/pointerevents/#the-touch-action-css-property
+	// auto | none | [ [ pan-x | pan-left | pan-right ] || [ pan-y | pan-up | pan-down ] ] | manipulation
+	if value := parse_property_keyword_value(mut tokens, ['auto', 'none', 'manipulation']) {
+		return value
+	}
+
+	mut transaction := tokens.clone()
+	mut parsed_values := []StyleValue{}
+	mut has_horizontal := false
+	mut has_vertical := false
+	mut swap_order := false
+
+	for {
+		keyword := parse_touch_action_single_keyword_for_value_logic(mut transaction) or { break }
+		match keyword {
+			.pan_x, .pan_left, .pan_right {
+				if has_horizontal {
+					return none
+				}
+				if has_vertical {
+					swap_order = true
+				}
+				has_horizontal = true
+			}
+			.pan_y, .pan_up, .pan_down {
+				if has_vertical {
+					return none
+				}
+				has_vertical = true
+			}
+			else {
+				return none
+			}
+		}
+
+		parsed_values << StyleValue(KeywordStyleValue.create(keyword))
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			break
+		}
+	}
+
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() || parsed_values.len == 0 {
+		return none
+	}
+	if swap_order && parsed_values.len == 2 {
+		first := parsed_values[0]
+		parsed_values[0] = parsed_values[1]
+		parsed_values[1] = first
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(parsed_values, .space, .yes))
 }
 
 // https://drafts.csswg.org/css-borders-4/#typedef-corner-shape-value

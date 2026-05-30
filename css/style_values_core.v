@@ -108,6 +108,15 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'anchor-scope' {
 			PropertyID.anchor_scope
 		}
+		'align-content', '-webkit-align-content' {
+			PropertyID.align_content
+		}
+		'align-items', '-webkit-align-items', '-webkit-box-align' {
+			PropertyID.align_items
+		}
+		'align-self', '-webkit-align-self' {
+			PropertyID.align_self
+		}
 		'animation-composition' {
 			PropertyID.animation_composition
 		}
@@ -143,6 +152,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'aspect-ratio' {
 			PropertyID.aspect_ratio
+		}
+		'appearance', '-moz-appearance', '-webkit-appearance' {
+			PropertyID.appearance
 		}
 		'background-color' {
 			PropertyID.background_color
@@ -219,6 +231,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'content-visibility' {
 			PropertyID.content_visibility
 		}
+		'column-span' {
+			PropertyID.column_span
+		}
 		'direction' {
 			PropertyID.direction
 		}
@@ -285,8 +300,26 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'font-width' {
 			PropertyID.font_width
 		}
+		'flex-direction', '-webkit-flex-direction', '-webkit-box-orient' {
+			PropertyID.flex_direction
+		}
+		'flex-wrap', '-webkit-flex-wrap' {
+			PropertyID.flex_wrap
+		}
+		'image-rendering' {
+			PropertyID.image_rendering
+		}
 		'isolation' {
 			PropertyID.isolation
+		}
+		'justify-content', '-webkit-justify-content', '-webkit-box-pack' {
+			PropertyID.justify_content
+		}
+		'justify-items' {
+			PropertyID.justify_items
+		}
+		'justify-self' {
+			PropertyID.justify_self
 		}
 		'letter-spacing' {
 			PropertyID.letter_spacing
@@ -414,6 +447,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'transform' {
 			PropertyID.transform
 		}
+		'transform-box' {
+			PropertyID.transform_box
+		}
 		'transform-style' {
 			PropertyID.transform_style
 		}
@@ -440,6 +476,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'user-select' {
 			PropertyID.user_select
+		}
+		'touch-action' {
+			PropertyID.touch_action
 		}
 		'view-timeline-inset' {
 			PropertyID.view_timeline_inset
@@ -539,7 +578,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.border_top_style, .box_sizing, .caption_side, .clip_rule, .color_interpolation,
 		.content_visibility, .direction, .empty_cells, .fill_rule, .font_kerning,
 		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
-		.isolation, .list_style_position, .mask_type {
+		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
+		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .transform_box,
+		.touch_action, .isolation, .list_style_position, .mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
@@ -655,6 +696,23 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.anchor_scope {
 			lowercase_value in ['none', 'all']
 		}
+		.align_content {
+			lowercase_value in ['normal', 'start', 'flex-start', 'end', 'flex-end', 'center',
+				'space-between', 'space-around', 'space-evenly', 'stretch']
+		}
+		.align_items {
+			lowercase_value in ['baseline', 'center', 'end', 'flex-end', 'flex-start', 'normal',
+				'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe']
+		}
+		.align_self {
+			lowercase_value in ['auto', 'baseline', 'center', 'end', 'flex-end', 'flex-start',
+				'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe']
+		}
+		.appearance {
+			lowercase_value in ['auto', 'button', 'checkbox', 'listbox', 'menulist', 'meter',
+				'menulist-button', 'none', 'push-button', 'progress-bar', 'radio', 'searchfield',
+				'slider-horizontal', 'square-button', 'textarea', 'textfield']
+		}
 		.position_anchor {
 			lowercase_value == 'auto'
 		}
@@ -692,6 +750,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.content_visibility {
 			// content-visibility = visible | auto | hidden
 			lowercase_value in ['visible', 'auto', 'hidden']
+		}
+		.column_span {
+			lowercase_value in ['none', 'all']
 		}
 		.clip_rule, .fill_rule {
 			lowercase_value in ['nonzero', 'evenodd']
@@ -823,6 +884,13 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.transform_style {
 			lowercase_value in ['flat', 'preserve-3d']
 		}
+		.transform_box {
+			lowercase_value in ['content-box', 'border-box', 'fill-box', 'stroke-box', 'view-box']
+		}
+		.touch_action {
+			lowercase_value in ['auto', 'manipulation', 'none', 'pan-down', 'pan-left', 'pan-right',
+				'pan-up', 'pan-x', 'pan-y']
+		}
 		.user_select {
 			lowercase_value in ['all', 'auto', 'contain', 'none', 'text']
 		}
@@ -867,6 +935,30 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.font_width {
 			lowercase_value in ['ultra-condensed', 'extra-condensed', 'condensed', 'semi-condensed',
 				'normal', 'semi-expanded', 'expanded', 'extra-expanded', 'ultra-expanded']
+		}
+		.flex_direction {
+			lowercase_value in ['row', 'row-reverse', 'column', 'column-reverse']
+		}
+		.flex_wrap {
+			lowercase_value in ['nowrap', 'wrap', 'wrap-reverse']
+		}
+		.image_rendering {
+			lowercase_value in ['auto', 'crisp-edges', 'high-quality', 'pixelated', 'smooth',
+				'optimizespeed', 'optimizequality']
+		}
+		.justify_content {
+			lowercase_value in ['normal', 'start', 'end', 'flex-start', 'flex-end', 'center',
+				'space-between', 'space-around', 'space-evenly', 'stretch', 'left', 'right']
+		}
+		.justify_items {
+			lowercase_value in ['baseline', 'center', 'end', 'flex-end', 'flex-start', 'legacy',
+				'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe', 'left',
+				'right']
+		}
+		.justify_self {
+			lowercase_value in ['auto', 'baseline', 'center', 'end', 'flex-end', 'flex-start',
+				'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe', 'left',
+				'right']
 		}
 		.letter_spacing, .line_height, .word_spacing {
 			lowercase_value == 'normal'
@@ -914,12 +1006,14 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.border_top_style, .box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color,
 		.color_interpolation, .direction, .empty_cells, .fill_rule, .float_, .flood_color,
 		.font_kerning, .font_language_override, .font_optical_sizing, .font_variant_caps,
-		.font_variant_emoji, .font_variant_position, .isolation, .list_style_image,
-		.list_style_position, .mask_image, .mask_type, .mix_blend_mode, .object_fit,
-		.outline_color, .outline_style, .overflow_x, .overflow_y, .pointer_events, .position,
-		.shape_rendering, .stop_color, .stroke_linecap, .stroke_linejoin, .table_layout,
-		.text_align, .text_anchor, .text_justify, .text_overflow, .text_rendering, .text_transform,
-		.text_wrap_mode, .text_wrap_style, .transform_style, .unicode_bidi, .user_select,
+		.font_variant_emoji, .font_variant_position, .flex_direction, .flex_wrap, .align_content,
+		.align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance,
+		.column_span, .image_rendering, .isolation, .list_style_image, .list_style_position,
+		.mask_image, .mask_type, .mix_blend_mode, .object_fit, .outline_color, .outline_style,
+		.overflow_x, .overflow_y, .pointer_events, .position, .shape_rendering, .stop_color,
+		.stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify,
+		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
+		.transform_box, .transform_style, .touch_action, .unicode_bidi, .user_select,
 		.view_timeline_inset, .visibility, .webkit_text_fill_color, .white_space_collapse,
 		.white_space_trim, .word_break {
 			false
@@ -2062,6 +2156,52 @@ pub enum Keyword {
 	unicode
 	sub
 	super
+	flex_start
+	flex_end
+	space_between
+	space_around
+	space_evenly
+	self_start
+	self_end
+	stretch
+	baseline
+	safe
+	unsafe_
+	legacy
+	row
+	row_reverse
+	column
+	column_reverse
+	wrap_reverse
+	button
+	checkbox
+	listbox
+	menulist
+	meter
+	menulist_button
+	push_button
+	progress_bar
+	radio
+	searchfield
+	slider_horizontal
+	square_button
+	textarea
+	textfield
+	crisp_edges
+	high_quality
+	pixelated
+	smooth
+	optimizequality
+	fill_box
+	stroke_box
+	view_box
+	manipulation
+	pan_down
+	pan_left
+	pan_right
+	pan_up
+	pan_x
+	pan_y
 	separate
 	border_box
 	content_box
@@ -2341,6 +2481,52 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.unicode { 'unicode' }
 		.sub { 'sub' }
 		.super { 'super' }
+		.flex_start { 'flex-start' }
+		.flex_end { 'flex-end' }
+		.space_between { 'space-between' }
+		.space_around { 'space-around' }
+		.space_evenly { 'space-evenly' }
+		.self_start { 'self-start' }
+		.self_end { 'self-end' }
+		.stretch { 'stretch' }
+		.baseline { 'baseline' }
+		.safe { 'safe' }
+		.unsafe_ { 'unsafe' }
+		.legacy { 'legacy' }
+		.row { 'row' }
+		.row_reverse { 'row-reverse' }
+		.column { 'column' }
+		.column_reverse { 'column-reverse' }
+		.wrap_reverse { 'wrap-reverse' }
+		.button { 'button' }
+		.checkbox { 'checkbox' }
+		.listbox { 'listbox' }
+		.menulist { 'menulist' }
+		.meter { 'meter' }
+		.menulist_button { 'menulist-button' }
+		.push_button { 'push-button' }
+		.progress_bar { 'progress-bar' }
+		.radio { 'radio' }
+		.searchfield { 'searchfield' }
+		.slider_horizontal { 'slider-horizontal' }
+		.square_button { 'square-button' }
+		.textarea { 'textarea' }
+		.textfield { 'textfield' }
+		.crisp_edges { 'crisp-edges' }
+		.high_quality { 'high-quality' }
+		.pixelated { 'pixelated' }
+		.smooth { 'smooth' }
+		.optimizequality { 'optimizequality' }
+		.fill_box { 'fill-box' }
+		.stroke_box { 'stroke-box' }
+		.view_box { 'view-box' }
+		.manipulation { 'manipulation' }
+		.pan_down { 'pan-down' }
+		.pan_left { 'pan-left' }
+		.pan_right { 'pan-right' }
+		.pan_up { 'pan-up' }
+		.pan_x { 'pan-x' }
+		.pan_y { 'pan-y' }
 		.separate { 'separate' }
 		.border_box { 'border-box' }
 		.content_box { 'content-box' }
@@ -2609,6 +2795,52 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'unicode' { Keyword.unicode }
 		'sub' { Keyword.sub }
 		'super' { Keyword.super }
+		'flex-start' { Keyword.flex_start }
+		'flex-end' { Keyword.flex_end }
+		'space-between' { Keyword.space_between }
+		'space-around' { Keyword.space_around }
+		'space-evenly' { Keyword.space_evenly }
+		'self-start' { Keyword.self_start }
+		'self-end' { Keyword.self_end }
+		'stretch' { Keyword.stretch }
+		'baseline' { Keyword.baseline }
+		'safe' { Keyword.safe }
+		'unsafe' { Keyword.unsafe_ }
+		'legacy' { Keyword.legacy }
+		'row' { Keyword.row }
+		'row-reverse' { Keyword.row_reverse }
+		'column' { Keyword.column }
+		'column-reverse' { Keyword.column_reverse }
+		'wrap-reverse' { Keyword.wrap_reverse }
+		'button' { Keyword.button }
+		'checkbox' { Keyword.checkbox }
+		'listbox' { Keyword.listbox }
+		'menulist' { Keyword.menulist }
+		'meter' { Keyword.meter }
+		'menulist-button' { Keyword.menulist_button }
+		'push-button' { Keyword.push_button }
+		'progress-bar' { Keyword.progress_bar }
+		'radio' { Keyword.radio }
+		'searchfield' { Keyword.searchfield }
+		'slider-horizontal' { Keyword.slider_horizontal }
+		'square-button' { Keyword.square_button }
+		'textarea' { Keyword.textarea }
+		'textfield' { Keyword.textfield }
+		'crisp-edges' { Keyword.crisp_edges }
+		'high-quality' { Keyword.high_quality }
+		'pixelated' { Keyword.pixelated }
+		'smooth' { Keyword.smooth }
+		'optimizequality' { Keyword.optimizequality }
+		'fill-box' { Keyword.fill_box }
+		'stroke-box' { Keyword.stroke_box }
+		'view-box' { Keyword.view_box }
+		'manipulation' { Keyword.manipulation }
+		'pan-down' { Keyword.pan_down }
+		'pan-left' { Keyword.pan_left }
+		'pan-right' { Keyword.pan_right }
+		'pan-up' { Keyword.pan_up }
+		'pan-x' { Keyword.pan_x }
+		'pan-y' { Keyword.pan_y }
 		'separate' { Keyword.separate }
 		'border-box' { Keyword.border_box }
 		'content-box' { Keyword.content_box }

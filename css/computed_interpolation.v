@@ -349,7 +349,9 @@ pub mut:
 pub enum AlignContent {
 	normal
 	start
+	flex_start
 	end_
+	flex_end
 	center
 	stretch
 	space_between
@@ -360,25 +362,39 @@ pub enum AlignContent {
 pub enum AlignItems {
 	normal
 	start
+	flex_start
+	self_start
 	end_
+	flex_end
+	self_end
 	center
 	stretch
 	baseline
+	safe
+	unsafe_
 }
 
 pub enum AlignSelf {
 	auto_
 	normal
 	start
+	flex_start
+	self_start
 	end_
+	flex_end
+	self_end
 	center
 	stretch
 	baseline
+	safe
+	unsafe_
 }
 
 pub enum Appearance {
 	none_
 	auto_
+	textfield
+	menulist_button
 }
 
 pub enum Visibility {
@@ -390,35 +406,60 @@ pub enum Visibility {
 pub enum ImageRendering {
 	auto_
 	crisp_edges
+	high_quality
 	pixelated
+	smooth
 }
 
 pub enum JustifyContent {
 	normal
 	start
+	flex_start
 	end_
+	flex_end
 	center
 	stretch
 	space_between
 	space_around
 	space_evenly
+	left
+	right
 }
 
 pub enum JustifyItems {
 	normal
 	start
+	flex_start
+	self_start
 	end_
+	flex_end
+	self_end
 	center
 	stretch
+	baseline
+	safe
+	unsafe_
+	legacy
+	left
+	right
 }
 
 pub enum JustifySelf {
 	auto_
 	normal
 	start
+	flex_start
+	self_start
 	end_
+	flex_end
+	self_end
 	center
 	stretch
+	baseline
+	safe
+	unsafe_
+	left
+	right
 }
 
 pub enum Overflow {
@@ -530,25 +571,28 @@ pub enum Isolation {
 
 pub struct TouchActionData {
 pub mut:
-	pan_x      bool
-	pan_y      bool
-	pinch_zoom bool
-	double_tap bool
-	manipulate bool
+	allow_left       bool = true
+	allow_right      bool = true
+	allow_up         bool = true
+	allow_down       bool = true
+	allow_pinch_zoom bool = true
+	// Other touch interactions which aren't pan or pinch to zoom. E.g.: Double tap to zoom.
+	allow_other bool = true
 }
 
 pub fn TouchActionData.auto_() TouchActionData {
-	return TouchActionData{
-		pan_x:      true
-		pan_y:      true
-		pinch_zoom: true
-		double_tap: true
-		manipulate: true
-	}
+	return TouchActionData{}
 }
 
-pub fn TouchActionData.none() TouchActionData {
-	return TouchActionData{}
+pub fn TouchActionData.none_() TouchActionData {
+	return TouchActionData{
+		allow_left:       false
+		allow_right:      false
+		allow_up:         false
+		allow_down:       false
+		allow_pinch_zoom: false
+		allow_other:      false
+	}
 }
 
 pub struct Containment {
@@ -977,6 +1021,27 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.font_variant_caps, .font_variant_emoji, .font_variant_position {
 			'normal'
 		}
+		.flex_direction {
+			'row'
+		}
+		.flex_wrap {
+			'nowrap'
+		}
+		.align_content, .align_items, .justify_content {
+			'normal'
+		}
+		.align_self, .justify_self {
+			'auto'
+		}
+		.justify_items {
+			'legacy'
+		}
+		.appearance, .column_span {
+			'none'
+		}
+		.image_rendering {
+			'auto'
+		}
 		.isolation {
 			'auto'
 		}
@@ -1094,6 +1159,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.transform_style {
 			'flat'
 		}
+		.transform_box {
+			'view-box'
+		}
 		.transition_behavior {
 			'normal'
 		}
@@ -1110,6 +1178,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 			'normal'
 		}
 		.user_select {
+			'auto'
+		}
+		.touch_action {
 			'auto'
 		}
 		.webkit_text_fill_color {
@@ -1153,10 +1224,10 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		.color_scheme, .direction, .empty_cells, .fill_opacity, .fill_rule, .font_kerning,
 		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
 		.font_variant_emoji, .font_variant_position, .font_weight, .letter_spacing,
-		.list_style_image, .list_style_position, .math_depth, .math_style, .orphans,
-		.pointer_events, .shape_rendering, .stroke_linecap, .stroke_linejoin, .stroke_opacity,
-		.text_align, .text_anchor, .text_justify, .text_rendering, .text_transform,
-		.text_wrap_mode, .text_wrap_style, .visibility, .webkit_text_fill_color,
+		.image_rendering, .list_style_image, .list_style_position, .math_depth, .math_style,
+		.orphans, .pointer_events, .shape_rendering, .stroke_linecap, .stroke_linejoin,
+		.stroke_opacity, .text_align, .text_anchor, .text_justify, .text_rendering,
+		.text_transform, .text_wrap_mode, .text_wrap_style, .visibility, .webkit_text_fill_color,
 		.white_space_collapse, .word_break, .word_spacing, .border_collapse {
 			true
 		}
@@ -1190,13 +1261,15 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.clear, .clip_rule, .color_interpolation, .color_scheme, .content_visibility, .direction,
 		.empty_cells, .fill_rule, .float_, .font_kerning, .font_language_override,
 		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
-		.isolation, .list_style_position, .mask_type, .math_style, .mix_blend_mode, .object_fit,
+		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
+		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
+		.list_style_position, .mask_type, .math_style, .mix_blend_mode, .object_fit,
 		.outline_style, .overflow_x, .overflow_y, .pointer_events, .position, .position_anchor,
 		.scroll_timeline_name, .shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout,
 		.text_align, .text_anchor, .text_justify, .text_overflow, .text_rendering, .text_transform,
-		.text_wrap_mode, .text_wrap_style, .transform_style, .transition_behavior,
-		.transition_property, .unicode_bidi, .user_select, .view_timeline_name, .visibility,
-		.white_space_collapse, .white_space_trim, .word_break {
+		.text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .transition_behavior,
+		.transition_property, .touch_action, .unicode_bidi, .user_select, .view_timeline_name,
+		.visibility, .white_space_collapse, .white_space_trim, .word_break {
 			false
 		}
 	}
@@ -1226,18 +1299,20 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.color_interpolation, .color_scheme, .content_visibility, .direction, .empty_cells,
 		.fill_opacity, .fill_rule, .float_, .flood_opacity, .font_feature_settings, .font_kerning,
 		.font_language_override, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
-		.font_variant_position, .font_variation_settings, .isolation, .line_height,
-		.list_style_image, .list_style_position, .mask_image, .mask_type, .math_style,
-		.mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color, .outline_offset,
-		.outline_style, .overflow_x, .overflow_y, .pointer_events, .position, .position_anchor,
-		.scroll_timeline_name, .shape_rendering, .table_layout, .shape_image_threshold,
-		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale,
-		.transform, .transform_style, .text_align, .text_anchor, .text_justify, .text_overflow,
+		.font_variant_position, .font_variation_settings, .flex_direction, .flex_wrap,
+		.align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self,
+		.appearance, .column_span, .image_rendering, .isolation, .line_height, .list_style_image,
+		.list_style_position, .mask_image, .mask_type, .math_style, .mix_blend_mode, .object_fit,
+		.opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style, .overflow_x,
+		.overflow_y, .pointer_events, .position, .position_anchor, .scroll_timeline_name,
+		.shape_rendering, .table_layout, .shape_image_threshold, .stop_opacity, .stroke_linecap,
+		.stroke_linejoin, .stroke_opacity, .rotate, .scale, .transform, .transform_box,
+		.transform_style, .text_align, .text_anchor, .text_justify, .text_overflow,
 		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transition_behavior,
 		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.translate, .unicode_bidi, .user_select, .view_timeline_inset, .view_timeline_name,
-		.visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim,
-		.word_break, .z_index {
+		.translate, .touch_action, .unicode_bidi, .user_select, .view_timeline_inset,
+		.view_timeline_name, .visibility, .webkit_text_fill_color, .white_space_collapse,
+		.white_space_trim, .word_break, .z_index {
 			false
 		}
 	}
@@ -1842,8 +1917,13 @@ pub fn (c &ComputedProperties) clear() Clear {
 }
 
 pub fn (c &ComputedProperties) column_span() ColumnSpan {
-	_ = c
-	return .none_
+	value := c.property(.column_span, .yes) or { return .none_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .none_ }
+	return match keyword {
+		.none_ { ColumnSpan.none_ }
+		.all { ColumnSpan.all }
+		else { ColumnSpan.none_ }
+	}
 }
 
 pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, initial_quote_nesting_level u32) ContentDataAndQuoteNestingLevel {
@@ -2072,13 +2152,26 @@ pub fn (c &ComputedProperties) list_style_position() ListStylePosition {
 }
 
 pub fn (c &ComputedProperties) flex_direction() FlexDirection {
-	_ = c
-	return .row
+	value := c.property(.flex_direction, .yes) or { return .row }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .row }
+	return match keyword {
+		.row { FlexDirection.row }
+		.row_reverse { FlexDirection.row_reverse }
+		.column { FlexDirection.column }
+		.column_reverse { FlexDirection.column_reverse }
+		else { FlexDirection.row }
+	}
 }
 
 pub fn (c &ComputedProperties) flex_wrap() FlexWrap {
-	_ = c
-	return .nowrap
+	value := c.property(.flex_wrap, .yes) or { return .nowrap }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .nowrap }
+	return match keyword {
+		.nowrap { FlexWrap.nowrap }
+		.wrap { FlexWrap.wrap }
+		.wrap_reverse { FlexWrap.wrap_reverse }
+		else { FlexWrap.nowrap }
+	}
 }
 
 pub fn (c &ComputedProperties) flex_basis() FlexBasis {
@@ -2126,23 +2219,75 @@ pub fn (c &ComputedProperties) accent_color(layout_node &dom.LayoutNode) ?Comput
 }
 
 pub fn (c &ComputedProperties) align_content() AlignContent {
-	_ = c
-	return .normal
+	value := c.property(.align_content, .yes) or { return .normal }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .normal }
+	return match keyword {
+		.normal { AlignContent.normal }
+		.start { AlignContent.start }
+		.flex_start { AlignContent.flex_start }
+		.end_ { AlignContent.end_ }
+		.flex_end { AlignContent.flex_end }
+		.center { AlignContent.center }
+		.stretch { AlignContent.stretch }
+		.space_between { AlignContent.space_between }
+		.space_around { AlignContent.space_around }
+		.space_evenly { AlignContent.space_evenly }
+		else { AlignContent.normal }
+	}
 }
 
 pub fn (c &ComputedProperties) align_items() AlignItems {
-	_ = c
-	return .normal
+	value := c.property(.align_items, .yes) or { return .normal }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .normal }
+	return match keyword {
+		.normal { AlignItems.normal }
+		.start { AlignItems.start }
+		.flex_start { AlignItems.flex_start }
+		.self_start { AlignItems.self_start }
+		.end_ { AlignItems.end_ }
+		.flex_end { AlignItems.flex_end }
+		.self_end { AlignItems.self_end }
+		.center { AlignItems.center }
+		.stretch { AlignItems.stretch }
+		.baseline { AlignItems.baseline }
+		.safe { AlignItems.safe }
+		.unsafe_ { AlignItems.unsafe_ }
+		else { AlignItems.normal }
+	}
 }
 
 pub fn (c &ComputedProperties) align_self() AlignSelf {
-	_ = c
-	return .auto_
+	value := c.property(.align_self, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { AlignSelf.auto_ }
+		.normal { AlignSelf.normal }
+		.start { AlignSelf.start }
+		.flex_start { AlignSelf.flex_start }
+		.self_start { AlignSelf.self_start }
+		.end_ { AlignSelf.end_ }
+		.flex_end { AlignSelf.flex_end }
+		.self_end { AlignSelf.self_end }
+		.center { AlignSelf.center }
+		.stretch { AlignSelf.stretch }
+		.baseline { AlignSelf.baseline }
+		.safe { AlignSelf.safe }
+		.unsafe_ { AlignSelf.unsafe_ }
+		else { AlignSelf.auto_ }
+	}
 }
 
 pub fn (c &ComputedProperties) appearance() Appearance {
-	_ = c
-	return .auto_
+	value := c.property(.appearance, .yes) or { return .none_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .none_ }
+	appearance := match keyword {
+		.none_ { Appearance.none_ }
+		.textfield { Appearance.textfield }
+		.menulist_button { Appearance.menulist_button }
+		else { Appearance.auto_ }
+	}
+
+	return appearance
 }
 
 pub fn (c &ComputedProperties) backdrop_filter() Filter {
@@ -2172,23 +2317,82 @@ pub fn (c &ComputedProperties) visibility() Visibility {
 }
 
 pub fn (c &ComputedProperties) image_rendering() ImageRendering {
-	_ = c
-	return .auto_
+	value := c.property(.image_rendering, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { ImageRendering.auto_ }
+		.crisp_edges { ImageRendering.crisp_edges }
+		.high_quality { ImageRendering.high_quality }
+		.pixelated, .optimizespeed { ImageRendering.pixelated }
+		.smooth, .optimizequality { ImageRendering.smooth }
+		else { ImageRendering.auto_ }
+	}
 }
 
 pub fn (c &ComputedProperties) justify_content() JustifyContent {
-	_ = c
-	return .normal
+	value := c.property(.justify_content, .yes) or { return .normal }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .normal }
+	return match keyword {
+		.normal { JustifyContent.normal }
+		.start { JustifyContent.start }
+		.flex_start { JustifyContent.flex_start }
+		.end_ { JustifyContent.end_ }
+		.flex_end { JustifyContent.flex_end }
+		.center { JustifyContent.center }
+		.stretch { JustifyContent.stretch }
+		.space_between { JustifyContent.space_between }
+		.space_around { JustifyContent.space_around }
+		.space_evenly { JustifyContent.space_evenly }
+		.left { JustifyContent.left }
+		.right { JustifyContent.right }
+		else { JustifyContent.normal }
+	}
 }
 
 pub fn (c &ComputedProperties) justify_items() JustifyItems {
-	_ = c
-	return .normal
+	value := c.property(.justify_items, .yes) or { return .legacy }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .legacy }
+	return match keyword {
+		.normal { JustifyItems.normal }
+		.start { JustifyItems.start }
+		.flex_start { JustifyItems.flex_start }
+		.self_start { JustifyItems.self_start }
+		.end_ { JustifyItems.end_ }
+		.flex_end { JustifyItems.flex_end }
+		.self_end { JustifyItems.self_end }
+		.center { JustifyItems.center }
+		.stretch { JustifyItems.stretch }
+		.baseline { JustifyItems.baseline }
+		.safe { JustifyItems.safe }
+		.unsafe_ { JustifyItems.unsafe_ }
+		.legacy { JustifyItems.legacy }
+		.left { JustifyItems.left }
+		.right { JustifyItems.right }
+		else { JustifyItems.legacy }
+	}
 }
 
 pub fn (c &ComputedProperties) justify_self() JustifySelf {
-	_ = c
-	return .auto_
+	value := c.property(.justify_self, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { JustifySelf.auto_ }
+		.normal { JustifySelf.normal }
+		.start { JustifySelf.start }
+		.flex_start { JustifySelf.flex_start }
+		.self_start { JustifySelf.self_start }
+		.end_ { JustifySelf.end_ }
+		.flex_end { JustifySelf.flex_end }
+		.self_end { JustifySelf.self_end }
+		.center { JustifySelf.center }
+		.stretch { JustifySelf.stretch }
+		.baseline { JustifySelf.baseline }
+		.safe { JustifySelf.safe }
+		.unsafe_ { JustifySelf.unsafe_ }
+		.left { JustifySelf.left }
+		.right { JustifySelf.right }
+		else { JustifySelf.auto_ }
+	}
 }
 
 fn keyword_to_overflow_for_computed_properties(keyword Keyword) ?Overflow {
@@ -2498,7 +2702,57 @@ pub fn (c &ComputedProperties) isolation() Isolation {
 }
 
 pub fn (c &ComputedProperties) touch_action() TouchActionData {
-	_ = c
+	value := c.property(.touch_action, .yes) or { return TouchActionData.auto_() }
+	parsed_value := parse_css_value_logic(.touch_action, value.css_text) or {
+		return TouchActionData.auto_()
+	}
+	if parsed_value is KeywordStyleValue {
+		match parsed_value.keyword() {
+			.auto {
+				return TouchActionData.auto_()
+			}
+			.none_ {
+				return TouchActionData.none_()
+			}
+			.manipulation {
+				return TouchActionData{
+					allow_other: false
+				}
+			}
+			else {}
+		}
+	}
+	if parsed_value is StyleValueList {
+		mut touch_action_data := TouchActionData.none_()
+		for item in parsed_value.values() {
+			if item is KeywordStyleValue {
+				match item.keyword() {
+					.pan_x {
+						touch_action_data.allow_right = true
+						touch_action_data.allow_left = true
+					}
+					.pan_left {
+						touch_action_data.allow_left = true
+					}
+					.pan_right {
+						touch_action_data.allow_right = true
+					}
+					.pan_y {
+						touch_action_data.allow_up = true
+						touch_action_data.allow_down = true
+					}
+					.pan_up {
+						touch_action_data.allow_up = true
+					}
+					.pan_down {
+						touch_action_data.allow_down = true
+					}
+					else {}
+				}
+			}
+		}
+		return touch_action_data
+	}
 	return TouchActionData.auto_()
 }
 
@@ -2904,8 +3158,16 @@ pub fn (c &ComputedProperties) transformations() []TransformationData {
 }
 
 pub fn (c &ComputedProperties) transform_box() TransformBox {
-	_ = c
-	return .view_box
+	value := c.property(.transform_box, .yes) or { return .view_box }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .view_box }
+	return match keyword {
+		.content_box { TransformBox.content_box }
+		.border_box { TransformBox.border_box }
+		.fill_box { TransformBox.fill_box }
+		.stroke_box { TransformBox.stroke_box }
+		.view_box { TransformBox.view_box }
+		else { TransformBox.view_box }
+	}
 }
 
 pub fn (c &ComputedProperties) transform_origin() TransformOrigin {
@@ -3383,12 +3645,14 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.box_sizing, .caption_side, .clear, .clip_rule, .color_interpolation, .color_scheme,
 		.empty_cells, .fill_rule, .float_, .font_kerning, .font_language_override,
 		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
-		.isolation, .list_style_image, .list_style_position, .mask_image, .mask_type,
-		.mix_blend_mode, .object_fit, .overflow_x, .overflow_y, .pointer_events, .position,
-		.position_anchor, .shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout,
-		.text_align, .text_anchor, .text_justify, .text_overflow, .text_rendering, .text_transform,
-		.text_wrap_mode, .text_wrap_style, .transform_style, .user_select, .white_space_collapse,
-		.white_space_trim, .word_break {
+		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
+		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
+		.list_style_image, .list_style_position, .mask_image, .mask_type, .mix_blend_mode,
+		.object_fit, .overflow_x, .overflow_y, .pointer_events, .position, .position_anchor,
+		.shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align,
+		.text_anchor, .text_justify, .text_overflow, .text_rendering, .text_transform,
+		.text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .touch_action,
+		.user_select, .white_space_collapse, .white_space_trim, .word_break {
 			.discrete
 		}
 	}
@@ -4116,26 +4380,29 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.caret_color, .clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility,
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity,
-		.font_feature_settings, .font_variation_settings, .font_weight, .font_width, .line_height,
-		.mask_image, .mask_type, .math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity,
-		.outline_color, .outline_offset, .outline_style, .outline_width, .pointer_events,
-		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
-		.stroke_opacity, .rotate, .scale, .scroll_timeline_name, .transform, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.translate, .user_select, .view_timeline_inset, .view_timeline_name, .text_overflow,
-		.text_rendering, .webkit_text_fill_color, .z_index {
+		.font_feature_settings, .font_variation_settings, .font_weight, .font_width,
+		.image_rendering, .line_height, .mask_image, .mask_type, .math_depth, .math_style,
+		.mix_blend_mode, .object_fit, .opacity, .outline_color, .outline_offset, .outline_style,
+		.outline_width, .pointer_events, .shape_image_threshold, .stop_color, .stop_opacity,
+		.stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale, .scroll_timeline_name,
+		.transform, .transform_box, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .translate, .touch_action, .user_select,
+		.view_timeline_inset, .view_timeline_name, .text_overflow, .text_rendering,
+		.webkit_text_fill_color, .z_index {
 			false
 		}
 		.anchor_name, .aspect_ratio, .border_bottom_style, .border_bottom_width, .border_collapse,
 		.border_left_style, .border_left_width, .border_right_style, .border_right_width,
 		.border_top_style, .border_top_width, .box_sizing, .caption_side, .clear, .direction,
 		.empty_cells, .float_, .font_kerning, .font_language_override, .font_optical_sizing,
-		.font_style, .font_variant_caps, .font_variant_emoji, .font_variant_position, .isolation,
-		.letter_spacing, .list_style_image, .list_style_position, .order, .orphans, .overflow_x,
-		.overflow_y, .position, .position_anchor, .shape_rendering, .table_layout, .text_align,
-		.text_anchor, .text_justify, .text_transform, .text_wrap_mode, .text_wrap_style,
-		.transform_style, .unicode_bidi, .visibility, .white_space_collapse, .white_space_trim,
-		.word_break, .word_spacing {
+		.font_style, .font_variant_caps, .font_variant_emoji, .font_variant_position,
+		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
+		.justify_items, .justify_self, .appearance, .column_span, .isolation, .letter_spacing,
+		.list_style_image, .list_style_position, .order, .orphans, .overflow_x, .overflow_y,
+		.position, .position_anchor, .shape_rendering, .table_layout, .text_align, .text_anchor,
+		.text_justify, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
+		.unicode_bidi, .visibility, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing {
 			true
 		}
 	}
@@ -4162,18 +4429,21 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .float_,
 		.direction, .empty_cells, .font_feature_settings, .font_kerning, .font_language_override,
 		.font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji,
-		.font_variant_position, .font_variation_settings, .font_weight, .font_width, .isolation,
+		.font_variant_position, .font_variation_settings, .font_weight, .font_width,
+		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
+		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
 		.letter_spacing, .line_height, .list_style_image, .list_style_position, .mask_type,
 		.math_depth, .math_style, .object_fit, .order, .orphans, .outline_color, .outline_offset,
 		.outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
 		.shape_rendering, .position, .position_anchor, .scroll_timeline_name,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
 		.stroke_opacity, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
-		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .unicode_bidi, .user_select, .view_timeline_inset,
-		.view_timeline_name, .visibility, .webkit_text_fill_color, .white_space_collapse,
-		.white_space_trim, .word_break, .word_spacing {
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,
+		.transform_style, .touch_action, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
+		.user_select, .view_timeline_inset, .view_timeline_name, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing {
 			false
 		}
 	}
@@ -4215,18 +4485,21 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .float_,
 		.direction, .empty_cells, .font_feature_settings, .font_kerning, .font_language_override,
 		.font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji,
-		.font_variant_position, .font_variation_settings, .font_weight, .font_width, .isolation,
+		.font_variant_position, .font_variation_settings, .font_weight, .font_width,
+		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
+		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
 		.letter_spacing, .line_height, .list_style_image, .list_style_position, .mask_type,
 		.math_depth, .math_style, .object_fit, .order, .orphans, .outline_color, .outline_offset,
 		.outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
 		.shape_rendering, .position, .position_anchor, .scroll_timeline_name,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
 		.stroke_opacity, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
-		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .unicode_bidi, .user_select, .view_timeline_inset,
-		.view_timeline_name, .visibility, .webkit_text_fill_color, .white_space_collapse,
-		.white_space_trim, .word_break, .word_spacing, .z_index {
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,
+		.transform_style, .touch_action, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
+		.user_select, .view_timeline_inset, .view_timeline_name, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing, .z_index {
 			false
 		}
 	}

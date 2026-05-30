@@ -156,6 +156,19 @@ pub enum PropertyID {
 	font_variant_caps
 	font_variant_emoji
 	font_variant_position
+	flex_direction
+	flex_wrap
+	align_content
+	align_items
+	align_self
+	justify_content
+	justify_items
+	justify_self
+	appearance
+	column_span
+	image_rendering
+	transform_box
+	touch_action
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {
