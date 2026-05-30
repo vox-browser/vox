@@ -143,7 +143,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 			false
 		}
 		.animation_timeline {
-			value_type in [.custom_ident, .dashed_ident, .scroll_function, .view_function]
+			value_type in [.dashed_ident, .scroll_function, .view_function]
 		}
 	}
 }
@@ -163,16 +163,15 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.color_scheme {
 			// color-scheme = normal | [ light | dark | <custom-ident> ]+ && only?
-			lowercase_value in ['normal', 'light', 'dark', 'only']
+			lowercase_value in ['normal', 'light', 'dark']
 		}
 		.content_visibility {
 			// content-visibility = visible | auto | hidden
 			lowercase_value in ['visible', 'auto', 'hidden']
 		}
 		.animation_timeline {
-			// animation-timeline accepts the regular CSS-wide keywords through the
-			// early check above. Named timelines are custom identifiers.
-			lowercase_value != ''
+			// animation-timeline = auto | none | <dashed-ident> | scroll() | view()
+			lowercase_value in ['auto', 'none']
 		}
 	}
 }
@@ -193,7 +192,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 			false
 		}
 		.animation_timeline {
-			true
+			// The named timeline branch is a <dashed-ident>, represented by
+			// CustomIdentStyleValue until a dedicated DashedIdent StyleValue exists.
+			value.starts_with('--')
 		}
 	}
 }
@@ -1138,7 +1139,6 @@ pub enum Keyword {
 	normal
 	light
 	dark
-	only
 	accentcolor
 	accentcolortext
 	activeborder
@@ -1267,7 +1267,6 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.normal { 'normal' }
 		.light { 'light' }
 		.dark { 'dark' }
-		.only { 'only' }
 		.accentcolor { 'accentcolor' }
 		.accentcolortext { 'accentcolortext' }
 		.activeborder { 'activeborder' }
@@ -1385,7 +1384,6 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'normal' { Keyword.normal }
 		'light' { Keyword.light }
 		'dark' { Keyword.dark }
-		'only' { Keyword.only }
 		'accentcolor' { Keyword.accentcolor }
 		'accentcolortext' { Keyword.accentcolortext }
 		'activeborder' { Keyword.activeborder }

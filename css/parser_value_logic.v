@@ -218,7 +218,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 			parser.parse_content_visibility_value(mut tokens)
 		}
 		.animation_timeline {
-			parser.parse_builtin_value(mut tokens)
+			parser.parse_animation_timeline_value(mut tokens)
 		}
 	}
 }
@@ -259,6 +259,156 @@ fn (mut parser Parser) parse_builtin_value(mut tokens ComponentValueStream) ?Sty
 		return style_value_from_css_image_source_for_value_logic(value)
 	}
 	return none
+}
+
+fn (mut parser Parser) parse_animation_timeline_value(mut tokens ComponentValueStream) ?StyleValue {
+	// animation-timeline = auto | none | <dashed-ident> | scroll() | view()
+	tokens.consume_whitespace()
+	component_value := tokens.consume() or { return none }
+	if component_value.is(.ident) {
+		ident := component_value.token().ident()
+		if equals_ignoring_ascii_case(ident, 'auto') {
+			return StyleValue(KeywordStyleValue.create(.auto))
+		}
+		if equals_ignoring_ascii_case(ident, 'none') {
+			return StyleValue(KeywordStyleValue.create(.none_))
+		}
+		if ident.starts_with('--') {
+			return StyleValue(CustomIdentStyleValue.create(ident))
+		}
+		return none
+	}
+	if scroll_function := parser.parse_scroll_function_value(component_value) {
+		return StyleValue(scroll_function)
+	}
+	if view_function := parser.parse_view_function_value(component_value) {
+		return StyleValue(view_function)
+	}
+	return none
+}
+
+fn axis_from_identifier_for_value_logic(value string) ?Axis {
+	return match to_ascii_lowercase(value) {
+		'block' { Axis.block }
+		'inline' { Axis.inline_ }
+		'x' { Axis.x }
+		'y' { Axis.y }
+		else { none }
+	}
+}
+
+fn scroller_from_identifier_for_value_logic(value string) ?Scroller {
+	return match to_ascii_lowercase(value) {
+		'root' { Scroller.root }
+		'nearest' { Scroller.nearest }
+		'self' { Scroller.self_ }
+		else { none }
+	}
+}
+
+fn (mut parser Parser) parse_scroll_function_value(component_value ComponentValue) ?ScrollFunctionStyleValue {
+	// <scroll()> = scroll( [ <scroller> || <axis> ]? )
+	if !component_value.is_function_named('scroll') {
+		return none
+	}
+	mut argument_tokens := ComponentValueStream.new(component_value.function().value)
+	mut scroller := ?Scroller(none)
+	mut axis := ?Axis(none)
+	for argument_tokens.has_more_tokens() {
+		argument_tokens.consume_whitespace()
+		token := argument_tokens.consume() or { break }
+		if !token.is(.ident) {
+			return none
+		}
+		ident := token.token().ident()
+		if maybe_scroller := scroller_from_identifier_for_value_logic(ident) {
+			if _ := scroller {
+				return none
+			}
+			scroller = maybe_scroller
+			continue
+		}
+		if maybe_axis := axis_from_identifier_for_value_logic(ident) {
+			if _ := axis {
+				return none
+			}
+			axis = maybe_axis
+			continue
+		}
+		return none
+	}
+
+	resolved_scroller := scroller or { Scroller.nearest }
+	resolved_axis := axis or { Axis.block }
+	return ScrollFunctionStyleValue.create(resolved_scroller, resolved_axis)
+}
+
+fn (mut parser Parser) parse_view_timeline_inset_value(mut tokens ComponentValueStream) ?StyleValue {
+	// [ [ auto | <length-percentage> ]{1,2} ]
+	mut transaction := tokens.clone()
+	mut inset_values := []StyleValue{}
+	for transaction.has_more_tokens() && inset_values.len < 2 {
+		transaction.consume_whitespace()
+		if token := transaction.peek() {
+			if token.is_ident('auto') {
+				transaction.consume()
+				inset_values << StyleValue(KeywordStyleValue.create(.auto))
+				continue
+			}
+		}
+		if length_percentage := parser.parse_length_percentage_value(mut transaction) {
+			inset_values << length_percentage
+			continue
+		}
+		break
+	}
+	if inset_values.len == 0 {
+		return none
+	}
+	tokens = transaction
+	if inset_values.len == 1 {
+		inset_values << inset_values[0]
+	}
+	return StyleValue(StyleValueList.create(inset_values, .space, .yes))
+}
+
+fn (mut parser Parser) parse_view_function_value(component_value ComponentValue) ?ViewFunctionStyleValue {
+	// <view()> = view( [ <axis> || <'view-timeline-inset'> ]? )
+	if !component_value.is_function_named('view') {
+		return none
+	}
+	mut argument_tokens := ComponentValueStream.new(component_value.function().value)
+	mut axis := ?Axis(none)
+	mut inset := ?StyleValue(none)
+	for argument_tokens.has_more_tokens() {
+		if inset_value := parser.parse_view_timeline_inset_value(mut argument_tokens) {
+			if _ := inset {
+				return none
+			}
+			inset = inset_value
+			continue
+		}
+
+		argument_tokens.consume_whitespace()
+		token := argument_tokens.consume() or { break }
+		if !token.is(.ident) {
+			return none
+		}
+		maybe_axis := axis_from_identifier_for_value_logic(token.token().ident()) or { return none }
+		if _ := axis {
+			return none
+		}
+		axis = maybe_axis
+	}
+
+	resolved_axis := axis or { Axis.block }
+	resolved_inset := inset or {
+		StyleValue(StyleValueList.create([
+			StyleValue(KeywordStyleValue.create(.auto)),
+			StyleValue(KeywordStyleValue.create(.auto)),
+		], .space, .yes))
+	}
+	return ViewFunctionStyleValue.create(resolved_axis, resolved_inset)
 }
 
 fn (mut parser Parser) parse_keyword_value(mut tokens ComponentValueStream) ?StyleValue {
