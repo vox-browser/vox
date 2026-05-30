@@ -2881,12 +2881,12 @@ pub fn (style_value TransformationStyleValue) to_string() string {
 
 // https://drafts.css-houdini.org/css-typed-om-1/#reify-a-transform-function
 pub fn (style_value TransformationStyleValue) reify_a_transform_function() !CSSTransformComponent {
-	reify_numeric_argument := fn [style_value] (index int) CSSNumericValue {
+	reify_numeric_argument := fn [style_value] (index int) !CSSNumericValue {
 		reified := style_value.values_[index].reify('')
 		if numeric := reified.numeric_value_ {
 			return numeric
 		}
-		return CSSUnitValue.create(0, 'number')
+		return error('Unable to reify transform argument as CSSNumericValue')
 	}
 	reify_0 := fn () CSSNumericValue {
 		return CSSUnitValue.create(0, 'number')
@@ -2944,25 +2944,25 @@ pub fn (style_value TransformationStyleValue) reify_a_transform_function() !CSST
 		//       is true if func is translate(), translateX(), or translateY(), and false otherwise.
 		.translate {
 			// NB: Default y to 0px if it's not specified.
-			y := if style_value.values_.len > 1 { reify_numeric_argument(1) } else { reify_0px() }
-			return CSSTransformComponent(CSSTranslate.create(.yes, reify_numeric_argument(0), y,
+			y := if style_value.values_.len > 1 { reify_numeric_argument(1)! } else { reify_0px() }
+			return CSSTransformComponent(CSSTranslate.create(.yes, reify_numeric_argument(0)!, y,
 				reify_0px()))
 		}
 		.translate_x {
-			return CSSTransformComponent(CSSTranslate.create(.yes, reify_numeric_argument(0),
+			return CSSTransformComponent(CSSTranslate.create(.yes, reify_numeric_argument(0)!,
 				reify_0px(), reify_0px()))
 		}
 		.translate_y {
 			return CSSTransformComponent(CSSTranslate.create(.yes, reify_0px(),
-				reify_numeric_argument(0), reify_0px()))
+				reify_numeric_argument(0)!, reify_0px()))
 		}
 		.translate3d {
-			return CSSTransformComponent(CSSTranslate.create(.no, reify_numeric_argument(0),
-				reify_numeric_argument(1), reify_numeric_argument(2)))
+			return CSSTransformComponent(CSSTranslate.create(.no, reify_numeric_argument(0)!,
+				reify_numeric_argument(1)!, reify_numeric_argument(2)!))
 		}
 		.translate_z {
 			return CSSTransformComponent(CSSTranslate.create(.no, reify_0px(), reify_0px(),
-				reify_numeric_argument(0)))
+				reify_numeric_argument(0)!))
 		}
 		// -> scale()
 		// -> scaleX()
@@ -2975,28 +2975,28 @@ pub fn (style_value TransformationStyleValue) reify_a_transform_function() !CSST
 		.scale {
 			// NB: Default y to a copy of x if it's not specified.
 			y := if style_value.values_.len > 1 {
-				reify_numeric_argument(1)
+				reify_numeric_argument(1)!
 			} else {
-				reify_numeric_argument(0)
+				reify_numeric_argument(0)!
 			}
-			return CSSTransformComponent(CSSScale.create(.yes, reify_numeric_argument(0), y,
+			return CSSTransformComponent(CSSScale.create(.yes, reify_numeric_argument(0)!, y,
 				reify_1()))
 		}
 		.scale_x {
-			return CSSTransformComponent(CSSScale.create(.yes, reify_numeric_argument(0),
+			return CSSTransformComponent(CSSScale.create(.yes, reify_numeric_argument(0)!,
 				reify_1(), reify_1()))
 		}
 		.scale_y {
 			return CSSTransformComponent(CSSScale.create(.yes, reify_1(),
-				reify_numeric_argument(0), reify_1()))
+				reify_numeric_argument(0)!, reify_1()))
 		}
 		.scale3d {
-			return CSSTransformComponent(CSSScale.create(.no, reify_numeric_argument(0),
-				reify_numeric_argument(1), reify_numeric_argument(2)))
+			return CSSTransformComponent(CSSScale.create(.no, reify_numeric_argument(0)!,
+				reify_numeric_argument(1)!, reify_numeric_argument(2)!))
 		}
 		.scale_z {
 			return CSSTransformComponent(CSSScale.create(.no, reify_1(), reify_1(),
-				reify_numeric_argument(0)))
+				reify_numeric_argument(0)!))
 		}
 		// -> rotate()
 		// -> rotate3d()
@@ -3009,43 +3009,43 @@ pub fn (style_value TransformationStyleValue) reify_a_transform_function() !CSST
 		//       false otherwise.
 		.rotate {
 			return CSSTransformComponent(CSSRotate.create(.yes, reify_0(), reify_0(), reify_1(),
-				reify_numeric_argument(0)))
+				reify_numeric_argument(0)!))
 		}
 		.rotate3d {
-			return CSSTransformComponent(CSSRotate.create(.no, reify_numeric_argument(0),
-				reify_numeric_argument(1), reify_numeric_argument(2), reify_numeric_argument(3)))
+			return CSSTransformComponent(CSSRotate.create(.no, reify_numeric_argument(0)!,
+				reify_numeric_argument(1)!, reify_numeric_argument(2)!, reify_numeric_argument(3)!))
 		}
 		.rotate_x {
 			return CSSTransformComponent(CSSRotate.create(.no, reify_1(), reify_0(), reify_0(),
-				reify_numeric_argument(0)))
+				reify_numeric_argument(0)!))
 		}
 		.rotate_y {
 			return CSSTransformComponent(CSSRotate.create(.no, reify_0(), reify_1(), reify_0(),
-				reify_numeric_argument(0)))
+				reify_numeric_argument(0)!))
 		}
 		.rotate_z {
 			return CSSTransformComponent(CSSRotate.create(.no, reify_0(), reify_0(), reify_1(),
-				reify_numeric_argument(0)))
+				reify_numeric_argument(0)!))
 		}
 		// -> skew()
 		//    1. Return a new CSSSkew object, whose ax and ay internal slots are set to the reification of the specified x
 		//       and y angles, or the reification of 0deg if not specified in func, and whose is2D internal slot is true.
 		.skew {
 			// NB: Default y to 0deg if it's not specified.
-			y := if style_value.values_.len > 1 { reify_numeric_argument(1) } else { reify_0deg() }
-			return CSSTransformComponent(CSSSkew.create(reify_numeric_argument(0), y))
+			y := if style_value.values_.len > 1 { reify_numeric_argument(1)! } else { reify_0deg() }
+			return CSSTransformComponent(CSSSkew.create(reify_numeric_argument(0)!, y))
 		}
 		// -> skewX()
 		//    1. Return a new CSSSkewX object, whose ax internal slot is set to the reification of the specified x angle,
 		//       or the reification of 0deg if not specified in func, and whose is2D internal slot is true.
 		.skew_x {
-			return CSSTransformComponent(CSSSkewX.create(reify_numeric_argument(0)))
+			return CSSTransformComponent(CSSSkewX.create(reify_numeric_argument(0)!))
 		}
 		// -> skewY()
 		//    1. Return a new CSSSkewY object, whose ay internal slot is set to the reification of the specified y angle,
 		//       or the reification of 0deg if not specified in func, and whose is2D internal slot is true.
 		.skew_y {
-			return CSSTransformComponent(CSSSkewY.create(reify_numeric_argument(0)))
+			return CSSTransformComponent(CSSSkewY.create(reify_numeric_argument(0)!))
 		}
 		// -> perspective()
 		//    1. Return a new CSSPerspective object, whose length internal slot is set to the reification of the specified
@@ -3055,7 +3055,7 @@ pub fn (style_value TransformationStyleValue) reify_a_transform_function() !CSST
 			if style_value_is_keyword_none(style_value.values_[0]) {
 				return CSSTransformComponent(CSSPerspective.create(CSSKeywordValue.create('none')))
 			}
-			return CSSTransformComponent(CSSPerspective.create(css_perspective_internal_from_numeric(reify_numeric_argument(0))))
+			return CSSTransformComponent(CSSPerspective.create(css_perspective_internal_from_numeric(reify_numeric_argument(0)!)))
 		}
 	}
 }
