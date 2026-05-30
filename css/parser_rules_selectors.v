@@ -1942,14 +1942,14 @@ fn parse_font_family_name_for_rule_parsing(values []ComponentValue) ?string {
 		if is_css_wide_keyword_string(parts[0]) || equals_ignoring_ascii_case(parts[0], 'default') {
 			return none
 		}
-		if is_generic_font_family_name_stub(parts[0]) {
+		if is_generic_font_family_name(parts[0]) {
 			return none
 		}
 	}
 	return parts.join(' ')
 }
 
-fn is_generic_font_family_name_stub(name string) bool {
+fn is_generic_font_family_name(name string) bool {
 	return name.to_lower() in ['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui',
 		'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded', 'math', 'emoji', 'fangsong']
 }
@@ -1986,14 +1986,14 @@ fn (mut parser RuleSelectorParser) parse_counter_style_name(mut tokens ParserTok
 	// Counter style names are case-sensitive. However, the names defined in this specification are ASCII lowercased
 	// on parse wherever they are used as counter styles, e.g. in the list-style set of properties, in the
 	// @counter-style rule, and in the counter() functions.
-	if is_predefined_counter_style_name_stub(custom_ident) {
+	if is_predefined_counter_style_name(custom_ident) {
 		custom_ident = custom_ident.to_lower()
 	}
 
 	return custom_ident
 }
 
-fn is_predefined_counter_style_name_stub(name string) bool {
+fn is_predefined_counter_style_name(name string) bool {
 	return name.to_lower() in ['decimal', 'disc', 'square', 'circle', 'disclosure-open',
 		'disclosure-closed']
 }
@@ -2139,7 +2139,7 @@ fn parse_counter_style_additive_symbols_descriptor_value(value string) ?CounterS
 fn parse_page_selector_list_for_rule_parsing(mut tokens ParserTokenStream) ?PageSelectorList {
 	text := tokens.dump_string().trim_space()
 	tokens.index = tokens.values.len - 1
-	return parse_page_selector_list_stub(text)
+	return parse_page_selector_list(text)
 }
 
 fn convert_to_page_descriptor_for_rule_parsing(declaration Declaration) ?Descriptor {

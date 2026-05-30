@@ -578,7 +578,7 @@ pub fn (mut rule CSSRule) set_page_selector_text(text string) {
 
 	// On setting the selectorText attribute these steps must be run:
 	// 1. Run the parse a list of CSS page selectors algorithm on the given value.
-	selectors := parse_page_selector_list_stub(text) or { return }
+	selectors := parse_page_selector_list(text) or { return }
 
 	// 2. If the algorithm returns a non-null value replace the associated selector list with
 	// the returned value.
@@ -614,7 +614,7 @@ fn (rule &CSSRule) serialized_page_rule() string {
 	return builder.str()
 }
 
-fn parse_page_selector_list_stub(text string) ?PageSelectorList {
+fn parse_page_selector_list(text string) ?PageSelectorList {
 	mut tokens := ParserTokenStream.from_tokens(Tokenizer.tokenize(text, 'utf-8'))
 	return parse_a_page_selector_list_translated(mut tokens)
 }
