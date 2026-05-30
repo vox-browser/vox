@@ -2958,15 +2958,18 @@ pub fn (style_value StubStyleValue) serialize(mode SerializationMode) string {
 	return style_value.serialization
 }
 
-// Extra methods for the existing CalculatedStyleValue stub in css.v.
 pub fn (c CalculatedStyleValue) resolves_to_number() bool {
-	_ = c
+	if numeric_type := c.numeric_type() {
+		return numeric_type.matches_number(none)
+	}
 	return true
 }
 
 pub fn (c CalculatedStyleValue) resolves_to_percentage() bool {
-	_ = c
-	return false
+	if numeric_type := c.numeric_type() {
+		return numeric_type.matches_percentage()
+	}
+	return c.serialization.trim_space().ends_with('%)')
 }
 
 // --- CSSStyleValue ---
@@ -4293,9 +4296,31 @@ pub fn (unit_value CSSUnitValue) create_an_internal_representation(property Prop
 		return StyleValue(UnresolvedStyleValue.create([token]))
 	}
 
-	wrap_in_math_sum := fn (primitive NumericPrimitiveValue) StyleValue {
-		_ = primitive
-		return StyleValue(CalculatedStyleValue{})
+	context := CalculationContext.for_property(property)
+	wrap_in_math_sum := fn [context] (primitive NumericPrimitiveValue) StyleValue {
+		serialization := match primitive {
+			Number { primitive.serialize(.normal) }
+			Percentage { primitive.serialize(.normal) }
+			Angle { primitive.serialize(.normal) }
+			Flex { primitive.serialize(.normal) }
+			Frequency { primitive.serialize(.normal) }
+			Length { primitive.serialize(.normal) }
+			Resolution { primitive.serialize(.normal) }
+			Time { primitive.serialize(.normal) }
+		}
+		type_ := NumericType.create_from_unit(match primitive {
+			Number { 'number' }
+			Percentage { 'percent' }
+			Angle { primitive.unit_name() }
+			Flex { primitive.unit_name() }
+			Frequency { primitive.unit_name() }
+			Length { primitive.unit_name() }
+			Resolution { primitive.unit_name() }
+			Time { primitive.unit_name() }
+		}) or { NumericType.new() }
+		return StyleValue(CalculatedStyleValue.create(CalculationNode{
+			serialization: 'calc(${serialization})'
+		}, type_, context))
 	}
 
 	value := create_numeric_value(unit_value.value_, unit_value.unit_) or {

@@ -6,8 +6,15 @@ import math
 // --- CalculatedOr ---
 
 pub fn (c CalculatedStyleValue) resolve_angle(context CalculationResolutionContext) ?Angle {
-	_ = c
-	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
+	inner := c.inner_calculation_text()
+	if angle := calculated_parse_angle(inner) {
+		return angle
+	}
+	if percentage := calculated_parse_percentage(inner) {
+		if percentage_basis := context.percentage_basis_angle() {
+			return percentage_basis.percentage_of(percentage)
+		}
+	}
 	if percentage_basis := context.percentage_basis_angle() {
 		return percentage_basis
 	}
@@ -15,15 +22,28 @@ pub fn (c CalculatedStyleValue) resolve_angle(context CalculationResolutionConte
 }
 
 pub fn (c CalculatedStyleValue) resolve_flex(context CalculationResolutionContext) ?Flex {
-	_ = c
 	_ = context
-	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
+	inner := c.inner_calculation_text()
+	mut parser := Parser.from_css_text(inner)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	if style_value := parser.parse_flex_value(mut tokens) {
+		if !tokens.has_more_tokens() && style_value is FlexStyleValue {
+			return (style_value as FlexStyleValue).flex()
+		}
+	}
 	return Flex.make_fr(0)
 }
 
 pub fn (c CalculatedStyleValue) resolve_frequency(context CalculationResolutionContext) ?Frequency {
-	_ = c
-	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
+	inner := c.inner_calculation_text()
+	if frequency := calculated_parse_frequency(inner) {
+		return frequency
+	}
+	if percentage := calculated_parse_percentage(inner) {
+		if percentage_basis := context.percentage_basis_frequency() {
+			return percentage_basis.percentage_of(percentage)
+		}
+	}
 	if percentage_basis := context.percentage_basis_frequency() {
 		return percentage_basis
 	}
@@ -38,8 +58,15 @@ pub fn (c CalculatedStyleValue) resolve_integer(context CalculationResolutionCon
 }
 
 pub fn (c CalculatedStyleValue) resolve_number(context CalculationResolutionContext) ?f64 {
-	_ = c
-	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
+	inner := c.inner_calculation_text()
+	if number := calculated_parse_number(inner) {
+		return number.value()
+	}
+	if percentage := calculated_parse_percentage(inner) {
+		if percentage_basis := context.percentage_basis_number() {
+			return percentage_basis.value() * percentage.as_fraction()
+		}
+	}
 	if percentage_basis := context.percentage_basis_number() {
 		return percentage_basis.value()
 	}
@@ -47,22 +74,33 @@ pub fn (c CalculatedStyleValue) resolve_number(context CalculationResolutionCont
 }
 
 pub fn (c CalculatedStyleValue) resolve_percentage(context CalculationResolutionContext) ?Percentage {
-	_ = c
 	_ = context
-	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
+	inner := c.inner_calculation_text()
+	if percentage := calculated_parse_percentage(inner) {
+		return percentage
+	}
 	return Percentage.new(0)
 }
 
 pub fn (c CalculatedStyleValue) resolve_resolution(context CalculationResolutionContext) ?Resolution {
-	_ = c
 	_ = context
-	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
+	inner := c.inner_calculation_text()
+	if resolution := calculated_parse_resolution(inner) {
+		return resolution
+	}
 	return Resolution.make_dots_per_pixel(0)
 }
 
 pub fn (c CalculatedStyleValue) resolve_time(context CalculationResolutionContext) ?Time {
-	_ = c
-	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
+	inner := c.inner_calculation_text()
+	if time := calculated_parse_time(inner) {
+		return time
+	}
+	if percentage := calculated_parse_percentage(inner) {
+		if percentage_basis := context.percentage_basis_time() {
+			return percentage_basis.percentage_of(percentage)
+		}
+	}
 	if percentage_basis := context.percentage_basis_time() {
 		return percentage_basis
 	}

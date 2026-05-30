@@ -1598,25 +1598,129 @@ pub fn CalculationResolutionContext.from_computation_context(computation_context
 	}
 }
 
-pub struct CalculatedStyleValue {}
+pub struct CalculatedStyleValue {
+pub mut:
+	serialization string = 'calc(0px)'
+	numeric_type_ ?NumericType
+}
+
+pub fn CalculatedStyleValue.create(node CalculationNode, numeric_type NumericType, context CalculationContext) CalculatedStyleValue {
+	_ = context
+	return CalculatedStyleValue{
+		serialization: if node.serialization.len == 0 { 'calc(0px)' } else { node.serialization }
+		numeric_type_: numeric_type
+	}
+}
+
+pub fn (c CalculatedStyleValue) numeric_type() ?NumericType {
+	return c.numeric_type_
+}
 
 pub fn (c CalculatedStyleValue) contains_percentage() bool {
-	_ = c
-	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
-	return false
+	if numeric_type := c.numeric_type_ {
+		if exponent := numeric_type.exponent(.percent) {
+			return exponent != 0
+		}
+	}
+	return c.serialization.contains('%')
 }
 
 pub fn (c CalculatedStyleValue) serialize(mode SerializationMode) string {
-	_ = c
 	_ = mode
-	return 'calc(0px)'
+	if c.serialization.len == 0 {
+		return 'calc(0px)'
+	}
+	return c.serialization
+}
+
+fn (c CalculatedStyleValue) inner_calculation_text() string {
+	trimmed := c.serialization.trim_space()
+	if trimmed.starts_with('calc(') && trimmed.ends_with(')') {
+		return trimmed[5..trimmed.len - 1].trim_space()
+	}
+	return trimmed
+}
+
+fn calculated_parse_number(text string) ?Number {
+	mut parser := Parser.from_css_text(text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	value := parser.parse_number(mut tokens) or { return none }
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return value
+}
+
+fn calculated_parse_percentage(text string) ?Percentage {
+	mut parser := Parser.from_css_text(text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	value := parser.parse_percentage(mut tokens) or { return none }
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return value
+}
+
+fn calculated_parse_length(text string) ?Length {
+	mut parser := Parser.from_css_text(text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	value := parser.parse_length(mut tokens) or { return none }
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return value
+}
+
+fn calculated_parse_angle(text string) ?Angle {
+	mut parser := Parser.from_css_text(text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	value := parser.parse_angle(mut tokens) or { return none }
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return value
+}
+
+fn calculated_parse_frequency(text string) ?Frequency {
+	mut parser := Parser.from_css_text(text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	style_value := parser.parse_frequency_value(mut tokens) or { return none }
+	if tokens.has_more_tokens() || style_value !is FrequencyStyleValue {
+		return none
+	}
+	return (style_value as FrequencyStyleValue).frequency()
+}
+
+fn calculated_parse_resolution(text string) ?Resolution {
+	mut parser := Parser.from_css_text(text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	style_value := parser.parse_resolution_value(mut tokens) or { return none }
+	if tokens.has_more_tokens() || style_value !is ResolutionStyleValue {
+		return none
+	}
+	return (style_value as ResolutionStyleValue).resolution()
+}
+
+fn calculated_parse_time(text string) ?Time {
+	mut parser := Parser.from_css_text(text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	style_value := parser.parse_time_value(mut tokens) or { return none }
+	if tokens.has_more_tokens() || style_value !is TimeStyleValue {
+		return none
+	}
+	return (style_value as TimeStyleValue).time()
 }
 
 pub fn (c CalculatedStyleValue) resolve_length(context CalculationResolutionContext) ?Length {
-	_ = c
-	// Boundary: The typed CalculationNode/NumericType runtime is not translated in
-	// the V port yet. Preserve the explicit used-value percentage basis where it
-	// is representable; otherwise keep the existing canonical zero fallback.
+	inner := c.inner_calculation_text()
+	if length := calculated_parse_length(inner) {
+		return length
+	}
+	if percentage := calculated_parse_percentage(inner) {
+		if percentage_basis := context.percentage_basis_length() {
+			return percentage_basis.percentage_of(percentage)
+		}
+	}
 	if percentage_basis := context.percentage_basis_length() {
 		return percentage_basis
 	}

@@ -701,23 +701,23 @@ pub fn (style_value StyleValue) as_angle() AngleStyleValue {
 }
 
 pub fn (c CalculatedStyleValue) resolves_to_angle() bool {
-	_ = c
-	// Calculation integration: the typed calculation tree is not translated yet; this mirrors the existing
-	// resolved-value stand-ins.
+	if numeric_type := c.numeric_type() {
+		return numeric_type.matches_angle(none)
+	}
 	return true
 }
 
 pub fn (c CalculatedStyleValue) resolves_to_length() bool {
-	_ = c
-	// Calculation integration: the typed calculation tree is not translated yet; this mirrors the existing
-	// resolved-value stand-ins.
+	if numeric_type := c.numeric_type() {
+		return numeric_type.matches_length(none)
+	}
 	return true
 }
 
 pub fn (c CalculatedStyleValue) resolves_to_length_percentage() bool {
-	_ = c
-	// Calculation integration: the typed calculation tree is not translated yet; this mirrors the existing
-	// resolved-value stand-ins.
+	if numeric_type := c.numeric_type() {
+		return numeric_type.matches_length_percentage(none)
+	}
 	return true
 }
 
@@ -736,8 +736,8 @@ pub fn (value CSSNumericValue) create_an_internal_representation(property Proper
 					return error('Property does not accept values of this type.')
 				}
 			}
-			_ = CSSNumericValue(value).create_calculation_node(context)!
-			StyleValue(CalculatedStyleValue{})
+			node := CSSNumericValue(value).create_calculation_node(context)!
+			StyleValue(CalculatedStyleValue.create(node, value.type_, context))
 		}
 		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax,
 		CSSMathClamp {

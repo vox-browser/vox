@@ -86,9 +86,11 @@ fn (mut stream ComponentValueStream) reconsume() {
 }
 
 fn (mut stream ComponentValueStream) consume_whitespace() {
-	for value := stream.peek() or { return }; value.is(.whitespace); value = stream.peek() or {
-		return
-	} {
+	for {
+		value := stream.peek() or { return }
+		if !value.is(.whitespace) {
+			return
+		}
 		stream.index++
 	}
 }

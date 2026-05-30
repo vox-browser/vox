@@ -147,11 +147,12 @@ pub fn (value CSSMathValue) create_an_internal_representation(property PropertyN
 	//     Return the value.
 	context := CalculationContext.for_property(property)
 	type_ := value.type_()
+	node := value.create_calculation_node(context)!
 	property_id := property.id() or {
 		if perform_type_check == .yes {
 			return error('Property does not accept values of this type.')
 		}
-		return StyleValue(CalculatedStyleValue{})
+		return StyleValue(CalculatedStyleValue.create(node, type_, context))
 	}
 	matches := css_numeric_type_matches_property(type_, property_id, none)
 
@@ -159,11 +160,7 @@ pub fn (value CSSMathValue) create_an_internal_representation(property PropertyN
 		return error('Property does not accept values of this type.')
 	}
 
-	// The V CalculatedStyleValue stub cannot store the calculation node or resolved
-	// type yet, but still run the translated node construction so unsupported
-	// numeric leaves fail at the same boundary as the C++ algorithm.
-	_ = value.create_calculation_node(context)!
-	return StyleValue(CalculatedStyleValue{})
+	return StyleValue(CalculatedStyleValue.create(node, type_, context))
 }
 
 pub fn (value CSSMathValue) create_calculation_node(context CalculationContext) !CalculationNode {
