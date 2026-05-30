@@ -807,26 +807,121 @@ fn (mut parser Parser) parse_media_type(mut tokens ComponentValueStream) ?MediaQ
 }
 
 fn (mut parser Parser) parse_media_feature_value(media_feature string, mut tokens ComponentValueStream) ?StyleValue {
-	_ = media_feature
-	// Generated media feature grammar is not translated yet. Reuse the same
-	// primitive value order as ValueParsing.cpp for lengths, ratios, numbers,
-	// identifiers, and strings.
-	if value := parser.parse_length_percentage_value(mut tokens) {
-		return value
+	mut transaction := tokens.clone()
+	if value := parser.parse_known_media_feature_value(media_feature, mut transaction) {
+		transaction.consume_whitespace()
+
+		// Only return the value if there are no trailing tokens.
+		// Otherwise, the transaction gets reverted and we consume all the value tokens below.
+		if !media_feature_stream_has_value_token(transaction) {
+			tokens = transaction
+			return value
+		}
 	}
-	if value := parser.parse_number_percentage_value(mut tokens) {
-		return value
+
+	// Parsing failed somehow, so wrap all the tokens into an "unknown" MediaFeatureValue if possible.
+	mut unknown_transaction := tokens.clone()
+	unknown_transaction.consume_whitespace()
+	mut unknown_tokens := []ComponentValue{}
+
+	// Consume any tokens that could be part of a value.
+	for unknown_transaction.has_more_tokens() {
+		next := unknown_transaction.peek() or { break }
+		if !is_media_feature_value_token(next) {
+			break
+		}
+		unknown_tokens << unknown_transaction.consume() or { break }
 	}
-	if value := parser.parse_ratio_value(mut tokens) {
-		return value
+
+	if unknown_tokens.len != 0 {
+		tokens = unknown_transaction
+		return StyleValue(UnresolvedStyleValue.create(unknown_tokens))
 	}
-	if value := parser.parse_keyword_value(mut tokens) {
-		return value
-	}
-	if string_value := parser.parse_string_value(mut tokens) {
-		return StyleValue(string_value)
-	}
+
 	return none
+}
+
+fn (mut parser Parser) parse_known_media_feature_value(media_feature string, mut tokens ComponentValueStream) ?StyleValue {
+	feature_name := media_feature.to_lower()
+
+	// One branch for each member of the MediaFeatureValueType enum:
+	// Identifiers
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if token := transaction.peek() {
+		if token.is(.ident) {
+			ident := token.token().ident().to_lower()
+			if media_feature_accepts_keyword_name(feature_name, ident) {
+				transaction.consume()
+				tokens = transaction
+				if keyword := keyword_from_string(ident) {
+					return StyleValue(KeywordStyleValue.create(keyword))
+				}
+				return StyleValue(CustomIdentStyleValue.create(ident))
+			}
+		}
+	}
+
+	// Boolean (<mq-boolean> in the spec: a 1 or 0)
+	if media_feature_accepts_type_name(feature_name, .boolean) {
+		transaction = tokens.clone()
+		transaction.consume_whitespace()
+		if value := parser.parse_integer_value(mut transaction) {
+			integer := value.as_integer().integer()
+			if integer == 0 || integer == 1 {
+				tokens = transaction
+				return value
+			}
+		}
+	}
+
+	// Integer
+	if media_feature_accepts_type_name(feature_name, .integer) {
+		transaction = tokens.clone()
+		if value := parser.parse_integer_value(mut transaction) {
+			tokens = transaction
+			return value
+		}
+	}
+
+	// Length
+	if media_feature_accepts_type_name(feature_name, .length) {
+		transaction = tokens.clone()
+		transaction.consume_whitespace()
+		if value := parser.parse_length_value(mut transaction) {
+			tokens = transaction
+			return value
+		}
+	}
+
+	// Ratio
+	if media_feature_accepts_type_name(feature_name, .ratio) {
+		transaction = tokens.clone()
+		transaction.consume_whitespace()
+		if value := parser.parse_ratio_value(mut transaction) {
+			tokens = transaction
+			return value
+		}
+	}
+
+	// Resolution
+	if media_feature_accepts_type_name(feature_name, .resolution) {
+		transaction = tokens.clone()
+		transaction.consume_whitespace()
+		if value := parser.parse_resolution_value(mut transaction) {
+			tokens = transaction
+			return value
+		}
+	}
+
+	return none
+}
+
+fn media_feature_stream_has_value_token(stream ComponentValueStream) bool {
+	mut copy := stream
+	copy.consume_whitespace()
+	next := copy.peek() or { return false }
+	return is_media_feature_value_token(next)
 }
 
 fn (mut parser Parser) parse_ratio_value(mut tokens ComponentValueStream) ?StyleValue {
