@@ -20,12 +20,35 @@ fn length_resolution_context_from_viewport_rect(viewport_rect CSSPixelRect) Leng
 	}
 }
 
+fn length_resolution_context_from_document(document &dom.Document) LengthResolutionContext {
+	// Translates Length::ResolutionContext::for_document(). The C++ version gets
+	// the initial font and font metrics from Document::font_computer(); those
+	// hooks are not available in the V DOM yet, so default initial metrics are
+	// the current boundary and the document viewport is preserved.
+	return length_resolution_context_from_viewport_rect(css_pixel_rect_from_dom_rect(document.viewport_rect()))
+}
+
+fn length_resolution_context_from_layout_node(layout_node &dom.LayoutNode) ?LengthResolutionContext {
+	// Translates the document/viewport half of
+	// Length::ResolutionContext::for_layout_node(). The V LayoutNode stub does
+	// not expose computed_values(), first_available_font(), navigable(), or the
+	// root layout node yet. When a DOM back-pointer exists, use its document
+	// viewport and keep font metrics at the explicit default-font boundary.
+	dom_node := layout_node.dom_node() or { return none }
+	return length_resolution_context_from_document(dom_node.document())
+}
+
+fn document_from_layout_node(layout_node &dom.LayoutNode) ?&dom.Document {
+	dom_node := layout_node.dom_node() or { return none }
+	return dom_node.document()
+}
+
 // Translates Length::ResolutionContext::for_element(). The C++ version reads
 // computed fonts from DOM/Layout; the V DOM style/layout objects do not expose
 // those metrics yet, so this uses the element document viewport with default
 // font metrics.
 pub fn LengthResolutionContext.for_element(element &dom.AbstractElement) LengthResolutionContext {
-	return length_resolution_context_from_viewport_rect(css_pixel_rect_from_dom_rect(element.document().viewport_rect()))
+	return length_resolution_context_from_document(element.document())
 }
 
 // Translates Length::ResolutionContext::for_window(). The current Window stub
@@ -33,17 +56,30 @@ pub fn LengthResolutionContext.for_element(element &dom.AbstractElement) LengthR
 // zero viewport in that case.
 pub fn LengthResolutionContext.for_window(window &dom.Window) LengthResolutionContext {
 	document := window.associated_document() or { return LengthResolutionContext.default() }
-	return length_resolution_context_from_viewport_rect(css_pixel_rect_from_dom_rect(document.viewport_rect()))
+	return length_resolution_context_from_document(document)
 }
 
-// Layout::Node does not currently expose document, viewport, or font metrics in
-// the V port. Keep the layout-dependent slow path explicit and deterministic.
-pub fn (length Length) to_px_slow_case_stub(layout_node &dom.LayoutNode) CSSPixels {
-	_ = layout_node
+// Translates Length::to_px_slow_case(Layout::Node const&). Layout::Node does not
+// currently expose computed_values(), first_available_font(), navigable(), or
+// root layout nodes in the V port; those font/layout metrics remain an explicit
+// boundary, but the C++ branch behavior and document viewport lookup are kept
+// when the stub can expose a DOM node.
+pub fn (length Length) to_px_slow_case_for_layout_node(layout_node &dom.LayoutNode) CSSPixels {
 	if length.is_absolute() {
 		return length.absolute_length_to_px()
 	}
-	return length.to_px(LengthResolutionContext.default())
+	document := document_from_layout_node(layout_node) or { return CSSPixels{} }
+	if document.get_browsing_context() == none {
+		return CSSPixels{}
+	}
+	context := length_resolution_context_from_document(document)
+	if length.is_font_relative() {
+		return length.font_relative_length_to_px(context.font_metrics, context.root_font_metrics)
+	}
+	if length.is_viewport_relative() {
+		return length.viewport_relative_length_to_px(context.viewport_rect)
+	}
+	panic('VERIFY_NOT_REACHED')
 }
 
 // StyleValue-backed equivalents of Angle::from_style_value(),
@@ -148,14 +184,47 @@ pub fn LengthPercentageOrAuto.from_style_value_logic(style_value StyleValue) Len
 	return LengthPercentageOrAuto.from_length_percentage(LengthPercentage.from_style_value_logic(style_value))
 }
 
-pub fn (edge_rect EdgeRect) resolved_for_layout_node_stub(layout_node &dom.LayoutNode, border_box CSSPixelRect) CSSPixelRect {
-	_ = layout_node
-	return edge_rect.resolved(LengthResolutionContext.default(), border_box)
+pub fn (edge_rect EdgeRect) resolved_for_layout_node(layout_node &dom.LayoutNode, border_box CSSPixelRect) CSSPixelRect {
+	// Direct translation of EdgeRect::resolved(Layout::Node const&,
+	// CSSPixelRect): each non-auto edge resolves through Length::to_px(node),
+	// whose missing font/layout hooks are isolated in to_px_slow_case_for_layout_node().
+	left := border_box.x.plus(if length := edge_rect.left_edge.length() {
+		length.to_px_slow_case_for_layout_node(layout_node)
+	} else {
+		CSSPixels{}
+	})
+	top := border_box.y.plus(if length := edge_rect.top_edge.length() {
+		length.to_px_slow_case_for_layout_node(layout_node)
+	} else {
+		CSSPixels{}
+	})
+	right := border_box.x.plus(if length := edge_rect.right_edge.length() {
+		length.to_px_slow_case_for_layout_node(layout_node)
+	} else {
+		border_box.width
+	})
+	bottom := border_box.y.plus(if length := edge_rect.bottom_edge.length() {
+		length.to_px_slow_case_for_layout_node(layout_node)
+	} else {
+		border_box.height
+	})
+	return CSSPixelRect{
+		x:      left
+		y:      top
+		width:  right.minus(left)
+		height: bottom.minus(top)
+	}
 }
 
-pub fn (size Size) to_px_for_layout_node_stub(layout_node &dom.LayoutNode, reference_value CSSPixels) CSSPixels {
-	_ = layout_node
-	return size.to_px(LengthResolutionContext.default(), reference_value)
+pub fn (size Size) to_px_for_layout_node(layout_node &dom.LayoutNode, reference_value CSSPixels) CSSPixels {
+	// Direct translation of Size::to_px(Layout::Node const&, CSSPixels): no
+	// length percentage means zero; otherwise resolve against the reference and
+	// convert the resulting Length through the layout-node slow path.
+	length_percentage := size.length_percentage_ or { return CSSPixels{} }
+	context := length_resolution_context_from_layout_node(layout_node) or {
+		LengthResolutionContext.default()
+	}
+	return length_percentage.resolved(context, reference_value).to_px_slow_case_for_layout_node(layout_node)
 }
 
 // Ratio::operator== compares the numeric ratio value rather than the raw
