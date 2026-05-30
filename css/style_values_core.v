@@ -2140,7 +2140,9 @@ pub fn (style_value KeywordStyleValue) to_color(color_resolution_context ColorRe
 		min_contrast := 10.2
 		system_accent_text := SystemColor.accent_color_text(scheme)
 
-		accent_color := color_resolution_context.accent_color or { SystemColor.accent_color(scheme) }
+		accent_color := color_resolution_context.accent_color or {
+			SystemColor.accent_color(scheme)
+		}
 		if accent_color.contrast_ratio(system_accent_text) < min_contrast {
 			return system_accent_text.inverted()
 		}
@@ -2165,8 +2167,8 @@ pub fn (style_value KeywordStyleValue) to_color(color_resolution_context ColorRe
 		.buttontext {
 			return SystemColor.button_text(scheme)
 		}
-		.canvas, .appworkspace, .background, .inactivecaption, .infobackground, .menu,
-		.scrollbar, .window {
+		.canvas, .appworkspace, .background, .inactivecaption, .infobackground, .menu, .scrollbar,
+		.window {
 			return SystemColor.canvas(scheme)
 		}
 		.canvastext, .activecaption, .captiontext, .infotext, .menutext, .windowtext {
@@ -2230,9 +2232,7 @@ pub fn (style_value KeywordStyleValue) absolutized(context ComputationContext) S
 
 	resolved_color := style_value.to_color(ColorResolutionContext{
 		color_scheme: context.color_scheme
-	}) or {
-		return StyleValue(style_value)
-	}
+	}) or { return StyleValue(style_value) }
 	return StyleValue(ColorStyleValue.create(resolved_color))
 }
 
@@ -2908,14 +2908,14 @@ pub fn (value CSSKeywordValue) create_an_internal_representation(property Proper
 		if is_css_wide_keyword_string(value.value_) {
 			return true
 		}
-			if property.is_custom_property() {
-				// FIXME: If this is a registered custom property, check if that allows the keyword.
-				return true
-			}
-			property_id := property.id() or { return false }
-			return property_accepts_keyword_string(property_id, value.value_)
-				|| property_accepts_custom_ident(property_id, value.value_)
-		}()
+		if property.is_custom_property() {
+			// FIXME: If this is a registered custom property, check if that allows the keyword.
+			return true
+		}
+		property_id := property.id() or { return false }
+		return property_accepts_keyword_string(property_id, value.value_)
+			|| property_accepts_custom_ident(property_id, value.value_)
+	}()
 	if perform_type_check == .yes && !matches_grammar {
 		return error("Property '${property.name()}' does not accept the keyword '${value.value_}'")
 	}
@@ -3478,10 +3478,82 @@ pub fn (value CSSNumericValue) create_a_sum_value() ?SumValue {
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-parse
 pub fn CSSNumericValue.parse(css_text string) !CSSNumericValue {
-	_ = css_text
-	// The real algorithm parses a component value, validates it as a number, percentage, dimension, or math function,
-	// then reifies it. The parser and math function reifier are not translated in this V port.
-	return error('CSSNumericValue parsing is not implemented in this V port')
+	// The parse(cssText) method, when called, must perform the following steps:
+
+	// 1. Parse a component value from cssText and let result be the result. If result is a syntax error, throw a
+	//    SyntaxError and abort this algorithm.
+	mut parser := RuleSelectorParser.create(ParsingParams{}, css_text, 'utf-8')
+	result := parser.parse_as_component_value() or {
+		return error('SyntaxError: Unable to parse input as a component value.')
+	}
+
+	// 2. If result is not a <number-token>, <percentage-token>, <dimension-token>, or a math function, throw a
+	//    SyntaxError and abort this algorithm.
+	if !(result.is(.number) || result.is(.percentage) || result.is(.dimension)
+		|| css_numeric_value_is_math_function(result)) {
+		return error('SyntaxError: Input not a <number-token>, <percentage-token>, <dimension-token>, or a math function.')
+	}
+
+	// 3. If result is a <dimension-token> and creating a type from result's unit returns failure, throw a SyntaxError
+	//    and abort this algorithm.
+	if result.is(.dimension) {
+		if NumericType.create_from_unit(result.token().dimension_unit()) == none {
+			return error('SyntaxError: Input is <dimension> with an unrecognized unit.')
+		}
+	}
+
+	// 4. Reify a numeric value result, and return the result.
+	return css_numeric_value_reify_component_value(result)!
+}
+
+fn css_numeric_value_is_math_function(component_value ComponentValue) bool {
+	if !component_value.is_function() {
+		return false
+	}
+
+	return match to_ascii_lowercase(component_value.function().name) {
+		'abs', 'acos', 'asin', 'atan', 'atan2', 'clamp', 'calc', 'cos', 'exp', 'hypot', 'log',
+		'max', 'min', 'mod', 'pow', 'random', 'rem', 'round', 'sign', 'sin', 'sqrt', 'tan' {
+			true
+		}
+		else {
+			false
+		}
+	}
+}
+
+fn css_numeric_value_reify_component_value(numeric_value ComponentValue) !CSSNumericValue {
+	// To reify a numeric value num:
+	// 1. If num is a math function, reify a math expression from num and return the result.
+	if numeric_value.is_function() {
+		// Calculation integration: C++ parses the function as a CalculatedStyleValue and reifies the
+		// CalculationNode tree. That parser/reifier is not translated in this V port yet, so preserve
+		// CSSNumericValue.parse()'s SyntaxError boundary for un-reifiable math functions.
+		return error('SyntaxError: Unable to parse input as a calculation tree.')
+	}
+
+	// 2. If num is the unitless value 0 and num is a <dimension>, return a new CSSUnitValue with its value internal
+	//    slot set to 0, and its unit internal slot set to "px".
+	// FIXME: What does this mean? We just have a component value, it doesn't have any knowledge about whether 0 should
+	//        be interpreted as a dimension.
+
+	// 3. Return a new CSSUnitValue with its value internal slot set to the numeric value of num, and its unit internal
+	//    slot set to "number" if num is a <number>, "percent" if num is a <percentage>, and num's unit if num is a
+	//    <dimension>.
+	//    If the value being reified is a computed value, the unit used must be the appropriate canonical unit for the
+	//    value's type, with the numeric value scaled accordingly.
+	// NB: The computed value part is irrelevant here, I think.
+	if numeric_value.is(.number) {
+		return CSSNumericValue(CSSUnitValue.create(numeric_value.token().number_value(), 'number'))
+	}
+	if numeric_value.is(.percentage) {
+		return CSSNumericValue(CSSUnitValue.create(numeric_value.token().percentage(), 'percent'))
+	}
+	if !numeric_value.is(.dimension) {
+		panic('VERIFY_NOT_REACHED')
+	}
+	return CSSNumericValue(CSSUnitValue.create(numeric_value.token().dimension_value(),
+		numeric_value.token().dimension_unit()))
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#rectify-a-numberish-value
