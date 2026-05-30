@@ -159,8 +159,23 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'background-color' {
 			PropertyID.background_color
 		}
+		'background-attachment' {
+			PropertyID.background_attachment
+		}
+		'background-blend-mode' {
+			PropertyID.background_blend_mode
+		}
+		'background-clip' {
+			PropertyID.background_clip
+		}
 		'background-image' {
 			PropertyID.background_image
+		}
+		'background-origin' {
+			PropertyID.background_origin
+		}
+		'background-repeat' {
+			PropertyID.background_repeat
 		}
 		'border-bottom-color' {
 			PropertyID.border_bottom_color
@@ -348,6 +363,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'mask-composite', '-webkit-mask-composite' {
 			PropertyID.mask_composite
 		}
+		'mask-clip' {
+			PropertyID.mask_clip
+		}
 		'mask-image' {
 			PropertyID.mask_image
 		}
@@ -356,6 +374,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'mask-origin', '-webkit-mask-origin' {
 			PropertyID.mask_origin
+		}
+		'mask-repeat' {
+			PropertyID.mask_repeat
 		}
 		'mask-type' {
 			PropertyID.mask_type
@@ -634,16 +655,17 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.font_language_override {
 			value_type == .string
 		}
-		.border_bottom_style, .border_collapse, .border_image_repeat, .border_left_style,
-		.border_right_style, .border_top_style, .box_sizing, .caption_side, .clip_rule,
-		.color_interpolation, .content_visibility, .direction, .empty_cells, .fill_rule,
-		.font_kerning, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
+		.background_attachment, .background_blend_mode, .background_clip, .background_origin,
+		.background_repeat, .border_bottom_style, .border_collapse, .border_image_repeat,
+		.border_left_style, .border_right_style, .border_top_style, .box_sizing, .caption_side,
+		.clip_rule, .color_interpolation, .content_visibility, .direction, .empty_cells,
+		.fill_rule, .font_kerning, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
 		.font_variant_position, .flex_direction, .flex_wrap, .align_content, .align_items,
 		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
 		.image_rendering, .transform_box, .touch_action, .writing_mode, .scrollbar_width, .resize,
 		.contain, .container_type, .text_decoration_line, .text_decoration_style, .paint_order,
 		.overflow_wrap, .scroll_behavior, .math_shift, .isolation, .list_style_position,
-		.mask_composite, .mask_mode, .mask_origin, .mask_type {
+		.mask_clip, .mask_composite, .mask_mode, .mask_origin, .mask_repeat, .mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
@@ -810,6 +832,20 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.background_image, .border_image_source, .list_style_image, .mask_image {
 			lowercase_value == 'none'
 		}
+		.background_attachment {
+			lowercase_value in ['fixed', 'local', 'scroll']
+		}
+		.background_blend_mode {
+			lowercase_value in ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten',
+				'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion',
+				'hue', 'saturation', 'color', 'luminosity', 'plus-darker', 'plus-lighter']
+		}
+		.background_clip, .background_origin {
+			lowercase_value in ['border-box', 'content-box', 'padding-box', 'text']
+		}
+		.background_repeat, .mask_repeat {
+			lowercase_value in ['no-repeat', 'repeat', 'round', 'space', 'repeat-x', 'repeat-y']
+		}
 		.color_scheme {
 			// color-scheme = normal | [ light | dark | <custom-ident> ]+ && only?
 			lowercase_value in ['normal', 'light', 'dark']
@@ -928,6 +964,10 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.mask_type {
 			lowercase_value in ['luminance', 'alpha']
+		}
+		.mask_clip {
+			lowercase_value in ['content-box', 'padding-box', 'border-box', 'fill-box', 'stroke-box',
+				'view-box', 'no-clip']
 		}
 		.mask_composite {
 			lowercase_value in ['add', 'subtract', 'intersect', 'exclude']
@@ -1122,25 +1162,27 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.animation_name {
 			lowercase_value !in ['default', 'none']
 		}
-		.accent_color, .background_color, .background_image, .border_bottom_color,
-		.border_bottom_style, .border_collapse, .border_image_repeat, .border_image_source,
-		.border_left_color, .border_left_style, .border_right_color, .border_right_style,
-		.border_top_color, .border_top_style, .box_sizing, .caption_side, .caret_color, .clear,
-		.clip_rule, .color, .color_interpolation, .direction, .empty_cells, .fill_rule, .float_,
-		.flood_color, .font_kerning, .font_language_override, .font_optical_sizing,
-		.font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_direction,
-		.flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items,
-		.justify_self, .appearance, .column_span, .image_rendering, .isolation, .list_style_image,
-		.list_style_position, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_type,
-		.mix_blend_mode, .object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y,
-		.overflow_wrap, .paint_order, .pointer_events, .position, .position_visibility,
-		.scroll_timeline_axis, .shape_rendering, .stop_color, .stroke_linecap, .stroke_linejoin,
-		.table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style,
-		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
-		.text_wrap_style, .transform_box, .transform_style, .touch_action, .writing_mode,
-		.scrollbar_width, .resize, .scroll_behavior, .math_shift, .contain, .container_type,
-		.unicode_bidi, .user_select, .view_timeline_axis, .view_timeline_inset, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break {
+		.accent_color, .background_attachment, .background_blend_mode, .background_clip,
+		.background_color, .background_image, .background_origin, .background_repeat,
+		.border_bottom_color, .border_bottom_style, .border_collapse, .border_image_repeat,
+		.border_image_source, .border_left_color, .border_left_style, .border_right_color,
+		.border_right_style, .border_top_color, .border_top_style, .box_sizing, .caption_side,
+		.caret_color, .clear, .clip_rule, .color, .color_interpolation, .direction, .empty_cells,
+		.fill_rule, .float_, .flood_color, .font_kerning, .font_language_override,
+		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
+		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
+		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
+		.list_style_image, .list_style_position, .mask_clip, .mask_composite, .mask_image,
+		.mask_mode, .mask_origin, .mask_repeat, .mask_type, .mix_blend_mode, .object_fit,
+		.outline_color, .outline_style, .overflow_x, .overflow_y, .overflow_wrap, .paint_order,
+		.pointer_events, .position, .position_visibility, .scroll_timeline_axis, .shape_rendering,
+		.stop_color, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor,
+		.text_decoration_line, .text_decoration_style, .text_justify, .text_overflow,
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,
+		.transform_style, .touch_action, .writing_mode, .scrollbar_width, .resize,
+		.scroll_behavior, .math_shift, .contain, .container_type, .unicode_bidi, .user_select,
+		.view_timeline_axis, .view_timeline_inset, .visibility, .webkit_text_fill_color,
+		.white_space_collapse, .white_space_trim, .word_break {
 			false
 		}
 		.color_scheme {
@@ -1242,6 +1284,9 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		}
 		TransformationStyleValue {
 			property_accepts_type(property_id, .transform_function)
+		}
+		RepeatStyleStyleValue {
+			property_id in [.background_repeat, .mask_repeat]
 		}
 		URLStyleValue {
 			property_accepts_type(property_id, .url)
@@ -2191,8 +2236,12 @@ pub enum Keyword {
 	inset
 	outset
 	clip
+	no_clip
 	scroll
 	repeat
+	no_repeat
+	repeat_x
+	repeat_y
 	fill
 	stroke
 	markers
@@ -2366,6 +2415,7 @@ pub enum Keyword {
 	text
 	absolute
 	fixed
+	local
 	relative
 	static_
 	sticky
@@ -2557,8 +2607,12 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.inset { 'inset' }
 		.outset { 'outset' }
 		.clip { 'clip' }
+		.no_clip { 'no-clip' }
 		.scroll { 'scroll' }
 		.repeat { 'repeat' }
+		.no_repeat { 'no-repeat' }
+		.repeat_x { 'repeat-x' }
+		.repeat_y { 'repeat-y' }
 		.fill { 'fill' }
 		.stroke { 'stroke' }
 		.markers { 'markers' }
@@ -2732,6 +2786,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.text { 'text' }
 		.absolute { 'absolute' }
 		.fixed { 'fixed' }
+		.local { 'local' }
 		.relative { 'relative' }
 		.static_ { 'static' }
 		.sticky { 'sticky' }
@@ -2912,8 +2967,12 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'inset' { Keyword.inset }
 		'outset' { Keyword.outset }
 		'clip' { Keyword.clip }
+		'no-clip' { Keyword.no_clip }
 		'scroll' { Keyword.scroll }
 		'repeat' { Keyword.repeat }
+		'no-repeat' { Keyword.no_repeat }
+		'repeat-x' { Keyword.repeat_x }
+		'repeat-y' { Keyword.repeat_y }
 		'fill' { Keyword.fill }
 		'stroke' { Keyword.stroke }
 		'markers' { Keyword.markers }
@@ -3087,6 +3146,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'text' { Keyword.text }
 		'absolute' { Keyword.absolute }
 		'fixed' { Keyword.fixed }
+		'local' { Keyword.local }
 		'relative' { Keyword.relative }
 		'static' { Keyword.static_ }
 		'sticky' { Keyword.sticky }

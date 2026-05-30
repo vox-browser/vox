@@ -188,6 +188,13 @@ pub enum PropertyID {
 	scroll_timeline_axis
 	view_timeline_axis
 	position_visibility
+	background_attachment
+	background_blend_mode
+	background_clip
+	background_origin
+	background_repeat
+	mask_clip
+	mask_repeat
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

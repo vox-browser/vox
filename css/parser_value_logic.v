@@ -219,6 +219,18 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.anchor_scope {
 			return parser.parse_anchor_scope_value(mut tokens)
 		}
+		.background_attachment {
+			return parser.parse_background_attachment_value(mut tokens)
+		}
+		.background_blend_mode {
+			return parser.parse_background_blend_mode_value(mut tokens)
+		}
+		.background_clip, .background_origin {
+			return parser.parse_background_box_value(mut tokens)
+		}
+		.background_repeat {
+			return parser.parse_repeat_style_list_value(.background_repeat, mut tokens)
+		}
 		.animation_composition {
 			return parser.parse_animation_composition_value(mut tokens)
 		}
@@ -446,11 +458,17 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.mask_composite {
 			return parser.parse_mask_composite_value(mut tokens)
 		}
+		.mask_clip {
+			return parser.parse_mask_clip_value(mut tokens)
+		}
 		.mask_mode {
 			return parser.parse_mask_mode_value(mut tokens)
 		}
 		.mask_origin {
 			return parser.parse_mask_origin_value(mut tokens)
+		}
+		.mask_repeat {
+			return parser.parse_repeat_style_list_value(.mask_repeat, mut tokens)
 		}
 		.mix_blend_mode {
 			return parser.parse_mix_blend_mode_value(mut tokens)
@@ -2118,6 +2136,49 @@ fn parse_simple_comma_separated_keyword_list_for_value_logic(mut tokens Componen
 	return parse_animation_keyword_list_for_value_logic(mut tokens, allowed_keywords)
 }
 
+fn (mut parser Parser) parse_background_attachment_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_simple_comma_separated_keyword_list_for_value_logic(mut tokens, [
+		'fixed',
+		'local',
+		'scroll',
+	])
+}
+
+fn (mut parser Parser) parse_background_blend_mode_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_simple_comma_separated_keyword_list_for_value_logic(mut tokens, [
+		'normal',
+		'multiply',
+		'screen',
+		'overlay',
+		'darken',
+		'lighten',
+		'color-dodge',
+		'color-burn',
+		'hard-light',
+		'soft-light',
+		'difference',
+		'exclusion',
+		'hue',
+		'saturation',
+		'color',
+		'luminosity',
+		'plus-darker',
+		'plus-lighter',
+	])
+}
+
+fn (mut parser Parser) parse_background_box_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_simple_comma_separated_keyword_list_for_value_logic(mut tokens, [
+		'border-box',
+		'content-box',
+		'padding-box',
+		'text',
+	])
+}
+
 fn (mut parser Parser) parse_border_image_repeat_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	mut transaction := tokens.clone()
@@ -2150,6 +2211,97 @@ fn (mut parser Parser) parse_border_image_repeat_value(mut tokens ComponentValue
 
 	tokens = transaction
 	return StyleValue(StyleValueList.create([first_value, second_value], .space, .yes))
+}
+
+fn repetition_from_keyword_for_value_logic(keyword Keyword) ?Repetition {
+	return match keyword {
+		.no_repeat { Repetition.no_repeat }
+		.repeat { Repetition.repeat }
+		.round { Repetition.round }
+		.space { Repetition.space }
+		else { none }
+	}
+}
+
+fn (mut parser Parser) parse_single_repeat_style_value(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	_ = property_id
+	mut transaction := tokens.clone()
+
+	x_keyword := parse_single_keyword_from_set_for_value_logic(mut transaction, [
+		'no-repeat',
+		'repeat',
+		'round',
+		'space',
+		'repeat-x',
+		'repeat-y',
+	]) or { return none }
+
+	if x_keyword == .repeat_x {
+		tokens = transaction
+		return StyleValue(RepeatStyleStyleValue.create(.repeat, .no_repeat))
+	}
+	if x_keyword == .repeat_y {
+		tokens = transaction
+		return StyleValue(RepeatStyleStyleValue.create(.no_repeat, .repeat))
+	}
+
+	x_repeat := repetition_from_keyword_for_value_logic(x_keyword) or { return none }
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		tokens = transaction
+		return StyleValue(RepeatStyleStyleValue.create(x_repeat, x_repeat))
+	}
+
+	y_keyword := parse_single_keyword_from_set_for_value_logic(mut transaction, [
+		'no-repeat',
+		'repeat',
+		'round',
+		'space',
+	]) or { return none }
+	y_repeat := repetition_from_keyword_for_value_logic(y_keyword) or { return none }
+
+	tokens = transaction
+	return StyleValue(RepeatStyleStyleValue.create(x_repeat, y_repeat))
+}
+
+fn (mut parser Parser) parse_repeat_style_list_value(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut repeat_styles := []StyleValue{}
+	for value in values {
+		mut repeat_tokens := ComponentValueStream.new(value)
+		repeat_value := parser.parse_single_repeat_style_value(property_id, mut repeat_tokens) or {
+			return none
+		}
+		repeat_tokens.consume_whitespace()
+		if repeat_tokens.has_more_tokens() {
+			return none
+		}
+		repeat_styles << repeat_value
+	}
+
+	if repeat_styles.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(repeat_styles, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_mask_clip_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_simple_comma_separated_keyword_list_for_value_logic(mut tokens, [
+		'content-box',
+		'padding-box',
+		'border-box',
+		'fill-box',
+		'stroke-box',
+		'view-box',
+		'no-clip',
+	])
 }
 
 fn (mut parser Parser) parse_mask_composite_value(mut tokens ComponentValueStream) ?StyleValue {
