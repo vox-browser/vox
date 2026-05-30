@@ -1489,6 +1489,18 @@ pub fn (mut scale CSSScale) set_is_2d(value bool) {
 	scale.is_2d_ = value
 }
 
+pub fn (scale CSSScale) x() CSSNumberish {
+	return css_numberish_from_numeric_value(scale.x_)
+}
+
+pub fn (scale CSSScale) y() CSSNumberish {
+	return css_numberish_from_numeric_value(scale.y_)
+}
+
+pub fn (scale CSSScale) z() CSSNumberish {
+	return css_numberish_from_numeric_value(scale.z_)
+}
+
 // https://drafts.css-houdini.org/css-typed-om-1/#serialize-a-cssscale
 pub fn (scale CSSScale) to_string() !string {
 	// 1. Let s initially be the empty string.
@@ -1682,6 +1694,18 @@ pub fn (mut translate CSSTranslate) set_is_2d(value bool) {
 	translate.is_2d_ = value
 }
 
+pub fn (translate CSSTranslate) x() CSSNumericValue {
+	return translate.x_
+}
+
+pub fn (translate CSSTranslate) y() CSSNumericValue {
+	return translate.y_
+}
+
+pub fn (translate CSSTranslate) z() CSSNumericValue {
+	return translate.z_
+}
+
 // https://drafts.css-houdini.org/css-typed-om-1/#serialize-a-csstranslate
 pub fn (translate CSSTranslate) to_string() !string {
 	// 1. Let s initially be the empty string.
@@ -1836,6 +1860,14 @@ pub fn (skew CSSSkew) is_2d() bool {
 	return skew.is_2d_
 }
 
+pub fn (skew CSSSkew) ax() CSSNumericValue {
+	return skew.ax_
+}
+
+pub fn (skew CSSSkew) ay() CSSNumericValue {
+	return skew.ay_
+}
+
 // https://drafts.css-houdini.org/css-typed-om-1/#serialize-a-cssskew
 pub fn (skew CSSSkew) to_string() !string {
 	// 1. Let s initially be "skew(".
@@ -1948,6 +1980,10 @@ pub fn (skew CSSSkewX) is_2d() bool {
 	return skew.is_2d_
 }
 
+pub fn (skew CSSSkewX) ax() CSSNumericValue {
+	return skew.ax_
+}
+
 // https://drafts.css-houdini.org/css-typed-om-1/#serialize-a-cssskewx
 pub fn (skew CSSSkewX) to_string() !string {
 	// 1. Let s initially be "skewX(".
@@ -2032,6 +2068,10 @@ pub fn CSSSkewY.construct_impl(ay CSSNumericValue) !CSSSkewY {
 
 pub fn (skew CSSSkewY) is_2d() bool {
 	return skew.is_2d_
+}
+
+pub fn (skew CSSSkewY) ay() CSSNumericValue {
+	return skew.ay_
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#serialize-a-cssskewy
