@@ -218,6 +218,11 @@ pub enum PropertyID {
 	r
 	rx
 	ry
+	background_position_x
+	background_position_y
+	background_size
+	mask_position
+	mask_size
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

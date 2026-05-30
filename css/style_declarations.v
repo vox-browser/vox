@@ -41,7 +41,10 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.background_blend_mode { 'background-blend-mode' }
 		.background_clip { 'background-clip' }
 		.background_origin { 'background-origin' }
+		.background_position_x { 'background-position-x' }
+		.background_position_y { 'background-position-y' }
 		.background_repeat { 'background-repeat' }
+		.background_size { 'background-size' }
 		.border_bottom_color { 'border-bottom-color' }
 		.border_bottom_style { 'border-bottom-style' }
 		.border_bottom_width { 'border-bottom-width' }
@@ -118,7 +121,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.mask_image { 'mask-image' }
 		.mask_mode { 'mask-mode' }
 		.mask_origin { 'mask-origin' }
+		.mask_position { 'mask-position' }
 		.mask_repeat { 'mask-repeat' }
+		.mask_size { 'mask-size' }
 		.mask_type { 'mask-type' }
 		.math_depth { 'math-depth' }
 		.math_shift { 'math-shift' }
@@ -219,12 +224,13 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .background_image, .background_attachment,
-		.background_blend_mode, .background_clip, .background_origin, .background_repeat,
-		.font_feature_settings, .font_variation_settings, .mask_image, .mask_clip, .mask_composite,
-		.mask_mode, .mask_origin, .mask_repeat, .scroll_timeline_axis, .scroll_timeline_name,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .view_timeline_axis, .view_timeline_inset,
-		.view_timeline_name {
+		.background_blend_mode, .background_clip, .background_origin, .background_position_x,
+		.background_position_y, .background_repeat, .background_size, .font_feature_settings,
+		.font_variation_settings, .mask_image, .mask_clip, .mask_composite, .mask_mode,
+		.mask_origin, .mask_position, .mask_repeat, .mask_size, .scroll_timeline_axis,
+		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .view_timeline_axis,
+		.view_timeline_inset, .view_timeline_name {
 			false
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
@@ -267,12 +273,13 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
 		.animation_timing_function, .background_image, .background_attachment,
-		.background_blend_mode, .background_clip, .background_origin, .background_repeat,
-		.font_feature_settings, .font_variation_settings, .mask_image, .mask_clip, .mask_composite,
-		.mask_mode, .mask_origin, .mask_repeat, .scroll_timeline_axis, .scroll_timeline_name,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .view_timeline_axis, .view_timeline_inset,
-		.view_timeline_name {
+		.background_blend_mode, .background_clip, .background_origin, .background_position_x,
+		.background_position_y, .background_repeat, .background_size, .font_feature_settings,
+		.font_variation_settings, .mask_image, .mask_clip, .mask_composite, .mask_mode,
+		.mask_origin, .mask_position, .mask_repeat, .mask_size, .scroll_timeline_axis,
+		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .view_timeline_axis,
+		.view_timeline_inset, .view_timeline_name {
 			true
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
@@ -309,14 +316,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 184
+pub const number_of_longhand_properties = 189
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .ry
+	return .mask_size
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -505,6 +512,11 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		181 { PropertyID.r }
 		182 { PropertyID.rx }
 		183 { PropertyID.ry }
+		184 { PropertyID.background_position_x }
+		185 { PropertyID.background_position_y }
+		186 { PropertyID.background_size }
+		187 { PropertyID.mask_position }
+		188 { PropertyID.mask_size }
 		else { none }
 	}
 }

@@ -228,8 +228,14 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.background_clip, .background_origin {
 			return parser.parse_background_box_value(mut tokens)
 		}
+		.background_position_x, .background_position_y {
+			return parser.parse_background_position_axis_list_value(property_id, mut tokens)
+		}
 		.background_repeat {
 			return parser.parse_repeat_style_list_value(.background_repeat, mut tokens)
+		}
+		.background_size {
+			return parser.parse_background_size_list_value(.background_size, mut tokens)
 		}
 		.animation_composition {
 			return parser.parse_animation_composition_value(mut tokens)
@@ -482,8 +488,14 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.mask_origin {
 			return parser.parse_mask_origin_value(mut tokens)
 		}
+		.mask_position {
+			return parser.parse_position_list_value(mut tokens, .normal)
+		}
 		.mask_repeat {
 			return parser.parse_repeat_style_list_value(.mask_repeat, mut tokens)
+		}
+		.mask_size {
+			return parser.parse_background_size_list_value(.mask_size, mut tokens)
 		}
 		.mix_blend_mode {
 			return parser.parse_mix_blend_mode_value(mut tokens)
@@ -2219,6 +2231,403 @@ fn (mut parser Parser) parse_background_box_value(mut tokens ComponentValueStrea
 		'padding-box',
 		'text',
 	])
+}
+
+enum PositionParsingMode {
+	normal
+	background_position
+}
+
+struct PositionAndLengthForValueLogic {
+	position PositionEdge
+	length   StyleValue
+}
+
+struct PositionAndMaybeLengthForValueLogic {
+	position PositionEdge
+	length   ?StyleValue
+}
+
+fn keyword_to_position_edge_for_value_logic(keyword Keyword) ?PositionEdge {
+	return match keyword {
+		.center { PositionEdge.center }
+		.left { PositionEdge.left }
+		.right { PositionEdge.right }
+		.top { PositionEdge.top }
+		.bottom { PositionEdge.bottom }
+		else { none }
+	}
+}
+
+fn parse_position_edge_for_value_logic(mut tokens ComponentValueStream) ?PositionEdge {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is(.ident) {
+		return none
+	}
+	keyword := keyword_from_string(component_value.token().ident()) or { return none }
+	edge := keyword_to_position_edge_for_value_logic(keyword) or { return none }
+	tokens = transaction
+	return edge
+}
+
+fn position_edge_is_horizontal_for_value_logic(edge PositionEdge, accept_center bool) bool {
+	return match edge {
+		.left, .right { true }
+		.center { accept_center }
+		else { false }
+	}
+}
+
+fn position_edge_is_vertical_for_value_logic(edge PositionEdge, accept_center bool) bool {
+	return match edge {
+		.top, .bottom { true }
+		.center { accept_center }
+		else { false }
+	}
+}
+
+fn (mut parser Parser) parse_position_or_length_for_value_logic(mut tokens ComponentValueStream, as_horizontal bool) ?EdgeStyleValue {
+	tokens.consume_whitespace()
+
+	mut edge_transaction := tokens.clone()
+	if position := parse_position_edge_for_value_logic(mut edge_transaction) {
+		valid := if as_horizontal {
+			position_edge_is_horizontal_for_value_logic(position, true)
+		} else {
+			position_edge_is_vertical_for_value_logic(position, true)
+		}
+		if !valid {
+			return none
+		}
+		tokens = edge_transaction
+		return EdgeStyleValue.create(position, none)
+	}
+
+	mut length_transaction := tokens.clone()
+	maybe_length := parser.parse_length_percentage_value(mut length_transaction) or { return none }
+	tokens = length_transaction
+	return EdgeStyleValue.create(none, maybe_length)
+}
+
+fn (mut parser Parser) parse_position_and_length_for_value_logic(mut tokens ComponentValueStream) ?PositionAndLengthForValueLogic {
+	tokens.consume_whitespace()
+	position := parse_position_edge_for_value_logic(mut tokens) or { return none }
+	tokens.consume_whitespace()
+	length := parser.parse_length_percentage_value(mut tokens) or { return none }
+	return PositionAndLengthForValueLogic{
+		position: position
+		length:   length
+	}
+}
+
+fn (mut parser Parser) parse_position_and_maybe_length_for_value_logic(mut tokens ComponentValueStream) ?PositionAndMaybeLengthForValueLogic {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	position := parse_position_edge_for_value_logic(mut transaction) or { return none }
+	transaction.consume_whitespace()
+	mut length := ?StyleValue(none)
+	if maybe_length := parser.parse_length_percentage_value(mut transaction) {
+		// 'center' cannot be followed by a <length-percentage>
+		if position == .center {
+			return none
+		}
+		length = maybe_length
+	}
+	tokens = transaction
+	return PositionAndMaybeLengthForValueLogic{
+		position: position
+		length:   length
+	}
+}
+
+fn (mut parser Parser) parse_css_position_value(mut tokens ComponentValueStream, position_parsing_mode PositionParsingMode) ?StyleValue {
+	// <position> = [
+	//   [ left | center | right | top | bottom | <length-percentage> ]
+	// |
+	//   [ left | center | right ] && [ top | center | bottom ]
+	// |
+	//   [ left | center | right | <length-percentage> ]
+	//   [ top | center | bottom | <length-percentage> ]
+	// |
+	//   [ [ left | right ] <length-percentage> ] &&
+	//   [ [ top | bottom ] <length-percentage> ]
+	// ]
+
+	// [ [ left | right ] <length-percentage> ] &&
+	// [ [ top | bottom ] <length-percentage> ]
+	{
+		mut transaction := tokens.clone()
+		if group1 := parser.parse_position_and_length_for_value_logic(mut transaction) {
+			if group2 := parser.parse_position_and_length_for_value_logic(mut transaction) {
+				if position_edge_is_horizontal_for_value_logic(group1.position, false)
+					&& position_edge_is_vertical_for_value_logic(group2.position, false) {
+					tokens = transaction
+					return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(group1.position,
+						group1.length), EdgeStyleValue.create(group2.position, group2.length)))
+				}
+				if position_edge_is_vertical_for_value_logic(group1.position, false)
+					&& position_edge_is_horizontal_for_value_logic(group2.position, false) {
+					tokens = transaction
+					return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(group2.position,
+						group2.length), EdgeStyleValue.create(group1.position, group1.length)))
+				}
+			}
+		}
+	}
+
+	// The extra 3-value syntax that's allowed for background-position:
+	// [ center | [ left | right ] <length-percentage>? ] &&
+	// [ center | [ top | bottom ] <length-percentage>? ]
+	if position_parsing_mode == .background_position {
+		mut transaction := tokens.clone()
+		if group1_value := parser.parse_position_and_maybe_length_for_value_logic(mut transaction) {
+			if group2_value := parser.parse_position_and_maybe_length_for_value_logic(mut transaction) {
+				mut group1 := group1_value
+				mut group2 := group2_value
+
+				// 2-value or 4-value if both <length-percentage>s are present or missing.
+				if !((group1.length != none && group2.length != none)
+					|| (group1.length == none && group2.length == none)) {
+					// If 'left' or 'right' is given, that position is X and the other is Y.
+					// Conversely -
+					// If 'top' or 'bottom' is given, that position is Y and the other is X.
+					if position_edge_is_vertical_for_value_logic(group1.position, false)
+						|| position_edge_is_horizontal_for_value_logic(group2.position, false) {
+						tmp := group1
+						group1 = group2
+						group2 = tmp
+					}
+
+					// [ center | [ left | right ] ]
+					if position_edge_is_horizontal_for_value_logic(group1.position, true)
+						&& position_edge_is_vertical_for_value_logic(group2.position, true) {
+						edge_x := if group1.position == .center {
+							EdgeStyleValue.create(PositionEdge.center, none)
+						} else {
+							EdgeStyleValue.create(group1.position, group1.length)
+						}
+						edge_y := if group2.position == .center {
+							EdgeStyleValue.create(PositionEdge.center, none)
+						} else {
+							EdgeStyleValue.create(group2.position, group2.length)
+						}
+						tokens = transaction
+						return StyleValue(PositionStyleValue.create(edge_x, edge_y))
+					}
+				}
+			}
+		}
+	}
+
+	// [ left | center | right | <length-percentage> ]
+	// [ top | center | bottom | <length-percentage> ]
+	{
+		mut transaction := tokens.clone()
+		if horizontal_edge := parser.parse_position_or_length_for_value_logic(mut transaction, true) {
+			if vertical_edge := parser.parse_position_or_length_for_value_logic(mut transaction,
+				false)
+			{
+				tokens = transaction
+				return StyleValue(PositionStyleValue.create(horizontal_edge, vertical_edge))
+			}
+		}
+	}
+
+	// [ left | center | right ] && [ top | center | bottom ]
+	{
+		mut transaction := tokens.clone()
+		if first_edge_value := parse_position_edge_for_value_logic(mut transaction) {
+			mut first_edge := first_edge_value
+			transaction.consume_whitespace()
+			if second_edge_value := parse_position_edge_for_value_logic(mut transaction) {
+				mut second_edge := second_edge_value
+
+				// If 'left' or 'right' is given, that position is X and the other is Y.
+				// Conversely -
+				// If 'top' or 'bottom' is given, that position is Y and the other is X.
+				if position_edge_is_vertical_for_value_logic(first_edge, false)
+					|| position_edge_is_horizontal_for_value_logic(second_edge, false) {
+					tmp := first_edge
+					first_edge = second_edge
+					second_edge = tmp
+				}
+				if position_edge_is_horizontal_for_value_logic(first_edge, true)
+					&& position_edge_is_vertical_for_value_logic(second_edge, true) {
+					tokens = transaction
+					return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(first_edge,
+						none), EdgeStyleValue.create(second_edge, none)))
+				}
+			}
+		}
+	}
+
+	// [ left | center | right | top | bottom | <length-percentage> ]
+	{
+		mut transaction := tokens.clone()
+		if edge := parse_position_edge_for_value_logic(mut transaction) {
+			tokens = transaction
+			if position_edge_is_horizontal_for_value_logic(edge, false) {
+				return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(edge, none), EdgeStyleValue.create(PositionEdge.center,
+					none)))
+			}
+			if position_edge_is_vertical_for_value_logic(edge, false) {
+				return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(PositionEdge.center,
+					none), EdgeStyleValue.create(edge, none)))
+			}
+			return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(PositionEdge.center,
+				none), EdgeStyleValue.create(PositionEdge.center, none)))
+		}
+
+		mut length_transaction := tokens.clone()
+		if maybe_percentage := parser.parse_length_percentage_value(mut length_transaction) {
+			tokens = length_transaction
+			return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(none,
+				maybe_percentage), EdgeStyleValue.create(PositionEdge.center, none)))
+		}
+	}
+
+	return none
+}
+
+fn (mut parser Parser) parse_position_list_value(mut tokens ComponentValueStream, position_parsing_mode PositionParsingMode) ?StyleValue {
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut positions := []StyleValue{}
+	for value in values {
+		mut position_tokens := ComponentValueStream.new(value)
+		position_value := parser.parse_css_position_value(mut position_tokens,
+			position_parsing_mode) or { return none }
+		position_tokens.consume_whitespace()
+		if position_tokens.has_more_tokens() {
+			return none
+		}
+		positions << position_value
+	}
+
+	if positions.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(positions, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_single_background_position_x_or_y_value(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	mut relative_edge := ?PositionEdge(none)
+
+	mut keyword_transaction := transaction.clone()
+	if keyword := parse_single_keyword_from_set_for_value_logic(mut keyword_transaction, if property_id == .background_position_x {
+		['center', 'left', 'right']
+	} else {
+		['center', 'bottom', 'top']
+	})
+	{
+		if keyword == .center {
+			tokens = keyword_transaction
+			return StyleValue(EdgeStyleValue.create(PositionEdge.center, none))
+		}
+		relative_edge = keyword_to_position_edge_for_value_logic(keyword) or { return none }
+		transaction = keyword_transaction
+		if value := parser.parse_length_percentage_value(mut transaction) {
+			tokens = transaction
+			return StyleValue(EdgeStyleValue.create(relative_edge, value))
+		}
+		tokens = transaction
+		return StyleValue(EdgeStyleValue.create(relative_edge, none))
+	}
+
+	value := parser.parse_length_percentage_value(mut transaction) or { return none }
+	tokens = transaction
+	return StyleValue(EdgeStyleValue.create(relative_edge, value))
+}
+
+fn (mut parser Parser) parse_background_position_axis_list_value(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut positions := []StyleValue{}
+	for value in values {
+		mut position_tokens := ComponentValueStream.new(value)
+		position_value := parser.parse_single_background_position_x_or_y_value(property_id, mut
+			position_tokens) or { return none }
+		position_tokens.consume_whitespace()
+		if position_tokens.has_more_tokens() {
+			return none
+		}
+		positions << position_value
+	}
+
+	if positions.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(positions, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_background_size_component_value(mut tokens ComponentValueStream, allow_cover_contain bool) ?StyleValue {
+	mut transaction := tokens.clone()
+	allowed_keywords := if allow_cover_contain {
+		['auto', 'cover', 'contain']
+	} else {
+		['auto']
+	}
+	if value := parse_property_keyword_value(mut transaction, allowed_keywords) {
+		tokens = transaction
+		return value
+	}
+	return parser.parse_nonnegative_length_percentage_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_single_background_size_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	x_value := parser.parse_background_size_component_value(mut transaction, true) or {
+		return none
+	}
+	if x_value.to_keyword() in [.cover, .contain] {
+		tokens = transaction
+		return x_value
+	}
+
+	y_value := parser.parse_background_size_component_value(mut transaction, false) or {
+		tokens = transaction
+		return StyleValue(BackgroundSizeStyleValue.create(x_value,
+			StyleValue(KeywordStyleValue.create(.auto))))
+	}
+	tokens = transaction
+	return StyleValue(BackgroundSizeStyleValue.create(x_value, y_value))
+}
+
+fn (mut parser Parser) parse_background_size_list_value(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
+	_ = property_id
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut sizes := []StyleValue{}
+	for value in values {
+		mut size_tokens := ComponentValueStream.new(value)
+		size_value := parser.parse_single_background_size_value(mut size_tokens) or { return none }
+		size_tokens.consume_whitespace()
+		if size_tokens.has_more_tokens() {
+			return none
+		}
+		sizes << size_value
+	}
+
+	if sizes.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(sizes, .comma, .yes))
 }
 
 fn (mut parser Parser) parse_border_image_repeat_value(mut tokens ComponentValueStream) ?StyleValue {
