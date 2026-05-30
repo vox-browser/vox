@@ -14,6 +14,8 @@ import strings
 
 pub type UniqueNodeID = i64
 
+const namespace_xlink_uri = 'http://www.w3.org/1999/xlink'
+
 pub fn (id UniqueNodeID) value() i64 {
 	return i64(id)
 }
@@ -113,6 +115,8 @@ pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUp
 pub enum StyleInvalidationReason {
 	base_url_changed
 	css_font_loaded
+	element_set_active
+	element_set_shadow_root
 	html_iframe_element_geometry_change
 	html_object_element_update_layout_and_child_objects
 	navigable_set_viewport_size
@@ -127,6 +131,8 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 	return match reason {
 		.base_url_changed { 'BaseURLChanged' }
 		.css_font_loaded { 'CSSFontLoaded' }
+		.element_set_active { 'ElementSetActive' }
+		.element_set_shadow_root { 'ElementSetShadowRoot' }
 		.html_iframe_element_geometry_change { 'HTMLIFrameElementGeometryChange' }
 		.html_object_element_update_layout_and_child_objects { 'HTMLObjectElementUpdateLayoutAndChildObjects' }
 		.navigable_set_viewport_size { 'NavigableSetViewportSize' }
@@ -146,6 +152,16 @@ pub mut:
 pub enum FragmentSerializationMode {
 	inner
 	outer
+}
+
+pub enum SerializableShadowRoots {
+	no
+	yes
+}
+
+pub enum AllowDeclarativeShadowRoots {
+	no
+	yes
 }
 
 pub enum RequireWellFormed {
@@ -240,8 +256,10 @@ pub mut:
 @[heap]
 pub struct RegisteredObserver {
 pub mut:
-	observer_ &MutationObserver = unsafe { nil }
-	options_  MutationObserverOptions
+	observer_  &MutationObserver = unsafe { nil }
+	options_   MutationObserverOptions
+	transient_ bool
+	source_    &RegisteredObserver = unsafe { nil }
 }
 
 pub fn (ro &RegisteredObserver) observer() &MutationObserver {
@@ -255,8 +273,6 @@ pub fn (ro &RegisteredObserver) options() MutationObserverOptions {
 @[heap]
 pub struct TransientRegisteredObserver {
 	RegisteredObserver
-pub mut:
-	source_ &RegisteredObserver = unsafe { nil }
 }
 
 @[heap]
@@ -342,19 +358,22 @@ pub struct HTMLLegendElement {
 }
 
 fn allocate_unique_id(node &Node) UniqueNodeID {
-	_ = node
-	// The C++ implementation keeps a process-wide directory. The current V
-	// port does not have GC lifecycle hooks yet, so this is a stable stub.
-	return UniqueNodeID(0)
+	// The C++ implementation keeps a process-wide directory from integer IDs to nodes.
+	// This V port is compiled without mutable module globals, so use the live node pointer
+	// as the opaque process-local ID and reconstruct it in Node.from_unique_id().
+	return UniqueNodeID(i64(voidptr(node)))
 }
 
 fn deallocate_unique_id(node_id UniqueNodeID) {
+	// Pointer-backed IDs do not have a separate directory entry to remove.
 	_ = node_id
 }
 
 pub fn Node.from_unique_id(unique_id UniqueNodeID) ?&Node {
-	_ = unique_id
-	return none
+	if unique_id.value() == 0 {
+		return none
+	}
+	return unsafe { &Node(voidptr(unique_id.value())) }
 }
 
 pub fn Node.new_with_realm(realm voidptr, document &Document, node_type NodeType) &Node {
@@ -376,6 +395,7 @@ pub fn (mut n Node) finalize() {
 }
 
 pub fn (mut n Node) visit_edges(mut visitor CellVisitor) {
+	n.EventTarget.visit_edges(mut visitor)
 	visitor.visit(n.document_)
 	visitor.visit(n.child_nodes_)
 	visitor.visit(n.layout_node_)
@@ -456,6 +476,10 @@ pub fn (n &Node) node_type_value() u16 {
 }
 
 pub fn (n &Node) unique_id() UniqueNodeID {
+	if n.unique_id_ == UniqueNodeID(0) {
+		mut mutable_node := unsafe { &Node(n) }
+		mutable_node.unique_id_ = allocate_unique_id(n)
+	}
 	return n.unique_id_
 }
 
@@ -625,16 +649,18 @@ pub fn (n &Node) as_attr() ?&Attr {
 }
 
 pub fn (n &Node) dispatch_event_simple(event_name string, bubbles bool) {
-	_ = event_name
-	_ = bubbles
+	event := Event.create(event_name, EventInit{
+		bubbles: bubbles
+	})
+	event_target_dispatch_event(unsafe { &EventTarget(n) }, event)
 }
 
 pub fn (n &Node) dispatch_event(event &Event) {
-	_ = event
+	event_target_dispatch_event(unsafe { &EventTarget(n) }, event)
 }
 
 pub fn (n &Node) has_event_listener(type_ string) bool {
-	return type_ in n.event_listener_types
+	return type_ in n.event_listener_types || unsafe { &EventTarget(n) }.has_event_listener(type_)
 }
 
 // https://dom.spec.whatwg.org/#dom-node-baseuri
@@ -803,11 +829,13 @@ pub fn (mut n Node) normalize() ! {
 							range.end_container_ = node
 						}
 						if parent := current.parent() {
-							if range.start_container_ == parent && range.start_offset_ == current.index() {
+							if range.start_container_ == parent
+								&& range.start_offset_ == current.index() {
 								range.start_container_ = node
 								range.start_offset_ = length
 							}
-							if range.end_container_ == parent && range.end_offset_ == current.index() {
+							if range.end_container_ == parent
+								&& range.end_offset_ == current.index() {
 								range.end_container_ = node
 								range.end_offset_ = length
 							}
@@ -892,12 +920,19 @@ pub fn (n &Node) navigable() ?&Navigable {
 	if doc == unsafe { nil } {
 		return none
 	}
-	if doc.cached_navigable_ != unsafe { nil } {
-		return doc.cached_navigable_
+	mut document := unsafe { &Document(doc) }
+	if cached_navigable := document.cached_navigable() {
+		if active_document := cached_navigable.active_document() {
+			if active_document == document {
+				return cached_navigable
+			}
+		}
 	}
 	// To get the node navigable of a node node, return the navigable whose active document is node's node document,
 	// or null if there is no such navigable.
-	return none
+	navigable := navigable_with_active_document(document)
+	document.set_cached_navigable(navigable)
+	return navigable
 }
 
 fn reason_may_affect_has_selectors(reason StyleInvalidationReason) bool {
@@ -912,21 +947,90 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	if n.is_character_data() {
 		return
 	}
+	doc := n.document()
+	if doc == unsafe { nil } {
+		return
+	}
+	style_scope := style_scope_for_node(&n)
+	if style_scope.may_have_has_selectors() {
+		if reason == .node_remove {
+			if parent := n.parent_or_shadow_host() {
+				mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
+				mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(parent)
+				for child in parent.children {
+					if element := child.as_element() {
+						if element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator {
+							mut mutable_element := unsafe { &Element(element) }
+							mutable_element.invalidate_style_if_affected_by_has()
+						}
+					}
+				}
+			}
+		} else if reason_may_affect_has_selectors(reason) {
+			mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
+			mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
+		}
+	}
+	if n.is_document() {
+		mut mutable_doc := unsafe { &Document(doc) }
+		mutable_doc.set_needs_full_style_update(true)
+		return
+	}
+	if doc.needs_full_style_update() {
+		return
+	}
+	for ancestor := n.parent_or_shadow_host(); ancestor != none; {
+		current := ancestor or { break }
+		if current.entire_subtree_needs_style_update() {
+			return
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
 	// When invalidating style for a node, we actually invalidate:
 	// - the node itself
 	// - all of its descendants
 	// - preceding siblings that depend on following-sibling counts (only on DOM insert/remove)
 	// - subsequent siblings that depend on previous siblings or sibling combinators
 	// FIXME: This is a lot of invalidation and we should implement more sophisticated invalidation to do less work!
-	if n.is_document() {
-		doc := n.document()
-		if doc != unsafe { nil } {
-			mut mutable_doc := unsafe { &Document(doc) }
-			mutable_doc.set_needs_full_style_update(true)
-		}
-		return
-	}
 	n.set_entire_subtree_needs_style_update(true)
+	if reason == .node_insert_before || reason == .node_remove {
+		for sibling := n.previous_sibling(); sibling != none; {
+			current := sibling or { break }
+			if element := current.as_element() {
+				if element.affected_by_backward_structural_changes() {
+					mut mutable_current := unsafe { &Node(current) }
+					mutable_current.set_entire_subtree_needs_style_update(true)
+				}
+			}
+			sibling = current.previous_sibling()
+		}
+	}
+	mut current_sibling_distance := 1
+	for sibling := n.next_sibling(); sibling != none; {
+		current := sibling or { break }
+		if element := current.as_element() {
+			mut needs_to_invalidate := false
+			if reason == .node_insert_before || reason == .node_remove {
+				needs_to_invalidate = element.affected_by_indirect_sibling_combinator
+					|| element.affected_by_first_child_pseudo_class
+					|| element.affected_by_forward_positional_pseudo_class
+					|| (element.affected_by_direct_sibling_combinator
+					&& current_sibling_distance <= element.sibling_invalidation_distance)
+			} else if element.affected_by_indirect_sibling_combinator
+				|| element.affected_by_forward_positional_pseudo_class {
+				needs_to_invalidate = true
+			} else if element.affected_by_direct_sibling_combinator
+				&& current_sibling_distance <= element.sibling_invalidation_distance {
+				needs_to_invalidate = true
+			}
+			if needs_to_invalidate {
+				mut mutable_current := unsafe { &Node(current) }
+				mutable_current.set_entire_subtree_needs_style_update(true)
+			}
+			current_sibling_distance++
+		}
+		sibling = current.next_sibling()
+	}
 	for ancestor := n.parent_or_shadow_host(); ancestor != none; {
 		mut current := unsafe { &Node(ancestor or { break }) }
 		current.child_needs_style_update_ = true
@@ -934,15 +1038,220 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	}
 }
 
+fn style_scope_for_node(node &Node) &StyleScope {
+	root := node.root()
+	if shadow_root := root.as_shadow_root() {
+		return shadow_root.style_scope()
+	}
+	return node.document().style_scope()
+}
+
+fn shadow_style_scope_for_node(node &Node) ?&StyleScope {
+	element := node.as_element() or { return none }
+	if !element.is_shadow_host() {
+		return none
+	}
+	shadow_root := element.shadow_root() or { return none }
+	return shadow_root.style_scope()
+}
+
+pub fn (d &Document) style_computer() &StyleComputer {
+	_ = d
+	// Stub for Document::style_computer() until the CSS style computer is ported.
+	return &StyleComputer{}
+}
+
+pub fn (mut d Document) style_invalidator() &StyleInvalidator {
+	if d.style_invalidator_ == unsafe { nil } {
+		d.style_invalidator_ = &StyleInvalidator{}
+	}
+	return d.style_invalidator_
+}
+
+pub fn (d CSSDisplay_) is_contents() bool {
+	_ = d
+	// Stub for CSS::Display::is_contents() until display-outside/inside values are ported.
+	return false
+}
+
+pub fn (d CSSDisplay_) is_inline_outside() bool {
+	_ = d
+	// Stub for CSS::Display::is_inline_outside() until display-outside values are ported.
+	return false
+}
+
+pub fn (d CSSDisplay_) is_flow_inside() bool {
+	_ = d
+	// Stub for CSS::Display::is_flow_inside() until display-inside values are ported.
+	return false
+}
+
+pub fn (ln &LayoutNode) display() CSSDisplay_ {
+	_ = ln
+	// Stub for Layout::Node::display() until layout style data is ported.
+	return CSSDisplay_{}
+}
+
+pub fn (ln &LayoutNode) parent() ?&LayoutNode {
+	_ = ln
+	// Stub for Layout::Node::parent() until the layout tree is ported.
+	return none
+}
+
+pub fn (ln &LayoutNode) is_anonymous() bool {
+	_ = ln
+	// Stub for Layout::Node::is_anonymous() until anonymous layout nodes are ported.
+	return false
+}
+
+pub fn (ln &LayoutNode) dom_node() ?&Node {
+	_ = ln
+	// Stub for Layout::Node::dom_node() until layout nodes retain DOM back-pointers.
+	return none
+}
+
+pub fn (ln &LayoutNode) is_text_node() bool {
+	_ = ln
+	// Stub for Layout::TextNode type checks until text layout nodes are ported.
+	return false
+}
+
+fn element_allows_accessible_name_from_content_stub(element &Element) bool {
+	role := element_aria_role(element) or { return false }
+	return aria_role_allows_name_from_content(role)
+}
+
+// Approximation of Element::role_or_default(). Reads the `role` attribute if
+// present; otherwise falls back to a default role derived from the element's
+// local name for HTML elements with implicit ARIA semantics.
+fn element_aria_role(element &Element) ?string {
+	if value := element.get_attribute('role') {
+		for token in value.fields() {
+			if token.len > 0 {
+				return token.to_lower()
+			}
+		}
+	}
+	if !element.is_html_element() {
+		return none
+	}
+	return html_local_name_to_default_aria_role(element.local_name())
+}
+
+// https://www.w3.org/TR/html-aria/ — implicit ARIA semantics for HTML
+// elements relevant to name-from-content. The mapping below covers the
+// elements whose default roles appear in `aria_role_allows_name_from_content`.
+fn html_local_name_to_default_aria_role(name string) ?string {
+	return match name {
+		'button' { 'button' }
+		'a' { 'link' }
+		'area' { 'link' }
+		'h1', 'h2', 'h3', 'h4', 'h5', 'h6' { 'heading' }
+		'th' { 'columnheader' }
+		'td' { 'cell' }
+		'tr' { 'row' }
+		'option' { 'option' }
+		'summary' { 'button' }
+		else { none }
+	}
+}
+
+// https://www.w3.org/TR/wai-aria-1.2/#namefromcontent
+fn aria_role_allows_name_from_content(role string) bool {
+	return role in [
+		'button',
+		'cell',
+		'checkbox',
+		'columnheader',
+		'gridcell',
+		'heading',
+		'link',
+		'menuitem',
+		'menuitemcheckbox',
+		'menuitemradio',
+		'option',
+		'radio',
+		'row',
+		'rowheader',
+		'sectionhead',
+		'switch',
+		'tab',
+		'tooltip',
+		'treeitem',
+	]
+}
+
+fn generated_content_text_stub(element &Element, pseudo_element PseudoElement) string {
+	_ = element
+	_ = pseudo_element
+	// Stub for CSS generated content serialization until pseudo computed content is ported.
+	return ''
+}
+
+fn rendered_text_for_accessibility_stub(node &Node) ?string {
+	_ = node
+	// Stub for Layout::TextNode::text_for_rendering() until text layout nodes are ported.
+	return none
+}
+
+fn element_is_referenced_for_accessibility_stub(element &Element) bool {
+	return element.is_referenced()
+}
+
+fn element_has_referenced_and_hidden_ancestor_stub(element &Element) bool {
+	return element.has_referenced_and_hidden_ancestor()
+}
+
+fn append_accessible_text(mut builder strings.Builder, text string) {
+	if text.len == 0 {
+		return
+	}
+	if builder.len > 0 {
+		builder.write_string(' ')
+	}
+	builder.write_string(text)
+}
+
 pub fn (mut n Node) invalidate_style_with_properties(reason StyleInvalidationReason, properties []InvalidationProperty, options StyleInvalidationOptions) {
 	if n.is_character_data() {
 		return
 	}
-	// This covers the C++ overload taking invalidation properties and options.
-	_ = properties
-	_ = reason_may_affect_has_selectors(reason)
+	doc := n.document()
+	if doc == unsafe { nil } {
+		return
+	}
+	style_scope := style_scope_for_node(&n)
+	shadow_style_scope := shadow_style_scope_for_node(&n)
+	mut properties_used_in_has_selectors := false
+	for property in properties {
+		properties_used_in_has_selectors = properties_used_in_has_selectors
+			|| doc.style_computer().invalidation_property_used_in_has_selector(property, style_scope)
+		if shadow_scope := shadow_style_scope {
+			properties_used_in_has_selectors = properties_used_in_has_selectors
+				|| doc.style_computer().invalidation_property_used_in_has_selector(property, shadow_scope)
+		}
+	}
+	if properties_used_in_has_selectors {
+		mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
+		mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
+		if shadow_scope := shadow_style_scope {
+			mut mutable_shadow_scope := unsafe { &StyleScope(shadow_scope) }
+			mutable_shadow_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
+		}
+	}
 	if options.invalidate_self {
 		n.set_needs_style_update(true)
+	}
+	mut document := unsafe { &Document(doc) }
+	mut invalidator := document.style_invalidator()
+	plan := doc.style_computer().invalidation_plan_for_properties(properties, style_scope)
+	if invalidator.enqueue_invalidation_plan(&n, reason, *plan) {
+		return
+	}
+	if shadow_scope := shadow_style_scope {
+		shadow_plan := doc.style_computer().invalidation_plan_for_properties(properties,
+			shadow_scope)
+		invalidator.enqueue_invalidation_plan(&n, reason, *shadow_plan)
 	}
 }
 
@@ -1084,8 +1393,8 @@ fn (n &Node) ensure_replacement_validity(node &Node, child &Node) ! {
 			if node_element_child_count > 1 || node_has_child_text(node) {
 				return error('HierarchyRequestError: Invalid node type for insertion')
 			}
-			if node_element_child_count == 1
-				&& (node_first_child_element_is_not(n, child) || node_has_following_doctype(child)) {
+			if node_element_child_count == 1 && (node_first_child_element_is_not(n, child)
+				|| node_has_following_doctype(child)) {
 				return error('HierarchyRequestError: Invalid node type for insertion')
 			}
 		} else if node.is_element() {
@@ -1331,17 +1640,45 @@ pub fn (mut n Node) insert_before(node &Node, child ?&Node, suppress_observers b
 		type_: .inserted
 		node:  node
 	})
+	// Let staticNodeList be a list of nodes, initially << >>. We collect before running post-connection steps, because
+	// those steps can modify the tree and make live traversal unsafe.
+	mut static_node_list := []&Node{}
 	for node_to_insert in nodes {
-		node_to_insert.for_each_shadow_including_inclusive_descendant(fn (inclusive_descendant &Node) TraversalDecision {
-			if inclusive_descendant.is_connected() {
-				mut mutable_descendant := unsafe { &Node(inclusive_descendant) }
-				mutable_descendant.post_connection()
-			}
+		node_to_insert.for_each_shadow_including_inclusive_descendant(fn [mut static_node_list] (inclusive_descendant &Node) TraversalDecision {
+			static_node_list << inclusive_descendant
 			return .@continue
 		})
 	}
+	for node_to_connect in static_node_list {
+		if node_to_connect.is_connected() {
+			mut mutable_node_to_connect := unsafe { &Node(node_to_connect) }
+			mutable_node_to_connect.post_connection()
+		}
+	}
 	if n.is_connected() {
+		// NB: Called during DOM insertion, layout is not up to date.
+		if layout_node := n.unsafe_layout_node() {
+			if layout_node.display().is_contents() {
+				if parent_element := n.parent_element() {
+					mut parent_node := unsafe { &Node(parent_element.as_node()) }
+					parent_node.set_needs_layout_tree_update(true,
+						.node_insert_before_with_display_contents)
+				}
+			}
+		}
 		n.set_needs_layout_tree_update(true, .node_insert_before)
+	}
+	// AD-HOC: invalidate the ordinal of the first list_item of the list_owner of the child node, if any.
+	if child_node := child {
+		if child_element := child_node.as_element() {
+			mut mutable_child_element := unsafe { &Element(child_element) }
+			mutable_child_element.maybe_invalidate_ordinals_for_list_owner(none)
+		}
+	} else if element := n.as_element() {
+		if !element.is_html_ol_ul_menu_element() {
+			mut mutable_element := unsafe { &Element(element) }
+			mutable_element.maybe_invalidate_ordinals_for_list_owner(none)
+		}
 	}
 	doc := n.document()
 	if doc != unsafe { nil } {
@@ -1478,6 +1815,18 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 		mutable_descendant.removed_from(none, parent_root)
 		return .@continue
 	})
+	// For each inclusive ancestor of parent, copy subtree observers into transient observers on the removed node.
+	for ancestor := ?&Node(parent); ancestor != none; {
+		inclusive_ancestor := ancestor or { break }
+		for registered in inclusive_ancestor.registered_observer_list_ {
+			if registered.options().subtree {
+				transient_observer := TransientRegisteredObserver.create(registered.observer(),
+					registered.options(), registered)
+				n.add_registered_observer(unsafe { &RegisteredObserver(transient_observer) })
+			}
+		}
+		ancestor = inclusive_ancestor.parent()
+	}
 	if !suppress_observers {
 		mut removed := []&Node{}
 		removed << &n
@@ -1517,7 +1866,7 @@ pub fn (mut n Node) replace_child(node &Node, child &Node) !&Node {
 		nodes << node
 	}
 	if reference_child == none
-		|| ((reference_child or { unsafe { nil } }).parent_ == n && child.parent() == none) {
+		|| (reference_child or { unsafe { nil } }.parent_ == n && child.parent() == none) {
 		n.insert_before(node, reference_child, true)
 	}
 	n.queue_tree_mutation_record(nodes, removed_nodes, previous_sibling, reference_child or {
@@ -1548,8 +1897,9 @@ pub fn (n &Node) clone_node(document ?&Document, subtree bool, parent ?&Node) !&
 				mut copy_element := copy.as_element() or {
 					return error('InvalidStateError: Element clone did not produce an element')
 				}
-				copy_element.attach_a_shadow_root(shadow_root.mode_(), true, shadow_root.serializable(),
-					shadow_root.delegates_focus(), shadow_root.slot_assignment())!
+				copy_element.attach_a_shadow_root(shadow_root.mode_(), true,
+					shadow_root.serializable(), shadow_root.delegates_focus(),
+					shadow_root.slot_assignment())!
 				mut copy_shadow_root := copy_element.shadow_root() or {
 					return error('InvalidStateError: Cloned shadow root was not attached')
 				}
@@ -1600,6 +1950,14 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 	}
 	old_previous_sibling := n.previous_sibling() or { unsafe { nil } }
 	old_next_sibling := n.next_sibling() or { unsafe { nil } }
+	if old_parent.is_connected() {
+		// Since the tree structure is about to change, we need to invalidate both style and layout.
+		n.invalidate_style(.node_remove)
+		if n.unsafe_layout_node() != none {
+			mut mutable_old_parent_for_layout := unsafe { &Node(old_parent) }
+			mutable_old_parent_for_layout.set_needs_layout_tree_update(true, .node_remove)
+		}
+	}
 	mut mutable_old_parent := unsafe { &Node(old_parent) }
 	mutable_old_parent.remove_child_impl(n)
 	if assigned_slot := assigned_slot_for_node(&n) {
@@ -1688,7 +2046,15 @@ pub fn (n &Node) clone_single_node(document &Document) !&Node {
 		}
 		copy = element_copy.as_node()
 	} else if n.is_document() {
-		document_copy := Document.create(n.document().url)
+		source_document := unsafe { &Document(n) }
+		mut document_copy := Document.create(source_document.url)
+		document_copy.set_encoding(source_document.get_encoding())
+		document_copy.set_content_type(source_document.get_content_type())
+		document_copy.set_url(source_document.url)
+		document_copy.set_origin(source_document.origin())
+		document_copy.set_document_type(source_document.document_type())
+		document_copy.set_quirks_mode(source_document.mode())
+		document_copy.set_allow_declarative_shadow_roots(source_document.allow_declarative_shadow_roots())
 		copy = unsafe { &Node(document_copy) }
 	} else if document_type := n.as_document_type() {
 		mut document_type_copy := DocumentType.new(document)
@@ -1699,17 +2065,22 @@ pub fn (n &Node) clone_single_node(document &Document) !&Node {
 	} else if attr := n.as_attr() {
 		copy = attr.clone(document).as_node()
 	} else if n.is_text() {
-		data := n.character_data() or { return error('InvalidStateError: Text node missing character data') }
+		data := n.character_data() or {
+			return error('InvalidStateError: Text node missing character data')
+		}
 		if n.is_cdata_section() {
 			copy = CDATASection.new(document, data.data_).as_node()
 		} else {
 			copy = Text.new(document, data.data_).as_node()
 		}
 	} else if n.is_comment() {
-		data := n.character_data() or { return error('InvalidStateError: Comment node missing character data') }
+		data := n.character_data() or {
+			return error('InvalidStateError: Comment node missing character data')
+		}
 		copy = Comment.new(document, data.data_).as_node()
 	} else if processing_instruction := n.as_processing_instruction() {
-		copy = ProcessingInstruction.new(document, processing_instruction.data(), processing_instruction.target()).as_node()
+		copy = ProcessingInstruction.new(document, processing_instruction.data(),
+			processing_instruction.target()).as_node()
 	} else if n.is_document_fragment() {
 		copy = DocumentFragment.new(document).as_node()
 	} else {
@@ -1761,6 +2132,19 @@ pub fn (mut n Node) recompute_editable_subtree_flag() {
 	if n.is_document() {
 		doc := n.document()
 		new_value = doc != unsafe { nil } && doc.design_mode_enabled_state()
+	} else if element := n.as_element() {
+		if element.is_html_element() {
+			state := html_content_editable_state(element)
+			if state == 'true' || state == 'plaintext-only' {
+				new_value = true
+			} else if state == 'false' {
+				new_value = false
+			} else if parent := n.parent() {
+				new_value = parent.in_editable_subtree_
+			}
+		} else if parent := n.parent() {
+			new_value = parent.in_editable_subtree_
+		}
 	} else if parent := n.parent() {
 		new_value = parent.in_editable_subtree_
 	}
@@ -1772,6 +2156,12 @@ pub fn (n &Node) is_editable() bool {
 	// Something is editable if it is a node; it is not an editing host;
 	if n.is_editing_host() {
 		return false
+	}
+	// it does not have a contenteditable attribute set to the false state;
+	if element := n.as_element() {
+		if element.is_html_element() && html_content_editable_state(element) == 'false' {
+			return false
+		}
 	}
 	// its parent is an editing host or editable;
 	if parent := n.parent() {
@@ -1785,17 +2175,27 @@ pub fn (n &Node) is_editable() bool {
 	if n.is_inert() {
 		return false
 	}
-	return true
+	if element := n.as_element() {
+		return element.is_html_element() || element.is_svg_element() || element.namespace_uri() or {
+			''
+		} == 'http://www.w3.org/1998/Math/MathML'
+	}
+	parent := n.parent() or { return false }
+	parent_element := parent.as_element() or { return false }
+	return parent_element.is_html_element()
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#editing-host
 pub fn (n &Node) is_editing_host() bool {
-	if element := n.as_element() {
-		if state := element.get_attribute('contenteditable') {
-			if state == '' || state == 'true' || state == 'plaintext-only' {
-				return true
-			}
-		}
+	element := n.as_element() or { return false }
+	if !element.is_html_element() {
+		return false
+	}
+	state := html_content_editable_state(element)
+	if (state == 'true' || state == 'plaintext-only') && (n.parent() == none || !(n.parent() or {
+		unsafe { nil }
+	}).in_editable_subtree_) {
+		return true
 	}
 	if parent := n.parent() {
 		if parent.is_document() {
@@ -1804,6 +2204,21 @@ pub fn (n &Node) is_editing_host() bool {
 		}
 	}
 	return false
+}
+
+fn html_content_editable_state(element &Element) string {
+	value := element.get_attribute('contenteditable') or { return 'inherit' }
+	normalized := to_ascii_lowercase(value)
+	if normalized == '' || normalized == 'true' {
+		return 'true'
+	}
+	if normalized == 'plaintext-only' {
+		return 'plaintext-only'
+	}
+	if normalized == 'false' {
+		return 'false'
+	}
+	return 'inherit'
 }
 
 pub fn (n &Node) is_editable_or_editing_host() bool {
@@ -1856,6 +2271,13 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 		return
 	}
 	n.needs_layout_tree_update = value
+	// NOTE: If this is a shadow root, we need to propagate the layout tree update to the host.
+	if shadow_root := n.as_shadow_root() {
+		if host := shadow_root.host() {
+			mut host_node := unsafe { &Node(host.as_node()) }
+			host_node.set_needs_layout_tree_update(value, reason)
+		}
+	}
 	if n.needs_layout_tree_update {
 		for ancestor := n.flat_tree_parent(); ancestor != none; {
 			mut current := unsafe { &Node(ancestor or { break }) }
@@ -1865,12 +2287,42 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 			current.child_needs_layout_tree_update = true
 			ancestor = current.flat_tree_parent()
 		}
+		// If this is an element with display: contents, we need to propagate the layout tree update to the parent.
+		if element := n.as_element() {
+			if properties := element.el_computed_properties() {
+				if properties.display().is_contents() {
+					if parent_element := n.parent_or_shadow_host_element() {
+						mut parent_node := unsafe { &Node(parent_element.as_node()) }
+						parent_node.set_needs_layout_tree_update(true, reason)
+					}
+				}
+			}
+		}
 		if layout_node := n.unsafe_layout_node() {
 			mut mutable_layout_node := unsafe { &LayoutNode(layout_node) }
 			mutable_layout_node.set_needs_layout_update(.layout_tree_update)
+			// If the layout node has an anonymous parent, rebuild from the nearest non-anonymous ancestor.
+			// FIXME: This is not optimal, and we should figure out how to rebuild a smaller part of the tree.
+			if layout_parent := layout_node.parent() {
+				if layout_parent.is_anonymous() {
+					mut ancestor := ?&LayoutNode(layout_parent)
+					for ancestor != none {
+						current := ancestor or { break }
+						if !current.is_anonymous() {
+							break
+						}
+						ancestor = current.parent()
+					}
+					if nearest := ancestor {
+						if dom_node := nearest.dom_node() {
+							mut mutable_dom_node := unsafe { &Node(dom_node) }
+							mutable_dom_node.set_needs_layout_tree_update(true, reason)
+						}
+					}
+				}
+			}
 		}
 	}
-	_ = reason
 }
 
 pub fn (n &Node) needs_layout_tree_update_() bool {
@@ -2002,6 +2454,11 @@ pub fn (n &Node) parent_or_shadow_host_element() ?&Element {
 
 pub fn (n &Node) flat_tree_parent() ?&Node {
 	// If we're assigned to a slot, that slot is our flat tree parent.
+	if n.is_slottable() {
+		if slot := n.assigned_slot_internal() {
+			return html_slot_element_as_node(slot)
+		}
+	}
 	// Otherwise, this is the parent or shadow host.
 	return n.parent_or_shadow_host()
 }
@@ -2054,8 +2511,24 @@ pub fn (n &Node) compare_document_position(other ?&Node) u16 {
 	if n == other_node {
 		return document_position_equal
 	}
-	node1 := other_node
-	node2 := n
+	mut node1 := unsafe { &Node(other_node) }
+	mut node2 := unsafe { &Node(n) }
+	mut has_attr1 := false
+	mut has_attr2 := false
+	if attr := node1.as_attr() {
+		has_attr1 = true
+		owner := attr.owner_element() or {
+			return document_position_disconnected | document_position_implementation_specific | document_position_following
+		}
+		node1 = unsafe { &Node(owner.as_node()) }
+	}
+	if attr := node2.as_attr() {
+		has_attr2 = true
+		owner := attr.owner_element() or {
+			return document_position_disconnected | document_position_implementation_specific | document_position_following
+		}
+		node2 = unsafe { &Node(owner.as_node()) }
+	}
 	if node1.root() != node2.root() {
 		return document_position_disconnected | document_position_implementation_specific | document_position_following
 	}
@@ -2089,11 +2562,14 @@ pub fn (n &Node) compare_document_position(other ?&Node) u16 {
 		i--
 		j--
 	}
-	if node1_ancestors.len < node2_ancestors.len {
+	if (node1_ancestors.len < node2_ancestors.len && !has_attr1) || (node1 == node2 && has_attr2) {
 		return document_position_contains | document_position_preceding
 	}
-	if node1_ancestors.len > node2_ancestors.len {
+	if (node1_ancestors.len > node2_ancestors.len && !has_attr2) || (node1 == node2 && has_attr1) {
 		return document_position_contained_by | document_position_following
+	}
+	if node1_ancestors.len < node2_ancestors.len {
+		return document_position_preceding
 	}
 	return document_position_following
 }
@@ -2126,8 +2602,11 @@ pub fn (n &Node) is_uninteresting_whitespace_node() bool {
 	if content.trim_space().len != 0 {
 		return false
 	}
-	if n.layout_node() == none {
-		return true
+	layout_node := n.layout_node() or { return true }
+	if parent := layout_node.parent() {
+		if parent.is_anonymous() {
+			return true
+		}
 	}
 	return false
 }
@@ -2141,36 +2620,112 @@ pub fn (n &Node) serialize_child_as_json(mut children_array strings.Builder, chi
 }
 
 pub fn (n &Node) serialize_tree_as_json(mut object strings.Builder) {
-	object.write_string('{"name":"${n.node_name()}","id":${n.unique_id_.value()}')
+	object.write_string('{"name":${json_quote(n.node_name())},"id":${n.unique_id().value()}')
 	if n.is_document() {
 		object.write_string(',"type":"document"')
 	} else if n.is_element() {
 		object.write_string(',"type":"element"')
+		if element := n.as_element() {
+			if namespace := element.namespace_uri() {
+				object.write_string(',"namespace":${json_quote(namespace)}')
+			}
+			if attrs := element.attributes_ {
+				if attrs.attrs.len > 0 {
+					object.write_string(',"attributes":{')
+					for i, attr in attrs.attrs {
+						if i > 0 {
+							object.write_string(',')
+						}
+						object.write_string('${json_quote(attr.name_)}:${json_quote(attr.value_)}')
+					}
+					object.write_string('}')
+				}
+			}
+		}
+		if paintable_box := n.paintable_box() {
+			if paintable_box.could_be_scrolled_by_wheel_event() {
+				object.write_string(',"scrollable":true')
+			}
+			if !paintable_box.is_visible() {
+				object.write_string(',"invisible":true')
+			}
+			if paintable_box.has_stacking_context() {
+				object.write_string(',"stackingContext":true')
+			}
+		}
 	} else if n.is_text() {
 		object.write_string(',"type":"text"')
 		if text := n.text_content() {
-			object.write_string(',"text":"${text}"')
+			object.write_string(',"text":${json_quote(text)}')
 		}
 	} else if n.is_comment() {
 		object.write_string(',"type":"comment"')
 		if data := n.node_value() {
-			object.write_string(',"data":"${data}"')
+			object.write_string(',"data":${json_quote(data)}')
 		}
 	} else if n.is_shadow_root() {
 		object.write_string(',"type":"shadow-root"')
+		if shadow_root := n.as_shadow_root() {
+			mode := if shadow_root.mode == .open { 'open' } else { 'closed' }
+			object.write_string(',"mode":${json_quote(mode)}')
+		}
 	}
 	object.write_string(',"visible":${n.layout_node() != none}')
 	if n.children.len > 0 {
 		object.write_string(',"children":[')
-		for i, child in n.children {
-			if i > 0 {
+		mut wrote_child := false
+		for child in n.children {
+			if child.is_uninteresting_whitespace_node() {
+				continue
+			}
+			if wrote_child {
 				object.write_string(',')
 			}
 			child.serialize_tree_as_json(mut object)
+			wrote_child = true
 		}
 		object.write_string(']')
 	}
 	object.write_string('}')
+}
+
+fn json_quote(value string) string {
+	mut builder := strings.new_builder(value.len + 2)
+	builder.write_string('"')
+	for r in value.runes() {
+		match r {
+			`"` {
+				builder.write_string('\\"')
+			}
+			`\\` {
+				builder.write_string('\\\\')
+			}
+			`\b` {
+				builder.write_string('\\b')
+			}
+			`\f` {
+				builder.write_string('\\f')
+			}
+			`\n` {
+				builder.write_string('\\n')
+			}
+			`\r` {
+				builder.write_string('\\r')
+			}
+			`\t` {
+				builder.write_string('\\t')
+			}
+			else {
+				if u32(r) < 0x20 {
+					builder.write_string('\\u${u32(r):04x}')
+				} else {
+					builder.write_rune(r)
+				}
+			}
+		}
+	}
+	builder.write_string('"')
+	return builder.str()
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#concept-n-script
@@ -2254,27 +2809,43 @@ pub fn (mut n Node) string_replace_all(string_ string) {
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#fragment-serializing-algorithm-steps
 pub fn (n &Node) serialize_fragment(require_well_formed RequireWellFormed, fragment_serialization_mode FragmentSerializationMode) !string {
-	_ = require_well_formed
 	// 1. Let context document be the value of node's node document.
-	// 2. If context document is an HTML document, return the result of HTML fragment serialization algorithm.
+	context_document := n.document()
+
+	// 2. If context document is an HTML document, return the result of HTML fragment serialization algorithm with node, false, and << >>.
+	if context_document != unsafe { nil } && context_document.is_html_document() {
+		return html_parser_serialize_html_fragment(n, .no, []&ShadowRoot{},
+			fragment_serialization_mode)
+	}
+
 	// 3. Return the XML serialization of node given require well-formed.
+	// AD-HOC: XML serialization algorithm returns the "outer" XML serialization of the node.
+	//         For inner, concatenate the serialization of all children.
 	if fragment_serialization_mode == .inner {
 		mut builder := strings.new_builder(0)
 		for child in n.children {
-			builder.write_string(child.serialize_fragment(require_well_formed, .outer)!)
+			child_markup := html_serialize_node_to_xml_string(child, require_well_formed)!
+			builder.write_string(child_markup)
 		}
 		return builder.str()
 	}
-	return n.text_content() or { '' }
+	return html_serialize_node_to_xml_string(n, require_well_formed)
 }
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#unsafely-set-html
 pub fn (mut n Node) unsafely_set_html(context_element &Element, html string) ! {
-	_ = html
 	// 1. Let newChildren be the result of the HTML fragment parsing algorithm given contextElement, html, and true.
+	new_children := html_parser_parse_html_fragment(context_element, html, .yes)!
+
 	// 2. Let fragment be a new DocumentFragment whose node document is contextElement's node document.
 	fragment := new_document_fragment(context_element.document())
+
 	// 3. For each node in newChildren, append node to fragment.
+	mut fragment_node := unsafe { &Node(fragment.as_node()) }
+	for child in new_children {
+		fragment_node.append_child(child)!
+	}
+
 	// 4. Replace all with fragment within contextElement.
 	n.replace_all(fragment.as_node())
 }
@@ -2295,7 +2866,7 @@ pub fn (n &Node) is_equal_node(other_node ?&Node) bool {
 	if n.node_type != other.node_type {
 		return false
 	}
-	if n.node_name().to_lower() != other.node_name().to_lower() {
+	if to_ascii_lowercase(n.node_name()) != to_ascii_lowercase(other.node_name()) {
 		return false
 	}
 
@@ -2318,9 +2889,7 @@ pub fn (n &Node) is_equal_node(other_node ?&Node) bool {
 		if attrs := element.attributes_ {
 			for attribute in attrs.attrs {
 				other_attribute := other_element.get_attribute_node_ns(attribute.namespace_uri_,
-					attribute.local_name_) or {
-					return false
-				}
+					attribute.local_name_) or { return false }
 				if other_attribute.value() != attribute.value() {
 					return false
 				}
@@ -2334,8 +2903,7 @@ pub fn (n &Node) is_equal_node(other_node ?&Node) bool {
 	} else if attr := n.as_attr() {
 		other_attr := other.as_attr() or { return false }
 		if attr.namespace_uri() != other_attr.namespace_uri()
-			|| attr.local_name() != other_attr.local_name()
-			|| attr.value() != other_attr.value() {
+			|| attr.local_name() != other_attr.local_name() || attr.value() != other_attr.value() {
 			return false
 		}
 	} else if processing_instruction := n.as_processing_instruction() {
@@ -2420,15 +2988,18 @@ fn add_in_scope_prefix(mut prefixes []string, mut seen_prefixes []string, prefix
 
 // https://dom.spec.whatwg.org/#locate-a-namespace
 pub fn (n &Node) locate_a_namespace(prefix ?string) ?string {
-	if p := prefix {
-		if p == 'xml' {
-			return namespace_xml_uri
-		}
-		if p == 'xmlns' {
-			return namespace_xmlns_uri
-		}
-	}
+	// To locate a namespace for a node using prefix, switch on the interface node implements:
 	if element := n.as_element() {
+		// 1. If prefix is "xml", then return the XML namespace.
+		// 2. If prefix is "xmlns", then return the XMLNS namespace.
+		if p := prefix {
+			if p == 'xml' {
+				return namespace_xml_uri
+			}
+			if p == 'xmlns' {
+				return namespace_xmlns_uri
+			}
+		}
 		if ns := element.namespace_uri() {
 			if element.prefix() == prefix {
 				return ns
@@ -2437,8 +3008,9 @@ pub fn (n &Node) locate_a_namespace(prefix ?string) ?string {
 		if attrs := element.attributes_ {
 			for attr in attrs.attrs {
 				if attr.namespace_uri_ or { '' } == namespace_xmlns_uri {
-					if (attr.prefix__ or { '' }) == 'xmlns' && prefix != none
-						&& attr.local_name_ == (prefix or { '' }) {
+					if (attr.prefix__ or { '' }) == 'xmlns' && prefix != none && attr.local_name_ == prefix or {
+						''
+					} {
 						if attr.value().len > 0 {
 							return attr.value()
 						}
@@ -2465,6 +3037,9 @@ pub fn (n &Node) locate_a_namespace(prefix ?string) ?string {
 				return element.as_node().locate_a_namespace(prefix)
 			}
 		}
+		return none
+	}
+	if n.is_document_type() || n.is_document_fragment() {
 		return none
 	}
 	if attr := n.as_attr() {
@@ -2564,7 +3139,7 @@ pub fn (n &Node) get_root_node(options GetRootNodeOptions) &Node {
 
 pub fn (n &Node) debug_description() string {
 	mut builder := strings.new_builder(0)
-	builder.write_string(n.node_name().to_lower())
+	builder.write_string(to_ascii_lowercase(n.node_name()))
 	if element := n.as_element() {
 		if id := element.id() {
 			builder.write_string('#${id}')
@@ -2611,7 +3186,9 @@ pub fn (mut n Node) clear_paintable() {
 
 pub fn (mut n Node) set_needs_repaint(should_invalidate_display_list InvalidateDisplayList) {
 	if mut layout_node := n.unsafe_layout_node() {
-		layout_node.set_needs_repaint(should_invalidate_display_list)
+		for mut paintable in layout_node.paintables() {
+			paintable.set_needs_repaint(should_invalidate_display_list)
+		}
 	}
 }
 
@@ -2648,29 +3225,49 @@ pub fn (n &Node) unsafe_paintable_box() ?&PaintableBox {
 // https://dom.spec.whatwg.org/#queue-a-mutation-record
 pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?string, attribute_namespace ?string, old_value ?string, added_nodes []&Node, removed_nodes []&Node, previous_sibling &Node, next_sibling &Node) {
 	target := unsafe { &Node(&n) }
+	mut document := unsafe { &Document(target.document()) }
+
+	// 1. Let interestedObservers be an empty map.
+	// mutationObserver -> mappedOldValue
 	mut interested_observers := []&MutationObserver{}
+	mut mapped_old_values := []?string{}
+
+	// 2. Let nodes be the inclusive ancestors of target.
+	// 3. For each node of nodes, and then for each registered of node's registered observer list:
 	mut current := ?&Node(target)
 	for current != none {
 		node := current or { break }
 		for registered_observer in node.registered_observer_list_ {
+			// 1. Let options be registered's options.
 			options := registered_observer.options()
+
+			// 2. If none of the following are true
+			//      - node is not target and options["subtree"] is false
+			//      - type is "attributes" and options["attributes"] either does not exist or is false
+			//      - type is "attributes", options["attributeFilter"] exists, and options["attributeFilter"] does not contain name or namespace is non-null
+			//      - type is "characterData" and options["characterData"] either does not exist or is false
+			//      - type is "childList" and options["childList"] is false
+			//    then:
 			if node != target && !options.subtree {
 				continue
 			}
-			mut record_old_value := ?string(none)
+			mut should_use_old_value := false
 			match type_ {
 				.attributes {
 					if !(options.attributes or { false }) {
 						continue
 					}
 					if attribute_filter := options.attribute_filter {
+						if attribute_namespace != none {
+							continue
+						}
 						name := attribute_name or { '' }
 						if name !in attribute_filter {
 							continue
 						}
 					}
 					if options.attribute_old_value or { false } {
-						record_old_value = old_value
+						should_use_old_value = true
 					}
 				}
 				.character_data {
@@ -2678,7 +3275,7 @@ pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?st
 						continue
 					}
 					if options.character_data_old_value or { false } {
-						record_old_value = old_value
+						should_use_old_value = true
 					}
 				}
 				.child_list {
@@ -2687,19 +3284,59 @@ pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?st
 					}
 				}
 			}
+
+			// 1. Let mo be registered's observer.
 			observer := registered_observer.observer()
-			if observer !in interested_observers {
-				interested_observers << observer
-			} else {
-				continue
+
+			// 2. If interestedObservers[mo] does not exist, then set interestedObservers[mo] to null.
+			mut observer_index := -1
+			for i, interested_observer in interested_observers {
+				if interested_observer == observer {
+					observer_index = i
+					break
+				}
 			}
-			record := MutationRecord.create(mutation_type_to_string(type_), target, added_nodes,
-				removed_nodes, previous_sibling, next_sibling, attribute_name,
-				attribute_namespace, record_old_value)
-			mut mutable_observer := unsafe { &MutationObserver(observer) }
-			mutable_observer.enqueue_record(record)
+			if observer_index == -1 {
+				interested_observers << observer
+				mapped_old_values << ?string(none)
+				observer_index = interested_observers.len - 1
+			}
+
+			// 3. If either type is "attributes" and options["attributeOldValue"] is true, or type is
+			//    "characterData" and options["characterDataOldValue"] is true, then set interestedObservers[mo] to oldValue.
+			if should_use_old_value {
+				mapped_old_values[observer_index] = old_value
+			}
 		}
 		current = node.parent()
+	}
+
+	// OPTIMIZATION: If there are no interested observers, bail without doing any more work.
+	if interested_observers.len == 0 {
+		return
+	}
+
+	// 4. For each observer -> mappedOldValue of interestedObservers:
+	for i, observer in interested_observers {
+		// 1. Let record be a new MutationRecord object with its type set to type, target set to target, attributeName set to name, attributeNamespace set to namespace, oldValue set to mappedOldValue,
+		//    addedNodes set to addedNodes, removedNodes set to removedNodes, previousSibling set to previousSibling, and nextSibling set to nextSibling.
+		record := MutationRecord.create(mutation_type_to_string(type_), target, added_nodes,
+			removed_nodes, previous_sibling, next_sibling, attribute_name, attribute_namespace,
+			mapped_old_values[i])
+
+		// 2. Enqueue record to observer's record queue.
+		mut mutable_observer := unsafe { &MutationObserver(observer) }
+		mutable_observer.enqueue_record(record)
+
+		// 3. Append observer to the surrounding agent's pending mutation observers.
+		if document != unsafe { nil } {
+			document.pending_mutation_observers << observer
+		}
+	}
+
+	// 5. Queue a mutation observer microtask.
+	if document != unsafe { nil } {
+		queue_mutation_observer_microtask(mut document)
 	}
 }
 
@@ -2748,7 +3385,9 @@ pub fn (mut n Node) remove_child_impl(node &Node) {
 }
 
 pub fn (n &Node) is_child_allowed(node &Node) bool {
-	_ = node
+	if n.is_document() {
+		return unsafe { &Document(n) }.is_child_allowed(node)
+	}
 	return true
 }
 
@@ -2814,16 +3453,197 @@ pub fn (n &Node) build_accessibility_tree(mut parent AccessibilityTreeNode) {
 
 // https://www.w3.org/TR/accname-1.2/#mapping_additional_nd_te
 pub fn (n &Node) name_or_description(target NameOrDescription, document &Document, mut visited_nodes map[UniqueNodeID]bool, is_descendant IsDescendant, should_compute_role ShouldComputeRole) !string {
-	_ = target
-	_ = document
-	_ = is_descendant
 	_ = should_compute_role
-	// The text alternative for a given element is computed by the Accessible Name and Description Computation.
-	// The host-language and ARIA-specific branches live in the element/html/svg ports; preserve cycle protection here.
-	if visited_nodes[n.unique_id_] {
+	// The text alternative for a given element is computed as follows:
+	// 1. Set the root node to the given element, the current node to the root node, and the total accumulated text to the
+	//    empty string (""). If the root node's role prohibits naming, return the empty string ("").
+	node_id := n.unique_id()
+	if visited_nodes[node_id] {
 		return ''
 	}
-	visited_nodes[n.unique_id_] = true
+	visited_nodes[node_id] = true
+	if element := n.as_element() {
+		// A. Hidden Not Referenced:
+		// AD-HOC: As in Ladybird C++, this is intentionally handled while visiting text nodes below
+		// instead of returning early here, so referenced or visible descendants can still contribute.
+
+		// B. Otherwise:
+		// - if computing a name, and the current node has an aria-labelledby attribute that contains at least one valid
+		//   IDREF, and the current node is not already part of an aria-labelledby traversal, process its IDREFs in the
+		//   order they occur:
+		// - or, if computing a description, and the current node has an aria-describedby attribute that contains at least
+		//   one valid IDREF, and the current node is not already part of an aria-describedby traversal, process its IDREFs
+		//   in the order they occur:
+		reference_attribute := if target == .name { 'aria-labelledby' } else { 'aria-describedby' }
+		if idrefs := element.get_attribute(reference_attribute) {
+			if Node.first_valid_id(idrefs, document) != none {
+				mut accumulated_text := strings.new_builder(0)
+				for id_ref in idrefs.fields() {
+					referenced_element := document.get_element_by_id(id_ref) or { continue }
+					referenced_node := referenced_element.as_node()
+					// AD-HOC: Required by WPT labelledby cases; a referenced node's own aria-label contributes.
+					if target == .name {
+						if aria_label := referenced_element.get_attribute('aria-label') {
+							if aria_label.trim_space().len > 0 {
+								append_accessible_text(mut accumulated_text, aria_label)
+							}
+						}
+					}
+					if visited_nodes[referenced_node.unique_id()] {
+						continue
+					}
+					result := referenced_node.name_or_description(target, document, mut
+						visited_nodes, .no, should_compute_role)!
+					append_accessible_text(mut accumulated_text, result)
+				}
+				if accumulated_text.str().trim_space().len == 0 && target == .name {
+					if aria_label := element.get_attribute('aria-label') {
+						if aria_label.trim_space().len > 0 {
+							return aria_label
+						}
+					}
+				}
+				return accumulated_text.str()
+			}
+		}
+
+		// D. AriaLabel: Otherwise, if the current node has an aria-label attribute whose value is not undefined, not
+		//    the empty string, nor, when trimmed of whitespace, is not the empty string:
+		if target == .name {
+			if aria_label := element.get_attribute('aria-label') {
+				if aria_label.trim_space().len > 0 && element.local_name() != 'slot' {
+					return aria_label
+				}
+			}
+		}
+
+		// E. Host Language Label: Otherwise, if the current node's native markup provides an attribute (e.g. alt) or
+		//    element (e.g. HTML label or SVG title) that defines a text alternative, return that alternative in the form
+		//    of a flat string as defined by the host language.
+		if target == .name && element.local_name() == 'img' && element.has_attribute('alt') {
+			return element.get_attribute('alt') or { '' }
+		}
+		if target == .name && element.is_svg_element() {
+			for child in n.children {
+				if child_element := child.as_element() {
+					if child_element.local_name() == 'title' {
+						return child.text_content() or { '' }
+					}
+				}
+			}
+			if title := element.get_attribute_ns(namespace_xlink_uri, 'title') {
+				return title
+			}
+		}
+		if target == .name && element.local_name() == 'table' {
+			for child in n.children {
+				if child_element := child.as_element() {
+					if child_element.local_name() == 'caption' {
+						return child.text_content() or { '' }
+					}
+				}
+			}
+		}
+		if target == .name && element.local_name() == 'fieldset' {
+			for child in n.children {
+				if child_element := child.as_element() {
+					if child_element.local_name() == 'legend' {
+						return child.text_content() or { '' }
+					}
+				}
+			}
+		}
+		if target == .name && element.local_name() == 'input' {
+			input_type := to_ascii_lowercase(element.get_attribute('type') or { 'text' })
+			if input_type in ['button', 'submit', 'reset'] {
+				if value := element.get_attribute('value') {
+					return value
+				}
+			}
+			if input_type == 'image' {
+				if alt := element.get_attribute('alt') {
+					return alt
+				}
+			}
+		}
+
+		// F. Name From Content: Otherwise, if the current node's role allows name from content, or if the current node
+		//    is referenced by aria-labelledby, aria-describedby, or is a native host language text alternative element
+		//    (e.g. label in HTML), or is a descendant of a native host language text alternative element:
+		if element_allows_accessible_name_from_content_stub(element)
+			|| element_is_referenced_for_accessibility_stub(element) || is_descendant == .yes {
+			mut accumulated_text := strings.new_builder(0)
+			accumulated_text.write_string(generated_content_text_stub(element, .before))
+			mut child_nodes := n.children.clone()
+			if element.is_shadow_host() {
+				if shadow_root := element.shadow_root() {
+					shadow_root_node := shadow_root_as_node(shadow_root)
+					if shadow_root_node.is_connected() {
+						child_nodes = shadow_root_node.children_as_vector()
+					}
+				}
+			}
+			if slot := node_as_html_slot_element(n) {
+				if text := element.as_node().text_content() {
+					accumulated_text.write_string(text)
+				}
+				child_nodes = slot.assigned_nodes()
+			}
+			for child_node in child_nodes {
+				if !child_node.is_element() && !child_node.is_text() {
+					continue
+				}
+				mut should_add_space := true
+				if layout_node := child_node.layout_node() {
+					display := layout_node.display()
+					if display.is_inline_outside() && display.is_flow_inside() {
+						should_add_space = false
+					}
+				}
+				if visited_nodes[child_node.unique_id()] {
+					continue
+				}
+				result := child_node.name_or_description(target, document, mut visited_nodes, .yes,
+					should_compute_role)!
+				if should_add_space {
+					append_accessible_text(mut accumulated_text, result)
+				} else {
+					accumulated_text.write_string(result)
+				}
+			}
+			accumulated_text.write_string(generated_content_text_stub(element, .after))
+			if accumulated_text.len > 0 {
+				return accumulated_text.str()
+			}
+		}
+	}
+
+	// G. Text Node: Otherwise, if the current node is a Text Node, return its textual contents.
+	if n.is_text() {
+		if parent_element := n.parent_element() {
+			if !element_is_referenced_for_accessibility_stub(parent_element)
+				&& parent_element.is_hidden() && parent_element.has_hidden_ancestor()
+				&& !element_has_referenced_and_hidden_ancestor_stub(parent_element) {
+				return ''
+			}
+		}
+		if text := rendered_text_for_accessibility_stub(n) {
+			return text
+		}
+		return n.text_content() or { '' }
+	}
+
+	// I. Otherwise, if the current node has a Tooltip attribute, return its value.
+	if element := n.as_element() {
+		if title := element.get_attribute('title') {
+			if title.len > 0 {
+				return title
+			}
+		}
+	}
+
+	// 3. After all steps are completed, the total accumulated text is used as the accessible name or accessible description
+	//    of the element that initiated the computation.
 	return n.text_content() or { '' }
 }
 
@@ -2839,8 +3659,17 @@ pub fn (n &Node) accessible_description(document &Document) !string {
 	if !n.is_element() {
 		return ''
 	}
+	element := n.as_element() or { return '' }
+	described_by := element.get_attribute('aria-describedby') or { return '' }
 	mut visited_nodes := map[UniqueNodeID]bool{}
-	return n.name_or_description(.description, document, mut visited_nodes, .no, .yes)
+	mut builder := strings.new_builder(0)
+	for id in described_by.fields() {
+		description_element := document.get_element_by_id(id) or { continue }
+		description := description_element.as_node().name_or_description(.description, document, mut
+			visited_nodes, .no, .yes)!
+		append_accessible_text(mut builder, description)
+	}
+	return builder.str()
 }
 
 pub fn Node.first_valid_id(value string, document &Document) ?string {
@@ -2878,6 +3707,12 @@ pub fn (n &Node) has_inclusive_ancestor_with_event_listener(type_ string) bool {
 			return true
 		}
 		ancestor = current.parent_or_shadow_host()
+	}
+	doc := n.document()
+	if doc != unsafe { nil } && doc.window != unsafe { nil } {
+		if unsafe { &EventTarget(doc.window) }.has_event_listener(type_) {
+			return true
+		}
 	}
 	return false
 }
@@ -3181,7 +4016,7 @@ pub fn (pi &ProcessingInstruction) target() string {
 }
 
 pub fn (mut a Attr) set_value(value string) ! {
-	a.value_ = value
+	a.set_value_with_attribute_steps(value)!
 }
 
 pub fn (a &Attr) value() string {
@@ -3303,6 +4138,8 @@ pub fn (mut ln LayoutNode) set_needs_layout_update(reason SetNeedsLayoutReason) 
 	_ = reason
 }
 
-pub fn (mut ln LayoutNode) set_needs_repaint(should_invalidate_display_list InvalidateDisplayList) {
-	_ = should_invalidate_display_list
+pub fn (ln &LayoutNode) paintables() []&Paintable {
+	_ = ln
+	// Stub for Layout::Node::paintables() until layout paintables are ported.
+	return []&Paintable{}
 }

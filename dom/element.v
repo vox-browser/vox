@@ -49,40 +49,67 @@ pub fn (n &NamedNodeMap) is_empty() bool {
 	return n.attrs.len == 0
 }
 
-pub fn (n &NamedNodeMap) get_attribute(name string) ?&Attr_ {
-	for a in n.attrs {
-		if a.name_ == name {
-			return a
+fn (n &NamedNodeMap) should_lowercase_attribute_names() bool {
+	return n.element != unsafe { nil } && n.element.is_html_element()
+		&& n.element.document().is_html_document()
+}
+
+fn (n &NamedNodeMap) effective_attribute_name(qualified_name string) string {
+	if n.should_lowercase_attribute_names() {
+		return to_ascii_lowercase(qualified_name)
+	}
+	return qualified_name
+}
+
+fn normalize_attribute_namespace(namespace_ ?string) ?string {
+	if namespace_ or { '' } == '' {
+		return none
+	}
+	return namespace_
+}
+
+fn (n &NamedNodeMap) attribute_index_by_name(qualified_name string) ?int {
+	effective_qualified_name := n.effective_attribute_name(qualified_name)
+	for index, attribute in n.attrs {
+		if attribute.name_ == effective_qualified_name {
+			return index
 		}
 	}
 	return none
+}
+
+fn (n &NamedNodeMap) attribute_index_by_namespace(namespace_ ?string, local_name string) ?int {
+	normalized_namespace := normalize_attribute_namespace(namespace_)
+	for index, attribute in n.attrs {
+		if attribute.namespace_uri_ == normalized_namespace && attribute.local_name_ == local_name {
+			return index
+		}
+	}
+	return none
+}
+
+pub fn (n &NamedNodeMap) get_attribute(name string) ?&Attr_ {
+	index := n.attribute_index_by_name(name) or { return none }
+	return n.attrs[index]
 }
 
 pub fn (n &NamedNodeMap) get_attribute_ns(namespace_ ?string, local_name string) ?&Attr_ {
-	for a in n.attrs {
-		if a.namespace_uri_ == namespace_ && a.local_name_ == local_name {
-			return a
-		}
-	}
-	return none
+	index := n.attribute_index_by_namespace(namespace_, local_name) or { return none }
+	return n.attrs[index]
 }
 
 pub fn (mut n NamedNodeMap) append_attribute(attr &Attr_) {
+	n.attrs << attr
 	if n.element != unsafe { nil } {
 		mut mutable_attr := unsafe { &Attr_(attr) }
 		mutable_attr.owner_element_ = n.element
 		mutable_attr.handle_attribute_changes(n.element, none, attr.value_)
 	}
-	n.attrs << attr
 }
 
 pub fn (mut n NamedNodeMap) remove_attribute(name string) {
-	for index, attr in n.attrs {
-		if attr.name_ == name {
-			n.remove_attribute_at_index(index)
-			return
-		}
-	}
+	index := n.attribute_index_by_name(name) or { return }
+	n.remove_attribute_at_index(index)
 }
 
 pub fn (mut n NamedNodeMap) remove_attribute_node(attr &Attr_) {
@@ -159,6 +186,19 @@ pub struct GetHTMLOptions {
 pub mut:
 	serializable_shadow_roots bool
 }
+
+pub enum TokenizedFeatureNoOpener {
+	no
+	yes
+}
+
+pub type TaskID = int
+
+pub enum TaskSource {
+	dom_manipulation
+}
+
+pub struct PointerLockOptions {}
 
 // https://w3c.github.io/csswg-drafts/cssom-view-1/#dictdef-scrollintoviewoptions
 pub struct ScrollIntoViewOptions {
@@ -250,19 +290,29 @@ pub struct CustomStateSet_ {}
 @[heap]
 pub struct CSSStyleProperties_ {
 pub mut:
-	is_updating_ bool
+	is_updating_       bool
+	associated_element ?&Element
 }
 
 pub fn (c &CSSStyleProperties_) is_updating() bool {
 	return c.is_updating_
 }
 
+fn create_element_inline_style(element &Element) &CSSStyleProperties_ {
+	return &CSSStyleProperties_{
+		associated_element: element
+	}
+}
+
 @[heap]
 pub struct CSSComputedProperties_ {
 pub mut:
-	display_    CSSDisplay_  = CSSDisplay_{}
-	overflow_x_ CSSOverflow_ = .visible
-	overflow_y_ CSSOverflow_ = .visible
+	display_            CSSDisplay_           = CSSDisplay_{}
+	overflow_x_         CSSOverflow_          = .visible
+	overflow_y_         CSSOverflow_          = .visible
+	content_visibility_ CSSContentVisibility_ = .visible
+	opacity_            f32                   = 1.0
+	visibility_         CSSVisibility_        = .visible
 }
 
 pub fn (c &CSSComputedProperties_) display() CSSDisplay_ {
@@ -277,8 +327,27 @@ pub fn (c &CSSComputedProperties_) overflow_y() CSSOverflow_ {
 	return c.overflow_y_
 }
 
+pub fn (c &CSSComputedProperties_) content_visibility() CSSContentVisibility_ {
+	return c.content_visibility_
+}
+
+pub fn (c &CSSComputedProperties_) opacity() f32 {
+	return c.opacity_
+}
+
+pub fn (c &CSSComputedProperties_) visibility() CSSVisibility_ {
+	return c.visibility_
+}
+
 pub fn (c &CSSComputedProperties_) view_transition_name() ?string {
 	return none
+}
+
+pub fn (c &CSSComputedProperties_) has_attempted_match_against_pseudo_class(pseudo_class PseudoClass) bool {
+	_ = c
+	_ = pseudo_class
+	// Stub for CSS::ComputedProperties selector matching bookkeeping.
+	return false
 }
 
 pub struct CSSDisplay_ {
@@ -303,11 +372,30 @@ pub enum CSSOverflow_ {
 	clip
 }
 
+pub enum CSSContentVisibility_ {
+	visible
+	hidden
+	auto_
+}
+
+pub enum CSSVisibility_ {
+	visible
+	hidden
+	collapse
+}
+
 @[heap]
 pub struct CSSCascadedProperties_ {}
 
 @[heap]
-pub struct CSSCustomPropertyData_ {}
+pub struct CSSCustomPropertyData_ {
+pub mut:
+	properties map[string]&CSSStyleValue_
+}
+
+pub fn (data &CSSCustomPropertyData_) get(name string) ?&CSSStyleValue_ {
+	return data.properties[name] or { return none }
+}
 
 @[heap]
 pub struct CSSCountersSet_ {}
@@ -342,6 +430,8 @@ pub mut:
 	computed_props   ?&CSSComputedProperties_
 	cascaded_props   ?&CSSCascadedProperties_
 	custom_prop_data ?&CSSCustomPropertyData_
+	counters_set_    ?&CSSCountersSet_
+	scroll_offset_   CSSPixelPoint_
 }
 
 pub fn (p &PseudoElement_) layout_node() ?&LayoutNodeWithStyle_ {
@@ -386,6 +476,61 @@ pub fn (n &LayoutNodeWithStyle_) apply_style(props &CSSComputedProperties_) {
 pub fn (n &LayoutNodeWithStyle_) is_scroll_container() bool {
 	return false
 }
+
+pub fn (n &LayoutNodeWithStyle_) previous_in_pre_order() ?&LayoutNodeWithStyle_ {
+	_ = n
+	// Stub for Layout::Node::previous_in_pre_order() until the layout tree is ported.
+	return none
+}
+
+pub fn (n &LayoutNodeWithStyle_) previous_sibling() ?&LayoutNodeWithStyle_ {
+	_ = n
+	// Stub for Layout::Node::previous_sibling() until the layout tree is ported.
+	return none
+}
+
+pub fn (n &LayoutNodeWithStyle_) dom_node() ?&Node {
+	_ = n
+	// Stub for Layout::Node::dom_node() until layout nodes retain DOM back-pointers.
+	return none
+}
+
+pub fn (n &LayoutNodeWithStyle_) is_generated_for_pseudo_element() bool {
+	_ = n
+	// Stub for generated pseudo-element layout metadata.
+	return false
+}
+
+pub fn (n &LayoutNodeWithStyle_) pseudo_element_generator() ?&Element {
+	_ = n
+	// Stub for Layout::NodeWithStyle::pseudo_element_generator().
+	return none
+}
+
+pub fn (n &LayoutNodeWithStyle_) generated_for_pseudo_element() ?PseudoElement {
+	_ = n
+	// Stub for Layout::NodeWithStyle::generated_for_pseudo_element().
+	return none
+}
+
+pub fn (n &LayoutNodeWithStyle_) is_before(other &LayoutNodeWithStyle_) bool {
+	_ = n
+	_ = other
+	// Stub for Layout::Node::is_before().
+	return false
+}
+
+pub struct ImmutableBitmap_ {
+pub mut:
+	width  int = 1
+	height int = 1
+}
+
+pub fn (a &CSSAnimation_) cancel() {}
+
+pub fn (a &CSSAnimation_) play() ! {}
+
+pub fn (a &CSSAnimation_) pause() ! {}
 
 pub struct PaintableBox_ {
 pub mut:
@@ -526,15 +671,14 @@ fn is_ascii_digit_code_point(ch u32) bool {
 // https://dom.spec.whatwg.org/#valid-namespace-prefix
 pub fn is_valid_namespace_prefix(prefix string) bool {
 	// A string is a valid namespace prefix if its length is at least 1 and it does not contain ASCII whitespace, U+0000 NULL, U+002F (/), or U+003E (>).
-	return prefix.len > 0 && !contains_any_code_point(prefix, [u32(9), 10, 12, 13, 32, 0, 47,
-		62])
+	return prefix.len > 0 && !contains_any_code_point(prefix, [u32(9), 10, 12, 13, 32, 0, 47, 62])
 }
 
 // https://dom.spec.whatwg.org/#valid-attribute-local-name
 pub fn is_valid_attribute_local_name(local_name string) bool {
 	// A string is a valid attribute local name if its length is at least 1 and it does not contain ASCII whitespace, U+0000 NULL, U+002F (/), U+003D (=), or U+003E (>).
-	return local_name.len > 0 && !contains_any_code_point(local_name, [u32(9), 10, 12, 13, 32, 0,
-		47, 61, 62])
+	return local_name.len > 0
+		&& !contains_any_code_point(local_name, [u32(9), 10, 12, 13, 32, 0, 47, 61, 62])
 }
 
 // https://dom.spec.whatwg.org/#valid-element-local-name
@@ -569,8 +713,8 @@ pub fn is_valid_element_local_name(name string) bool {
 	for i := 1; i < runes.len; i++ {
 		code_point := u32(runes[i])
 		if !is_ascii_alpha_code_point(code_point) && !is_ascii_digit_code_point(code_point)
-			&& code_point != `-` && code_point != `.` && code_point != `:`
-			&& code_point != `_` && (code_point < 0x0080 || code_point > 0x10ffff) {
+			&& code_point != `-` && code_point != `.` && code_point != `:` && code_point != `_`
+			&& (code_point < 0x0080 || code_point > 0x10ffff) {
 			return false
 		}
 	}
@@ -701,8 +845,8 @@ pub fn validate_and_extract(namespace_ ?string, qualified_name string, context V
 	}
 
 	// 11. If namespace is the XMLNS namespace and neither qualifiedName nor prefix is "xmlns", then throw a "NamespaceError" DOMException.
-	if namespace_matches(normalized_namespace, namespace_xmlns_uri)
-		&& !(qualified_name == 'xmlns' || prefix_is_xmlns) {
+	if namespace_matches(normalized_namespace, namespace_xmlns_uri) && !(qualified_name == 'xmlns'
+		|| prefix_is_xmlns) {
 		return error('NamespaceError: Namespace is the XMLNS namespace and neither qualifiedName nor prefix is xmlns')
 	}
 
@@ -755,8 +899,11 @@ pub mut:
 
 	scroll_offset_ CSSPixelPoint_
 
+	css_defined_animations_         map[string]&CSSAnimation_
+	has_css_defined_animations_flag bool
+
 	// Boolean flags
-	is_being_activated                                                              bool
+	is_being_activated_                                                             bool
 	in_top_layer                                                                    bool
 	rendered_in_top_layer                                                           bool
 	style_uses_attr_css_function                                                    bool
@@ -793,7 +940,16 @@ pub mut:
 	doc_ ?&Document
 }
 
-pub struct StylePropertyMap_ {}
+pub struct StylePropertyMap_ {
+pub mut:
+	style ?&CSSStyleProperties_
+}
+
+fn create_style_property_map_for_bindings(style &CSSStyleProperties_) &StylePropertyMap_ {
+	return &StylePropertyMap_{
+		style: style
+	}
+}
 
 pub struct StylePropertyMapReadOnly_ {}
 
@@ -872,7 +1028,7 @@ pub fn (e &Element) lowercased_local_name() string {
 	if e.qualified_name.lowercased_local_name.len > 0 {
 		return e.qualified_name.lowercased_local_name
 	}
-	return e.qualified_name.local_name.to_lower()
+	return to_ascii_lowercase(e.qualified_name.local_name)
 }
 
 pub fn (e &Element) namespace_uri() ?string {
@@ -965,20 +1121,68 @@ pub fn (e &Element) has_attributes() bool {
 
 // https://dom.spec.whatwg.org/#dom-element-setattributevalue
 pub fn (mut e Element) set_attribute_value(local_name string, value string) {
+	e.set_attribute_value_ns(local_name, value, none, none)
+}
+
+// https://dom.spec.whatwg.org/#concept-element-attributes-set-value
+pub fn (mut e Element) set_attribute_value_ns(local_name string, value string, prefix ?string, namespace_ ?string) {
 	mut attrs := e.ensure_attributes()
-	if existing := attrs.get_attribute(local_name) {
+	normalized_namespace := normalize_attribute_namespace(namespace_)
+	if existing := attrs.get_attribute_ns(normalized_namespace, local_name) {
 		old_value := existing.value_
 		unsafe {
 			existing.value_ = value
 		}
 		existing.handle_attribute_changes(e, old_value, value)
 	} else {
+		qualified_name := QualifiedName.new(local_name, prefix, normalized_namespace)
 		attrs.append_attribute(&Attr_{
-			name_:       local_name
-			value_:      value
-			local_name_: local_name
+			name_:          qualified_name.as_string()
+			value_:         value
+			local_name_:    local_name
+			prefix__:       prefix
+			namespace_uri_: normalized_namespace
 		})
 	}
+}
+
+// https://dom.spec.whatwg.org/#dom-element-setattribute
+pub fn (mut e Element) set_attribute_for_bindings(qualified_name string, value string) ! {
+	if !is_valid_attribute_local_name(qualified_name) {
+		return error('InvalidCharacterError: Attribute name must not be empty or contain invalid characters')
+	}
+
+	mut actual_name := qualified_name
+	if e.namespace_uri() or { '' } == namespace_html_uri {
+		doc := e.document()
+		if doc != unsafe { nil } && doc.document_type() == .html {
+			actual_name = to_ascii_lowercase(qualified_name)
+		}
+	}
+
+	e.set_attribute_value(actual_name, value)
+}
+
+// https://dom.spec.whatwg.org/#dom-element-setattributens
+pub fn (mut e Element) set_attribute_ns_for_bindings(namespace_ ?string, qualified_name string, value string) ! {
+	extracted := validate_and_extract(namespace_, qualified_name, .attribute)!
+	e.set_attribute_value_ns(extracted.local_name, value, extracted.prefix_, extracted.namespace_)
+}
+
+// https://dom.spec.whatwg.org/#dom-element-setattributenode
+pub fn (mut e Element) set_attribute_node_for_bindings(attr &Attr_) !&Attr_ {
+	// The setAttributeNode(attr) and setAttributeNodeNS(attr) methods steps are to
+	// return the result of setting an attribute given attr and this.
+	mut attrs := e.attributes()
+	return attrs.set_attribute(attr)!
+}
+
+// https://dom.spec.whatwg.org/#dom-element-setattributenodens
+pub fn (mut e Element) set_attribute_node_ns_for_bindings(attr &Attr_) !&Attr_ {
+	// The setAttributeNode(attr) and setAttributeNodeNS(attr) methods steps are to
+	// return the result of setting an attribute given attr and this.
+	mut attrs := e.attributes()
+	return attrs.set_attribute(attr)!
 }
 
 // https://dom.spec.whatwg.org/#dom-element-appendattribute
@@ -1006,13 +1210,15 @@ pub fn (mut e Element) remove_attribute(name string) {
 // https://dom.spec.whatwg.org/#dom-element-removeattributens
 pub fn (mut e Element) remove_attribute_ns(namespace_ ?string, name string) {
 	if mut attrs := e.attributes_ {
-		for a in attrs.attrs {
-			if a.namespace_uri_ == namespace_ && a.local_name_ == name {
-				attrs.remove_attribute_node(a)
-				return
-			}
-		}
+		index := attrs.attribute_index_by_namespace(namespace_, name) or { return }
+		attrs.remove_attribute_at_index(index)
 	}
+}
+
+// https://dom.spec.whatwg.org/#dom-element-removeattributenode
+pub fn (mut e Element) remove_attribute_node(attr &Attr_) !&Attr_ {
+	mut attrs := e.attributes()
+	return attrs.remove_attribute_node_checked(attr)!
 }
 
 // https://dom.spec.whatwg.org/#dom-element-toggleattribute
@@ -1026,7 +1232,7 @@ pub fn (mut e Element) toggle_attribute(name string, force ?bool) !bool {
 	if ns == namespace_html_uri {
 		doc := e.document()
 		if doc != unsafe { nil } && doc.document_type() == .html {
-			actual_name = name.to_lower()
+			actual_name = to_ascii_lowercase(name)
 		}
 	}
 
@@ -1094,15 +1300,30 @@ fn (mut e Element) ensure_attributes() &NamedNodeMap {
 
 // https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#attr-associated-element
 pub fn (e &Element) get_the_attribute_associated_element(content_attribute string, explicitly_set ?&Element) ?&Element {
+	// 1. Let element be the result of running reflectedTarget's get the element.
 	if exp := explicitly_set {
-		return exp
+		// 3. If reflectedTarget's explicitly set attr-element is a descendant of any of
+		// element's shadow-including ancestors, then return it. The C++ implementation
+		// represents that as a root check against element's shadow-including root.
+		if exp.as_node().root() == e.as_node().shadow_including_root() {
+			return exp
+		}
+		return none
 	}
+	// 2. Let contentAttributeValue be the result of running reflectedTarget's get the content attribute.
 	content_attribute_value := e.get_attribute(content_attribute) or { return none }
 	doc := e.document()
 	if doc == unsafe { nil } {
 		return none
 	}
-	return doc.get_element_by_id(content_attribute_value)
+	// 4. Otherwise, if contentAttributeValue is not null, return the first element
+	// candidate, in tree order, whose root is the same as element's root and whose
+	// ID is contentAttributeValue.
+	candidate := doc.get_element_by_id(content_attribute_value) or { return none }
+	if candidate.as_node().root() != e.as_node().root() {
+		return none
+	}
+	return candidate
 }
 
 // --- Class / Part lists ---
@@ -1137,9 +1358,9 @@ pub fn (e &Element) has_class(class_name string) bool {
 }
 
 pub fn (e &Element) has_class_case_insensitive(class_name string) bool {
-	lower := class_name.to_lower()
+	lower := to_ascii_lowercase(class_name)
 	for c in e.classes {
-		if c.to_lower() == lower {
+		if to_ascii_lowercase(c) == lower {
 			return true
 		}
 	}
@@ -1231,20 +1452,74 @@ pub fn (e &Element) shadow_root() ?&ShadowRoot {
 }
 
 pub fn (mut e Element) set_shadow_root(sr ?&ShadowRoot) {
+	current_shadow_root := e.shadow_root_ or { unsafe { nil } }
+	new_shadow_root := sr or { unsafe { nil } }
+	if current_shadow_root == new_shadow_root {
+		return
+	}
+	if current_shadow_root != unsafe { nil } {
+		mut current_fragment := unsafe { &DocumentFragment(current_shadow_root) }
+		current_fragment.set_host(none)
+	}
 	e.shadow_root_ = sr
+	if new_shadow_root != unsafe { nil } {
+		mut new_fragment := unsafe { &DocumentFragment(new_shadow_root) }
+		new_fragment.set_host(&e)
+	}
+	mut node := unsafe { &Node(&e) }
+	node.invalidate_style(.element_set_shadow_root)
+	node.set_needs_layout_tree_update(true, .element_set_shadow_root)
 }
 
 // --- Selector matching ---
 
 // https://dom.spec.whatwg.org/#dom-element-matches
 pub fn (e &Element) matches(selectors string) !bool {
-	_ = selectors
+	// 1. Let s be the result of parse a selector from selectors.
+	maybe_selectors := parse_selector(e.document(), selectors)
+
+	// 2. If s is failure, then throw a "SyntaxError" DOMException.
+	selector_list := maybe_selectors or { return error('SyntaxError: Failed to parse selector') }
+
+	// 3. If the result of match a selector against an element, using s, this, and scoping root this, returns success, then return true; otherwise, return false.
+	scoping_root := unsafe { &ParentNode(e) }
+	for selector in selector_list.selectors {
+		if selector_engine_matches(selector, e, scoping_root) {
+			return true
+		}
+	}
 	return false
 }
 
 // https://dom.spec.whatwg.org/#dom-element-closest
 pub fn (e &Element) closest(selectors string) ?&Element {
-	_ = selectors
+	// 1. Let s be the result of parse a selector from selectors.
+	maybe_selectors := parse_selector(e.document(), selectors)
+
+	// 2. If s is failure, then throw a "SyntaxError" DOMException.
+	selector_list := maybe_selectors or { return none }
+
+	scoping_root := unsafe { &ParentNode(e) }
+	matches_selectors := fn [selector_list, scoping_root] (element &Element) bool {
+		// 4. For each element in elements, if match a selector against an element, using s, element, and scoping root this, returns success, return element.
+		for selector in selector_list.selectors {
+			if selector_engine_matches(selector, element, scoping_root) {
+				return true
+			}
+		}
+		return false
+	}
+
+	// 3. Let elements be this's inclusive ancestors that are elements, in reverse tree order.
+	mut element := ?&Element(e)
+	for element != none {
+		current := element or { break }
+		if matches_selectors(current) {
+			return current
+		}
+		element = current.as_node().parent_element()
+	}
+	// 5. Return null.
 	return none
 }
 
@@ -1283,6 +1558,28 @@ pub fn (e &Element) el_layout_node() ?&LayoutNodeWithStyle_ {
 
 pub fn (e &Element) el_unsafe_layout_node() ?&LayoutNodeWithStyle_ {
 	return none
+}
+
+pub fn (e &Element) create_layout_node(style &CSSComputedProperties_) ?&LayoutNodeWithStyle_ {
+	// The full C++ implementation selects concrete Layout node subclasses from the
+	// computed display type. The V layout tree is still a stub, so preserve the
+	// observable "display: none" and scripting-enabled noscript checks.
+	if e.local_name() == 'noscript' && e.document().is_scripting_enabled() {
+		return none
+	}
+	display := style.display()
+	return create_layout_node_for_display_type(e.document(), display, style, e)
+}
+
+pub fn create_layout_node_for_display_type(document &Document, display CSSDisplay_, style &CSSComputedProperties_, element &Element) ?&LayoutNodeWithStyle_ {
+	_ = document
+	_ = style
+	_ = element
+	if display.is_none() {
+		return none
+	}
+	// Stub for Layout::{Box,ListItemBox,BlockContainer,InlineNode} allocation.
+	return &LayoutNodeWithStyle_{}
 }
 
 pub fn (e &Element) paintable_box() ?&PaintableBox_ {
@@ -1396,6 +1693,11 @@ pub fn (e &Element) el_inline_style() ?&CSSStyleProperties_ {
 
 pub fn (mut e Element) set_inline_style(style ?&CSSStyleProperties_) {
 	e.inline_style_ = style
+	if e.attribute_style_map_ != none {
+		e.attribute_style_map_ = none
+	}
+	mut node := unsafe { &Node(&e) }
+	node.set_needs_style_update(true)
 }
 
 // https://drafts.csswg.org/cssom/#dom-elementcssinlinestyle-style
@@ -1403,7 +1705,7 @@ pub fn (mut e Element) style_for_bindings() &CSSStyleProperties_ {
 	if s := e.inline_style_ {
 		return s
 	}
-	new_style := &CSSStyleProperties_{}
+	new_style := create_element_inline_style(&e)
 	e.inline_style_ = new_style
 	return new_style
 }
@@ -1412,9 +1714,14 @@ pub fn (mut e Element) el_attribute_style_map() &StylePropertyMap_ {
 	if m := e.attribute_style_map_ {
 		return m
 	}
-	new_map := &StylePropertyMap_{}
+	new_map := create_style_property_map_for_bindings(e.style_for_bindings())
 	e.attribute_style_map_ = new_map
 	return new_map
+}
+
+// https://www.w3.org/TR/css-typed-om-1/#dom-element-attributestylemap
+pub fn (mut e Element) attribute_style_map() &StylePropertyMap_ {
+	return e.el_attribute_style_map()
 }
 
 // --- Custom property data ---
@@ -1491,39 +1798,224 @@ pub fn (mut e Element) recompute_inherited_style() RequiredInvalidationAfterStyl
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-innerhtml
 pub fn (mut e Element) set_inner_html(value string) ! {
-	_ = value
+	// Trusted Types compliance is not translated yet; treat value as the compliant string.
+	mut node := unsafe { &Node(&e) }
+	node.unsafely_set_html(&e, value)!
+	node.set_needs_style_update(true)
+	if node.is_connected() {
+		node.set_needs_layout_tree_update(true, .element_set_inner_html)
+	}
 }
 
 pub fn (e &Element) inner_html() !string {
-	return ''
+	return e.as_node().serialize_fragment(.yes, .inner)
 }
 
 pub fn (e &Element) outer_html() !string {
-	return ''
+	return e.as_node().serialize_fragment(.yes, .outer)
 }
 
 pub fn (mut e Element) set_outer_html(value string) ! {
-	_ = value
+	// Trusted Types compliance is not translated yet; treat value as the compliant string.
+	parent := e.as_node().parent() or { return }
+	if parent.is_document() {
+		return error('NoModificationAllowedError: Cannot set outer HTML on document')
+	}
+	mut context := ?&Element(none)
+	if parent.is_document_fragment() {
+		context = create_element(e.document(), 'body', namespace_html_, none, none, false)!
+	} else {
+		context = parent.as_element()
+	}
+	context_element := context or {
+		return error('NoModificationAllowedError: Cannot set outer HTML without an element context')
+	}
+
+	fragment := parse_fragment_fallback(context_element, value)!
+	mut mutable_parent := unsafe { &Node(parent) }
+	mutable_parent.replace_child(fragment.as_node(), e.as_node())!
 }
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtmlunsafe
 pub fn (mut e Element) set_html_unsafe(html string) ! {
-	_ = html
+	mut node := unsafe { &Node(&e) }
+	node.unsafely_set_html(&e, html)!
 }
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-gethtml
 pub fn (e &Element) get_html(options GetHTMLOptions) !string {
 	_ = options
-	return ''
+	return e.as_node().serialize_fragment(.yes, .inner)
 }
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#the-insertadjacenthtml()-method
 pub fn (mut e Element) insert_adjacent_html(position string, text string) ! {
-	lower_pos := position.to_lower()
+	lower_pos := to_ascii_lowercase(position)
 	if lower_pos !in ['beforebegin', 'afterbegin', 'beforeend', 'afterend'] {
 		return error('SyntaxError: insertAdjacentHTML: invalid position argument')
 	}
-	_ = text
+	mut context_node := ?&Node(none)
+	if lower_pos in ['beforebegin', 'afterend'] {
+		parent := e.as_node().parent() or {
+			return error('NoModificationAllowedError: insertAdjacentHTML: context is null or a Document')
+		}
+		if parent.is_document() {
+			return error('NoModificationAllowedError: insertAdjacentHTML: context is null or a Document')
+		}
+		context_node = unsafe { &Node(parent) }
+	} else {
+		context_node = unsafe { &Node(e.as_node()) }
+	}
+	context := context_node or { return }
+	mut context_element := context.as_element()
+	if context_element == none {
+		context_element = create_element(e.document(), 'body', namespace_html_, none, none, false)!
+	} else if element := context_element {
+		if element.document().document_type() == .html && element.local_name() == 'html' && element.namespace_uri() or {
+			''
+		} == namespace_html_ {
+			context_element = create_element(e.document(), 'body', namespace_html_, none, none,
+				false)!
+		}
+	}
+	element_context := context_element or { return }
+	fragment := parse_fragment_fallback(element_context, text)!
+	match lower_pos {
+		'beforebegin' {
+			parent := e.as_node().parent() or { return }
+			mut mutable_parent := unsafe { &Node(parent) }
+			mutable_parent.insert_before(fragment.as_node(), e.as_node(), false)
+		}
+		'afterbegin' {
+			mut node := unsafe { &Node(&e) }
+			node.insert_before(fragment.as_node(), e.as_node().first_child(), false)
+		}
+		'beforeend' {
+			mut node := unsafe { &Node(&e) }
+			node.append_child(fragment.as_node())!
+		}
+		'afterend' {
+			parent := e.as_node().parent() or { return }
+			mut mutable_parent := unsafe { &Node(parent) }
+			mutable_parent.insert_before(fragment.as_node(), e.as_node().next_sibling(), false)
+		}
+		else {}
+	}
+}
+
+fn html_parser_parse_html_fragment(context_element &Element, markup string, allow_declarative_shadow_roots AllowDeclarativeShadowRoots) ![]&Node {
+	_ = allow_declarative_shadow_roots
+	// Stub for HTML::HTMLParser::parse_html_fragment until the HTML parser is ported.
+	if markup.len == 0 {
+		return []&Node{}
+	}
+	return [new_text_node(context_element.document(), markup).as_node()]
+}
+
+fn xml_fragment_parser_parse_xml_fragment(context_element &Element, markup string, allow_declarative_shadow_roots AllowDeclarativeShadowRoots) ![]&Node {
+	_ = allow_declarative_shadow_roots
+	// Stub for XMLFragmentParser::parse_xml_fragment until the XML parser is ported.
+	if markup.len == 0 {
+		return []&Node{}
+	}
+	return [new_text_node(context_element.document(), markup).as_node()]
+}
+
+fn append_nodes_to_new_fragment(document &Document, new_children []&Node) !&DocumentFragment {
+	fragment := new_document_fragment(document)
+	mut fragment_node := unsafe { &Node(fragment.as_node()) }
+	for child in new_children {
+		fragment_node.append_child(child)!
+	}
+	return fragment
+}
+
+// https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#fragment-parsing-algorithm-steps
+pub fn (e &Element) parse_fragment(markup string) !&DocumentFragment {
+	// 1. Let algorithm be the HTML fragment parsing algorithm.
+	// 2. If context's node document is an XML document, then set algorithm to the XML fragment parsing algorithm.
+	new_children := if e.document().is_xml_document() {
+		xml_fragment_parser_parse_xml_fragment(e, markup, .no)!
+	} else {
+		html_parser_parse_html_fragment(e, markup, .no)!
+	}
+
+	// 4. Let fragment be a new DocumentFragment whose node document is context's node document.
+	// 5. For each node of newChildren, in tree order: append node to fragment.
+	// 6. Return fragment.
+	return append_nodes_to_new_fragment(e.document(), new_children)
+}
+
+fn parse_fragment_fallback(context_element &Element, html string) !&DocumentFragment {
+	return context_element.parse_fragment(html)
+}
+
+fn html_escape_text(value string) string {
+	return value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+}
+
+fn html_escape_attribute(value string) string {
+	return html_escape_text(value).replace('"', '&quot;')
+}
+
+fn serialize_element_start_tag(mut builder strings.Builder, element &Element) {
+	builder.write_string('<')
+	builder.write_string(element.qualified_name_str())
+	if attrs := element.attributes_ {
+		for attr in attrs.attrs {
+			builder.write_string(' ')
+			builder.write_string(attr.name())
+			builder.write_string('="')
+			builder.write_string(html_escape_attribute(attr.value()))
+			builder.write_string('"')
+		}
+	}
+	builder.write_string('>')
+}
+
+fn serialize_node_fallback(node &Node, mode FragmentSerializationMode) string {
+	if character_data := node.character_data() {
+		return html_escape_text(character_data.data())
+	}
+	if attr := node.as_attr() {
+		return html_escape_attribute(attr.value())
+	}
+	if document_type := node.as_document_type() {
+		return '<!DOCTYPE ${document_type.name()}>'
+	}
+	if element := node.as_element() {
+		mut builder := strings.new_builder(0)
+		if mode == .outer {
+			serialize_element_start_tag(mut builder, element)
+		}
+		for child in node.children {
+			builder.write_string(serialize_node_fallback(child, .outer))
+		}
+		if mode == .outer && !element.serializes_as_void() {
+			builder.write_string('</')
+			builder.write_string(element.qualified_name_str())
+			builder.write_string('>')
+		}
+		return builder.str()
+	}
+	mut builder := strings.new_builder(0)
+	for child in node.children {
+		builder.write_string(serialize_node_fallback(child, .outer))
+	}
+	return builder.str()
+}
+
+fn html_parser_serialize_html_fragment(node &Node, serializable_shadow_roots SerializableShadowRoots, shadow_roots []&ShadowRoot, fragment_serialization_mode FragmentSerializationMode) string {
+	_ = serializable_shadow_roots
+	_ = shadow_roots
+	// Stub for HTML::HTMLParser::serialize_html_fragment until the HTML serializer is ported.
+	return serialize_node_fallback(node, fragment_serialization_mode)
+}
+
+fn html_serialize_node_to_xml_string(node &Node, require_well_formed RequireWellFormed) !string {
+	_ = require_well_formed
+	// Stub for HTML::serialize_node_to_xml_string until the XML serializer is ported.
+	return serialize_node_fallback(node, .outer)
 }
 
 // --- Focus / Active ---
@@ -1536,15 +2028,22 @@ pub fn (e &Element) is_the_active_element() bool {
 	return e.document().active_element() or { return false } == e
 }
 
+pub fn (e &Element) is_being_activated() bool {
+	return e.is_being_activated_
+}
+
+// Kept for compatibility with callers that used the V-prefixed accessor.
 pub fn (e &Element) el_is_being_activated() bool {
-	return e.is_being_activated
+	return e.is_being_activated()
 }
 
 pub fn (mut e Element) set_being_activated(active bool) {
-	if e.is_being_activated == active {
+	if e.is_being_activated_ == active {
 		return
 	}
-	e.is_being_activated = active
+	e.is_being_activated_ = active
+	mut node := unsafe { &Node(&e) }
+	node.invalidate_style(.element_set_active)
 }
 
 pub fn (e &Element) is_target() bool {
@@ -1572,21 +2071,118 @@ pub fn (e &Element) is_void_element() bool {
 }
 
 pub fn (e &Element) serializes_as_void() bool {
-	return e.is_void_element()
+	return e.is_void_element() || e.local_name() in ['basefont', 'bgsound', 'frame', 'keygen']
 }
 
 // --- Bounding rects ---
 
 // https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect
 pub fn (e &Element) get_bounding_client_rect() Rect {
-	return Rect{}
+	// 1. Let list be the result of invoking getClientRects() on element.
+	list := e.get_client_rects()
+
+	// 2. If the list is empty return a DOMRect object whose x, y, width and height members are zero.
+	if list.len == 0 {
+		return Rect{}
+	}
+
+	// 3. If all rectangles in list have zero width or height, return the first rectangle in list.
+	mut all_rectangle_has_zero_width_or_height := true
+	for rect in list {
+		if rect.width() != 0 && rect.height() != 0 {
+			all_rectangle_has_zero_width_or_height = false
+			break
+		}
+	}
+	first := list[0]
+	if all_rectangle_has_zero_width_or_height {
+		return Rect{
+			x:      first.x_
+			y:      first.y_
+			width:  first.width_
+			height: first.height_
+		}
+	}
+
+	// 4. Otherwise, return a DOMRect object describing the smallest rectangle that includes all of the rectangles in
+	//    list of which the height or width is not zero.
+	mut left := first.x_
+	mut top := first.y_
+	mut right := first.x_ + first.width_
+	mut bottom := first.y_ + first.height_
+	for i := 1; i < list.len; i++ {
+		rect := list[i]
+		if rect.width() == 0 || rect.height() == 0 {
+			continue
+		}
+		if rect.x_ < left {
+			left = rect.x_
+		}
+		if rect.y_ < top {
+			top = rect.y_
+		}
+		if rect.x_ + rect.width_ > right {
+			right = rect.x_ + rect.width_
+		}
+		if rect.y_ + rect.height_ > bottom {
+			bottom = rect.y_ + rect.height_
+		}
+	}
+	return Rect{
+		x:      left
+		y:      top
+		width:  right - left
+		height: bottom - top
+	}
 }
 
 pub fn (e &Element) get_client_rects() []CSSPixelRect_ {
 	return []
 }
 
+// https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect
+// Bindings counterpart of `get_bounding_client_rect`. The V port lacks the
+// IDL DOMRect type, so the existing `Rect` is returned directly.
+pub fn (e &Element) get_bounding_client_rect_for_bindings() Rect {
+	return e.get_bounding_client_rect()
+}
+
+// https://drafts.csswg.org/cssom-view/#dom-element-getclientrects
+// Bindings counterpart of `get_client_rects`. The V port lacks the IDL
+// DOMRectList type, so a slice of `CSSPixelRect_` is returned directly.
+pub fn (e &Element) get_client_rects_for_bindings() []CSSPixelRect_ {
+	return e.get_client_rects()
+}
+
 // --- Tab index ---
+
+fn parse_html_integer(value string) ?int {
+	mut index := 0
+	for index < value.len && is_ascii_whitespace(value[index]) {
+		index++
+	}
+	if index >= value.len {
+		return none
+	}
+
+	mut sign := 1
+	if value[index] == `-` {
+		sign = -1
+		index++
+	} else if value[index] == `+` {
+		index++
+	}
+	if index >= value.len || value[index] < `0` || value[index] > `9` {
+		return none
+	}
+
+	mut result := 0
+	for index < value.len && value[index] >= `0` && value[index] <= `9` {
+		result = result * 10 + int(value[index] - `0`)
+		index++
+	}
+	return sign * result
+}
 
 pub fn (e &Element) default_tab_index_value() int {
 	return -1
@@ -1594,11 +2190,10 @@ pub fn (e &Element) default_tab_index_value() int {
 
 // https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex
 pub fn (e &Element) tab_index() int {
-	tab_str := e.get_attribute_value('tabindex')
-	if tab_str.len == 0 {
+	tab_index := parse_html_integer(e.get_attribute_value('tabindex')) or {
 		return e.default_tab_index_value()
 	}
-	return tab_str.int()
+	return tab_index
 }
 
 pub fn (mut e Element) set_tab_index(tab_index int) {
@@ -1607,35 +2202,113 @@ pub fn (mut e Element) set_tab_index(tab_index int) {
 
 // --- Scrolling ---
 
+pub enum TreatOverflowClipOnBodyParentAsOverflowHidden {
+	no
+	yes
+}
+
+fn overflow_value_makes_box_a_scroll_container(value CSSOverflow_) bool {
+	return value in [.hidden, .scroll, .auto_]
+}
+
+fn (e &Element) document_window() ?&Window {
+	doc := e.document()
+	if doc == unsafe { nil } {
+		return none
+	}
+	return doc.get_window()
+}
+
+fn (e &Element) is_document_body_element(document &Document) bool {
+	body := document.body() or { return false }
+	return unsafe { &Element(body) } == e
+}
+
 // https://drafts.csswg.org/cssom-view/#potentially-scrollable
 pub fn (e &Element) is_potentially_scrollable() bool {
+	return e.is_potentially_scrollable_with_overflow_clip_treatment(.no)
+}
+
+pub fn (e &Element) is_potentially_scrollable_with_overflow_clip_treatment(treat_overflow_clip_on_body_parent_as_overflow_hidden TreatOverflowClipOnBodyParentAsOverflowHidden) bool {
+	// NOTE: Ensure that layout is up-to-date before looking at metrics.
+	mut document := unsafe { &Document(e.document()) }
+	document.update_layout(.element_is_potentially_scrollable)
+
+	// An element body (which will be the body element) is potentially scrollable if all of the following conditions are true:
+	// - body has an associated box.
 	if e.el_layout_node() == none {
 		return false
 	}
-	return false
+
+	// - body's parent element's computed value of the overflow-x or overflow-y properties is neither visible nor clip.
+	parent := e.as_node().parent_element() or { return false }
+	parent_properties := parent.el_computed_properties() or { return false }
+	if parent_properties.overflow_x() == .visible || parent_properties.overflow_y() == .visible {
+		return false
+	}
+	// NOTE: When treating 'overflow:clip' as 'overflow:hidden', we can never fail this condition.
+	if treat_overflow_clip_on_body_parent_as_overflow_hidden == .no
+		&& (parent_properties.overflow_x() == .clip || parent_properties.overflow_y() == .clip) {
+		return false
+	}
+
+	// - body's computed value of the overflow-x or overflow-y properties is neither visible nor clip.
+	computed_properties := e.el_computed_properties() or { return false }
+	if computed_properties.overflow_x() in [.visible, .clip]
+		|| computed_properties.overflow_y() in [.visible, .clip] {
+		return false
+	}
+
+	return true
 }
 
 pub fn (e &Element) is_scroll_container() bool {
+	// NB: We should only call this if we know that computed_properties has already been computed.
 	if e.is_document_element() {
 		return true
 	}
-	return false
+	computed_properties := e.el_computed_properties() or { return false }
+	return overflow_value_makes_box_a_scroll_container(computed_properties.overflow_x())
+		|| overflow_value_makes_box_a_scroll_container(computed_properties.overflow_y())
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-scrolltop
 pub fn (e &Element) scroll_top() f64 {
+	// 1. Let document be the element's node document.
 	doc := e.document()
+
+	// 2. If document is not the active document, return zero and terminate these steps.
 	if doc == unsafe { nil } || !doc.is_active() {
 		return 0.0
 	}
+
+	// 3. Let window be the value of document's defaultView attribute.
+	// FIXME: The specification expects defaultView to be a Window object, but defaultView actually returns a WindowProxy object.
+	window := e.document_window() or { return 0.0 }
+
+	// 5. If the element is the root element and document is in quirks mode, return zero and terminate these steps.
 	if e.is_document_element() && doc.in_quirks_mode() {
 		return 0.0
 	}
+
+	// 6. If the element is the root element return the value of scrollY on window.
 	if e.is_document_element() {
-		// Would return window.scroll_y()
-		return 0.0
+		return window.scroll_y()
 	}
+
+	// NOTE: Ensure that layout is up-to-date before looking at metrics.
+	mut document := unsafe { &Document(doc) }
+	document.update_layout(.element_scroll_top)
+
+	// 7. If the element is the body element, document is in quirks mode, and the element is not potentially scrollable, return the value of scrollY on window.
+	if e.is_document_body_element(doc) && doc.in_quirks_mode() && !e.is_potentially_scrollable() {
+		return window.scroll_y()
+	}
+
+	// 8. If the element does not have any associated box, return zero and terminate these steps.
 	if pb := e.paintable_box() {
+		// 9. Return the y-coordinate of the scrolling area at the alignment point with the top of the padding edge of the element.
+		// FIXME: Is this correct?
 		return pb.scroll_offset().y()
 	}
 	return 0.0
@@ -1643,18 +2316,41 @@ pub fn (e &Element) scroll_top() f64 {
 
 // https://drafts.csswg.org/cssom-view/#dom-element-scrollleft
 pub fn (e &Element) scroll_left() f64 {
+	// 1. Let document be the element's node document.
 	doc := e.document()
+
+	// 2. If document is not the active document, return zero and terminate these steps.
 	if doc == unsafe { nil } || !doc.is_active() {
 		return 0.0
 	}
+
+	// 3. Let window be the value of document's defaultView attribute.
+	// FIXME: The specification expects defaultView to be a Window object, but defaultView actually returns a WindowProxy object.
+	window := e.document_window() or { return 0.0 }
+
+	// 5. If the element is the root element and document is in quirks mode, return zero and terminate these steps.
 	if e.is_document_element() && doc.in_quirks_mode() {
 		return 0.0
 	}
+
+	// 6. If the element is the root element return the value of scrollX on window.
 	if e.is_document_element() {
-		// Would return window.scroll_x()
-		return 0.0
+		return window.scroll_x()
 	}
+
+	// NOTE: Ensure that layout is up-to-date before looking at metrics.
+	mut document := unsafe { &Document(doc) }
+	document.update_layout(.element_scroll_left)
+
+	// 7. If the element is the body element, document is in quirks mode, and the element is not potentially scrollable, return the value of scrollX on window.
+	if e.is_document_body_element(doc) && doc.in_quirks_mode() && !e.is_potentially_scrollable() {
+		return window.scroll_x()
+	}
+
+	// 8. If the element does not have any associated box, return zero and terminate these steps.
 	if pb := e.paintable_box() {
+		// 9. Return the x-coordinate of the scrolling area at the alignment point with the left of the padding edge of the element.
+		// FIXME: Is this correct?
 		return pb.scroll_offset().x()
 	}
 	return 0.0
@@ -1662,19 +2358,53 @@ pub fn (e &Element) scroll_left() f64 {
 
 // https://drafts.csswg.org/cssom-view/#dom-element-scrollleft
 pub fn (mut e Element) set_scroll_left(x_ f64) {
+	// 1. Let x be the given value.
+
+	// 2. Normalize non-finite values for x.
 	x := normalize_non_finite(x_)
+
+	// 3. Let document be the element's node document.
 	doc := e.document()
+
+	// 4. If document is not the active document, terminate these steps.
 	if doc == unsafe { nil } || !doc.is_active() {
 		return
 	}
+
+	// 5. Let window be the value of document's defaultView attribute.
+	// FIXME: The specification expects defaultView to be a Window object, but defaultView actually returns a WindowProxy object.
+	mut window := e.document_window() or { return }
+
+	// 7. If the element is the root element and document is in quirks mode, terminate these steps.
 	if e.is_document_element() && doc.in_quirks_mode() {
 		return
 	}
+
+	// 8. If the element is the root element invoke scroll() on window with x as first argument and scrollY on window as second argument, and terminate these steps.
 	if e.is_document_element() {
-		// Would invoke window.scroll(x, window.scroll_y())
+		window.scroll(x, window.scroll_y())
 		return
 	}
+
+	// NOTE: Ensure that layout is up-to-date before looking at metrics or scrolling the page.
+	mut document := unsafe { &Document(doc) }
+	document.update_layout(.element_set_scroll_left)
+
+	// 9. If the element is the body element, document is in quirks mode, and the element is not potentially scrollable, invoke scroll() on window with x as first argument and scrollY on window as second argument, and terminate these steps.
+	if e.is_document_body_element(doc) && doc.in_quirks_mode() && !e.is_potentially_scrollable() {
+		window.scroll(x, window.scroll_y())
+		return
+	}
+
+	// 10. If the element does not have any associated box, the element has no associated scrolling box, or the element has no overflow, terminate these steps.
 	if mut pb := e.paintable_box() {
+		if !e.is_scroll_container() {
+			return
+		}
+		// FIXME: or the element has no overflow.
+
+		// 11. Scroll the element to x,scrollTop, with the scroll behavior being "auto".
+		// FIXME: Implement this in terms of calling "scroll the element".
 		mut offset := pb.scroll_offset()
 		offset.set_x(x)
 		pb.set_scroll_offset(offset)
@@ -1683,19 +2413,53 @@ pub fn (mut e Element) set_scroll_left(x_ f64) {
 
 // https://drafts.csswg.org/cssom-view/#dom-element-scrolltop
 pub fn (mut e Element) set_scroll_top(y_ f64) {
+	// 1. Let y be the given value.
+
+	// 2. Normalize non-finite values for y.
 	y := normalize_non_finite(y_)
+
+	// 3. Let document be the element's node document.
 	doc := e.document()
+
+	// 4. If document is not the active document, terminate these steps.
 	if doc == unsafe { nil } || !doc.is_active() {
 		return
 	}
+
+	// 5. Let window be the value of document's defaultView attribute.
+	// FIXME: The specification expects defaultView to be a Window object, but defaultView actually returns a WindowProxy object.
+	mut window := e.document_window() or { return }
+
+	// 7. If the element is the root element and document is in quirks mode, terminate these steps.
 	if e.is_document_element() && doc.in_quirks_mode() {
 		return
 	}
+
+	// 8. If the element is the root element invoke scroll() on window with scrollX on window as first argument and y as second argument, and terminate these steps.
 	if e.is_document_element() {
-		// Would invoke window.scroll(window.scroll_x(), y)
+		window.scroll(window.scroll_x(), y)
 		return
 	}
+
+	// NOTE: Ensure that layout is up-to-date before looking at metrics or scrolling the page.
+	mut document := unsafe { &Document(doc) }
+	document.update_layout(.element_set_scroll_top)
+
+	// 9. If the element is the body element, document is in quirks mode, and the element is not potentially scrollable, invoke scroll() on window with scrollX as first argument and y as second argument, and terminate these steps.
+	if e.is_document_body_element(doc) && doc.in_quirks_mode() && !e.is_potentially_scrollable() {
+		window.scroll(window.scroll_x(), y)
+		return
+	}
+
+	// 10. If the element does not have any associated box, the element has no associated scrolling box, or the element has no overflow, terminate these steps.
 	if mut pb := e.paintable_box() {
+		if !e.is_scroll_container() {
+			return
+		}
+		// FIXME: or the element has no overflow.
+
+		// 11. Scroll the element to scrollLeft,y, with the scroll behavior being "auto".
+		// FIXME: Implement this in terms of calling "scroll the element".
 		mut offset := pb.scroll_offset()
 		offset.set_y(y)
 		pb.set_scroll_offset(offset)
@@ -2003,7 +2767,7 @@ pub fn (e &Element) is_actually_disabled() bool {
 // --- Insert adjacent ---
 
 fn (mut e Element) insert_adjacent(where_ string, node &Node) !&Node {
-	match where_.to_lower() {
+	match to_ascii_lowercase(where_) {
 		'beforebegin' {
 			parent := e.as_node().parent() or { return unsafe { nil } }
 			mut mutable_parent := unsafe { &Node(parent) }
@@ -2045,9 +2809,73 @@ pub fn (mut e Element) insert_adjacent_text(where_ string, data string) ! {
 
 // https://drafts.csswg.org/cssom-view-1/#dom-element-checkvisibility
 pub fn (e &Element) check_visibility(options ?CheckVisibilityOptions) bool {
-	if e.el_layout_node() == none {
+	// NOTE: Ensure that layout is up-to-date before looking at metrics.
+	mut document := unsafe { &Document(e.document()) }
+	document.update_layout_if_needed_for_node(e.as_node(), .element_check_visibility)
+
+	// 1. If this does not have an associated box, return false.
+	if e.paintable_box() == none {
 		return false
 	}
+
+	// 2. If an ancestor of this in the flat tree has content-visibility: hidden, return false.
+	mut ancestor := e.as_node().flat_tree_parent_element()
+	for ancestor != none {
+		element := ancestor or { break }
+		if computed_properties := element.el_computed_properties() {
+			if computed_properties.content_visibility() == .hidden {
+				return false
+			}
+		}
+		ancestor = element.as_node().flat_tree_parent_element()
+	}
+
+	// AD-HOC: Since the rest of the steps use the options, we can return early if we haven't been given any options.
+	opts := options or { return true }
+
+	// 3. If either the opacityProperty or the checkOpacity dictionary members of options are true, and this, or an
+	//    ancestor of this in the flat tree, has a computed opacity value of 0, return false.
+	if opts.opacity_property || opts.check_opacity {
+		mut element_or_ancestor := ?&Element(e)
+		for element_or_ancestor != none {
+			element := element_or_ancestor or { break }
+			if computed_properties := element.el_computed_properties() {
+				if computed_properties.opacity() == 0.0 {
+					return false
+				}
+			}
+			element_or_ancestor = element.as_node().flat_tree_parent_element()
+		}
+	}
+
+	// 4. If either the visibilityProperty or the checkVisibilityCSS dictionary members of options are true, and this
+	//    is invisible, return false.
+	if opts.visibility_property || opts.check_visibility_css {
+		if computed_properties := e.el_computed_properties() {
+			if computed_properties.visibility() == .hidden {
+				return false
+			}
+		}
+	}
+
+	// 5. If the contentVisibilityAuto dictionary member of options is true and an ancestor of this in the flat tree
+	//    skips its contents due to content-visibility: auto, return false.
+	// FIXME: Currently we do not skip any content if content-visibility is auto: https://drafts.csswg.org/css-contain-2/#proximity-to-the-viewport
+	skipped_contents_due_to_content_visibility_auto := false
+	if opts.content_visibility_auto && skipped_contents_due_to_content_visibility_auto {
+		mut parent_element := e.as_node().flat_tree_parent_element()
+		for parent_element != none {
+			element := parent_element or { break }
+			if computed_properties := element.el_computed_properties() {
+				if computed_properties.content_visibility() == .auto_ {
+					return false
+				}
+			}
+			parent_element = element.as_node().flat_tree_parent_element()
+		}
+	}
+
+	// 6. Return true.
 	return true
 }
 
@@ -2062,6 +2890,17 @@ pub fn (mut e Element) unregister_intersection_observer(observer voidptr) {
 		e.registered_intersection_observers.filter(it.observer != observer)
 }
 
+// Mirrors the C++ Element::get_intersection_observer_registration accessor used
+// from Document during intersection observer notification dispatch.
+pub fn (mut e Element) get_intersection_observer_registration(observer voidptr) ?&IntersectionObserverRegistration_ {
+	for i := 0; i < e.registered_intersection_observers.len; i++ {
+		if e.registered_intersection_observers[i].observer == observer {
+			return unsafe { &e.registered_intersection_observers[i] }
+		}
+	}
+	return none
+}
+
 // --- Custom elements ---
 
 fn (mut e Element) enqueue_an_element_on_the_appropriate_element_queue() {
@@ -2071,6 +2910,15 @@ fn (mut e Element) enqueue_an_element_on_the_appropriate_element_queue() {
 	// is stored on the node document and processed by future custom-element runtime wiring.
 	mut document := unsafe { &Document(e.document()) }
 	document.enqueue_custom_element_reaction_element(e)
+}
+
+// Mirrors the C++ Element::ensure_custom_element_reaction_queue() accessor.
+// In V the queue is always represented as an in-place slice (no lazy
+// allocation needed), so this simply returns it. V slices share their backing
+// array, so callers may iterate the result; mutation should still go through
+// the dedicated enqueue helpers.
+pub fn (e &Element) ensure_custom_element_reaction_queue() []CustomElementReaction {
+	return e.custom_element_reaction_queue
 }
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#enqueue-a-custom-element-upgrade-reaction
@@ -2193,6 +3041,15 @@ pub fn (e &Element) for_each_attribute(callback fn (&Attr_)) {
 	}
 }
 
+pub fn (e &Element) for_each_attribute_name_value(callback fn (string, string)) {
+	attrs := e.attributes_ or { return }
+	for i := 0; i < attrs.length(); i++ {
+		if a := attrs.item(i) {
+			callback(a.name(), a.value())
+		}
+	}
+}
+
 // --- Directionality ---
 
 pub fn (e &Element) dir() ?Dir {
@@ -2213,40 +3070,185 @@ pub fn (e &Element) directionality() Directionality {
 				if result := e.auto_directionality() {
 					return result
 				}
+				return .ltr
 			}
 		}
+	}
+	if e.local_name() == 'bdi' {
+		if result := e.auto_directionality() {
+			return result
+		}
+		return .ltr
+	}
+	if is_html_element_with_local_name(e, 'input')
+		&& to_ascii_lowercase(e.get_attribute_value('type')) == 'tel' {
+		return .ltr
 	}
 	return e.parent_directionality()
 }
 
 fn (e &Element) auto_directionality() ?Directionality {
-	return none
+	if e.is_auto_directionality_form_associated_element() {
+		value := if is_html_element_with_local_name(e, 'textarea') {
+			e.as_node().text_content() or { '' }
+		} else {
+			e.get_attribute_value('value')
+		}
+		for r in value.runes() {
+			code_point := u32(r)
+			if is_ltr_code_point_for_directionality(code_point) {
+				break
+			}
+			if is_rtl_code_point_for_directionality(code_point) {
+				return .rtl
+			}
+		}
+		if value.len == 0 {
+			return .ltr
+		}
+		return none
+	}
+
+	if is_html_element_with_local_name(e, 'slot') && e.as_node().root().is_shadow_root() {
+		slot := unsafe { &HTMLSlotElement(e) }
+		assigned_nodes := slot.assigned_nodes()
+		if assigned_nodes.len > 0 {
+			for child in assigned_nodes {
+				child_direction := if child.is_text() {
+					unsafe { &Text(child) }.directionality()
+				} else if child_element := child.as_element() {
+					child_element.contained_text_auto_directionality(true)
+				} else {
+					?Directionality(none)
+				}
+				if direction := child_direction {
+					return direction
+				}
+			}
+			return none
+		}
+	}
+
+	return e.contained_text_auto_directionality(false)
 }
 
 pub fn (e &Element) contained_text_auto_directionality(can_exclude_root bool) ?Directionality {
-	_ = can_exclude_root
-	return none
+	if can_exclude_root && element_is_filtered_for_auto_directionality(e) {
+		return none
+	}
+	return contained_text_auto_directionality_for_subtree(e.as_node(), e, can_exclude_root)
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#parent-directionality
 pub fn (e &Element) parent_directionality() Directionality {
+	parent := e.as_node().parent() or { return .ltr }
+	if shadow_root := parent.as_shadow_root() {
+		if shadow_root.host_ != unsafe { nil } {
+			return shadow_root.host_.directionality()
+		}
+		return .ltr
+	}
+	if element := parent.as_element() {
+		return element.directionality()
+	}
 	return .ltr
 }
 
 pub fn (e &Element) is_auto_directionality_form_associated_element() bool {
-	return false
+	if is_html_element_with_local_name(e, 'textarea') {
+		return true
+	}
+	if !is_html_element_with_local_name(e, 'input') {
+		return false
+	}
+	type_ := to_ascii_lowercase(e.get_attribute_value('type'))
+	input_type := if type_.len == 0 { 'text' } else { type_ }
+	return input_type in ['hidden', 'text', 'search', 'tel', 'url', 'email', 'password', 'submit',
+		'reset', 'button']
 }
 
 // --- Translation mode ---
 
 pub fn (e &Element) translation_mode() TranslationMode {
-	if e.has_attribute('translate') {
-		val := e.get_attribute_value('translate')
+	if translate := e.get_attribute('translate') {
+		val := to_ascii_lowercase(translate)
+		if val == '' || val == 'yes' {
+			return .translate_enabled
+		}
 		if val == 'no' {
 			return .no_translate
 		}
 	}
+	if parent := e.as_node().parent_element() {
+		return parent.translation_mode()
+	}
 	return .translate_enabled
+}
+
+fn element_is_filtered_for_auto_directionality(element &Element) bool {
+	return is_html_element_with_local_name(element, 'script')
+		|| is_html_element_with_local_name(element, 'style')
+		|| is_html_element_with_local_name(element, 'textarea') || element.dir() != none
+}
+
+fn descendant_is_filtered_for_auto_directionality(descendant &Node, root &Element, can_exclude_root bool) bool {
+	if element := descendant.as_element() {
+		if element_is_filtered_for_auto_directionality(element) {
+			return true
+		}
+	}
+	for ancestor := descendant.parent(); ancestor != none; {
+		current := ancestor or { break }
+		if current == root.as_node() {
+			if can_exclude_root && element_is_filtered_for_auto_directionality(root) {
+				return true
+			}
+			break
+		}
+		if element := current.as_element() {
+			if element_is_filtered_for_auto_directionality(element) {
+				return true
+			}
+		}
+		ancestor = current.parent()
+	}
+	return false
+}
+
+fn contained_text_auto_directionality_for_subtree(node &Node, root &Element, can_exclude_root bool) ?Directionality {
+	for child in node.children {
+		if descendant_is_filtered_for_auto_directionality(child, root, can_exclude_root) {
+			continue
+		}
+
+		if child_element := child.as_element() {
+			if is_html_element_with_local_name(child_element, 'slot') {
+				if shadow_root := child.root().as_shadow_root() {
+					if shadow_root.host_ != unsafe { nil } {
+						return shadow_root.host_.directionality()
+					}
+				}
+			}
+			if direction := contained_text_auto_directionality_for_subtree(child, root,
+				can_exclude_root)
+			{
+				return direction
+			}
+			continue
+		}
+
+		if child.is_text() {
+			if direction := unsafe { &Text(child) }.directionality() {
+				return direction
+			}
+		}
+		if direction := contained_text_auto_directionality_for_subtree(child, root,
+			can_exclude_root)
+		{
+			return direction
+		}
+	}
+	return none
 }
 
 // --- Counters ---
@@ -2310,14 +3312,30 @@ pub fn (mut e Element) is_relevant_to_the_user() bool {
 }
 
 // https://drafts.csswg.org/css-contain-2/#skips-its-contents
-pub fn (e &Element) skips_its_contents() bool {
+pub fn (mut e Element) skips_its_contents() bool {
+	computed_properties := e.el_computed_properties() or { return false }
+
+	// https://drafts.csswg.org/css-contain-2/#valdef-content-visibility-hidden
+	// The element skips its contents.
+	if computed_properties.content_visibility() == .hidden {
+		return true
+	}
+
+	// https://drafts.csswg.org/css-contain-2/#valdef-content-visibility-auto
+	// If the element is not relevant to the user, it also skips its contents.
+	if computed_properties.content_visibility() == .auto_ && !e.is_relevant_to_the_user() {
+		return true
+	}
+
 	return false
 }
 
 // --- Pseudo-class matching ---
 
 pub fn (e &Element) matches_enabled_pseudo_class() bool {
-	return !e.is_actually_disabled()
+	return e.is_html_element()
+		&& e.local_name() in ['button', 'input', 'select', 'textarea', 'optgroup', 'option', 'fieldset']
+		&& !e.is_actually_disabled()
 }
 
 pub fn (e &Element) matches_disabled_pseudo_class() bool {
@@ -2338,10 +3356,40 @@ pub fn (e &Element) matches_placeholder_shown_pseudo_class() bool {
 
 pub fn (e &Element) matches_link_pseudo_class() bool {
 	name := e.local_name()
-	return name == 'a' || name == 'area'
+	return ((e.is_html_element() && (name == 'a' || name == 'area'))
+		|| (e.is_svg_element() && name == 'a')) && e.has_attribute('href')
 }
 
 pub fn (e &Element) matches_local_link_pseudo_class() bool {
+	return false
+}
+
+pub fn (e &Element) affected_by_pseudo_class(pseudo_class PseudoClass) bool {
+	if props := e.computed_properties_ {
+		if props.has_attempted_match_against_pseudo_class(pseudo_class) {
+			return true
+		}
+	}
+	for _, pseudo_element in e.pseudo_element_data {
+		props := pseudo_element.computed_properties() or { continue }
+		if props.has_attempted_match_against_pseudo_class(pseudo_class) {
+			return true
+		}
+	}
+	return false
+}
+
+pub fn (e &Element) includes_properties_from_invalidation_set(set StyleInvalidationSet) bool {
+	for property in set.properties {
+		name := property.name
+		if name.len == 0 {
+			continue
+		}
+		if e.id() or { '' } == name || e.local_name() == name || e.has_class(name)
+			|| e.has_attribute(name) {
+			return true
+		}
+	}
 	return false
 }
 
@@ -2363,35 +3411,215 @@ pub fn (mut e Element) invalidate_style_if_affected_by_has() {
 }
 
 pub fn (mut e Element) set_needs_style_update(v bool) {
-	_ = v
+	mut node := unsafe { &Node(&e) }
+	node.set_needs_style_update(v)
 }
 
 pub fn (e &Element) needs_style_update() bool {
-	return false
+	return e.as_node().needs_style_update()
 }
 
 pub fn (e &Element) entire_subtree_needs_style_update() bool {
-	return false
+	return e.as_node().entire_subtree_needs_style_update()
 }
 
 // --- List ordinals ---
 
 pub fn (e &Element) number_of_owned_list_items() int {
-	return 0
+	mut number_of_owned_li_elements := 0
+	for _ in e.numbered_items_owned_by_list_owner() {
+		number_of_owned_li_elements++
+	}
+	return number_of_owned_li_elements
+}
+
+// Wraps `numbered_items_owned_by_list_owner` to mirror the C++ template
+// `Element::for_each_numbered_item_owned_by_list_owner(Callback)` API.
+pub fn (e &Element) for_each_numbered_item_owned_by_list_owner(callback fn (&Element) TraversalDecision) {
+	for item in e.numbered_items_owned_by_list_owner() {
+		if callback(item) == .@break {
+			return
+		}
+	}
+}
+
+fn (e &Element) numbered_items_owned_by_list_owner() []&Element {
+	mut items := []&Element{}
+	root := e.as_node()
+	mut current := root.first_child() or { return items }
+	for {
+		mut node_for_next := unsafe { &Node(current) }
+		if element := current.as_element() {
+			mut mutable_element := unsafe { &Element(element) }
+			mutable_element.is_contained_in_list_subtree = true
+
+			if element.is_html_ol_ul_menu_element() {
+				// Skip list nodes and their descendents. They have their own, unrelated ordinals.
+				for {
+					last := node_for_next.last_child() or { break }
+					node_for_next = unsafe { &Node(last) }
+				}
+			} else {
+				// NB: unsafe_layout_node() because list ordinal computation happens during style
+				//     recalculation when layout is inherently stale.
+				if current.unsafe_layout_node() != none {
+					if computed_properties := element.el_computed_properties() {
+						if computed_properties.display().is_list_item() {
+							items << element
+						}
+					}
+				}
+			}
+		}
+		current = node_for_next.next_in_pre_order(root) or { break }
+	}
+	return items
 }
 
 pub fn (e &Element) list_owner() ?&Element {
-	return none
+	// Any element whose computed value of 'display' is 'list-item' has a list owner, which is determined as follows:
+	if !e.is_contained_in_list_subtree {
+		computed_properties := e.el_computed_properties() or { return none }
+		if !computed_properties.display().is_list_item() {
+			return none
+		}
+	}
+
+	// 1. If the element is not being rendered, return null; the element has no list owner.
+	// NB: unsafe_layout_node() because list ordinal computation happens during style recalculation
+	//     when layout is inherently stale.
+	if e.as_node().unsafe_layout_node() == none {
+		return none
+	}
+
+	// 2. Let ancestor be the element's parent.
+	mut ancestor := e.as_node().parent_element() or { return none }
+
+	// 3. If the element has an ol, ul, or menu ancestor, set ancestor to the closest such ancestor element.
+	mut ancestor_node := ancestor.as_node().parent()
+	for ancestor_node != none {
+		node := ancestor_node or { break }
+		if element := node.as_element() {
+			if element.is_html_ol_ul_menu_element() {
+				ancestor = unsafe { &Element(element) }
+				break
+			}
+		}
+		ancestor_node = node.parent()
+	}
+
+	// 4. Return the closest inclusive ancestor of ancestor that produces a CSS box.
+	mut inclusive_ancestor := ancestor.as_node()
+	for {
+		if element := inclusive_ancestor.as_element() {
+			// NB: unsafe_paintable_box() because this runs during list ordinal computation as part of
+			//     style recalculation, when layout is inherently stale.
+			if inclusive_ancestor.unsafe_paintable_box() != none {
+				ancestor = unsafe { &Element(element) }
+				break
+			}
+		}
+		inclusive_ancestor = inclusive_ancestor.parent() or { break }
+	}
+	return ancestor
+}
+
+pub fn (e &Element) maybe_invalidate_ordinals_for_list_owner(skip_node ?&Element) {
+	owner := e.list_owner() or { return }
+	for item in owner.numbered_items_owned_by_list_owner() {
+		if skipped := skip_node {
+			if item == skipped {
+				continue
+			}
+		}
+
+		mut mutable_item := unsafe { &Element(item) }
+		mutable_item.ordinal_value_ = none
+
+		// Invalidate just the first ordinal in the list of numbered items.
+		// NOTE: This works since this item is the first accessed (preorder) when rendering the list.
+		//       It will trigger a recalculation of all ordinals on the [first] call to ordinal_value().
+		break
+	}
+}
+
+fn (e &Element) ol_starting_value() int {
+	// 1. If the ol element has a start attribute, then:
+	if start := e.get_attribute('start') {
+		// 1. Let parsed be the result of parsing the value of the attribute as an integer.
+		// 2. If parsed is not an error, then return parsed.
+		if parsed := parse_html_integer(start) {
+			return parsed
+		}
+	}
+
+	// 2. If the ol element has a reversed attribute, then return the number of owned li elements.
+	if e.has_attribute('reversed') {
+		return e.number_of_owned_list_items()
+	}
+
+	// 3. Return 1.
+	return 1
 }
 
 pub fn (mut e Element) ordinal_value() int {
 	if v := e.ordinal_value_ {
 		return v
 	}
-	return 0
+
+	owner := e.list_owner() or { return 1 }
+
+	// 1. Let i be 1. [Not necessary]
+	// 2. If owner is an ol element, let numbering be owner's starting value. Otherwise, let numbering be 1.
+	mut numbering := 1
+	mut reversed := false
+	if owner.is_html_ol_element() {
+		numbering = owner.ol_starting_value()
+		reversed = owner.has_attribute('reversed')
+	}
+
+	// 3. Loop : If i is greater than the number of list items that owner owns, then return; all of owner's owned list items have been assigned ordinal values.
+	// NOTE: We use `owner->for_each_numbered_item_in_list` to iterate through the owner's list of owned elements.
+	//       As a result, we don't need `i` as counter (spec) in the list of children, with no material consequences.
+	for item in owner.numbered_items_owned_by_list_owner() {
+		// 4. Let item be the ith of owner's owned list items, in tree order. [Not necessary]
+		// 5. If item is an li element that has a value attribute, then:
+		if item.is_html_li_element() {
+			if value_attribute := item.get_attribute('value') {
+				// 1. Let parsed be the result of parsing the value of the attribute as an integer.
+				// 2. If parsed is not an error, then set numbering to parsed.
+				if parsed := parse_html_integer(value_attribute) {
+					numbering = parsed
+				}
+			}
+		}
+
+		// 6. The ordinal value of item is numbering.
+		mut mutable_item := unsafe { &Element(item) }
+		mutable_item.ordinal_value_ = numbering
+
+		// 7. If owner is an ol element, and owner has a reversed attribute, decrement numbering by 1; otherwise, increment numbering by 1.
+		if reversed {
+			numbering--
+		} else {
+			numbering++
+		}
+
+		// 8. Increment i by 1. [Not necessary]
+		// 9. Go to the step labeled loop.
+	}
+
+	return e.ordinal_value_ or { 1 }
 }
 
 // --- View transition ---
+
+// https://drafts.csswg.org/css-view-transitions-1/#capture-the-image
+pub fn (e &Element) capture_the_image() &ImmutableBitmap_ {
+	_ = e
+	// FIXME: Actually implement this. Matches the C++ placeholder with a 1x1 bitmap.
+	return &ImmutableBitmap_{}
+}
 
 pub fn (e &Element) captured_in_a_view_transition() bool {
 	return e.captured_in_a_view_transition
@@ -2412,6 +3640,29 @@ pub fn (e &Element) document_scoped_view_transition_name() ?string {
 	return props.view_transition_name()
 }
 
+pub fn (mut e Element) play_or_cancel_animations_after_display_property_change() {
+	// OPTIMIZATION: We don't care about elements with no CSS defined animations.
+	if !e.has_css_defined_animations_flag {
+		return
+	}
+
+	// OPTIMIZATION: We don't care about animations in disconnected subtrees.
+	if !e.is_connected() {
+		return
+	}
+
+	// Setting display:none terminates running CSS animations. Restart/pause state
+	// tracking lives in CSSAnimation and is not ported, so this is a narrow stub.
+	has_display_none_inclusive_ancestor := e.as_node().has_inclusive_ancestor_with_display_none()
+	for _, animation in e.css_defined_animations_ {
+		if has_display_none_inclusive_ancestor {
+			animation.cancel()
+		} else {
+			animation.play() or {}
+		}
+	}
+}
+
 // --- Pointer capture ---
 
 pub fn (mut e Element) set_pointer_capture(pointer_id int) {
@@ -2427,6 +3678,13 @@ pub fn (e &Element) has_pointer_capture(pointer_id int) bool {
 	return false
 }
 
+pub fn (e &Element) request_pointer_lock(options ?PointerLockOptions) &Promise {
+	_ = e
+	_ = options
+	// Stub for Pointer Lock; C++ returns a rejected NotSupportedError promise.
+	return &Promise{}
+}
+
 // --- Lang ---
 
 // https://html.spec.whatwg.org/multipage/dom.html#the-lang-and-xml:lang-attributes
@@ -2437,16 +3695,45 @@ pub fn (e &Element) lang() ?string {
 		}
 		return cached
 	}
+
+	mut value := ''
 	if xml_lang := e.get_attribute_ns(namespace_xml_uri, 'lang') {
-		return xml_lang
-	}
-	ns := e.namespace_uri() or { '' }
-	if ns == namespace_html_uri || ns == namespace_svg_uri {
-		if lang_attr := e.get_attribute('lang') {
-			return lang_attr
+		value = xml_lang
+	} else {
+		ns := e.namespace_uri() or { '' }
+		if ns == namespace_html_uri || ns == namespace_svg_uri {
+			if lang_attr := e.get_attribute('lang') {
+				value = lang_attr
+			}
+		}
+		if value.len == 0 {
+			if parent := e.as_node().parent() {
+				if shadow_root := parent.as_shadow_root() {
+					if shadow_root.host_ != unsafe { nil } {
+						value = shadow_root.host_.lang() or { '' }
+					}
+				} else if parent_element := parent.as_element() {
+					value = parent_element.lang() or { '' }
+				}
+			}
+		}
+		if value.len == 0 {
+			doc := e.document()
+			if doc != unsafe { nil } {
+				if pragma_language := doc.pragma_set_default_language {
+					value = pragma_language
+				} else if http_language := doc.http_content_language {
+					value = http_language
+				}
+			}
 		}
 	}
-	return none
+	mut mutable_element := unsafe { &Element(e) }
+	mutable_element.lang_value_ = value
+	if value.len == 0 {
+		return none
+	}
+	return value
 }
 
 pub fn (mut e Element) invalidate_lang_value() {
@@ -2536,11 +3823,12 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		}
 		e.set_needs_style_update(true)
 	} else if local_name == 'dir' {
-		if value_or_empty.to_lower() == 'ltr' {
+		lowercase_value := to_ascii_lowercase(value_or_empty)
+		if lowercase_value == 'ltr' {
 			e.dir__ = .ltr
-		} else if value_or_empty.to_lower() == 'rtl' {
+		} else if lowercase_value == 'rtl' {
 			e.dir__ = .rtl
-		} else if value_or_empty.to_lower() == 'auto' {
+		} else if lowercase_value == 'auto' {
 			e.dir__ = .auto_
 		} else {
 			e.dir__ = none
@@ -2586,6 +3874,52 @@ pub fn (e &Element) has_hidden_ancestor() bool {
 		current := ancestor or { break }
 		if element := current.as_element() {
 			if element.is_hidden() {
+				return true
+			}
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
+	return false
+}
+
+// Returns true when this element's id is mentioned by another element's
+// aria-labelledby attribute somewhere in the same root subtree.
+//
+// The C++ implementation consults Web::ARIA::AriaData, which collects every
+// IDREF-list ARIA attribute. The V port currently lacks AriaData, so we scan
+// the root subtree for HTML elements whose aria-labelledby tokens contain our
+// id. This covers the dominant accessibility use case.
+pub fn (e &Element) is_referenced() bool {
+	id := e.id() or { return false }
+	root := e.as_node().root()
+	return id_referenced_in_subtree(root, id)
+}
+
+fn id_referenced_in_subtree(node &Node, id string) bool {
+	if element := node.as_element() {
+		if element.is_html_element() {
+			if labelled_by := element.get_attribute('aria-labelledby') {
+				for token in labelled_by.fields() {
+					if token == id {
+						return true
+					}
+				}
+			}
+		}
+	}
+	for child in node.children {
+		if id_referenced_in_subtree(child, id) {
+			return true
+		}
+	}
+	return false
+}
+
+pub fn (e &Element) has_referenced_and_hidden_ancestor() bool {
+	for ancestor := e.as_node().parent_or_shadow_host(); ancestor != none; {
+		current := ancestor or { break }
+		if element := current.as_element() {
+			if element.is_referenced() && element.is_hidden() {
 				return true
 			}
 		}
@@ -2672,8 +4006,7 @@ pub fn (e &Element) should_indicate_focus() bool {
 
 // https://html.spec.whatwg.org/multipage/interaction.html#tabindex-value
 pub fn (e &Element) is_focusable() bool {
-	tab_str := e.get_attribute_value('tabindex')
-	return tab_str.len > 0
+	return parse_html_integer(e.get_attribute_value('tabindex')) != none
 }
 
 // --- Tokenization flag ---
@@ -2764,7 +4097,10 @@ pub fn (e &Element) element_to_inherit_style_from(pseudo_element ?int) ?&Element
 	if pseudo_element != none {
 		return e
 	}
-	return none
+	if assigned_slot := e.as_node().assigned_slot_internal() {
+		return html_slot_element_as_element(assigned_slot)
+	}
+	return e.as_node().parent_or_shadow_host_element()
 }
 
 // --- Serialize ---
@@ -2776,15 +4112,103 @@ pub fn (e &Element) serialize_children_as_json(mut sb strings.Builder) {
 // --- get_an_elements_target ---
 
 pub fn (e &Element) get_an_elements_target(target ?string) string {
-	if t := target {
+	mut resolved_target := target
+	if resolved_target == none {
+		if attr_target := e.get_attribute('target') {
+			resolved_target = attr_target
+		} else {
+			doc := e.document()
+			if doc != unsafe { nil } {
+				if base_element := doc.first_base_element_with_target_in_tree_order() {
+					resolved_target = unsafe { &Element(base_element) }.get_attribute('target')
+				}
+			}
+		}
+	}
+	if t := resolved_target {
+		if contains_ascii_tab_or_newline(t) && t.contains('<') {
+			return '_blank'
+		}
 		return t
 	}
-	return e.get_attribute('target') or { '' }
+	return ''
+}
+
+// https://html.spec.whatwg.org/multipage/links.html#get-an-element's-noopener
+pub fn (e &Element) get_an_elements_noopener(url URL, target string) TokenizedFeatureNoOpener {
+	_ = url
+	// 1. If element's link types include the noopener or noreferrer keyword, then return true.
+	rel := to_ascii_lowercase(e.get_attribute_value('rel'))
+	link_types := split_on_ascii_whitespace(rel)
+	if 'noopener' in link_types || 'noreferrer' in link_types {
+		return .yes
+	}
+
+	// 2. If element's link types do not include the opener keyword and target is
+	// an ASCII case-insensitive match for "_blank", then return true.
+	if 'opener' !in link_types && to_ascii_lowercase(target) == '_blank' {
+		return .yes
+	}
+
+	// 3. Blob URL origin checks depend on URL/relevant settings objects outside the DOM port.
+	// 4. Return false.
+	return .no
+}
+
+// https://html.spec.whatwg.org/multipage/links.html#following-hyperlinks-2
+pub fn (mut e Element) follow_the_hyperlink(hyperlink_suffix ?string, user_involvement UserNavigationInvolvement) {
+	_ = user_involvement
+	// 1. If subject cannot navigate, then return.
+	if e.cannot_navigate() {
+		return
+	}
+
+	// 2. Let targetAttributeValue be the empty string.
+	mut target_attribute_value := ''
+
+	// 3. If subject is an a or area element, then set targetAttributeValue to the
+	// result of getting an element's target given subject.
+	if is_html_element_with_local_name(e, 'a')
+		|| is_html_element_with_local_name(e, 'area')
+		|| (e.is_svg_element() && e.local_name() == 'a') {
+		target_attribute_value = e.get_an_elements_target(none)
+	}
+
+	// 4. Let urlRecord be the result of encoding-parsing a URL given subject's href
+	// attribute value, relative to subject's node document.
+	url_record := e.document().encoding_parse_url(e.get_attribute_value('href')) or { return }
+
+	// 5. If urlRecord is failure, then return. [Handled above.]
+	// 6. Let noopener be the result of getting an element's noopener with subject, urlRecord, and targetAttributeValue.
+	_ = e.get_an_elements_noopener(url_record, target_attribute_value)
+
+	// 7-13. Choosing a navigable and performing navigation are outside the DOM port.
+	// Preserve URL suffix construction to keep the parsed URL path exercised.
+	mut url_string := url_record.serialize()
+	if suffix := hyperlink_suffix {
+		url_string += suffix
+	}
+	_ = url_string
 }
 
 // --- Misc helpers ---
 
 pub fn (e &Element) cannot_navigate() bool {
+	doc := e.document()
+	if doc == unsafe { nil } || !doc.is_fully_active() {
+		return true
+	}
+	is_anchor := is_html_element_with_local_name(e, 'a')
+		|| (e.is_svg_element() && e.local_name() == 'a')
+	return !is_anchor && !e.is_connected()
+}
+
+fn contains_ascii_tab_or_newline(value string) bool {
+	for ch in value {
+		if ch == `\t` || ch == `\n` || ch == `\r` {
+			return true
+		}
+	}
 	return false
 }
 
@@ -2807,6 +4231,14 @@ pub fn (e &Element) is_html_ol_ul_menu_element() bool {
 	return name == 'ol' || name == 'ul' || name == 'menu'
 }
 
+pub fn (e &Element) is_html_ol_element() bool {
+	return e.namespace_uri() or { '' } == namespace_html_ && e.local_name() == 'ol'
+}
+
+pub fn (e &Element) is_html_li_element() bool {
+	return e.namespace_uri() or { '' } == namespace_html_ && e.local_name() == 'li'
+}
+
 pub fn (e &Element) id_reference_exists(id string) bool {
 	doc := e.document()
 	if doc == unsafe { nil } {
@@ -2824,5 +4256,54 @@ pub fn (e &Element) is_scripting_enabled() bool {
 }
 
 pub fn (mut e Element) append_child(child &Element) {
-	_ = child
+	mut node := unsafe { &Node(&e) }
+	node.append_child(child.as_node()) or {}
+}
+
+// https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#attr-associated-elements
+//
+// Returns `none` only when the attribute is absent and there are no explicitly
+// set attribute elements (matching C++'s `Optional<...>` empty result). When
+// some explicitly set elements exist but none qualify, an empty list is
+// returned to mirror the spec behaviour.
+pub fn (e &Element) get_the_attribute_associated_elements(content_attribute string, explicitly_set_attribute_elements ?[]&Element) ?[]&Element {
+	mut elements := []&Element{}
+
+	// 3. If reflectedTarget's explicitly set attr-elements is not null:
+	if explicit := explicitly_set_attribute_elements {
+		shadow_root := e.as_node().shadow_including_root()
+		for attr_element in explicit {
+			if attr_element == unsafe { nil } {
+				continue
+			}
+			// 1. If attrElement is not a descendant of any of element's
+			//    shadow-including ancestors, then continue.
+			if attr_element.as_node().shadow_including_root() != shadow_root {
+				continue
+			}
+			elements << attr_element
+		}
+		return elements
+	}
+
+	// 4. Otherwise:
+	// 1. Let contentAttributeValue be the result of running reflectedTarget's
+	//    get the content attribute.
+	content_attribute_value := e.get_attribute(content_attribute) or { return none }
+
+	// 3. Let tokens be contentAttributeValue, split on ASCII whitespace.
+	doc := e.document()
+	for token in content_attribute_value.fields() {
+		if token.len == 0 {
+			continue
+		}
+		// 1. Let candidate be the first element ... whose ID is token.
+		if doc != unsafe { nil } {
+			if candidate := doc.get_element_by_id(token) {
+				elements << candidate
+			}
+		}
+	}
+
+	return elements
 }

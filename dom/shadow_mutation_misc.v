@@ -145,7 +145,7 @@ pub fn (mut observer MutationObserver) visit_edges(mut visitor CellVisitor) {
 }
 
 // https://dom.spec.whatwg.org/#dom-mutationobserver-observe
-pub fn (mut observer MutationObserver) observe(mut target Node, mut options MutationObserverOptions) ! {
+pub fn (mut observer MutationObserver) observe(target &Node, mut options MutationObserverOptions) ! {
 	// 1. If either options["attributeOldValue"] or options["attributeFilter"] exists, and
 	// options["attributes"] does not exist, then set options["attributes"] to true.
 	if (options.attribute_old_value != none || options.attribute_filter != none)
@@ -183,18 +183,34 @@ pub fn (mut observer MutationObserver) observe(mut target Node, mut options Muta
 	}
 
 	// 7. For each registered of target's registered observer list, if registered's observer is this:
-	for mut registered_observer in target.registered_observer_list_ {
+	for registered_observer in target.registered_observer_list_ {
 		if registered_observer.observer_ == &observer {
-			// 1. Transient registered observers are not modeled yet in the shared Node storage.
+			// 1. For each node of this's node list, remove all transient registered observers whose source is registered
+			// from node's registered observer list.
+			for node in observer.node_list_ {
+				mut mutable_node := unsafe { &Node(node) }
+				for i := mutable_node.registered_observer_list_.len - 1; i >= 0; i-- {
+					transient_observer := mutable_node.registered_observer_list_[i]
+					if transient_observer.is_transient() {
+						if source := transient_observer.source() {
+							if source == registered_observer {
+								mutable_node.registered_observer_list_.delete(i)
+							}
+						}
+					}
+				}
+			}
 			// 2. Set registered's options to options.
-			registered_observer.set_options(options)
+			mut mutable_registered_observer := unsafe { &RegisteredObserver(registered_observer) }
+			mutable_registered_observer.set_options(options)
 			return
 		}
 	}
 
 	// 8. Otherwise append a new registered observer whose observer is this and options is options.
-	target.add_registered_observer(RegisteredObserver.create(observer, options))
-	observer.node_list_ << unsafe { &Node(&target) }
+	mut mutable_target := unsafe { &Node(target) }
+	mutable_target.add_registered_observer(RegisteredObserver.create(observer, options))
+	observer.node_list_ << target
 }
 
 // https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect
@@ -208,7 +224,6 @@ pub fn (mut observer MutationObserver) disconnect() {
 			}
 		}
 	}
-	observer.node_list_.clear()
 	// 2. Empty this's record queue.
 	observer.record_queue.clear()
 }
@@ -235,8 +250,14 @@ pub fn (mut registered RegisteredObserver) set_options(options MutationObserverO
 }
 
 pub fn (registered &RegisteredObserver) is_transient() bool {
-	_ = registered
-	return false
+	return registered.transient_
+}
+
+pub fn (registered &RegisteredObserver) source() ?&RegisteredObserver {
+	if registered.source_ == unsafe { nil } {
+		return none
+	}
+	return registered.source_
 }
 
 pub fn (mut registered RegisteredObserver) visit_edges(mut visitor CellVisitor) {
@@ -246,18 +267,16 @@ pub fn (mut registered RegisteredObserver) visit_edges(mut visitor CellVisitor) 
 pub fn TransientRegisteredObserver.create(observer &MutationObserver, options MutationObserverOptions, source &RegisteredObserver) &TransientRegisteredObserver {
 	return &TransientRegisteredObserver{
 		RegisteredObserver: RegisteredObserver{
-			observer_: observer
-			options_:  options
+			observer_:  observer
+			options_:   options
+			transient_: true
+			source_:    source
 		}
-		source_: source
 	}
 }
 
 pub fn (registered &TransientRegisteredObserver) source() ?&RegisteredObserver {
-	if registered.source_ == unsafe { nil } {
-		return none
-	}
-	return registered.source_
+	return registered.RegisteredObserver.source()
 }
 
 pub fn (registered &TransientRegisteredObserver) is_transient() bool {
@@ -267,7 +286,9 @@ pub fn (registered &TransientRegisteredObserver) is_transient() bool {
 
 pub fn (mut registered TransientRegisteredObserver) visit_edges(mut visitor CellVisitor) {
 	registered.RegisteredObserver.visit_edges(mut visitor)
-	visitor.visit(registered.source_)
+	if source := registered.RegisteredObserver.source() {
+		visitor.visit(source)
+	}
 }
 
 fn shadow_root_as_node(shadow_root &ShadowRoot) &Node {
@@ -341,10 +362,15 @@ pub fn (shadow_root &ShadowRoot) fullscreen_element_for_bindings() ?&Element {
 		return none
 	}
 
-	// 2. Let candidate be the result of retargeting fullscreen element against this.
-	// The current V DOM does not model EventTarget retargeting for Element yet, so use the document candidate.
 	document := shadow_root.document()
-	candidate := document.fullscreen_element() or { return none }
+	fullscreen_element := document.fullscreen_element() or { return none }
+
+	// 2. Let candidate be the result of retargeting fullscreen element against this.
+	candidate_target := retarget(unsafe { &EventTarget(fullscreen_element.as_node()) }, unsafe {
+		&EventTarget(shadow_root_as_node(shadow_root))
+	}) or { return none }
+	candidate_node := event_target_as_node(candidate_target) or { return none }
+	candidate := candidate_node.as_element() or { return none }
 
 	// 3. If candidate and this are in the same tree, then return candidate.
 	if candidate.as_node().root() == shadow_root_as_node(shadow_root).root() {
@@ -360,11 +386,16 @@ pub fn (mut shadow_root ShadowRoot) initialize() {}
 // https://dom.spec.whatwg.org/#dom-shadowroot-onslotchange
 pub fn (mut shadow_root ShadowRoot) set_onslotchange(event_handler ?&CallbackType) {
 	shadow_root.onslotchange_ = event_handler
+	unsafe { &EventTarget(shadow_root_as_node(&shadow_root)) }.set_event_handler_attribute('slotchange',
+		event_handler)
 }
 
 // https://dom.spec.whatwg.org/#dom-shadowroot-onslotchange
 pub fn (shadow_root &ShadowRoot) onslotchange() ?&CallbackType {
-	return shadow_root.onslotchange_
+	event_handler := unsafe { &EventTarget(shadow_root_as_node(shadow_root)) }.event_handler_attribute('slotchange') or {
+		return shadow_root.onslotchange_
+	}
+	return event_handler
 }
 
 // https://dom.spec.whatwg.org/#ref-for-get-the-parent
@@ -408,9 +439,16 @@ pub fn (mut shadow_root ShadowRoot) set_inner_html(value string) ! {
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-gethtml
 pub fn (shadow_root &ShadowRoot) get_html(options GetHTMLOptions) !string {
-	// ShadowRoot's getHTML(options) method steps are to return the result of HTML fragment serialization algorithm.
-	_ = options
-	return shadow_root_as_node(shadow_root).serialize_fragment(.yes, .inner)
+	// ShadowRoot's getHTML(options) method steps are to return the result
+	// of HTML fragment serialization algorithm with this,
+	// options["serializableShadowRoots"], and options["shadowRoots"].
+	serializable_shadow_roots := if options.serializable_shadow_roots {
+		SerializableShadowRoots.yes
+	} else {
+		SerializableShadowRoots.no
+	}
+	return html_parser_serialize_html_fragment(shadow_root_as_node(shadow_root),
+		serializable_shadow_roots, []&ShadowRoot{}, .inner)
 }
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtmlunsafe
@@ -424,12 +462,34 @@ pub fn (mut shadow_root ShadowRoot) set_html_unsafe(html string) ! {
 
 pub fn (shadow_root &ShadowRoot) active_element() ?&Element {
 	document := shadow_root.document()
-	return document.active_element()
+	mut candidate := document.focused_area()
+	if candidate == none && document.browsing_context != unsafe { nil }
+		&& !unsafe { &Node(document) }.is_inert() {
+		candidate = unsafe { &Node(document) }
+	}
+	candidate_node := candidate or { return none }
+	retargeted := retarget(unsafe { &EventTarget(candidate_node) }, unsafe {
+		&EventTarget(shadow_root_as_node(shadow_root))
+	}) or { return none }
+	retargeted_node := event_target_as_node(retargeted) or { return none }
+	if retargeted_node.root() != shadow_root_as_node(shadow_root) {
+		return none
+	}
+	if retargeted_node.is_document() {
+		candidate_document := unsafe { &Document(retargeted_node) }
+		if body := candidate_document.body() {
+			return html_element_as_element(body)
+		}
+		return candidate_document.document_element()
+	}
+	return retargeted_node.as_element()
 }
 
 pub fn (mut shadow_root ShadowRoot) style_sheets() &StyleSheetList {
-	mut document := unsafe { &Document(shadow_root.document()) }
-	return document.style_sheets()
+	if shadow_root.style_sheets_ == unsafe { nil } {
+		shadow_root.style_sheets_ = &StyleSheetList{}
+	}
+	return shadow_root.style_sheets_
 }
 
 pub fn (mut shadow_root ShadowRoot) style_sheets_for_bindings() &StyleSheetList {
@@ -453,8 +513,8 @@ pub fn (mut shadow_root ShadowRoot) set_adopted_style_sheet_list(sheets []&CSSSt
 }
 
 pub fn (shadow_root &ShadowRoot) for_each_css_style_sheet(callback fn (&CSSStyleSheet)) {
-	mut document := unsafe { &Document(shadow_root.document()) }
-	for style_sheet in document.style_sheets().sheets {
+	mut mutable_shadow_root := unsafe { &ShadowRoot(shadow_root) }
+	for style_sheet in mutable_shadow_root.style_sheets().sheets {
 		callback(style_sheet)
 	}
 	for style_sheet in shadow_root.adopted_style_sheets() {
@@ -473,8 +533,14 @@ pub fn (shadow_root &ShadowRoot) for_each_active_css_style_sheet(callback fn (&C
 pub fn (mut shadow_root ShadowRoot) visit_edges(mut visitor CellVisitor) {
 	mut fragment := shadow_root_as_document_fragment(&shadow_root)
 	fragment.visit_edges(mut visitor)
+	visitor.visit(shadow_root.style_sheets_)
 	visitor.visit(shadow_root.element_by_id_)
 	visitor.visit(shadow_root.slot_registry_)
+	for style_sheet in shadow_root.adopted_style_sheets_ {
+		visitor.visit(style_sheet)
+	}
+	mut event_target := unsafe { &EventTarget(shadow_root_as_node(&shadow_root)) }
+	event_target.visit_edges(mut visitor)
 	if handler := shadow_root.onslotchange_ {
 		visitor.visit(handler)
 	}
@@ -499,21 +565,7 @@ pub fn (shadow_root &ShadowRoot) first_slot_with_name(name string) ?&HTMLSlotEle
 		registry := unsafe { &SlotRegistry(shadow_root.slot_registry_) }
 		return registry.first_slot_with_name(name)
 	}
-
-	mut found := ?&HTMLSlotElement(none)
-	shadow_root_as_node(shadow_root).for_each_in_subtree(fn [name, mut found] (node &Node) TraversalDecision {
-		if found != none {
-			return .@break
-		}
-		element := node.as_element() or { return .@continue }
-		if element.local_name() == 'slot'
-			&& html_slot_element_name(unsafe { &HTMLSlotElement(element) }) == name {
-			found = unsafe { &HTMLSlotElement(element) }
-			return .@break
-		}
-		return .@continue
-	})
-	return found
+	return none
 }
 
 // https://drafts.csswg.org/css-shadow-1/#shadow-root-part-element-map
@@ -580,30 +632,46 @@ mut:
 }
 
 pub fn (mut registry SlotRegistry) add(slot &HTMLSlotElement) {
-	registry.remove(slot)
+	registry.slots = registry.slots.filter(it != unsafe { nil } && it != slot)
+
 	if registry.slots.len == 0 || !registry.try_insert_in_tree_order(slot) {
 		registry.slots << slot
 	}
 }
 
 fn (mut registry SlotRegistry) try_insert_in_tree_order(slot &HTMLSlotElement) bool {
+	// Walk forward from the slot being added to find the next registered slot. If found,
+	// insert before it so the registry keeps slot tree order as DOM mutations reorder nodes.
 	slot_node := html_slot_element_as_node(slot)
-	for index, other_slot in registry.slots {
-		other_node := html_slot_element_as_node(other_slot)
-		if (slot_node.compare_document_position(other_node) & document_position_following) != 0 {
-			registry.slots.insert(index, slot)
-			return true
+	shadow_root := slot_node.root()
+	mut maybe_node := slot_node.next_in_pre_order(shadow_root)
+	for maybe_node != none {
+		node := maybe_node or { break }
+		if element := node.as_element() {
+			if element.local_name() == 'slot' {
+				following_slot := unsafe { &HTMLSlotElement(element) }
+				for index, registered_slot in registry.slots {
+					if registered_slot == following_slot {
+						registry.slots.insert(index, slot)
+						return true
+					}
+				}
+			}
 		}
+		maybe_node = node.next_in_pre_order(shadow_root)
 	}
 	return false
 }
 
 pub fn (mut registry SlotRegistry) remove(slot &HTMLSlotElement) {
-	registry.slots = registry.slots.filter(it != slot)
+	registry.slots = registry.slots.filter(it != unsafe { nil } && it != slot)
 }
 
 pub fn (registry &SlotRegistry) first_slot_with_name(name string) ?&HTMLSlotElement {
 	for slot in registry.slots {
+		if slot == unsafe { nil } {
+			continue
+		}
 		if html_slot_element_name(slot) == name {
 			return slot
 		}
@@ -613,12 +681,20 @@ pub fn (registry &SlotRegistry) first_slot_with_name(name string) ?&HTMLSlotElem
 
 pub fn (registry &SlotRegistry) for_each_slot(callback fn (&HTMLSlotElement)) {
 	for slot in registry.slots {
+		if slot == unsafe { nil } {
+			continue
+		}
 		callback(slot)
 	}
 }
 
 pub fn (registry &SlotRegistry) is_empty() bool {
-	return registry.slots.len == 0
+	for slot in registry.slots {
+		if slot != unsafe { nil } {
+			return false
+		}
+	}
+	return true
 }
 
 pub enum OpenFlag {
@@ -920,15 +996,16 @@ pub fn assign_slottables(slot &HTMLSlotElement) {
 		old_node.set_assigned_slot(none)
 	}
 
-	// 3. Set slot's assigned nodes to slottables.
-	mut mutable_slot := unsafe { &HTMLSlotElement(slot) }
-	mutable_slot.assigned_nodes_ = slottables
-
 	// 4. For each slottable in slottables, set slottable's assigned slot to slot.
 	for slottable in slottables {
 		mut node := unsafe { &Node(slottable) }
 		node.set_assigned_slot(slot)
 	}
+
+	// 3. Set slot's assigned nodes to slottables.
+	// NOTE: We do this step last so that we can move the slottables list.
+	mut mutable_slot := unsafe { &HTMLSlotElement(slot) }
+	mutable_slot.assigned_nodes_ = slottables
 }
 
 // https://dom.spec.whatwg.org/#assign-slotables-for-a-tree
@@ -936,14 +1013,12 @@ pub fn assign_slottables_for_a_tree(root &Node) {
 	// To assign slottables for a tree, given a node root, run assign slottables for each slot of root's inclusive
 	// descendants, in tree order.
 	if shadow_root := root.as_shadow_root() {
-		shadow_root_as_node(shadow_root).for_each_in_subtree(fn (node &Node) TraversalDecision {
-			if element := node.as_element() {
-				if element.local_name() == 'slot' {
-					assign_slottables(unsafe { &HTMLSlotElement(element) })
-				}
-			}
-			return .@continue
-		})
+		if shadow_root.slot_registry_ != unsafe { nil } {
+			registry := unsafe { &SlotRegistry(shadow_root.slot_registry_) }
+			registry.for_each_slot(fn (slot &HTMLSlotElement) {
+				assign_slottables(slot)
+			})
+		}
 		return
 	}
 
@@ -951,7 +1026,14 @@ pub fn assign_slottables_for_a_tree(root &Node) {
 		if element.local_name() != 'slot' {
 			return
 		}
-		assign_slottables(unsafe { &HTMLSlotElement(element) })
+		root.for_each_in_inclusive_subtree(fn (node &Node) TraversalDecision {
+			if descendant_element := node.as_element() {
+				if descendant_element.local_name() == 'slot' {
+					assign_slottables(unsafe { &HTMLSlotElement(descendant_element) })
+				}
+			}
+			return .@continue
+		})
 	}
 }
 
@@ -973,11 +1055,82 @@ pub fn signal_a_slot_change(slot &HTMLSlotElement) {
 	}
 
 	// 2. Queue a mutation observer microtask.
-	queue_mutation_observer_microtask()
+	if document != unsafe { nil } {
+		queue_mutation_observer_microtask(mut document)
+	}
 }
 
-fn queue_mutation_observer_microtask() {
-	// Bindings::queue_mutation_observer_microtask is outside this DOM-only V port.
+fn queue_mutation_observer_microtask(mut document Document) {
+	// 1. If the surrounding agent's mutation observer microtask queued is true, then return.
+	if document.mutation_observer_microtask_queued {
+		return
+	}
+
+	// 2. Set the surrounding agent's mutation observer microtask queued to true.
+	document.mutation_observer_microtask_queued = true
+
+	// 3. Queue a microtask to notify mutation observers.
+	// This DOM-only port has no JS microtask queue, so run the checkpoint immediately.
+	document.notify_mutation_observers()
+}
+
+pub fn (mut document Document) notify_mutation_observers() {
+	// https://dom.spec.whatwg.org/#notify-mutation-observers
+	// 1. Set the surrounding agent's mutation observer microtask queued to false.
+	document.mutation_observer_microtask_queued = false
+
+	// 2. Let notifySet be a clone of the surrounding agent's pending mutation observers.
+	// 3. Empty the surrounding agent's pending mutation observers.
+	notify_set := document.pending_mutation_observers.clone()
+	document.pending_mutation_observers.clear()
+
+	// 4. Let signalSet be a clone of the surrounding agent's signal slots.
+	// 5. Empty the surrounding agent's signal slots.
+	signal_set := document.signal_slots.clone()
+	document.signal_slots.clear()
+
+	// 6. For each mo of notifySet:
+	for mutation_observer in notify_set {
+		// 1. Let records be a clone of mo's record queue.
+		// 2. Empty mo's record queue.
+		mut mutable_observer := unsafe { &MutationObserver(mutation_observer) }
+		records := mutable_observer.take_records()
+
+		// 3. For each node of mo's node list, remove all transient registered observers whose observer is mo from
+		//    node's registered observer list.
+		for node in mutation_observer.node_list_ {
+			if node == unsafe { nil } {
+				continue
+			}
+			mut mutable_node := unsafe { &Node(node) }
+			for i := mutable_node.registered_observer_list_.len - 1; i >= 0; i-- {
+				registered_observer := mutable_node.registered_observer_list_[i]
+				if registered_observer.is_transient()
+					&& registered_observer.observer() == mutation_observer {
+					mutable_node.registered_observer_list_.delete(i)
+				}
+			}
+		}
+
+		// 4. If records is not empty, then invoke mo's callback with << records, mo >> and "report", and with
+		//    callback this value mo.
+		if records.len != 0 {
+			if callback := mutation_observer.callback_ {
+				if mutation_callback := callback.mutation_callback {
+					mutation_callback(records, mutation_observer)
+				}
+			}
+		}
+	}
+
+	// 7. For each slot of signalSet, fire an event named slotchange, with its bubbles attribute set to true, at slot.
+	for slot in signal_set {
+		slotchange_event := Event.create('slotchange', EventInit{
+			bubbles: true
+		})
+		event_target_dispatch_event(unsafe { &EventTarget(html_slot_element_as_node(slot)) },
+			slotchange_event)
+	}
 }
 
 pub struct StyleInvalidationSet {
@@ -1006,9 +1159,40 @@ pub enum SiblingInvalidationReach {
 }
 
 fn element_matches_invalidation_rule(element &Element, match_set StyleInvalidationSet, match_any bool) bool {
+	return match_any || element_includes_properties_from_invalidation_set(element, match_set)
+}
+
+fn element_includes_properties_from_invalidation_set(element &Element, match_set StyleInvalidationSet) bool {
 	_ = element
 	_ = match_set
-	return match_any || match_set.properties.len == 0
+	// Stub for Element::includes_properties_from_invalidation_set() until selector invalidation metadata is ported.
+	return false
+}
+
+fn invalidation_plan_is_empty(plan InvalidationPlan) bool {
+	_ = plan
+	// Stub for CSS::InvalidationPlan::is_empty().
+	return true
+}
+
+fn invalidation_plan_invalidates_whole_subtree(plan InvalidationPlan) bool {
+	_ = plan
+	return false
+}
+
+fn invalidation_plan_invalidates_self(plan InvalidationPlan) bool {
+	_ = plan
+	return false
+}
+
+fn invalidation_plan_descendant_rules(plan InvalidationPlan) []DescendantInvalidationRule {
+	_ = plan
+	return []DescendantInvalidationRule{}
+}
+
+fn invalidation_plan_sibling_rules(plan InvalidationPlan) []SiblingInvalidationRule {
+	_ = plan
+	return []SiblingInvalidationRule{}
 }
 
 pub fn (mut invalidator StyleInvalidator) visit_edges(mut visitor CellVisitor) {
@@ -1025,15 +1209,39 @@ fn (mut invalidator StyleInvalidator) add_pending_invalidation(node &Node, reaso
 	_ = node
 	_ = reason
 	_ = plan
+	// Stub for StyleInvalidator::m_pending_invalidations until StyleInvalidator stores pending rule state.
 }
 
 fn (mut invalidator StyleInvalidator) apply_invalidation_plan(mut element Element, reason StyleInvalidationReason, plan InvalidationPlan, invalidate_entire_subtree bool) bool {
-	_ = invalidator
-	_ = plan
+	if invalidation_plan_is_empty(plan) {
+		return invalidate_entire_subtree
+	}
 	mut node := unsafe { &Node(&element) }
-	node.set_needs_style_update(true)
-	_ = reason
-	return invalidate_entire_subtree
+	mut invalidate_subtree := invalidate_entire_subtree
+	if invalidation_plan_invalidates_whole_subtree(plan) {
+		node.invalidate_style(reason)
+		invalidate_subtree = true
+		node.set_needs_style_update_internal(true)
+		if node.has_child_nodes() {
+			node.set_child_needs_style_update(true)
+		}
+		return invalidate_subtree
+	}
+
+	if invalidation_plan_invalidates_self(plan) {
+		node.set_needs_style_update(true)
+	}
+
+	for descendant_rule in invalidation_plan_descendant_rules(plan) {
+		if payload := descendant_rule.payload {
+			invalidator.add_pending_invalidation(node, reason, payload)
+		}
+	}
+
+	for sibling_rule in invalidation_plan_sibling_rules(plan) {
+		invalidator.apply_sibling_invalidation(mut element, reason, sibling_rule)
+	}
+	return invalidate_subtree
 }
 
 fn (mut invalidator StyleInvalidator) apply_sibling_invalidation(mut element Element, reason StyleInvalidationReason, sibling_rule SiblingInvalidationRule) {
@@ -1119,8 +1327,15 @@ pub fn (mut base StyleElementBase) update_a_style_block() {
 
 	// 1. Let element be the style element.
 	// 2. If element has an associated CSS style sheet, remove the CSS style sheet in question.
-	base.associated_css_style_sheet_ = none
-	base.style_sheet_list_ = none
+	if associated_css_style_sheet := base.associated_css_style_sheet_ {
+		if mut style_sheet_list := base.style_sheet_list_ {
+			style_sheet_list.remove_a_css_style_sheet(associated_css_style_sheet)
+		}
+		base.style_sheet_list_ = none
+
+		// FIXME: This should probably be handled by StyleSheet::set_owner_node().
+		base.associated_css_style_sheet_ = none
+	}
 
 	// 3. If element is not connected, then return.
 	if !style_element.as_node().is_connected() {
@@ -1130,16 +1345,22 @@ pub fn (mut base StyleElementBase) update_a_style_block() {
 	// 4. If element's type attribute is present and its value is neither the empty string nor an ASCII
 	// case-insensitive match for "text/css", then return.
 	if type_attribute := style_element.get_attribute('type') {
-		if type_attribute.len > 0 && type_attribute.to_lower() != 'text/css' {
+		if type_attribute.len > 0 && to_ascii_lowercase(type_attribute) != 'text/css' {
 			return
 		}
 	}
 
-	// 5. Content Security Policy is not translated yet.
+	// 5. If the Should element's inline behavior be blocked by Content Security Policy? algorithm returns "Blocked"
+	// when executed upon the style element, "style", and the style element's child text content, then return. [CSP]
+	if should_elements_inline_style_behavior_be_blocked_by_content_security_policy(style_element,
+		style_element.as_node().child_text_content())
+	{
+		return
+	}
 
 	// 6. Create a CSS style sheet with the associated CSS style sheet properties.
 	mut document := unsafe { &Document(style_element.document()) }
-	mut style_sheet_list := document.style_sheets()
+	mut style_sheet_list := style_element.document_or_shadow_root_style_sheets()
 	style_sheet := &CSSStyleSheet{
 		url: style_element.base_uri()
 	}
@@ -1154,7 +1375,17 @@ pub fn (mut base StyleElementBase) update_a_style_block() {
 	}
 
 	// FIXME: 8. Potential render-blocking media matching is not translated yet.
-	base.finished_loading_critical_subresources(.no)
+
+	// AD-HOC: Check if we have already loaded the sheet's resources.
+	loading_state := style_sheet.loading_state_value()
+	if loading_state == .loaded || loading_state == .error {
+		any_failed := if loading_state == .error {
+			StyleElementAnyFailed.yes
+		} else {
+			StyleElementAnyFailed.no
+		}
+		base.finished_loading_critical_subresources(any_failed)
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/semantics.html#the-style-element:critical-subresources
@@ -1206,7 +1437,19 @@ pub fn (mut base StyleElementBase) visit_style_element_edges(mut visitor CellVis
 	}
 }
 
+fn should_elements_inline_style_behavior_be_blocked_by_content_security_policy(element &Element, child_text_content string) bool {
+	_ = element
+	_ = child_text_content
+	// Stub for ContentSecurityPolicy::should_elements_inline_type_behavior_be_blocked_by_content_security_policy(..., Style, ...).
+	return false
+}
+
 pub fn (element &Element) document_or_shadow_root_style_sheets() &StyleSheetList {
+	root_node := element.as_node().root()
+	if shadow_root := root_node.as_shadow_root() {
+		mut mutable_shadow_root := unsafe { &ShadowRoot(shadow_root) }
+		return mutable_shadow_root.style_sheets()
+	}
 	mut document := unsafe { &Document(element.document()) }
 	return document.style_sheets()
 }
@@ -1277,6 +1520,11 @@ pub fn (implementation &DOMImplementation) create_document(namespace_ ?string, q
 		document_node.append_child(el.as_node())!
 	}
 
+	// 6. document's origin is this's associated document's origin.
+	if implementation.document_ != unsafe { nil } {
+		xml_document.set_origin(implementation.document_.origin())
+	}
+
 	// 7. document's content type is determined by namespace.
 	ns := namespace_ or { '' }
 	if ns == namespace_html_ {
@@ -1287,51 +1535,52 @@ pub fn (implementation &DOMImplementation) create_document(namespace_ ?string, q
 		xml_document.content_type = 'application/xml'
 	}
 
-	// 6. document's origin is this's associated document's origin.
-	if implementation.document_ != unsafe { nil } {
-		xml_document.set_origin(implementation.document_.origin())
-	}
-
 	// 8. Return document.
 	return xml_document
 }
 
 // https://dom.spec.whatwg.org/#dom-domimplementation-createhtmldocument
-pub fn (implementation &DOMImplementation) create_html_document(title ?string) &Document {
+pub fn (implementation &DOMImplementation) create_html_document(title ?string) !&Document {
 	// 1. Let doc be a new document that is an HTML document.
+	// HTMLDocument is not a distinct type in this V DOM port yet; this creates a Document with HTML type/content.
 	mut html_document := Document.create(url_about_blank())
+	// 2. Set doc's content type to "text/html".
 	html_document.set_content_type('text/html')
 	html_document.set_document_type(.html)
 	html_document.ready_for_post_load_tasks = true
 
 	// 3. Append a new doctype, with "html" as its name and with its node document set to doc, to doc.
-	doctype := &DocumentType{
-		Node:  Node{
-			node_type:  .document_type_node
-			document_:  html_document
-			unique_id_: UniqueNodeID(0)
-		}
-		name_: 'html'
-	}
+	mut doctype := DocumentType.create(html_document)
+	doctype.set_name('html')
 	mut document_node := unsafe { &Node(html_document) }
-	document_node.append_child(unsafe { &Node(doctype) }) or {}
+	document_node.append_child(doctype.as_node())!
 
-	// 4-7. Append html/head/title/body.
-	mut html_element := html_document.create_element('html') or { return html_document }
-	mut head_element := html_document.create_element('head') or { return html_document }
-	mut body_element := html_document.create_element('body') or { return html_document }
+	// 4. Append the result of creating an element given doc, "html", and the HTML namespace, to doc.
+	mut html_element := create_element(html_document, 'html', namespace_html_, none, none, false)!
+	document_node.append_child(html_element.as_node())!
+
+	// 5. Append the result of creating an element given doc, "head", and the HTML namespace, to the html element created earlier.
+	mut head_element := create_element(html_document, 'head', namespace_html_, none, none, false)!
 	mut html_node := unsafe { &Node(html_element) }
-	html_node.append_child(head_element.as_node()) or {}
+	html_node.append_child(head_element.as_node())!
+
+	// 6. If title is given:
 	if value := title {
-		mut title_element := html_document.create_element('title') or { return html_document }
+		// 1. Append the result of creating an element given doc, "title", and the HTML namespace, to the head element created earlier.
+		mut title_element := create_element(html_document, 'title', namespace_html_, none, none,
+			false)!
 		text := new_text_node(html_document, value)
-		mut title_node := unsafe { &Node(title_element) }
-		title_node.append_child(text.as_node()) or {}
 		mut head_node := unsafe { &Node(head_element) }
-		head_node.append_child(title_element.as_node()) or {}
+		head_node.append_child(title_element.as_node())!
+
+		// 2. Append a new Text node, with its data set to title (which could be the empty string) and its node document set to doc, to the title element created earlier.
+		mut title_node := unsafe { &Node(title_element) }
+		title_node.append_child(text.as_node())!
 	}
-	html_node.append_child(body_element.as_node()) or {}
-	document_node.append_child(html_element.as_node()) or {}
+
+	// 7. Append the result of creating an element given doc, "body", and the HTML namespace, to the html element created earlier.
+	mut body_element := create_element(html_document, 'body', namespace_html_, none, none, false)!
+	html_node.append_child(body_element.as_node())!
 
 	// 8. doc's origin is this's associated document's origin.
 	if implementation.document_ != unsafe { nil } {
@@ -1349,17 +1598,13 @@ pub fn (implementation &DOMImplementation) create_document_type(name string, pub
 		return error('InvalidCharacterError: Invalid doctype name')
 	}
 
-	// 2. Return a new doctype.
-	return &DocumentType{
-		Node:       Node{
-			node_type:  .document_type_node
-			document_:  implementation.document_
-			unique_id_: UniqueNodeID(0)
-		}
-		name_:      name
-		public_id_: public_id
-		system_id_: system_id
-	}
+	// 2. Return a new doctype, with name as its name, publicId as its public ID, and systemId as its system ID,
+	// and with its node document set to the associated document of this.
+	mut document_type := DocumentType.create(implementation.document_)
+	document_type.set_name(name)
+	document_type.set_public_id(public_id)
+	document_type.set_system_id(system_id)
+	return document_type
 }
 
 // https://dom.spec.whatwg.org/#dom-domimplementation-hasfeature
@@ -1624,18 +1869,933 @@ pub fn is_unknown_html_element(tag_name string) bool {
 	return true
 }
 
+fn new_element_storage(document &Document, qualified_name QualifiedName) Element {
+	return Element{
+		ParentNode:     ParentNode{
+			Node: Node{
+				node_type: .element_node
+				document_: document
+			}
+		}
+		qualified_name: qualified_name
+		doc_:           document
+	}
+}
+
+fn new_html_element_storage(document &Document, qualified_name QualifiedName) HTMLElement {
+	return HTMLElement{
+		Element: new_element_storage(document, qualified_name)
+	}
+}
+
+fn new_svg_element_storage(document &Document, qualified_name QualifiedName) SVGElement {
+	return SVGElement{
+		Element: new_element_storage(document, qualified_name)
+	}
+}
+
+fn new_mathml_element_storage(document &Document, qualified_name QualifiedName) MathMLElement {
+	return MathMLElement{
+		Element: new_element_storage(document, qualified_name)
+	}
+}
+
 fn create_html_element(document &Document, qualified_name QualifiedName) &Element {
-	return Element.new(document, qualified_name)
+	tag_name := qualified_name.local_name
+	match tag_name {
+		'a' {
+			return unsafe {
+				&Element(&HTMLAnchorElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'area' {
+			return unsafe {
+				&Element(&HTMLAreaElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'audio' {
+			return unsafe {
+				&Element(&HTMLAudioElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'base' {
+			return unsafe {
+				&Element(&HTMLBaseElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'body' {
+			return unsafe {
+				&Element(&HTMLBodyElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'br' {
+			return unsafe {
+				&Element(&HTMLBRElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'button' {
+			return unsafe {
+				&Element(&HTMLButtonElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'canvas' {
+			return unsafe {
+				&Element(&HTMLCanvasElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'data' {
+			return unsafe {
+				&Element(&HTMLDataElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'datalist' {
+			return unsafe {
+				&Element(&HTMLDataListElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'details' {
+			return unsafe {
+				&Element(&HTMLDetailsElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'dialog' {
+			return unsafe {
+				&Element(&HTMLDialogElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'dir' {
+			return unsafe {
+				&Element(&HTMLDirectoryElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'div' {
+			return unsafe {
+				&Element(&HTMLDivElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'dl' {
+			return unsafe {
+				&Element(&HTMLDListElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'embed' {
+			return unsafe {
+				&Element(&HTMLEmbedElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'fieldset' {
+			return unsafe {
+				&Element(&HTMLFieldSetElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'font' {
+			return unsafe {
+				&Element(&HTMLFontElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'form' {
+			return unsafe {
+				&Element(&HTMLFormElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'frame' {
+			return unsafe {
+				&Element(&HTMLFrameElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'frameset' {
+			return unsafe {
+				&Element(&HTMLFrameSetElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'head' {
+			return unsafe {
+				&Element(&HTMLHeadElement{
+					Element: new_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'h1', 'h2', 'h3', 'h4', 'h5', 'h6' {
+			return unsafe {
+				&Element(&HTMLHeadingElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'hr' {
+			return unsafe {
+				&Element(&HTMLHRElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'html' {
+			return unsafe {
+				&Element(&HTMLHtmlElement{
+					Element: new_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'iframe' {
+			return unsafe {
+				&Element(&HTMLIFrameElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'img' {
+			return unsafe {
+				&Element(&HTMLImageElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'input' {
+			return unsafe {
+				&Element(&HTMLInputElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'label' {
+			return unsafe {
+				&Element(&HTMLLabelElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'legend' {
+			return unsafe {
+				&Element(&HTMLLegendElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'li' {
+			return unsafe {
+				&Element(&HTMLLIElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'link' {
+			return unsafe {
+				&Element(&HTMLLinkElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'map' {
+			return unsafe {
+				&Element(&HTMLMapElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'marquee' {
+			return unsafe {
+				&Element(&HTMLMarqueeElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'menu' {
+			return unsafe {
+				&Element(&HTMLMenuElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'meta' {
+			return unsafe {
+				&Element(&HTMLMetaElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'meter' {
+			return unsafe {
+				&Element(&HTMLMeterElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'ins', 'del' {
+			return unsafe {
+				&Element(&HTMLModElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'object' {
+			return unsafe {
+				&Element(&HTMLObjectElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'ol' {
+			return unsafe {
+				&Element(&HTMLOListElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'optgroup' {
+			return unsafe {
+				&Element(&HTMLOptGroupElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'option' {
+			return unsafe {
+				&Element(&HTMLOptionElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'output' {
+			return unsafe {
+				&Element(&HTMLOutputElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'p' {
+			return unsafe {
+				&Element(&HTMLParagraphElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'param' {
+			return unsafe {
+				&Element(&HTMLParamElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'picture' {
+			return unsafe {
+				&Element(&HTMLPictureElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'pre', 'listing', 'xmp' {
+			return unsafe {
+				&Element(&HTMLPreElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'progress' {
+			return unsafe {
+				&Element(&HTMLProgressElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'blockquote', 'q' {
+			return unsafe {
+				&Element(&HTMLQuoteElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'script' {
+			return unsafe {
+				&Element(&HTMLScriptElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'selectedcontent' {
+			return unsafe {
+				&Element(&HTMLSelectedContentElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'select' {
+			return unsafe {
+				&Element(&HTMLSelectElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'slot' {
+			return unsafe {
+				&Element(&HTMLSlotElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'source' {
+			return unsafe {
+				&Element(&HTMLSourceElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'span' {
+			return unsafe {
+				&Element(&HTMLSpanElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'style' {
+			return unsafe {
+				&Element(&HTMLStyleElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'summary' {
+			return unsafe {
+				&Element(&HTMLSummaryElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'caption' {
+			return unsafe {
+				&Element(&HTMLTableCaptionElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'td', 'th' {
+			return unsafe {
+				&Element(&HTMLTableCellElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'colgroup', 'col' {
+			return unsafe {
+				&Element(&HTMLTableColElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'table' {
+			return unsafe {
+				&Element(&HTMLTableElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'tr' {
+			return unsafe {
+				&Element(&HTMLTableRowElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'tbody', 'thead', 'tfoot' {
+			return unsafe {
+				&Element(&HTMLTableSectionElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'template' {
+			return unsafe {
+				&Element(&HTMLTemplateElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'textarea' {
+			return unsafe {
+				&Element(&HTMLTextAreaElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'time' {
+			return unsafe {
+				&Element(&HTMLTimeElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'title' {
+			return unsafe {
+				&Element(&HTMLTitleElement{
+					Element: new_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'track' {
+			return unsafe {
+				&Element(&HTMLTrackElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'ul' {
+			return unsafe {
+				&Element(&HTMLUListElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'video' {
+			return unsafe {
+				&Element(&HTMLVideoElement{
+					HTMLElement: new_html_element_storage(document, qualified_name)
+				})
+			}
+		}
+		else {}
+	}
+
+	if is_unknown_html_element(tag_name) {
+		return unsafe {
+			&Element(&HTMLUnknownElement{
+				HTMLElement: new_html_element_storage(document, qualified_name)
+			})
+		}
+	}
+	return unsafe {
+		&Element(&HTMLElement{
+			Element: new_element_storage(document, qualified_name)
+		})
+	}
 }
 
 fn create_svg_element(document &Document, qualified_name QualifiedName) &Element {
+	local_name := qualified_name.local_name
+	match local_name {
+		'svg' {
+			return unsafe {
+				&Element(&SVGSVGElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'circle' {
+			return unsafe {
+				&Element(&SVGCircleElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'desc' {
+			return unsafe {
+				&Element(&SVGDescElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'ellipse' {
+			return unsafe {
+				&Element(&SVGEllipseElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feBlend' {
+			return unsafe {
+				&Element(&SVGFEBlendElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feColorMatrix' {
+			return unsafe {
+				&Element(&SVGFEColorMatrixElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feComponentTransfer' {
+			return unsafe {
+				&Element(&SVGFEComponentTransferElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feComposite' {
+			return unsafe {
+				&Element(&SVGFECompositeElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feDisplacementMap' {
+			return unsafe {
+				&Element(&SVGFEDisplacementMapElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feDropShadow' {
+			return unsafe {
+				&Element(&SVGFEDropShadowElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feFlood' {
+			return unsafe {
+				&Element(&SVGFEFloodElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feFuncA' {
+			return unsafe {
+				&Element(&SVGFEFuncAElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feFuncB' {
+			return unsafe {
+				&Element(&SVGFEFuncBElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feFuncG' {
+			return unsafe {
+				&Element(&SVGFEFuncGElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feFuncR' {
+			return unsafe {
+				&Element(&SVGFEFuncRElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feGaussianBlur' {
+			return unsafe {
+				&Element(&SVGFEGaussianBlurElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feImage' {
+			return unsafe {
+				&Element(&SVGFEImageElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feMerge' {
+			return unsafe {
+				&Element(&SVGFEMergeElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feMergeNode' {
+			return unsafe {
+				&Element(&SVGFEMergeNodeElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feMorphology' {
+			return unsafe {
+				&Element(&SVGFEMorphologyElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feOffset' {
+			return unsafe {
+				&Element(&SVGFEOffsetElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'feTurbulence' {
+			return unsafe {
+				&Element(&SVGFETurbulenceElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'filter' {
+			return unsafe {
+				&Element(&SVGFilterElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'line' {
+			return unsafe {
+				&Element(&SVGLineElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'linearGradient' {
+			return unsafe {
+				&Element(&SVGLinearGradientElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'mask' {
+			return unsafe {
+				&Element(&SVGMaskElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'metadata' {
+			return unsafe {
+				&Element(&SVGMetadataElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'path' {
+			return unsafe {
+				&Element(&SVGPathElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'pattern' {
+			return unsafe {
+				&Element(&SVGPatternElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'polygon' {
+			return unsafe {
+				&Element(&SVGPolygonElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'polyline' {
+			return unsafe {
+				&Element(&SVGPolylineElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'radialGradient' {
+			return unsafe {
+				&Element(&SVGRadialGradientElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'rect' {
+			return unsafe {
+				&Element(&SVGRectElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'g' {
+			return unsafe {
+				&Element(&SVGGElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'stop' {
+			return unsafe {
+				&Element(&SVGStopElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'style' {
+			return unsafe {
+				&Element(&SVGStyleElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'symbol' {
+			return unsafe {
+				&Element(&SVGSymbolElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'text' {
+			return unsafe {
+				&Element(&SVGTextElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'textPath' {
+			return unsafe {
+				&Element(&SVGTextPathElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'title' {
+			return unsafe {
+				&Element(&SVGTitleElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'tspan' {
+			return unsafe {
+				&Element(&SVGTSpanElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'use' {
+			return unsafe {
+				&Element(&SVGUseElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'script' {
+			return unsafe {
+				&Element(&SVGScriptElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'view' {
+			return unsafe {
+				&Element(&SVGViewElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'a' {
+			return unsafe {
+				&Element(&SVGAElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		'image' {
+			return unsafe {
+				&Element(&SVGImageElement{
+					SVGElement: new_svg_element_storage(document, qualified_name)
+				})
+			}
+		}
+		else {}
+	}
+
+	lowercase_local_name := to_ascii_lowercase(local_name)
+	if lowercase_local_name == 'clippath' {
+		return unsafe {
+			&Element(&SVGClipPathElement{
+				SVGElement: new_svg_element_storage(document, qualified_name)
+			})
+		}
+	}
+	if lowercase_local_name == 'defs' {
+		return unsafe {
+			&Element(&SVGDefsElement{
+				SVGElement: new_svg_element_storage(document, qualified_name)
+			})
+		}
+	}
+	if lowercase_local_name == 'foreignobject' {
+		return unsafe {
+			&Element(&SVGForeignObjectElement{
+				SVGElement: new_svg_element_storage(document, qualified_name)
+			})
+		}
+	}
+
 	// https://svgwg.org/svg2-draft/types.html#ElementsInTheSVGDOM
-	return Element.new(document, qualified_name)
+	// Elements in the SVG namespace whose local name does not match an element defined in any
+	// specification supported by the software must nonetheless implement the SVGElement interface.
+	return unsafe {
+		&Element(&SVGElement{
+			Element: new_element_storage(document, qualified_name)
+		})
+	}
 }
 
 fn create_mathml_element(document &Document, qualified_name QualifiedName) &Element {
+	local_name := qualified_name.local_name
+	if local_name == 'mi' {
+		return unsafe {
+			&Element(&MathMLMiElement{
+				MathMLElement: new_mathml_element_storage(document, qualified_name)
+			})
+		}
+	}
+	if local_name == 'mspace' {
+		return unsafe {
+			&Element(&MathMLMspaceElement{
+				MathMLElement: new_mathml_element_storage(document, qualified_name)
+			})
+		}
+	}
+
 	// https://w3c.github.io/mathml-core/#dom-and-javascript
-	return Element.new(document, qualified_name)
+	// All the nodes representing MathML elements in the DOM must implement, and expose to scripts,
+	// the following MathMLElement interface.
+	return unsafe {
+		&Element(&MathMLElement{
+			Element: new_element_storage(document, qualified_name)
+		})
+	}
 }
 
 // https://dom.spec.whatwg.org/#concept-create-element
@@ -1653,7 +2813,11 @@ pub fn create_element(document &Document, local_name string, namespace_ ?string,
 			mut element := create_element_internal(document, local_name, namespace_html_, prefix,
 				.undefined_, is_value)
 			if synchronous_custom_elements_flag {
-				element.upgrade_element(definition)!
+				element.upgrade_element(definition) or {
+					// If this step threw an exception, report it and set result's custom element state to "failed".
+					report_custom_element_upgrade_exception(definition, err.str())
+					element.set_custom_element_state(.failed)
+				}
 			} else {
 				element.enqueue_a_custom_element_upgrade_reaction(definition)
 			}
@@ -1667,7 +2831,22 @@ pub fn create_element(document &Document, local_name string, namespace_ ?string,
 		mut element := create_element_internal(document, local_name, namespace_html_, prefix,
 			.undefined_, none)
 		if synchronous_custom_elements_flag {
-			element.upgrade_element(definition)!
+			element.upgrade_element(definition) or {
+				// If any of these steps threw an exception, report it and set result to an HTMLUnknownElement in the failed state.
+				report_custom_element_upgrade_exception(definition, err.str())
+				mut fallback_element := unsafe {
+					&Element(&HTMLUnknownElement{
+						HTMLElement: new_html_element_storage(document, QualifiedName{
+							local_name:            local_name
+							prefix_:               prefix
+							namespace_:            namespace_html_
+							lowercased_local_name: to_ascii_lowercase(local_name)
+						})
+					})
+				}
+				fallback_element.set_custom_element_state(.failed)
+				return fallback_element
+			}
 		} else {
 			element.enqueue_a_custom_element_upgrade_reaction(definition)
 		}
@@ -1690,13 +2869,19 @@ pub fn create_element(document &Document, local_name string, namespace_ ?string,
 	return element
 }
 
+fn report_custom_element_upgrade_exception(definition &CustomElementDefinition, message string) {
+	_ = definition
+	_ = message
+	// Stub for reporting the exception for definition's constructor's associated global object.
+}
+
 // https://dom.spec.whatwg.org/#create-an-element-internal
 pub fn create_element_internal(document &Document, local_name string, namespace_ ?string, prefix ?string, state CustomElementState, is_value ?string) &Element {
 	qualified_name := QualifiedName{
 		local_name:            local_name
 		prefix_:               prefix
 		namespace_:            namespace_
-		lowercased_local_name: local_name.to_lower()
+		lowercased_local_name: to_ascii_lowercase(local_name)
 	}
 	ns := namespace_ or { '' }
 	mut element := if ns == namespace_html_ {
@@ -1722,30 +2907,42 @@ pub fn (mut id_map ElementByIdMap) add(element_id string, element &Element) {
 	}
 	elements << element
 	id_map.elements_by_id[element_id] = elements
+	if elements.len == 1 {
+		id_map.cached_first_element_by_id[element_id] = element
+	} else {
+		id_map.cached_first_element_by_id.delete(element_id)
+	}
 }
 
 pub fn (mut id_map ElementByIdMap) remove(element_id string, element &Element) {
 	mut elements := id_map.elements_by_id[element_id] or { return }
-	elements = elements.filter(it != element)
+	elements = elements.filter(it != unsafe { nil } && it != element)
 	if elements.len == 0 {
 		id_map.elements_by_id.delete(element_id)
+		id_map.cached_first_element_by_id.delete(element_id)
 		return
+	}
+	if cached := id_map.cached_first_element_by_id[element_id] {
+		if cached == element {
+			id_map.cached_first_element_by_id.delete(element_id)
+		}
 	}
 	id_map.elements_by_id[element_id] = elements
 }
 
 pub fn (id_map &ElementByIdMap) get(element_id string, scope_root &Node) ?&Element {
-	if elements := id_map.elements_by_id[element_id] {
-		if elements.len == 1 {
-			return elements[0]
-		}
-		for element in elements {
-			if element.as_node().is_shadow_including_inclusive_descendant_of(scope_root) {
-				return element
-			}
-		}
+	_ = id_map.elements_by_id[element_id] or { return none }
+
+	if element := id_map.cached_first_element_by_id[element_id] {
+		return element
 	}
-	return first_element_with_id_in_inclusive_subtree(scope_root, element_id)
+
+	first_element := first_element_with_id_in_inclusive_subtree(scope_root, element_id) or {
+		return none
+	}
+	mut mutable_id_map := unsafe { &ElementByIdMap(id_map) }
+	mutable_id_map.cached_first_element_by_id[element_id] = first_element
+	return first_element
 }
 
 fn first_element_with_id_in_inclusive_subtree(root &Node, element_id string) ?&Element {
@@ -1770,6 +2967,8 @@ pub fn (id_map &ElementByIdMap) for_each_element_with_id(element_id string, scop
 			callback(elements[0])
 			return
 		}
+	} else {
+		return
 	}
 	scope_root.for_each_in_inclusive_subtree(fn [element_id, callback] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
@@ -1980,6 +3179,142 @@ pub fn mime_type_from_essence(essence string) MimeType {
 	}
 }
 
+fn resolve_session_history_processing_signal(signal_to_continue_session_history_processing VoidPtr) {
+	_ = signal_to_continue_session_history_processing
+}
+
+fn run_encoding_sniffing_algorithm(document &Document, data ByteBuffer, mime MimeType) string {
+	_ = document
+	_ = data
+	_ = mime
+	// Stub for HTML::run_encoding_sniffing_algorithm until the HTML parser/text codec ports exist.
+	return 'UTF-8'
+}
+
+fn text_decoder_validate(data ByteBuffer, content_encoding ?string) bool {
+	_ = data
+	_ = content_encoding
+	// Stub for TextCodec::Decoder::validate().
+	return true
+}
+
+fn text_decoder_to_utf8(data ByteBuffer, content_encoding ?string) !string {
+	_ = content_encoding
+	// Stub for TextCodec::Decoder::to_utf8().
+	return data.bytestr()
+}
+
+fn xml_decoder_label(document &Document, data ByteBuffer, mime MimeType, content_encoding ?string) string {
+	if encoding := content_encoding {
+		return encoding
+	}
+	return run_encoding_sniffing_algorithm(document, data, mime)
+}
+
+fn mime_type_parameter(mime MimeType, name string) ?string {
+	_ = mime
+	_ = name
+	// Stub for MimeSniff::MimeType::parameters() until MIME parameters are represented.
+	return none
+}
+
+fn parse_xml_document_into(document &Document, source string) bool {
+	_ = document
+	_ = source
+	// Stub for XML::Parser + XMLDocumentBuilder. The DOM-side caller still follows the C++ control flow.
+	return true
+}
+
+fn html_parser_the_end(document &Document) {
+	mut mutable_document := unsafe { &Document(document) }
+	mutable_document.completely_finish_loading()
+}
+
+fn html_parser_run_with_uncertain_encoding(document &Document, data ByteBuffer, mime MimeType, url URL) {
+	_ = mime
+	_ = url
+	mut mutable_document := unsafe { &Document(document) }
+	mutable_document.source = data.bytestr()
+	html_parser_the_end(document)
+}
+
+fn html_parser_run_text_document(document &Document, data ByteBuffer, mime MimeType, url URL) string {
+	encoding := run_encoding_sniffing_algorithm(document, data, mime)
+	mut mutable_document := unsafe { &Document(document) }
+	// Stub for the tokenizer sequence that emits <pre>\n, switches to PLAINTEXT,
+	// inserts the body bytes, inserts EOF, and runs the parser.
+	mutable_document.source = '<pre>\n${data.bytestr()}'
+	_ = url
+	html_parser_the_end(document)
+	return encoding
+}
+
+fn sniff_resource_type(sniff_bytes ReadonlyBytes, supplied_type MimeType) MimeType {
+	_ = sniff_bytes
+	// Stub for MimeSniff::Resource::sniff(..., Browsing, supplied_type).
+	return supplied_type
+}
+
+fn navigation_response_mime_type(navigation_params &NavigationParams) MimeType {
+	essence := if navigation_params.response_mime_type == '' {
+		'text/html'
+	} else {
+		navigation_params.response_mime_type
+	}
+	return mime_type_from_essence(essence)
+}
+
+fn navigation_response_url(navigation_params &NavigationParams) URL {
+	if current_url := navigation_params.request_current_url {
+		return current_url
+	}
+	return navigation_params.response_url
+}
+
+fn basename_from_url_string(url_string string) string {
+	mut value := url_string
+	for value.len > 1 && value.ends_with('/') {
+		value = value[..value.len - 1]
+	}
+	index := value.last_index('/') or { return value }
+	return value[index + 1..]
+}
+
+fn append_title_to_document_head(document &Document, document_url string) ! {
+	title := basename_from_url_string(document_url)
+	title_element := create_element(document, 'title', namespace_html_, none, none, false)!
+	head := document.head() or { return }
+	head_element := unsafe { &Element(head) }
+	mut head_node := head_element.as_node()
+	head_node.append_child(title_element.as_node())!
+	mut title_node := title_element.as_node()
+	title_node.append_child(new_text_node(document, title).as_node())!
+}
+
+fn append_media_document_style(document &Document) ! {
+	style_element := create_element(document, 'style', namespace_html_, none, none, false)!
+	mut style_node := style_element.as_node()
+	style_node.string_replace_all('
+        :root {
+            background-color: #222;
+        }
+        img, video, audio {
+            position: absolute;
+            inset: 0;
+            max-width: 100vw;
+            max-height: 100vh;
+            margin: auto;
+        }
+        img {
+            background-color: #fff;
+        }
+    ')
+	head := document.head() or { return }
+	head_element := unsafe { &Element(head) }
+	mut head_node := head_element.as_node()
+	head_node.append_child(style_element.as_node())!
+}
+
 fn convert_to_xml_error_document(mut document Document, error_string string) {
 	html_element := create_element(document, 'html', namespace_html_, none, none, false) or {
 		return
@@ -1997,39 +3332,173 @@ fn convert_to_xml_error_document(mut document Document, error_string string) {
 }
 
 pub fn build_xml_document(mut document Document, data ByteBuffer, content_encoding ?string) bool {
-	// The actual HTTP headers and other metadata are used when determining character encoding in the full port.
-	_ = content_encoding
-	document.source = data.bytestr()
-	return true
+	// The actual HTTP headers and other metadata, not the headers as mutated or implied by the algorithms given in this specification,
+	// are the ones that must be used when determining the character encoding according to the rules given in the above specifications.
+	encoding := xml_decoder_label(&document, data, mime_type_from_essence('application/xml'),
+		content_encoding)
+	if !text_decoder_validate(data, encoding) {
+		convert_to_xml_error_document(mut document,
+			'XML Document contains improperly-encoded characters')
+		return false
+	}
+	source := text_decoder_to_utf8(data, encoding) or {
+		convert_to_xml_error_document(mut document, 'Failed to decode XML document: ${err}')
+		return false
+	}
+	document.source = source
+	return parse_xml_document_into(&document, source)
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#navigate-html
 fn load_html_document(navigation_params &NavigationParams, signal_to_continue_session_history_processing VoidPtr) !&Document {
-	_ = signal_to_continue_session_history_processing
-	return Document.create_and_initialize(.html, 'text/html', navigation_params)
+	// 1. Let document be the result of creating and initializing a Document object given "html", "text/html", and navigationParams.
+	mut document := Document.create_and_initialize(.html, 'text/html', navigation_params)!
+
+	// 2. If document's URL is about:blank, then populate with html/head/body given document.
+	// FIXME: The additional check for a non-empty body fixes issues with loading javascript urls in iframes, which
+	//        default to an "about:blank" url. Is this a spec bug?
+	if document.url_string() == 'about:blank' && navigation_params.response_body.len == 0 {
+		document.populate_with_html_head_and_body()!
+		// NB: Nothing else is added to the document, so mark it as loaded and resolve the signal_to_continue_session_history_processing.
+		resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
+		html_parser_the_end(document)
+	} else {
+		// FIXME: Parse as we receive the document data, instead of waiting for the whole document to be fetched first.
+		resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
+		html_parser_run_with_uncertain_encoding(document, navigation_params.response_body,
+			navigation_response_mime_type(navigation_params),
+			navigation_response_url(navigation_params))
+	}
+
+	// 4. Return document.
+	return document
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-xml
 fn load_xml_document(navigation_params &NavigationParams, type_ MimeType, signal_to_continue_session_history_processing VoidPtr) !&Document {
-	_ = signal_to_continue_session_history_processing
-	return Document.create_and_initialize(.xml, type_.essence(), navigation_params)
+	// When faced with displaying an XML file inline, create and initialize a Document object document,
+	// given "xml", type, and navigationParams, and return that Document.
+	mut document := Document.create_and_initialize(.xml, type_.essence(), navigation_params)!
+
+	// FIXME: Actually follow the spec! This is just the ad-hoc code we had before, modified somewhat.
+	content_encoding := mime_type_parameter(type_, 'charset')
+	encoding := xml_decoder_label(document, navigation_params.response_body, type_,
+		content_encoding)
+	if !text_decoder_validate(navigation_params.response_body, encoding) {
+		convert_to_xml_error_document(mut document,
+			'XML Document contains improperly-encoded characters')
+		// NB: This ensures that the `load` event gets fired for the frame loading this document.
+		document.completely_finish_loading()
+		// NB: If document is part of a session history entry's traversal, resolve the signal_to_continue_session_history_processing.
+		resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
+		return document
+	}
+
+	source := text_decoder_to_utf8(navigation_params.response_body, encoding) or {
+		convert_to_xml_error_document(mut document, 'Failed to decode XML document: ${err}')
+		// NB: This ensures that the `load` event gets fired for the frame loading this document.
+		document.completely_finish_loading()
+		// NB: If document is part of session history traversal, resolve the signal_to_continue_session_history_processing.
+		resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
+		return document
+	}
+
+	// NB: If document is part of session history traversal, resolve the signal_to_continue_session_history_processing.
+	resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
+	document.source = source
+	if !parse_xml_document_into(document, source) {
+		convert_to_xml_error_document(mut document, 'Failed to parse XML document')
+		// NB: XMLDocumentBuilder ensures that the `load` event gets fired. We don't need to do anything else here.
+	}
+
+	return document
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#navigate-text
 fn load_text_document(navigation_params &NavigationParams, type_ MimeType, signal_to_continue_session_history_processing VoidPtr) !&Document {
-	_ = signal_to_continue_session_history_processing
+	// 1. Let document be the result of creating and initializing a Document object given "html", type, and navigationParams.
 	mut document := Document.create_and_initialize(.html, type_.essence(), navigation_params)!
+
+	// 2. Set document's parser cannot change the mode flag to true.
 	document.parser_cannot_change_the_mode = true
+
+	// 3. Set document's mode to "no-quirks".
 	document.set_quirks_mode(.no)
+
+	// 4. Create an HTML parser and associate it with the document. Act as if the tokenizer had emitted a start tag token
+	//    with the tag name "pre" followed by a single U+000A LINE FEED (LF) character, and switch the HTML parser's tokenizer
+	//    to the PLAINTEXT state.
+	resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
+	encoding := html_parser_run_text_document(document, navigation_params.response_body, type_,
+		navigation_response_url(navigation_params))
+	document.set_encoding(encoding)
+
+	// 5. User agents may add content to the head element of document, e.g., linking to a style sheet, providing
+	//    script, or giving the document a title.
+	append_title_to_document_head(document, document.url_string()) or {}
+
+	// 6. Return document.
 	return document
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#navigate-media
 fn load_media_document(navigation_params &NavigationParams, type_ MimeType, signal_to_continue_session_history_processing VoidPtr) !&Document {
-	_ = signal_to_continue_session_history_processing
+	// 1. Let document be the result of creating and initializing a Document object given "html", type, and navigationParams.
 	mut document := Document.create_and_initialize(.html, type_.essence(), navigation_params)!
+
+	// 2. Set document's mode to "no-quirks".
 	document.set_quirks_mode(.no)
-	document.populate_with_html_head_and_body() or {}
+
+	// 3. Populate with html/head/body given document.
+	document.populate_with_html_head_and_body()!
+
+	// 4. Append an element host element for the media, as described below, to the body element.
+	// 5. Set the appropriate attribute of the element host element, as described below, to the address of the image,
+	//    video, or audio resource.
+	// 6. User agents may add content to the head element of document, or attributes to host element, e.g., to link
+	//    to a style sheet, to provide a script, to give the document a title, or to make the media autoplay.
+	append_media_document_style(document) or {}
+	url_string := document.url_string()
+	mut host_element := ?&Element(none)
+	if type_.is_image() {
+		mut img_element := create_element(document, 'img', namespace_html_, none, none, false)!
+		img_element.set_attribute_value('src', url_string)
+		host_element = img_element
+	} else if type_.type_() == 'video' {
+		mut video_element := create_element(document, 'video', namespace_html_, none, none, false)!
+		video_element.set_attribute_value('src', url_string)
+		video_element.set_attribute_value('autoplay', '')
+		video_element.set_attribute_value('controls', '')
+		host_element = video_element
+	} else if type_.type_() == 'audio' {
+		mut audio_element := create_element(document, 'audio', namespace_html_, none, none, false)!
+		audio_element.set_attribute_value('src', url_string)
+		audio_element.set_attribute_value('autoplay', '')
+		audio_element.set_attribute_value('controls', '')
+		host_element = audio_element
+	} else {
+		// FIXME: According to https://mimesniff.spec.whatwg.org/#audio-or-video-mime-type we might have to deal with
+		//        "application/ogg" and figure out whether it's audio or video.
+		panic('VERIFY_NOT_REACHED')
+	}
+	if media_element := host_element {
+		body := document.body() or { return document }
+		body_element := unsafe { &Element(body) }
+		mut body_node := body_element.as_node()
+		body_node.append_child(media_element.as_node())!
+		append_title_to_document_head(document, url_string) or {}
+	}
+
+	// FIXME: 7. Process link headers given document, navigationParams's response, and "media".
+
+	// 8. Act as if the user agent had stopped parsing document.
+	// FIXME: We should not need to force the media file to load before saying that parsing has completed!
+	//        However, if we don't, then we get stuck in HTMLParser::the_end() waiting for the media file to load, which
+	//        never happens.
+	resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
+	html_parser_the_end(document)
+
+	// 9. Return document.
 	return document
 }
 
@@ -2049,27 +3518,71 @@ pub fn can_load_document_with_type(type_ MimeType) bool {
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#loading-a-document
 pub fn load_document(navigation_params &NavigationParams, signal_to_continue_session_history_processing VoidPtr, sniff_bytes ReadonlyBytes) ?&Document {
-	_ = sniff_bytes
-	// MIME sniffing is not translated yet; default to HTML, matching the most common navigable load path.
-	type_ := mime_type_from_essence('text/html')
+	// 1. Let type be the computed type of navigationParams's response.
+	supplied_type := navigation_response_mime_type(navigation_params)
+	type_ := sniff_resource_type(sniff_bytes, supplied_type)
+
+	// 2. If the user agent has been configured to process resources of the given type using some mechanism other than
+	//    rendering the content in a navigable, then skip this step.
+	//    Otherwise, if the type is one of the following types:
+
+	// -> an HTML MIME type
 	if type_.is_html() {
 		return load_html_document(navigation_params, signal_to_continue_session_history_processing) or {
 			return none
 		}
 	}
+
+	// -> an XML MIME type that is not an explicitly supported XML MIME type
+	//    FIXME: that is not an explicitly supported XML MIME type
 	if type_.is_xml() {
 		return load_xml_document(navigation_params, type_,
 			signal_to_continue_session_history_processing) or { return none }
 	}
+
+	// -> a JavaScript MIME type
+	// -> a JSON MIME type that is not an explicitly supported JSON MIME type
+	// -> "text/css"
+	// -> "text/plain"
+	// -> "text/vtt"
 	if type_.is_javascript() || type_.is_json()
 		|| type_.essence() in ['text/css', 'text/plain', 'text/vtt'] {
 		return load_text_document(navigation_params, type_,
 			signal_to_continue_session_history_processing) or { return none }
 	}
+
+	// -> "multipart/x-mixed-replace"
+	if type_.essence() == 'multipart/x-mixed-replace' {
+		// FIXME: Return the result of loading a multipart/x-mixed-replace document, given navigationParams,
+		//        sourceSnapshotParams, and initiatorOrigin.
+	}
+
+	// -> a supported image, video, or audio type
 	if type_.is_image() || type_.is_audio_or_video() {
 		return load_media_document(navigation_params, type_,
 			signal_to_continue_session_history_processing) or { return none }
 	}
+
+	// -> "application/pdf"
+	// -> "text/pdf"
+	if type_.essence() in ['application/pdf', 'text/pdf'] {
+		// FIXME: If the user agent's PDF viewer supported is true, return the result of creating a document for inline
+		//        content that doesn't have a DOM given navigationParams's navigable, navigationParams's id,
+		//        navigationParams's navigation timing type, and navigationParams's user involvement.
+	}
+
+	// FIXME: 3. If, given type, the new resource is to be handled by displaying some sort of inline content, e.g., a
+	//    native rendering of the content or an error message because the specified type is not supported, then
+	//    return the result of creating a document for inline content that doesn't have a DOM given navigationParams's
+	//    navigable, navigationParams's id, navigationParams's navigation timing type, and navigationParams's user involvement.
+
+	// FIXME: 4. Otherwise, the document's type is such that the resource will not affect navigationParams's navigable,
+	//        e.g., because the resource is to be handed to an external application or because it is an unknown type
+	//        that will be processed by handle as a download. Hand-off to external software given navigationParams's
+	//        response, navigationParams's navigable, navigationParams's final sandboxing flag set,
+	//        sourceSnapshotParams's has transient activation, and initiatorOrigin.
+
+	// 5. Return null.
 	return none
 }
 
@@ -2213,7 +3726,8 @@ pub fn (mut manager EditingHostManager) handle_insert(input_type string, value s
 }
 
 pub fn (mut manager EditingHostManager) select_all() {
-	if manager.active_contenteditable_element_ == unsafe { nil } || manager.document_ == unsafe { nil } {
+	if manager.active_contenteditable_element_ == unsafe { nil }
+		|| manager.document_ == unsafe { nil } {
 		return
 	}
 	mut document := unsafe { &Document(manager.document_) }
@@ -2234,7 +3748,8 @@ pub fn (mut manager EditingHostManager) set_selection_anchor(anchor_node &Node, 
 }
 
 pub fn (mut manager EditingHostManager) set_selection_focus(focus_node &Node, focus_offset int) {
-	if manager.document_ == unsafe { nil } || manager.active_contenteditable_element_ == unsafe { nil } {
+	if manager.document_ == unsafe { nil }
+		|| manager.active_contenteditable_element_ == unsafe { nil } {
 		return
 	}
 	if !manager.active_contenteditable_element_.is_ancestor_of(focus_node) {
@@ -2366,6 +3881,14 @@ pub fn (mut manager EditingHostManager) set_active_contenteditable_element(eleme
 	manager.active_contenteditable_element_ = element or { unsafe { nil } }
 }
 
+pub fn (manager &EditingHostManager) is_within_active_contenteditable(node &Node) bool {
+	if manager.active_contenteditable_element_ == unsafe { nil } {
+		return false
+	}
+	active := unsafe { &Node(manager.active_contenteditable_element_) }
+	return active.is_shadow_including_inclusive_ancestor_of(node)
+}
+
 pub fn (mut pseudo PseudoElement_) visit_edges(mut visitor CellVisitor) {
 	if layout := pseudo.layout_node_ {
 		visitor.visit(layout)
@@ -2376,34 +3899,38 @@ pub fn (mut pseudo PseudoElement_) visit_edges(mut visitor CellVisitor) {
 	if computed := pseudo.computed_props {
 		visitor.visit(computed)
 	}
+	if mut counters := pseudo.counters_set_ {
+		counters.visit_edges(visitor)
+	}
 }
 
 pub fn (pseudo &PseudoElement_) has_non_empty_counters_set() bool {
-	_ = pseudo
-	return false
+	return pseudo.counters_set_ != none
 }
 
 pub fn (pseudo &PseudoElement_) counters_set() ?&CSSCountersSet_ {
-	_ = pseudo
-	return none
+	return pseudo.counters_set_
 }
 
 pub fn (mut pseudo PseudoElement_) ensure_counters_set() &CSSCountersSet_ {
-	_ = pseudo
-	return &CSSCountersSet_{}
+	if counters := pseudo.counters_set_ {
+		return counters
+	}
+	counters := &CSSCountersSet_{}
+	pseudo.counters_set_ = counters
+	return counters
 }
 
 pub fn (mut pseudo PseudoElement_) set_counters_set(counters_set ?&CSSCountersSet_) {
-	_ = counters_set
+	pseudo.counters_set_ = counters_set
 }
 
 pub fn (pseudo &PseudoElement_) scroll_offset() CSSPixelPoint_ {
-	_ = pseudo
-	return CSSPixelPoint_{}
+	return pseudo.scroll_offset_
 }
 
 pub fn (mut pseudo PseudoElement_) set_scroll_offset(value CSSPixelPoint_) {
-	_ = value
+	pseudo.scroll_offset_ = value
 }
 
 @[heap]
@@ -2507,9 +4034,23 @@ pub enum AbstractElementWalkMethod {
 }
 
 pub fn (abstract_element &AbstractElement) walk_layout_tree(walk_method AbstractElementWalkMethod) ?AbstractElement {
-	_ = walk_method
-	if parent := abstract_element.parent_element() {
-		return AbstractElement.new(parent, none)
+	mut node := abstract_element.unsafe_layout_node() or { return none }
+	for {
+		node = match walk_method {
+			.previous { node.previous_in_pre_order() or { return none } }
+			.previous_sibling { node.previous_sibling() or { return none } }
+		}
+
+		if dom_node := node.dom_node() {
+			if element := dom_node.as_element() {
+				return AbstractElement.new(element, none)
+			}
+		}
+		if node.is_generated_for_pseudo_element() {
+			generator := node.pseudo_element_generator() or { continue }
+			pseudo := node.generated_for_pseudo_element() or { continue }
+			return AbstractElement.new(generator, pseudo)
+		}
 	}
 	return none
 }
@@ -2523,7 +4064,9 @@ pub fn (abstract_element &AbstractElement) previous_sibling_in_tree_order() ?Abs
 }
 
 pub fn (abstract_element &AbstractElement) is_before(other AbstractElement) bool {
-	return (abstract_element.element_.as_node().compare_document_position(other.element_.as_node()) & document_position_following) != 0
+	this_node := abstract_element.unsafe_layout_node() or { return false }
+	other_node := other.unsafe_layout_node() or { return false }
+	return this_node.is_before(other_node)
 }
 
 pub fn (mut abstract_element AbstractElement) set_inheritance_override(element &Element) {
@@ -2547,9 +4090,8 @@ pub fn (mut abstract_element AbstractElement) set_custom_property_data(data ?&CS
 }
 
 pub fn (abstract_element &AbstractElement) get_custom_property(name string) ?&CSSStyleValue_ {
-	_ = abstract_element
-	_ = name
-	return none
+	data := abstract_element.custom_property_data() or { return none }
+	return data.get(name)
 }
 
 pub fn (abstract_element &AbstractElement) cascaded_properties() ?&CSSCascadedProperties_ {
@@ -2594,7 +4136,11 @@ pub fn (mut abstract_element AbstractElement) ensure_counters_set() &CSSCounters
 }
 
 pub fn (mut abstract_element AbstractElement) set_counters_set(counters_set ?&CSSCountersSet_) {
-	if abstract_element.pseudo_element_ != none {
+	if pseudo := abstract_element.pseudo_element_ {
+		mut pseudo_element := abstract_element.element_.get_pseudo_element(int(pseudo)) or {
+			return
+		}
+		pseudo_element.set_counters_set(counters_set)
 		return
 	}
 	mut element := unsafe { &Element(abstract_element.element_) }
@@ -2602,12 +4148,15 @@ pub fn (mut abstract_element AbstractElement) set_counters_set(counters_set ?&CS
 }
 
 pub fn (abstract_element &AbstractElement) css_defined_animations() ?map[string]&CSSAnimation_ {
-	_ = abstract_element
+	if abstract_element.element_.has_css_defined_animations_flag {
+		return abstract_element.element_.css_defined_animations_
+	}
 	return none
 }
 
 pub fn (mut abstract_element AbstractElement) set_has_css_defined_animations() {
-	_ = abstract_element
+	mut element := unsafe { &Element(abstract_element.element_) }
+	element.has_css_defined_animations_flag = true
 }
 
 pub fn (abstract_element &AbstractElement) visit(mut visitor CellVisitor) {

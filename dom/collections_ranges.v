@@ -253,48 +253,6 @@ fn collect_elements_for_scope(root &Node, scope CollectionScope, filter fn (&Ele
 	return elements
 }
 
-fn selector_matches_element(element &Element, selector_text string) bool {
-	selector := selector_text.trim_space()
-	if selector.len == 0 {
-		return false
-	}
-	if selector[0] == `#` {
-		id := element.id() or { return false }
-		return id == selector[1..]
-	}
-	if selector[0] == `.` {
-		return element.has_class(selector[1..])
-	}
-	return element.local_name() == selector.to_lower()
-}
-
-fn first_matching_selector(root &Node, selector_text string) ?&Element {
-	for child in root.children {
-		if element := child.as_element() {
-			if selector_matches_element(element, selector_text) {
-				return element
-			}
-		}
-		if matched := first_matching_selector(child, selector_text) {
-			return matched
-		}
-	}
-	return none
-}
-
-fn all_matching_selector(root &Node, selector_text string) []&Node {
-	mut nodes := []&Node{}
-	for child in root.children {
-		if element := child.as_element() {
-			if selector_matches_element(element, selector_text) {
-				nodes << element.as_node()
-			}
-		}
-		nodes << all_matching_selector(child, selector_text)
-	}
-	return nodes
-}
-
 // --- Node helpers needed by collection/range traversal ---
 
 pub fn (n &Node) node_type() u16 {
@@ -354,12 +312,7 @@ pub fn (n &Node) is_preceding(other &Node) bool {
 }
 
 pub fn (mut t Text) substring_data(offset int, count int) !string {
-	data := t.CharacterData.data_
-	if offset < 0 || offset > data.len {
-		return error('IndexSizeError: offset is outside data')
-	}
-	end := if offset + count > data.len { data.len } else { offset + count }
-	return data[offset..end]
+	return t.CharacterData.substring_data(offset, count)
 }
 
 // --- NodeList / LiveNodeList / StaticNodeList ---
@@ -388,8 +341,8 @@ fn collection_scope_from_live_node_list_scope(scope LiveNodeListScope) Collectio
 
 pub fn (nl &NodeList) collection() []&Node {
 	if nl.is_live && nl.node_root != unsafe { nil } {
-		return collect_nodes_for_scope(nl.node_root, collection_scope_from_live_node_list_scope(nl.live_scope),
-			nl.live_filter)
+		return collect_nodes_for_scope(nl.node_root,
+			collection_scope_from_live_node_list_scope(nl.live_scope), nl.live_filter)
 	}
 	if nl.nodes.len > 0 {
 		return nl.nodes.clone()
@@ -522,12 +475,16 @@ fn sort_elements_with_comparator(mut elements []&Element, sort fn (&Element, &El
 	}
 }
 
-fn html_collection_name_for_element(element &Element) ?string {
+fn html_collection_id_for_element(element &Element) ?string {
 	if id := element.id() {
 		if id.len > 0 {
 			return id
 		}
 	}
+	return none
+}
+
+fn html_collection_html_name_for_element(element &Element) ?string {
 	if element.namespace_uri() or { '' } == namespace_html_uri {
 		if name := element.get_attribute('name') {
 			if name.len > 0 {
@@ -540,18 +497,14 @@ fn html_collection_name_for_element(element &Element) ?string {
 
 fn (c &HTMLCollection) element_for_supported_name(name string) ?&Element {
 	for element in c.cached_elements {
-		if id := element.id() {
+		if id := html_collection_id_for_element(element) {
 			if id == name {
 				return element
 			}
 		}
-	}
-	for element in c.cached_elements {
-		if element.namespace_uri() or { '' } == namespace_html_uri {
-			if element_name := element.get_attribute('name') {
-				if element_name == name {
-					return element
-				}
+		if element_name := html_collection_html_name_for_element(element) {
+			if element_name == name {
+				return element
 			}
 		}
 	}
@@ -561,7 +514,13 @@ fn (c &HTMLCollection) element_for_supported_name(name string) ?&Element {
 fn (c &HTMLCollection) ordered_supported_names() []string {
 	mut result := []string{}
 	for element in c.cached_elements {
-		if name := html_collection_name_for_element(element) {
+		// 1. If element has an ID which is not in result, append element's ID to result.
+		if id := html_collection_id_for_element(element) {
+			append_to_ordered_set(mut result, id)
+		}
+		// 2. If element is in the HTML namespace and has a name attribute whose value
+		//    is neither the empty string nor is in result, append element's name attribute value to result.
+		if name := html_collection_html_name_for_element(element) {
 			append_to_ordered_set(mut result, name)
 		}
 	}
@@ -598,7 +557,11 @@ pub fn (c &HTMLCollection) update_cache_if_needed() {
 
 	root_node := c.root.as_node()
 	document := root_node.document()
-	current_dom_tree_version := if document == unsafe { nil } { u64(0) } else { document.dom_tree_version() }
+	current_dom_tree_version := if document == unsafe { nil } {
+		u64(0)
+	} else {
+		document.dom_tree_version()
+	}
 	if c.cache_initialized && c.cached_dom_tree_version == current_dom_tree_version {
 		return
 	}
@@ -704,7 +667,7 @@ pub fn (n &NamedNodeMap) supported_property_names() []string {
 	// 2. If this NamedNodeMap object's element is in the HTML namespace and its node document is an HTML document, then for each name of names:
 	if n.element != unsafe { nil } && n.element.namespace_uri() or { '' } == namespace_html_uri
 		&& n.element.document().document_type() == .html {
-		names = names.filter(it == it.to_lower())
+		names = names.filter(it == to_ascii_lowercase(it))
 	}
 	// 3. Return names.
 	return names
@@ -815,23 +778,14 @@ pub fn (mut n NamedNodeMap) remove_attribute_at_index(attribute_index int) ?&Att
 
 // https://dom.spec.whatwg.org/#concept-element-attributes-remove-by-name
 pub fn (mut n NamedNodeMap) take_attribute(qualified_name string) ?&Attr_ {
-	for index, attribute in n.attrs {
-		if attribute.name() == qualified_name {
-			return n.remove_attribute_at_index(index)
-		}
-	}
-	return none
+	index := n.attribute_index_by_name(qualified_name) or { return none }
+	return n.remove_attribute_at_index(index)
 }
 
 // https://dom.spec.whatwg.org/#concept-element-attributes-remove-by-namespace
 pub fn (mut n NamedNodeMap) take_attribute_ns(namespace_ ?string, local_name string) ?&Attr_ {
-	normalized_namespace := if namespace_ or { '' } == '' { ?string(none) } else { namespace_ }
-	for index, attribute in n.attrs {
-		if attribute.namespace_uri_ == normalized_namespace && attribute.local_name_ == local_name {
-			return n.remove_attribute_at_index(index)
-		}
-	}
-	return none
+	index := n.attribute_index_by_namespace(namespace_, local_name) or { return none }
+	return n.remove_attribute_at_index(index)
 }
 
 pub fn (n &NamedNodeMap) item_value(index int) ?&Attr_ {
@@ -1007,7 +961,7 @@ pub fn (mut d DOMTokenList) supports(token string) !bool {
 // https://dom.spec.whatwg.org/#concept-domtokenlist-validation
 pub fn (d &DOMTokenList) run_validation_steps(token string) !bool {
 	key := '${d.associated_element.local_name()}|${d.associated_attribute}'
-	lowercase_token := token.to_lower()
+	lowercase_token := to_ascii_lowercase(token)
 	mut supported_tokens := []string{}
 	match key {
 		'link|rel' {
@@ -1076,7 +1030,6 @@ pub fn (mut d DOMTokenList) set_value(value string) {
 	}
 	mut element := unsafe { &Element(d.associated_element) }
 	element.set_attribute_value(d.associated_attribute, value)
-	d.associated_attribute_changed(value)
 }
 
 pub fn (d &DOMTokenList) validate_token(token string) ! {
@@ -1165,6 +1118,9 @@ pub fn (mut it NodeIterator) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(it.filter)
 	visitor.visit(it.root)
 	visitor.visit(it.reference_node_)
+	if pointer := it.traversal_pointer {
+		visitor.visit(pointer.node)
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createnodeiterator
@@ -1216,6 +1172,10 @@ pub fn (mut it NodeIterator) detach() {
 }
 
 // https://dom.spec.whatwg.org/#concept-traversal-filter
+pub fn (it &NodeIterator) filter() ?&NodeFilter {
+	return it.filter_object()
+}
+
 pub fn (it &NodeIterator) filter_object() ?&NodeFilter {
 	if it.filter == unsafe { nil } {
 		return none
@@ -1224,6 +1184,7 @@ pub fn (it &NodeIterator) filter_object() ?&NodeFilter {
 }
 
 // https://dom.spec.whatwg.org/#concept-node-filter
+// C++ overload: NodeIterator::filter(Node& node)
 pub fn (mut it NodeIterator) filter_node(node &Node) NodeFilterResult {
 	// 1. If traverser's active flag is set, then throw an "InvalidStateError" DOMException.
 	if it.active {
@@ -1239,43 +1200,62 @@ pub fn (mut it NodeIterator) filter_node(node &Node) NodeFilterResult {
 	if it.filter == unsafe { nil } {
 		return .filter_accept
 	}
-	// 5-8. Callback invocation is not wired until the WebIDL user object operation support is ported.
+	// 5. Set traverser's active flag.
 	it.active = true
+	// 6. Let result be the return value of calling the filter's acceptNode operation.
+	mut result := NodeFilterResult.filter_accept
+	if accept_node := it.filter.callback().accept_node {
+		result = node_filter_result_from_int(accept_node(node))
+	}
+	// 7. Unset traverser's active flag.
 	it.active = false
-	return .filter_accept
+	// 8. Return result.
+	return result
 }
 
 // https://dom.spec.whatwg.org/#concept-nodeiterator-traverse
 pub fn (mut it NodeIterator) traverse(direction NodeIteratorDirection) ?&Node {
-	mut pointer := NodePointer{
+	it.traversal_pointer = NodePointer{
 		node:           it.reference_node()
 		is_before_node: it.pointer_before_reference_node_
 	}
 	for {
+		mut pointer := it.traversal_pointer or { return none }
 		if direction == .next {
 			if !pointer.is_before_node {
-				pointer.node = pointer.node.next_in_pre_order(it.root) or { return none }
+				pointer.node = pointer.node.next_in_pre_order(it.root) or {
+					it.traversal_pointer = none
+					return none
+				}
 			} else {
 				pointer.is_before_node = false
 			}
 		} else {
 			if pointer.is_before_node {
 				if pointer.node == it.root {
+					it.traversal_pointer = none
 					return none
 				}
-				pointer.node = pointer.node.previous_in_pre_order() or { return none }
+				pointer.node = pointer.node.previous_in_pre_order() or {
+					it.traversal_pointer = none
+					return none
+				}
 			} else {
 				pointer.is_before_node = true
 			}
 		}
 		candidate := pointer.node
+		it.traversal_pointer = pointer
 		result := it.filter_node(pointer.node)
 		if result == .filter_accept {
-			it.reference_node_ = pointer.node
-			it.pointer_before_reference_node_ = pointer.is_before_node
+			final_pointer := it.traversal_pointer or { pointer }
+			it.reference_node_ = final_pointer.node
+			it.pointer_before_reference_node_ = final_pointer.is_before_node
+			it.traversal_pointer = none
 			return candidate
 		}
 	}
+	it.traversal_pointer = none
 	return none
 }
 
@@ -1342,6 +1322,10 @@ pub fn (mut it NodeIterator) run_pre_removing_steps_with_node_pointer(to_be_remo
 
 // https://dom.spec.whatwg.org/#nodeiterator-pre-removing-steps
 pub fn (mut it NodeIterator) run_pre_removing_steps(to_be_removed_node &Node) {
+	if mut traversal_pointer := it.traversal_pointer {
+		it.run_pre_removing_steps_with_node_pointer(to_be_removed_node, mut traversal_pointer)
+		it.traversal_pointer = traversal_pointer
+	}
 	mut pointer := NodePointer{
 		node:           it.reference_node()
 		is_before_node: it.pointer_before_reference_node_
@@ -1391,6 +1375,10 @@ pub fn (mut tw TreeWalker) set_current_node(node &Node) {
 }
 
 // https://dom.spec.whatwg.org/#concept-traversal-filter
+pub fn (tw &TreeWalker) filter() ?&NodeFilter {
+	return tw.filter_object()
+}
+
 pub fn (tw &TreeWalker) filter_object() ?&NodeFilter {
 	if tw.filter == unsafe { nil } {
 		return none
@@ -1399,6 +1387,7 @@ pub fn (tw &TreeWalker) filter_object() ?&NodeFilter {
 }
 
 // https://dom.spec.whatwg.org/#concept-node-filter
+// C++ overload: TreeWalker::filter(Node& node)
 pub fn (mut tw TreeWalker) filter_node(node &Node) NodeFilterResult {
 	// 1. If traverser's active flag is set, then throw an "InvalidStateError" DOMException.
 	if tw.active {
@@ -1414,10 +1403,17 @@ pub fn (mut tw TreeWalker) filter_node(node &Node) NodeFilterResult {
 	if tw.filter == unsafe { nil } {
 		return .filter_accept
 	}
-	// 5-8. Callback invocation is not wired until the WebIDL user object operation support is ported.
+	// 5. Set traverser's active flag.
 	tw.active = true
+	// 6. Let result be the return value of calling the filter's acceptNode operation.
+	mut result := NodeFilterResult.filter_accept
+	if accept_node := tw.filter.callback().accept_node {
+		result = node_filter_result_from_int(accept_node(node))
+	}
+	// 7. Unset traverser's active flag.
 	tw.active = false
-	return .filter_accept
+	// 8. Return result.
+	return result
 }
 
 // https://dom.spec.whatwg.org/#dom-treewalker-parentnode
@@ -1623,29 +1619,104 @@ fn (mut p ParentNode) as_mut_node() &Node {
 
 fn contains_named_namespace(selectors SelectorList) bool {
 	_ = selectors
+	// Stub for walking CSS::SelectorList and detecting named namespace qualified names.
+	return false
+}
+
+fn parse_selector(document &Document, selector_text string) ?SelectorList {
+	_ = document
+	mut selectors := []CSSSelector{}
+	for raw_selector in selector_text.split(',') {
+		selector := raw_selector.trim_space()
+		if selector.len == 0 {
+			return none
+		}
+		selectors << CSSSelector{
+			text: selector
+		}
+	}
+	if selectors.len == 0 {
+		return none
+	}
+	// Stub for CSS::Parser::parse_selector(CSS::Parser::ParsingParams { document }, selector_text).
+	return SelectorList{
+		selectors: selectors
+	}
+}
+
+fn selector_engine_matches(selector CSSSelector, element &Element, scoping_root &ParentNode) bool {
+	_ = selector
+	_ = element
+	_ = scoping_root
+	// Stub for CSS::SelectorEngine::matches(selector, element, nullptr, context, {}, scoping_root).
 	return false
 }
 
 // https://dom.spec.whatwg.org/#scope-match-a-selectors-string
-fn scope_match_a_selectors_string(node &ParentNode, selector_text string, return_matches ReturnMatches) NodeList {
+fn scope_match_a_selectors_string(node &ParentNode, selector_text string, return_matches ReturnMatches) !NodeList {
 	// To scope-match a selectors string selectors against a node, run these steps:
-	// 1. Let s be the result of parse a selector selectors.
-	// 2. If s is failure, then throw a "SyntaxError" DOMException.
-	if selector_text.trim_space().len == 0 {
-		return NodeList{}
+	document := node.as_node().document()
+	selector_text_string := selector_text
+	mut selectors := SelectorList{}
+
+	// Check the document's parsed selector cache first.
+	if selector_text_string in document.selector_query_cache {
+		// 2. If s is failure, then throw a "SyntaxError" DOMException.
+		selectors = document.selector_query_cache[selector_text_string] or {
+			return error('SyntaxError: Failed to parse selector')
+		}
+	} else {
+		// 1. Let s be the result of parse a selector selectors.
+		mut maybe_selectors := parse_selector(document, selector_text)
+
+		// "Note: Support for namespaces within selectors is not planned and will not be added."
+		if parsed_selectors := maybe_selectors {
+			if contains_named_namespace(parsed_selectors) {
+				maybe_selectors = none
+			}
+		}
+
+		mut mutable_document := unsafe { &Document(document) }
+		mutable_document.cache_query_selector_result(selector_text_string, maybe_selectors)
+
+		// 2. If s is failure, then throw a "SyntaxError" DOMException.
+		selectors = mutable_document.selector_query_cache[selector_text_string] or {
+			return error('SyntaxError: Failed to parse selector')
+		}
 	}
+
 	// 3. Return the result of match a selector against a tree with s and node's root using scoping root node.
-	root := node.as_node()
+	mut results := []&Node{}
 	if return_matches == .first {
-		if element := first_matching_selector(root, selector_text) {
+		node.as_node().for_each_in_subtree(fn [selectors, node, mut results] (tree_node &Node) TraversalDecision {
+			element := tree_node.as_element() or { return .@continue }
+			for selector in selectors.selectors {
+				if selector_engine_matches(selector, element, node) {
+					results << element.as_node()
+					return .@break
+				}
+			}
+			return .@continue
+		})
+		if results.len > 0 {
 			return NodeList{
-				nodes: [element.as_node()]
+				nodes: [results[0]]
 			}
 		}
 		return NodeList{}
 	}
+	node.as_node().for_each_in_subtree(fn [selectors, node, mut results] (tree_node &Node) TraversalDecision {
+		element := tree_node.as_element() or { return .@continue }
+		for selector in selectors.selectors {
+			if selector_engine_matches(selector, element, node) {
+				results << element.as_node()
+				break
+			}
+		}
+		return .@continue
+	})
 	return NodeList{
-		nodes: all_matching_selector(root, selector_text)
+		nodes: results
 	}
 }
 
@@ -1653,7 +1724,7 @@ fn scope_match_a_selectors_string(node &ParentNode, selector_text string, return
 pub fn (p &ParentNode) query_selector(selector_text string) ?&Element {
 	// The querySelector(selectors) method steps are to return the first result of running scope-match a selectors string selectors against this,
 	// if the result is not an empty list; otherwise null.
-	list := scope_match_a_selectors_string(p, selector_text, .first)
+	list := scope_match_a_selectors_string(p, selector_text, .first) or { return none }
 	node := list.item(0) or { return none }
 	return node.as_element()
 }
@@ -1661,7 +1732,7 @@ pub fn (p &ParentNode) query_selector(selector_text string) ?&Element {
 // https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall
 pub fn (p &ParentNode) query_selector_all(selector_text string) !&NodeList {
 	// The querySelectorAll(selectors) method steps are to return the static result of running scope-match a selectors string selectors against this.
-	list := scope_match_a_selectors_string(p, selector_text, .all)
+	list := scope_match_a_selectors_string(p, selector_text, .all)!
 	return &NodeList{
 		nodes: list.nodes
 	}
@@ -1700,12 +1771,17 @@ pub fn (p &ParentNode) child_element_count() u32 {
 pub fn (mut p ParentNode) visit_edges(mut visitor CellVisitor) {
 	mut node := p.as_mut_node()
 	node.visit_edges(mut visitor)
+	visitor.visit(p.children_)
 }
 
 // https://dom.spec.whatwg.org/#dom-parentnode-children
 pub fn (mut p ParentNode) children_collection() &HTMLCollection {
 	// The children getter steps are to return an HTMLCollection collection rooted at this matching only element children.
-	return HTMLCollection.create(&p, .children, always_accept_element, never_sort_elements)
+	if p.children_ == unsafe { nil } {
+		p.children_ = HTMLCollection.create(&p, .children, always_accept_element,
+			never_sort_elements)
+	}
+	return p.children_
 }
 
 // https://dom.spec.whatwg.org/#concept-getelementsbytagname
@@ -1717,7 +1793,7 @@ pub fn (mut p ParentNode) get_elements_by_tag_name(qualified_name string) &HTMLC
 	root_node := p.as_node()
 	// 2. Otherwise, if root's node document is an HTML document, return a HTMLCollection rooted at root, whose filter matches the following descendant elements:
 	if root_node.document().document_type() == .html {
-		qualified_name_in_ascii_lowercase := qualified_name.to_lower()
+		qualified_name_in_ascii_lowercase := to_ascii_lowercase(qualified_name)
 		return HTMLCollection.create(&p, .descendants, fn [qualified_name, qualified_name_in_ascii_lowercase] (element &Element) bool {
 			// - Whose namespace is the HTML namespace and whose qualified name is qualifiedName, in ASCII lowercase.
 			if element.namespace_uri() or { '' } == namespace_html_uri {
@@ -1827,7 +1903,18 @@ pub fn (mut p ParentNode) get_elements_by_class_name(class_names string) &HTMLCo
 }
 
 pub fn (p &ParentNode) get_element_by_id(id string) ?&Element {
-	return get_element_by_id_in_subtree(p.as_node(), id)
+	node := p.as_node()
+	if node.is_connected() {
+		// For connected document and shadow root we have a cache that allows fast lookup.
+		if node.is_document() {
+			document := unsafe { &Document(node) }
+			return document.element_by_id_map().get(id, node)
+		}
+		if shadow_root := node.as_shadow_root() {
+			return shadow_root.element_by_id().get(id, node)
+		}
+	}
+	return get_element_by_id_in_subtree(node, id)
 }
 
 fn get_element_by_id_in_subtree(node &Node, id string) ?&Element {
@@ -1979,6 +2066,8 @@ pub fn Range.create_from_window(window &Window) &Range {
 }
 
 pub fn Range.create_from_boundary_points(start_container &Node, start_offset int, end_container &Node, end_offset int) &Range {
+	assert start_offset <= start_container.length()
+	assert end_offset <= end_container.length()
 	range := &Range{
 		start_container_: start_container
 		start_offset_:    start_offset
@@ -2092,6 +2181,7 @@ pub fn (r &Range) collapsed() bool {
 pub fn position_of_boundary_point_relative_to_other_boundary_point(a BoundaryPoint, b BoundaryPoint) RelativeBoundaryPointPosition {
 	// 1. Assert: nodeA and nodeB have the same root.
 	// NOTE: Nodes may not share the same root if they belong to different shadow trees, so compare shadow-including roots.
+	assert a.node.shadow_including_root() == b.node.shadow_including_root()
 	if a.node == b.node {
 		// 2. If nodeA is nodeB, then return equal if offsetA is offsetB, before if offsetA is less than offsetB, and after if offsetA is greater than offsetB.
 		if a.offset == b.offset {
@@ -2427,7 +2517,8 @@ pub fn (r &Range) to_string() string {
 	// 1. Let s be the empty string.
 	mut builder := ''
 	// 2. If this's start node is this's end node and it is a Text node, then return the substring of that Text node's data.
-	if r.start_container_ == r.end_container_ && r.start_container_.is_text_node_for_range_stringifier() {
+	if r.start_container_ == r.end_container_
+		&& r.start_container_.is_text_node_for_range_stringifier() {
 		if text := r.start_container_.character_data() {
 			return text.substring_data(r.start_offset_, r.end_offset_ - r.start_offset_) or { '' }
 		}
@@ -2435,9 +2526,8 @@ pub fn (r &Range) to_string() string {
 	// 3. If this's start node is a Text node, then append the substring of that node's data from this's start offset until the end to s.
 	if r.start_container_.is_text_node_for_range_stringifier() {
 		if text := r.start_container_.character_data() {
-			builder += text.substring_data(r.start_offset_, text.length_in_utf16_code_units() - r.start_offset_) or {
-				''
-			}
+			builder += text.substring_data(r.start_offset_,
+				text.length_in_utf16_code_units() - r.start_offset_) or { '' }
 		}
 	}
 	// 4. Append the concatenation of the data of all Text nodes that are contained in this, in tree order, to s.
@@ -2494,8 +2584,8 @@ pub fn (mut r Range) extract() !&DocumentFragment {
 		fragment_node.append_child(clone)!
 		mut mutable_original_start_node := unsafe { &Node(original_start_node) }
 		if mut data := mutable_original_start_node.character_data_mut() {
-			data.replace_data_with_mutation_steps(original_start_offset, original_end_offset - original_start_offset,
-				'')!
+			data.replace_data_with_mutation_steps(original_start_offset,
+				original_end_offset - original_start_offset, '')!
 		}
 		return fragment
 	}
@@ -2962,9 +3052,56 @@ pub fn (l &DOMRectList) item(index int) ?DOMRect {
 // https://drafts.csswg.org/cssom-view/#dom-element-getclientrects
 // https://drafts.csswg.org/cssom-view/#extensions-to-the-range-interface
 pub fn (r &Range) get_client_rects() &DOMRectList {
-	_ = r
 	// 1. Return an empty DOMRectList object if the range is not in the document.
-	return DOMRectList.create([])
+	mut document := unsafe { &Document(r.start_container_.document()) }
+	if document.navigable() == none {
+		return DOMRectList.create([])
+	}
+	document.update_layout(.range_get_client_rects)
+
+	mut rects := []DOMRect{}
+	// FIXME: take Range collapsed into consideration.
+	// 2. Iterate the nodes included in Range.
+	mut start_node := ?&Node(r.start_container_)
+	if !r.start_container_.is_text() {
+		start_node = r.start_container_.child_at_index(r.start_offset_)
+	}
+	mut end_node := ?&Node(r.end_container_)
+	if !r.end_container_.is_text() {
+		// end offset shouldn't be 0.
+		if r.end_offset_ == 0 {
+			return DOMRectList.create([])
+		}
+		end_node = r.end_container_.child_at_index(r.end_offset_ - 1)
+	}
+	start := start_node or { return DOMRectList.create([]) }
+	end := end_node or { return DOMRectList.create([]) }
+	end_next := end.next_in_pre_order(none)
+	for node := ?&Node(start); node != none; {
+		current := node or { break }
+		if stop := end_next {
+			if current == stop {
+				break
+			}
+		}
+		if element := current.as_element() {
+			// 1. For each element selected by the range, whose parent is not selected by the range,
+			//    include the border areas returned by invoking getClientRects() on the element.
+			parent_is_contained := if parent := current.parent() {
+				r.contains_node(parent)
+			} else {
+				false
+			}
+			if r.contains_node(current) && !parent_is_contained {
+				for rect in element.get_client_rects() {
+					rects << DOMRect.construct_impl(rect.x_, rect.y_, rect.width_, rect.height_)
+				}
+			}
+		}
+		// 2. Text-node fragment geometry depends on the layout line-fragment subsystem and is deferred.
+		node = current.next_in_pre_order(none)
+	}
+	return DOMRectList.create(rects)
 }
 
 // https://w3c.github.io/csswg-drafts/cssom-view/#dom-range-getboundingclientrect
@@ -3019,13 +3156,29 @@ pub fn (r &Range) create_contextual_fragment(fragment string) !&DocumentFragment
 	// 2. Let node be this's start node.
 	node := r.start_container_
 	// 3. Let element be null.
-	// 4-6. Context element selection and HTML fragment parsing are deferred in this partial V port.
-	// 7. Let fragment node be the result of invoking the fragment parsing algorithm steps with element and compliantString.
-	fragment_node := new_document_fragment(node.document())
-	if compliant_string.len > 0 {
-		mut fragment_as_node := unsafe { &Node(fragment_node) }
-		fragment_as_node.append_child(new_text_node(node.document(), compliant_string).as_node())!
+	mut element := ?&Element(none)
+	// 4. If node implements Element, set element to node.
+	if node_element := node.as_element() {
+		element = unsafe { &Element(node_element) }
 	}
+	// 5. Otherwise, if node implements Text or Comment node, set element to node's parent element.
+	else if node.is_text() || node.is_comment() {
+		element = node.parent_element()
+	}
+	// 6. If element is null or is an HTML html element, use a synthetic body element.
+	if context_element := element {
+		if context_element.is_html_element() && context_element.local_name() == 'html' {
+			element = create_element(node.document(), 'body', namespace_html_, none, none, false)!
+		}
+	} else {
+		element = create_element(node.document(), 'body', namespace_html_, none, none, false)!
+	}
+	context_element := element or {
+		return error('InvalidStateError: Could not determine a context element')
+	}
+
+	// 7. Let fragment node be the result of invoking the fragment parsing algorithm steps with element and compliantString.
+	fragment_node := parse_fragment_fallback(context_element, compliant_string)!
 	// 8. Script descendant preparation is deferred until HTMLScriptElement is fully ported.
 	return fragment_node
 }
@@ -3101,7 +3254,7 @@ pub fn (p &Position) equals(other &Position) bool {
 
 pub fn (p &Position) to_string() string {
 	if node := p.node() {
-		return 'DOM::Position(${node.node_name()} (${ptr_str(node)}), ${p.offset()})'
+		return 'DOM::Position(${node.node_name()} (${ptr_str(node)})), ${p.offset()})'
 	}
 	return 'DOM::Position(<null>, 0)'
 }

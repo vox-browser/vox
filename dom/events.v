@@ -20,6 +20,8 @@
 
 module dom
 
+import time
+
 // The JS and WebIDL support types used by these C++ files are not translated in
 // this repository yet. These narrow stubs keep the DOM event algorithms present
 // and compilable without inventing a full JavaScript runtime.
@@ -172,6 +174,7 @@ pub fn Event.new(event_name string) &Event {
 	return &Event{
 		type_:        event_name
 		initialized_: true
+		time_stamp_:  current_event_timestamp()
 	}
 }
 
@@ -183,7 +186,15 @@ pub fn Event.new_with_init(event_name string, event_init EventInit) &Event {
 		cancelable_:  event_init.cancelable
 		composed_:    event_init.composed
 		initialized_: true
+		time_stamp_:  current_event_timestamp()
 	}
+}
+
+fn current_event_timestamp() DOMHighResTimeStamp {
+	// C++ uses current_high_resolution_time(relevant global object). This DOM-only port does not
+	// yet thread the relevant global through Event construction, so use V's monotonic clock rather
+	// than epoch time.
+	return DOMHighResTimeStamp(f64(time.sys_mono_now()) / 1_000_000.0)
 }
 
 pub fn (mut e Event) initialize() {
@@ -625,7 +636,12 @@ pub fn CustomEvent.construct_impl(event_name string, event_init CustomEventInit)
 fn CustomEvent.new(event_name string, event_init CustomEventInit) &CustomEvent {
 	return &CustomEvent{
 		Event:   Event{
-			type_: event_name
+			type_:        event_name
+			bubbles_:     event_init.bubbles
+			cancelable_:  event_init.cancelable
+			composed_:    event_init.composed
+			initialized_: true
+			time_stamp_:  current_event_timestamp()
 		}
 		detail_: event_init.detail
 	}
@@ -737,6 +753,12 @@ pub fn (listener &IDLEventListener) callback() &CallbackType {
 	return listener.callback_
 }
 
+fn event_listener_callbacks_match(a ?&IDLEventListener, b ?&IDLEventListener) bool {
+	left := a or { return b == none }
+	right := b or { return false }
+	return left.callback() == right.callback()
+}
+
 pub fn (mut listener IDLEventListener) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(listener.callback_)
 }
@@ -749,8 +771,15 @@ pub mut:
 	signal  ?&AbortSignal
 }
 
+pub enum EventTargetKind {
+	generic
+	window
+}
+
 pub struct EventTargetData {
 pub mut:
+	kind EventTargetKind
+
 	event_listener_list []&DOMEventListener
 
 	// https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-map
@@ -775,8 +804,9 @@ pub fn EventTarget.new() &EventTarget {
 }
 
 pub fn (et &EventTarget) is_focusable() bool {
-	_ = et
-	return false
+	node := event_target_as_node(et) or { return false }
+	element := node.as_element() or { return false }
+	return element.is_focusable()
 }
 
 pub fn (mut et EventTarget) initialize() {
@@ -864,7 +894,27 @@ pub fn default_passive_value(type_ string, event_target &EventTarget) bool {
 	//    - eventTarget is a Window object, or is a node whose node document is eventTarget, or is a node whose node document's document element is eventTarget,
 	//      or is a node whose node document's body element is eventTarget.
 	if type_ in ['touchstart', 'touchmove', 'wheel', 'mousewheel'] {
-		_ = event_target
+		if event_target_as_window(event_target) != none {
+			return true
+		}
+		node := event_target_as_node(event_target) or { return false }
+		document := node.document()
+		if document == unsafe { nil } {
+			return false
+		}
+		if node == unsafe { &Node(document) } {
+			return true
+		}
+		if document_element := document.document_element() {
+			if node == document_element.as_node() {
+				return true
+			}
+		}
+		if body_element := document.body() {
+			if node == html_element_as_element(body_element).as_node() {
+				return true
+			}
+		}
 	}
 
 	// 2. Return false.
@@ -920,16 +970,33 @@ pub fn (et &EventTarget) add_an_event_listener(listener &DOMEventListener) {
 	// 5. If eventTarget's event listener list does not contain an event listener whose type is listener's type, callback is listener's callback,
 	//    and capture is listener's capture, then append listener to eventTarget's event listener list.
 	mut target := unsafe { &EventTarget(et) }
+	mut listener_already_registered := false
 	for entry in target.data.event_listener_list {
-		if entry.type_ == listener.type_ && entry.callback == listener.callback
+		if entry.type_ == listener.type_
+			&& event_listener_callbacks_match(entry.callback, listener.callback)
 			&& entry.capture == listener.capture {
-			return
+			listener_already_registered = true
+			break
 		}
 	}
-	target.data.event_listener_list << listener
+	if !listener_already_registered {
+		target.data.event_listener_list << listener
+		if node := event_target_as_node(et) {
+			mut mutable_node := unsafe { &Node(node) }
+			if listener.type_ !in mutable_node.event_listener_types {
+				mutable_node.event_listener_types << listener.type_
+			}
+		}
+	}
 
 	// 6. If listener's signal is not null, then add the following abort steps to it:
-	// The abort algorithm would remove this event listener from eventTarget.
+	if signal := listener.signal {
+		mut mutable_signal := unsafe { &AbortSignal(signal) }
+		_ = mutable_signal.add_abort_algorithm(fn [et, listener] () {
+			// 1. Remove an event listener with eventTarget and listener.
+			et.remove_an_event_listener(listener)
+		})
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-eventtarget-removeeventlistener
@@ -940,7 +1007,8 @@ pub fn (et &EventTarget) remove_event_listener(type_ string, callback ?&IDLEvent
 	// 2. If this's event listener list contains an event listener whose type is type, callback is callback, and capture is capture,
 	//    then remove an event listener with this and that event listener.
 	for listener in et.event_listener_list() {
-		if listener.type_ == type_ && listener.callback == callback && listener.capture == capture {
+		if listener.type_ == type_ && event_listener_callbacks_match(listener.callback, callback)
+			&& listener.capture == capture {
 			et.remove_an_event_listener(listener)
 			return
 		}
@@ -963,6 +1031,20 @@ pub fn (et &EventTarget) remove_an_event_listener(listener &DOMEventListener) {
 	for index, entry in target.data.event_listener_list {
 		if entry == listener {
 			target.data.event_listener_list.delete(index)
+			if node := event_target_as_node(et) {
+				mut has_same_type := false
+				for remaining in target.data.event_listener_list {
+					if remaining.type_ == listener.type_ {
+						has_same_type = true
+						break
+					}
+				}
+				if !has_same_type {
+					mut mutable_node := unsafe { &Node(node) }
+					mutable_node.event_listener_types =
+						mutable_node.event_listener_types.filter(it != listener.type_)
+				}
+			}
 			return
 		}
 	}
@@ -1004,12 +1086,25 @@ fn determine_target_of_event_handler(event_target &EventTarget, name string) ?&E
 	// and an event handler name name, the following steps are taken:
 
 	// 1. If eventTarget is not a body element or a frameset element, then return eventTarget.
+	node := event_target_as_node(event_target) or { return event_target }
+	element := node.as_element() or { return event_target }
+	if !is_html_element_with_local_name(element, 'body')
+		&& !is_html_element_with_local_name(element, 'frameset') {
+		return event_target
+	}
 	// 2. If name is not the name of an attribute member of the WindowEventHandlers interface mixin and the Window-reflecting
 	//    body element event handler set does not contain name, then return eventTarget.
+	if !is_window_event_handler(name) && !is_window_reflecting_body_element_event_handler(name) {
+		return event_target
+	}
 	// 3. If eventTarget's node document is not an active document, then return null.
+	document := node.document()
+	if document == unsafe { nil } || !document.is_active() {
+		return none
+	}
 	// 4. Return eventTarget's node document's relevant global object.
-	_ = name
-	return event_target
+	window := document.get_window() or { return none }
+	return unsafe { &EventTarget(window) }
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-attributes:event-handler-idl-attributes-2
@@ -1032,10 +1127,57 @@ pub fn (et &EventTarget) get_current_value_of_event_handler(name string) ?&Callb
 	//               Plus, the vast majority of these allocations would be likely wasted, as web content will only use a handful of these attributes on certain elements.
 	//               Thus, treat the event handler not being in the event handler map as equivalent to an event handler with an initial null value.
 	handler := et.data.event_handler_map[name] or { return none }
+	// 3. If eventHandler's value is an internal raw uncompiled handler, then compile it.
+	if handler.value.kind == .string {
+		callback := compile_raw_event_handler(et, name, handler.value.string_data) or {
+			mut target := unsafe { &EventTarget(et) }
+			target.data.event_handler_map.delete(name)
+			return none
+		}
+		mut mutable_handler := unsafe { &EventHandler_(handler) }
+		mutable_handler.value = js_object(callback)
+		return callback
+	}
+
+	// 4. Return eventHandler's value.
 	if handler.value.kind == .object && handler.value.object_data != unsafe { nil } {
 		return unsafe { &CallbackType(handler.value.object_data) }
 	}
 	return none
+}
+
+fn compile_raw_event_handler(event_target &EventTarget, name string, body string) ?&CallbackType {
+	// 1. If eventTarget is an element, then let element be eventTarget, and document be element's node document.
+	//    Otherwise, eventTarget is a Window object, let element be null, and document be eventTarget's associated Document.
+	mut document := ?&Document(none)
+	if node := event_target_as_node(event_target) {
+		if element := node.as_element() {
+			_ = element
+			document = node.document()
+		}
+	} else if window := event_target_as_window(event_target) {
+		document = window.associated_document()
+	}
+	document_value := document or { return none }
+
+	// 2. If scripting is disabled for document, then return null.
+	if unsafe { &Node(document_value) }.is_scripting_disabled() {
+		return none
+	}
+
+	// 3. Let body be the uncompiled script body in eventHandler's value.
+	// FIXME: 4. Let location be the location where the script body originated, as given by eventHandler's value.
+	// FIXME: 5-12. Compile body as a dynamic function with the document/form/element scope chain and store
+	// a Web IDL EventHandler callback. The JS compiler/runtime is outside this DOM-only port.
+	_ = name
+	_ = body
+	return &CallbackType{
+		handle_event: fn (event &Event, current_target ?&EventTarget) JSValue {
+			_ = event
+			_ = current_target
+			return js_undefined()
+		}
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-attributes:event-handler-idl-attributes-3
@@ -1050,15 +1192,19 @@ pub fn (et &EventTarget) set_event_handler_attribute(name string, value ?&Callba
 		return
 	}
 
-	// 4. Otherwise, set eventHandler's value to the given value and activate an event handler.
+	// 4. Otherwise:
 	mut target := unsafe { &EventTarget(event_target) }
+	if mut handler := target.data.event_handler_map[name] {
+		handler.value = js_object(value)
+		event_target.activate_event_handler(name, handler)
+		return
+	}
+
 	handler := &EventHandler_{
 		value: js_object(value)
 	}
+	event_target.activate_event_handler(name, handler)
 	target.data.event_handler_map[name] = handler
-	event_target.activate_event_handler(name, EventHandler_{
-		value: handler.value
-	})
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#activate-an-event-handler
@@ -1083,10 +1229,14 @@ pub fn (et &EventTarget) activate_event_handler(name string, event_handler Event
 	// 5. Let listener be a new event listener whose type is the event handler event type corresponding to eventHandler and callback is callback.
 	// 6. Add an event listener with eventTarget and listener.
 	// 7. Set eventHandler's listener to listener.
-	if handler.value.kind != .object || handler.value.object_data == unsafe { nil } {
-		return
+	event_target := unsafe { &EventTarget(et) }
+	callback := &CallbackType{
+		handle_event: fn [event_target, name] (event &Event, current_target ?&EventTarget) JSValue {
+			_ = current_target
+			event_target.process_event_handler_for_event(name, event) or {}
+			return js_undefined()
+		}
 	}
-	callback := unsafe { &CallbackType(handler.value.object_data) }
 	listener := &DOMEventListener{
 		type_:    name
 		callback: IDLEventListener.new(callback)
@@ -1109,6 +1259,7 @@ pub fn (et &EventTarget) deactivate_event_handler(name string) {
 		et.remove_an_event_listener(listener)
 	}
 	handler.listener = none
+	target.data.event_handler_map.delete(name)
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#the-event-handler-processing-algorithm
@@ -1117,15 +1268,32 @@ pub fn (et &EventTarget) process_event_handler_for_event(name string, event &Eve
 	callback := et.get_current_value_of_event_handler(name) or { return }
 
 	// 2. If callback is null, then return.
-	_ = callback
 
 	// 3. Let special error event handling be true if event is an ErrorEvent object, event's type is error, and event's currentTarget implements the WindowOrWorkerGlobalScope mixin.
-	special_error_event_handling := event.type_ == 'error'
+	special_error_event_handling := event_is_error_event(event) && event.type_ == 'error' && if current_target := event.current_target() {
+		event_target_as_window(current_target) != none
+	} else {
+		false
+	}
 
 	// 4. Process the Event object event by invoking the callback.
-	return_value := js_undefined()
+	mut return_value := js_undefined()
+	if handle_event := callback.handle_event {
+		return_value = handle_event(event, event.current_target())
+	}
+
+	is_beforeunload := event.type_ == 'beforeunload'
 
 	// 5. Process return value as follows.
+	if event_is_before_unload_event(event) && is_beforeunload {
+		// If event is a BeforeUnloadEvent object and event's type is "beforeunload", if return value is not null, then:
+		if !return_value.is_nullish() {
+			mut mutable_event := unsafe { &Event(event) }
+			mutable_event.set_cancelled(true)
+			// BeforeUnloadEvent.returnValue is not represented in this DOM file set yet.
+		}
+	}
+
 	if special_error_event_handling {
 		// If special error event handling is true, if return value is true, then set event's canceled flag.
 		if return_value.is_boolean() && return_value.as_bool() {
@@ -1134,11 +1302,60 @@ pub fn (et &EventTarget) process_event_handler_for_event(name string, event &Eve
 		}
 	} else {
 		// Otherwise, if return value is false, then set event's canceled flag.
-		if return_value.is_boolean() && !return_value.as_bool() && event.type_ != 'beforeunload' {
+		if return_value.is_boolean() && !return_value.as_bool() && !is_beforeunload {
 			mut mutable_event := unsafe { &Event(event) }
 			mutable_event.set_cancelled(true)
 		}
 	}
+}
+
+fn event_is_error_event(event &Event) bool {
+	_ = event
+	// Stub for HTML::ErrorEvent until that event subclass is ported.
+	return false
+}
+
+fn event_is_before_unload_event(event &Event) bool {
+	_ = event
+	// Stub for HTML::BeforeUnloadEvent until that event subclass is ported.
+	return false
+}
+
+fn event_is_mouse_event(event &Event) bool {
+	_ = event
+	// Stub for UIEvents::MouseEvent until that event subclass is ported.
+	return false
+}
+
+fn event_is_keyboard_event(event &Event) bool {
+	_ = event
+	// Stub for UIEvents::KeyboardEvent until that event subclass is ported.
+	return false
+}
+
+fn keyboard_event_key_code_is_escape(event &Event) bool {
+	_ = event
+	// Stub for UIEvents::KeyboardEvent::key_code() == UIEvents::KeyCode::Key_Escape.
+	return false
+}
+
+fn event_is_pointer_event(event &Event) bool {
+	_ = event
+	// Stub for UIEvents::PointerEvent until that event subclass is ported.
+	return false
+}
+
+fn pointer_event_pointer_type(event &Event) string {
+	_ = event
+	// Stub for UIEvents::PointerEvent::pointer_type().
+	return ''
+}
+
+fn should_inline_script_attribute_be_blocked_by_content_security_policy(element &Element, value string) bool {
+	_ = element
+	_ = value
+	// Stub for ContentSecurityPolicy::should_elements_inline_type_behavior_be_blocked_by_content_security_policy(..., ScriptAttribute, ...).
+	return false
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-attributes:concept-element-attributes-change-ext
@@ -1158,18 +1375,32 @@ pub fn (et &EventTarget) element_event_handler_attribute_changed(local_name stri
 	// 5. Otherwise:
 	//  1. If the Should element's inline behavior be blocked by Content Security Policy? algorithm returns "Blocked" when executed upon element,
 	//     "script attribute", and value, then return. [CSP]
+	script_attribute := value
+	if node := event_target_as_node(et) {
+		if element := node.as_element() {
+			if should_inline_script_attribute_be_blocked_by_content_security_policy(element,
+				script_attribute)
+			{
+				return
+			}
+		}
+	}
 	//  2. Let handlerMap be eventTarget's event handler map.
 	//  3. Let eventHandler be handlerMap[localName].
 	//  4. Let location be the script location that triggered the execution of these steps.
 	//  5. Set eventHandler's value to the internal raw uncompiled handler value/location.
 	//  6. Activate an event handler given eventTarget and name.
 	mut target := unsafe { &EventTarget(event_target) }
-	target.data.event_handler_map[local_name] = &EventHandler_{
-		value: js_string(value)
+	if mut handler := target.data.event_handler_map[local_name] {
+		handler.value = js_string(script_attribute)
+		event_target.activate_event_handler(local_name, handler)
+		return
 	}
-	event_target.activate_event_handler(local_name, EventHandler_{
-		value: js_string(value)
-	})
+	handler := &EventHandler_{
+		value: js_string(script_attribute)
+	}
+	event_target.activate_event_handler(local_name, handler)
+	target.data.event_handler_map[local_name] = handler
 }
 
 // document.v already defines EventTarget.dispatch_event(event &Event) bool. This helper carries the translated EventTarget.cpp dispatch body
@@ -1177,7 +1408,77 @@ pub fn (et &EventTarget) element_event_handler_attribute_changed(local_name stri
 pub fn event_target_dispatch_event(target &EventTarget, event &Event) bool {
 	// https://html.spec.whatwg.org/multipage/interaction.html#activation-triggering-input-event
 	// https://html.spec.whatwg.org/multipage/interaction.html#user-activation-processing-model
+	if is_activation_triggering_input_event(event) {
+		current_time := current_event_timestamp()
+		if mut window := event_target_relevant_window(target) {
+			window.set_last_activation_timestamp(current_time)
+			window.close_watcher_manager().notify_about_user_activation()
+		}
+	}
 	return EventDispatcher.dispatch(target, event, false)
+}
+
+fn is_activation_triggering_input_event(event &Event) bool {
+	// An activation triggering input event is any event whose isTrusted attribute is true and whose type is one of:
+	if !event.is_trusted() {
+		return false
+	}
+
+	// keydown, provided the key is neither the Esc key nor a shortcut key reserved by the user agent.
+	if event.type_ == 'keydown' {
+		if event_is_keyboard_event(event) {
+			return !keyboard_event_key_code_is_escape(event)
+		}
+		return false
+	}
+
+	// mousedown.
+	if event.type_ == 'mousedown' {
+		return true
+	}
+
+	// pointerdown, provided the event's pointerType is "mouse".
+	if event.type_ == 'pointerdown' {
+		if event_is_pointer_event(event) {
+			return pointer_event_pointer_type(event) == 'mouse'
+		}
+		return false
+	}
+
+	// pointerup, provided the event's pointerType is not "mouse".
+	if event.type_ == 'pointerup' {
+		if event_is_pointer_event(event) {
+			return pointer_event_pointer_type(event) != 'mouse'
+		}
+		return false
+	}
+
+	// FIXME: touchend
+	return false
+}
+
+fn event_target_relevant_window(target &EventTarget) ?&Window {
+	if window := event_target_as_window(target) {
+		return window
+	}
+	if node := event_target_as_node(target) {
+		document := node.document()
+		if document != unsafe { nil } {
+			return document.get_window()
+		}
+	}
+	return none
+}
+
+fn event_listener_callback_global_window(listener &DOMEventListener, event &Event) ?&Window {
+	// C++: listener callback's associated Realm's global object.
+	// The V callback stub does not carry Realm/global metadata yet, so use the event current
+	// target's relevant Window as the named stand-in for that associated global.
+	_ = listener
+	if current_target := event.current_target() {
+		return event_target_relevant_window(current_target)
+	}
+	return none
 }
 
 pub fn (et &EventTarget) has_event_listener(type_ string) bool {
@@ -1270,9 +1571,23 @@ pub fn EventDispatcher.inner_invoke(event &Event, listeners []&DOMEventListener,
 		}
 
 		// 6. Let global be listener callback's associated Realm's global object.
+		listener_global_window := event_listener_callback_global_window(listener, event)
+
 		// 7. Let currentEvent be undefined.
-		// 8. If global is a Window object, then update global's current event.
-		_ = invocation_target_in_shadow_tree
+		mut current_event := ?&Event(none)
+
+		// 8. If global is a Window object, then:
+		if global_window := listener_global_window {
+			mut mutable_global_window := unsafe { &Window(global_window) }
+
+			// 1. Set currentEvent to global's current event.
+			current_event = mutable_global_window.current_event()
+
+			// 2. If invocationTargetInShadowTree is false, then set global's current event to event.
+			if !invocation_target_in_shadow_tree {
+				mutable_global_window.set_current_event(event)
+			}
+		}
 
 		// 9. If listener's passive is true, then set event's in passive listener flag.
 		mut mutable_event := unsafe { &Event(event) }
@@ -1281,13 +1596,23 @@ pub fn EventDispatcher.inner_invoke(event &Event, listeners []&DOMEventListener,
 		}
 		// 10. If global is a Window object, then record timing info for event listener given event and listener.
 		// 11. Call a user object's operation with listener's callback, "handleEvent", event, and event's currentTarget attribute value.
-		if listener.callback == none {
+		if idle_listener := listener.callback {
+			callback := idle_listener.callback()
+			if handle_event := callback.handle_event {
+				_ = handle_event(event, event.current_target_for_bindings())
+			}
+		} else {
 			legacy_output.did_listeners_throw = false
 		}
 
 		// 12. Unset event's in passive listener flag.
 		mutable_event.set_in_passive_listener(false)
 		// 13. If global is a Window object, then restore global's current event.
+		if global_window := listener_global_window {
+			mut mutable_global_window := unsafe { &Window(global_window) }
+			mutable_global_window.set_current_event(current_event)
+		}
+
 		// 14. If event's stop immediate propagation flag is set, then break.
 		if event.should_stop_immediate_propagation() {
 			break
@@ -1325,7 +1650,6 @@ pub fn EventDispatcher.invoke(struct_ EventPathEntry, event &Event, phase EventP
 
 	// 5. Initialize event's currentTarget attribute to struct's invocation target.
 	mutable_event.set_current_target(struct_.invocation_target)
-	mutable_event.set_phase(if struct_.shadow_adjusted_target != none { .at_target } else { phase })
 	// 6. Let listeners be a clone of event's currentTarget attribute value's event listener list.
 	listeners := struct_.invocation_target.event_listener_list()
 
@@ -1339,7 +1663,32 @@ pub fn EventDispatcher.invoke(struct_ EventPathEntry, event &Event, phase EventP
 
 	// 9. If found is false and event's isTrusted attribute is true, then run the legacy prefixed animation/transition fallback.
 	if !found && event.is_trusted() {
-		// Current Event storage can only expose the unprefixed type.
+		// 1. Let originalEventType be event's type attribute value.
+		original_event_type := event.type_name()
+
+		// 2. If event's type attribute value is a match for any of the strings in the first column in the following table,
+		//    set event's type attribute value to the string in the second column on the same row as the matching string, and return otherwise.
+		prefixed_event_type := legacy_prefixed_animation_or_transition_event_type(original_event_type) or {
+			return
+		}
+		mutable_event.set_type(prefixed_event_type)
+
+		// 3. Inner invoke with event, listeners, phase, invocationTargetInShadowTree, and legacyOutputDidListenersThrowFlag if given.
+		EventDispatcher.inner_invoke(event, listeners, phase, invocation_target_in_shadow_tree, mut
+			legacy_output)
+
+		// 4. Set event's type attribute value to originalEventType.
+		mutable_event.set_type(original_event_type)
+	}
+}
+
+fn legacy_prefixed_animation_or_transition_event_type(type_ string) ?string {
+	return match type_ {
+		'animationend' { 'webkitAnimationEnd' }
+		'animationiteration' { 'webkitAnimationIteration' }
+		'animationstart' { 'webkitAnimationStart' }
+		'transitionend' { 'webkitTransitionEnd' }
+		else { none }
 	}
 }
 
@@ -1359,6 +1708,11 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 	mut target_override := ?&EventTarget(none)
 	if !legacy_target_override {
 		target_override = unsafe { &EventTarget(target) }
+	} else {
+		window := unsafe { &Window(target) }
+		if document := window.associated_document() {
+			target_override = unsafe { &EventTarget(document) }
+		}
 	}
 
 	// 3. Let activationTarget be null.
@@ -1369,10 +1723,14 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 	// 5. Let clearTargets be false.
 	mut clear_targets := false
 
-	// OPTIMIZATION: Only dispatch events if there is at least one listener on the node or its ancestors. Activation events are always dispatched.
-	is_activation_event := event.type_ == 'click'
-	should_dispatch := is_activation_event || event_target_or_ancestor_has_event_listener(target,
-		event.type_)
+	// OPTIMIZATION: Only dispatch events if there is at least one listener on the node or its ancestors. Activation
+	//               events are always dispatched. This saves us from going through the path building and dispatch
+	//               phases for events that will be dropped on the floor anyway.
+	is_activation_event := event_is_mouse_event(event) && event.type_ == 'click'
+	mut should_dispatch := is_activation_event
+	if !should_dispatch {
+		should_dispatch = should_dispatch_non_activation_event(target, event.type_)
+	}
 
 	// 6. If target is not relatedTarget or target is event's relatedTarget, then:
 	related_target_is_target := if rt := related_target { rt == target } else { false }
@@ -1438,10 +1796,11 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 				}
 			}
 
-			mut parent_is_in_current_target_root := false
+			mut parent_is_in_current_target_root := event_target_as_window(parent_target) != none
 			if current_target_node := event_target_as_node(current_target) {
 				if parent_node := event_target_as_node(parent_target) {
-					parent_is_in_current_target_root = current_target_node.root().is_shadow_including_inclusive_ancestor_of(parent_node)
+					parent_is_in_current_target_root =
+						current_target_node.root().is_shadow_including_inclusive_ancestor_of(parent_node)
 				}
 			}
 			if parent_is_in_current_target_root {
@@ -1451,7 +1810,11 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 				}
 				mutable_event.append_to_path(parent_target, none, related_target, touch_targets,
 					slot_in_closed_tree)
-			} else if if rt := related_target { rt == parent_target } else { false } {
+			} else if if rt := related_target {
+				rt == parent_target
+			} else {
+				false
+			} {
 				parent = none
 			} else {
 				current_target = unsafe { &EventTarget(parent_target) }
@@ -1484,7 +1847,8 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 			}
 			if !clear_targets {
 				if related_target_to_check := clear_targets_struct.related_target {
-					clear_targets = event_target_is_node_whose_root_is_shadow_root(related_target_to_check)
+					clear_targets =
+						event_target_is_node_whose_root_is_shadow_root(related_target_to_check)
 				}
 			}
 			if !clear_targets {
@@ -1501,16 +1865,38 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 		if activation := activation_target {
 			activation.legacy_pre_activation_behavior()
 		}
-		// 13. For each struct of event's path, in reverse order, invoke capturing listeners.
-		// 14. For each struct of event's path, invoke bubbling listeners.
+		// 13. For each struct of event's path, in reverse order:
 		path := event.path()
 		for index := path.len - 1; index >= 0; index-- {
+			// 1. If struct's shadow-adjusted target is non-null, then set event's eventPhase attribute to AT_TARGET.
+			if path[index].shadow_adjusted_target != none {
+				mutable_event.set_phase(.at_target)
+			} else {
+				// 2. Otherwise, set event's eventPhase attribute to CAPTURING_PHASE.
+				mutable_event.set_phase(.capturing_phase)
+			}
+
+			// 3. Invoke with struct, event, "capturing", and legacyOutputDidListenersThrowFlag if given.
 			EventDispatcher.invoke(path[index], event, .capturing_phase, mut legacy_output)
 		}
+
+		// 14. For each struct of event's path:
 		for path_entry in path {
-			if path_entry.shadow_adjusted_target == none && !event.bubbles() {
-				continue
+			// 1. If struct's shadow-adjusted target is non-null, then set event's eventPhase attribute to AT_TARGET.
+			if path_entry.shadow_adjusted_target != none {
+				mutable_event.set_phase(.at_target)
+			} else {
+				// 2. Otherwise:
+				// 1. If event's bubbles attribute is false, then continue.
+				if !event.bubbles() {
+					continue
+				}
+
+				// 2. Set event's eventPhase attribute to BUBBLING_PHASE.
+				mutable_event.set_phase(.bubbling_phase)
 			}
+
+			// 3. Invoke with struct, event, "bubbling", and legacyOutputDidListenersThrowFlag if given.
 			EventDispatcher.invoke(path_entry, event, .bubbling_phase, mut legacy_output)
 		}
 	}
@@ -1540,13 +1926,21 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 	if activation := activation_target {
 		if !event.cancelled() {
 			activation.activation_behavior(event)
-		} else {
 			activation.legacy_cancelled_activation_behavior_was_not_called()
+		} else {
 			activation.legacy_cancelled_activation_behavior()
 		}
 	}
 	// 13. Return false if event's canceled flag is set; otherwise true.
 	return !event.cancelled()
+}
+
+fn should_dispatch_non_activation_event(target &EventTarget, type_ string) bool {
+	// C++: should_dispatch = !node || node->has_inclusive_ancestor_with_event_listener(event.type()).
+	if event_target_as_node(target) == none {
+		return true
+	}
+	return event_target_or_ancestor_has_event_listener(target, type_)
 }
 
 fn event_target_or_ancestor_has_event_listener(target &EventTarget, type_ string) bool {
@@ -1561,13 +1955,29 @@ fn event_target_or_ancestor_has_event_listener(target &EventTarget, type_ string
 		}
 		ancestor = current.parent_or_shadow_host()
 	}
+	document := node.document()
+	if document != unsafe { nil } && document.window != unsafe { nil } {
+		if unsafe { &EventTarget(document.window) }.has_event_listener(type_) {
+			return true
+		}
+	}
 	return false
 }
 
 fn event_target_get_parent(target &EventTarget, event &Event) ?&EventTarget {
+	if event_target_as_window(target) != none {
+		return none
+	}
 	node := event_target_as_node(target) or { return none }
 	if shadow_root := node.as_shadow_root() {
 		return shadow_root.get_parent(event)
+	}
+	if node.is_document() {
+		document := unsafe { &Document(node) }
+		if window := document.get_parent(event) {
+			return unsafe { &EventTarget(window) }
+		}
+		return none
 	}
 	return node.get_parent(event)
 }
@@ -1604,15 +2014,14 @@ pub fn retarget(target ?&EventTarget, against &EventTarget) ?&EventTarget {
 }
 
 fn event_target_as_node(target &EventTarget) ?&Node {
+	if target.data.kind == .window {
+		return none
+	}
 	node := unsafe { &Node(target) }
-	if node.node_type != .element_node
-		&& node.node_type != .attribute_node
-		&& node.node_type != .text_node
-		&& node.node_type != .cdata_section_node
-		&& node.node_type != .processing_instruction_node
-		&& node.node_type != .comment_node
-		&& node.node_type != .document_node
-		&& node.node_type != .document_type_node
+	if node.node_type != .element_node && node.node_type != .attribute_node
+		&& node.node_type != .text_node && node.node_type != .cdata_section_node
+		&& node.node_type != .processing_instruction_node && node.node_type != .comment_node
+		&& node.node_type != .document_node && node.node_type != .document_type_node
 		&& node.node_type != .document_fragment_node {
 		return none
 	}
@@ -1620,6 +2029,13 @@ fn event_target_as_node(target &EventTarget) ?&Node {
 		return none
 	}
 	return node
+}
+
+fn event_target_as_window(target &EventTarget) ?&Window {
+	if target.data.kind != .window {
+		return none
+	}
+	return unsafe { &Window(target) }
 }
 
 pub fn is_an_assigned_slottable(node &Node) bool {
@@ -1639,6 +2055,7 @@ pub mut:
 
 	// https://dom.spec.whatwg.org/#abortsignal-abort-algorithms
 	abort_algorithms        map[u64]AbortAlgorithm
+	abort_algorithm_order   []u64
 	next_abort_algorithm_id u64
 
 	// https://dom.spec.whatwg.org/#abortsignal-source-signals
@@ -1677,6 +2094,7 @@ pub fn (mut signal AbortSignal) add_abort_algorithm(abort_algorithm AbortAlgorit
 	// 2. Append algorithm to signal's abort algorithms.
 	signal.next_abort_algorithm_id++
 	signal.abort_algorithms[signal.next_abort_algorithm_id] = abort_algorithm
+	signal.abort_algorithm_order << signal.next_abort_algorithm_id
 	return signal.next_abort_algorithm_id
 }
 
@@ -1684,6 +2102,7 @@ pub fn (mut signal AbortSignal) add_abort_algorithm(abort_algorithm AbortAlgorit
 pub fn (mut signal AbortSignal) remove_abort_algorithm(id u64) {
 	// To remove an algorithm algorithm from an AbortSignal signal, remove algorithm from signal's abort algorithms.
 	signal.abort_algorithms.delete(id)
+	signal.abort_algorithm_order = signal.abort_algorithm_order.filter(it != id)
 }
 
 // https://dom.spec.whatwg.org/#dom-abortsignal-aborted
@@ -1735,12 +2154,15 @@ pub fn (mut signal AbortSignal) signal_abort(reason JSValue) {
 fn (mut signal AbortSignal) run_abort_steps() {
 	// https://dom.spec.whatwg.org/#run-the-abort-steps
 	// 1. For each algorithm in signal's abort algorithms: run algorithm.
-	for _, algorithm in signal.abort_algorithms {
-		algorithm()
+	for algorithm_id in signal.abort_algorithm_order.clone() {
+		if algorithm := signal.abort_algorithms[algorithm_id] {
+			algorithm()
+		}
 	}
 
 	// 2. Empty signal's abort algorithms.
 	signal.abort_algorithms.clear()
+	signal.abort_algorithm_order.clear()
 
 	// 3. Fire an event named abort at signal.
 	mut abort_event := Event.create('abort', EventInit{})
@@ -1826,13 +2248,37 @@ pub fn AbortSignal.timeout(milliseconds u64) !&AbortSignal {
 	mut signal := AbortSignal.construct_impl()!
 
 	// 2. Let global be signal's relevant global object.
-	// 3. Run steps after a timeout given global, "AbortSignal-timeout", milliseconds, and queue a timer task to signal abort
-	//    given signal and a new "TimeoutError" DOMException.
-	_ = milliseconds
-	_ = timeout_error_value('Signal timed out')
+	global := relevant_global_object_for_abort_signal(signal)
+
+	// 3. Run steps after a timeout given global, "AbortSignal-timeout", milliseconds, and the following step:
+	run_steps_after_a_timeout_for_abort_signal(global, signal, milliseconds)
 
 	// 4. Return signal.
 	return signal
+}
+
+fn relevant_global_object_for_abort_signal(signal &AbortSignal) &Window {
+	// C++: HTML::relevant_global_object(signal).
+	_ = signal
+	return &Window{}
+}
+
+fn run_steps_after_a_timeout_for_abort_signal(global &Window, signal &AbortSignal, milliseconds u64) {
+	// C++ delegates to WindowOrWorkerGlobalScope::run_steps_after_a_timeout.
+	_ = global
+	spawn abort_signal_timeout_task(signal, milliseconds)
+}
+
+fn abort_signal_timeout_task(signal &AbortSignal, milliseconds u64) {
+	time.sleep(milliseconds * time.millisecond)
+	queue_abort_signal_timeout_task(relevant_global_object_for_abort_signal(signal), signal)
+}
+
+fn queue_abort_signal_timeout_task(global &Window, signal &AbortSignal) {
+	// C++ queues a global task on the timer task source.
+	_ = global
+	mut mutable_signal := unsafe { &AbortSignal(signal) }
+	mutable_signal.signal_abort(timeout_error_value('Signal timed out'))
 }
 
 // https://dom.spec.whatwg.org/#dom-abortsignal-any

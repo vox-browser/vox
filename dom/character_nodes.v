@@ -19,8 +19,18 @@ pub fn QualifiedName.new(local_name string, prefix ?string, namespace_ ?string) 
 		local_name:            local_name
 		prefix_:               prefix
 		namespace_:            namespace_
-		lowercased_local_name: local_name.to_lower()
+		lowercased_local_name: to_ascii_lowercase(local_name)
 	}
+}
+
+fn to_ascii_lowercase(value string) string {
+	mut bytes := value.bytes()
+	for i, byte in bytes {
+		if byte >= `A` && byte <= `Z` {
+			bytes[i] = byte + 0x20
+		}
+	}
+	return bytes.bytestr()
 }
 
 fn qualified_name_hash_string(value string) u64 {
@@ -124,7 +134,7 @@ pub fn (mut a Attr) initialize() {
 }
 
 pub fn (mut a Attr) visit_edges(mut visitor CellVisitor) {
-	// Base::visit_edges(visitor);
+	a.Node.visit_edges(mut visitor)
 	visitor.visit(a.owner_element_)
 }
 
@@ -153,8 +163,8 @@ pub fn (mut a Attr) set_value_with_attribute_steps(value string) ! {
 
 	// 3. Let verifiedValue be the result of calling get Trusted Types-compliant attribute value with
 	//    attribute's local name, attribute's namespace, element, and value.
-	verified_value := get_trusted_types_compliant_attribute_value(a.local_name_,
-		a.namespace_uri_, element, value)!
+	verified_value := get_trusted_types_compliant_attribute_value(a.local_name_, a.namespace_uri_,
+		element, value)!
 
 	// 4. If attribute's element is null, then set attribute's value to verifiedValue, and return.
 	if a.owner_element() == none {
@@ -249,14 +259,12 @@ pub fn (c &CharacterData) substring_data(offset int, count int) !string {
 
 	// 3. If offset plus count is greater than length, return a string whose value is the code units from the offsetth code unit
 	//    to the end of node's data, and then return.
-	start_byte := byte_index_for_utf16_code_unit_offset(c.data_, offset)
 	if offset + count > length {
-		return c.data_[start_byte..]
+		return string_from_utf16_code_units(utf16_code_units_from_string(c.data_)[offset..])
 	}
 
 	// 4. Return a string whose value is the code units from the offsetth code unit to the offset+countth code unit in node's data.
-	end_byte := byte_index_for_utf16_code_unit_offset(c.data_, offset + count)
-	return c.data_[start_byte..end_byte]
+	return string_from_utf16_code_units(utf16_code_units_from_string(c.data_)[offset..offset + count])
 }
 
 // https://dom.spec.whatwg.org/#concept-cd-replace
@@ -279,11 +287,14 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 	// 6. Let delete offset be offset + data's length.
 	// 7. Starting from delete offset code units, remove count code units from node's data.
 	old_data := c.data_
-	start_byte := byte_index_for_utf16_code_unit_offset(c.data_, offset)
-	end_byte := byte_index_for_utf16_code_unit_offset(c.data_, offset + actual_count)
-	before_data := c.data_[..start_byte]
-	after_data := c.data_[end_byte..]
-	c.data_ = before_data + data + after_data
+	mut full_data := utf16_code_units_from_string(c.data_)
+	replacement_data := utf16_code_units_from_string(data)
+	before_data := full_data[..offset].clone()
+	after_data := full_data[offset + actual_count..].clone()
+	full_data = before_data.clone()
+	full_data << replacement_data
+	full_data << after_data
+	c.data_ = string_from_utf16_code_units(full_data)
 
 	mut node := unsafe { &Node(&c) }
 
@@ -300,7 +311,8 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 	//     start offset by data's length and decrease it by count.
 	// 11. For each live range whose end node is node and end offset is greater than offset plus count, increase its end
 	//     offset by data's length and decrease it by count.
-	update_live_ranges_for_character_data_replacement(node, offset, actual_count, utf16_code_unit_length(data))
+	update_live_ranges_for_character_data_replacement(node, offset, actual_count,
+		utf16_code_unit_length(data))
 
 	// 12. If node's parent is non-null, then run the children changed steps for node's parent.
 	if parent := node.parent() {
@@ -328,6 +340,58 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 		mut mutable_doc := unsafe { &Document(doc) }
 		mutable_doc.bump_character_data_version()
 	}
+
+	if c.grapheme_segmenter_ != unsafe { nil } {
+		c.grapheme_segmenter_.set_segmented_text(c.data_)
+	}
+	if c.line_segmenter_ != unsafe { nil } {
+		c.line_segmenter_.set_segmented_text(c.data_)
+	}
+	if c.word_segmenter_ != unsafe { nil } {
+		c.word_segmenter_.set_segmented_text(c.data_)
+	}
+}
+
+fn utf16_code_units_from_string(value string) []u16 {
+	mut code_units := []u16{}
+	for r in value.runes() {
+		code_point := u32(r)
+		if code_point <= 0xffff {
+			code_units << u16(code_point)
+			continue
+		}
+		scalar := code_point - 0x10000
+		code_units << u16(0xd800 + (scalar >> 10))
+		code_units << u16(0xdc00 + (scalar & 0x3ff))
+	}
+	return code_units
+}
+
+fn string_from_utf16_code_units(code_units []u16) string {
+	mut builder := strings.new_builder(code_units.len)
+	mut index := 0
+	for index < code_units.len {
+		code_unit := code_units[index]
+		if code_unit >= 0xd800 && code_unit <= 0xdbff && index + 1 < code_units.len {
+			next_code_unit := code_units[index + 1]
+			if next_code_unit >= 0xdc00 && next_code_unit <= 0xdfff {
+				high := u32(code_unit) - 0xd800
+				low := u32(next_code_unit) - 0xdc00
+				builder.write_rune(rune(0x10000 + ((high << 10) | low)))
+				index += 2
+				continue
+			}
+		}
+		if code_unit >= 0xd800 && code_unit <= 0xdfff {
+			// V strings are UTF-8 and cannot represent lone UTF-16 surrogates; keep the
+			// UTF-16 algorithm boundary explicit and substitute U+FFFD for isolated units.
+			builder.write_rune(rune(0xfffd))
+		} else {
+			builder.write_rune(rune(code_unit))
+		}
+		index++
+	}
+	return builder.str()
 }
 
 // https://dom.spec.whatwg.org/#dom-characterdata-appenddata
@@ -349,18 +413,33 @@ pub fn (mut c CharacterData) delete_data(offset int, count int) ! {
 }
 
 pub fn (c &CharacterData) grapheme_segmenter() &Segmenter {
-	mut document := unsafe { &Document(c.as_node().document()) }
-	return document.grapheme_segmenter()
+	mut mutable_character_data := unsafe { &CharacterData(c) }
+	if mutable_character_data.grapheme_segmenter_ == unsafe { nil } {
+		mut document := unsafe { &Document(c.as_node().document()) }
+		mutable_character_data.grapheme_segmenter_ = document.grapheme_segmenter().clone()
+		mutable_character_data.grapheme_segmenter_.set_segmented_text(c.data_)
+	}
+	return mutable_character_data.grapheme_segmenter_
 }
 
 pub fn (c &CharacterData) line_segmenter() &Segmenter {
-	mut document := unsafe { &Document(c.as_node().document()) }
-	return document.line_segmenter()
+	mut mutable_character_data := unsafe { &CharacterData(c) }
+	if mutable_character_data.line_segmenter_ == unsafe { nil } {
+		mut document := unsafe { &Document(c.as_node().document()) }
+		mutable_character_data.line_segmenter_ = document.line_segmenter().clone()
+		mutable_character_data.line_segmenter_.set_segmented_text(c.data_)
+	}
+	return mutable_character_data.line_segmenter_
 }
 
 pub fn (c &CharacterData) word_segmenter() &Segmenter {
-	mut document := unsafe { &Document(c.as_node().document()) }
-	return document.word_segmenter()
+	mut mutable_character_data := unsafe { &CharacterData(c) }
+	if mutable_character_data.word_segmenter_ == unsafe { nil } {
+		mut document := unsafe { &Document(c.as_node().document()) }
+		mutable_character_data.word_segmenter_ = document.word_segmenter().clone()
+		mutable_character_data.word_segmenter_.set_segmented_text(c.data_)
+	}
+	return mutable_character_data.word_segmenter_
 }
 
 fn update_live_ranges_for_character_data_replacement(node &Node, offset int, count int, data_length int) {
@@ -534,21 +613,25 @@ pub fn (t &Text) whole_text() string {
 pub fn (t &Text) directionality() ?Directionality {
 	// 1. If text's data does not contain a code point whose bidirectional character type is L, AL, or R, then return null.
 	// 2. Let codePoint be the first code point in text's data whose bidirectional character type is L, AL, or R.
+	mut found_character_bidi_class := ?UnicodeBidiClass(none)
 	for r in t.data().runes() {
 		code_point := u32(r)
-
-		// 3. If codePoint is of bidirectional character type AL or R, then return 'rtl'.
-		if is_rtl_code_point_for_directionality(code_point) {
-			return .rtl
-		}
-
-		// 4. If codePoint is of bidirectional character type L, then return 'ltr'.
-		if is_ltr_code_point_for_directionality(code_point) {
-			return .ltr
+		bidi_class := unicode_bidirectional_class(code_point)
+		if bidi_class == .left_to_right || bidi_class == .right_to_left_arabic
+			|| bidi_class == .right_to_left {
+			found_character_bidi_class = bidi_class
+			break
 		}
 	}
+	bidi_class := found_character_bidi_class or { return none }
 
-	return none
+	// 3. If codePoint is of bidirectional character type AL or R, then return 'rtl'.
+	if bidi_class == .right_to_left_arabic || bidi_class == .right_to_left {
+		return .rtl
+	}
+
+	// 4. If codePoint is of bidirectional character type L, then return 'ltr'.
+	return .ltr
 }
 
 fn update_live_ranges_for_text_split(node &Node, new_node &Node, parent &Node, offset int) {
@@ -576,16 +659,88 @@ fn update_live_ranges_for_text_split(node &Node, new_node &Node, parent &Node, o
 	}
 }
 
+enum UnicodeBidiClass {
+	left_to_right
+	right_to_left_arabic
+	right_to_left
+	other
+}
+
+fn unicode_bidirectional_class(code_point u32) UnicodeBidiClass {
+	// C++ calls Unicode::bidirectional_class(code_point). The Unicode database is not part of
+	// this DOM-only port yet, so keep the call boundary explicit.
+	return unicode_bidirectional_class_stub(code_point)
+}
+
+fn unicode_bidirectional_class_stub(code_point u32) UnicodeBidiClass {
+	// Approximation of Unicode::bidirectional_class until the full Unicode
+	// database is ported. Covers ASCII letters and the most common strong
+	// bidi ranges (Hebrew, Arabic, Latin/Greek/Cyrillic letters) so that
+	// HTML text directionality inference works for the vast majority of
+	// real-world content.
+
+	// ASCII letters → L
+	if (code_point >= 0x41 && code_point <= 0x5A) || (code_point >= 0x61 && code_point <= 0x7A) {
+		return .left_to_right
+	}
+	if code_point < 0x80 {
+		return .other
+	}
+
+	// Hebrew block → R
+	if code_point >= 0x0590 && code_point <= 0x05FF {
+		return .right_to_left
+	}
+	// Hebrew presentation forms → R
+	if code_point >= 0xFB1D && code_point <= 0xFB4F {
+		return .right_to_left
+	}
+
+	// Arabic blocks → AL
+	if (code_point >= 0x0600 && code_point <= 0x06FF)
+		|| (code_point >= 0x0750 && code_point <= 0x077F)
+		|| (code_point >= 0x08A0 && code_point <= 0x08FF)
+		|| (code_point >= 0xFB50 && code_point <= 0xFDFF)
+		|| (code_point >= 0xFE70 && code_point <= 0xFEFF) {
+		return .right_to_left_arabic
+	}
+
+	// Thaana (Maldivian) → R
+	if code_point >= 0x0780 && code_point <= 0x07BF {
+		return .right_to_left
+	}
+	// N'Ko / Samaritan / Mandaic → R
+	if (code_point >= 0x07C0 && code_point <= 0x07FF)
+		|| (code_point >= 0x0800 && code_point <= 0x083F)
+		|| (code_point >= 0x0840 && code_point <= 0x085F) {
+		return .right_to_left
+	}
+	// Syriac → AL
+	if code_point >= 0x0700 && code_point <= 0x074F {
+		return .right_to_left_arabic
+	}
+
+	// Latin-1 letters, Latin Extended, IPA, Greek, Cyrillic, Armenian, ... → L
+	// (Approximation: most letters in these blocks are L; we don't model
+	// the narrow set of LRM/RLM/format characters here.)
+	if (code_point >= 0x00C0 && code_point <= 0x024F)
+		|| (code_point >= 0x0370 && code_point <= 0x03FF)
+		|| (code_point >= 0x0400 && code_point <= 0x04FF)
+		|| (code_point >= 0x0500 && code_point <= 0x052F)
+		|| (code_point >= 0x0530 && code_point <= 0x058F) {
+		return .left_to_right
+	}
+
+	return .other
+}
+
 fn is_ltr_code_point_for_directionality(code_point u32) bool {
-	return (code_point >= `A` && code_point <= `Z`)
-		|| (code_point >= `a` && code_point <= `z`)
-		|| (code_point >= 0x00c0 && code_point <= 0x02af)
+	return unicode_bidirectional_class(code_point) == .left_to_right
 }
 
 fn is_rtl_code_point_for_directionality(code_point u32) bool {
-	return (code_point >= 0x0590 && code_point <= 0x08ff)
-		|| (code_point >= 0xfb1d && code_point <= 0xfdff)
-		|| (code_point >= 0xfe70 && code_point <= 0xfeff)
+	bidi_class := unicode_bidirectional_class(code_point)
+	return bidi_class == .right_to_left_arabic || bidi_class == .right_to_left
 }
 
 // --- Comment ---
@@ -752,7 +907,7 @@ pub fn (mut d DocumentFragment) initialize() {
 }
 
 pub fn (mut d DocumentFragment) visit_edges(mut visitor CellVisitor) {
-	// Base::visit_edges(visitor);
+	d.ParentNode.visit_edges(mut visitor)
 	visitor.visit(d.host_)
 }
 
