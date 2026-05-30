@@ -4089,6 +4089,11 @@ fn css_numeric_value_reify_math_function(numeric_value ComponentValue) !CSSNumer
 // https://drafts.css-houdini.org/css-typed-om-1/#rectify-a-numberish-value
 pub fn rectify_a_numberish_value(numberish CSSNumberish) CSSNumericValue {
 	// To rectify a numberish value num, optionally to a given unit unit (defaulting to "number"), perform the following steps:
+	return rectify_a_numberish_value_with_unit(numberish, none)
+}
+
+pub fn rectify_a_numberish_value_with_unit(numberish CSSNumberish, unit ?string) CSSNumericValue {
+	// To rectify a numberish value num, optionally to a given unit unit (defaulting to "number"), perform the following steps:
 	return match numberish {
 		// 1. If num is a CSSNumericValue, return num.
 		CSSUnitValue { CSSNumericValue(numberish) }
@@ -4102,7 +4107,7 @@ pub fn rectify_a_numberish_value(numberish CSSNumberish) CSSNumericValue {
 		CSSMathClamp { CSSNumericValue(numberish) }
 		// 2. If num is a double, return a new CSSUnitValue with its value internal slot set to num and its unit
 		//    internal slot set to unit.
-		f64 { CSSNumericValue(CSSUnitValue.create(numberish, 'number')) }
+		f64 { CSSNumericValue(CSSUnitValue.create(numberish, unit or { 'number' })) }
 	}
 }
 
