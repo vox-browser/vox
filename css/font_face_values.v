@@ -3707,11 +3707,37 @@ fn split_css_space_list(value string) []string {
 
 fn parse_unicode_ranges(value string) []UnicodeRange {
 	mut ranges := []UnicodeRange{}
-	for part in split_css_comma_list(value) {
-		range := parse_unicode_range(part) or { continue }
+	parts := split_css_comma_list(value)
+	if parts.len == 0 {
+		return ranges
+	}
+	for part in parts {
+		range := parse_unicode_range(part) or { return []UnicodeRange{} }
 		ranges << range
 	}
 	return ranges
+}
+
+fn make_valid_unicode_range(start u64, end u64) ?UnicodeRange {
+	if end > 0x10ffff || start > end {
+		return none
+	}
+	return UnicodeRange{
+		start: u32(start)
+		end:   u32(end)
+	}
+}
+
+fn is_hex_digit_string(text string) bool {
+	if text.len == 0 || text.len > 6 {
+		return false
+	}
+	for ch in text {
+		if !is_hex_digit(u32(ch)) {
+			return false
+		}
+	}
+	return true
 }
 
 fn parse_unicode_range(value string) ?UnicodeRange {
@@ -3721,32 +3747,39 @@ fn parse_unicode_range(value string) ?UnicodeRange {
 	}
 	text = text[2..]
 	if text.contains('?') {
+		if text.len == 0 || text.len > 6 {
+			return none
+		}
+		mut seen_question_mark := false
+		for ch in text {
+			if ch == `?` {
+				seen_question_mark = true
+				continue
+			}
+			if seen_question_mark || !is_hex_digit(u32(ch)) {
+				return none
+			}
+		}
 		start_text := text.replace('?', '0')
 		end_text := text.replace('?', 'F')
 		start := strconv.parse_uint(start_text, 16, 32) or { return none }
 		end := strconv.parse_uint(end_text, 16, 32) or { return none }
-		return UnicodeRange{
-			start: u32(start)
-			end:   u32(end)
-		}
+		return make_valid_unicode_range(start, end)
 	}
 	if text.contains('-') {
 		parts := text.split_nth('-', 2)
-		if parts.len != 2 {
+		if parts.len != 2 || !is_hex_digit_string(parts[0]) || !is_hex_digit_string(parts[1]) {
 			return none
 		}
 		start := strconv.parse_uint(parts[0], 16, 32) or { return none }
 		end := strconv.parse_uint(parts[1], 16, 32) or { return none }
-		return UnicodeRange{
-			start: u32(start)
-			end:   u32(end)
-		}
+		return make_valid_unicode_range(start, end)
+	}
+	if !is_hex_digit_string(text) {
+		return none
 	}
 	code_point := strconv.parse_uint(text, 16, 32) or { return none }
-	return UnicodeRange{
-		start: u32(code_point)
-		end:   u32(code_point)
-	}
+	return make_valid_unicode_range(code_point, code_point)
 }
 
 fn font_display_from_string(value string) ?FontDisplay {
