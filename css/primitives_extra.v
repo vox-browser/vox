@@ -92,7 +92,11 @@ pub fn Angle.from_style_value(style_value StyleValue, percentage_basis ?Angle) A
 			style_value.angle()
 		}
 		CalculatedStyleValue {
-			style_value.resolve_angle(CalculationResolutionContext{}) or { Angle.make_degrees(0) }
+			mut context := CalculationResolutionContext{}
+			if basis := percentage_basis {
+				context.percentage_basis = basis
+			}
+			style_value.resolve_angle(context) or { Angle.make_degrees(0) }
 		}
 		PercentageStyleValue {
 			basis := percentage_basis or { panic('VERIFY_NOT_REACHED') }
@@ -105,19 +109,15 @@ pub fn Angle.from_style_value(style_value StyleValue, percentage_basis ?Angle) A
 }
 
 pub fn Angle.resolve_calculated_with_context(calculated CalculatedStyleValue, context LengthResolutionContext, reference_value Angle) Angle {
-	// CalculationResolutionContext in the V port currently only stores a length
-	// percentage basis, so the angle basis cannot be represented yet.
-	_ = reference_value
 	return calculated.resolve_angle(CalculationResolutionContext{
+		percentage_basis:          reference_value
 		length_resolution_context: context
 	}) or { Angle.make_degrees(0) }
 }
 
 pub fn Frequency.resolve_calculated_with_context(calculated CalculatedStyleValue, context LengthResolutionContext, reference_value Frequency) Frequency {
-	// CalculationResolutionContext in the V port currently only stores a length
-	// percentage basis, so the frequency basis cannot be represented yet.
-	_ = reference_value
 	return calculated.resolve_frequency(CalculationResolutionContext{
+		percentage_basis:          reference_value
 		length_resolution_context: context
 	}) or { Frequency.make_hertz(0) }
 }
@@ -150,7 +150,11 @@ pub fn Time.from_style_value(style_value StyleValue, percentage_basis ?Time) Tim
 			style_value.time()
 		}
 		CalculatedStyleValue {
-			style_value.resolve_time(CalculationResolutionContext{}) or { Time.make_seconds(0) }
+			mut context := CalculationResolutionContext{}
+			if basis := percentage_basis {
+				context.percentage_basis = basis
+			}
+			style_value.resolve_time(context) or { Time.make_seconds(0) }
 		}
 		PercentageStyleValue {
 			basis := percentage_basis or { panic('VERIFY_NOT_REACHED') }
@@ -163,10 +167,8 @@ pub fn Time.from_style_value(style_value StyleValue, percentage_basis ?Time) Tim
 }
 
 pub fn Time.resolve_calculated_with_context(calculated CalculatedStyleValue, context LengthResolutionContext, reference_value Time) Time {
-	// CalculationResolutionContext in the V port currently only stores a length
-	// percentage basis, so the time basis cannot be represented yet.
-	_ = reference_value
 	return calculated.resolve_time(CalculationResolutionContext{
+		percentage_basis:          reference_value
 		length_resolution_context: context
 	}) or { Time.make_seconds(0) }
 }

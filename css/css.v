@@ -19,6 +19,7 @@ pub fn invalidate_style(doc &dom.Document, reason StyleInvalidationReason) {
 		.base_url_changed { dom.StyleInvalidationReason.base_url_changed }
 		.hover_changed, .style_sheet_changed, .dom_mutation { dom.StyleInvalidationReason.style_change }
 	}
+
 	mut document_node := unsafe { &dom.Node(doc) }
 	document_node.invalidate_style(mapped_reason)
 }
@@ -1524,16 +1525,81 @@ pub fn (loa LengthOrAuto) to_px_or_zero(context LengthResolutionContext) CSSPixe
 
 // --- Calculated style value stubs ---
 
+pub type CalculationPercentageBasis = Angle | Frequency | Length | Number | Time
+
 pub struct CalculationResolutionContext {
 pub mut:
-	percentage_basis          ?Length
+	percentage_basis          ?CalculationPercentageBasis
 	length_resolution_context LengthResolutionContext
+}
+
+pub fn (context CalculationResolutionContext) percentage_basis_angle() ?Angle {
+	basis := context.percentage_basis or { return none }
+	if basis is Angle {
+		if basis.unit() == .deg {
+			return basis
+		}
+		return Angle.make_degrees(basis.to_degrees())
+	}
+	return none
+}
+
+pub fn (context CalculationResolutionContext) percentage_basis_frequency() ?Frequency {
+	basis := context.percentage_basis or { return none }
+	if basis is Frequency {
+		if basis.unit() == .hz {
+			return basis
+		}
+		return Frequency.make_hertz(basis.to_hertz())
+	}
+	return none
+}
+
+pub fn (context CalculationResolutionContext) percentage_basis_length() ?Length {
+	basis := context.percentage_basis or { return none }
+	if basis is Length {
+		if basis.is_px() {
+			return basis
+		}
+		if basis.is_absolute() {
+			return Length.make_px(basis.absolute_length_to_px_without_rounding())
+		}
+		return Length.make_px(basis.to_px_without_rounding(context.length_resolution_context))
+	}
+	return none
+}
+
+pub fn (context CalculationResolutionContext) percentage_basis_number() ?Number {
+	basis := context.percentage_basis or { return none }
+	if basis is Number {
+		return basis
+	}
+	return none
+}
+
+pub fn (context CalculationResolutionContext) percentage_basis_time() ?Time {
+	basis := context.percentage_basis or { return none }
+	if basis is Time {
+		if basis.unit() == .s {
+			return basis
+		}
+		return Time.make_seconds(basis.to_seconds())
+	}
+	return none
+}
+
+pub fn CalculationResolutionContext.from_computation_context(computation_context ComputationContext, percentage_basis ?CalculationPercentageBasis) CalculationResolutionContext {
+	return CalculationResolutionContext{
+		percentage_basis:          percentage_basis
+		length_resolution_context: computation_context.length_resolution_context
+	}
 }
 
 pub struct CalculatedStyleValue {}
 
 pub fn (c CalculatedStyleValue) contains_percentage() bool {
 	_ = c
+	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
 	return false
 }
 
@@ -1545,7 +1611,10 @@ pub fn (c CalculatedStyleValue) serialize(mode SerializationMode) string {
 
 pub fn (c CalculatedStyleValue) resolve_length(context CalculationResolutionContext) ?Length {
 	_ = c
-	if percentage_basis := context.percentage_basis {
+	// Boundary: The typed CalculationNode/NumericType runtime is not translated in
+	// the V port yet. Preserve the explicit used-value percentage basis where it
+	// is representable; otherwise keep the existing canonical zero fallback.
+	if percentage_basis := context.percentage_basis_length() {
 		return percentage_basis
 	}
 	return Length.make_px(0)
@@ -1646,9 +1715,17 @@ pub fn (ap AnglePercentage) calculated() CalculatedStyleValue {
 pub fn (ap AnglePercentage) resolved(reference_value Angle) Angle {
 	value := ap.value_
 	return match value {
-		Angle { value }
-		Percentage { reference_value.percentage_of(value) }
-		CalculatedStyleValue { reference_value }
+		Angle {
+			value
+		}
+		Percentage {
+			reference_value.percentage_of(value)
+		}
+		CalculatedStyleValue {
+			value.resolve_angle(CalculationResolutionContext{
+				percentage_basis: reference_value
+			}) or { reference_value }
+		}
 	}
 }
 
@@ -1742,9 +1819,17 @@ pub fn (fp FrequencyPercentage) calculated() CalculatedStyleValue {
 pub fn (fp FrequencyPercentage) resolved(reference_value Frequency) Frequency {
 	value := fp.value_
 	return match value {
-		Frequency { value }
-		Percentage { reference_value.percentage_of(value) }
-		CalculatedStyleValue { reference_value }
+		Frequency {
+			value
+		}
+		Percentage {
+			reference_value.percentage_of(value)
+		}
+		CalculatedStyleValue {
+			value.resolve_frequency(CalculationResolutionContext{
+				percentage_basis: reference_value
+			}) or { reference_value }
+		}
 	}
 }
 
@@ -2063,9 +2148,17 @@ pub fn (tp TimePercentage) calculated() CalculatedStyleValue {
 pub fn (tp TimePercentage) resolved(reference_value Time) Time {
 	value := tp.value_
 	return match value {
-		Time { value }
-		Percentage { reference_value.percentage_of(value) }
-		CalculatedStyleValue { reference_value }
+		Time {
+			value
+		}
+		Percentage {
+			reference_value.percentage_of(value)
+		}
+		CalculatedStyleValue {
+			value.resolve_time(CalculationResolutionContext{
+				percentage_basis: reference_value
+			}) or { reference_value }
+		}
 	}
 }
 
@@ -2159,9 +2252,18 @@ pub fn (np NumberPercentage) calculated() CalculatedStyleValue {
 pub fn (np NumberPercentage) resolved(reference_value Number) Number {
 	value := np.value_
 	return match value {
-		Number { value }
-		Percentage { reference_value.percentage_of(value) }
-		CalculatedStyleValue { reference_value }
+		Number {
+			value
+		}
+		Percentage {
+			reference_value.percentage_of(value)
+		}
+		CalculatedStyleValue {
+			resolved := value.resolve_number(CalculationResolutionContext{
+				percentage_basis: reference_value
+			}) or { return reference_value }
+			Number.with_type(.number, resolved)
+		}
 	}
 }
 

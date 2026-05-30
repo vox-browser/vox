@@ -1,54 +1,71 @@
 module css
 
 import dom
+import math
 
 // --- CalculatedOr ---
 
 pub fn (c CalculatedStyleValue) resolve_angle(context CalculationResolutionContext) ?Angle {
 	_ = c
-	_ = context
+	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
+	if percentage_basis := context.percentage_basis_angle() {
+		return percentage_basis
+	}
 	return Angle.make_degrees(0)
 }
 
 pub fn (c CalculatedStyleValue) resolve_flex(context CalculationResolutionContext) ?Flex {
 	_ = c
 	_ = context
+	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
 	return Flex.make_fr(0)
 }
 
 pub fn (c CalculatedStyleValue) resolve_frequency(context CalculationResolutionContext) ?Frequency {
 	_ = c
-	_ = context
+	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
+	if percentage_basis := context.percentage_basis_frequency() {
+		return percentage_basis
+	}
 	return Frequency.make_hertz(0)
 }
 
 pub fn (c CalculatedStyleValue) resolve_integer(context CalculationResolutionContext) ?i64 {
-	_ = c
-	_ = context
+	if resolved_number := c.resolve_number(context) {
+		return i64(math.round(resolved_number))
+	}
 	return i64(0)
 }
 
 pub fn (c CalculatedStyleValue) resolve_number(context CalculationResolutionContext) ?f64 {
 	_ = c
-	_ = context
+	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
+	if percentage_basis := context.percentage_basis_number() {
+		return percentage_basis.value()
+	}
 	return 0.0
 }
 
 pub fn (c CalculatedStyleValue) resolve_percentage(context CalculationResolutionContext) ?Percentage {
 	_ = c
 	_ = context
+	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
 	return Percentage.new(0)
 }
 
 pub fn (c CalculatedStyleValue) resolve_resolution(context CalculationResolutionContext) ?Resolution {
 	_ = c
 	_ = context
+	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
 	return Resolution.make_dots_per_pixel(0)
 }
 
 pub fn (c CalculatedStyleValue) resolve_time(context CalculationResolutionContext) ?Time {
 	_ = c
-	_ = context
+	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet.
+	if percentage_basis := context.percentage_basis_time() {
+		return percentage_basis
+	}
 	return Time.make_seconds(0)
 }
 
