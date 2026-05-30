@@ -730,6 +730,12 @@ pub fn StylePropertyMapReadOnly.create_for_declaration(declaration &CSSStyleProp
 	}
 }
 
+fn reify_serialized_style_map_value(property PropertyNameAndID, serialized_value string, parse_multiple bool) []CSSStyleValue {
+	return CSSStyleValue.parse_a_css_style_value(property.name(), serialized_value, parse_multiple) or {
+		return []CSSStyleValue{}
+	}
+}
+
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-get
 pub fn (mut property_map StylePropertyMapReadOnly) get(property_name string) ?CSSStyleValue {
 	// The get(property) method, when called on a StylePropertyMapReadOnly this, must perform the following steps:
@@ -741,10 +747,15 @@ pub fn (mut property_map StylePropertyMapReadOnly) get(property_name string) ?CS
 	// 3. Let props be the value of this's [[declarations]] internal slot.
 	// 4. If props[property] exists, subdivide into iterations props[property], then reify the first item of the result and return it.
 	if serialized_value := property_map.get_serialized_style_value(property) {
+		reified_values := reify_serialized_style_map_value(property, serialized_value, false)
+		if reified_values.len > 0 {
+			return reified_values[0]
+		}
 		return StyleValue(StubStyleValue.create(.unresolved, serialized_value)).reify(property.name())
 	}
 	if property_value := property_map.get_style_value(property) {
 		_ = property_value
+		// Boundary: dom.StyleValue is currently opaque to CSS-side reification in this V port.
 		return StyleValue(StubStyleValue.create(.unresolved, '')).reify(property.name())
 	}
 
@@ -765,10 +776,15 @@ pub fn (mut property_map StylePropertyMapReadOnly) get_all(property_name string)
 	// 3. Let props be the value of this's [[declarations]] internal slot.
 	// 4. If props[property] exists, subdivide into iterations props[property], then reify each item of the result, and return the list.
 	if serialized_value := property_map.get_serialized_style_value(property) {
+		reified_values := reify_serialized_style_map_value(property, serialized_value, true)
+		if reified_values.len > 0 {
+			return reified_values
+		}
 		return [StyleValue(StubStyleValue.create(.unresolved, serialized_value)).reify(property.name())]
 	}
 	if property_value := property_map.get_style_value(property) {
 		_ = property_value
+		// Boundary: dom.StyleValue is currently opaque to CSS-side reification in this V port.
 		return [StyleValue(StubStyleValue.create(.unresolved, '')).reify(property.name())]
 	}
 
