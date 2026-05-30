@@ -1538,36 +1538,73 @@ fn named_css_color_for_value_logic(value string) ?Color {
 }
 
 fn (mut parser Parser) parse_color_scheme_value(mut tokens ComponentValueStream) ?StyleValue {
-	// Translated shape of parse_color_scheme_value(): accept normal, or an
-	// optional "only" followed by one or more custom idents. The concrete
-	// ColorSchemeStyleValue type exists outside StyleValue in this port, so keep
-	// the parsed serialization in an explicit stub.
-	tokens.consume_whitespace()
-	first := tokens.consume() or { return none }
-	if !first.is(.ident) {
-		return none
-	}
-	if equals_ignoring_ascii_case(first.token().ident(), 'normal') {
-		return StyleValue(KeywordStyleValue.create(Keyword.auto))
-	}
-	mut parts := []string{}
-	if equals_ignoring_ascii_case(first.token().ident(), 'only') {
-		parts << 'only'
-	} else {
-		parts << first.token().ident()
-	}
-	for tokens.has_more_tokens() {
-		tokens.consume_whitespace()
-		next := tokens.consume() or { break }
-		if !next.is(.ident) {
-			return none
+	// normal | [ light | dark | <custom-ident> ]+ && only?
+
+	// normal
+	{
+		mut transaction := tokens.clone()
+		transaction.consume_whitespace()
+		token := transaction.consume() or { return none }
+		if token.is(.ident) && equals_ignoring_ascii_case(token.token().ident(), 'normal') {
+			if transaction.has_more_tokens() {
+				return none
+			}
+			tokens = transaction
+			return StyleValue(ColorSchemeStyleValue.normal())
 		}
-		parts << next.token().ident()
 	}
-	if parts.len == 1 && parts[0] == 'only' {
+
+	mut only := false
+	mut schemes := []string{}
+
+	// only? && (..)
+	{
+		mut transaction := tokens.clone()
+		transaction.consume_whitespace()
+		if token := transaction.consume() {
+			if token.is(.ident) && equals_ignoring_ascii_case(token.token().ident(), 'only') {
+				only = true
+				tokens = transaction
+			}
+		}
+	}
+
+	// [ light | dark | <custom-ident> ]+
+	tokens.consume_whitespace()
+	for tokens.has_more_tokens() {
+		mut transaction := tokens.clone()
+
+		// The 'normal', 'light', 'dark', and 'only' keywords are not valid <custom-ident>s in this property.
+		// Note: only 'normal' is blacklisted here because 'light' and 'dark' aren't parsed differently and 'only' is checked for afterwards
+		ident := parser.parse_custom_ident_value(mut transaction, ['normal']) or { return none }
+
+		if ident.custom_ident() == 'only' {
+			break
+		}
+
+		schemes << ident.custom_ident()
+		transaction.consume_whitespace()
+		tokens = transaction
+	}
+
+	// (..) && only?
+	if !only {
+		mut transaction := tokens.clone()
+		transaction.consume_whitespace()
+		if token := transaction.consume() {
+			if token.is(.ident) && equals_ignoring_ascii_case(token.token().ident(), 'only') {
+				only = true
+				tokens = transaction
+			}
+		}
+	}
+
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() || schemes.len == 0 {
 		return none
 	}
-	return StyleValue(StubStyleValue.create(.color_scheme, parts.join(' ')))
+
+	return StyleValue(ColorSchemeStyleValue.create(schemes, only))
 }
 
 pub fn (mut parser Parser) parse_descriptor_value(at_rule_id AtRuleID, descriptor_id DescriptorID) ?StyleValue {
@@ -1621,7 +1658,47 @@ fn (mut parser Parser) parse_descriptor_value_tokens(at_rule_id AtRuleID, descri
 }
 
 fn descriptor_ident_style_value(value string) StyleValue {
-	return StyleValue(StubStyleValue.create(.custom_ident, value))
+	return StyleValue(CustomIdentStyleValue.create(value))
+}
+
+// https://www.w3.org/TR/css-values-4/#custom-idents
+fn (mut parser Parser) parse_custom_ident(mut tokens ComponentValueStream, blacklist []string) ?string {
+	_ = parser
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+
+	token := transaction.consume() or { return none }
+	if !token.is(.ident) {
+		return none
+	}
+	custom_ident := token.token().ident()
+
+	// The CSS-wide keywords are not valid <custom-ident>s.
+	if is_css_wide_keyword_string(custom_ident) {
+		return none
+	}
+
+	// The default keyword is reserved and is also not a valid <custom-ident>.
+	if equals_ignoring_ascii_case(custom_ident, 'default') {
+		return none
+	}
+
+	// Specifications using <custom-ident> must specify clearly what other keywords are excluded from <custom-ident>,
+	// if any-for example by saying that any pre-defined keywords in that property's value definition are excluded.
+	// Excluded keywords are excluded in all ASCII case permutations.
+	for value in blacklist {
+		if equals_ignoring_ascii_case(custom_ident, value) {
+			return none
+		}
+	}
+
+	tokens = transaction
+	return custom_ident
+}
+
+fn (mut parser Parser) parse_custom_ident_value(mut tokens ComponentValueStream, blacklist []string) ?CustomIdentStyleValue {
+	custom_ident := parser.parse_custom_ident(mut tokens, blacklist) or { return none }
+	return CustomIdentStyleValue.create(custom_ident)
 }
 
 fn descriptor_ident_list_style_value(values []string) StyleValue {
@@ -1973,24 +2050,65 @@ fn media_feature_stream_has_value_token(stream ComponentValueStream) bool {
 }
 
 fn (mut parser Parser) parse_ratio_value(mut tokens ComponentValueStream) ?StyleValue {
-	mut copy := tokens
-	left := parser.parse_number(mut copy) or { return none }
-	copy.consume_whitespace()
-	if !copy.has_more_tokens() {
-		tokens = copy
-		return StyleValue(StubStyleValue.create(.ratio, left.serialize(.normal)))
-	}
-	solidus := copy.consume() or { return none }
-	if !solidus.is_delim(u32(`/`)) {
+	ratio := parser.parse_ratio(mut tokens) or { return none }
+	return StyleValue(RatioStyleValue.create(ratio))
+}
+
+fn (mut parser Parser) parse_ratio(mut tokens ComponentValueStream) ?Ratio {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+
+	// FIXME: It seems like `calc(...) / calc(...)` is a valid <ratio>, but this case is neither mentioned in a spec,
+	//        nor tested in WPT, as far as I can tell.
+	//        Still, we should probably support it. That means not assuming we can resolve the calculation immediately.
+
+	// Boundary: CalculatedStyleValue does not carry the CalculationNode tree yet, so the C++ parse_calculated_value()
+	// branch in read_number_value is not representable here.
+
+	// `<ratio> = <number [0,+inf]> [ / <number [0,+inf]> ]?`
+	maybe_numerator := parser.read_ratio_number_value(transaction.consume() or { return none }) or {
 		return none
 	}
-	right := parser.parse_number(mut copy) or { return none }
-	if left.value() < 0 || right.value() < 0 {
+	if maybe_numerator < 0 {
 		return none
 	}
-	tokens = copy
-	return StyleValue(StubStyleValue.create(.ratio,
-		'${left.serialize(.normal)} / ${right.serialize(.normal)}'))
+	numerator := maybe_numerator
+
+	{
+		mut two_value_transaction := transaction.clone()
+		two_value_transaction.consume_whitespace()
+		solidus := two_value_transaction.consume() or {
+			tokens = transaction
+			return Ratio.new_single(numerator)
+		}
+		two_value_transaction.consume_whitespace()
+		maybe_denominator := parser.read_ratio_number_value(two_value_transaction.consume() or {
+			tokens = transaction
+			return Ratio.new_single(numerator)
+		}) or {
+			tokens = transaction
+			return Ratio.new_single(numerator)
+		}
+
+		if solidus.is_delim(u32(`/`)) && maybe_denominator >= 0 {
+			denominator := maybe_denominator
+			// Two-value ratio
+			tokens = two_value_transaction
+			return Ratio.new(numerator, denominator)
+		}
+	}
+
+	// Single-value ratio
+	tokens = transaction
+	return Ratio.new_single(numerator)
+}
+
+fn (mut parser Parser) read_ratio_number_value(component_value ComponentValue) ?f64 {
+	_ = parser
+	if component_value.is(.number) {
+		return component_value.token().number_value()
+	}
+	return none
 }
 
 fn style_value_from_css_image_source_for_value_logic(value CSSImageSourceStyleValue) StyleValue {

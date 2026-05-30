@@ -1582,6 +1582,7 @@ pub type StyleValue = AddFunctionStyleValue
 	| FontStyleStyleValue
 	| FontVariantAlternatesFunctionStyleValue
 	| FrequencyStyleValue
+	| GuaranteedInvalidStyleValue
 	| HSLColorStyleValue
 	| HWBColorStyleValue
 	| ImageStyleValue
@@ -1596,11 +1597,13 @@ pub type StyleValue = AddFunctionStyleValue
 	| OKLabColorStyleValue
 	| OKLCHColorStyleValue
 	| OpenTypeTaggedStyleValue
+	| PendingSubstitutionStyleValue
 	| PercentageStyleValue
 	| PositionStyleValue
 	| RadialGradientStyleValue
 	| RadialSizeStyleValue
 	| RandomValueSharingStyleValue
+	| RatioStyleValue
 	| RectStyleValue
 	| RepeatStyleStyleValue
 	| ResolutionStyleValue
@@ -1622,6 +1625,7 @@ pub type StyleValue = AddFunctionStyleValue
 	| TupleStyleValue
 	| UnicodeRangeStyleValue
 	| UnresolvedStyleValue
+	| URLStyleValue
 	| ViewFunctionStyleValue
 
 pub type StyleValueVector = []StyleValue
@@ -1656,6 +1660,7 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		FontStyleStyleValue { .font_style }
 		FontVariantAlternatesFunctionStyleValue { .font_variant_alternates_function }
 		FrequencyStyleValue { .frequency }
+		GuaranteedInvalidStyleValue { .guaranteed_invalid }
 		HSLColorStyleValue { .color }
 		HWBColorStyleValue { .color }
 		ImageStyleValue { .image }
@@ -1670,11 +1675,13 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		OKLabColorStyleValue { .color }
 		OKLCHColorStyleValue { .color }
 		OpenTypeTaggedStyleValue { .open_type_tagged }
+		PendingSubstitutionStyleValue { .pending_substitution }
 		PercentageStyleValue { .percentage }
 		PositionStyleValue { .position }
 		RadialGradientStyleValue { .radial_gradient }
 		RadialSizeStyleValue { .radial_size }
 		RandomValueSharingStyleValue { .random_value_sharing }
+		RatioStyleValue { .ratio }
 		RectStyleValue { .rect }
 		RepeatStyleStyleValue { .repeat_style }
 		ResolutionStyleValue { .resolution }
@@ -1696,6 +1703,7 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		TupleStyleValue { .tuple }
 		UnicodeRangeStyleValue { .unicode_range }
 		UnresolvedStyleValue { .unresolved }
+		URLStyleValue { .url }
 		ViewFunctionStyleValue { .view_function }
 	}
 }
@@ -1714,6 +1722,10 @@ pub fn (style_value StyleValue) is_number() bool {
 
 pub fn (style_value StyleValue) is_percentage() bool {
 	return style_value.type_() == .percentage
+}
+
+pub fn (style_value StyleValue) is_ratio() bool {
+	return style_value.type_() == .ratio
 }
 
 pub fn (style_value StyleValue) is_calculated() bool {
@@ -1767,6 +1779,14 @@ pub fn (style_value StyleValue) as_number() NumberStyleValue {
 pub fn (style_value StyleValue) as_percentage() PercentageStyleValue {
 	value := style_value
 	if value is PercentageStyleValue {
+		return value
+	}
+	panic('VERIFY_NOT_REACHED')
+}
+
+pub fn (style_value StyleValue) as_ratio() RatioStyleValue {
+	value := style_value
+	if value is RatioStyleValue {
 		return value
 	}
 	panic('VERIFY_NOT_REACHED')
@@ -1953,6 +1973,7 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		FontStyleStyleValue { style_value.serialize(mode) }
 		FontVariantAlternatesFunctionStyleValue { style_value.serialize(mode) }
 		FrequencyStyleValue { style_value.serialize(mode) }
+		GuaranteedInvalidStyleValue { style_value.serialize(mode) }
 		HSLColorStyleValue { style_value.serialize(mode) }
 		HWBColorStyleValue { style_value.serialize(mode) }
 		ImageStyleValue { style_value.serialize(mode) }
@@ -1967,11 +1988,13 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		OKLabColorStyleValue { style_value.serialize(mode) }
 		OKLCHColorStyleValue { style_value.serialize(mode) }
 		OpenTypeTaggedStyleValue { style_value.serialize(mode) }
+		PendingSubstitutionStyleValue { style_value.serialize(mode) }
 		PercentageStyleValue { style_value.serialize(mode) }
 		PositionStyleValue { style_value.serialize(mode) }
 		RadialGradientStyleValue { style_value.serialize(mode) }
 		RadialSizeStyleValue { style_value.serialize(mode) }
 		RandomValueSharingStyleValue { style_value.serialize(mode) }
+		RatioStyleValue { style_value.serialize(mode) }
 		RectStyleValue { style_value.serialize(mode) }
 		RepeatStyleStyleValue { style_value.serialize(mode) }
 		ResolutionStyleValue { style_value.serialize(mode) }
@@ -1993,6 +2016,7 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		TupleStyleValue { style_value.serialize(mode) }
 		UnicodeRangeStyleValue { style_value.serialize(mode) }
 		UnresolvedStyleValue { style_value.serialize(mode) }
+		URLStyleValue { style_value.serialize(mode) }
 		ViewFunctionStyleValue { style_value.serialize(mode) }
 	}
 }
@@ -2021,6 +2045,15 @@ pub fn (style_value StyleValue) tokenize() []ComponentValue {
 		return style_value.tokenize()
 	}
 	if style_value is StyleValueList {
+		return style_value.tokenize()
+	}
+	if style_value is RatioStyleValue {
+		return style_value.tokenize()
+	}
+	if style_value is GuaranteedInvalidStyleValue {
+		return style_value.tokenize()
+	}
+	if style_value is PendingSubstitutionStyleValue {
 		return style_value.tokenize()
 	}
 	if style_value is UnresolvedStyleValue {
@@ -2474,6 +2507,40 @@ pub fn (style_value NumberStyleValue) reify(associated_property string) CSSStyle
 	return CSSStyleValue.from_numeric(CSSUnitValue.create(style_value.value_, 'number'))
 }
 
+// --- RatioStyleValue ---
+
+pub struct RatioStyleValue {
+pub mut:
+	ratio_ Ratio
+}
+
+pub fn RatioStyleValue.create(ratio Ratio) RatioStyleValue {
+	return RatioStyleValue{
+		ratio_: ratio
+	}
+}
+
+pub fn (style_value RatioStyleValue) ratio() Ratio {
+	return style_value.ratio_
+}
+
+pub fn (style_value RatioStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	return style_value.ratio_.to_string()
+}
+
+pub fn (style_value RatioStyleValue) tokenize() []ComponentValue {
+	return [
+		ComponentValue.from_token(Token.create_number(Number.with_type(.number,
+			style_value.ratio_.numerator()), serialize_a_number(style_value.ratio_.numerator()))),
+		ComponentValue.from_token(Token.create_whitespace(' ')),
+		ComponentValue.from_token(Token.create_delim(u32(`/`), '/')),
+		ComponentValue.from_token(Token.create_whitespace(' ')),
+		ComponentValue.from_token(Token.create_number(Number.with_type(.number,
+			style_value.ratio_.denominator()), serialize_a_number(style_value.ratio_.denominator()))),
+	]
+}
+
 // --- IntegerStyleValue ---
 
 pub struct IntegerStyleValue {
@@ -2787,6 +2854,72 @@ pub fn (style_value UnresolvedStyleValue) serialize(mode SerializationMode) stri
 		parts << token.to_string()
 	}
 	return parts.join(' ')
+}
+
+// https://drafts.csswg.org/css-variables/#guaranteed-invalid-value
+pub struct GuaranteedInvalidStyleValue {}
+
+pub fn GuaranteedInvalidStyleValue.create() GuaranteedInvalidStyleValue {
+	return GuaranteedInvalidStyleValue{}
+}
+
+pub fn (style_value GuaranteedInvalidStyleValue) serialize(mode SerializationMode) string {
+	_ = style_value
+	_ = mode
+	return ''
+}
+
+pub fn (style_value GuaranteedInvalidStyleValue) tokenize() []ComponentValue {
+	_ = style_value
+	return [ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})]
+}
+
+pub struct URLStyleValue {
+pub mut:
+	url_ URL
+}
+
+pub fn URLStyleValue.create(url URL) URLStyleValue {
+	return URLStyleValue{
+		url_: url
+	}
+}
+
+pub fn (style_value URLStyleValue) url() URL {
+	return style_value.url_
+}
+
+pub fn (style_value URLStyleValue) serialize(mode SerializationMode) string {
+	_ = mode
+	return style_value.url_.to_string()
+}
+
+// https://drafts.csswg.org/css-values-5/#pending-substitution-value
+pub struct PendingSubstitutionStyleValue {
+pub mut:
+	original_shorthand_value StyleValue
+}
+
+pub fn PendingSubstitutionStyleValue.create(original_shorthand_value StyleValue) PendingSubstitutionStyleValue {
+	return PendingSubstitutionStyleValue{
+		original_shorthand_value: original_shorthand_value
+	}
+}
+
+pub fn (style_value PendingSubstitutionStyleValue) serialize(mode SerializationMode) string {
+	_ = style_value
+	_ = mode
+	return ''
+}
+
+pub fn (style_value PendingSubstitutionStyleValue) tokenize() []ComponentValue {
+	_ = style_value
+	// Not sure what to do here, but this isn't valid so returning GIV seems the most correct.
+	return [ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})]
+}
+
+pub fn (style_value PendingSubstitutionStyleValue) original_shorthand_value_ref() StyleValue {
+	return style_value.original_shorthand_value
 }
 
 pub struct StubStyleValue {

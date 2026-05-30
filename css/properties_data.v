@@ -216,8 +216,7 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 
 	// 2. If result contains the guaranteed-invalid value, prop is invalid at computed-value time; return.
 	if contains_guaranteed_invalid_value(result) {
-		return dom_style_value_from_value_logic(StyleValue(StubStyleValue.create(.guaranteed_invalid,
-			'')))
+		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
 	}
 
 	// 3. Parse result according to prop's grammar. If this returns failure, prop is invalid at computed-value time; return.
@@ -225,7 +224,7 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 	// FIXME: Parse according to @property syntax once we support that.
 	mut parser := Parser.from_component_values(result)
 	parsed_value := parser.parse_css_value(property_id) or {
-		return dom_style_value_from_value_logic(StyleValue(StubStyleValue.create(.guaranteed_invalid, '')))
+		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
 	}
 
 	// 4. Otherwise, replace prop's value with the parsed result.
@@ -301,8 +300,7 @@ fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value St
 		// https://drafts.csswg.org/css-values-5/#pending-substitution-value
 		// Ensure we keep the longhand around until it can be resolved.
 		set_longhand_property(property_id, value)
-		pending_substitution_value := StyleValue(StubStyleValue.create(.pending_substitution,
-			value.serialize(.normal)))
+		pending_substitution_value := StyleValue(PendingSubstitutionStyleValue.create(value))
 		for longhand_id in longhands_for_shorthand_local(property_id) {
 			for_each_typed_property_expanding_shorthands(longhand_id, pending_substitution_value,
 				set_longhand_property)

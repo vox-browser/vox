@@ -523,7 +523,7 @@ pub fn (dimension Dimension) to_string() string {
 }
 
 fn guaranteed_invalid_style_value() StyleValue {
-	return StyleValue(StubStyleValue.create(.guaranteed_invalid, ''))
+	return StyleValue(GuaranteedInvalidStyleValue.create())
 }
 
 fn parse_declaration_value_from_remaining(mut tokens ComponentValueTokenStream) ?[]ComponentValue {
@@ -651,9 +651,7 @@ fn parse_value_using_existing_parser_for_syntax_type(type_ ValueType, mut tokens
 			result = parser.parse_frequency_value(mut stream)
 		}
 		.image {
-			if image := parser.parse_image_value(mut stream) {
-				result = StyleValue(StubStyleValue.create(.image, image.serialize(.normal)))
-			}
+			result = parse_image_value_for_syntax(mut stream)
 		}
 		.integer {
 			result = parser.parse_integer_value(mut stream)
@@ -698,13 +696,184 @@ fn parse_value_using_existing_parser_for_syntax_type(type_ ValueType, mut tokens
 	return value
 }
 
-fn parse_url_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
-	tokens.consume_whitespace()
-	component_value := tokens.consume() or { return none }
-	if component_value.is(.url) || component_value.is_function_named('url') {
-		return StyleValue(StubStyleValue.create(.url, component_value.to_string()))
+fn request_url_modifier_list_contains_type(modifiers []RequestURLModifier, type_ RequestURLModifierType) bool {
+	for modifier in modifiers {
+		if modifier.type_() == type_ {
+			return true
+		}
+	}
+	return false
+}
+
+fn cross_origin_modifier_value_from_string(value string) ?CrossOriginModifierValue {
+	return match to_ascii_lowercase(value) {
+		'anonymous' { CrossOriginModifierValue.anonymous }
+		'use-credentials' { CrossOriginModifierValue.use_credentials }
+		else { none }
+	}
+}
+
+fn referrer_policy_modifier_value_from_string(value string) ?ReferrerPolicyModifierValue {
+	return match to_ascii_lowercase(value) {
+		'no-referrer' { ReferrerPolicyModifierValue.no_referrer }
+		'no-referrer-when-downgrade' { ReferrerPolicyModifierValue.no_referrer_when_downgrade }
+		'same-origin' { ReferrerPolicyModifierValue.same_origin }
+		'origin' { ReferrerPolicyModifierValue.origin }
+		'strict-origin' { ReferrerPolicyModifierValue.strict_origin }
+		'origin-when-cross-origin' { ReferrerPolicyModifierValue.origin_when_cross_origin }
+		'strict-origin-when-cross-origin' { ReferrerPolicyModifierValue.strict_origin_when_cross_origin }
+		'unsafe-url' { ReferrerPolicyModifierValue.unsafe_url }
+		else { none }
+	}
+}
+
+fn parse_single_ident_url_modifier_value(values []ComponentValue) ?string {
+	mut modifier_tokens := ComponentValueStream.new(values)
+	modifier_tokens.consume_whitespace()
+	maybe_ident := modifier_tokens.consume() or { return none }
+	modifier_tokens.consume_whitespace()
+	if !maybe_ident.is(.ident) || modifier_tokens.has_more_tokens() {
+		return none
+	}
+	return maybe_ident.token().ident()
+}
+
+fn parse_single_string_url_modifier_value(values []ComponentValue) ?string {
+	mut modifier_tokens := ComponentValueStream.new(values)
+	modifier_tokens.consume_whitespace()
+	maybe_string := modifier_tokens.consume() or { return none }
+	modifier_tokens.consume_whitespace()
+	if !maybe_string.is(.string) || modifier_tokens.has_more_tokens() {
+		return none
+	}
+	return maybe_string.token().string_value()
+}
+
+fn sort_request_url_modifiers_for_serialization(modifiers []RequestURLModifier) []RequestURLModifier {
+	mut sorted := []RequestURLModifier{}
+	for type_ in [RequestURLModifierType.cross_origin, .integrity, .referrer_policy] {
+		for modifier in modifiers {
+			if modifier.type_() == type_ {
+				sorted << modifier
+			}
+		}
+	}
+	return sorted
+}
+
+// https://drafts.csswg.org/css-values-4/#url-value
+fn parse_url_function_for_syntax(mut tokens ComponentValueStream) ?URL {
+	// <url> = <url()> | <src()>
+	// <url()> = url( <string> <url-modifier>* ) | <url-token>
+	// <src()> = src( <string> <url-modifier>* )
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+
+	// <url-token>
+	if component_value.is(.url) {
+		tokens = transaction
+		return URL.from_url(component_value.token().url())
+	}
+
+	// <url()> = url( <string> <url-modifier>* )
+	// <src()> = src( <string> <url-modifier>* )
+	if !component_value.is_function() {
+		return none
+	}
+
+	function_type := if component_value.is_function_named('url') {
+		URLType.url
+	} else if component_value.is_function_named('src') {
+		URLType.src
+	} else {
+		return none
+	}
+
+	mut url_tokens := ComponentValueStream.new(component_value.function().value)
+	url_tokens.consume_whitespace()
+	url_string := url_tokens.consume() or { return none }
+	if !url_string.is(.string) {
+		return none
+	}
+	url_tokens.consume_whitespace()
+
+	// NB: Currently <request-url-modifier> is the only kind of <url-modifier>.
+	// https://drafts.csswg.org/css-values-5/#request-url-modifiers
+	// <request-url-modifier> = <cross-origin-modifier> | <integrity-modifier> | <referrer-policy-modifier>
+	mut request_url_modifiers := []RequestURLModifier{}
+	// AD-HOC: This isn't mentioned in the spec, but WPT expects modifiers to be unique (one per type).
+	// Spec issue: https://github.com/w3c/csswg-drafts/issues/12151
+	for url_tokens.has_more_tokens() {
+		modifier_token := url_tokens.consume() or { return none }
+		if modifier_token.is_function_named('cross-origin') {
+			// Reject duplicates.
+			if request_url_modifier_list_contains_type(request_url_modifiers, .cross_origin) {
+				return none
+			}
+			// <cross-origin-modifier> = cross-origin(anonymous | use-credentials)
+			ident := parse_single_ident_url_modifier_value(modifier_token.function().value) or {
+				return none
+			}
+			value := cross_origin_modifier_value_from_string(ident) or { return none }
+			request_url_modifiers << RequestURLModifier.create_cross_origin(value)
+		} else if modifier_token.is_function_named('integrity') {
+			// Reject duplicates.
+			if request_url_modifier_list_contains_type(request_url_modifiers, .integrity) {
+				return none
+			}
+			// <integrity-modifier> = integrity(<string>)
+			value := parse_single_string_url_modifier_value(modifier_token.function().value) or {
+				return none
+			}
+			request_url_modifiers << RequestURLModifier.create_integrity(value)
+		} else if modifier_token.is_function_named('referrer-policy') {
+			// Reject duplicates.
+			if request_url_modifier_list_contains_type(request_url_modifiers, .referrer_policy) {
+				return none
+			}
+			// <referrer-policy-modifier> = (no-referrer | no-referrer-when-downgrade | same-origin | origin | strict-origin | origin-when-cross-origin | strict-origin-when-cross-origin | unsafe-url)
+			ident := parse_single_ident_url_modifier_value(modifier_token.function().value) or {
+				return none
+			}
+			value := referrer_policy_modifier_value_from_string(ident) or { return none }
+			request_url_modifiers << RequestURLModifier.create_referrer_policy(value)
+		} else {
+			return none
+		}
+		url_tokens.consume_whitespace()
+	}
+
+	// AD-HOC: This isn't mentioned in the spec, but WPT expects modifiers to be sorted alphabetically.
+	// Spec issue: https://github.com/w3c/csswg-drafts/issues/12151
+	tokens = transaction
+	return URL.new(url_string.token().string_value(), function_type,
+		sort_request_url_modifiers_for_serialization(request_url_modifiers))
+}
+
+fn parse_image_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
+	mut parser := Parser.from_component_values([])
+	mut url_probe := tokens.clone()
+	if url := parse_url_function_for_syntax(mut url_probe) {
+		// If the value is a 'url(..)' parse as image, but if it is just a reference 'url(#xx)', leave it alone,
+		// so we can parse as URL further on. These URLs are used as references inside SVG documents for masks.
+		// FIXME: Remove this special case once mask-image accepts `<image>`.
+		if !url.url().starts_with('#') {
+			tokens = url_probe
+			return StyleValue(ImageStyleValue.create(url))
+		}
+		return none
+	}
+
+	if image := parser.parse_image_value(mut tokens) {
+		return style_value_from_css_image_source_for_value_logic(image)
 	}
 	return none
+}
+
+fn parse_url_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
+	url := parse_url_function_for_syntax(mut tokens) or { return none }
+	return StyleValue(URLStyleValue.create(url))
 }
 
 fn parse_comma_separated_syntax_value_list(mut tokens ComponentValueTokenStream, child SyntaxNode) ?StyleValue {
