@@ -768,10 +768,105 @@ fn style_value_option_changed(old_value ?&dom.StyleValue, new_value ?&dom.StyleV
 	return new_value != none
 }
 
-fn property_affects_computed_font_list_stub(id PropertyID) bool {
-	_ = id
-	// Stub: the generated property table is not translated yet. C++ checks FontFamily,
-	// FontSize, FontStyle, FontWeight, FontWidth, and FontVariationSettings.
+fn computed_interpolation_longhand_property_ids() []PropertyID {
+	mut ids := []PropertyID{cap: number_of_longhand_properties}
+	for index in 0 .. number_of_longhand_properties {
+		if property_id := property_id_from_longhand_index(index) {
+			ids << property_id
+		}
+	}
+	return ids
+}
+
+fn computed_interpolation_is_longhand_property(property_id PropertyID) bool {
+	for longhand_id in computed_interpolation_longhand_property_ids() {
+		if longhand_id == property_id {
+			return true
+		}
+	}
+	return false
+}
+
+fn computed_interpolation_verify_longhand_property(property_id PropertyID) {
+	if !computed_interpolation_is_longhand_property(property_id) {
+		panic('PropertyID ${property_id} is not a translated longhand property')
+	}
+}
+
+fn computed_interpolation_property_computation_order() []PropertyID {
+	// C++ uses the generated `property_computation_order()` table. The V port
+	// currently exposes only the translated longhand range, so canonical enum order
+	// is the available computation order.
+	return computed_interpolation_longhand_property_ids()
+}
+
+fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
+	computed_interpolation_verify_longhand_property(property_id)
+	// Stub: generated InitialValues and typed StyleValue constructors are not
+	// connected to dom.StyleValue yet. Keep this at the exact metadata boundary.
+	return computed_interpolation_empty_style_value()
+}
+
+fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
+	computed_interpolation_verify_longhand_property(property_id)
+	return match property_id {
+		.color, .color_scheme { true }
+		else { false }
+	}
+}
+
+fn computed_interpolation_property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
+	computed_interpolation_verify_longhand_property(property_id)
+	// Stub: generated computed-value metadata is not translated yet. Returning true
+	// preserves the StyleComputer.cpp control flow while compute_value_of_property()
+	// remains the typed StyleValue integration point.
+	return true
+}
+
+fn computed_interpolation_property_requires_computation_with_inherited_value(property_id PropertyID) bool {
+	return computed_interpolation_property_requires_computation_with_cascaded_value(property_id)
+}
+
+fn computed_interpolation_property_requires_computation_with_initial_value(property_id PropertyID) bool {
+	return computed_interpolation_property_requires_computation_with_cascaded_value(property_id)
+}
+
+fn computed_interpolation_style_value_is_inherit(value &dom.StyleValue) bool {
+	_ = value
+	// Stub: dom.StyleValue is opaque in this port, so CSS-wide keyword detection
+	// cannot be performed here yet.
+	return false
+}
+
+fn computed_interpolation_style_value_is_initial(value &dom.StyleValue) bool {
+	_ = value
+	return false
+}
+
+fn computed_interpolation_style_value_is_unset(value &dom.StyleValue) bool {
+	_ = value
+	return false
+}
+
+fn computed_interpolation_style_value_is_revert(value &dom.StyleValue) bool {
+	_ = value
+	return false
+}
+
+fn computed_interpolation_style_value_is_revert_layer(value &dom.StyleValue) bool {
+	_ = value
+	return false
+}
+
+fn computed_interpolation_style_value_is_currentcolor(value &dom.StyleValue) bool {
+	_ = value
+	return false
+}
+
+fn property_affects_computed_font_list(id PropertyID) bool {
+	computed_interpolation_verify_longhand_property(id)
+	// The translated PropertyID enum does not yet include FontFamily, FontSize,
+	// FontStyle, FontWeight, FontWidth, or FontVariationSettings.
 	return false
 }
 
@@ -835,35 +930,59 @@ pub fn (mut c ComputedProperties) reset_non_inherited_animated_properties() {
 }
 
 pub fn (c &ComputedProperties) is_property_important(property_id PropertyID) bool {
+	computed_interpolation_verify_longhand_property(property_id)
 	return c.property_important_[property_id] or { false }
 }
 
 pub fn (c &ComputedProperties) is_property_inherited(property_id PropertyID) bool {
+	computed_interpolation_verify_longhand_property(property_id)
 	return c.property_inherited_[property_id] or { false }
 }
 
 pub fn (c &ComputedProperties) is_animated_property_inherited(property_id PropertyID) bool {
+	computed_interpolation_verify_longhand_property(property_id)
 	return c.animated_property_inherited_[property_id] or { false }
 }
 
 pub fn (c &ComputedProperties) is_animated_property_result_of_transition(property_id PropertyID) bool {
+	computed_interpolation_verify_longhand_property(property_id)
 	return c.animated_property_result_of_transition_[property_id] or { false }
 }
 
 pub fn (mut c ComputedProperties) set_property_important(property_id PropertyID, important Important) {
-	c.property_important_[property_id] = important == .yes
+	computed_interpolation_verify_longhand_property(property_id)
+	if important == .yes {
+		c.property_important_[property_id] = true
+	} else {
+		c.property_important_.delete(property_id)
+	}
 }
 
 pub fn (mut c ComputedProperties) set_property_inherited(property_id PropertyID, inherited ComputedPropertyInheritance) {
-	c.property_inherited_[property_id] = inherited == .yes
+	computed_interpolation_verify_longhand_property(property_id)
+	if inherited == .yes {
+		c.property_inherited_[property_id] = true
+	} else {
+		c.property_inherited_.delete(property_id)
+	}
 }
 
 pub fn (mut c ComputedProperties) set_animated_property_inherited(property_id PropertyID, inherited ComputedPropertyInheritance) {
-	c.animated_property_inherited_[property_id] = inherited == .yes
+	computed_interpolation_verify_longhand_property(property_id)
+	if inherited == .yes {
+		c.animated_property_inherited_[property_id] = true
+	} else {
+		c.animated_property_inherited_.delete(property_id)
+	}
 }
 
 pub fn (mut c ComputedProperties) set_animated_property_result_of_transition(property_id PropertyID, result AnimatedPropertyResultOfTransition) {
-	c.animated_property_result_of_transition_[property_id] = result == .yes
+	computed_interpolation_verify_longhand_property(property_id)
+	if result == .yes {
+		c.animated_property_result_of_transition_[property_id] = true
+	} else {
+		c.animated_property_result_of_transition_.delete(property_id)
+	}
 }
 
 pub fn (mut c ComputedProperties) set_property(property_id PropertyID, value &dom.StyleValue, inherited ComputedPropertyInheritance, important Important) {
@@ -873,26 +992,30 @@ pub fn (mut c ComputedProperties) set_property(property_id PropertyID, value &do
 }
 
 pub fn (mut c ComputedProperties) set_property_without_modifying_flags(property_id PropertyID, value &dom.StyleValue) {
+	computed_interpolation_verify_longhand_property(property_id)
 	c.property_values_[property_id] = unsafe { value }
-	if property_affects_computed_font_list_stub(property_id) {
+	if property_affects_computed_font_list(property_id) {
 		c.clear_computed_font_list_cache()
 	}
 }
 
 pub fn (mut c ComputedProperties) set_animated_property(property_id PropertyID, value &dom.StyleValue, result AnimatedPropertyResultOfTransition, inherited ComputedPropertyInheritance) {
+	computed_interpolation_verify_longhand_property(property_id)
 	c.animated_property_values_[property_id] = unsafe { value }
 	c.set_animated_property_inherited(property_id, inherited)
 	c.set_animated_property_result_of_transition(property_id, result)
-	if property_affects_computed_font_list_stub(property_id) {
+	if property_affects_computed_font_list(property_id) {
 		c.clear_computed_font_list_cache()
 	}
 }
 
 pub fn (mut c ComputedProperties) remove_animated_property(property_id PropertyID) {
+	computed_interpolation_verify_longhand_property(property_id)
 	c.animated_property_values_.delete(property_id)
 }
 
 pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_value WithAnimationsApplied) ?&dom.StyleValue {
+	computed_interpolation_verify_longhand_property(property_id)
 	// Important properties override animated but not transitioned properties.
 	if (!c.is_property_important(property_id)
 		|| c.is_animated_property_result_of_transition(property_id))
@@ -907,6 +1030,7 @@ pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_
 }
 
 pub fn (mut c ComputedProperties) revert_property(property_id PropertyID, style_for_revert &ComputedProperties) {
+	computed_interpolation_verify_longhand_property(property_id)
 	if value := style_for_revert.property_values_[property_id] {
 		c.property_values_[property_id] = unsafe { value }
 	} else {
@@ -3133,7 +3257,11 @@ pub mut:
 	node                                                        ?&dom.Node
 }
 
-pub struct LogicalAliasMappingContext {}
+pub struct LogicalAliasMappingContext {
+pub mut:
+	writing_mode WritingMode = .horizontal_tb
+	direction     Direction   = .ltr
+}
 
 pub struct RuleCache {
 pub mut:
@@ -3151,7 +3279,10 @@ pub mut:
 
 pub struct StyleComputationContextStub {
 pub mut:
-	property_id PropertyID
+	property_id                PropertyID
+	length_resolution_context  LengthResolutionContext = LengthResolutionContext.default()
+	color_scheme               ?PreferredColorScheme
+	abstract_element           ?dom.AbstractElement
 }
 
 @[heap]
@@ -3170,7 +3301,8 @@ pub mut:
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
 	return &StyleComputer{
-		document_: unsafe { document }
+		document_:      unsafe { document }
+		viewport_rect_: css_pixel_rect_from_dom_rect(document.viewport_rect())
 	}
 }
 

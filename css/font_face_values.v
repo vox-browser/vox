@@ -709,13 +709,9 @@ pub fn (rule &CSSFontFeatureValuesRule) font_family() string {
 pub fn (mut rule CSSFontFeatureValuesRule) set_font_family(value string) {
 	mut family_names := []string{}
 	for family_name in value.split(',') {
-		trimmed := family_name.trim_space()
-		if trimmed.len != 0 {
-			family_names << unquote_css_string(trimmed)
-		}
+		family_names << family_name.trim_space()
 	}
 	rule.font_families_ = family_names
-	rule.clear_caches()
 }
 
 pub fn (rule &CSSFontFeatureValuesRule) serialized() string {
@@ -1501,6 +1497,10 @@ pub fn (face &ParsedFontFace) font_family() string {
 	return face.font_family_
 }
 
+pub fn (face &ParsedFontFace) parent_rule_ref() ?&CSSFontFaceRule {
+	return face.parent_rule
+}
+
 pub fn (face &ParsedFontFace) weight() ?FontWeightRange {
 	return face.weight_
 }
@@ -1523,6 +1523,34 @@ pub fn (face &ParsedFontFace) unicode_ranges() []UnicodeRange {
 
 pub fn (face &ParsedFontFace) font_display() FontDisplay {
 	return face.font_display_
+}
+
+pub fn (face &ParsedFontFace) ascent_override() ?Percentage {
+	return face.ascent_override_
+}
+
+pub fn (face &ParsedFontFace) descent_override() ?Percentage {
+	return face.descent_override_
+}
+
+pub fn (face &ParsedFontFace) line_gap_override() ?Percentage {
+	return face.line_gap_override_
+}
+
+pub fn (face &ParsedFontFace) font_named_instance() ?string {
+	return face.font_named_instance_
+}
+
+pub fn (face &ParsedFontFace) font_language_override() ?string {
+	return face.font_language_override_
+}
+
+pub fn (face &ParsedFontFace) font_feature_settings() ?map[string]i64 {
+	return face.font_feature_settings_
+}
+
+pub fn (face &ParsedFontFace) font_variation_settings() ?map[string]f64 {
+	return face.font_variation_settings_
 }
 
 // --- FontFace object model ---
@@ -1739,29 +1767,23 @@ pub fn (face &FontFaceObject) parsed_font_face() ParsedFontFace {
 	}
 
 	// FIXME: The ParsedFontFace is kind of expensive to create. We should be using a shared sub-object for the data
-	mut descriptors := CSSFontFaceDescriptors.create([
-		FontFaceDescriptor{
-			id:    .font_family
-			value: face.family_
-		},
-		FontFaceDescriptor{
-			id:    .font_weight
-			value: face.weight_
-		},
-		FontFaceDescriptor{
-			id:    .font_style
-			value: face.style_
-		},
-		FontFaceDescriptor{
-			id:    .font_width
-			value: face.stretch_
-		},
-		FontFaceDescriptor{
-			id:    .unicode_range
-			value: face.unicode_range_
-		},
-	])
-	return ParsedFontFace.from_descriptors(descriptors)
+	return ParsedFontFace{
+		// Create a dummy CSSFontFaceRule so that we load relative to the document's base URL.
+		parent_rule:          CSSFontFaceRule.create(CSSFontFaceDescriptors.create([]FontFaceDescriptor{}))
+		font_family_:         face.family_
+		// FIXME: Actually parse this as we're supposed to.
+		weight_:              parse_font_face_object_numeric_weight(face.weight_)
+		slope_:               0 // FIXME: slope
+		width_:               100 // FIXME: width
+		sources_:             face.urls.clone()
+		unicode_ranges_:      face.unicode_ranges_.clone()
+		font_display_:        .auto_ // FIXME: font_display
+		font_named_instance_: none // font-named-instance doesn't exist in FontFace
+		// font-language-override doesn't exist in FontFace
+		font_language_override_: none
+		font_feature_settings_:  none // FIXME: feature_settings
+		font_variation_settings_: none // FIXME: variation_settings
+	}
 }
 
 pub fn (face &FontFaceObject) family() string {
@@ -3058,14 +3080,21 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 	// removed from the matching set.
 
 	// FIXME: This whole function currently just returns the first match instead of progressing further, so we'll do that here too.
-	for mut candidate in matching_family_fonts {
-		if !candidate.key.weight.contains_inclusive(weight) {
-			continue
+	mut matching_weight_index := -1
+	for i, candidate in matching_family_fonts {
+		if candidate.key.weight.contains_inclusive(weight) {
+			matching_weight_index = i
+			break
 		}
-		if found_font := candidate.font_with_point_size(font_size_in_pt, variations,
-			font_feature_data, font_feature_values)
-		{
-			return found_font
+	}
+	if matching_weight_index >= 0 {
+		for i := matching_weight_index; i < matching_family_fonts.len; i++ {
+			mut candidate := matching_family_fonts[i]
+			if found_font := candidate.font_with_point_size(font_size_in_pt, variations,
+				font_feature_data, font_feature_values)
+			{
+				return found_font
+			}
 		}
 	}
 
@@ -3076,11 +3105,11 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 	//   in descending order, followed by weights greater than 500, until a match is found.
 	if weight >= 400 && weight <= 500 {
 		mut i := 0
-		for ; i < matching_family_fonts.len; i++ {
+		for i < matching_family_fonts.len && matching_family_fonts[i].key.weight.min < weight {
+			i++
+		}
+		for ; i < matching_family_fonts.len && matching_family_fonts[i].key.weight.min <= 500; i++ {
 			mut candidate := matching_family_fonts[i]
-			if candidate.key.weight.min < weight || candidate.key.weight.min > 500 {
-				continue
-			}
 			if found_font := candidate.font_with_point_size(font_size_in_pt, variations,
 				font_feature_data, font_feature_values)
 			{
@@ -3256,13 +3285,28 @@ fn parse_font_face_source(input string) ?ParsedFontFaceSource {
 		if modifier_lower.starts_with('format(') && modifier.ends_with(')') {
 			source.format = unquote_css_string(modifier[7..modifier.len - 1].trim_space())
 		} else if modifier_lower.starts_with('tech(') && modifier.ends_with(')') {
-			tech_name := unquote_css_string(modifier[5..modifier.len - 1].trim_space())
-			if tech := font_tech_from_string(tech_name) {
-				source.tech << tech
+			tech_names := split_font_tech_names(modifier[5..modifier.len - 1])
+			for tech_name in tech_names {
+				if tech := font_tech_from_string(tech_name) {
+					source.tech << tech
+				}
 			}
 		}
 	}
 	return source
+}
+
+fn split_font_tech_names(value string) []string {
+	mut names := []string{}
+	for comma_part in split_css_comma_list(value) {
+		for space_part in split_css_space_list(comma_part) {
+			name := unquote_css_string(space_part)
+			if name.len != 0 {
+				names << name
+			}
+		}
+	}
+	return names
 }
 
 fn split_css_comma_list(value string) []string {
@@ -3457,6 +3501,14 @@ fn parse_font_weight_range(value string) ?FontWeightRange {
 		}
 	}
 	return none
+}
+
+fn parse_font_face_object_numeric_weight(value string) ?FontWeightRange {
+	weight := strconv.atoi(value.trim_space()) or { return none }
+	return FontWeightRange{
+		min: weight
+		max: weight
+	}
 }
 
 fn compute_font_style_slope_stub(value string) int {
