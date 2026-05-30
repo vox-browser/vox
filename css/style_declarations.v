@@ -751,7 +751,7 @@ pub fn (mut property_map StylePropertyMapReadOnly) get(property_name string) ?CS
 		if reified_values.len > 0 {
 			return reified_values[0]
 		}
-		return StyleValue(StubStyleValue.create(.unresolved, serialized_value)).reify(property.name())
+		return StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic(serialized_value))).reify(property.name())
 	}
 	if property_value := property_map.get_style_value(property) {
 		_ = property_value
@@ -780,7 +780,7 @@ pub fn (mut property_map StylePropertyMapReadOnly) get_all(property_name string)
 		if reified_values.len > 0 {
 			return reified_values
 		}
-		return [StyleValue(StubStyleValue.create(.unresolved, serialized_value)).reify(property.name())]
+		return [StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic(serialized_value))).reify(property.name())]
 	}
 	if property_value := property_map.get_style_value(property) {
 		_ = property_value

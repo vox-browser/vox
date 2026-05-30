@@ -2469,7 +2469,7 @@ fn find_matching_font_faces(font_face_set &FontFaceSet, font string, text string
 			continue
 		}
 		for font_face in available_font_faces {
-			if font_face.family().to_lower() != font_family.to_lower() {
+			if font_face.family() != font_family {
 				continue
 			}
 			if !font_face_object_array_contains(matched_font_faces, font_face) {
