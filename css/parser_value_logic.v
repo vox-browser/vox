@@ -247,6 +247,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.outline_width {
 			return parser.parse_border_or_outline_width_value(mut tokens)
 		}
+		.outline_offset {
+			return parser.parse_length_value(mut tokens)
+		}
+		.outline_style {
+			return parser.parse_outline_style_value(mut tokens)
+		}
 		.position_anchor {
 			return parser.parse_position_anchor_value(mut tokens)
 		}
@@ -1067,6 +1073,28 @@ fn (mut parser Parser) parse_border_or_outline_width_value(mut tokens ComponentV
 		return value
 	}
 	return parse_keyword_as_custom_ident_for_value_logic(mut tokens, ['thin', 'medium', 'thick'])
+}
+
+fn (mut parser Parser) parse_outline_style_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is(.ident) {
+		return none
+	}
+	ident := to_ascii_lowercase(component_value.token().ident())
+	if ident !in ['auto', 'none', 'dotted', 'dashed', 'solid', 'double', 'groove', 'ridge', 'inset',
+		'outset'] {
+		return none
+	}
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+	keyword := keyword_from_string(ident) or { return none }
+	tokens = transaction
+	return StyleValue(KeywordStyleValue.create(keyword))
 }
 
 // https://drafts.csswg.org/css-borders-4/#typedef-corner-shape-value

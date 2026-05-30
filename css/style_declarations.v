@@ -70,6 +70,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.math_style { 'math-style' }
 		.opacity { 'opacity' }
 		.outline_color { 'outline-color' }
+		.outline_offset { 'outline-offset' }
+		.outline_style { 'outline-style' }
 		.outline_width { 'outline-width' }
 		.position_anchor { 'position-anchor' }
 		.shape_image_threshold { 'shape-image-threshold' }
@@ -116,9 +118,9 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
 		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .outline_color,
-		.outline_width, .position_anchor, .shape_image_threshold, .stop_color, .stop_opacity,
-		.stroke_opacity, .rotate, .scale, .transform, .translate, .webkit_text_fill_color,
-		.word_spacing {
+		.outline_offset, .outline_style, .outline_width, .position_anchor, .shape_image_threshold,
+		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
+		.webkit_text_fill_color, .word_spacing {
 			true
 		}
 	}
@@ -142,15 +144,15 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
 		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .outline_color,
-		.outline_width, .position_anchor, .shape_image_threshold, .stop_color, .stop_opacity,
-		.stroke_opacity, .rotate, .scale, .transform, .translate, .webkit_text_fill_color,
-		.word_spacing {
+		.outline_offset, .outline_style, .outline_width, .position_anchor, .shape_image_threshold,
+		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
+		.webkit_text_fill_color, .word_spacing {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 69
+pub const number_of_longhand_properties = 71
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
@@ -211,26 +213,28 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		46 { PropertyID.math_style }
 		47 { PropertyID.opacity }
 		48 { PropertyID.outline_color }
-		49 { PropertyID.outline_width }
-		50 { PropertyID.position_anchor }
-		51 { PropertyID.shape_image_threshold }
-		52 { PropertyID.stop_color }
-		53 { PropertyID.stop_opacity }
-		54 { PropertyID.stroke_opacity }
-		55 { PropertyID.rotate }
-		56 { PropertyID.scale }
-		57 { PropertyID.scroll_timeline_name }
-		58 { PropertyID.transform }
-		59 { PropertyID.transition_behavior }
-		60 { PropertyID.transition_delay }
-		61 { PropertyID.transition_duration }
-		62 { PropertyID.transition_property }
-		63 { PropertyID.transition_timing_function }
-		64 { PropertyID.translate }
-		65 { PropertyID.view_timeline_inset }
-		66 { PropertyID.view_timeline_name }
-		67 { PropertyID.webkit_text_fill_color }
-		68 { PropertyID.word_spacing }
+		49 { PropertyID.outline_offset }
+		50 { PropertyID.outline_style }
+		51 { PropertyID.outline_width }
+		52 { PropertyID.position_anchor }
+		53 { PropertyID.shape_image_threshold }
+		54 { PropertyID.stop_color }
+		55 { PropertyID.stop_opacity }
+		56 { PropertyID.stroke_opacity }
+		57 { PropertyID.rotate }
+		58 { PropertyID.scale }
+		59 { PropertyID.scroll_timeline_name }
+		60 { PropertyID.transform }
+		61 { PropertyID.transition_behavior }
+		62 { PropertyID.transition_delay }
+		63 { PropertyID.transition_duration }
+		64 { PropertyID.transition_property }
+		65 { PropertyID.transition_timing_function }
+		66 { PropertyID.translate }
+		67 { PropertyID.view_timeline_inset }
+		68 { PropertyID.view_timeline_name }
+		69 { PropertyID.webkit_text_fill_color }
+		70 { PropertyID.word_spacing }
 		else { none }
 	}
 }

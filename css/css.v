@@ -83,6 +83,8 @@ pub enum PropertyID {
 	math_style
 	opacity
 	outline_color
+	outline_offset
+	outline_style
 	outline_width
 	position_anchor
 	shape_image_threshold

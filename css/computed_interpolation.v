@@ -919,6 +919,12 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.outline_color {
 			'currentcolor'
 		}
+		.outline_offset {
+			'0'
+		}
+		.outline_style {
+			'none'
+		}
 		.outline_width {
 			'medium'
 		}
@@ -997,15 +1003,15 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity,
 		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
 		.letter_spacing, .line_height, .list_style_image, .mask_image, .math_depth, .opacity,
-		.outline_color, .outline_width, .shape_image_threshold, .stop_color, .stop_opacity,
-		.stroke_opacity, .rotate, .scale, .transform, .transition_delay, .transition_duration,
-		.transition_timing_function, .translate, .view_timeline_inset, .webkit_text_fill_color,
-		.word_spacing {
+		.outline_color, .outline_offset, .outline_width, .shape_image_threshold, .stop_color,
+		.stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .transition_delay,
+		.transition_duration, .transition_timing_function, .translate, .view_timeline_inset,
+		.webkit_text_fill_color, .word_spacing {
 			true
 		}
 		.anchor_name, .anchor_scope, .animation_composition, .animation_direction,
 		.animation_fill_mode, .animation_play_state, .color_scheme, .content_visibility,
-		.math_style, .position_anchor, .scroll_timeline_name, .transition_behavior,
+		.math_style, .outline_style, .position_anchor, .scroll_timeline_name, .transition_behavior,
 		.transition_property, .view_timeline_name {
 			false
 		}
@@ -1033,11 +1039,11 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
 		.caret_color, .color_scheme, .content_visibility, .fill_opacity, .flood_opacity,
 		.font_feature_settings, .font_variation_settings, .line_height, .list_style_image,
-		.mask_image, .math_style, .opacity, .outline_color, .position_anchor,
-		.scroll_timeline_name, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate,
-		.scale, .transform, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .translate, .view_timeline_inset,
-		.view_timeline_name, .webkit_text_fill_color {
+		.mask_image, .math_style, .opacity, .outline_color, .outline_offset, .outline_style,
+		.position_anchor, .scroll_timeline_name, .shape_image_threshold, .stop_opacity,
+		.stroke_opacity, .rotate, .scale, .transform, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .translate,
+		.view_timeline_inset, .view_timeline_name, .webkit_text_fill_color {
 			false
 		}
 	}
@@ -1643,9 +1649,30 @@ pub fn (c &ComputedProperties) line_style(property_id PropertyID) LineStyle {
 	return .none_
 }
 
+pub fn (c &ComputedProperties) outline_offset() Length {
+	return c.length(.outline_offset)
+}
+
+fn keyword_to_outline_style_for_computed_properties(keyword Keyword) ?OutlineStyle {
+	return match keyword {
+		.auto { OutlineStyle.auto_ }
+		.none_ { OutlineStyle.none_ }
+		.dotted { OutlineStyle.dotted }
+		.dashed { OutlineStyle.dashed }
+		.solid { OutlineStyle.solid }
+		.double_ { OutlineStyle.double_ }
+		.groove { OutlineStyle.groove }
+		.ridge { OutlineStyle.ridge }
+		.inset { OutlineStyle.inset }
+		.outset { OutlineStyle.outset }
+		else { none }
+	}
+}
+
 pub fn (c &ComputedProperties) outline_style() OutlineStyle {
-	_ = c
-	return .none_
+	value := c.property(.outline_style, .yes) or { return .none_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .none_ }
+	return keyword_to_outline_style_for_computed_properties(keyword) or { OutlineStyle.none_ }
 }
 
 pub fn (c &ComputedProperties) text_decoration_line() []TextDecorationLine {
@@ -2772,8 +2799,9 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity, .font_style,
 		.font_weight, .font_width, .letter_spacing, .line_height, .opacity, .outline_color,
-		.outline_width, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity,
-		.rotate, .scale, .transform, .translate, .webkit_text_fill_color, .word_spacing {
+		.outline_offset, .outline_style, .outline_width, .shape_image_threshold, .stop_color,
+		.stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
+		.webkit_text_fill_color, .word_spacing {
 			.by_computed_value
 		}
 		.content_visibility {
@@ -3483,11 +3511,11 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_feature_settings, .font_style,
 		.font_variation_settings, .font_weight, .font_width, .line_height, .mask_image,
-		.math_depth, .math_style, .opacity, .outline_color, .outline_width, .shape_image_threshold,
-		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .scroll_timeline_name,
-		.transform, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .translate, .view_timeline_inset,
-		.view_timeline_name, .webkit_text_fill_color {
+		.math_depth, .math_style, .opacity, .outline_color, .outline_offset, .outline_style,
+		.outline_width, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity,
+		.rotate, .scale, .scroll_timeline_name, .transform, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
+		.translate, .view_timeline_inset, .view_timeline_name, .webkit_text_fill_color {
 			false
 		}
 		.anchor_name, .aspect_ratio, .letter_spacing, .list_style_image, .position_anchor,
@@ -3516,9 +3544,9 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity,
 		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
 		.letter_spacing, .line_height, .list_style_image, .math_depth, .math_style, .outline_color,
-		.outline_width, .position_anchor, .scroll_timeline_name, .shape_image_threshold,
-		.stop_color, .stop_opacity, .stroke_opacity, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function,
+		.outline_offset, .outline_style, .outline_width, .position_anchor, .scroll_timeline_name,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
 		.view_timeline_inset, .view_timeline_name, .webkit_text_fill_color, .word_spacing {
 			false
 		}
@@ -3554,9 +3582,9 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity,
 		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
 		.letter_spacing, .line_height, .list_style_image, .math_depth, .math_style, .outline_color,
-		.outline_width, .position_anchor, .scroll_timeline_name, .shape_image_threshold,
-		.stop_color, .stop_opacity, .stroke_opacity, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function,
+		.outline_offset, .outline_style, .outline_width, .position_anchor, .scroll_timeline_name,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
 		.view_timeline_inset, .view_timeline_name, .webkit_text_fill_color, .word_spacing {
 			false
 		}
@@ -4949,6 +4977,9 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 			StyleComputer.compute_line_height(absolutized_value,
 				computation_context.length_resolution_context.font_metrics.font_size)
 		}
+		.outline_offset {
+			StyleComputer.compute_length(absolutized_value, computation_context)
+		}
 		.math_depth {
 			inheritance_parent := style_computation_inheritance_parent(computation_context)
 			StyleComputer.compute_math_depth(absolutized_value, inheritance_parent)
@@ -5095,6 +5126,16 @@ pub fn StyleComputer.compute_border_or_outline_width(absolutized_value &dom.Styl
 	snapped_length := computed_interpolation_snap_a_length_as_a_border_width(device_pixels_per_css_pixel,
 		absolute_length)
 	return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_css_px(snapped_length))))
+}
+
+pub fn StyleComputer.compute_length(absolutized_value &dom.StyleValue, computation_context StyleComputationContextStub) &dom.StyleValue {
+	length := computed_interpolation_length_from_dom_style_value(absolutized_value) or {
+		return unsafe { absolutized_value }
+	}
+	computed_length := LengthStyleValue.create(length).absolutized(ComputationContext{
+		length_resolution_context: computation_context.length_resolution_context
+	})
+	return dom_style_value_from_value_logic(StyleValue(computed_length))
 }
 
 pub fn StyleComputer.compute_corner_shape(absolutized_value &dom.StyleValue) &dom.StyleValue {

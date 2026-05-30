@@ -249,6 +249,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'outline-color' {
 			PropertyID.outline_color
 		}
+		'outline-offset' {
+			PropertyID.outline_offset
+		}
+		'outline-style' {
+			PropertyID.outline_style
+		}
 		'outline-width' {
 			PropertyID.outline_width
 		}
@@ -376,6 +382,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.content_visibility {
 			false
 		}
+		.outline_style {
+			false
+		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape {
 			value_type == .corner_shape
@@ -391,7 +400,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 			value_type == .view_timeline_inset
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.outline_width {
+		.outline_offset, .outline_width {
 			value_type == .length
 		}
 		.font_feature_settings, .font_variation_settings {
@@ -529,6 +538,13 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.outline_width {
 			lowercase_value in ['thin', 'medium', 'thick']
 		}
+		.outline_offset {
+			false
+		}
+		.outline_style {
+			lowercase_value in ['auto', 'none', 'dotted', 'dashed', 'solid', 'double', 'groove',
+				'ridge', 'inset', 'outset']
+		}
 		.font_feature_settings, .font_variation_settings {
 			lowercase_value == 'normal'
 		}
@@ -585,7 +601,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.accent_color, .background_color, .background_image, .border_bottom_color,
 		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
 		.caret_color, .color, .flood_color, .list_style_image, .mask_image, .outline_color,
-		.stop_color, .view_timeline_inset, .webkit_text_fill_color {
+		.outline_style, .stop_color, .view_timeline_inset, .webkit_text_fill_color {
 			false
 		}
 		.color_scheme {
@@ -610,10 +626,10 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.animation_timing_function, .aspect_ratio, .border_bottom_width, .border_left_width,
 		.border_right_width, .border_top_width, .font_feature_settings, .font_style,
 		.font_variation_settings, .font_weight, .font_width, .letter_spacing, .line_height,
-		.math_depth, .math_style, .fill_opacity, .flood_opacity, .opacity, .outline_width,
-		.shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_timing_function,
-		.translate, .word_spacing {
+		.math_depth, .math_style, .fill_opacity, .flood_opacity, .opacity, .outline_offset,
+		.outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale,
+		.transform, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_timing_function, .translate, .word_spacing {
 			false
 		}
 		.transition_property {
@@ -1619,6 +1635,14 @@ pub enum Keyword {
 	none_
 	visible
 	hidden
+	dotted
+	dashed
+	solid
+	double_
+	groove
+	ridge
+	inset
+	outset
 	normal
 	compact
 	bold
@@ -1783,6 +1807,14 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.none_ { 'none' }
 		.visible { 'visible' }
 		.hidden { 'hidden' }
+		.dotted { 'dotted' }
+		.dashed { 'dashed' }
+		.solid { 'solid' }
+		.double_ { 'double' }
+		.groove { 'groove' }
+		.ridge { 'ridge' }
+		.inset { 'inset' }
+		.outset { 'outset' }
 		.normal { 'normal' }
 		.compact { 'compact' }
 		.bold { 'bold' }
@@ -1936,6 +1968,14 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'none' { Keyword.none_ }
 		'visible' { Keyword.visible }
 		'hidden' { Keyword.hidden }
+		'dotted' { Keyword.dotted }
+		'dashed' { Keyword.dashed }
+		'solid' { Keyword.solid }
+		'double' { Keyword.double_ }
+		'groove' { Keyword.groove }
+		'ridge' { Keyword.ridge }
+		'inset' { Keyword.inset }
+		'outset' { Keyword.outset }
 		'normal' { Keyword.normal }
 		'compact' { Keyword.compact }
 		'bold' { Keyword.bold }
