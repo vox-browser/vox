@@ -802,9 +802,18 @@ fn computed_interpolation_property_computation_order() []PropertyID {
 
 fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
-	// Stub: generated InitialValues and typed StyleValue constructors are not
-	// connected to dom.StyleValue yet. Keep this at the exact metadata boundary.
-	return computed_interpolation_empty_style_value()
+	initial_text := match property_id {
+		.animation_timeline { 'auto' }
+		.color { 'canvastext' }
+		.color_scheme { 'normal' }
+		.content_visibility { 'visible' }
+	}
+	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
+		// Boundary: dom.StyleValue is opaque in this port, so initial values that
+		// parse to typed css.StyleValue but cannot be reified still use the empty
+		// placeholder.
+		return computed_interpolation_empty_style_value()
+	}
 }
 
 fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
@@ -817,18 +826,23 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 
 fn computed_interpolation_property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
-	// Stub: generated computed-value metadata is not translated yet. Returning true
-	// preserves the StyleComputer.cpp control flow while compute_value_of_property()
-	// remains the typed StyleValue integration point.
-	return true
+	return match property_id {
+		.animation_timeline, .color { true }
+		.color_scheme, .content_visibility { false }
+	}
 }
 
 fn computed_interpolation_property_requires_computation_with_inherited_value(property_id PropertyID) bool {
-	return computed_interpolation_property_requires_computation_with_cascaded_value(property_id)
+	computed_interpolation_verify_longhand_property(property_id)
+	return false
 }
 
 fn computed_interpolation_property_requires_computation_with_initial_value(property_id PropertyID) bool {
-	return computed_interpolation_property_requires_computation_with_cascaded_value(property_id)
+	computed_interpolation_verify_longhand_property(property_id)
+	return match property_id {
+		.color { true }
+		.animation_timeline, .color_scheme, .content_visibility { false }
+	}
 }
 
 fn computed_interpolation_style_value_is_inherit(value &dom.StyleValue) bool {
@@ -1999,9 +2013,9 @@ pub fn interpolate_discrete(from &dom.StyleValue, to &dom.StyleValue, delta f64,
 	return unsafe { from }
 }
 
-fn animation_type_from_longhand_property_stub(property_id PropertyID) AnimationType {
+fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
-		.animation_timeline { .discrete }
+		.animation_timeline { .none_ }
 		.color { .by_computed_value }
 		.content_visibility { .custom }
 		.color_scheme { .discrete }
@@ -2013,7 +2027,7 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 	to := with_keyword_values_resolved_stub(element, property_id, a_to)
 	calculation_context := InterpolationCalculationContext.for_property(property_id)
 
-	match animation_type_from_longhand_property_stub(property_id) {
+	match animation_type_from_longhand_property(property_id) {
 		.by_computed_value {
 			return interpolate_value(element, calculation_context, from, to, delta, allow_discrete)
 		}
@@ -2042,7 +2056,7 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 pub fn property_values_are_transitionable(property_id PropertyID, old_value &dom.StyleValue, new_value &dom.StyleValue, element &dom.Element, transition_behavior TransitionBehavior) bool {
 	// When comparing the before-change style and after-change style for a given property,
 	// the property values are transitionable if they have an animation type that is neither not animatable nor discrete.
-	animation_type := animation_type_from_longhand_property_stub(property_id)
+	animation_type := animation_type_from_longhand_property(property_id)
 	if animation_type == .none_
 		|| (transition_behavior != .allow_discrete && animation_type == .discrete) {
 		return false
@@ -2156,9 +2170,11 @@ pub fn accumulate_filter_function(underlying_list []FilterValue, animated_list [
 
 pub fn composite_value(property_id PropertyID, underlying_value &dom.StyleValue, animated_value &dom.StyleValue, composite_operation CompositeOperation) ?&dom.StyleValue {
 	_ = property_id
+	_ = underlying_value
+	_ = animated_value
 	match composite_operation {
 		.replace {
-			return unsafe { animated_value }
+			return none
 		}
 		.add, .accumulate {
 			// Stub: additive composition requires typed StyleValue subclasses.
@@ -3491,18 +3507,94 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 }
 
 pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) &ComputedProperties {
-	_ = abstract_element
-	_ = cascaded_properties
 	mut properties := ComputedProperties.new()
-	s.compute_property_values(mut properties, none)
+	// Boundary: DOM::AbstractElement exposes only the DOM-side computed style
+	// placeholder here, not this port's ComputedProperties map.
+	inherited_source_available := false
+
+	for property_id in computed_interpolation_property_computation_order() {
+		mut value := ?&dom.StyleValue(none)
+		mut requires_computation := false
+
+		if cascaded_style_property := cascaded_properties.style_property(property_id) {
+			if cascaded_style_property.important == .yes {
+				properties.set_property_important(property_id, .yes)
+			}
+			value = cascaded_style_property.value
+			requires_computation = computed_interpolation_property_requires_computation_with_cascaded_value(property_id)
+		}
+
+		mut should_inherit := value == none && computed_interpolation_is_inherited_property(property_id)
+
+		// https://www.w3.org/TR/css-cascade-4/#inherit
+		// If the cascaded value of a property is the inherit keyword, the property’s specified and computed values are the inherited value.
+		if style_value := value {
+			should_inherit = should_inherit || computed_interpolation_style_value_is_inherit(style_value)
+		}
+
+		// https://www.w3.org/TR/css-cascade-4/#inherit-initial
+		// If the cascaded value of a property is the unset keyword, then if it is an inherited property, this is treated as inherit, and if it is not, this is treated as initial.
+		if style_value := value {
+			should_inherit = should_inherit
+				|| (computed_interpolation_style_value_is_unset(style_value)
+				&& computed_interpolation_is_inherited_property(property_id))
+		}
+
+		// https://www.w3.org/TR/css-color-4/#resolving-other-colors
+		// In the color property, the used value of currentcolor is the resolved inherited value.
+		if style_value := value {
+			should_inherit = should_inherit
+				|| (property_id == .color && computed_interpolation_style_value_is_currentcolor(style_value))
+		}
+
+		if should_inherit && inherited_source_available {
+			// Boundary: DOM::AbstractElement exposes only the DOM-side computed style
+			// placeholder here, not this port's ComputedProperties map.
+			properties.set_property_inherited(property_id, .yes)
+			value = computed_interpolation_property_initial_value(property_id)
+			requires_computation = computed_interpolation_property_requires_computation_with_inherited_value(property_id)
+		}
+
+		if style_value := value {
+			if computed_interpolation_style_value_is_initial(style_value)
+				|| computed_interpolation_style_value_is_unset(style_value)
+				|| (should_inherit && !inherited_source_available) {
+				value = computed_interpolation_property_initial_value(property_id)
+				requires_computation = computed_interpolation_property_requires_computation_with_initial_value(property_id)
+			}
+		} else {
+			value = computed_interpolation_property_initial_value(property_id)
+			requires_computation = computed_interpolation_property_requires_computation_with_initial_value(property_id)
+		}
+
+		style_value := value or { continue }
+		computed_value := if requires_computation {
+			StyleComputer.compute_value_of_property(property_id, style_value, fn [properties] (id PropertyID) &dom.StyleValue {
+				return properties.property(id, .no) or { computed_interpolation_property_initial_value(id) }
+			}, s.get_computation_context_for_property(property_id, properties, abstract_element),
+				1.0)
+		} else {
+			style_value
+		}
+		properties.set_property_without_modifying_flags(property_id, computed_value)
+	}
+
 	return properties
 }
 
 pub fn (s &StyleComputer) compute_property_values(mut computed_properties ComputedProperties, abstract_element ?dom.AbstractElement) {
-	_ = s
-	_ = computed_properties
-	_ = abstract_element
-	// Stub: generated longhand initial/inherit/computed-value table is not translated yet.
+	for property_id in computed_interpolation_property_computation_order() {
+		specified_value := computed_properties.property(property_id, .no) or {
+			computed_interpolation_property_initial_value(property_id)
+		}
+		computation_context := s.get_computation_context_for_property(property_id, computed_properties,
+			abstract_element)
+		computed_value := StyleComputer.compute_value_of_property(property_id, specified_value,
+			fn [computed_properties] (id PropertyID) &dom.StyleValue {
+			return computed_properties.property(id, .no) or { computed_interpolation_property_initial_value(id) }
+		}, computation_context, 1.0)
+		computed_properties.set_property_without_modifying_flags(property_id, computed_value)
+	}
 }
 
 pub fn (s &StyleComputer) process_animation_definitions(computed_properties &ComputedProperties, mut abstract_element dom.AbstractElement) {
@@ -3781,7 +3873,8 @@ pub fn (s &StyleComputer) computation_context_cache_is_empty() bool {
 		&& s.cached_generic_computation_context == none
 }
 
-pub fn (mut s StyleComputer) get_computation_context_for_property(property_id PropertyID, computed_properties &ComputedProperties, abstract_element ?dom.AbstractElement) StyleComputationContextStub {
+pub fn (s &StyleComputer) get_computation_context_for_property(property_id PropertyID, computed_properties &ComputedProperties, abstract_element ?dom.AbstractElement) StyleComputationContextStub {
+	_ = s
 	_ = computed_properties
 	_ = abstract_element
 	return StyleComputationContextStub{
