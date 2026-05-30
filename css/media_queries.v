@@ -8,12 +8,19 @@ import strings
 @[heap]
 pub struct Supports {
 pub mut:
-	text    string
-	matches bool = true
+	condition &BooleanExpression = unsafe { nil }
+	matches   bool
+}
+
+pub fn Supports.create(condition &BooleanExpression) &Supports {
+	return &Supports{
+		condition: condition
+		matches:   condition.evaluate_to_boolean(none)
+	}
 }
 
 pub fn (supports &Supports) to_string() string {
-	return supports.text
+	return supports.condition.to_string()
 }
 
 pub fn (supports &Supports) matches_condition() bool {
@@ -21,7 +28,8 @@ pub fn (supports &Supports) matches_condition() bool {
 }
 
 pub fn (supports &Supports) dump(indent_levels int) string {
-	return '${cssom_indent(indent_levels)}Supports: ${supports.text}\n'
+	return '${cssom_indent(indent_levels)}Supports condition: (matches = ${supports.matches})\n${supports.condition.dump(
+		indent_levels + 1)}'
 }
 
 pub fn parse_css_supports(context ParsingParams, condition_text string) ?&Supports {
@@ -34,10 +42,7 @@ fn parse_css_supports_stub(condition_text string) ?&Supports {
 	if trimmed.len == 0 {
 		return none
 	}
-	return &Supports{
-		text:    trimmed
-		matches: true
-	}
+	return Supports.create(BooleanExpression.create_general_enclosed(trimmed, .true_))
 }
 
 pub enum MediaQueryKnownMediaType {
