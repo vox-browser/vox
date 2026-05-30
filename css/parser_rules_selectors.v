@@ -1188,11 +1188,11 @@ fn (mut parser RuleSelectorParser) convert_to_import_rule(rule AtRule) ?&CSSRule
 
 	media_text :=
 		parser_component_values_to_string(tokens.values[tokens.index..tokens.values.len - 1]).trim_space()
-	mut media := MediaList.create_empty()
-	if media_text.len > 0 {
-		mut mutable_media := unsafe { &MediaList(media) }
-		mutable_media.set_media_text(media_text)
+	mut media_queries := []&MediaQuery{}
+	if media_text.len != 0 {
+		media_queries = parse_css_media_query_list_value_logic(media_text)
 	}
+	media := MediaList.create(media_query_entries_from_queries(media_queries))
 	return CSSRule.create_import(url, none, layer, supports, media)
 }
 
