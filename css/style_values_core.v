@@ -2971,6 +2971,12 @@ pub fn (value CSSStyleValue) create_an_internal_representation(property Property
 	if source_value := value.source_value_ {
 		return source_value
 	}
+	if keyword_value := value.keyword_value_ {
+		return keyword_value.create_an_internal_representation(property, perform_type_check)!
+	}
+	if numeric_value := value.numeric_value_ {
+		return numeric_value.create_an_internal_representation(property, perform_type_check)!
+	}
 	if transform_value := value.transform_value_ {
 		return transform_value.create_an_internal_representation(property, perform_type_check)!
 	}
