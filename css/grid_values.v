@@ -29,9 +29,9 @@ pub mut:
 	length_resolution_context LengthResolutionContext = LengthResolutionContext.default()
 }
 
-// Local stub for CalculatedStyleValue::absolutized() until the calculation tree/style-value
-// conversion path is translated.
-pub fn (calculated CalculatedStyleValue) absolutized(context GridComputationContext) CalculatedStyleValue {
+// Local grid-context bridge for CalculatedStyleValue::absolutized() until the calculation tree/style-value
+// conversion path is available to grid values.
+fn grid_absolutize_calculated(calculated CalculatedStyleValue, context GridComputationContext) CalculatedStyleValue {
 	_ = context
 	return calculated
 }
@@ -205,7 +205,7 @@ fn absolutize_integer_or_calculated(integer_or_calculated IntegerOrCalculated, c
 		return integer_or_calculated
 	}
 
-	absolutized := integer_or_calculated.calculated().absolutized(context)
+	absolutized := grid_absolutize_calculated(integer_or_calculated.calculated(), context)
 	return IntegerOrCalculated.from_calculated(absolutized)
 }
 
@@ -393,7 +393,8 @@ fn absolutize_length_percentage(length_percentage LengthPercentage, context Grid
 	}
 
 	if length_percentage.is_calculated() {
-		return LengthPercentage.from_calculated(length_percentage.calculated().absolutized(context))
+		return LengthPercentage.from_calculated(grid_absolutize_calculated(length_percentage.calculated(),
+			context))
 	}
 
 	return none

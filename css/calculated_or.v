@@ -6,105 +6,93 @@ import math
 // --- CalculatedOr ---
 
 pub fn (c CalculatedStyleValue) resolve_angle(context CalculationResolutionContext) ?Angle {
-	inner := c.inner_calculation_text()
-	if angle := calculated_parse_angle(inner) {
-		return angle
+	result := c.resolve_value(context) or { return none }
+	resolved_type := result.type_ or { return none }
+	if resolved_type.matches_angle(none) {
+		return Angle.make_degrees(result.value)
 	}
-	if percentage := calculated_parse_percentage(inner) {
+	if resolved_type.matches_percentage() {
 		if percentage_basis := context.percentage_basis_angle() {
-			return percentage_basis.percentage_of(percentage)
+			return percentage_basis.percentage_of(Percentage.new(result.value))
 		}
 	}
-	if percentage_basis := context.percentage_basis_angle() {
-		return percentage_basis
-	}
-	return Angle.make_degrees(0)
+	return none
 }
 
 pub fn (c CalculatedStyleValue) resolve_flex(context CalculationResolutionContext) ?Flex {
-	_ = context
-	inner := c.inner_calculation_text()
-	mut parser := Parser.from_css_text(inner)
-	mut tokens := ComponentValueStream.new(parser.component_values)
-	if style_value := parser.parse_flex_value(mut tokens) {
-		if !tokens.has_more_tokens() && style_value is FlexStyleValue {
-			return (style_value as FlexStyleValue).flex()
-		}
+	result := c.resolve_value(context) or { return none }
+	resolved_type := result.type_ or { return none }
+	if resolved_type.matches_flex(none) {
+		return Flex.make_fr(result.value)
 	}
-	return Flex.make_fr(0)
+	return none
 }
 
 pub fn (c CalculatedStyleValue) resolve_frequency(context CalculationResolutionContext) ?Frequency {
-	inner := c.inner_calculation_text()
-	if frequency := calculated_parse_frequency(inner) {
-		return frequency
+	result := c.resolve_value(context) or { return none }
+	resolved_type := result.type_ or { return none }
+	if resolved_type.matches_frequency(none) {
+		return Frequency.make_hertz(result.value)
 	}
-	if percentage := calculated_parse_percentage(inner) {
+	if resolved_type.matches_percentage() {
 		if percentage_basis := context.percentage_basis_frequency() {
-			return percentage_basis.percentage_of(percentage)
+			return percentage_basis.percentage_of(Percentage.new(result.value))
 		}
 	}
-	if percentage_basis := context.percentage_basis_frequency() {
-		return percentage_basis
-	}
-	return Frequency.make_hertz(0)
+	return none
 }
 
 pub fn (c CalculatedStyleValue) resolve_integer(context CalculationResolutionContext) ?i64 {
 	if resolved_number := c.resolve_number(context) {
 		return i64(math.round(resolved_number))
 	}
-	return i64(0)
+	return none
 }
 
 pub fn (c CalculatedStyleValue) resolve_number(context CalculationResolutionContext) ?f64 {
-	inner := c.inner_calculation_text()
-	if number := calculated_parse_number(inner) {
-		return number.value()
+	result := c.resolve_value(context) or { return none }
+	resolved_type := result.type_ or { return none }
+	if resolved_type.matches_number(none) {
+		return result.value
 	}
-	if percentage := calculated_parse_percentage(inner) {
+	if resolved_type.matches_percentage() {
 		if percentage_basis := context.percentage_basis_number() {
-			return percentage_basis.value() * percentage.as_fraction()
+			return percentage_basis.value() * Percentage.new(result.value).as_fraction()
 		}
 	}
-	if percentage_basis := context.percentage_basis_number() {
-		return percentage_basis.value()
-	}
-	return 0.0
+	return none
 }
 
 pub fn (c CalculatedStyleValue) resolve_percentage(context CalculationResolutionContext) ?Percentage {
-	_ = context
-	inner := c.inner_calculation_text()
-	if percentage := calculated_parse_percentage(inner) {
-		return percentage
+	result := c.resolve_value(context) or { return none }
+	resolved_type := result.type_ or { return none }
+	if resolved_type.matches_percentage() {
+		return Percentage.new(result.value)
 	}
-	return Percentage.new(0)
+	return none
 }
 
 pub fn (c CalculatedStyleValue) resolve_resolution(context CalculationResolutionContext) ?Resolution {
-	_ = context
-	inner := c.inner_calculation_text()
-	if resolution := calculated_parse_resolution(inner) {
-		return resolution
+	result := c.resolve_value(context) or { return none }
+	resolved_type := result.type_ or { return none }
+	if resolved_type.matches_resolution(none) {
+		return Resolution.make_dots_per_pixel(result.value)
 	}
-	return Resolution.make_dots_per_pixel(0)
+	return none
 }
 
 pub fn (c CalculatedStyleValue) resolve_time(context CalculationResolutionContext) ?Time {
-	inner := c.inner_calculation_text()
-	if time := calculated_parse_time(inner) {
-		return time
+	result := c.resolve_value(context) or { return none }
+	resolved_type := result.type_ or { return none }
+	if resolved_type.matches_time(none) {
+		return Time.make_seconds(result.value)
 	}
-	if percentage := calculated_parse_percentage(inner) {
+	if resolved_type.matches_percentage() {
 		if percentage_basis := context.percentage_basis_time() {
-			return percentage_basis.percentage_of(percentage)
+			return percentage_basis.percentage_of(Percentage.new(result.value))
 		}
 	}
-	if percentage_basis := context.percentage_basis_time() {
-		return percentage_basis
-	}
-	return Time.make_seconds(0)
+	return none
 }
 
 fn calculated_or_style_value(value StyleValue) &dom.StyleValue {

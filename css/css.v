@@ -1646,6 +1646,15 @@ pub fn (c CalculatedStyleValue) serialize(mode SerializationMode) string {
 	return c.serialization
 }
 
+pub fn (c CalculatedStyleValue) absolutized(computation_context ComputationContext) StyleValue {
+	_ = computation_context
+	// C++ simplifies the calculation tree with computed-value-time information here.
+	// This port stores only serialized calculation text, so the full tree simplification is a boundary until
+	// CalculationNode carries translated children. Keep the calculated value intact instead of inventing a simplified
+	// value.
+	return StyleValue(c)
+}
+
 fn (c CalculatedStyleValue) inner_calculation_text() string {
 	trimmed := c.serialization.trim_space()
 	if trimmed.starts_with('calc(') && trimmed.ends_with(')') {
@@ -1724,20 +1733,55 @@ fn calculated_parse_time(text string) ?Time {
 	return (style_value as TimeStyleValue).time()
 }
 
-pub fn (c CalculatedStyleValue) resolve_length(context CalculationResolutionContext) ?Length {
-	inner := c.inner_calculation_text()
-	if length := calculated_parse_length(inner) {
-		return length
+pub struct CalculatedResolvedValue {
+pub mut:
+	value f64
+	type_ ?NumericType
+}
+
+// https://drafts.csswg.org/css-values-4/#calc-computed-value
+pub fn (c CalculatedStyleValue) resolve_value(resolution_context CalculationResolutionContext) ?CalculatedResolvedValue {
+	_ = resolution_context
+	// The calculation tree is again simplified at used value time; with used value time information.
+	// Boundary: the full CalculationNode tree is not translated yet, so reify the currently supported serialized
+	// numeric/math functions through Typed OM and require a single sum item.
+	numeric_value := CSSNumericValue.parse(c.serialize(.normal)) or { return none }
+	sum := numeric_value.create_a_sum_value() or { return none }
+	if sum.len != 1 {
+		return none
 	}
-	if percentage := calculated_parse_percentage(inner) {
+
+	unit_value := CSSUnitValue.create_from_sum_value_item(sum[0]) or { return none }
+	mut raw_value := unit_value.value()
+
+	// https://drafts.csswg.org/css-values/#calc-ieee
+	// NaN does not escape a top-level calculation; it’s censored into a zero value.
+	if math.is_nan(raw_value) {
+		raw_value = 0
+	}
+
+	// https://drafts.csswg.org/css-values/#calc-range
+	// the value resulting from a top-level calculation must be clamped to the range allowed in the target context.
+	// Boundary: accepted type ranges are not translated into CalculationContext yet.
+	resolved_type := NumericType.create_from_unit(unit_value.unit()) or { return none }
+	return CalculatedResolvedValue{
+		value: raw_value
+		type_: resolved_type
+	}
+}
+
+pub fn (c CalculatedStyleValue) resolve_length(context CalculationResolutionContext) ?Length {
+	result := c.resolve_value(context) or { return none }
+	resolved_type := result.type_ or { return none }
+	if resolved_type.matches_length(none) {
+		return Length.make_px(result.value)
+	}
+	if resolved_type.matches_percentage() {
 		if percentage_basis := context.percentage_basis_length() {
-			return percentage_basis.percentage_of(percentage)
+			return percentage_basis.percentage_of(Percentage.new(result.value))
 		}
 	}
-	if percentage_basis := context.percentage_basis_length() {
-		return percentage_basis
-	}
-	return Length.make_px(0)
+	return none
 }
 
 fn parsed_length_percentage_style_value_from_dom_style_value(style_value &dom.StyleValue) ?StyleValue {

@@ -1967,6 +1967,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		BasicShapeStyleValue { style_value.absolutized(context) }
 		BorderRadiusRectStyleValue { style_value.absolutized(context) }
 		BorderRadiusStyleValue { style_value.absolutized(context) }
+		CalculatedStyleValue { style_value.absolutized(context) }
 		ColorFunctionStyleValue { style_value.absolutized(context) }
 		ColorInterpolationMethodStyleValue { StyleValue(style_value.absolutized(context)) }
 		ColorMixStyleValue { style_value.absolutized(context) }
