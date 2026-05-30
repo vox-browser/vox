@@ -4529,8 +4529,145 @@ pub fn StyleComputer.compute_font_weight(absolutized_value &dom.StyleValue, inhe
 	return unsafe { absolutized_value }
 }
 
+fn computed_interpolation_style_value_from_numeric_primitive(value NumericPrimitiveValue) ?StyleValue {
+	return match value {
+		Number { StyleValue(NumberStyleValue.create(value.value())) }
+		Percentage { StyleValue(PercentageStyleValue.create(value)) }
+		Length { StyleValue(LengthStyleValue.create(value)) }
+		else { none }
+	}
+}
+
+fn computed_interpolation_style_value_from_css_numeric_value(value CSSNumericValue) ?StyleValue {
+	if value is CSSUnitValue {
+		primitive := create_numeric_value(value.value(), value.unit()) or { return none }
+		return computed_interpolation_style_value_from_numeric_primitive(primitive)
+	}
+
+	sum := value.create_a_sum_value() or { return none }
+	if sum.len != 1 {
+		return none
+	}
+	unit_value := CSSUnitValue.create_from_sum_value_item(sum[0]) or { return none }
+	primitive := create_numeric_value(unit_value.value(), unit_value.unit()) or { return none }
+	return computed_interpolation_style_value_from_numeric_primitive(primitive)
+}
+
+fn computed_interpolation_number_from_dom_style_value(style_value &dom.StyleValue) ?f64 {
+	mut parser := Parser.from_css_text(style_value.css_text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	parsed_value := parser.parse_number_value(mut tokens) or { return none }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() || parsed_value !is NumberStyleValue {
+		return none
+	}
+	return (parsed_value as NumberStyleValue).number()
+}
+
+fn computed_interpolation_percentage_from_dom_style_value(style_value &dom.StyleValue) ?Percentage {
+	mut parser := Parser.from_css_text(style_value.css_text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	parsed_value := parser.parse_percentage_value(mut tokens) or { return none }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() || parsed_value !is PercentageStyleValue {
+		return none
+	}
+	return (parsed_value as PercentageStyleValue).percentage()
+}
+
+fn computed_interpolation_calculated_style_value_from_dom_style_value(style_value &dom.StyleValue) ?StyleValue {
+	numeric_value := CSSNumericValue.parse(style_value.css_text) or { return none }
+	return computed_interpolation_style_value_from_css_numeric_value(numeric_value)
+}
+
+fn computed_interpolation_calculated_number_from_dom_style_value(style_value &dom.StyleValue, computed_font_size CSSPixels) ?f64 {
+	parsed_value := computed_interpolation_calculated_style_value_from_dom_style_value(style_value) or {
+		return none
+	}
+	if parsed_value is NumberStyleValue {
+		return parsed_value.number()
+	}
+	if parsed_value is CalculatedStyleValue {
+		return parsed_value.resolve_number(CalculationResolutionContext{
+			percentage_basis: Length.make_css_px(computed_font_size)
+		})
+	}
+	return none
+}
+
+fn computed_interpolation_calculated_percentage_from_dom_style_value(style_value &dom.StyleValue) ?Percentage {
+	parsed_value := computed_interpolation_calculated_style_value_from_dom_style_value(style_value) or {
+		return none
+	}
+	if parsed_value is PercentageStyleValue {
+		return parsed_value.percentage()
+	}
+	if parsed_value is CalculatedStyleValue {
+		return parsed_value.resolve_percentage(CalculationResolutionContext{})
+	}
+	return none
+}
+
+fn computed_interpolation_calculated_length_from_dom_style_value(style_value &dom.StyleValue, computed_font_size CSSPixels) ?Length {
+	parsed_value := computed_interpolation_calculated_style_value_from_dom_style_value(style_value) or {
+		return none
+	}
+	if parsed_value is LengthStyleValue {
+		return parsed_value.length()
+	}
+	if parsed_value is PercentageStyleValue {
+		return Length.make_px(computed_font_size.to_double() * parsed_value.percentage().as_fraction())
+	}
+	if parsed_value is CalculatedStyleValue {
+		return parsed_value.resolve_length(CalculationResolutionContext{
+			percentage_basis: Length.make_css_px(computed_font_size)
+		})
+	}
+	return none
+}
+
+fn computed_interpolation_font_width_keyword_to_percentage(value string) ?Percentage {
+	return match to_ascii_lowercase(value.trim_space()) {
+		// ultra-condensed 50%
+		'ultra-condensed' { Percentage.new(50) }
+		// extra-condensed 62.5%
+		'extra-condensed' { Percentage.new(62.5) }
+		// condensed 75%
+		'condensed' { Percentage.new(75) }
+		// semi-condensed 87.5%
+		'semi-condensed' { Percentage.new(87.5) }
+		// normal 100%
+		'normal' { Percentage.new(100) }
+		// semi-expanded 112.5%
+		'semi-expanded' { Percentage.new(112.5) }
+		// expanded 125%
+		'expanded' { Percentage.new(125) }
+		// extra-expanded 150%
+		'extra-expanded' { Percentage.new(150) }
+		// ultra-expanded 200%
+		'ultra-expanded' { Percentage.new(200) }
+		else { none }
+	}
+}
+
 pub fn StyleComputer.compute_font_width(absolutized_value &dom.StyleValue) &dom.StyleValue {
-	return unsafe { absolutized_value }
+	// https://drafts.csswg.org/css-fonts-4/#font-width-prop
+	// a percentage, see below
+
+	// <percentage [0,∞]>
+	if percentage := computed_interpolation_percentage_from_dom_style_value(absolutized_value) {
+		return dom_style_value_from_value_logic(StyleValue(PercentageStyleValue.create(percentage)))
+	}
+
+	// AD-HOC: We support calculated percentages as well
+	if calculated_percentage := computed_interpolation_calculated_percentage_from_dom_style_value(absolutized_value) {
+		return dom_style_value_from_value_logic(StyleValue(PercentageStyleValue.create(calculated_percentage)))
+	}
+
+	percentage := computed_interpolation_font_width_keyword_to_percentage(absolutized_value.css_text) or {
+		return unsafe { absolutized_value }
+	}
+	return dom_style_value_from_value_logic(StyleValue(PercentageStyleValue.create(percentage)))
 }
 
 pub fn StyleComputer.compute_font_variation_settings(absolutized_value &dom.StyleValue, computation_context StyleComputationContextStub) &dom.StyleValue {
@@ -4544,7 +4681,39 @@ pub fn StyleComputer.compute_font_variation_settings(absolutized_value &dom.Styl
 }
 
 pub fn StyleComputer.compute_line_height(absolutized_value &dom.StyleValue, computed_font_size CSSPixels) &dom.StyleValue {
-	_ = computed_font_size
+	// https://drafts.csswg.org/css-inline-3/#line-height-property
+
+	// normal
+	// <length [0,∞]>
+	// <number [0,∞]>
+	if equals_ignoring_ascii_case(absolutized_value.css_text.trim_space(), 'normal') {
+		return unsafe { absolutized_value }
+	}
+	if length := computed_interpolation_length_from_dom_style_value(absolutized_value) {
+		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(length)))
+	}
+	if number := computed_interpolation_number_from_dom_style_value(absolutized_value) {
+		return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(number)))
+	}
+
+	// NOTE: We also support calc()'d lengths (percentages resolve to lengths so we don't have to handle them separately)
+	if calculated_length := computed_interpolation_calculated_length_from_dom_style_value(absolutized_value,
+		computed_font_size) {
+		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(calculated_length)))
+	}
+
+	// NOTE: We also support calc()'d numbers
+	if calculated_number := computed_interpolation_calculated_number_from_dom_style_value(absolutized_value,
+		computed_font_size) {
+		return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(calculated_number)))
+	}
+
+	// <percentage [0,∞]>
+	if percentage := computed_interpolation_percentage_from_dom_style_value(absolutized_value) {
+		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(computed_font_size.to_double() *
+			percentage.as_fraction()))))
+	}
+
 	return unsafe { absolutized_value }
 }
 
