@@ -307,8 +307,12 @@ fn supports_component_values_to_string(values []ComponentValue) string {
 }
 
 fn supports_selector_contains_unknown_webkit_pseudo_element_stub(selector string) bool {
-	_ = selector
-	// Stub for Selector::contains_unknown_webkit_pseudo_element().
+	selector_list := parse_selector_with_parser(selector, map[string]bool{}) or { return false }
+	for item in selector_list.selectors {
+		if item.contains_unknown_webkit_pseudo_element() {
+			return true
+		}
+	}
 	return false
 }
 
@@ -805,6 +809,20 @@ pub fn parse_media_query_from_text(text string) ?&MediaQuery {
 		return none
 	}
 
+	mut condition_tokens := SupportsTokenStream.from_values(parse_component_values_for_value_logic(trimmed))
+	if condition := parse_media_condition(mut condition_tokens) {
+		condition_tokens.discard_whitespace()
+		if !condition_tokens.has_next_token() {
+			mut query := MediaQuery{
+				text:            trimmed
+				media_type:      MediaQueryType.all()
+				media_condition: unsafe { &BooleanExpression(condition) }
+			}
+			query.matches = query.evaluate(unsafe { nil })
+			return &query
+		}
+	}
+
 	lower := trimmed.to_lower()
 	if lower == 'not all' {
 		return MediaQuery.create_not_all()
@@ -842,7 +860,12 @@ pub fn parse_media_query_from_text(text string) ?&MediaQuery {
 		if condition_text.len == 0 {
 			return MediaQuery.create_not_all()
 		}
-		condition = parse_media_condition_stub(condition_text)
+		condition = parse_media_condition_from_text(condition_text) or { return MediaQuery.create_not_all() }
+		if media_condition := condition {
+			if media_condition.kind == .or {
+				return MediaQuery.create_not_all()
+			}
+		}
 	}
 
 	mut query := MediaQuery{
@@ -872,15 +895,896 @@ fn media_query_matches_media_type(media_type MediaQueryType) MatchResult {
 	}
 }
 
-fn parse_media_condition_stub(condition_text string) ?&BooleanExpression {
+fn parse_media_condition_from_text(condition_text string) ?&BooleanExpression {
 	trimmed := condition_text.trim_space()
 	if trimmed.len == 0 {
 		return none
 	}
-	// Stub for Parser::parse_media_condition(): media-feature evaluation needs
-	// Window::query_media_feature(). Preserve the parsed condition text and keep
-	// ordinary screen media active until the feature evaluator is ported.
-	return BooleanExpression.create_general_enclosed(trimmed, .true_)
+	mut tokens := SupportsTokenStream.from_values(parse_component_values_for_value_logic(trimmed))
+	condition := parse_media_condition(mut tokens) or { return none }
+	tokens.discard_whitespace()
+	if tokens.has_next_token() {
+		return none
+	}
+	return condition
+}
+
+// `<media-condition>`, https://www.w3.org/TR/mediaqueries-4/#typedef-media-condition
+fn parse_media_condition(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	return parse_media_boolean_expression(mut tokens, .unknown)
+}
+
+// https://drafts.csswg.org/css-values-5/#typedef-boolean-expr
+fn parse_media_boolean_expression(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+
+	if peeked_token := transaction.next_token() {
+		if peeked_token.is_ident('not') {
+			transaction.discard_a_token()
+			transaction.discard_whitespace()
+			child := parse_media_boolean_expression_group(mut transaction,
+				result_for_general_enclosed) or { return none }
+			transaction.discard_whitespace()
+			tokens = transaction
+			return BooleanExpression.create_not(child)
+		}
+	}
+
+	mut children := []&BooleanExpression{}
+	mut combinator := ?string(none)
+	for transaction.has_next_token() {
+		if children.len != 0 {
+			token := transaction.consume_a_token() or { return none }
+			if !token.is(.ident) {
+				return none
+			}
+			maybe_combinator := token.token().ident().to_lower()
+			if maybe_combinator != 'and' && maybe_combinator != 'or' {
+				return none
+			}
+			if existing := combinator {
+				if existing != maybe_combinator {
+					return none
+				}
+			} else {
+				combinator = maybe_combinator
+			}
+		}
+
+		transaction.discard_whitespace()
+		child := parse_media_boolean_expression_group(mut transaction,
+			result_for_general_enclosed) or { return none }
+		children << child
+		transaction.discard_whitespace()
+	}
+
+	if children.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	if children.len == 1 {
+		return children[0]
+	}
+
+	if combinator_value := combinator {
+		if combinator_value == 'and' {
+			return BooleanExpression.create_and(children)
+		}
+		if combinator_value == 'or' {
+			return BooleanExpression.create_or(children)
+		}
+	}
+	return none
+}
+
+fn parse_media_boolean_expression_group(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
+	if first_token := tokens.next_token() {
+		if first_token.is_block() && first_token.block().is_paren() {
+			mut transaction := tokens
+			transaction.discard_a_token()
+			mut child_tokens := SupportsTokenStream.from_values(first_token.block().value)
+			if expression := parse_media_boolean_expression(mut child_tokens,
+				result_for_general_enclosed)
+			{
+				child_tokens.discard_whitespace()
+				if !child_tokens.has_next_token() {
+					tokens = transaction
+					return BooleanExpression.create_in_parens(expression)
+				}
+			}
+		}
+	}
+
+	if test := parse_media_in_parens(mut tokens) {
+		return test
+	}
+
+	if general_enclosed := parse_supports_general_enclosed(mut tokens, result_for_general_enclosed) {
+		return general_enclosed
+	}
+
+	return none
+}
+
+// `<media-in-parens>` currently only has the concrete `<media-feature>` branch in the V port.
+fn parse_media_in_parens(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+
+	first_token := transaction.next_token() or { return none }
+	if !(first_token.is_block() && first_token.block().is_paren()) {
+		return none
+	}
+	transaction.discard_a_token()
+
+	mut inner_tokens := SupportsTokenStream.from_values(first_token.block().value)
+	feature := parse_media_feature(mut inner_tokens) or { return none }
+	inner_tokens.discard_whitespace()
+	if inner_tokens.has_next_token() {
+		return none
+	}
+
+	tokens = transaction
+	return feature
+}
+
+enum MediaFeatureNamePrefix {
+	normal
+	min
+	max
+}
+
+struct MediaFeatureName {
+	name   string
+	prefix MediaFeatureNamePrefix
+}
+
+enum MediaFeatureValueTypeLocal {
+	boolean
+	integer
+	length
+	ratio
+	resolution
+}
+
+enum MediaFeatureValueKindLocal {
+	ident
+	integer
+	length
+	ratio
+	resolution
+	unknown
+}
+
+struct MediaFeatureValueLocal {
+	kind  MediaFeatureValueKindLocal
+	text  string
+	name  string
+	value f64
+}
+
+enum MediaFeatureComparison {
+	equal
+	less_than
+	less_than_or_equal
+	greater_than
+	greater_than_or_equal
+}
+
+fn parse_media_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	if feature := parse_media_feature_boolean(mut tokens) {
+		return feature
+	}
+	if feature := parse_media_feature_plain(mut tokens) {
+		return feature
+	}
+	if feature := parse_media_feature_range(mut tokens) {
+		return feature
+	}
+	return none
+}
+
+fn parse_media_feature_boolean(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	name := parse_media_feature_name(mut transaction, false) or { return none }
+	transaction.discard_whitespace()
+	if transaction.has_next_token() {
+		return none
+	}
+	tokens = transaction
+	text := '(${name.name})'
+	return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window_stub(name.name,
+		.is_true, none, none, none, none))
+}
+
+fn parse_media_feature_plain(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	name := parse_media_feature_name(mut transaction, true) or { return none }
+	transaction.discard_whitespace()
+	if !(transaction.consume_a_token() or { return none }).is(.colon) {
+		return none
+	}
+	transaction.discard_whitespace()
+	value := parse_media_feature_value(name.name, mut transaction) or { return none }
+	transaction.discard_whitespace()
+	if transaction.has_next_token() {
+		return none
+	}
+	tokens = transaction
+	match name.prefix {
+		.normal {
+			text := '(${name.name}: ${value.text})'
+			return BooleanExpression.create_general_enclosed(text,
+				evaluate_media_feature_without_window_stub(name.name, .exact_value, value,
+				none, none, none))
+		}
+		.min {
+			text := '(min-${name.name}: ${value.text})'
+			return BooleanExpression.create_general_enclosed(text,
+				evaluate_media_feature_without_window_stub(name.name, .min_value, value,
+				none, none, none))
+		}
+		.max {
+			text := '(max-${name.name}: ${value.text})'
+			return BooleanExpression.create_general_enclosed(text,
+				evaluate_media_feature_without_window_stub(name.name, .max_value, value,
+				none, none, none))
+		}
+	}
+}
+
+fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+
+	if name := parse_media_feature_name(mut transaction, false) {
+		transaction.discard_whitespace()
+		if comparison := parse_media_feature_comparison(mut transaction) {
+			transaction.discard_whitespace()
+			if value := parse_media_feature_value(name.name, mut transaction) {
+				transaction.discard_whitespace()
+				if !transaction.has_next_token() && value.kind != .ident {
+					tokens = transaction
+					text := '(${name.name} ${media_feature_comparison_to_string(comparison)} ${value.text})'
+					return BooleanExpression.create_general_enclosed(text,
+						evaluate_media_feature_without_window_stub(name.name, .half_range_query_left,
+						value, comparison, none, none))
+				}
+			}
+		}
+	}
+
+	transaction = SupportsTokenStream{
+		values: tokens.values.clone()
+		index:  tokens.index
+	}
+	transaction.discard_whitespace()
+	maybe_name := find_media_feature_name_after_comparison(transaction) or { return none }
+	left_value := parse_media_feature_value(maybe_name.name, mut transaction) or { return none }
+	transaction.discard_whitespace()
+	left_comparison := parse_media_feature_comparison(mut transaction) or { return none }
+	transaction.discard_whitespace()
+	name_token := transaction.consume_a_token() or { return none }
+	if !name_token.is(.ident)
+		|| !equals_ignoring_ascii_case(name_token.token().ident(), maybe_name.name) {
+		return none
+	}
+	transaction.discard_whitespace()
+
+	if !transaction.has_next_token() {
+		tokens = transaction
+		text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name})'
+		return BooleanExpression.create_general_enclosed(text,
+			evaluate_media_feature_without_window_stub(maybe_name.name, .half_range_query_right,
+			left_value, left_comparison, none, none))
+	}
+
+	right_comparison := parse_media_feature_comparison(mut transaction) or { return none }
+	transaction.discard_whitespace()
+	right_value := parse_media_feature_value(maybe_name.name, mut transaction) or { return none }
+	transaction.discard_whitespace()
+	if transaction.has_next_token() || !media_feature_comparisons_match(left_comparison, right_comparison)
+		|| left_comparison == .equal || left_value.kind == .ident || right_value.kind == .ident {
+		return none
+	}
+
+	tokens = transaction
+	text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name} ${media_feature_comparison_to_string(right_comparison)} ${right_value.text})'
+	return BooleanExpression.create_general_enclosed(text,
+		evaluate_media_feature_without_window_stub(maybe_name.name, .range, left_value,
+		left_comparison, right_comparison, right_value))
+}
+
+fn find_media_feature_name_after_comparison(tokens SupportsTokenStream) ?MediaFeatureName {
+	mut temp := tokens
+	for temp.has_next_token() {
+		if _ := parse_media_feature_comparison(mut temp) {
+			temp.discard_whitespace()
+			return parse_media_feature_name(mut temp, false)
+		}
+		temp.discard_a_token()
+		temp.discard_whitespace()
+	}
+	return none
+}
+
+fn parse_media_feature_name(mut tokens SupportsTokenStream, allow_min_max_prefix bool) ?MediaFeatureName {
+	mut transaction := tokens
+	token := transaction.consume_a_token() or { return none }
+	if !token.is(.ident) {
+		return none
+	}
+
+	name := token.token().ident()
+	if media_feature_is_known(name) {
+		tokens = transaction
+		return MediaFeatureName{
+			name:   name.to_lower()
+			prefix: .normal
+		}
+	}
+
+	if allow_min_max_prefix {
+		lower := name.to_lower()
+		if lower.starts_with('min-') || lower.starts_with('max-') {
+			adjusted_name := lower[4..]
+			if media_feature_is_known(adjusted_name) && media_feature_type_is_range_name(adjusted_name) {
+				tokens = transaction
+				return MediaFeatureName{
+					name:   adjusted_name
+					prefix: if lower.starts_with('min-') { MediaFeatureNamePrefix.min } else { MediaFeatureNamePrefix.max }
+				}
+			}
+		}
+	}
+
+	return none
+}
+
+fn parse_media_feature_comparison(mut tokens SupportsTokenStream) ?MediaFeatureComparison {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	first := transaction.consume_a_token() or { return none }
+	if !first.is(.delim) {
+		return none
+	}
+	first_delim := first.token().delim()
+	if first_delim == `=` {
+		tokens = transaction
+		return .equal
+	}
+	if first_delim == `<` {
+		if second := transaction.next_token() {
+			if second.is_delim(u32(`=`)) {
+				transaction.discard_a_token()
+				tokens = transaction
+				return .less_than_or_equal
+			}
+		}
+		tokens = transaction
+		return .less_than
+	}
+	if first_delim == `>` {
+		if second := transaction.next_token() {
+			if second.is_delim(u32(`=`)) {
+				transaction.discard_a_token()
+				tokens = transaction
+				return .greater_than_or_equal
+			}
+		}
+		tokens = transaction
+		return .greater_than
+	}
+	return none
+}
+
+fn parse_media_feature_value(feature_name string, mut tokens SupportsTokenStream) ?MediaFeatureValueLocal {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	start_index := transaction.index
+	mut values := []ComponentValue{}
+	for transaction.has_next_token() {
+		next := transaction.next_token() or { break }
+		if !is_media_feature_value_token(next) {
+			break
+		}
+		values << transaction.consume_a_token() or { break }
+	}
+	if values.len == 0 {
+		return none
+	}
+
+	text := supports_component_values_to_string(values).trim_space()
+	mut value_tokens := SupportsTokenStream.from_values(values)
+	if value := parse_known_media_feature_value(feature_name, text, mut value_tokens) {
+		value_tokens.discard_whitespace()
+		if !is_media_feature_value_token(value_tokens.next_token() or {
+			ComponentValue.from_token(Tokenizer.create_eof_token())
+		}) {
+			tokens = transaction
+			return value
+		}
+	}
+
+	// Match C++ parse_media_feature_value() fallback: preserve unknown value tokens when they are syntactically value-like.
+	if transaction.index > start_index {
+		tokens = transaction
+		return MediaFeatureValueLocal{
+			kind: .unknown
+			text: text
+		}
+	}
+	return none
+}
+
+fn parse_known_media_feature_value(feature_name string, text string, mut tokens SupportsTokenStream) ?MediaFeatureValueLocal {
+	tokens.discard_whitespace()
+	if token := tokens.next_token() {
+		if token.is(.ident) {
+			ident := token.token().ident().to_lower()
+			if media_feature_accepts_keyword_name(feature_name, ident) {
+				tokens.discard_a_token()
+				return MediaFeatureValueLocal{
+					kind: .ident
+					text: text
+					name: ident
+				}
+			}
+		}
+	}
+
+	if media_feature_accepts_type_name(feature_name, .boolean) {
+		if value := parse_media_feature_integer_value(mut tokens) {
+			if value == 0 || value == 1 {
+				return MediaFeatureValueLocal{
+					kind:  .integer
+					text:  text
+					value: value
+				}
+			}
+		}
+	}
+
+	if media_feature_accepts_type_name(feature_name, .integer) {
+		if value := parse_media_feature_integer_value(mut tokens) {
+			return MediaFeatureValueLocal{
+				kind:  .integer
+				text:  text
+				value: value
+			}
+		}
+	}
+
+	if media_feature_accepts_type_name(feature_name, .length) {
+		if value := parse_media_feature_length_value(mut tokens) {
+			return MediaFeatureValueLocal{
+				kind:  .length
+				text:  text
+				value: value
+			}
+		}
+	}
+
+	if media_feature_accepts_type_name(feature_name, .ratio) {
+		if value := parse_media_feature_ratio_value(mut tokens) {
+			return MediaFeatureValueLocal{
+				kind:  .ratio
+				text:  text
+				value: value
+			}
+		}
+	}
+
+	if media_feature_accepts_type_name(feature_name, .resolution) {
+		if value := parse_media_feature_resolution_value(mut tokens) {
+			return MediaFeatureValueLocal{
+				kind:  .resolution
+				text:  text
+				value: value
+			}
+		}
+	}
+
+	return none
+}
+
+fn parse_media_feature_integer_value(mut tokens SupportsTokenStream) ?f64 {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	token := transaction.consume_a_token() or { return none }
+	if !token.is(.number) || !token.token().number().is_integer() {
+		return none
+	}
+	tokens = transaction
+	return token.token().number().value()
+}
+
+fn parse_media_feature_length_value(mut tokens SupportsTokenStream) ?f64 {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	token := transaction.consume_a_token() or { return none }
+	if token.is(.number) && token.token().number_value() == 0 {
+		tokens = transaction
+		return 0.0
+	}
+	if token.is(.dimension) {
+		unit := string_to_length_unit(token.token().dimension_unit()) or { return none }
+		if unit == .px {
+			tokens = transaction
+			return token.token().dimension_value()
+		}
+		if parse_css_media_feature_value_logic('', token.to_string()) != none {
+			tokens = transaction
+			return token.token().dimension_value()
+		}
+	}
+	if token.is_function() && parse_css_media_feature_value_logic('', token.to_string()) != none {
+		tokens = transaction
+		return 0.0
+	}
+	return none
+}
+
+fn parse_media_feature_ratio_value(mut tokens SupportsTokenStream) ?f64 {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	left := transaction.consume_a_token() or { return none }
+	if !left.is(.number) || left.token().number_value() < 0 {
+		return none
+	}
+	transaction.discard_whitespace()
+	solidus := transaction.consume_a_token() or { return none }
+	if !solidus.is_delim(u32(`/`)) {
+		return none
+	}
+	transaction.discard_whitespace()
+	right := transaction.consume_a_token() or { return none }
+	if !right.is(.number) || right.token().number_value() <= 0 {
+		return none
+	}
+	tokens = transaction
+	return left.token().number_value() / right.token().number_value()
+}
+
+fn parse_media_feature_resolution_value(mut tokens SupportsTokenStream) ?f64 {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	token := transaction.consume_a_token() or { return none }
+	if token.is(.dimension) {
+		unit := string_to_resolution_unit(token.token().dimension_unit()) or { return none }
+		tokens = transaction
+		return token.token().dimension_value() * ratio_between_resolution_units(unit, .dppx)
+	}
+	return none
+}
+
+fn is_media_feature_value_token(component_value ComponentValue) bool {
+	if !component_value.is_token() {
+		return true
+	}
+	if component_value.is(.ident) || component_value.is(.function) || component_value.is(.at_keyword)
+		|| component_value.is(.hash) || component_value.is(.string) || component_value.is(.bad_string)
+		|| component_value.is(.url) || component_value.is(.bad_url) || component_value.is(.number)
+		|| component_value.is(.percentage) || component_value.is(.dimension)
+		|| component_value.is(.whitespace) || component_value.is(.comma) {
+		return true
+	}
+	if component_value.is(.delim) {
+		delim := component_value.token().delim()
+		return delim != `<` && delim != `>` && delim != `=`
+	}
+	return false
+}
+
+enum MediaFeatureEvalKind {
+	is_true
+	exact_value
+	min_value
+	max_value
+	half_range_query_left
+	half_range_query_right
+	range
+}
+
+fn evaluate_media_feature_without_window_stub(feature_name string, kind MediaFeatureEvalKind, value ?MediaFeatureValueLocal, comparison ?MediaFeatureComparison, right_comparison ?MediaFeatureComparison, right_value ?MediaFeatureValueLocal) MatchResult {
+	queried_value := query_media_feature_without_window_stub(feature_name) or { return .unknown }
+	match kind {
+		.is_true {
+			return evaluate_media_feature_value_as_boolean(feature_name, queried_value)
+		}
+		.exact_value {
+			expected := value or { return .unknown }
+			return compare_media_feature_values(queried_value, .equal, expected)
+		}
+		.min_value {
+			expected := value or { return .unknown }
+			return compare_media_feature_values(queried_value, .greater_than_or_equal, expected)
+		}
+		.max_value {
+			expected := value or { return .unknown }
+			return compare_media_feature_values(queried_value, .less_than_or_equal, expected)
+		}
+		.half_range_query_left {
+			expected := value or { return .unknown }
+			expected_comparison := comparison or { return .unknown }
+			return compare_media_feature_values(queried_value, expected_comparison, expected)
+		}
+		.half_range_query_right {
+			expected := value or { return .unknown }
+			expected_comparison := comparison or { return .unknown }
+			return compare_media_feature_values(expected, expected_comparison, queried_value)
+		}
+		.range {
+			left := value or { return .unknown }
+			left_comparison := comparison or { return .unknown }
+			right := right_value or { return .unknown }
+			comparison_to_right := right_comparison or { return .unknown }
+			left_result := compare_media_feature_values(left, left_comparison, queried_value)
+			if left_result != .true_ {
+				return left_result
+			}
+			return compare_media_feature_values(queried_value, comparison_to_right, right)
+		}
+	}
+}
+
+fn query_media_feature_without_window_stub(feature_name string) ?MediaFeatureValueLocal {
+	return match feature_name {
+		'any-hover', 'hover' { media_feature_ident_value('hover') }
+		'any-pointer', 'pointer' { media_feature_ident_value('fine') }
+		'color' { media_feature_integer_value(8) }
+		'color-gamut', 'video-color-gamut' { media_feature_ident_value('srgb') }
+		'color-index', 'grid', 'monochrome' { media_feature_integer_value(0) }
+		'display-mode' { media_feature_ident_value('browser') }
+		'dynamic-range', 'video-dynamic-range' { media_feature_ident_value('standard') }
+		'environment-blending' { media_feature_ident_value('opaque') }
+		'forced-colors', 'inverted-colors', 'scan' { media_feature_ident_value('none') }
+		'height', 'device-height' { media_feature_length_value(600) }
+		'horizontal-viewport-segments', 'vertical-viewport-segments' { media_feature_integer_value(1) }
+		'nav-controls' { media_feature_ident_value('back') }
+		'orientation' { media_feature_ident_value('landscape') }
+		'overflow-block', 'overflow-inline' { media_feature_ident_value('scroll') }
+		'prefers-color-scheme' { media_feature_ident_value('light') }
+		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion',
+		'prefers-reduced-transparency' {
+			media_feature_ident_value('no-preference')
+		}
+		'resolution' { media_feature_resolution_value(1) }
+		'scripting' { media_feature_ident_value('enabled') }
+		'update' { media_feature_ident_value('fast') }
+		'width', 'device-width' { media_feature_length_value(800) }
+		'aspect-ratio', 'device-aspect-ratio' { media_feature_ratio_value(800.0 / 600.0) }
+		else { none }
+	}
+}
+
+fn media_feature_ident_value(name string) MediaFeatureValueLocal {
+	return MediaFeatureValueLocal{
+		kind: .ident
+		text: name
+		name: name
+	}
+}
+
+fn media_feature_integer_value(value f64) MediaFeatureValueLocal {
+	return MediaFeatureValueLocal{
+		kind:  .integer
+		text:  serialize_a_number(value)
+		value: value
+	}
+}
+
+fn media_feature_length_value(value f64) MediaFeatureValueLocal {
+	return MediaFeatureValueLocal{
+		kind:  .length
+		text:  '${serialize_a_number(value)}px'
+		value: value
+	}
+}
+
+fn media_feature_ratio_value(value f64) MediaFeatureValueLocal {
+	return MediaFeatureValueLocal{
+		kind:  .ratio
+		text:  serialize_a_number(value)
+		value: value
+	}
+}
+
+fn media_feature_resolution_value(value f64) MediaFeatureValueLocal {
+	return MediaFeatureValueLocal{
+		kind:  .resolution
+		text:  '${serialize_a_number(value)}dppx'
+		value: value
+	}
+}
+
+fn evaluate_media_feature_value_as_boolean(feature_name string, value MediaFeatureValueLocal) MatchResult {
+	match value.kind {
+		.ident {
+			if media_feature_keyword_is_falsey_name(feature_name, value.name) {
+				return .false_
+			}
+			return .true_
+		}
+		.integer, .length, .ratio, .resolution {
+			return as_match_result(value.value != 0)
+		}
+		.unknown {
+			return .unknown
+		}
+	}
+}
+
+fn compare_media_feature_values(left MediaFeatureValueLocal, comparison MediaFeatureComparison, right MediaFeatureValueLocal) MatchResult {
+	if left.kind == .unknown || right.kind == .unknown {
+		return .unknown
+	}
+	if left.kind != right.kind {
+		return .false_
+	}
+	if left.kind == .ident {
+		if comparison == .equal {
+			return as_match_result(left.name == right.name)
+		}
+		return .false_
+	}
+	return match comparison {
+		.equal { as_match_result(left.value == right.value) }
+		.less_than { as_match_result(left.value < right.value) }
+		.less_than_or_equal { as_match_result(left.value <= right.value) }
+		.greater_than { as_match_result(left.value > right.value) }
+		.greater_than_or_equal { as_match_result(left.value >= right.value) }
+	}
+}
+
+fn media_feature_comparisons_match(a MediaFeatureComparison, b MediaFeatureComparison) bool {
+	return match a {
+		.equal { b == .equal }
+		.less_than, .less_than_or_equal { b in [.less_than, .less_than_or_equal] }
+		.greater_than, .greater_than_or_equal { b in [.greater_than, .greater_than_or_equal] }
+	}
+}
+
+fn media_feature_comparison_to_string(comparison MediaFeatureComparison) string {
+	return match comparison {
+		.equal { '=' }
+		.less_than { '<' }
+		.less_than_or_equal { '<=' }
+		.greater_than { '>' }
+		.greater_than_or_equal { '>=' }
+	}
+}
+
+fn media_feature_is_known(name string) bool {
+	return name.to_lower() in [
+		'any-hover',
+		'any-pointer',
+		'aspect-ratio',
+		'color',
+		'color-gamut',
+		'color-index',
+		'device-aspect-ratio',
+		'device-height',
+		'device-width',
+		'display-mode',
+		'dynamic-range',
+		'environment-blending',
+		'forced-colors',
+		'grid',
+		'height',
+		'horizontal-viewport-segments',
+		'hover',
+		'inverted-colors',
+		'monochrome',
+		'nav-controls',
+		'orientation',
+		'overflow-block',
+		'overflow-inline',
+		'pointer',
+		'prefers-color-scheme',
+		'prefers-contrast',
+		'prefers-reduced-data',
+		'prefers-reduced-motion',
+		'prefers-reduced-transparency',
+		'resolution',
+		'scan',
+		'scripting',
+		'update',
+		'vertical-viewport-segments',
+		'video-color-gamut',
+		'video-dynamic-range',
+		'width',
+	]
+}
+
+fn media_feature_type_is_range_name(name string) bool {
+	return name.to_lower() in [
+		'aspect-ratio',
+		'color',
+		'color-index',
+		'device-aspect-ratio',
+		'device-height',
+		'device-width',
+		'height',
+		'horizontal-viewport-segments',
+		'monochrome',
+		'resolution',
+		'vertical-viewport-segments',
+		'width',
+	]
+}
+
+fn media_feature_accepts_type_name(name string, value_type MediaFeatureValueTypeLocal) bool {
+	lower := name.to_lower()
+	return match value_type {
+		.boolean { lower == 'grid' }
+		.integer {
+			lower in [
+				'color',
+				'color-index',
+				'horizontal-viewport-segments',
+				'monochrome',
+				'vertical-viewport-segments',
+			]
+		}
+		.length { lower in ['device-height', 'device-width', 'height', 'width'] }
+		.ratio { lower in ['aspect-ratio', 'device-aspect-ratio'] }
+		.resolution { lower == 'resolution' }
+	}
+}
+
+fn media_feature_accepts_keyword_name(name string, keyword string) bool {
+	lower_name := name.to_lower()
+	lower_keyword := keyword.to_lower()
+	return match lower_name {
+		'any-hover', 'hover' { lower_keyword in ['none', 'hover'] }
+		'any-pointer', 'pointer' { lower_keyword in ['none', 'coarse', 'fine'] }
+		'color-gamut', 'video-color-gamut' { lower_keyword in ['srgb', 'p3', 'rec2020'] }
+		'display-mode' {
+			lower_keyword in ['fullscreen', 'standalone', 'minimal-ui', 'browser',
+				'picture-in-picture']
+		}
+		'dynamic-range', 'video-dynamic-range' { lower_keyword in ['standard', 'high'] }
+		'environment-blending' { lower_keyword in ['opaque', 'additive', 'subtractive'] }
+		'forced-colors' { lower_keyword in ['none', 'active'] }
+		'inverted-colors' { lower_keyword in ['none', 'inverted'] }
+		'nav-controls' { lower_keyword in ['none', 'back'] }
+		'orientation' { lower_keyword in ['portrait', 'landscape'] }
+		'overflow-block' { lower_keyword in ['none', 'scroll', 'paged'] }
+		'overflow-inline' { lower_keyword in ['none', 'scroll'] }
+		'prefers-color-scheme' { lower_keyword in ['light', 'dark'] }
+		'prefers-contrast' { lower_keyword in ['no-preference', 'less', 'more', 'custom'] }
+		'prefers-reduced-data', 'prefers-reduced-motion', 'prefers-reduced-transparency' {
+			lower_keyword in ['no-preference', 'reduce']
+		}
+		'resolution' { lower_keyword == 'infinite' }
+		'scan' { lower_keyword in ['interlace', 'progressive'] }
+		'scripting' { lower_keyword in ['none', 'initial-only', 'enabled'] }
+		'update' { lower_keyword in ['none', 'slow', 'fast'] }
+		else { false }
+	}
+}
+
+fn media_feature_keyword_is_falsey_name(name string, keyword string) bool {
+	lower_name := name.to_lower()
+	lower_keyword := keyword.to_lower()
+	return match lower_name {
+		'any-hover', 'any-pointer', 'forced-colors', 'hover', 'inverted-colors',
+		'nav-controls', 'overflow-block', 'overflow-inline', 'pointer', 'scan', 'scripting',
+		'update' {
+			lower_keyword == 'none'
+		}
+		'dynamic-range', 'video-dynamic-range' { lower_keyword in ['standard', 'high'] }
+		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion',
+		'prefers-reduced-transparency' {
+			lower_keyword == 'no-preference'
+		}
+		else { false }
+	}
 }
 
 fn starts_with_ascii_word_case_insensitive(text string, word string) bool {
