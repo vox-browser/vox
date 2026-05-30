@@ -166,15 +166,7 @@ pub fn (value &CSSUnparsedValue) create_an_internal_representation(property Prop
 }
 
 fn parse_as_list_of_component_values_for_unparsed_value(value string) []ComponentValue {
-	// Local stub for Parser::Parser::parse_as_list_of_component_values().
-	mut component_values := []ComponentValue{}
-	for token in Tokenizer.tokenize(value, 'UTF-8') {
-		if token.is(.end_of_file) {
-			continue
-		}
-		component_values << ComponentValue.from_token(token)
-	}
-	return component_values
+	return parse_component_values_for_value_logic(value)
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#cssvariablereferencevalue
@@ -195,7 +187,7 @@ pub fn CSSVariableReferenceValue.create(variable string, fallback ?&CSSUnparsedV
 pub fn CSSVariableReferenceValue.construct_impl(variable string, fallback ?&CSSUnparsedValue) !CSSVariableReferenceValue {
 	// The CSSVariableReferenceValue(variable, fallback) constructor must, when called, perform the following steps:
 	// 1. If variable is not a custom property name string, throw a TypeError.
-	if !is_a_custom_property_name_string_for_unparsed_value(variable) {
+	if !is_a_custom_property_name_string(variable) {
 		return error("'${variable}' is not a valid CSS custom property name")
 	}
 
@@ -213,7 +205,7 @@ pub fn (value CSSVariableReferenceValue) variable() string {
 pub fn (mut value CSSVariableReferenceValue) set_variable(variable string) ! {
 	// The variable attribute of a CSSVariableReferenceValue this must, on setting a variable variable, perform the following steps:
 	// 1. If variable is not a custom property name string, throw a TypeError.
-	if !is_a_custom_property_name_string_for_unparsed_value(variable) {
+	if !is_a_custom_property_name_string(variable) {
 		return error("'${variable}' is not a valid CSS custom property name")
 	}
 
@@ -253,9 +245,4 @@ pub fn (value CSSVariableReferenceValue) to_string() !string {
 	// 4. Append ")" to s and return s.
 	s.write_string(')')
 	return s.str()
-}
-
-fn is_a_custom_property_name_string_for_unparsed_value(value string) bool {
-	// Local stub for is_a_custom_property_name_string().
-	return value.starts_with('--')
 }

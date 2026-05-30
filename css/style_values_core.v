@@ -90,7 +90,7 @@ pub mut:
 
 pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 	lowercase_name := to_ascii_lowercase(name)
-	if lowercase_name.starts_with('--') {
+	if is_a_custom_property_name_string(name) {
 		return PropertyNameAndID{
 			name_:      name
 			is_custom_: true
@@ -2030,7 +2030,7 @@ pub fn (style_value StyleValue) to_string_with_mode(mode SerializationMode) stri
 }
 
 pub fn (style_value StyleValue) tokenize() []ComponentValue {
-	// This is an inefficient way of producing ComponentValues, but it is guaranteed to work for types that round-trip.
+	// This is an inefficient way of producing ComponentValues, but it's guaranteed to work for types that round-trip.
 	// FIXME: Implement better versions in the subclasses.
 	if style_value.is_dimension() {
 		return style_value.as_dimension().tokenize()
@@ -2059,7 +2059,7 @@ pub fn (style_value StyleValue) tokenize() []ComponentValue {
 	if style_value is UnresolvedStyleValue {
 		return style_value.tokenize()
 	}
-	return [component_value_from_text(style_value.to_string())]
+	return parse_component_values_for_value_logic(style_value.to_string())
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#reify-as-a-cssstylevalue
