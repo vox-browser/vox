@@ -102,6 +102,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'accent-color' {
 			PropertyID.accent_color
 		}
+		'anchor-name' {
+			PropertyID.anchor_name
+		}
+		'anchor-scope' {
+			PropertyID.anchor_scope
+		}
 		'animation-composition' {
 			PropertyID.animation_composition
 		}
@@ -234,6 +240,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'outline-width' {
 			PropertyID.outline_width
 		}
+		'position-anchor' {
+			PropertyID.position_anchor
+		}
 		'shape-image-threshold' {
 			PropertyID.shape_image_threshold
 		}
@@ -251,6 +260,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'scale' {
 			PropertyID.scale
+		}
+		'scroll-timeline-name' {
+			PropertyID.scroll_timeline_name
 		}
 		'transform' {
 			PropertyID.transform
@@ -272,6 +284,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'translate' {
 			PropertyID.translate
+		}
+		'view-timeline-inset' {
+			PropertyID.view_timeline_inset
+		}
+		'view-timeline-name' {
+			PropertyID.view_timeline_name
 		}
 		'-webkit-text-fill-color' {
 			PropertyID.webkit_text_fill_color
@@ -326,6 +344,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.aspect_ratio {
 			value_type == .ratio
 		}
+		.anchor_name, .anchor_scope, .position_anchor, .scroll_timeline_name, .view_timeline_name {
+			value_type == .dashed_ident
+		}
 		.accent_color, .background_color, .border_bottom_color, .border_left_color,
 		.border_right_color, .border_top_color, .caret_color, .color, .flood_color, .outline_color,
 		.stop_color, .webkit_text_fill_color {
@@ -347,6 +368,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.animation_timeline {
 			value_type in [.dashed_ident, .scroll_function, .view_function]
+		}
+		.view_timeline_inset {
+			value_type == .view_timeline_inset
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
 		.outline_width {
@@ -430,6 +454,21 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.aspect_ratio {
 			lowercase_value == 'auto'
+		}
+		.anchor_name {
+			lowercase_value == 'none'
+		}
+		.anchor_scope {
+			lowercase_value in ['none', 'all']
+		}
+		.position_anchor {
+			lowercase_value == 'auto'
+		}
+		.scroll_timeline_name, .view_timeline_name {
+			lowercase_value == 'none'
+		}
+		.view_timeline_inset {
+			false
 		}
 		.accent_color, .caret_color {
 			if lowercase_value == 'auto' {
@@ -524,7 +563,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.accent_color, .background_color, .border_bottom_color, .border_left_color,
 		.border_right_color, .border_top_color, .caret_color, .color, .flood_color, .outline_color,
-		.stop_color, .webkit_text_fill_color {
+		.stop_color, .view_timeline_inset, .webkit_text_fill_color {
 			false
 		}
 		.color_scheme {
@@ -557,6 +596,15 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.transition_property {
 			lowercase_value != 'none'
+		}
+		.anchor_name, .scroll_timeline_name, .view_timeline_name {
+			value.starts_with('--') && lowercase_value != 'none'
+		}
+		.anchor_scope {
+			value.starts_with('--') && lowercase_value !in ['none', 'all']
+		}
+		.position_anchor {
+			value.starts_with('--') && lowercase_value != 'auto'
 		}
 	}
 }
@@ -1537,6 +1585,7 @@ pub enum Keyword {
 	revert
 	revert_layer
 	unset
+	all
 	auto_add
 	auto
 	none_
@@ -1700,6 +1749,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.revert { 'revert' }
 		.revert_layer { 'revert-layer' }
 		.unset { 'unset' }
+		.all { 'all' }
 		.auto_add { 'auto-add' }
 		.auto { 'auto' }
 		.none_ { 'none' }
@@ -1852,6 +1902,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'revert' { Keyword.revert }
 		'revert-layer' { Keyword.revert_layer }
 		'unset' { Keyword.unset }
+		'all' { Keyword.all }
 		'auto-add' { Keyword.auto_add }
 		'auto' { Keyword.auto }
 		'none' { Keyword.none_ }

@@ -35,6 +35,8 @@ pub:
 
 pub enum PropertyID {
 	accent_color
+	anchor_name
+	anchor_scope
 	animation_composition
 	animation_delay
 	animation_direction
@@ -78,12 +80,14 @@ pub enum PropertyID {
 	opacity
 	outline_color
 	outline_width
+	position_anchor
 	shape_image_threshold
 	stop_color
 	stop_opacity
 	stroke_opacity
 	rotate
 	scale
+	scroll_timeline_name
 	transform
 	transition_behavior
 	transition_delay
@@ -91,6 +95,8 @@ pub enum PropertyID {
 	transition_property
 	transition_timing_function
 	translate
+	view_timeline_inset
+	view_timeline_name
 	webkit_text_fill_color
 	word_spacing
 }

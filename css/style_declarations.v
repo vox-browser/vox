@@ -22,6 +22,8 @@ pub fn PropertyNameAndID.from_id(property_id PropertyID) PropertyNameAndID {
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
 		.accent_color { 'accent-color' }
+		.anchor_name { 'anchor-name' }
+		.anchor_scope { 'anchor-scope' }
 		.animation_composition { 'animation-composition' }
 		.animation_delay { 'animation-delay' }
 		.animation_direction { 'animation-direction' }
@@ -65,12 +67,14 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.opacity { 'opacity' }
 		.outline_color { 'outline-color' }
 		.outline_width { 'outline-width' }
+		.position_anchor { 'position-anchor' }
 		.shape_image_threshold { 'shape-image-threshold' }
 		.stop_color { 'stop-color' }
 		.stop_opacity { 'stop-opacity' }
 		.stroke_opacity { 'stroke-opacity' }
 		.rotate { 'rotate' }
 		.scale { 'scale' }
+		.scroll_timeline_name { 'scroll-timeline-name' }
 		.transform { 'transform' }
 		.transition_behavior { 'transition-behavior' }
 		.transition_delay { 'transition-delay' }
@@ -78,6 +82,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.transition_property { 'transition-property' }
 		.transition_timing_function { 'transition-timing-function' }
 		.translate { 'translate' }
+		.view_timeline_inset { 'view-timeline-inset' }
+		.view_timeline_name { 'view-timeline-name' }
 		.webkit_text_fill_color { '-webkit-text-fill-color' }
 		.word_spacing { 'word-spacing' }
 	}
@@ -90,11 +96,13 @@ pub fn property_is_shorthand(property_id PropertyID) bool {
 
 pub fn property_is_single_valued(property_id PropertyID) bool {
 	return match property_id {
-		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
-		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
-		.animation_timeline, .animation_timing_function, .font_feature_settings,
-		.font_variation_settings, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function {
+		.anchor_name, .anchor_scope, .animation_composition, .animation_delay,
+		.animation_direction, .animation_duration, .animation_fill_mode,
+		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
+		.animation_timing_function, .font_feature_settings, .font_variation_settings,
+		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .view_timeline_inset,
+		.view_timeline_name {
 			false
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
@@ -103,9 +111,9 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
 		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .line_height,
-		.math_depth, .math_style, .opacity, .outline_color, .outline_width, .shape_image_threshold,
-		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
-		.webkit_text_fill_color, .word_spacing {
+		.math_depth, .math_style, .opacity, .outline_color, .outline_width, .position_anchor,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
+		.transform, .translate, .webkit_text_fill_color, .word_spacing {
 			true
 		}
 	}
@@ -113,11 +121,13 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 
 pub fn property_is_list_valued(property_id PropertyID) bool {
 	return match property_id {
-		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
-		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
-		.animation_timeline, .animation_timing_function, .font_feature_settings,
-		.font_variation_settings, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function {
+		.anchor_name, .anchor_scope, .animation_composition, .animation_delay,
+		.animation_direction, .animation_duration, .animation_fill_mode,
+		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
+		.animation_timing_function, .font_feature_settings, .font_variation_settings,
+		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .view_timeline_inset,
+		.view_timeline_name {
 			true
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
@@ -126,15 +136,15 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
 		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .line_height,
-		.math_depth, .math_style, .opacity, .outline_color, .outline_width, .shape_image_threshold,
-		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .translate,
-		.webkit_text_fill_color, .word_spacing {
+		.math_depth, .math_style, .opacity, .outline_color, .outline_width, .position_anchor,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
+		.transform, .translate, .webkit_text_fill_color, .word_spacing {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 59
+pub const number_of_longhand_properties = 65
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
@@ -147,64 +157,70 @@ pub fn last_longhand_property_id() PropertyID {
 fn property_id_from_longhand_index(index int) ?PropertyID {
 	return match index {
 		0 { PropertyID.accent_color }
-		1 { PropertyID.animation_composition }
-		2 { PropertyID.animation_delay }
-		3 { PropertyID.animation_direction }
-		4 { PropertyID.animation_duration }
-		5 { PropertyID.animation_fill_mode }
-		6 { PropertyID.animation_iteration_count }
-		7 { PropertyID.animation_name }
-		8 { PropertyID.animation_play_state }
-		9 { PropertyID.animation_timeline }
-		10 { PropertyID.animation_timing_function }
-		11 { PropertyID.aspect_ratio }
-		12 { PropertyID.background_color }
-		13 { PropertyID.border_bottom_color }
-		14 { PropertyID.border_bottom_width }
-		15 { PropertyID.border_left_color }
-		16 { PropertyID.border_left_width }
-		17 { PropertyID.border_right_color }
-		18 { PropertyID.border_right_width }
-		19 { PropertyID.border_top_color }
-		20 { PropertyID.border_top_width }
-		21 { PropertyID.caret_color }
-		22 { PropertyID.color }
-		23 { PropertyID.color_scheme }
-		24 { PropertyID.content_visibility }
-		25 { PropertyID.corner_bottom_left_shape }
-		26 { PropertyID.corner_bottom_right_shape }
-		27 { PropertyID.corner_top_left_shape }
-		28 { PropertyID.corner_top_right_shape }
-		29 { PropertyID.fill_opacity }
-		30 { PropertyID.flood_color }
-		31 { PropertyID.flood_opacity }
-		32 { PropertyID.font_feature_settings }
-		33 { PropertyID.font_style }
-		34 { PropertyID.font_variation_settings }
-		35 { PropertyID.font_weight }
-		36 { PropertyID.font_width }
-		37 { PropertyID.letter_spacing }
-		38 { PropertyID.line_height }
-		39 { PropertyID.math_depth }
-		40 { PropertyID.math_style }
-		41 { PropertyID.opacity }
-		42 { PropertyID.outline_color }
-		43 { PropertyID.outline_width }
-		44 { PropertyID.shape_image_threshold }
-		45 { PropertyID.stop_color }
-		46 { PropertyID.stop_opacity }
-		47 { PropertyID.stroke_opacity }
-		48 { PropertyID.rotate }
-		49 { PropertyID.scale }
-		50 { PropertyID.transform }
-		51 { PropertyID.transition_behavior }
-		52 { PropertyID.transition_delay }
-		53 { PropertyID.transition_duration }
-		54 { PropertyID.transition_property }
-		55 { PropertyID.transition_timing_function }
-		56 { PropertyID.translate }
-		57 { PropertyID.webkit_text_fill_color }
-		58 { PropertyID.word_spacing }
+		1 { PropertyID.anchor_name }
+		2 { PropertyID.anchor_scope }
+		3 { PropertyID.animation_composition }
+		4 { PropertyID.animation_delay }
+		5 { PropertyID.animation_direction }
+		6 { PropertyID.animation_duration }
+		7 { PropertyID.animation_fill_mode }
+		8 { PropertyID.animation_iteration_count }
+		9 { PropertyID.animation_name }
+		10 { PropertyID.animation_play_state }
+		11 { PropertyID.animation_timeline }
+		12 { PropertyID.animation_timing_function }
+		13 { PropertyID.aspect_ratio }
+		14 { PropertyID.background_color }
+		15 { PropertyID.border_bottom_color }
+		16 { PropertyID.border_bottom_width }
+		17 { PropertyID.border_left_color }
+		18 { PropertyID.border_left_width }
+		19 { PropertyID.border_right_color }
+		20 { PropertyID.border_right_width }
+		21 { PropertyID.border_top_color }
+		22 { PropertyID.border_top_width }
+		23 { PropertyID.caret_color }
+		24 { PropertyID.color }
+		25 { PropertyID.color_scheme }
+		26 { PropertyID.content_visibility }
+		27 { PropertyID.corner_bottom_left_shape }
+		28 { PropertyID.corner_bottom_right_shape }
+		29 { PropertyID.corner_top_left_shape }
+		30 { PropertyID.corner_top_right_shape }
+		31 { PropertyID.fill_opacity }
+		32 { PropertyID.flood_color }
+		33 { PropertyID.flood_opacity }
+		34 { PropertyID.font_feature_settings }
+		35 { PropertyID.font_style }
+		36 { PropertyID.font_variation_settings }
+		37 { PropertyID.font_weight }
+		38 { PropertyID.font_width }
+		39 { PropertyID.letter_spacing }
+		40 { PropertyID.line_height }
+		41 { PropertyID.math_depth }
+		42 { PropertyID.math_style }
+		43 { PropertyID.opacity }
+		44 { PropertyID.outline_color }
+		45 { PropertyID.outline_width }
+		46 { PropertyID.position_anchor }
+		47 { PropertyID.shape_image_threshold }
+		48 { PropertyID.stop_color }
+		49 { PropertyID.stop_opacity }
+		50 { PropertyID.stroke_opacity }
+		51 { PropertyID.rotate }
+		52 { PropertyID.scale }
+		53 { PropertyID.scroll_timeline_name }
+		54 { PropertyID.transform }
+		55 { PropertyID.transition_behavior }
+		56 { PropertyID.transition_delay }
+		57 { PropertyID.transition_duration }
+		58 { PropertyID.transition_property }
+		59 { PropertyID.transition_timing_function }
+		60 { PropertyID.translate }
+		61 { PropertyID.view_timeline_inset }
+		62 { PropertyID.view_timeline_name }
+		63 { PropertyID.webkit_text_fill_color }
+		64 { PropertyID.word_spacing }
 		else { none }
 	}
 }

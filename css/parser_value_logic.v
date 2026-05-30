@@ -213,6 +213,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.accent_color, .caret_color {
 			return parser.parse_auto_or_color_value(mut tokens)
 		}
+		.anchor_name {
+			return parser.parse_anchor_name_value(mut tokens)
+		}
+		.anchor_scope {
+			return parser.parse_anchor_scope_value(mut tokens)
+		}
 		.animation_composition {
 			return parser.parse_animation_composition_value(mut tokens)
 		}
@@ -240,6 +246,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
 		.outline_width {
 			return parser.parse_border_or_outline_width_value(mut tokens)
+		}
+		.position_anchor {
+			return parser.parse_position_anchor_value(mut tokens)
 		}
 		.background_color, .border_bottom_color, .border_left_color, .border_right_color,
 		.border_top_color, .color, .flood_color, .outline_color, .stop_color,
@@ -302,6 +311,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.scale {
 			return parser.parse_scale_value(mut tokens)
 		}
+		.scroll_timeline_name {
+			return parser.parse_timeline_name_value(mut tokens)
+		}
 		.transform {
 			return parser.parse_transform_value(mut tokens)
 		}
@@ -322,6 +334,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.translate {
 			return parser.parse_translate_value(mut tokens)
+		}
+		.view_timeline_inset {
+			return parser.parse_view_timeline_inset_list_value(mut tokens)
+		}
+		.view_timeline_name {
+			return parser.parse_timeline_name_value(mut tokens)
 		}
 	}
 
@@ -734,6 +752,122 @@ fn (mut parser Parser) parse_aspect_ratio_value(mut tokens ComponentValueStream)
 	}
 
 	return none
+}
+
+fn parse_single_keyword_value_for_value_logic(mut tokens ComponentValueStream, keyword Keyword) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	token := transaction.consume() or { return none }
+	if !token.is(.ident)
+		|| !equals_ignoring_ascii_case(token.token().ident(), string_from_keyword(keyword)) {
+		return none
+	}
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(KeywordStyleValue.create(keyword))
+}
+
+fn (mut parser Parser) parse_dashed_ident_value(mut tokens ComponentValueStream, blacklist []string) ?StyleValue {
+	value := parser.parse_custom_ident_value(mut tokens, blacklist) or { return none }
+	if !value.custom_ident().starts_with('--') {
+		return none
+	}
+	return StyleValue(value)
+}
+
+fn (mut parser Parser) parse_dashed_ident_comma_list_value(mut tokens ComponentValueStream, blacklist []string) ?StyleValue {
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut idents := []StyleValue{}
+	for value in values {
+		mut item_tokens := ComponentValueStream.new(value)
+		ident := parser.parse_dashed_ident_value(mut item_tokens, blacklist) or { return none }
+		item_tokens.consume_whitespace()
+		if item_tokens.has_more_tokens() {
+			return none
+		}
+		idents << ident
+	}
+
+	if idents.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(idents, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_anchor_name_value(mut tokens ComponentValueStream) ?StyleValue {
+	// https://drafts.csswg.org/css-anchor-position/#name
+	// none | <dashed-ident>#
+	if none_value := parse_single_keyword_value_for_value_logic(mut tokens, .none_) {
+		return none_value
+	}
+
+	return parser.parse_dashed_ident_comma_list_value(mut tokens, ['none'])
+}
+
+fn (mut parser Parser) parse_anchor_scope_value(mut tokens ComponentValueStream) ?StyleValue {
+	// https://drafts.csswg.org/css-anchor-position/#anchor-scope
+	// none | all | <dashed-ident>#
+	if none_value := parse_single_keyword_value_for_value_logic(mut tokens, .none_) {
+		return none_value
+	}
+
+	if all_value := parse_single_keyword_value_for_value_logic(mut tokens, .all) {
+		return all_value
+	}
+
+	return parser.parse_dashed_ident_comma_list_value(mut tokens, ['none', 'all'])
+}
+
+fn (mut parser Parser) parse_position_anchor_value(mut tokens ComponentValueStream) ?StyleValue {
+	// https://drafts.csswg.org/css-anchor-position/#position-anchor
+	// auto | <anchor-name>
+	if auto_value := parse_single_keyword_value_for_value_logic(mut tokens, .auto) {
+		return auto_value
+	}
+
+	// <anchor-name> = <dashed-ident>
+	return parser.parse_dashed_ident_value(mut tokens, ['auto'])
+}
+
+fn (mut parser Parser) parse_timeline_name_value(mut tokens ComponentValueStream) ?StyleValue {
+	// none | <dashed-ident>#
+	if none_value := parse_single_keyword_value_for_value_logic(mut tokens, .none_) {
+		return none_value
+	}
+
+	return parser.parse_dashed_ident_comma_list_value(mut tokens, ['none'])
+}
+
+fn (mut parser Parser) parse_view_timeline_inset_list_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	values :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+
+	mut insets := []StyleValue{}
+	for value in values {
+		mut item_tokens := ComponentValueStream.new(value)
+		inset := parser.parse_view_timeline_inset_value(mut item_tokens) or { return none }
+		item_tokens.consume_whitespace()
+		if item_tokens.has_more_tokens() {
+			return none
+		}
+		insets << inset
+	}
+
+	if insets.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(insets, .comma, .yes))
 }
 
 fn (mut parser Parser) parse_transition_property_value(mut tokens ComponentValueStream) ?StyleValue {

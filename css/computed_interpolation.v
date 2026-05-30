@@ -810,6 +810,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.accent_color {
 			'auto'
 		}
+		.anchor_name, .anchor_scope {
+			'none'
+		}
 		.animation_composition {
 			'replace'
 		}
@@ -910,6 +913,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.outline_width {
 			'medium'
 		}
+		.position_anchor {
+			'auto'
+		}
 		.shape_image_threshold {
 			'0'
 		}
@@ -920,6 +926,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 			'1'
 		}
 		.rotate, .scale, .transform, .translate {
+			'none'
+		}
+		.scroll_timeline_name {
 			'none'
 		}
 		.transition_behavior {
@@ -936,6 +945,12 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		}
 		.webkit_text_fill_color {
 			'currentcolor'
+		}
+		.view_timeline_inset {
+			'auto'
+		}
+		.view_timeline_name {
+			'none'
 		}
 		.word_spacing {
 			'normal'
@@ -974,13 +989,14 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.font_variation_settings, .font_weight, .font_width, .letter_spacing, .line_height,
 		.math_depth, .opacity, .outline_color, .outline_width, .shape_image_threshold, .stop_color,
 		.stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .transition_delay,
-		.transition_duration, .transition_timing_function, .translate, .webkit_text_fill_color,
-		.word_spacing {
+		.transition_duration, .transition_timing_function, .translate, .view_timeline_inset,
+		.webkit_text_fill_color, .word_spacing {
 			true
 		}
-		.animation_composition, .animation_direction, .animation_fill_mode, .animation_play_state,
-		.color_scheme, .content_visibility, .math_style, .transition_behavior,
-		.transition_property {
+		.anchor_name, .anchor_scope, .animation_composition, .animation_direction,
+		.animation_fill_mode, .animation_play_state, .color_scheme, .content_visibility,
+		.math_style, .position_anchor, .scroll_timeline_name, .transition_behavior,
+		.transition_property, .view_timeline_name {
 			false
 		}
 	}
@@ -1000,15 +1016,17 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.font_width, .letter_spacing, .math_depth, .outline_width, .stop_color, .word_spacing {
 			true
 		}
-		.accent_color, .animation_composition, .animation_delay, .animation_direction,
-		.animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name,
-		.animation_play_state, .animation_timeline, .animation_timing_function, .aspect_ratio,
-		.border_bottom_color, .border_left_color, .border_right_color, .border_top_color,
-		.caret_color, .color_scheme, .content_visibility, .fill_opacity, .flood_opacity,
-		.font_feature_settings, .font_variation_settings, .line_height, .math_style, .opacity,
-		.outline_color, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.transform, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .translate, .webkit_text_fill_color {
+		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
+		.animation_direction, .animation_duration, .animation_fill_mode,
+		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
+		.animation_timing_function, .aspect_ratio, .border_bottom_color, .border_left_color,
+		.border_right_color, .border_top_color, .caret_color, .color_scheme, .content_visibility,
+		.fill_opacity, .flood_opacity, .font_feature_settings, .font_variation_settings,
+		.line_height, .math_style, .opacity, .outline_color, .position_anchor,
+		.scroll_timeline_name, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate,
+		.scale, .transform, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .translate, .view_timeline_inset,
+		.view_timeline_name, .webkit_text_fill_color {
 			false
 		}
 	}
@@ -2732,8 +2750,9 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
 		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
 		.animation_timeline, .animation_timing_function, .font_feature_settings,
-		.font_variation_settings, .math_depth, .math_style, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function {
+		.font_variation_settings, .math_depth, .math_style, .scroll_timeline_name,
+		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
+		.transition_timing_function, .view_timeline_inset, .view_timeline_name {
 			.none_
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
@@ -2749,7 +2768,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.content_visibility {
 			.custom
 		}
-		.color_scheme {
+		.anchor_name, .anchor_scope, .color_scheme, .position_anchor {
 			.discrete
 		}
 	}
@@ -3442,22 +3461,23 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		// generated property metadata check. For the currently translated
 		// PropertyID set, the missing generated metadata has no remaining
 		// layout-affecting properties.
-		.accent_color, .animation_composition, .animation_delay, .animation_direction,
-		.animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name,
-		.animation_play_state, .animation_timeline, .animation_timing_function, .background_color,
-		.border_bottom_color, .border_bottom_width, .border_left_color, .border_left_width,
-		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
-		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.flood_color, .flood_opacity, .font_feature_settings, .font_style,
-		.font_variation_settings, .font_weight, .font_width, .line_height, .math_depth,
-		.math_style, .opacity, .outline_color, .outline_width, .shape_image_threshold, .stop_color,
-		.stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .transition_behavior,
+		.accent_color, .anchor_scope, .animation_composition, .animation_delay,
+		.animation_direction, .animation_duration, .animation_fill_mode,
+		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
+		.animation_timing_function, .background_color, .border_bottom_color, .border_bottom_width,
+		.border_left_color, .border_left_width, .border_right_color, .border_right_width,
+		.border_top_color, .border_top_width, .caret_color, .color, .color_scheme,
+		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
+		.flood_opacity, .font_feature_settings, .font_style, .font_variation_settings,
+		.font_weight, .font_width, .line_height, .math_depth, .math_style, .opacity,
+		.outline_color, .outline_width, .shape_image_threshold, .stop_color, .stop_opacity,
+		.stroke_opacity, .rotate, .scale, .scroll_timeline_name, .transform, .transition_behavior,
 		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.translate, .webkit_text_fill_color {
+		.translate, .view_timeline_inset, .view_timeline_name, .webkit_text_fill_color {
 			false
 		}
-		.aspect_ratio, .letter_spacing, .word_spacing {
+		.anchor_name, .aspect_ratio, .letter_spacing, .position_anchor, .word_spacing {
 			true
 		}
 	}
@@ -3471,19 +3491,20 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.opacity, .rotate, .scale, .transform, .translate {
 			true
 		}
-		.accent_color, .animation_composition, .animation_delay, .animation_direction,
-		.animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name,
-		.animation_play_state, .animation_timeline, .animation_timing_function, .aspect_ratio,
-		.background_color, .border_bottom_color, .border_bottom_width, .border_left_color,
-		.border_left_width, .border_right_color, .border_right_width, .border_top_color,
-		.border_top_width, .caret_color, .color, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity,
-		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.letter_spacing, .line_height, .math_depth, .math_style, .outline_color, .outline_width,
+		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
+		.animation_direction, .animation_duration, .animation_fill_mode,
+		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
+		.animation_timing_function, .aspect_ratio, .background_color, .border_bottom_color,
+		.border_bottom_width, .border_left_color, .border_left_width, .border_right_color,
+		.border_right_width, .border_top_color, .border_top_width, .caret_color, .color,
+		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
+		.flood_opacity, .font_feature_settings, .font_style, .font_variation_settings,
+		.font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .math_style,
+		.outline_color, .outline_width, .position_anchor, .scroll_timeline_name,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .transition_behavior,
 		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.webkit_text_fill_color, .word_spacing {
+		.view_timeline_inset, .view_timeline_name, .webkit_text_fill_color, .word_spacing {
 			false
 		}
 	}
@@ -3507,19 +3528,20 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.opacity, .rotate, .scale, .transform, .translate {
 			true
 		}
-		.accent_color, .animation_composition, .animation_delay, .animation_direction,
-		.animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name,
-		.animation_play_state, .animation_timeline, .animation_timing_function, .aspect_ratio,
-		.background_color, .border_bottom_color, .border_bottom_width, .border_left_color,
-		.border_left_width, .border_right_color, .border_right_width, .border_top_color,
-		.border_top_width, .caret_color, .color, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity,
-		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.letter_spacing, .line_height, .math_depth, .math_style, .outline_color, .outline_width,
+		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
+		.animation_direction, .animation_duration, .animation_fill_mode,
+		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
+		.animation_timing_function, .aspect_ratio, .background_color, .border_bottom_color,
+		.border_bottom_width, .border_left_color, .border_left_width, .border_right_color,
+		.border_right_width, .border_top_color, .border_top_width, .caret_color, .color,
+		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color,
+		.flood_opacity, .font_feature_settings, .font_style, .font_variation_settings,
+		.font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .math_style,
+		.outline_color, .outline_width, .position_anchor, .scroll_timeline_name,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .transition_behavior,
 		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.webkit_text_fill_color, .word_spacing {
+		.view_timeline_inset, .view_timeline_name, .webkit_text_fill_color, .word_spacing {
 			false
 		}
 	}
