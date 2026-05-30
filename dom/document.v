@@ -822,6 +822,26 @@ pub struct VisualViewport {}
 @[heap]
 pub struct MediaQueryList {}
 
+pub type CSSMediaQueryListMatchesCallback = fn (voidptr) bool
+
+pub type CSSMediaQueryListEvaluateCallback = fn (voidptr) bool
+
+pub type CSSMediaQueryListHasChangedStateCallback = fn (voidptr) bool
+
+pub type CSSMediaQueryListSetHasChangedStateCallback = fn (voidptr, bool)
+
+pub type CSSMediaQueryListDispatchChangeEventCallback = fn (voidptr, bool)
+
+pub struct CSSMediaQueryListRegistration {
+pub:
+	target                voidptr
+	matches               CSSMediaQueryListMatchesCallback             = unsafe { nil }
+	evaluate              CSSMediaQueryListEvaluateCallback            = unsafe { nil }
+	has_changed_state     CSSMediaQueryListHasChangedStateCallback     = unsafe { nil }
+	set_has_changed_state CSSMediaQueryListSetHasChangedStateCallback  = unsafe { nil }
+	dispatch_change_event CSSMediaQueryListDispatchChangeEventCallback = unsafe { nil }
+}
+
 pub struct BackgroundLayerData {}
 
 pub struct CSSSelector {
@@ -2680,6 +2700,7 @@ pub mut:
 	cached_navigable_                       &Navigable                          = unsafe { nil }
 	temporary_document_for_fragment_parsing TemporaryDocumentForFragmentParsing = .no
 	media_query_lists                       []&MediaQueryList
+	css_media_query_lists                   []CSSMediaQueryListRegistration
 	document_observers_being_notified       []&DocumentObserver
 	// Extra fields for implementations
 	implementation_            &DOMImplementation = unsafe { nil }
@@ -4569,7 +4590,7 @@ pub fn (mut d Document) evaluate_media_queries_and_report_changes() {
 	d.needs_media_query_evaluation = false
 
 	// 1. For each MediaQueryList object target that has doc as its document,
-	//    in the order they were created, oldest first:
+	//    in the order they were created, oldest first, run these substeps:
 	for mql in d.media_query_lists {
 		if mql == unsafe { nil } {
 			continue
@@ -4581,12 +4602,37 @@ pub fn (mut d Document) evaluate_media_queries_and_report_changes() {
 			mql.dispatch_change_event(now_matches)
 		}
 	}
+
+	// Boundary: DOM cannot import css without creating a module cycle, so real
+	// CSS::MediaQueryList objects register opaque callbacks here. This keeps the
+	// C++ Document algorithm in DOM while allowing css/media_queries.v to own the
+	// translated MediaQueryList implementation.
+	for registration in d.css_media_query_lists {
+		if registration.target == unsafe { nil } {
+			continue
+		}
+		did_match := registration.matches(registration.target)
+		now_matches := registration.evaluate(registration.target)
+
+		did_change_internally := registration.has_changed_state(registration.target)
+		registration.set_has_changed_state(registration.target, false)
+
+		if did_change_internally || did_match != now_matches {
+			registration.dispatch_change_event(registration.target, now_matches)
+		}
+	}
 	// Also evaluate @media rules
 	d.evaluate_media_rules()
 }
 
 pub fn (mut d Document) add_media_query_list(mql &MediaQueryList) {
+	d.needs_media_query_evaluation = true
 	d.media_query_lists << mql
+}
+
+pub fn (mut d Document) add_css_media_query_list(registration CSSMediaQueryListRegistration) {
+	d.needs_media_query_evaluation = true
+	d.css_media_query_lists << registration
 }
 
 // --- Resize / Scroll ---

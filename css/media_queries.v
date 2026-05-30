@@ -590,11 +590,44 @@ pub fn (media_query_list &MediaQueryList) dispatch_change_event(matches bool) {
 	dom.event_target_dispatch_event(media_query_list.event_target(), event.base_event())
 }
 
-pub fn (media_query_list &MediaQueryList) register_with_document_stub() {
-	_ = media_query_list
-	// Stub: Window::match_media() registers the C++ CSS::MediaQueryList with DOM::Document.
-	// The V DOM module currently owns a small placeholder MediaQueryList to avoid a circular dom <-> css import,
-	// so registration has to stay at this boundary until the shared interface is split out.
+fn media_query_list_registration_matches(target voidptr) bool {
+	media_query_list := unsafe { &MediaQueryList(target) }
+	return media_query_list.matches()
+}
+
+fn media_query_list_registration_evaluate(target voidptr) bool {
+	media_query_list := unsafe { &MediaQueryList(target) }
+	return media_query_list.evaluate()
+}
+
+fn media_query_list_registration_has_changed_state(target voidptr) bool {
+	media_query_list := unsafe { &MediaQueryList(target) }
+	return media_query_list.has_changed_state() or { false }
+}
+
+fn media_query_list_registration_set_has_changed_state(target voidptr, has_changed_state bool) {
+	mut media_query_list := unsafe { &MediaQueryList(target) }
+	media_query_list.set_has_changed_state(has_changed_state)
+}
+
+fn media_query_list_registration_dispatch_change_event(target voidptr, matches bool) {
+	media_query_list := unsafe { &MediaQueryList(target) }
+	media_query_list.dispatch_change_event(matches)
+}
+
+pub fn (media_query_list &MediaQueryList) register_with_document() {
+	// Window::match_media() registers the C++ CSS::MediaQueryList with DOM::Document.
+	// Boundary: the V dom module cannot import css, so register the translated CSS
+	// object through an opaque callback record owned by DOM.
+	mut document := unsafe { &dom.Document(media_query_list.document_) }
+	document.add_css_media_query_list(dom.CSSMediaQueryListRegistration{
+		target:                voidptr(media_query_list)
+		matches:               media_query_list_registration_matches
+		evaluate:              media_query_list_registration_evaluate
+		has_changed_state:     media_query_list_registration_has_changed_state
+		set_has_changed_state: media_query_list_registration_set_has_changed_state
+		dispatch_change_event: media_query_list_registration_dispatch_change_event
+	})
 }
 
 pub struct MediaQueryListEntry {
@@ -792,7 +825,8 @@ pub fn parse_media_query_from_text(text string) ?&MediaQuery {
 		return none
 	}
 
-	mut condition_tokens := SupportsTokenStream.from_values(parse_component_values_for_value_logic(trimmed))
+	mut condition_tokens :=
+		SupportsTokenStream.from_values(parse_component_values_for_value_logic(trimmed))
 	if condition := parse_media_condition(mut condition_tokens) {
 		condition_tokens.discard_whitespace()
 		if !condition_tokens.has_next_token() {
@@ -843,7 +877,9 @@ pub fn parse_media_query_from_text(text string) ?&MediaQuery {
 		if condition_text.len == 0 {
 			return MediaQuery.create_not_all()
 		}
-		condition = parse_media_condition_from_text(condition_text) or { return MediaQuery.create_not_all() }
+		condition = parse_media_condition_from_text(condition_text) or {
+			return MediaQuery.create_not_all()
+		}
 		if media_condition := condition {
 			if media_condition.kind == .or {
 				return MediaQuery.create_not_all()
@@ -936,8 +972,9 @@ fn parse_media_boolean_expression(mut tokens SupportsTokenStream, result_for_gen
 		}
 
 		transaction.discard_whitespace()
-		child := parse_media_boolean_expression_group(mut transaction,
-			result_for_general_enclosed) or { return none }
+		child := parse_media_boolean_expression_group(mut transaction, result_for_general_enclosed) or {
+			return none
+		}
 		children << child
 		transaction.discard_whitespace()
 	}
@@ -1101,21 +1138,18 @@ fn parse_media_feature_plain(mut tokens SupportsTokenStream) ?&BooleanExpression
 	match name.prefix {
 		.normal {
 			text := '(${name.name}: ${value.text})'
-			return BooleanExpression.create_general_enclosed(text,
-				evaluate_media_feature_without_window(name.name, .exact_value, value,
-				none, none, none))
+			return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(name.name,
+				.exact_value, value, none, none, none))
 		}
 		.min {
 			text := '(min-${name.name}: ${value.text})'
-			return BooleanExpression.create_general_enclosed(text,
-				evaluate_media_feature_without_window(name.name, .min_value, value,
-				none, none, none))
+			return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(name.name,
+				.min_value, value, none, none, none))
 		}
 		.max {
 			text := '(max-${name.name}: ${value.text})'
-			return BooleanExpression.create_general_enclosed(text,
-				evaluate_media_feature_without_window(name.name, .max_value, value,
-				none, none, none))
+			return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(name.name,
+				.max_value, value, none, none, none))
 		}
 	}
 }
@@ -1133,9 +1167,8 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 				if !transaction.has_next_token() && value.kind != .ident {
 					tokens = transaction
 					text := '(${name.name} ${media_feature_comparison_to_string(comparison)} ${value.text})'
-					return BooleanExpression.create_general_enclosed(text,
-						evaluate_media_feature_without_window(name.name, .half_range_query_left,
-						value, comparison, none, none))
+					return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(name.name,
+						.half_range_query_left, value, comparison, none, none))
 				}
 			}
 		}
@@ -1161,25 +1194,24 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 	if !transaction.has_next_token() {
 		tokens = transaction
 		text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name})'
-		return BooleanExpression.create_general_enclosed(text,
-			evaluate_media_feature_without_window(maybe_name.name, .half_range_query_right,
-			left_value, left_comparison, none, none))
+		return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(maybe_name.name,
+			.half_range_query_right, left_value, left_comparison, none, none))
 	}
 
 	right_comparison := parse_media_feature_comparison(mut transaction) or { return none }
 	transaction.discard_whitespace()
 	right_value := parse_media_feature_value(maybe_name.name, mut transaction) or { return none }
 	transaction.discard_whitespace()
-	if transaction.has_next_token() || !media_feature_comparisons_match(left_comparison, right_comparison)
+	if transaction.has_next_token()
+		|| !media_feature_comparisons_match(left_comparison, right_comparison)
 		|| left_comparison == .equal || left_value.kind == .ident || right_value.kind == .ident {
 		return none
 	}
 
 	tokens = transaction
 	text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name} ${media_feature_comparison_to_string(right_comparison)} ${right_value.text})'
-	return BooleanExpression.create_general_enclosed(text,
-		evaluate_media_feature_without_window(maybe_name.name, .range, left_value,
-		left_comparison, right_comparison, right_value))
+	return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(maybe_name.name,
+		.range, left_value, left_comparison, right_comparison, right_value))
 }
 
 fn find_media_feature_name_after_comparison(tokens SupportsTokenStream) ?MediaFeatureName {
@@ -1215,11 +1247,16 @@ fn parse_media_feature_name(mut tokens SupportsTokenStream, allow_min_max_prefix
 		lower := name.to_lower()
 		if lower.starts_with('min-') || lower.starts_with('max-') {
 			adjusted_name := lower[4..]
-			if media_feature_is_known(adjusted_name) && media_feature_type_is_range_name(adjusted_name) {
+			if media_feature_is_known(adjusted_name)
+				&& media_feature_type_is_range_name(adjusted_name) {
 				tokens = transaction
 				return MediaFeatureName{
 					name:   adjusted_name
-					prefix: if lower.starts_with('min-') { MediaFeatureNamePrefix.min } else { MediaFeatureNamePrefix.max }
+					prefix: if lower.starts_with('min-') {
+						MediaFeatureNamePrefix.min
+					} else {
+						MediaFeatureNamePrefix.max
+					}
 				}
 			}
 		}
@@ -1449,8 +1486,9 @@ fn is_media_feature_value_token(component_value ComponentValue) bool {
 	if !component_value.is_token() {
 		return true
 	}
-	if component_value.is(.ident) || component_value.is(.function) || component_value.is(.at_keyword)
-		|| component_value.is(.hash) || component_value.is(.string) || component_value.is(.bad_string)
+	if component_value.is(.ident) || component_value.is(.function)
+		|| component_value.is(.at_keyword) || component_value.is(.hash)
+		|| component_value.is(.string) || component_value.is(.bad_string)
 		|| component_value.is(.url) || component_value.is(.bad_url) || component_value.is(.number)
 		|| component_value.is(.percentage) || component_value.is(.dimension)
 		|| component_value.is(.whitespace) || component_value.is(.comma) {
@@ -1517,31 +1555,73 @@ fn evaluate_media_feature_without_window(feature_name string, kind MediaFeatureE
 
 fn query_media_feature_without_window(feature_name string) ?MediaFeatureValueLocal {
 	return match feature_name {
-		'any-hover', 'hover' { media_feature_ident_value('hover') }
-		'any-pointer', 'pointer' { media_feature_ident_value('fine') }
-		'color' { media_feature_integer_value(8) }
-		'color-gamut', 'video-color-gamut' { media_feature_ident_value('srgb') }
-		'color-index', 'grid', 'monochrome' { media_feature_integer_value(0) }
-		'display-mode' { media_feature_ident_value('browser') }
-		'dynamic-range', 'video-dynamic-range' { media_feature_ident_value('standard') }
-		'environment-blending' { media_feature_ident_value('opaque') }
-		'forced-colors', 'inverted-colors', 'scan' { media_feature_ident_value('none') }
-		'height', 'device-height' { media_feature_length_value(600) }
-		'horizontal-viewport-segments', 'vertical-viewport-segments' { media_feature_integer_value(1) }
-		'nav-controls' { media_feature_ident_value('back') }
-		'orientation' { media_feature_ident_value('landscape') }
-		'overflow-block', 'overflow-inline' { media_feature_ident_value('scroll') }
-		'prefers-color-scheme' { media_feature_ident_value('light') }
+		'any-hover', 'hover' {
+			media_feature_ident_value('hover')
+		}
+		'any-pointer', 'pointer' {
+			media_feature_ident_value('fine')
+		}
+		'color' {
+			media_feature_integer_value(8)
+		}
+		'color-gamut', 'video-color-gamut' {
+			media_feature_ident_value('srgb')
+		}
+		'color-index', 'grid', 'monochrome' {
+			media_feature_integer_value(0)
+		}
+		'display-mode' {
+			media_feature_ident_value('browser')
+		}
+		'dynamic-range', 'video-dynamic-range' {
+			media_feature_ident_value('standard')
+		}
+		'environment-blending' {
+			media_feature_ident_value('opaque')
+		}
+		'forced-colors', 'inverted-colors', 'scan' {
+			media_feature_ident_value('none')
+		}
+		'height', 'device-height' {
+			media_feature_length_value(600)
+		}
+		'horizontal-viewport-segments', 'vertical-viewport-segments' {
+			media_feature_integer_value(1)
+		}
+		'nav-controls' {
+			media_feature_ident_value('back')
+		}
+		'orientation' {
+			media_feature_ident_value('landscape')
+		}
+		'overflow-block', 'overflow-inline' {
+			media_feature_ident_value('scroll')
+		}
+		'prefers-color-scheme' {
+			media_feature_ident_value('light')
+		}
 		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion',
 		'prefers-reduced-transparency' {
 			media_feature_ident_value('no-preference')
 		}
-		'resolution' { media_feature_resolution_value(1) }
-		'scripting' { media_feature_ident_value('enabled') }
-		'update' { media_feature_ident_value('fast') }
-		'width', 'device-width' { media_feature_length_value(800) }
-		'aspect-ratio', 'device-aspect-ratio' { media_feature_ratio_value(800.0 / 600.0) }
-		else { none }
+		'resolution' {
+			media_feature_resolution_value(1)
+		}
+		'scripting' {
+			media_feature_ident_value('enabled')
+		}
+		'update' {
+			media_feature_ident_value('fast')
+		}
+		'width', 'device-width' {
+			media_feature_length_value(800)
+		}
+		'aspect-ratio', 'device-aspect-ratio' {
+			media_feature_ratio_value(800.0 / 600.0)
+		}
+		else {
+			none
+		}
 	}
 }
 
@@ -1704,7 +1784,9 @@ fn media_feature_type_is_range_name(name string) bool {
 fn media_feature_accepts_type_name(name string, value_type MediaFeatureValueTypeLocal) bool {
 	lower := name.to_lower()
 	return match value_type {
-		.boolean { lower == 'grid' }
+		.boolean {
+			lower == 'grid'
+		}
 		.integer {
 			lower in [
 				'color',
@@ -1714,9 +1796,15 @@ fn media_feature_accepts_type_name(name string, value_type MediaFeatureValueType
 				'vertical-viewport-segments',
 			]
 		}
-		.length { lower in ['device-height', 'device-width', 'height', 'width'] }
-		.ratio { lower in ['aspect-ratio', 'device-aspect-ratio'] }
-		.resolution { lower == 'resolution' }
+		.length {
+			lower in ['device-height', 'device-width', 'height', 'width']
+		}
+		.ratio {
+			lower in ['aspect-ratio', 'device-aspect-ratio']
+		}
+		.resolution {
+			lower == 'resolution'
+		}
 	}
 }
 
@@ -1724,31 +1812,67 @@ fn media_feature_accepts_keyword_name(name string, keyword string) bool {
 	lower_name := name.to_lower()
 	lower_keyword := keyword.to_lower()
 	return match lower_name {
-		'any-hover', 'hover' { lower_keyword in ['none', 'hover'] }
-		'any-pointer', 'pointer' { lower_keyword in ['none', 'coarse', 'fine'] }
-		'color-gamut', 'video-color-gamut' { lower_keyword in ['srgb', 'p3', 'rec2020'] }
+		'any-hover', 'hover' {
+			lower_keyword in ['none', 'hover']
+		}
+		'any-pointer', 'pointer' {
+			lower_keyword in ['none', 'coarse', 'fine']
+		}
+		'color-gamut', 'video-color-gamut' {
+			lower_keyword in ['srgb', 'p3', 'rec2020']
+		}
 		'display-mode' {
 			lower_keyword in ['fullscreen', 'standalone', 'minimal-ui', 'browser',
 				'picture-in-picture']
 		}
-		'dynamic-range', 'video-dynamic-range' { lower_keyword in ['standard', 'high'] }
-		'environment-blending' { lower_keyword in ['opaque', 'additive', 'subtractive'] }
-		'forced-colors' { lower_keyword in ['none', 'active'] }
-		'inverted-colors' { lower_keyword in ['none', 'inverted'] }
-		'nav-controls' { lower_keyword in ['none', 'back'] }
-		'orientation' { lower_keyword in ['portrait', 'landscape'] }
-		'overflow-block' { lower_keyword in ['none', 'scroll', 'paged'] }
-		'overflow-inline' { lower_keyword in ['none', 'scroll'] }
-		'prefers-color-scheme' { lower_keyword in ['light', 'dark'] }
-		'prefers-contrast' { lower_keyword in ['no-preference', 'less', 'more', 'custom'] }
+		'dynamic-range', 'video-dynamic-range' {
+			lower_keyword in ['standard', 'high']
+		}
+		'environment-blending' {
+			lower_keyword in ['opaque', 'additive', 'subtractive']
+		}
+		'forced-colors' {
+			lower_keyword in ['none', 'active']
+		}
+		'inverted-colors' {
+			lower_keyword in ['none', 'inverted']
+		}
+		'nav-controls' {
+			lower_keyword in ['none', 'back']
+		}
+		'orientation' {
+			lower_keyword in ['portrait', 'landscape']
+		}
+		'overflow-block' {
+			lower_keyword in ['none', 'scroll', 'paged']
+		}
+		'overflow-inline' {
+			lower_keyword in ['none', 'scroll']
+		}
+		'prefers-color-scheme' {
+			lower_keyword in ['light', 'dark']
+		}
+		'prefers-contrast' {
+			lower_keyword in ['no-preference', 'less', 'more', 'custom']
+		}
 		'prefers-reduced-data', 'prefers-reduced-motion', 'prefers-reduced-transparency' {
 			lower_keyword in ['no-preference', 'reduce']
 		}
-		'resolution' { lower_keyword == 'infinite' }
-		'scan' { lower_keyword in ['interlace', 'progressive'] }
-		'scripting' { lower_keyword in ['none', 'initial-only', 'enabled'] }
-		'update' { lower_keyword in ['none', 'slow', 'fast'] }
-		else { false }
+		'resolution' {
+			lower_keyword == 'infinite'
+		}
+		'scan' {
+			lower_keyword in ['interlace', 'progressive']
+		}
+		'scripting' {
+			lower_keyword in ['none', 'initial-only', 'enabled']
+		}
+		'update' {
+			lower_keyword in ['none', 'slow', 'fast']
+		}
+		else {
+			false
+		}
 	}
 }
 
@@ -1756,17 +1880,20 @@ fn media_feature_keyword_is_falsey_name(name string, keyword string) bool {
 	lower_name := name.to_lower()
 	lower_keyword := keyword.to_lower()
 	return match lower_name {
-		'any-hover', 'any-pointer', 'forced-colors', 'hover', 'inverted-colors',
-		'nav-controls', 'overflow-block', 'overflow-inline', 'pointer', 'scan', 'scripting',
-		'update' {
+		'any-hover', 'any-pointer', 'forced-colors', 'hover', 'inverted-colors', 'nav-controls',
+		'overflow-block', 'overflow-inline', 'pointer', 'scan', 'scripting', 'update' {
 			lower_keyword == 'none'
 		}
-		'dynamic-range', 'video-dynamic-range' { lower_keyword in ['standard', 'high'] }
+		'dynamic-range', 'video-dynamic-range' {
+			lower_keyword in ['standard', 'high']
+		}
 		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion',
 		'prefers-reduced-transparency' {
 			lower_keyword == 'no-preference'
 		}
-		else { false }
+		else {
+			false
+		}
 	}
 }
 

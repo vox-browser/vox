@@ -92,13 +92,13 @@ pub fn (transform AffineTransform) inverse_map(position CSSPixelPoint) CSSPixelP
 // https://drafts.csswg.org/cssom-view/#the-screen-interface
 @[heap]
 pub struct Screen {
+	dom.EventTarget
 pub mut:
 	web_exposed_screen_area           CSSPixelRect = CSSPixelRect.new(0, 0, 800, 600)
 	web_exposed_available_screen_area CSSPixelRect = CSSPixelRect.new(0, 0, 800, 600)
 	screen_count                      int          = 1
 	window_management_allowed         bool
 	orientation_                      ?&ScreenOrientation
-	onchange_handler                  voidptr
 }
 
 pub fn Screen.create() &Screen {
@@ -106,17 +106,20 @@ pub fn Screen.create() &Screen {
 }
 
 pub fn (mut screen Screen) initialize() {
-	_ = screen
 	// WEB_SET_PROTOTYPE_FOR_INTERFACE(Screen);
-	// Base::initialize(realm);
+	screen.EventTarget.initialize()
 }
 
 pub fn (mut screen Screen) visit_edges(mut visitor dom.CellVisitor) {
-	// Base::visit_edges(visitor);
+	screen.EventTarget.visit_edges(mut visitor)
 	// visitor.visit(m_window);
 	if orientation := screen.orientation_ {
 		visitor.visit(orientation)
 	}
+}
+
+fn (screen &Screen) event_target() &dom.EventTarget {
+	return unsafe { &dom.EventTarget(screen) }
 }
 
 // https://drafts.csswg.org/cssom-view-1/#dom-screen-width
@@ -181,13 +184,13 @@ pub fn (screen &Screen) is_extended() bool {
 }
 
 // https://w3c.github.io/window-management/#dom-screen-onchange
-pub fn (mut screen Screen) set_onchange(event_handler voidptr) {
-	screen.onchange_handler = event_handler
+pub fn (screen &Screen) set_onchange(event_handler ?&dom.CallbackType) {
+	screen.event_target().set_event_handler_attribute('change', event_handler)
 }
 
 // https://w3c.github.io/window-management/#dom-screen-onchange
-pub fn (screen &Screen) onchange() voidptr {
-	return screen.onchange_handler
+pub fn (screen &Screen) onchange() ?&dom.CallbackType {
+	return screen.event_target().event_handler_attribute('change')
 }
 
 pub enum OrientationLockType {
@@ -210,8 +213,7 @@ pub enum OrientationType {
 
 @[heap]
 pub struct ScreenOrientation {
-pub mut:
-	onchange_handler voidptr
+	dom.EventTarget
 }
 
 pub fn ScreenOrientation.create() &ScreenOrientation {
@@ -219,46 +221,54 @@ pub fn ScreenOrientation.create() &ScreenOrientation {
 }
 
 pub fn (mut orientation ScreenOrientation) initialize() {
-	_ = orientation
 	// WEB_SET_PROTOTYPE_FOR_INTERFACE(ScreenOrientation);
-	// Base::initialize(realm);
+	orientation.EventTarget.initialize()
+}
+
+fn (orientation &ScreenOrientation) event_target() &dom.EventTarget {
+	return unsafe { &dom.EventTarget(orientation) }
 }
 
 // https://w3c.github.io/screen-orientation/#lock-method
 pub fn (orientation &ScreenOrientation) lock(lock_type OrientationLockType) ! {
 	_ = orientation
 	_ = lock_type
-	return error('FIXME: ScreenOrientation::lock() is not implemented')
+	// Boundary: the C++ implementation currently returns NotSupportedError here.
+	// A real lock needs WebIDL Promise plumbing plus browser/platform orientation support.
+	return error('NotSupportedError: FIXME: ScreenOrientation::lock() is not implemented')
 }
 
 // https://w3c.github.io/screen-orientation/#unlock-method
 pub fn (orientation &ScreenOrientation) unlock() {
 	_ = orientation
-	// FIXME: Stubbed ScreenOrientation::unlock()
+	// Boundary: C++ currently only logs "FIXME: Stubbed ScreenOrientation::unlock()".
+	// There is no platform orientation lock state to clear in this V port yet.
 }
 
 // https://w3c.github.io/screen-orientation/#type-attribute
 pub fn (orientation &ScreenOrientation) type_() OrientationType {
 	_ = orientation
-	// FIXME: Stubbed ScreenOrientation::type()
+	// Boundary: C++ currently only logs "FIXME: Stubbed ScreenOrientation::type()"
+	// and reports LandscapePrimary until browser/platform orientation state exists.
 	return .landscape_primary
 }
 
 // https://w3c.github.io/screen-orientation/#angle-attribute
 pub fn (orientation &ScreenOrientation) angle() u16 {
 	_ = orientation
-	// FIXME: Stubbed ScreenOrientation::angle()
+	// Boundary: C++ currently only logs "FIXME: Stubbed ScreenOrientation::angle()"
+	// and reports 0 until browser/platform orientation state exists.
 	return 0
 }
 
 // https://w3c.github.io/screen-orientation/#onchange-event-handler-attribute
-pub fn (mut orientation ScreenOrientation) set_onchange(event_handler voidptr) {
-	orientation.onchange_handler = event_handler
+pub fn (orientation &ScreenOrientation) set_onchange(event_handler ?&dom.CallbackType) {
+	orientation.event_target().set_event_handler_attribute('change', event_handler)
 }
 
 // https://w3c.github.io/screen-orientation/#onchange-event-handler-attribute
-pub fn (orientation &ScreenOrientation) onchange() voidptr {
-	return orientation.onchange_handler
+pub fn (orientation &ScreenOrientation) onchange() ?&dom.CallbackType {
+	return orientation.event_target().event_handler_attribute('change')
 }
 
 // https://drafts.csswg.org/cssom-view/#visualviewport
