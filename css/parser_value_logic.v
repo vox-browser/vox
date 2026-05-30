@@ -389,6 +389,18 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.column_span {
 			return parser.parse_column_span_value(mut tokens)
 		}
+		.column_count {
+			return parser.parse_auto_or_positive_integer_value(mut tokens)
+		}
+		.column_width, .column_height {
+			return parser.parse_auto_or_nonnegative_length_value(mut tokens)
+		}
+		.column_gap, .row_gap {
+			return parser.parse_gap_value(mut tokens)
+		}
+		.flex_grow, .flex_shrink {
+			return parser.parse_nonnegative_number_value(mut tokens)
+		}
 		.image_rendering {
 			return parser.parse_image_rendering_value(mut tokens)
 		}
@@ -413,8 +425,11 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.list_style_position {
 			return parser.parse_list_style_position_value(mut tokens)
 		}
-		.order, .orphans {
+		.order {
 			return parser.parse_integer_value(mut tokens)
+		}
+		.orphans, .widows {
+			return parser.parse_positive_integer_value(mut tokens)
 		}
 		.border_image_source, .list_style_image {
 			return parser.parse_image_or_none_value(mut tokens)
@@ -488,6 +503,15 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.shape_rendering {
 			return parser.parse_shape_rendering_value(mut tokens)
 		}
+		.shape_margin, .r {
+			return parser.parse_nonnegative_length_percentage_value(mut tokens)
+		}
+		.cx, .cy, .x, .y {
+			return parser.parse_length_percentage_value(mut tokens)
+		}
+		.rx, .ry {
+			return parser.parse_auto_or_nonnegative_length_percentage_value(mut tokens)
+		}
 		.scroll_timeline_name {
 			return parser.parse_timeline_name_value(mut tokens)
 		}
@@ -503,6 +527,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.stroke_linejoin {
 			return parser.parse_stroke_linejoin_value(mut tokens)
 		}
+		.stroke_miterlimit {
+			return parser.parse_nonnegative_number_value(mut tokens)
+		}
+		.stroke_width, .stroke_dashoffset {
+			return parser.parse_nonnegative_number_or_length_percentage_value(mut tokens)
+		}
 		.table_layout {
 			return parser.parse_table_layout_value(mut tokens)
 		}
@@ -517,6 +547,18 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.text_decoration_style {
 			return parser.parse_text_decoration_style_value(mut tokens)
+		}
+		.text_decoration_color {
+			return parser.parse_color_value(mut tokens)
+		}
+		.text_decoration_thickness {
+			return parser.parse_text_decoration_thickness_value(mut tokens)
+		}
+		.text_underline_offset {
+			return parser.parse_auto_or_length_percentage_value(mut tokens)
+		}
+		.text_indent {
+			return parser.parse_text_indent_value(mut tokens)
 		}
 		.text_justify {
 			return parser.parse_text_justify_value(mut tokens)
@@ -3166,6 +3208,174 @@ fn (mut parser Parser) parse_number_percentage_value(mut tokens ComponentValueSt
 		return value
 	}
 	return none
+}
+
+fn style_value_numeric_component_is_negative_for_value_logic(value StyleValue) bool {
+	return match value {
+		LengthStyleValue { value.length().raw_value() < 0 }
+		NumberStyleValue { value.number() < 0 }
+		PercentageStyleValue { value.percentage().value() < 0 }
+		else { false }
+	}
+}
+
+fn (mut parser Parser) parse_nonnegative_number_value(mut tokens ComponentValueStream) ?StyleValue {
+	value := parser.parse_number_value(mut tokens) or { return none }
+	if style_value_numeric_component_is_negative_for_value_logic(value) {
+		return none
+	}
+	return value
+}
+
+fn (mut parser Parser) parse_positive_integer_value(mut tokens ComponentValueStream) ?StyleValue {
+	value := parser.parse_integer_value(mut tokens) or { return none }
+	if value is IntegerStyleValue {
+		if value.integer() < 1 {
+			return none
+		}
+	}
+	return value
+}
+
+fn (mut parser Parser) parse_auto_or_positive_integer_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto']) {
+		tokens = transaction
+		return value
+	}
+	return parser.parse_positive_integer_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_nonnegative_length_value(mut tokens ComponentValueStream) ?StyleValue {
+	value := parser.parse_length_value(mut tokens) or { return none }
+	if style_value_numeric_component_is_negative_for_value_logic(value) {
+		return none
+	}
+	return value
+}
+
+fn (mut parser Parser) parse_auto_or_nonnegative_length_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto']) {
+		tokens = transaction
+		return value
+	}
+	return parser.parse_nonnegative_length_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_nonnegative_length_percentage_value(mut tokens ComponentValueStream) ?StyleValue {
+	value := parser.parse_length_percentage_value(mut tokens) or { return none }
+	if style_value_numeric_component_is_negative_for_value_logic(value) {
+		return none
+	}
+	return value
+}
+
+fn (mut parser Parser) parse_auto_or_nonnegative_length_percentage_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto']) {
+		tokens = transaction
+		return value
+	}
+	return parser.parse_nonnegative_length_percentage_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_auto_or_length_percentage_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto']) {
+		tokens = transaction
+		return value
+	}
+	return parser.parse_length_percentage_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_nonnegative_number_or_length_percentage_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parser.parse_number_value(mut transaction) {
+		if style_value_numeric_component_is_negative_for_value_logic(value) {
+			return none
+		}
+		tokens = transaction
+		return value
+	}
+	value := parser.parse_length_percentage_value(mut tokens) or { return none }
+	if style_value_numeric_component_is_negative_for_value_logic(value) {
+		return none
+	}
+	return value
+}
+
+fn (mut parser Parser) parse_gap_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['normal']) {
+		tokens = transaction
+		return value
+	}
+	return parser.parse_nonnegative_length_percentage_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_text_decoration_thickness_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto', 'from-font']) {
+		tokens = transaction
+		return value
+	}
+	return parser.parse_length_percentage_value(mut tokens)
+}
+
+fn (mut parser Parser) parse_text_indent_value(mut tokens ComponentValueStream) ?StyleValue {
+	// https://drafts.csswg.org/css-text-3/#text-indent-property
+	// [ <length-percentage> ] && hanging? && each-line?
+	mut transaction := tokens.clone()
+	mut length_percentage := ?StyleValue(none)
+	mut has_hanging := false
+	mut has_each_line := false
+
+	transaction.consume_whitespace()
+	for transaction.has_more_tokens() {
+		if length_percentage == none {
+			mut length_transaction := transaction.clone()
+			if parsed := parser.parse_length_percentage_value(mut length_transaction) {
+				length_percentage = parsed
+				transaction = length_transaction
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+
+		component_value := transaction.consume() or { break }
+		if !component_value.is(.ident) {
+			return none
+		}
+		ident := to_ascii_lowercase(component_value.token().ident())
+		match ident {
+			'hanging' {
+				if has_hanging {
+					return none
+				}
+				has_hanging = true
+			}
+			'each-line' {
+				if has_each_line {
+					return none
+				}
+				has_each_line = true
+			}
+			else {
+				return none
+			}
+		}
+
+		transaction.consume_whitespace()
+	}
+
+	length_value := length_percentage or { return none }
+	tokens = transaction
+	return StyleValue(TextIndentStyleValue.create(length_value, if has_hanging {
+		TextIndentHanging.yes
+	} else {
+		TextIndentHanging.no
+	}, if has_each_line { TextIndentEachLine.yes } else { TextIndentEachLine.no }))
 }
 
 // https://drafts.csswg.org/css-color-4/#typedef-opacity-opacity-value

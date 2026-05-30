@@ -195,6 +195,29 @@ pub enum PropertyID {
 	background_repeat
 	mask_clip
 	mask_repeat
+	flex_grow
+	flex_shrink
+	column_count
+	column_width
+	column_height
+	column_gap
+	row_gap
+	widows
+	stroke_miterlimit
+	stroke_width
+	stroke_dashoffset
+	text_decoration_color
+	text_decoration_thickness
+	text_underline_offset
+	text_indent
+	shape_margin
+	cx
+	cy
+	x
+	y
+	r
+	rx
+	ry
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

@@ -258,6 +258,21 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'column-span' {
 			PropertyID.column_span
 		}
+		'column-count' {
+			PropertyID.column_count
+		}
+		'column-width' {
+			PropertyID.column_width
+		}
+		'column-height' {
+			PropertyID.column_height
+		}
+		'column-gap' {
+			PropertyID.column_gap
+		}
+		'row-gap' {
+			PropertyID.row_gap
+		}
 		'direction' {
 			PropertyID.direction
 		}
@@ -323,6 +338,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'font-width' {
 			PropertyID.font_width
+		}
+		'flex-grow', '-webkit-box-flex', '-webkit-flex-grow' {
+			PropertyID.flex_grow
+		}
+		'flex-shrink', '-webkit-flex-shrink' {
+			PropertyID.flex_shrink
 		}
 		'flex-direction', '-webkit-flex-direction', '-webkit-box-orient' {
 			PropertyID.flex_direction
@@ -438,6 +459,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'position-visibility' {
 			PropertyID.position_visibility
 		}
+		'shape-margin' {
+			PropertyID.shape_margin
+		}
 		'shape-image-threshold' {
 			PropertyID.shape_image_threshold
 		}
@@ -458,6 +482,15 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'stroke-linejoin' {
 			PropertyID.stroke_linejoin
+		}
+		'stroke-miterlimit' {
+			PropertyID.stroke_miterlimit
+		}
+		'stroke-width' {
+			PropertyID.stroke_width
+		}
+		'stroke-dashoffset' {
+			PropertyID.stroke_dashoffset
 		}
 		'rotate' {
 			PropertyID.rotate
@@ -489,11 +522,23 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'text-anchor' {
 			PropertyID.text_anchor
 		}
+		'text-decoration-color' {
+			PropertyID.text_decoration_color
+		}
 		'text-decoration-line' {
 			PropertyID.text_decoration_line
 		}
 		'text-decoration-style' {
 			PropertyID.text_decoration_style
+		}
+		'text-decoration-thickness' {
+			PropertyID.text_decoration_thickness
+		}
+		'text-underline-offset' {
+			PropertyID.text_underline_offset
+		}
+		'text-indent' {
+			PropertyID.text_indent
 		}
 		'text-justify' {
 			PropertyID.text_justify
@@ -582,8 +627,32 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'writing-mode' {
 			PropertyID.writing_mode
 		}
+		'widows' {
+			PropertyID.widows
+		}
 		'z-index' {
 			PropertyID.z_index
+		}
+		'cx' {
+			PropertyID.cx
+		}
+		'cy' {
+			PropertyID.cy
+		}
+		'x' {
+			PropertyID.x
+		}
+		'y' {
+			PropertyID.y
+		}
+		'r' {
+			PropertyID.r
+		}
+		'rx' {
+			PropertyID.rx
+		}
+		'ry' {
+			PropertyID.ry
 		}
 		else {
 			return none
@@ -637,7 +706,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.accent_color, .background_color, .border_bottom_color, .border_left_color,
 		.border_right_color, .border_top_color, .caret_color, .color, .flood_color, .outline_color,
-		.stop_color, .webkit_text_fill_color {
+		.stop_color, .text_decoration_color, .webkit_text_fill_color {
 			value_type == .color
 		}
 		.background_image, .border_image_source, .list_style_image {
@@ -690,11 +759,17 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.order, .orphans, .z_index {
 			value_type == .integer
 		}
+		.column_count, .widows {
+			value_type == .integer
+		}
 		.view_timeline_inset {
 			value_type == .view_timeline_inset
 		}
 		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
 		.outline_offset, .outline_width {
+			value_type == .length
+		}
+		.column_width, .column_height {
 			value_type == .length
 		}
 		.font_feature_settings, .font_variation_settings {
@@ -706,6 +781,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.font_weight {
 			value_type == .number
 		}
+		.flex_grow, .flex_shrink, .stroke_miterlimit {
+			value_type == .number
+		}
 		.font_width {
 			value_type == .percentage
 		}
@@ -714,6 +792,13 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.letter_spacing, .word_spacing {
 			value_type in [.length, .percentage]
+		}
+		.column_gap, .row_gap, .shape_margin, .cx, .cy, .x, .y, .r, .rx, .ry,
+		.text_decoration_thickness, .text_underline_offset, .text_indent {
+			value_type in [.length, .percentage]
+		}
+		.stroke_width, .stroke_dashoffset {
+			value_type in [.length, .number, .percentage]
 		}
 		.math_depth {
 			value_type == .integer
@@ -822,7 +907,7 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.background_color, .border_bottom_color, .border_left_color, .border_right_color,
 		.border_top_color, .color, .flood_color, .outline_color, .stop_color,
-		.webkit_text_fill_color {
+		.text_decoration_color, .webkit_text_fill_color {
 			if keyword := keyword_from_string(lowercase_value) {
 				KeywordStyleValue.is_color(keyword)
 			} else {
@@ -863,6 +948,12 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.column_span {
 			lowercase_value in ['none', 'all']
+		}
+		.column_count, .column_width, .column_height {
+			lowercase_value == 'auto'
+		}
+		.column_gap, .row_gap {
+			lowercase_value == 'normal'
 		}
 		.clip_rule, .fill_rule {
 			lowercase_value in ['nonzero', 'evenodd']
@@ -907,8 +998,21 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.outline_offset {
 			false
 		}
-		.order, .orphans {
+		.order, .orphans, .widows {
 			false
+		}
+		.flex_grow, .flex_shrink, .stroke_miterlimit, .stroke_width, .stroke_dashoffset,
+		.shape_margin, .cx, .cy, .x, .y, .r {
+			false
+		}
+		.rx, .ry, .text_underline_offset {
+			lowercase_value == 'auto'
+		}
+		.text_decoration_thickness {
+			lowercase_value in ['auto', 'from-font']
+		}
+		.text_indent {
+			lowercase_value in ['each-line', 'hanging']
 		}
 		.outline_style {
 			lowercase_value in ['auto', 'none', 'dotted', 'dashed', 'solid', 'double', 'groove',
@@ -1170,19 +1274,23 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.caret_color, .clear, .clip_rule, .color, .color_interpolation, .direction, .empty_cells,
 		.fill_rule, .float_, .flood_color, .font_kerning, .font_language_override,
 		.font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position,
-		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
-		.list_style_image, .list_style_position, .mask_clip, .mask_composite, .mask_image,
-		.mask_mode, .mask_origin, .mask_repeat, .mask_type, .mix_blend_mode, .object_fit,
-		.outline_color, .outline_style, .overflow_x, .overflow_y, .overflow_wrap, .paint_order,
-		.pointer_events, .position, .position_visibility, .scroll_timeline_axis, .shape_rendering,
-		.stop_color, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor,
-		.text_decoration_line, .text_decoration_style, .text_justify, .text_overflow,
-		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_box,
-		.transform_style, .touch_action, .writing_mode, .scrollbar_width, .resize,
+		.flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items,
+		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
+		.column_count, .column_width, .column_height, .column_gap, .row_gap, .image_rendering,
+		.isolation, .list_style_image, .list_style_position, .mask_clip, .mask_composite,
+		.mask_image, .mask_mode, .mask_origin, .mask_repeat, .mask_type, .mix_blend_mode,
+		.object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y, .overflow_wrap,
+		.paint_order, .pointer_events, .position, .position_visibility, .scroll_timeline_axis,
+		.shape_margin, .shape_rendering, .stop_color, .stroke_linecap, .stroke_linejoin,
+		.stroke_miterlimit, .stroke_width, .stroke_dashoffset, .table_layout, .text_align,
+		.text_anchor, .text_decoration_color, .text_decoration_line, .text_decoration_style,
+		.text_decoration_thickness, .text_underline_offset, .text_indent, .text_justify,
+		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
+		.transform_box, .transform_style, .touch_action, .writing_mode, .scrollbar_width, .resize,
 		.scroll_behavior, .math_shift, .contain, .container_type, .unicode_bidi, .user_select,
 		.view_timeline_axis, .view_timeline_inset, .visibility, .webkit_text_fill_color,
-		.white_space_collapse, .white_space_trim, .word_break {
+		.white_space_collapse, .white_space_trim, .word_break, .widows, .cx, .cy, .x, .y, .r, .rx,
+		.ry {
 			false
 		}
 		.color_scheme {
@@ -1288,6 +1396,9 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		RepeatStyleStyleValue {
 			property_id in [.background_repeat, .mask_repeat]
 		}
+		TextIndentStyleValue {
+			property_id == .text_indent
+		}
 		URLStyleValue {
 			property_accepts_type(property_id, .url)
 		}
@@ -1322,23 +1433,37 @@ pub fn property_accepts_keyword(property_id PropertyID, keyword Keyword) bool {
 
 pub fn property_accepts_number(property_id PropertyID, value f64) bool {
 	return match property_id {
-		.animation_iteration_count { value >= 0 }
-		.font_weight { value >= 1 && value <= 1000 }
-		else { true }
+		.animation_iteration_count {
+			value >= 0
+		}
+		.font_weight {
+			value >= 1 && value <= 1000
+		}
+		.flex_grow, .flex_shrink, .stroke_miterlimit, .stroke_width, .stroke_dashoffset {
+			value >= 0
+		}
+		else {
+			true
+		}
 	}
 }
 
 pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
 	return match property_id {
-		.orphans { value >= 1 }
+		.column_count, .orphans, .widows { value >= 1 }
 		else { true }
 	}
 }
 
 pub fn property_accepts_percentage(property_id PropertyID, value Percentage) bool {
-	_ = property_id
-	_ = value
-	return true
+	return match property_id {
+		.column_gap, .row_gap, .shape_margin, .r, .rx, .ry, .stroke_width, .stroke_dashoffset {
+			value.value() >= 0
+		}
+		else {
+			true
+		}
+	}
 }
 
 pub fn property_accepts_angle(property_id PropertyID, value Angle) bool {
@@ -1360,9 +1485,15 @@ pub fn property_accepts_frequency(property_id PropertyID, value Frequency) bool 
 }
 
 pub fn property_accepts_length(property_id PropertyID, value Length) bool {
-	_ = property_id
-	_ = value
-	return true
+	return match property_id {
+		.column_width, .column_height, .column_gap, .row_gap, .shape_margin, .r, .rx, .ry,
+		.stroke_width, .stroke_dashoffset {
+			value.raw_value() >= 0
+		}
+		else {
+			true
+		}
+	}
 }
 
 pub fn property_accepts_resolution(property_id PropertyID, value Resolution) bool {
@@ -2420,7 +2551,10 @@ pub enum Keyword {
 	static_
 	sticky
 	normal
+	from_font
 	compact
+	hanging
+	each_line
 	underline
 	overline
 	line_through
@@ -2791,7 +2925,10 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.static_ { 'static' }
 		.sticky { 'sticky' }
 		.normal { 'normal' }
+		.from_font { 'from-font' }
 		.compact { 'compact' }
+		.hanging { 'hanging' }
+		.each_line { 'each-line' }
 		.underline { 'underline' }
 		.overline { 'overline' }
 		.line_through { 'line-through' }
@@ -3151,7 +3288,10 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'static' { Keyword.static_ }
 		'sticky' { Keyword.sticky }
 		'normal' { Keyword.normal }
+		'from-font' { Keyword.from_font }
 		'compact' { Keyword.compact }
+		'hanging' { Keyword.hanging }
+		'each-line' { Keyword.each_line }
 		'underline' { Keyword.underline }
 		'overline' { Keyword.overline }
 		'line-through' { Keyword.line_through }

@@ -90,6 +90,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.font_variation_settings { 'font-variation-settings' }
 		.font_weight { 'font-weight' }
 		.font_width { 'font-width' }
+		.flex_grow { 'flex-grow' }
+		.flex_shrink { 'flex-shrink' }
 		.flex_direction { 'flex-direction' }
 		.flex_wrap { 'flex-wrap' }
 		.align_content { 'align-content' }
@@ -100,6 +102,11 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.justify_self { 'justify-self' }
 		.appearance { 'appearance' }
 		.column_span { 'column-span' }
+		.column_count { 'column-count' }
+		.column_width { 'column-width' }
+		.column_height { 'column-height' }
+		.column_gap { 'column-gap' }
+		.row_gap { 'row-gap' }
 		.image_rendering { 'image-rendering' }
 		.isolation { 'isolation' }
 		.letter_spacing { 'letter-spacing' }
@@ -133,13 +140,17 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.position { 'position' }
 		.position_anchor { 'position-anchor' }
 		.position_visibility { 'position-visibility' }
+		.shape_margin { 'shape-margin' }
 		.shape_image_threshold { 'shape-image-threshold' }
 		.shape_rendering { 'shape-rendering' }
 		.stop_color { 'stop-color' }
 		.stop_opacity { 'stop-opacity' }
 		.stroke_linecap { 'stroke-linecap' }
 		.stroke_linejoin { 'stroke-linejoin' }
+		.stroke_miterlimit { 'stroke-miterlimit' }
 		.stroke_opacity { 'stroke-opacity' }
+		.stroke_width { 'stroke-width' }
+		.stroke_dashoffset { 'stroke-dashoffset' }
 		.rotate { 'rotate' }
 		.scale { 'scale' }
 		.scroll_behavior { 'scroll-behavior' }
@@ -149,8 +160,12 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.table_layout { 'table-layout' }
 		.text_align { 'text-align' }
 		.text_anchor { 'text-anchor' }
+		.text_decoration_color { 'text-decoration-color' }
 		.text_decoration_line { 'text-decoration-line' }
 		.text_decoration_style { 'text-decoration-style' }
+		.text_decoration_thickness { 'text-decoration-thickness' }
+		.text_underline_offset { 'text-underline-offset' }
+		.text_indent { 'text-indent' }
 		.text_justify { 'text-justify' }
 		.text_overflow { 'text-overflow' }
 		.text_rendering { 'text-rendering' }
@@ -180,7 +195,15 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.word_break { 'word-break' }
 		.word_spacing { 'word-spacing' }
 		.writing_mode { 'writing-mode' }
+		.widows { 'widows' }
 		.z_index { 'z-index' }
+		.cx { 'cx' }
+		.cy { 'cy' }
+		.x { 'x' }
+		.y { 'y' }
+		.r { 'r' }
+		.rx { 'rx' }
+		.ry { 'ry' }
 		.resize { 'resize' }
 	}
 }
@@ -214,21 +237,25 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.corner_top_right_shape, .fill_opacity, .fill_rule, .direction, .empty_cells, .flood_color,
 		.flood_opacity, .font_kerning, .font_language_override, .font_optical_sizing, .font_style,
 		.font_variant_caps, .font_variant_emoji, .font_variant_position, .font_weight, .font_width,
-		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
-		.letter_spacing, .clear, .line_height, .list_style_image, .list_style_position, .mask_type,
-		.math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans,
-		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
-		.pointer_events, .position_anchor, .position, .position_visibility, .shape_image_threshold,
-		.shape_rendering, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
-		.stroke_opacity, .rotate, .scale, .float_, .table_layout, .text_align, .text_anchor,
-		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
-		.text_wrap_style, .transform, .transform_box, .transform_style, .translate, .unicode_bidi,
-		.user_select, .touch_action, .writing_mode, .view_transition_name, .scrollbar_width,
-		.resize, .contain, .container_type, .text_decoration_line, .text_decoration_style,
-		.paint_order, .overflow_wrap, .scroll_behavior, .math_shift, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing, .z_index {
+		.flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items,
+		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
+		.column_count, .column_width, .column_height, .column_gap, .row_gap, .image_rendering,
+		.isolation, .letter_spacing, .clear, .line_height, .list_style_image, .list_style_position,
+		.mask_type, .math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity, .order,
+		.orphans, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x,
+		.overflow_y, .pointer_events, .position_anchor, .position, .position_visibility,
+		.shape_margin, .shape_image_threshold, .shape_rendering, .stop_color, .stop_opacity,
+		.stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity, .stroke_width,
+		.stroke_dashoffset, .rotate, .scale, .float_, .table_layout, .text_align, .text_anchor,
+		.text_decoration_color, .text_justify, .text_overflow, .text_rendering, .text_transform,
+		.text_wrap_mode, .text_wrap_style, .transform, .transform_box, .transform_style,
+		.translate, .unicode_bidi, .user_select, .touch_action, .writing_mode,
+		.view_transition_name, .scrollbar_width, .resize, .contain, .container_type,
+		.text_decoration_line, .text_decoration_style, .text_decoration_thickness,
+		.text_underline_offset, .text_indent, .paint_order, .overflow_wrap, .scroll_behavior,
+		.math_shift, .visibility, .webkit_text_fill_color, .white_space_collapse,
+		.white_space_trim, .word_break, .word_spacing, .z_index, .widows, .cx, .cy, .x, .y, .r,
+		.rx, .ry {
 			true
 		}
 	}
@@ -258,34 +285,38 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.corner_top_right_shape, .fill_opacity, .fill_rule, .direction, .empty_cells, .flood_color,
 		.flood_opacity, .font_kerning, .font_language_override, .font_optical_sizing, .font_style,
 		.font_variant_caps, .font_variant_emoji, .font_variant_position, .font_weight, .font_width,
-		.flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content,
-		.justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation,
-		.letter_spacing, .clear, .line_height, .list_style_image, .list_style_position, .mask_type,
-		.math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans,
-		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
-		.pointer_events, .position_anchor, .position, .position_visibility, .shape_image_threshold,
-		.shape_rendering, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
-		.stroke_opacity, .rotate, .scale, .float_, .table_layout, .text_align, .text_anchor,
-		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode,
-		.text_wrap_style, .transform, .transform_box, .transform_style, .translate, .unicode_bidi,
-		.user_select, .touch_action, .writing_mode, .view_transition_name, .scrollbar_width,
-		.resize, .contain, .container_type, .text_decoration_line, .text_decoration_style,
-		.paint_order, .overflow_wrap, .scroll_behavior, .math_shift, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing, .z_index {
+		.flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items,
+		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
+		.column_count, .column_width, .column_height, .column_gap, .row_gap, .image_rendering,
+		.isolation, .letter_spacing, .clear, .line_height, .list_style_image, .list_style_position,
+		.mask_type, .math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity, .order,
+		.orphans, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x,
+		.overflow_y, .pointer_events, .position_anchor, .position, .position_visibility,
+		.shape_margin, .shape_image_threshold, .shape_rendering, .stop_color, .stop_opacity,
+		.stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity, .stroke_width,
+		.stroke_dashoffset, .rotate, .scale, .float_, .table_layout, .text_align, .text_anchor,
+		.text_decoration_color, .text_justify, .text_overflow, .text_rendering, .text_transform,
+		.text_wrap_mode, .text_wrap_style, .transform, .transform_box, .transform_style,
+		.translate, .unicode_bidi, .user_select, .touch_action, .writing_mode,
+		.view_transition_name, .scrollbar_width, .resize, .contain, .container_type,
+		.text_decoration_line, .text_decoration_style, .text_decoration_thickness,
+		.text_underline_offset, .text_indent, .paint_order, .overflow_wrap, .scroll_behavior,
+		.math_shift, .visibility, .webkit_text_fill_color, .white_space_collapse,
+		.white_space_trim, .word_break, .word_spacing, .z_index, .widows, .cx, .cy, .x, .y, .r,
+		.rx, .ry {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 161
+pub const number_of_longhand_properties = 184
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .mask_repeat
+	return .ry
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -451,6 +482,29 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		158 { PropertyID.background_repeat }
 		159 { PropertyID.mask_clip }
 		160 { PropertyID.mask_repeat }
+		161 { PropertyID.flex_grow }
+		162 { PropertyID.flex_shrink }
+		163 { PropertyID.column_count }
+		164 { PropertyID.column_width }
+		165 { PropertyID.column_height }
+		166 { PropertyID.column_gap }
+		167 { PropertyID.row_gap }
+		168 { PropertyID.widows }
+		169 { PropertyID.stroke_miterlimit }
+		170 { PropertyID.stroke_width }
+		171 { PropertyID.stroke_dashoffset }
+		172 { PropertyID.text_decoration_color }
+		173 { PropertyID.text_decoration_thickness }
+		174 { PropertyID.text_underline_offset }
+		175 { PropertyID.text_indent }
+		176 { PropertyID.shape_margin }
+		177 { PropertyID.cx }
+		178 { PropertyID.cy }
+		179 { PropertyID.x }
+		180 { PropertyID.y }
+		181 { PropertyID.r }
+		182 { PropertyID.rx }
+		183 { PropertyID.ry }
 		else { none }
 	}
 }
