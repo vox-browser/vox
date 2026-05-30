@@ -49,7 +49,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.caption_side { 'caption-side' }
 		.caret_color { 'caret-color' }
 		.clear { 'clear' }
+		.clip_rule { 'clip-rule' }
 		.color { 'color' }
+		.color_interpolation { 'color-interpolation' }
 		.color_scheme { 'color-scheme' }
 		.content_visibility { 'content-visibility' }
 		.direction { 'direction' }
@@ -59,6 +61,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.corner_top_left_shape { 'corner-top-left-shape' }
 		.corner_top_right_shape { 'corner-top-right-shape' }
 		.fill_opacity { 'fill-opacity' }
+		.fill_rule { 'fill-rule' }
 		.flood_color { 'flood-color' }
 		.flood_opacity { 'flood-opacity' }
 		.float_ { 'float' }
@@ -71,6 +74,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.line_height { 'line-height' }
 		.list_style_image { 'list-style-image' }
 		.mask_image { 'mask-image' }
+		.mask_type { 'mask-type' }
 		.math_depth { 'math-depth' }
 		.math_style { 'math-style' }
 		.mix_blend_mode { 'mix-blend-mode' }
@@ -88,13 +92,17 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.position { 'position' }
 		.position_anchor { 'position-anchor' }
 		.shape_image_threshold { 'shape-image-threshold' }
+		.shape_rendering { 'shape-rendering' }
 		.stop_color { 'stop-color' }
 		.stop_opacity { 'stop-opacity' }
+		.stroke_linecap { 'stroke-linecap' }
+		.stroke_linejoin { 'stroke-linejoin' }
 		.stroke_opacity { 'stroke-opacity' }
 		.rotate { 'rotate' }
 		.scale { 'scale' }
 		.scroll_timeline_name { 'scroll-timeline-name' }
 		.table_layout { 'table-layout' }
+		.text_anchor { 'text-anchor' }
 		.transform { 'transform' }
 		.transition_behavior { 'transition-behavior' }
 		.transition_delay { 'transition-delay' }
@@ -131,15 +139,16 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
 		.border_bottom_width, .border_image_source, .border_left_color, .border_left_width,
 		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
-		.caption_side, .caret_color, .color, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .direction, .empty_cells, .flood_color,
-		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .clear,
-		.line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode, .object_fit,
-		.opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
-		.outline_width, .overflow_x, .overflow_y, .pointer_events, .position_anchor, .position,
-		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.float_, .table_layout, .transform, .translate, .unicode_bidi, .visibility,
+		.caption_side, .caret_color, .clip_rule, .color, .color_interpolation, .color_scheme,
+		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .direction,
+		.empty_cells, .flood_color, .flood_opacity, .font_style, .font_weight, .font_width,
+		.letter_spacing, .clear, .line_height, .list_style_image, .mask_type, .math_depth,
+		.math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color,
+		.outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
+		.position_anchor, .position, .shape_image_threshold, .shape_rendering, .stop_color,
+		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale,
+		.float_, .table_layout, .text_anchor, .transform, .translate, .unicode_bidi, .visibility,
 		.webkit_text_fill_color, .word_spacing, .z_index {
 			true
 		}
@@ -160,29 +169,30 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.accent_color, .aspect_ratio, .background_color, .border_bottom_color,
 		.border_bottom_width, .border_image_source, .border_left_color, .border_left_width,
 		.border_right_color, .border_right_width, .border_top_color, .border_top_width,
-		.caption_side, .caret_color, .color, .color_scheme, .content_visibility,
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .direction, .empty_cells, .flood_color,
-		.flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing, .clear,
-		.line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode, .object_fit,
-		.opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
-		.outline_width, .overflow_x, .overflow_y, .pointer_events, .position_anchor, .position,
-		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.float_, .table_layout, .transform, .translate, .unicode_bidi, .visibility,
+		.caption_side, .caret_color, .clip_rule, .color, .color_interpolation, .color_scheme,
+		.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
+		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .direction,
+		.empty_cells, .flood_color, .flood_opacity, .font_style, .font_weight, .font_width,
+		.letter_spacing, .clear, .line_height, .list_style_image, .mask_type, .math_depth,
+		.math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans, .outline_color,
+		.outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y, .pointer_events,
+		.position_anchor, .position, .shape_image_threshold, .shape_rendering, .stop_color,
+		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_opacity, .rotate, .scale,
+		.float_, .table_layout, .text_anchor, .transform, .translate, .unicode_bidi, .visibility,
 		.webkit_text_fill_color, .word_spacing, .z_index {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 88
+pub const number_of_longhand_properties = 96
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .z_index
+	return .text_anchor
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -275,6 +285,14 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		85 { PropertyID.unicode_bidi }
 		86 { PropertyID.visibility }
 		87 { PropertyID.z_index }
+		88 { PropertyID.clip_rule }
+		89 { PropertyID.color_interpolation }
+		90 { PropertyID.fill_rule }
+		91 { PropertyID.mask_type }
+		92 { PropertyID.shape_rendering }
+		93 { PropertyID.stroke_linecap }
+		94 { PropertyID.stroke_linejoin }
+		95 { PropertyID.text_anchor }
 		else { none }
 	}
 }

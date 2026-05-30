@@ -122,6 +122,14 @@ pub enum PropertyID {
 	unicode_bidi
 	visibility
 	z_index
+	clip_rule
+	color_interpolation
+	fill_rule
+	mask_type
+	shape_rendering
+	stroke_linecap
+	stroke_linejoin
+	text_anchor
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

@@ -186,8 +186,14 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'clear' {
 			PropertyID.clear
 		}
+		'clip-rule' {
+			PropertyID.clip_rule
+		}
 		'color' {
 			PropertyID.color
+		}
+		'color-interpolation' {
+			PropertyID.color_interpolation
 		}
 		'color-scheme' {
 			PropertyID.color_scheme
@@ -215,6 +221,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'fill-opacity' {
 			PropertyID.fill_opacity
+		}
+		'fill-rule' {
+			PropertyID.fill_rule
 		}
 		'flood-color' {
 			PropertyID.flood_color
@@ -251,6 +260,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'mask-image' {
 			PropertyID.mask_image
+		}
+		'mask-type' {
+			PropertyID.mask_type
 		}
 		'math-depth' {
 			PropertyID.math_depth
@@ -303,6 +315,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'shape-image-threshold' {
 			PropertyID.shape_image_threshold
 		}
+		'shape-rendering' {
+			PropertyID.shape_rendering
+		}
 		'stop-color' {
 			PropertyID.stop_color
 		}
@@ -311,6 +326,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'stroke-opacity' {
 			PropertyID.stroke_opacity
+		}
+		'stroke-linecap' {
+			PropertyID.stroke_linecap
+		}
+		'stroke-linejoin' {
+			PropertyID.stroke_linejoin
 		}
 		'rotate' {
 			PropertyID.rotate
@@ -323,6 +344,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'table-layout' {
 			PropertyID.table_layout
+		}
+		'text-anchor' {
+			PropertyID.text_anchor
 		}
 		'transform' {
 			PropertyID.transform
@@ -430,11 +454,13 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.color_scheme {
 			value_type == .custom_ident
 		}
-		.caption_side, .content_visibility, .direction, .empty_cells {
+		.caption_side, .clip_rule, .color_interpolation, .content_visibility, .direction,
+		.empty_cells, .fill_rule, .mask_type {
 			false
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
-		.pointer_events, .position, .table_layout, .unicode_bidi, .visibility {
+		.pointer_events, .position, .shape_rendering, .stroke_linecap, .stroke_linejoin,
+		.table_layout, .text_anchor, .unicode_bidi, .visibility {
 			false
 		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
@@ -581,6 +607,12 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			// content-visibility = visible | auto | hidden
 			lowercase_value in ['visible', 'auto', 'hidden']
 		}
+		.clip_rule, .fill_rule {
+			lowercase_value in ['nonzero', 'evenodd']
+		}
+		.color_interpolation {
+			lowercase_value in ['auto', 'linearrgb', 'srgb']
+		}
 		.caption_side {
 			lowercase_value in ['top', 'bottom']
 		}
@@ -648,6 +680,21 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.object_fit {
 			lowercase_value in ['fill', 'contain', 'cover', 'none', 'scale-down']
 		}
+		.mask_type {
+			lowercase_value in ['luminance', 'alpha']
+		}
+		.shape_rendering {
+			lowercase_value in ['auto', 'optimizespeed', 'crispedges', 'geometricprecision']
+		}
+		.stroke_linecap {
+			lowercase_value in ['butt', 'round', 'square']
+		}
+		.stroke_linejoin {
+			lowercase_value in ['miter', 'round', 'bevel']
+		}
+		.text_anchor {
+			lowercase_value in ['start', 'middle', 'end']
+		}
 		.font_feature_settings, .font_variation_settings {
 			lowercase_value == 'normal'
 		}
@@ -703,10 +750,12 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.accent_color, .background_color, .background_image, .border_bottom_color,
 		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
-		.caption_side, .caret_color, .clear, .color, .direction, .empty_cells, .float_,
-		.flood_color, .list_style_image, .mask_image, .mix_blend_mode, .object_fit, .outline_color,
-		.outline_style, .overflow_x, .overflow_y, .pointer_events, .position, .stop_color,
-		.table_layout, .unicode_bidi, .view_timeline_inset, .visibility, .webkit_text_fill_color {
+		.caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation, .direction,
+		.empty_cells, .fill_rule, .float_, .flood_color, .list_style_image, .mask_image,
+		.mask_type, .mix_blend_mode, .object_fit, .outline_color, .outline_style, .overflow_x,
+		.overflow_y, .pointer_events, .position, .shape_rendering, .stop_color, .stroke_linecap,
+		.stroke_linejoin, .table_layout, .text_anchor, .unicode_bidi, .view_timeline_inset,
+		.visibility, .webkit_text_fill_color {
 			false
 		}
 		.color_scheme {
@@ -1790,6 +1839,20 @@ pub enum Keyword {
 	bidi_override
 	isolate_override
 	plaintext
+	nonzero
+	evenodd
+	linearrgb
+	srgb
+	luminance
+	alpha
+	optimizespeed
+	crispedges
+	geometricprecision
+	butt
+	miter
+	start
+	middle
+	end_
 	absolute
 	fixed
 	relative
@@ -2004,6 +2067,20 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.bidi_override { 'bidi-override' }
 		.isolate_override { 'isolate-override' }
 		.plaintext { 'plaintext' }
+		.nonzero { 'nonzero' }
+		.evenodd { 'evenodd' }
+		.linearrgb { 'linearrgb' }
+		.srgb { 'srgb' }
+		.luminance { 'luminance' }
+		.alpha { 'alpha' }
+		.optimizespeed { 'optimizespeed' }
+		.crispedges { 'crispedges' }
+		.geometricprecision { 'geometricprecision' }
+		.butt { 'butt' }
+		.miter { 'miter' }
+		.start { 'start' }
+		.middle { 'middle' }
+		.end_ { 'end' }
 		.absolute { 'absolute' }
 		.fixed { 'fixed' }
 		.relative { 'relative' }
@@ -2207,6 +2284,20 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'bidi-override' { Keyword.bidi_override }
 		'isolate-override' { Keyword.isolate_override }
 		'plaintext' { Keyword.plaintext }
+		'nonzero' { Keyword.nonzero }
+		'evenodd' { Keyword.evenodd }
+		'linearrgb' { Keyword.linearrgb }
+		'srgb' { Keyword.srgb }
+		'luminance' { Keyword.luminance }
+		'alpha' { Keyword.alpha }
+		'optimizespeed' { Keyword.optimizespeed }
+		'crispedges' { Keyword.crispedges }
+		'geometricprecision' { Keyword.geometricprecision }
+		'butt' { Keyword.butt }
+		'miter' { Keyword.miter }
+		'start' { Keyword.start }
+		'middle' { Keyword.middle }
+		'end' { Keyword.end_ }
 		'absolute' { Keyword.absolute }
 		'fixed' { Keyword.fixed }
 		'relative' { Keyword.relative }

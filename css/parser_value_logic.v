@@ -329,11 +329,20 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.clear {
 			return parser.parse_clear_value(mut tokens)
 		}
+		.clip_rule {
+			return parser.parse_fill_rule_value(mut tokens)
+		}
+		.color_interpolation {
+			return parser.parse_color_interpolation_value(mut tokens)
+		}
 		.direction {
 			return parser.parse_direction_value(mut tokens)
 		}
 		.empty_cells {
 			return parser.parse_empty_cells_value(mut tokens)
+		}
+		.fill_rule {
+			return parser.parse_fill_rule_value(mut tokens)
 		}
 		.float_ {
 			return parser.parse_float_value(mut tokens)
@@ -343,6 +352,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.math_style {
 			return parser.parse_math_style_value(mut tokens)
+		}
+		.mask_type {
+			return parser.parse_mask_type_value(mut tokens)
 		}
 		.mix_blend_mode {
 			return parser.parse_mix_blend_mode_value(mut tokens)
@@ -356,11 +368,23 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.scale {
 			return parser.parse_scale_value(mut tokens)
 		}
+		.shape_rendering {
+			return parser.parse_shape_rendering_value(mut tokens)
+		}
 		.scroll_timeline_name {
 			return parser.parse_timeline_name_value(mut tokens)
 		}
+		.stroke_linecap {
+			return parser.parse_stroke_linecap_value(mut tokens)
+		}
+		.stroke_linejoin {
+			return parser.parse_stroke_linejoin_value(mut tokens)
+		}
 		.table_layout {
 			return parser.parse_table_layout_value(mut tokens)
+		}
+		.text_anchor {
+			return parser.parse_text_anchor_value(mut tokens)
 		}
 		.transform {
 			return parser.parse_transform_value(mut tokens)
@@ -1160,6 +1184,16 @@ fn (mut parser Parser) parse_caption_side_value(mut tokens ComponentValueStream)
 	return parse_property_keyword_value(mut tokens, ['top', 'bottom'])
 }
 
+fn (mut parser Parser) parse_fill_rule_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['nonzero', 'evenodd'])
+}
+
+fn (mut parser Parser) parse_color_interpolation_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'linearrgb', 'srgb'])
+}
+
 fn (mut parser Parser) parse_direction_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['ltr', 'rtl'])
@@ -1170,9 +1204,35 @@ fn (mut parser Parser) parse_empty_cells_value(mut tokens ComponentValueStream) 
 	return parse_property_keyword_value(mut tokens, ['show', 'hide'])
 }
 
+fn (mut parser Parser) parse_mask_type_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['luminance', 'alpha'])
+}
+
+fn (mut parser Parser) parse_shape_rendering_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'optimizespeed', 'crispedges',
+		'geometricprecision'])
+}
+
+fn (mut parser Parser) parse_stroke_linecap_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['butt', 'round', 'square'])
+}
+
+fn (mut parser Parser) parse_stroke_linejoin_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['miter', 'round', 'bevel'])
+}
+
 fn (mut parser Parser) parse_table_layout_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'fixed'])
+}
+
+fn (mut parser Parser) parse_text_anchor_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['start', 'middle', 'end'])
 }
 
 fn (mut parser Parser) parse_unicode_bidi_value(mut tokens ComponentValueStream) ?StyleValue {
