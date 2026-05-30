@@ -1602,10 +1602,10 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 				negative = parse_counter_style_symbol_list_descriptor_value(value_text)
 			}
 			'prefix' {
-				prefix = parse_counter_style_generic_descriptor_value(value_text)
+				prefix = parse_counter_style_symbol_descriptor_value(value_text)
 			}
 			'suffix' {
-				suffix = parse_counter_style_generic_descriptor_value(value_text)
+				suffix = parse_counter_style_symbol_descriptor_value(value_text)
 			}
 			'range' {
 				range = parse_counter_style_range_descriptor_value(value_text)
@@ -1614,7 +1614,7 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 				pad = parse_counter_style_pad_descriptor_value(value_text)
 			}
 			'fallback' {
-				fallback = parse_counter_style_generic_descriptor_value(value_text)
+				fallback = parse_counter_style_name_descriptor_value(value_text)
 			}
 			'symbols' {
 				symbols = parse_counter_style_symbol_list_descriptor_value(value_text)
@@ -1623,7 +1623,7 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 				additive_symbols = parse_counter_style_additive_symbols_descriptor_value(value_text)
 			}
 			'speak-as' {
-				speak_as = parse_counter_style_generic_descriptor_value(value_text)
+				speak_as = parse_counter_style_speak_as_descriptor_value(value_text)
 			}
 			else {}
 		}
@@ -1988,6 +1988,10 @@ fn parse_font_feature_values_declaration_values(values []ComponentValue) ?[]u32 
 }
 
 fn (mut parser RuleSelectorParser) parse_counter_style_name(mut tokens ParserTokenStream) ?string {
+	return parse_counter_style_name_from_tokens(mut tokens)
+}
+
+fn parse_counter_style_name_from_tokens(mut tokens ParserTokenStream) ?string {
 	// https://drafts.csswg.org/css-counter-styles-3/#typedef-counter-style-name
 	// <counter-style-name> is a <custom-ident> that is not an ASCII case-insensitive match for none.
 	transaction_index := tokens.index
@@ -1998,6 +2002,12 @@ fn (mut parser RuleSelectorParser) parse_counter_style_name(mut tokens ParserTok
 		return none
 	}
 	mut custom_ident := token.token().ident()
+	if keyword := keyword_from_string(custom_ident) {
+		if keyword.is_css_wide_keyword() {
+			tokens.index = transaction_index
+			return none
+		}
+	}
 
 	// https://drafts.csswg.org/css-counter-styles-3/#the-counter-style-rule
 	// Counter style names are case-sensitive. However, the names defined in this specification are ASCII lowercased
@@ -2021,18 +2031,6 @@ fn css_counter_style_rule_matches_non_overridable_counter_style_name(name string
 		'disclosure-closed']
 }
 
-fn parse_counter_style_generic_descriptor_value(value string) ?StyleValue {
-	trimmed := value.trim_space()
-	if trimmed.len == 0 {
-		return none
-	}
-	mut parser := Parser.from_css_text(trimmed)
-	parsed := parser.parse_descriptor_value(.counter_style, .unknown) or {
-		return StyleValue(StubStyleValue.create(.custom_ident, trimmed))
-	}
-	return parsed
-}
-
 fn parse_counter_style_system_descriptor_value(value string) ?CounterStyleSystemStyleValue {
 	mut tokens := ParserTokenStream.from_values(parse_component_values_for_value_logic(value))
 	tokens.discard_whitespace()
@@ -2048,20 +2046,22 @@ fn parse_counter_style_system_descriptor_value(value string) ?CounterStyleSystem
 		tokens.discard_whitespace()
 		mut first_symbol := ?StyleValue(none)
 		if tokens.has_next_token() {
-			first_symbol = StyleValue(StubStyleValue.create(.custom_ident,
-				parser_component_values_to_string(tokens.values[tokens.index..tokens.values.len - 1]).trim_space()))
-			tokens.index = tokens.values.len - 1
+			first_symbol = parse_counter_style_integer_value(mut tokens) or { return none }
+			tokens.discard_whitespace()
+			if tokens.has_next_token() {
+				return none
+			}
 		}
 		return CounterStyleSystemStyleValue.create_fixed(first_symbol)
 	}
 	if lower == 'extends' {
 		tokens.discard_whitespace()
-		name := tokens.consume_a_token()
+		name := parse_counter_style_name_from_tokens(mut tokens) or { return none }
 		tokens.discard_whitespace()
-		if !name.is(.ident) || tokens.has_next_token() {
+		if tokens.has_next_token() {
 			return none
 		}
-		return CounterStyleSystemStyleValue.create_extends(name.token().ident())
+		return CounterStyleSystemStyleValue.create_extends(name)
 	}
 	tokens.discard_whitespace()
 	if tokens.has_next_token() {
@@ -2077,17 +2077,62 @@ fn parse_counter_style_system_descriptor_value(value string) ?CounterStyleSystem
 	}
 }
 
+fn parse_counter_style_symbol_value(mut tokens ParserTokenStream) ?StyleValue {
+	// https://drafts.csswg.org/css-counter-styles-3/#typedef-symbol
+	// <symbol> = <string> | <image> | <custom-ident>
+	// Note: The <image> syntax in <symbol> is currently at-risk. No implementations have plans to implement it
+	//       currently, and it complicates some usages of counter() in ways that haven’t been fully handled.
+	// NB: Given the above we don't currently support <image> here - we may need to revisit this if other browsers implement it.
+	tokens.discard_whitespace()
+	token := tokens.consume_a_token()
+	if token.is(.string) {
+		return StyleValue(StringStyleValue.create(token.token().string_value()))
+	}
+	if token.is(.ident) {
+		ident := token.token().ident()
+		if keyword := keyword_from_string(ident) {
+			if keyword.is_css_wide_keyword() {
+				return none
+			}
+		}
+		return StyleValue(CustomIdentStyleValue.create(ident))
+	}
+	return none
+}
+
+fn parse_counter_style_symbol_descriptor_value(value string) ?StyleValue {
+	mut tokens := ParserTokenStream.from_values(parse_component_values_for_value_logic(value))
+	symbol := parse_counter_style_symbol_value(mut tokens) or { return none }
+	tokens.discard_whitespace()
+	if tokens.has_next_token() {
+		return none
+	}
+	return symbol
+}
+
+fn parse_counter_style_name_descriptor_value(value string) ?StyleValue {
+	mut tokens := ParserTokenStream.from_values(parse_component_values_for_value_logic(value))
+	name := parse_counter_style_name_from_tokens(mut tokens) or { return none }
+	tokens.discard_whitespace()
+	if tokens.has_next_token() {
+		return none
+	}
+	return StyleValue(CustomIdentStyleValue.create(name))
+}
+
+fn parse_counter_style_speak_as_descriptor_value(value string) ?StyleValue {
+	// speak-as accepts keywords plus <counter-style-name>. This V translation does not have a dedicated
+	// CounterStyleSpeakAsStyleValue, so keep the parsed ident as a typed custom-ident boundary.
+	return parse_counter_style_name_descriptor_value(value)
+}
+
 fn parse_counter_style_symbol_list_descriptor_value(value string) ?CounterStyleSymbolListStyleValue {
-	component_values := parse_component_values_for_value_logic(value)
-	mut tokens := ParserTokenStream.from_values(component_values)
+	mut tokens := ParserTokenStream.from_values(parse_component_values_for_value_logic(value))
 	mut symbols := []StyleValue{}
 	tokens.discard_whitespace()
 	for tokens.has_next_token() {
-		token := tokens.consume_a_token()
-		if token.is(.whitespace) || token.is(.comma) {
-			continue
-		}
-		symbols << StyleValue(StubStyleValue.create(.custom_ident, token.to_string()))
+		symbol := parse_counter_style_symbol_value(mut tokens) or { return none }
+		symbols << symbol
 		tokens.discard_whitespace()
 	}
 	if symbols.len == 0 {
@@ -2096,56 +2141,162 @@ fn parse_counter_style_symbol_list_descriptor_value(value string) ?CounterStyleS
 	return CounterStyleSymbolListStyleValue.create(symbols)
 }
 
-fn parse_counter_style_range_bound(value string) CounterStyleRangeBound {
-	if value.to_lower() == 'infinite' {
+fn parse_counter_style_integer_value(mut tokens ParserTokenStream) ?StyleValue {
+	tokens.discard_whitespace()
+	token := tokens.consume_a_token()
+	if !token.is(.number) || !token.token().number().is_integer() {
+		return none
+	}
+	return StyleValue(IntegerStyleValue.create(token.token().number().integer_value()))
+}
+
+fn parse_counter_style_nonnegative_integer_value(mut tokens ParserTokenStream) ?StyleValue {
+	value := parse_counter_style_integer_value(mut tokens) or { return none }
+	if value.as_integer().integer() < 0 {
+		return none
+	}
+	return value
+}
+
+fn parse_counter_style_range_bound(mut tokens ParserTokenStream) ?CounterStyleRangeBound {
+	tokens.discard_whitespace()
+	token := tokens.next_token()
+	if token.is(.ident) && equals_ignoring_ascii_case(token.token().ident(), 'infinite') {
+		tokens.consume_a_token()
 		return CounterStyleRangeBound(CounterStyleInfinite{})
 	}
-	return CounterStyleRangeBound(StyleValue(StubStyleValue.create(.custom_ident, value)))
+	return CounterStyleRangeBound(parse_counter_style_integer_value(mut tokens) or { return none })
+}
+
+fn counter_style_range_bound_to_i64(bound CounterStyleRangeBound, infinite_value i64) i64 {
+	return match bound {
+		CounterStyleInfinite { infinite_value }
+		StyleValue { bound.as_integer().integer() }
+	}
+}
+
+fn parse_counter_style_range_entry(mut tokens ParserTokenStream) ?CounterStyleRangeStyleValueEntry {
+	first_value := parse_counter_style_range_bound(mut tokens) or { return none }
+	second_value := parse_counter_style_range_bound(mut tokens) or { return none }
+
+	// If the lower bound of any range is higher than the upper bound, the entire descriptor is
+	// invalid and must be ignored.
+	first_int := counter_style_range_bound_to_i64(first_value, counter_i64_min)
+	second_int := counter_style_range_bound_to_i64(second_value, counter_i64_max)
+	if first_int > second_int {
+		return none
+	}
+
+	return CounterStyleRangeStyleValueEntry{
+		start: first_value
+		end:   second_value
+	}
 }
 
 fn parse_counter_style_range_descriptor_value(value string) ?CounterStyleRangeStyleValue {
-	trimmed := value.trim_space()
-	if trimmed.len == 0 {
+	mut tokens := ParserTokenStream.from_values(parse_component_values_for_value_logic(value))
+	tokens.discard_whitespace()
+	if !tokens.has_next_token() {
 		return none
 	}
-	if trimmed.to_lower() == 'auto' {
-		return CounterStyleRangeStyleValue.create_auto()
-	}
-	mut entries := []CounterStyleRangeStyleValueEntry{}
-	for entry_text in trimmed.split(',') {
-		parts := entry_text.trim_space().fields()
-		if parts.len != 2 {
+	if tokens.next_token().is(.ident)
+		&& equals_ignoring_ascii_case(tokens.next_token().token().ident(), 'auto') {
+		tokens.consume_a_token()
+		tokens.discard_whitespace()
+		if tokens.has_next_token() {
 			return none
 		}
-		entries << CounterStyleRangeStyleValueEntry{
-			start: parse_counter_style_range_bound(parts[0])
-			end:   parse_counter_style_range_bound(parts[1])
+		return CounterStyleRangeStyleValue.create_auto()
+	}
+
+	mut entries := []CounterStyleRangeStyleValueEntry{}
+	for {
+		entries << parse_counter_style_range_entry(mut tokens) or { return none }
+		tokens.discard_whitespace()
+		if !tokens.has_next_token() {
+			break
 		}
+		if !tokens.consume_a_token().is(.comma) {
+			return none
+		}
+		tokens.discard_whitespace()
 	}
 	return CounterStyleRangeStyleValue.create(entries)
 }
 
+fn parse_counter_style_nonnegative_integer_symbol_pair_value(mut tokens ParserTokenStream) ?CounterStyleAdditiveSymbolTupleStyleValue {
+	// [ <integer [0,∞]> && <symbol> ]
+	mut integer := ?StyleValue(none)
+	mut symbol := ?StyleValue(none)
+
+	for tokens.has_next_token() {
+		start_index := tokens.index
+		if integer_value := parse_counter_style_nonnegative_integer_value(mut tokens) {
+			if integer != none {
+				return none
+			}
+			integer = integer_value
+			tokens.discard_whitespace()
+			continue
+		}
+		tokens.index = start_index
+
+		if symbol_value := parse_counter_style_symbol_value(mut tokens) {
+			if symbol != none {
+				return none
+			}
+			symbol = symbol_value
+			tokens.discard_whitespace()
+			continue
+		}
+		tokens.index = start_index
+		break
+	}
+
+	integer_value := integer or { return none }
+	symbol_value := symbol or { return none }
+	return CounterStyleAdditiveSymbolTupleStyleValue{
+		weight: integer_value
+		symbol: symbol_value
+	}
+}
+
 fn parse_counter_style_pad_descriptor_value(value string) ?CounterStylePadStyleValue {
-	parts := value.trim_space().fields()
-	if parts.len < 2 {
+	mut tokens := ParserTokenStream.from_values(parse_component_values_for_value_logic(value))
+	pair := parse_counter_style_nonnegative_integer_symbol_pair_value(mut tokens) or { return none }
+	tokens.discard_whitespace()
+	if tokens.has_next_token() {
 		return none
 	}
-	minimum_length := StyleValue(StubStyleValue.create(.integer, parts[0]))
-	symbol := StyleValue(StubStyleValue.create(.custom_ident, parts[1..].join(' ')))
-	return CounterStylePadStyleValue.create(minimum_length, symbol)
+	return CounterStylePadStyleValue.create(pair.weight, pair.symbol)
 }
 
 fn parse_counter_style_additive_symbols_descriptor_value(value string) ?CounterStyleAdditiveSymbolsStyleValue {
+	mut tokens := ParserTokenStream.from_values(parse_component_values_for_value_logic(value))
 	mut tuples := []CounterStyleAdditiveSymbolTupleStyleValue{}
-	for tuple_text in value.split(',') {
-		parts := tuple_text.trim_space().fields()
-		if parts.len < 2 {
+	mut previous_weight := counter_i64_max
+	for {
+		tuple := parse_counter_style_nonnegative_integer_symbol_pair_value(mut tokens) or {
 			return none
 		}
-		tuples << CounterStyleAdditiveSymbolTupleStyleValue{
-			weight: StyleValue(StubStyleValue.create(.integer, parts[0]))
-			symbol: StyleValue(StubStyleValue.create(.custom_ident, parts[1..].join(' ')))
+		weight := tuple.weight.as_integer().integer()
+		// Each entry in the additive-symbols descriptor’s value defines an additive tuple, which consists
+		// of a counter symbol and an integer weight. Each weight must be a non-negative integer, and the
+		// additive tuples must be specified in order of strictly descending weight; otherwise, the
+		// declaration is invalid and must be ignored.
+		if weight >= previous_weight {
+			return none
 		}
+		previous_weight = weight
+		tuples << tuple
+		tokens.discard_whitespace()
+		if !tokens.has_next_token() {
+			break
+		}
+		if !tokens.consume_a_token().is(.comma) {
+			return none
+		}
+		tokens.discard_whitespace()
 	}
 	if tuples.len == 0 {
 		return none
