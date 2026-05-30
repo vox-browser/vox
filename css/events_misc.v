@@ -1,0 +1,371 @@
+module css
+
+import dom
+
+// --- AnimationEvent ---
+
+// https://www.w3.org/TR/css-animations-1/#dictdef-animationeventinit
+pub struct AnimationEventInit {
+	dom.EventInit
+pub mut:
+	animation_name string
+	elapsed_time   f64
+	pseudo_element string
+}
+
+// https://www.w3.org/TR/css-animations-1/#animationevent
+pub struct AnimationEvent {
+pub mut:
+	event           &dom.Event = unsafe { nil }
+	animation_name_ string
+	elapsed_time_   f64
+	pseudo_element_ string
+}
+
+pub fn AnimationEvent.create(type_ string, event_init AnimationEventInit) &AnimationEvent {
+	return AnimationEvent.new(type_, event_init)
+}
+
+pub fn AnimationEvent.construct_impl(type_ string, event_init AnimationEventInit) !&AnimationEvent {
+	return AnimationEvent.create(type_, event_init)
+}
+
+pub fn AnimationEvent.new(type_ string, event_init AnimationEventInit) &AnimationEvent {
+	return &AnimationEvent{
+		event:           dom.Event.new_with_init(type_, event_init.EventInit)
+		animation_name_: event_init.animation_name
+		elapsed_time_:   event_init.elapsed_time
+		pseudo_element_: event_init.pseudo_element
+	}
+}
+
+pub fn (e AnimationEvent) animation_name() string {
+	return e.animation_name_
+}
+
+pub fn (e AnimationEvent) elapsed_time() f64 {
+	return e.elapsed_time_
+}
+
+pub fn (e AnimationEvent) pseudo_element() string {
+	return e.pseudo_element_
+}
+
+pub fn (mut e AnimationEvent) initialize() {
+	// WEB_SET_PROTOTYPE_FOR_INTERFACE(AnimationEvent);
+	e.event.initialize()
+}
+
+// --- TransitionEvent ---
+
+pub struct TransitionEventInit {
+	dom.EventInit
+pub mut:
+	property_name  string
+	elapsed_time   f64
+	pseudo_element string
+}
+
+pub struct TransitionEvent {
+pub mut:
+	event           &dom.Event = unsafe { nil }
+	property_name_  string
+	elapsed_time_   f64
+	pseudo_element_ string
+}
+
+pub fn TransitionEvent.create(type_ string, event_init TransitionEventInit) &TransitionEvent {
+	mut event := TransitionEvent.new(type_, event_init)
+	event.event.set_is_trusted(true)
+	return event
+}
+
+pub fn TransitionEvent.construct_impl(type_ string, event_init TransitionEventInit) &TransitionEvent {
+	return TransitionEvent.new(type_, event_init)
+}
+
+pub fn TransitionEvent.new(type_ string, event_init TransitionEventInit) &TransitionEvent {
+	return &TransitionEvent{
+		event:           dom.Event.new_with_init(type_, event_init.EventInit)
+		property_name_:  event_init.property_name
+		elapsed_time_:   event_init.elapsed_time
+		pseudo_element_: event_init.pseudo_element
+	}
+}
+
+pub fn (e TransitionEvent) property_name() string {
+	return e.property_name_
+}
+
+pub fn (e TransitionEvent) elapsed_time() f64 {
+	return e.elapsed_time_
+}
+
+pub fn (e TransitionEvent) pseudo_element() string {
+	return e.pseudo_element_
+}
+
+pub fn (mut e TransitionEvent) initialize() {
+	// WEB_SET_PROTOTYPE_FOR_INTERFACE(TransitionEvent);
+	e.event.initialize()
+}
+
+// --- MediaQueryListEvent ---
+
+pub struct MediaQueryListEventInit {
+	dom.EventInit
+pub mut:
+	media   string
+	matches bool
+}
+
+pub struct MediaQueryListEvent {
+pub mut:
+	event    &dom.Event = unsafe { nil }
+	media_   string
+	matches_ bool
+}
+
+pub fn MediaQueryListEvent.create(event_name string, event_init MediaQueryListEventInit) &MediaQueryListEvent {
+	mut event := MediaQueryListEvent.new(event_name, event_init)
+	event.event.set_is_trusted(true)
+	return event
+}
+
+pub fn MediaQueryListEvent.construct_impl(event_name string, event_init MediaQueryListEventInit) &MediaQueryListEvent {
+	return MediaQueryListEvent.new(event_name, event_init)
+}
+
+pub fn MediaQueryListEvent.new(event_name string, event_init MediaQueryListEventInit) &MediaQueryListEvent {
+	return &MediaQueryListEvent{
+		event:    dom.Event.new_with_init(event_name, event_init.EventInit)
+		media_:   event_init.media
+		matches_: event_init.matches
+	}
+}
+
+pub fn (e MediaQueryListEvent) media() string {
+	return e.media_
+}
+
+pub fn (e MediaQueryListEvent) matches() bool {
+	return e.matches_
+}
+
+pub fn (mut e MediaQueryListEvent) initialize() {
+	// WEB_SET_PROTOTYPE_FOR_INTERFACE(MediaQueryListEvent);
+	e.event.initialize()
+}
+
+// --- FontFaceSetLoadEvent ---
+
+pub struct FontFace {}
+
+pub struct FontFaceSetLoadEventInit {
+	dom.EventInit
+pub mut:
+	fontfaces []&FontFace
+}
+
+pub struct FontFaceSetLoadEvent {
+pub mut:
+	event      &dom.Event = unsafe { nil }
+	fontfaces_ []&FontFace
+}
+
+pub fn FontFaceSetLoadEvent.create(event_name string, event_init FontFaceSetLoadEventInit) &FontFaceSetLoadEvent {
+	return FontFaceSetLoadEvent.new(event_name, event_init)
+}
+
+// https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadevent-fontfacesetloadevent
+pub fn FontFaceSetLoadEvent.construct_impl(event_name string, event_init FontFaceSetLoadEventInit) !&FontFaceSetLoadEvent {
+	return FontFaceSetLoadEvent.create(event_name, event_init)
+}
+
+pub fn FontFaceSetLoadEvent.new(event_name string, event_init FontFaceSetLoadEventInit) &FontFaceSetLoadEvent {
+	mut fontfaces := []&FontFace{cap: event_init.fontfaces.len}
+	for font_face in event_init.fontfaces {
+		if unsafe { font_face == nil } {
+			panic('VERIFY_NOT_REACHED')
+		}
+		fontfaces << font_face
+	}
+	return &FontFaceSetLoadEvent{
+		event:      dom.Event.new_with_init(event_name, event_init.EventInit)
+		fontfaces_: fontfaces
+	}
+}
+
+pub fn (e FontFaceSetLoadEvent) fontfaces() []&FontFace {
+	return e.fontfaces_
+}
+
+pub fn (mut e FontFaceSetLoadEvent) initialize() {
+	// WEB_SET_PROTOTYPE_FOR_INTERFACE(FontFaceSetLoadEvent);
+	e.event.initialize()
+}
+
+pub fn (mut e FontFaceSetLoadEvent) visit_edges(mut visitor dom.CellVisitor) {
+	e.event.visit_edges(mut visitor)
+	// visitor.visit(m_fontfaces);
+}
+
+// --- StyleProperty ---
+
+pub enum Important {
+	no
+	yes
+}
+
+pub struct StyleProperty {
+pub mut:
+	important   Important = .no
+	property_id PropertyID
+	value       &dom.StyleValue = unsafe { nil }
+}
+
+pub fn (p StyleProperty) equals(other StyleProperty) bool {
+	if p.important != other.important || p.property_id != other.property_id {
+		return false
+	}
+	return p.value == other.value
+}
+
+pub struct StylePropertyAndName {
+pub mut:
+	property StyleProperty
+	name     string
+}
+
+// --- Descriptor ---
+
+pub enum DescriptorID {
+	unknown
+}
+
+pub struct Descriptor {
+pub mut:
+	descriptor_id DescriptorID
+	value         &dom.StyleValue = unsafe { nil }
+}
+
+// --- PageSelector ---
+
+pub enum PagePseudoClass {
+	left
+	right
+	first
+	blank
+}
+
+pub fn page_pseudo_class_from_string(input string) ?PagePseudoClass {
+	lower_input := input.to_lower()
+	if lower_input == 'blank' {
+		return .blank
+	}
+	if lower_input == 'first' {
+		return .first
+	}
+	if lower_input == 'left' {
+		return .left
+	}
+	if lower_input == 'right' {
+		return .right
+	}
+	return none
+}
+
+pub fn page_pseudo_class_to_string(pseudo_class PagePseudoClass) string {
+	return match pseudo_class {
+		.blank { 'blank' }
+		.first { 'first' }
+		.left { 'left' }
+		.right { 'right' }
+	}
+}
+
+pub struct PageSelector {
+pub mut:
+	name_           ?string
+	pseudo_classes_ []PagePseudoClass
+}
+
+pub type PageSelectorList = []PageSelector
+
+pub fn PageSelector.new(name ?string, pseudo_classes []PagePseudoClass) PageSelector {
+	return PageSelector{
+		name_:           name
+		pseudo_classes_: pseudo_classes
+	}
+}
+
+pub fn (p PageSelector) name() ?string {
+	return p.name_
+}
+
+pub fn (p PageSelector) pseudo_classes() []PagePseudoClass {
+	return p.pseudo_classes_
+}
+
+pub fn (p PageSelector) serialize() string {
+	mut serialized := ''
+	if name := p.name_ {
+		serialized += name
+	}
+	for pseudo_class in p.pseudo_classes_ {
+		serialized += ':${page_pseudo_class_to_string(pseudo_class)}'
+	}
+	return serialized
+}
+
+// --- StyleSheetIdentifier ---
+
+pub enum StyleSheetIdentifierType {
+	style_element
+	link_element
+	import_rule
+	user_agent
+	user_style
+}
+
+pub struct StyleSheetIdentifier {
+pub mut:
+	type_                 StyleSheetIdentifierType
+	dom_element_unique_id ?u64
+	url                   ?string
+	rule_count            usize
+}
+
+pub fn (s StyleSheetIdentifier) equals(other StyleSheetIdentifier) bool {
+	return s.type_ == other.type_ && s.dom_element_unique_id == other.dom_element_unique_id
+		&& s.url == other.url
+}
+
+pub fn style_sheet_identifier_type_to_string(type_ StyleSheetIdentifierType) string {
+	return match type_ {
+		.style_element { 'StyleElement' }
+		.link_element { 'LinkElement' }
+		.import_rule { 'ImportRule' }
+		.user_agent { 'UserAgent' }
+		.user_style { 'UserStyle' }
+	}
+}
+
+pub fn style_sheet_identifier_type_from_string(string_ string) ?StyleSheetIdentifierType {
+	if string_ == 'StyleElement' {
+		return .style_element
+	}
+	if string_ == 'LinkElement' {
+		return .link_element
+	}
+	if string_ == 'ImportRule' {
+		return .import_rule
+	}
+	if string_ == 'UserAgent' {
+		return .user_agent
+	}
+	if string_ == 'UserStyle' {
+		return .user_style
+	}
+	return none
+}
