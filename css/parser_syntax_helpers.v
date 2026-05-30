@@ -685,10 +685,10 @@ fn parse_value_using_existing_parser_for_syntax_type(type_ ValueType, mut tokens
 			result = parse_url_value_for_syntax(mut stream)
 		}
 		.transform_function {
-			result = parse_transform_function_value_for_syntax(mut stream)
+			result = parser.parse_transform_function_value(mut stream)
 		}
 		.transform_list {
-			result = parse_transform_list_value_for_syntax(mut stream)
+			result = parser.parse_transform_list_value(mut stream)
 		}
 		else {}
 	}
@@ -705,32 +705,6 @@ fn parse_url_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
 		return StyleValue(StubStyleValue.create(.url, component_value.to_string()))
 	}
 	return none
-}
-
-fn parse_transform_function_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
-	tokens.consume_whitespace()
-	component_value := tokens.consume() or { return none }
-	if !component_value.is(.function) {
-		return none
-	}
-	_ = transform_function_from_string(component_value.function().name) or { return none }
-	return StyleValue(StubStyleValue.create(.transformation, component_value.to_string()))
-}
-
-fn parse_transform_list_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
-	mut parts := []string{}
-	for {
-		tokens.consume_whitespace()
-		if !tokens.has_more_tokens() {
-			break
-		}
-		value := parse_transform_function_value_for_syntax(mut tokens) or { return none }
-		parts << value.serialize(.normal)
-	}
-	if parts.len == 0 {
-		return none
-	}
-	return StyleValue(StubStyleValue.create(.transformation, parts.join(' ')))
 }
 
 fn parse_comma_separated_syntax_value_list(mut tokens ComponentValueTokenStream, child SyntaxNode) ?StyleValue {

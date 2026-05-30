@@ -1130,6 +1130,7 @@ pub enum Keyword {
 	revert_layer
 	unset
 	auto
+	none_
 	accentcolor
 	accentcolortext
 	activeborder
@@ -1252,6 +1253,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.revert_layer { 'revert-layer' }
 		.unset { 'unset' }
 		.auto { 'auto' }
+		.none_ { 'none' }
 		.accentcolor { 'accentcolor' }
 		.accentcolortext { 'accentcolortext' }
 		.activeborder { 'activeborder' }
@@ -1363,6 +1365,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'revert-layer' { Keyword.revert_layer }
 		'unset' { Keyword.unset }
 		'auto' { Keyword.auto }
+		'none' { Keyword.none_ }
 		'accentcolor' { Keyword.accentcolor }
 		'accentcolortext' { Keyword.accentcolortext }
 		'activeborder' { Keyword.activeborder }

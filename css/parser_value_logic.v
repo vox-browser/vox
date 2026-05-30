@@ -256,7 +256,7 @@ fn (mut parser Parser) parse_builtin_value(mut tokens ComponentValueStream) ?Sty
 		return StyleValue(value)
 	}
 	if value := parser.parse_image_value(mut tokens) {
-		return StyleValue(StubStyleValue.create(.image, value.serialize(.normal)))
+		return style_value_from_css_image_source_for_value_logic(value)
 	}
 	return none
 }
@@ -1202,6 +1202,16 @@ fn (mut parser Parser) parse_ratio_value(mut tokens ComponentValueStream) ?Style
 		'${left.serialize(.normal)} / ${right.serialize(.normal)}'))
 }
 
+fn style_value_from_css_image_source_for_value_logic(value CSSImageSourceStyleValue) StyleValue {
+	return match value {
+		ConicGradientStyleValue { StyleValue(value) }
+		ImageStyleValue { StyleValue(value) }
+		LinearGradientStyleValue { StyleValue(value) }
+		RadialGradientStyleValue { StyleValue(value) }
+		StyleValue { value }
+	}
+}
+
 fn (mut parser Parser) parse_image_value(mut tokens ComponentValueStream) ?CSSImageSourceStyleValue {
 	tokens.consume_whitespace()
 	component_value := tokens.consume() or { return none }
@@ -1236,6 +1246,107 @@ fn (mut parser Parser) parse_image_value(mut tokens ComponentValueStream) ?CSSIm
 		return CSSImageSourceStyleValue(gradient)
 	}
 	return none
+}
+
+fn (mut parser Parser) parse_transform_parameter_value(parameter TransformFunctionParameter, mut tokens ComponentValueStream) ?StyleValue {
+	match parameter.type_ {
+		.angle {
+			// These are `<angle> | <zero>` in the spec, so we have to check for both kinds.
+			if angle_value := parser.parse_angle_value(mut tokens) {
+				return angle_value
+			}
+			if next := tokens.peek() {
+				if next.is(.number) && next.token().number_value() == 0 {
+					tokens.consume()
+					return StyleValue(AngleStyleValue.create(Angle.make_degrees(0)))
+				}
+			}
+			return none
+		}
+		.length, .length_none {
+			if length_value := parser.parse_length_value(mut tokens) {
+				return length_value
+			}
+			if parameter.type_ == .length_none {
+				if next := tokens.peek() {
+					if next.is(.ident) && equals_ignoring_ascii_case(next.token().ident(), 'none') {
+						tokens.consume()
+						return StyleValue(KeywordStyleValue.create(.none_))
+					}
+				}
+			}
+			return none
+		}
+		.length_percentage {
+			return parser.parse_length_percentage_value(mut tokens)
+		}
+		.number {
+			return parser.parse_number_value(mut tokens)
+		}
+		.number_percentage {
+			return parser.parse_number_percentage_value(mut tokens)
+		}
+	}
+}
+
+// https://drafts.csswg.org/css-transforms-1/#typedef-transform-function
+fn (mut parser Parser) parse_transform_function_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	part := transaction.consume() or { return none }
+	if !part.is_function() {
+		return none
+	}
+	function := transform_function_from_string(part.function().name) or { return none }
+
+	function_metadata := transform_function_metadata(function)
+	mut arguments :=
+		parse_a_comma_separated_list_of_component_values_for_value_logic(part.function().value)
+
+	if arguments.len > function_metadata.parameters.len {
+		return none
+	}
+
+	if arguments.len < function_metadata.parameters.len
+		&& function_metadata.parameters[arguments.len].required {
+		return none
+	}
+
+	mut values := StyleValueVector{}
+	for argument_index in 0 .. arguments.len {
+		mut argument_tokens := ComponentValueStream.new(arguments[argument_index])
+		argument_tokens.consume_whitespace()
+		value := parser.parse_transform_parameter_value(function_metadata.parameters[argument_index], mut
+			argument_tokens) or { return none }
+		values << value
+		if argument_tokens.has_more_tokens() {
+			return none
+		}
+	}
+
+	tokens = transaction
+	return StyleValue(TransformationStyleValue.create(.transform, function, values))
+}
+
+// https://drafts.csswg.org/css-transforms-1/#typedef-transform-list
+fn (mut parser Parser) parse_transform_list_value(mut tokens ComponentValueStream) ?StyleValue {
+	// <transform-list> = <transform-function>+
+	// https://www.w3.org/TR/css-transforms-1/#transform-property
+	mut transaction := tokens.clone()
+	mut transformations := StyleValueVector{}
+	for transaction.has_more_tokens() {
+		if maybe_function := parser.parse_transform_function_value(mut transaction) {
+			transformations << maybe_function
+			transaction.consume_whitespace()
+			continue
+		}
+		break
+	}
+	if transformations.len == 0 {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(StyleValueList.create(transformations, .space, .yes))
 }
 
 fn (mut parser Parser) parse_linear_gradient_function(function_name string, mut tokens ComponentValueStream) ?LinearGradientStyleValue {
