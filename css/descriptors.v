@@ -83,6 +83,7 @@ pub mut:
 	descriptors []Descriptor
 	readonly    bool
 	computed    bool
+	parent_rule ?&CSSRule
 }
 
 pub fn CSSDescriptors.create(at_rule_id AtRuleID, descriptors []Descriptor) &CSSDescriptors {
@@ -90,6 +91,10 @@ pub fn CSSDescriptors.create(at_rule_id AtRuleID, descriptors []Descriptor) &CSS
 		at_rule_id:  at_rule_id
 		descriptors: descriptors.clone()
 	}
+}
+
+pub fn (mut descriptors CSSDescriptors) set_parent_rule(rule ?&CSSRule) {
+	descriptors.parent_rule = rule
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-length

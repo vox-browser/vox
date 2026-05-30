@@ -539,6 +539,8 @@ pub fn CSSRule.create_page(selectors PageSelectorList, descriptors &CSSPageDescr
 	mut rule := CSSRule.create_grouping(.page, rules)
 	rule.page_selectors = selectors.clone()
 	rule.page_descriptors = descriptors
+	mut mutable_descriptors := unsafe { &CSSPageDescriptors(descriptors) }
+	mutable_descriptors.base.set_parent_rule(rule)
 	return rule
 }
 
