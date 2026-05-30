@@ -1133,6 +1133,8 @@ pub enum Keyword {
 	unset
 	auto
 	none_
+	visible
+	hidden
 	accentcolor
 	accentcolortext
 	activeborder
@@ -1256,6 +1258,8 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.unset { 'unset' }
 		.auto { 'auto' }
 		.none_ { 'none' }
+		.visible { 'visible' }
+		.hidden { 'hidden' }
 		.accentcolor { 'accentcolor' }
 		.accentcolortext { 'accentcolortext' }
 		.activeborder { 'activeborder' }
@@ -1368,6 +1372,8 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'unset' { Keyword.unset }
 		'auto' { Keyword.auto }
 		'none' { Keyword.none_ }
+		'visible' { Keyword.visible }
+		'hidden' { Keyword.hidden }
 		'accentcolor' { Keyword.accentcolor }
 		'accentcolortext' { Keyword.accentcolortext }
 		'activeborder' { Keyword.activeborder }

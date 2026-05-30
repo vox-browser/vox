@@ -875,6 +875,20 @@ fn computed_interpolation_style_value_is_revert_layer(value &dom.StyleValue) boo
 	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .revert_layer
 }
 
+fn keyword_to_content_visibility_for_computed_interpolation(keyword Keyword) ?ContentVisibility {
+	return match keyword {
+		.visible { ContentVisibility.visible }
+		.auto { ContentVisibility.auto_ }
+		.hidden { ContentVisibility.hidden }
+		else { none }
+	}
+}
+
+fn content_visibility_from_style_value(value &dom.StyleValue) ?ContentVisibility {
+	keyword := computed_interpolation_style_value_keyword(value) or { return none }
+	return keyword_to_content_visibility_for_computed_interpolation(keyword)
+}
+
 fn computed_interpolation_style_value_is_currentcolor(value &dom.StyleValue) bool {
 	return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .currentcolor
 }
@@ -1283,8 +1297,8 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 }
 
 pub fn (c &ComputedProperties) content_visibility() ContentVisibility {
-	if _ := c.property(.content_visibility, .yes) {
-		// Boundary: KeywordStyleValue conversion is not wired to dom.StyleValue yet.
+	if value := c.property(.content_visibility, .yes) {
+		return content_visibility_from_style_value(value) or { ContentVisibility.visible }
 	}
 	return .visible
 }
@@ -2109,7 +2123,30 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 		.custom {
 			if property_id == .content_visibility {
 				// https://drafts.csswg.org/css-contain/#content-visibility-animation
-				// Boundary: without KeywordStyleValue we cannot detect hidden/non-hidden; fall back to discrete behavior.
+				// In general, the content-visibility property’s animation type is discrete.
+				// However, similar to interpolation of visibility, during interpolation between hidden and any other content-visibility value,
+				// p values between 0 and 1 map to the non-hidden value.
+				from_content_visibility := content_visibility_from_style_value(from) or {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+				to_content_visibility := content_visibility_from_style_value(to) or {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+				if from_content_visibility == to_content_visibility {
+					return unsafe { from }
+				}
+				from_is_hidden := from_content_visibility == .hidden
+				to_is_hidden := to_content_visibility == .hidden
+				if from_is_hidden || to_is_hidden {
+					non_hidden_value := if from_is_hidden { to } else { from }
+					if delta <= 0 {
+						return unsafe { from }
+					}
+					if delta >= 1 {
+						return unsafe { to }
+					}
+					return unsafe { non_hidden_value }
+				}
 				return interpolate_discrete(from, to, delta, allow_discrete)
 			}
 			return interpolate_discrete(from, to, delta, allow_discrete)
