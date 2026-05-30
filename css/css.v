@@ -15,7 +15,12 @@ pub enum StyleInvalidationReason {
 }
 
 pub fn invalidate_style(doc &dom.Document, reason StyleInvalidationReason) {
-	// Stub: would invalidate style for the given reason
+	mapped_reason := match reason {
+		.base_url_changed { dom.StyleInvalidationReason.base_url_changed }
+		.hover_changed, .style_sheet_changed, .dom_mutation { dom.StyleInvalidationReason.style_change }
+	}
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.invalidate_style(mapped_reason)
 }
 
 // --- CSS Parsing stubs ---
