@@ -68,6 +68,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.mask_image { 'mask-image' }
 		.math_depth { 'math-depth' }
 		.math_style { 'math-style' }
+		.mix_blend_mode { 'mix-blend-mode' }
+		.object_fit { 'object-fit' }
 		.opacity { 'opacity' }
 		.order { 'order' }
 		.orphans { 'orphans' }
@@ -122,11 +124,11 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
-		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .order, .orphans,
-		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
-		.pointer_events, .position_anchor, .shape_image_threshold, .stop_color, .stop_opacity,
-		.stroke_opacity, .rotate, .scale, .transform, .translate, .webkit_text_fill_color,
-		.word_spacing {
+		.line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode, .object_fit,
+		.opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
+		.outline_width, .overflow_x, .overflow_y, .pointer_events, .position_anchor,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
+		.transform, .translate, .webkit_text_fill_color, .word_spacing {
 			true
 		}
 	}
@@ -149,17 +151,17 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.caret_color, .color, .color_scheme, .content_visibility, .corner_bottom_left_shape,
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
-		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .order, .orphans,
-		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
-		.pointer_events, .position_anchor, .shape_image_threshold, .stop_color, .stop_opacity,
-		.stroke_opacity, .rotate, .scale, .transform, .translate, .webkit_text_fill_color,
-		.word_spacing {
+		.line_height, .list_style_image, .math_depth, .math_style, .mix_blend_mode, .object_fit,
+		.opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style,
+		.outline_width, .overflow_x, .overflow_y, .pointer_events, .position_anchor,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
+		.transform, .translate, .webkit_text_fill_color, .word_spacing {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 76
+pub const number_of_longhand_properties = 78
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
@@ -218,35 +220,37 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		44 { PropertyID.mask_image }
 		45 { PropertyID.math_depth }
 		46 { PropertyID.math_style }
-		47 { PropertyID.opacity }
-		48 { PropertyID.order }
-		49 { PropertyID.orphans }
-		50 { PropertyID.outline_color }
-		51 { PropertyID.outline_offset }
-		52 { PropertyID.outline_style }
-		53 { PropertyID.outline_width }
-		54 { PropertyID.overflow_x }
-		55 { PropertyID.overflow_y }
-		56 { PropertyID.pointer_events }
-		57 { PropertyID.position_anchor }
-		58 { PropertyID.shape_image_threshold }
-		59 { PropertyID.stop_color }
-		60 { PropertyID.stop_opacity }
-		61 { PropertyID.stroke_opacity }
-		62 { PropertyID.rotate }
-		63 { PropertyID.scale }
-		64 { PropertyID.scroll_timeline_name }
-		65 { PropertyID.transform }
-		66 { PropertyID.transition_behavior }
-		67 { PropertyID.transition_delay }
-		68 { PropertyID.transition_duration }
-		69 { PropertyID.transition_property }
-		70 { PropertyID.transition_timing_function }
-		71 { PropertyID.translate }
-		72 { PropertyID.view_timeline_inset }
-		73 { PropertyID.view_timeline_name }
-		74 { PropertyID.webkit_text_fill_color }
-		75 { PropertyID.word_spacing }
+		47 { PropertyID.mix_blend_mode }
+		48 { PropertyID.object_fit }
+		49 { PropertyID.opacity }
+		50 { PropertyID.order }
+		51 { PropertyID.orphans }
+		52 { PropertyID.outline_color }
+		53 { PropertyID.outline_offset }
+		54 { PropertyID.outline_style }
+		55 { PropertyID.outline_width }
+		56 { PropertyID.overflow_x }
+		57 { PropertyID.overflow_y }
+		58 { PropertyID.pointer_events }
+		59 { PropertyID.position_anchor }
+		60 { PropertyID.shape_image_threshold }
+		61 { PropertyID.stop_color }
+		62 { PropertyID.stop_opacity }
+		63 { PropertyID.stroke_opacity }
+		64 { PropertyID.rotate }
+		65 { PropertyID.scale }
+		66 { PropertyID.scroll_timeline_name }
+		67 { PropertyID.transform }
+		68 { PropertyID.transition_behavior }
+		69 { PropertyID.transition_delay }
+		70 { PropertyID.transition_duration }
+		71 { PropertyID.transition_property }
+		72 { PropertyID.transition_timing_function }
+		73 { PropertyID.translate }
+		74 { PropertyID.view_timeline_inset }
+		75 { PropertyID.view_timeline_name }
+		76 { PropertyID.webkit_text_fill_color }
+		77 { PropertyID.word_spacing }
 		else { none }
 	}
 }

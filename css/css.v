@@ -81,6 +81,8 @@ pub enum PropertyID {
 	mask_image
 	math_depth
 	math_style
+	mix_blend_mode
+	object_fit
 	opacity
 	order
 	orphans

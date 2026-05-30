@@ -243,6 +243,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'math-style' {
 			PropertyID.math_style
 		}
+		'mix-blend-mode' {
+			PropertyID.mix_blend_mode
+		}
+		'object-fit' {
+			PropertyID.object_fit
+		}
 		'opacity' {
 			PropertyID.opacity
 		}
@@ -397,7 +403,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.content_visibility {
 			false
 		}
-		.outline_style, .overflow_x, .overflow_y, .pointer_events {
+		.mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y, .pointer_events {
 			false
 		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
@@ -572,6 +578,14 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.pointer_events {
 			lowercase_value in ['auto', 'all', 'none']
 		}
+		.mix_blend_mode {
+			lowercase_value in ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten',
+				'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion',
+				'hue', 'saturation', 'color', 'luminosity', 'plus-darker', 'plus-lighter']
+		}
+		.object_fit {
+			lowercase_value in ['fill', 'contain', 'cover', 'none', 'scale-down']
+		}
 		.font_feature_settings, .font_variation_settings {
 			lowercase_value == 'normal'
 		}
@@ -627,9 +641,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.accent_color, .background_color, .background_image, .border_bottom_color,
 		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
-		.caret_color, .color, .flood_color, .list_style_image, .mask_image, .outline_color,
-		.outline_style, .overflow_x, .overflow_y, .pointer_events, .stop_color,
-		.view_timeline_inset, .webkit_text_fill_color {
+		.caret_color, .color, .flood_color, .list_style_image, .mask_image, .mix_blend_mode,
+		.object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y, .pointer_events,
+		.stop_color, .view_timeline_inset, .webkit_text_fill_color {
 			false
 		}
 		.color_scheme {
@@ -1674,6 +1688,27 @@ pub enum Keyword {
 	outset
 	clip
 	scroll
+	fill
+	contain
+	cover
+	scale_down
+	multiply
+	screen
+	overlay
+	darken
+	lighten
+	color_dodge
+	color_burn
+	hard_light
+	soft_light
+	difference
+	exclusion
+	hue
+	saturation
+	color
+	luminosity
+	plus_darker
+	plus_lighter
 	normal
 	compact
 	bold
@@ -1848,6 +1883,27 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.outset { 'outset' }
 		.clip { 'clip' }
 		.scroll { 'scroll' }
+		.fill { 'fill' }
+		.contain { 'contain' }
+		.cover { 'cover' }
+		.scale_down { 'scale-down' }
+		.multiply { 'multiply' }
+		.screen { 'screen' }
+		.overlay { 'overlay' }
+		.darken { 'darken' }
+		.lighten { 'lighten' }
+		.color_dodge { 'color-dodge' }
+		.color_burn { 'color-burn' }
+		.hard_light { 'hard-light' }
+		.soft_light { 'soft-light' }
+		.difference { 'difference' }
+		.exclusion { 'exclusion' }
+		.hue { 'hue' }
+		.saturation { 'saturation' }
+		.color { 'color' }
+		.luminosity { 'luminosity' }
+		.plus_darker { 'plus-darker' }
+		.plus_lighter { 'plus-lighter' }
 		.normal { 'normal' }
 		.compact { 'compact' }
 		.bold { 'bold' }
@@ -2011,6 +2067,27 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'outset' { Keyword.outset }
 		'clip' { Keyword.clip }
 		'scroll' { Keyword.scroll }
+		'fill' { Keyword.fill }
+		'contain' { Keyword.contain }
+		'cover' { Keyword.cover }
+		'scale-down' { Keyword.scale_down }
+		'multiply' { Keyword.multiply }
+		'screen' { Keyword.screen }
+		'overlay' { Keyword.overlay }
+		'darken' { Keyword.darken }
+		'lighten' { Keyword.lighten }
+		'color-dodge' { Keyword.color_dodge }
+		'color-burn' { Keyword.color_burn }
+		'hard-light' { Keyword.hard_light }
+		'soft-light' { Keyword.soft_light }
+		'difference' { Keyword.difference }
+		'exclusion' { Keyword.exclusion }
+		'hue' { Keyword.hue }
+		'saturation' { Keyword.saturation }
+		'color' { Keyword.color }
+		'luminosity' { Keyword.luminosity }
+		'plus-darker' { Keyword.plus_darker }
+		'plus-lighter' { Keyword.plus_lighter }
 		'normal' { Keyword.normal }
 		'compact' { Keyword.compact }
 		'bold' { Keyword.bold }

@@ -552,6 +552,18 @@ pub enum MixBlendMode {
 	overlay
 	darken
 	lighten
+	color_dodge
+	color_burn
+	hard_light
+	soft_light
+	difference
+	exclusion
+	hue
+	saturation
+	color
+	luminosity
+	plus_darker
+	plus_lighter
 }
 
 pub enum TransformBox {
@@ -914,6 +926,12 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.math_style {
 			'normal'
 		}
+		.mix_blend_mode {
+			'normal'
+		}
+		.object_fit {
+			'fill'
+		}
 		.opacity {
 			'1'
 		}
@@ -1024,8 +1042,9 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		}
 		.anchor_name, .anchor_scope, .animation_composition, .animation_direction,
 		.animation_fill_mode, .animation_play_state, .color_scheme, .content_visibility,
-		.math_style, .outline_style, .overflow_x, .overflow_y, .pointer_events, .position_anchor,
-		.scroll_timeline_name, .transition_behavior, .transition_property, .view_timeline_name {
+		.math_style, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
+		.pointer_events, .position_anchor, .scroll_timeline_name, .transition_behavior,
+		.transition_property, .view_timeline_name {
 			false
 		}
 	}
@@ -1052,12 +1071,12 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
 		.caret_color, .color_scheme, .content_visibility, .fill_opacity, .flood_opacity,
 		.font_feature_settings, .font_variation_settings, .line_height, .list_style_image,
-		.mask_image, .math_style, .opacity, .order, .orphans, .outline_color, .outline_offset,
-		.outline_style, .overflow_x, .overflow_y, .pointer_events, .position_anchor,
-		.scroll_timeline_name, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate,
-		.scale, .transform, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .translate, .view_timeline_inset,
-		.view_timeline_name, .webkit_text_fill_color {
+		.mask_image, .math_style, .mix_blend_mode, .object_fit, .opacity, .order, .orphans,
+		.outline_color, .outline_offset, .outline_style, .overflow_x, .overflow_y, .pointer_events,
+		.position_anchor, .scroll_timeline_name, .shape_image_threshold, .stop_opacity,
+		.stroke_opacity, .rotate, .scale, .transform, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .translate,
+		.view_timeline_inset, .view_timeline_name, .webkit_text_fill_color {
 			false
 		}
 	}
@@ -2029,8 +2048,16 @@ pub fn (c &ComputedProperties) grid_template_areas() GridTemplateAreas {
 }
 
 pub fn (c &ComputedProperties) object_fit() ObjectFit {
-	_ = c
-	return .fill
+	value := c.property(.object_fit, .yes) or { return .fill }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .fill }
+	return match keyword {
+		.fill { ObjectFit.fill }
+		.contain { ObjectFit.contain }
+		.cover { ObjectFit.cover }
+		.none_ { ObjectFit.none_ }
+		.scale_down { ObjectFit.scale_down }
+		else { ObjectFit.fill }
+	}
 }
 
 pub fn (c &ComputedProperties) object_position() Position {
@@ -2084,8 +2111,29 @@ pub fn (c &ComputedProperties) container_type() ContainerType {
 }
 
 pub fn (c &ComputedProperties) mix_blend_mode() MixBlendMode {
-	_ = c
-	return .normal
+	value := c.property(.mix_blend_mode, .yes) or { return .normal }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .normal }
+	return match keyword {
+		.normal { MixBlendMode.normal }
+		.multiply { MixBlendMode.multiply }
+		.screen { MixBlendMode.screen }
+		.overlay { MixBlendMode.overlay }
+		.darken { MixBlendMode.darken }
+		.lighten { MixBlendMode.lighten }
+		.color_dodge { MixBlendMode.color_dodge }
+		.color_burn { MixBlendMode.color_burn }
+		.hard_light { MixBlendMode.hard_light }
+		.soft_light { MixBlendMode.soft_light }
+		.difference { MixBlendMode.difference }
+		.exclusion { MixBlendMode.exclusion }
+		.hue { MixBlendMode.hue }
+		.saturation { MixBlendMode.saturation }
+		.color { MixBlendMode.color }
+		.luminosity { MixBlendMode.luminosity }
+		.plus_darker { MixBlendMode.plus_darker }
+		.plus_lighter { MixBlendMode.plus_lighter }
+		else { MixBlendMode.normal }
+	}
 }
 
 pub fn (c &ComputedProperties) view_transition_name() ?string {
@@ -2860,8 +2908,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 			.custom
 		}
 		.anchor_name, .anchor_scope, .background_image, .border_image_source, .color_scheme,
-		.list_style_image, .mask_image, .overflow_x, .overflow_y, .pointer_events,
-		.position_anchor {
+		.list_style_image, .mask_image, .mix_blend_mode, .object_fit, .overflow_x, .overflow_y,
+		.pointer_events, .position_anchor {
 			.discrete
 		}
 	}
@@ -3564,11 +3612,12 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_feature_settings, .font_style,
 		.font_variation_settings, .font_weight, .font_width, .line_height, .mask_image,
-		.math_depth, .math_style, .opacity, .outline_color, .outline_offset, .outline_style,
-		.outline_width, .pointer_events, .shape_image_threshold, .stop_color, .stop_opacity,
-		.stroke_opacity, .rotate, .scale, .scroll_timeline_name, .transform, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.translate, .view_timeline_inset, .view_timeline_name, .webkit_text_fill_color {
+		.math_depth, .math_style, .mix_blend_mode, .object_fit, .opacity, .outline_color,
+		.outline_offset, .outline_style, .outline_width, .pointer_events, .shape_image_threshold,
+		.stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale, .scroll_timeline_name,
+		.transform, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .translate, .view_timeline_inset,
+		.view_timeline_name, .webkit_text_fill_color {
 			false
 		}
 		.anchor_name, .aspect_ratio, .letter_spacing, .list_style_image, .order, .orphans,
@@ -3583,7 +3632,7 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		// None of the currently translated longhands maps to the C++ generated
 		// affects-stacking-context metadata. ContentVisibility is handled by the
 		// full-invalidation branch above.
-		.mask_image, .opacity, .rotate, .scale, .transform, .translate {
+		.mask_image, .mix_blend_mode, .opacity, .rotate, .scale, .transform, .translate {
 			true
 		}
 		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
@@ -3596,9 +3645,9 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity,
 		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.letter_spacing, .line_height, .list_style_image, .math_depth, .math_style, .order,
-		.orphans, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x,
-		.overflow_y, .pointer_events, .position_anchor, .scroll_timeline_name,
+		.letter_spacing, .line_height, .list_style_image, .math_depth, .math_style, .object_fit,
+		.order, .orphans, .outline_color, .outline_offset, .outline_style, .outline_width,
+		.overflow_x, .overflow_y, .pointer_events, .position_anchor, .scroll_timeline_name,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .transition_behavior,
 		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
 		.view_timeline_inset, .view_timeline_name, .webkit_text_fill_color, .word_spacing {
@@ -3608,9 +3657,11 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 }
 
 fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&dom.StyleValue) bool {
-	_ = property_id
 	if value == none {
 		return false
+	}
+	if property_id == .mix_blend_mode {
+		return computed_interpolation_style_value_keyword(value) or { Keyword.invalid } != .normal
 	}
 	// Boundary: the C++ implementation checks typed DOM StyleValue subclasses
 	// (opacity numbers, keywords, lists, transforms, filters). The V DOM
@@ -3622,7 +3673,7 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 	return match property_id {
 		// The translated PropertyID enum does not yet include perspective, clip,
 		// mix-blend-mode, or filter.
-		.mask_image, .opacity, .rotate, .scale, .transform, .translate {
+		.mask_image, .mix_blend_mode, .opacity, .rotate, .scale, .transform, .translate {
 			true
 		}
 		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
@@ -3635,9 +3686,9 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity,
 		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
-		.letter_spacing, .line_height, .list_style_image, .math_depth, .math_style, .order,
-		.orphans, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x,
-		.overflow_y, .pointer_events, .position_anchor, .scroll_timeline_name,
+		.letter_spacing, .line_height, .list_style_image, .math_depth, .math_style, .object_fit,
+		.order, .orphans, .outline_color, .outline_offset, .outline_style, .outline_width,
+		.overflow_x, .overflow_y, .pointer_events, .position_anchor, .scroll_timeline_name,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .transition_behavior,
 		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
 		.view_timeline_inset, .view_timeline_name, .webkit_text_fill_color, .word_spacing {

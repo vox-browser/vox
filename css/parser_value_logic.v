@@ -326,6 +326,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.math_style {
 			return parser.parse_math_style_value(mut tokens)
 		}
+		.mix_blend_mode {
+			return parser.parse_mix_blend_mode_value(mut tokens)
+		}
+		.object_fit {
+			return parser.parse_object_fit_value(mut tokens)
+		}
 		.rotate {
 			return parser.parse_rotate_value(mut tokens)
 		}
@@ -1099,6 +1105,36 @@ fn (mut parser Parser) parse_overflow_value(mut tokens ComponentValueStream) ?St
 fn (mut parser Parser) parse_pointer_events_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'all', 'none'])
+}
+
+fn (mut parser Parser) parse_mix_blend_mode_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, [
+		'normal',
+		'multiply',
+		'screen',
+		'overlay',
+		'darken',
+		'lighten',
+		'color-dodge',
+		'color-burn',
+		'hard-light',
+		'soft-light',
+		'difference',
+		'exclusion',
+		'hue',
+		'saturation',
+		'color',
+		'luminosity',
+		'plus-darker',
+		'plus-lighter',
+	])
+}
+
+fn (mut parser Parser) parse_object_fit_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens,
+		['fill', 'contain', 'cover', 'none', 'scale-down'])
 }
 
 fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {
