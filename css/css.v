@@ -69,13 +69,16 @@ pub enum ContentVisibility {
 
 pub struct RequiredInvalidationAfterStyleChange {
 pub mut:
-	relayout                      bool
-	rebuild_layout_tree           bool
-	rebuild_stacking_context_tree bool
+	repaint                             bool
+	rebuild_stacking_context_tree       bool
+	relayout                            bool
+	rebuild_layout_tree                 bool
+	rebuild_accumulated_visual_contexts bool
 }
 
 pub fn (r RequiredInvalidationAfterStyleChange) is_none() bool {
-	return !r.relayout && !r.rebuild_layout_tree && !r.rebuild_stacking_context_tree
+	return !r.repaint && !r.rebuild_stacking_context_tree && !r.relayout && !r.rebuild_layout_tree
+		&& !r.rebuild_accumulated_visual_contexts
 }
 
 // --- StyleComputer user agent source ---

@@ -2747,10 +2747,7 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 	// NOTE: If the computed CSS display, position, content, or content-visibility property changes, we have to rebuild the entire layout tree.
 	//       In the future, we should figure out ways to rebuild a smaller part of the tree.
 	if property_requires_full_invalidation(property_id) {
-		invalidation.relayout = true
-		invalidation.rebuild_layout_tree = true
-		invalidation.rebuild_stacking_context_tree = true
-		return invalidation
+		return required_invalidation_after_style_change_full()
 	}
 
 	if property_affects_layout_generated_metadata_boundary(property_id) {
@@ -2768,17 +2765,16 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 	}
 
 	if property_rebuilds_accumulated_visual_contexts(property_id) {
-		// The C++ struct has a rebuild_accumulated_visual_contexts field; the V
-		// RequiredInvalidationAfterStyleChange has not grown that field yet.
+		invalidation.rebuild_accumulated_visual_contexts = true
 	}
 
-	// The C++ struct also tracks repaint and accumulated visual context rebuilds. The existing V
-	// RequiredInvalidationAfterStyleChange has not grown those fields yet.
+	invalidation.repaint = true
 	return invalidation
 }
 
 pub fn required_invalidation_after_style_change_full() RequiredInvalidationAfterStyleChange {
 	return RequiredInvalidationAfterStyleChange{
+		repaint:                       true
 		relayout:                      true
 		rebuild_layout_tree:           true
 		rebuild_stacking_context_tree: true
@@ -2786,16 +2782,19 @@ pub fn required_invalidation_after_style_change_full() RequiredInvalidationAfter
 }
 
 pub fn required_invalidation_after_style_change_is_full(invalidation RequiredInvalidationAfterStyleChange) bool {
-	return invalidation.relayout && invalidation.rebuild_layout_tree
-		&& invalidation.rebuild_stacking_context_tree
+	return invalidation.repaint && invalidation.rebuild_stacking_context_tree
+		&& invalidation.relayout && invalidation.rebuild_layout_tree
 }
 
 pub fn required_invalidation_after_style_change_or(left RequiredInvalidationAfterStyleChange, right RequiredInvalidationAfterStyleChange) RequiredInvalidationAfterStyleChange {
 	return RequiredInvalidationAfterStyleChange{
-		relayout:                      left.relayout || right.relayout
-		rebuild_layout_tree:           left.rebuild_layout_tree || right.rebuild_layout_tree
-		rebuild_stacking_context_tree: left.rebuild_stacking_context_tree
+		repaint:                             left.repaint || right.repaint
+		relayout:                            left.relayout || right.relayout
+		rebuild_layout_tree:                 left.rebuild_layout_tree || right.rebuild_layout_tree
+		rebuild_stacking_context_tree:       left.rebuild_stacking_context_tree
 			|| right.rebuild_stacking_context_tree
+		rebuild_accumulated_visual_contexts: left.rebuild_accumulated_visual_contexts
+			|| right.rebuild_accumulated_visual_contexts
 	}
 }
 
