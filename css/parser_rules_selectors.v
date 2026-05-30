@@ -2523,8 +2523,23 @@ fn parser_selector_text_is_syntactically_valid(selector_text string, mode Parser
 fn parser_balanced_selector_text(text string) bool {
 	mut parens := 0
 	mut squares := 0
-	for ch in text {
+	mut quote := u8(0)
+	mut i := 0
+	for i < text.len {
+		ch := text[i]
+		if quote != 0 {
+			if ch == `\\` && i + 1 < text.len {
+				i += 2
+				continue
+			}
+			if ch == quote {
+				quote = 0
+			}
+			i++
+			continue
+		}
 		match ch {
+			`"`, `'` { quote = ch }
 			`(` { parens++ }
 			`)` { parens-- }
 			`[` { squares++ }
@@ -2535,8 +2550,9 @@ fn parser_balanced_selector_text(text string) bool {
 		if parens < 0 || squares < 0 {
 			return false
 		}
+		i++
 	}
-	return parens == 0 && squares == 0
+	return parens == 0 && squares == 0 && quote == 0
 }
 
 fn parser_selector_uses_undeclared_namespace(text string, declared_namespaces map[string]bool) bool {

@@ -761,7 +761,7 @@ fn computed_interpolation_empty_style_value() &dom.StyleValue {
 fn style_value_option_changed(old_value ?&dom.StyleValue, new_value ?&dom.StyleValue) bool {
 	if old := old_value {
 		if new := new_value {
-			return old != new
+			return old.css_text != new.css_text
 		}
 		return true
 	}
