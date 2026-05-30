@@ -264,6 +264,15 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'outline-width' {
 			PropertyID.outline_width
 		}
+		'overflow-x' {
+			PropertyID.overflow_x
+		}
+		'overflow-y' {
+			PropertyID.overflow_y
+		}
+		'pointer-events' {
+			PropertyID.pointer_events
+		}
 		'position-anchor' {
 			PropertyID.position_anchor
 		}
@@ -388,7 +397,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.content_visibility {
 			false
 		}
-		.outline_style {
+		.outline_style, .overflow_x, .overflow_y, .pointer_events {
 			false
 		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
@@ -557,6 +566,12 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['auto', 'none', 'dotted', 'dashed', 'solid', 'double', 'groove',
 				'ridge', 'inset', 'outset']
 		}
+		.overflow_x, .overflow_y {
+			lowercase_value in ['auto', 'clip', 'hidden', 'scroll', 'visible', 'overlay']
+		}
+		.pointer_events {
+			lowercase_value in ['auto', 'all', 'none']
+		}
 		.font_feature_settings, .font_variation_settings {
 			lowercase_value == 'normal'
 		}
@@ -613,7 +628,8 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.accent_color, .background_color, .background_image, .border_bottom_color,
 		.border_image_source, .border_left_color, .border_right_color, .border_top_color,
 		.caret_color, .color, .flood_color, .list_style_image, .mask_image, .outline_color,
-		.outline_style, .stop_color, .view_timeline_inset, .webkit_text_fill_color {
+		.outline_style, .overflow_x, .overflow_y, .pointer_events, .stop_color,
+		.view_timeline_inset, .webkit_text_fill_color {
 			false
 		}
 		.color_scheme {
@@ -1656,6 +1672,8 @@ pub enum Keyword {
 	ridge
 	inset
 	outset
+	clip
+	scroll
 	normal
 	compact
 	bold
@@ -1828,6 +1846,8 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.ridge { 'ridge' }
 		.inset { 'inset' }
 		.outset { 'outset' }
+		.clip { 'clip' }
+		.scroll { 'scroll' }
 		.normal { 'normal' }
 		.compact { 'compact' }
 		.bold { 'bold' }
@@ -1989,6 +2009,8 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'ridge' { Keyword.ridge }
 		'inset' { Keyword.inset }
 		'outset' { Keyword.outset }
+		'clip' { Keyword.clip }
+		'scroll' { Keyword.scroll }
 		'normal' { Keyword.normal }
 		'compact' { Keyword.compact }
 		'bold' { Keyword.bold }

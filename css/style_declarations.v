@@ -75,6 +75,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.outline_offset { 'outline-offset' }
 		.outline_style { 'outline-style' }
 		.outline_width { 'outline-width' }
+		.overflow_x { 'overflow-x' }
+		.overflow_y { 'overflow-y' }
+		.pointer_events { 'pointer-events' }
 		.position_anchor { 'position-anchor' }
 		.shape_image_threshold { 'shape-image-threshold' }
 		.stop_color { 'stop-color' }
@@ -120,9 +123,10 @@ pub fn property_is_single_valued(property_id PropertyID) bool {
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
 		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .order, .orphans,
-		.outline_color, .outline_offset, .outline_style, .outline_width, .position_anchor,
-		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.transform, .translate, .webkit_text_fill_color, .word_spacing {
+		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
+		.pointer_events, .position_anchor, .shape_image_threshold, .stop_color, .stop_opacity,
+		.stroke_opacity, .rotate, .scale, .transform, .translate, .webkit_text_fill_color,
+		.word_spacing {
 			true
 		}
 	}
@@ -146,15 +150,16 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
 		.flood_color, .flood_opacity, .font_style, .font_weight, .font_width, .letter_spacing,
 		.line_height, .list_style_image, .math_depth, .math_style, .opacity, .order, .orphans,
-		.outline_color, .outline_offset, .outline_style, .outline_width, .position_anchor,
-		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .rotate, .scale,
-		.transform, .translate, .webkit_text_fill_color, .word_spacing {
+		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
+		.pointer_events, .position_anchor, .shape_image_threshold, .stop_color, .stop_opacity,
+		.stroke_opacity, .rotate, .scale, .transform, .translate, .webkit_text_fill_color,
+		.word_spacing {
 			false
 		}
 	}
 }
 
-pub const number_of_longhand_properties = 73
+pub const number_of_longhand_properties = 76
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
@@ -220,25 +225,28 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		51 { PropertyID.outline_offset }
 		52 { PropertyID.outline_style }
 		53 { PropertyID.outline_width }
-		54 { PropertyID.position_anchor }
-		55 { PropertyID.shape_image_threshold }
-		56 { PropertyID.stop_color }
-		57 { PropertyID.stop_opacity }
-		58 { PropertyID.stroke_opacity }
-		59 { PropertyID.rotate }
-		60 { PropertyID.scale }
-		61 { PropertyID.scroll_timeline_name }
-		62 { PropertyID.transform }
-		63 { PropertyID.transition_behavior }
-		64 { PropertyID.transition_delay }
-		65 { PropertyID.transition_duration }
-		66 { PropertyID.transition_property }
-		67 { PropertyID.transition_timing_function }
-		68 { PropertyID.translate }
-		69 { PropertyID.view_timeline_inset }
-		70 { PropertyID.view_timeline_name }
-		71 { PropertyID.webkit_text_fill_color }
-		72 { PropertyID.word_spacing }
+		54 { PropertyID.overflow_x }
+		55 { PropertyID.overflow_y }
+		56 { PropertyID.pointer_events }
+		57 { PropertyID.position_anchor }
+		58 { PropertyID.shape_image_threshold }
+		59 { PropertyID.stop_color }
+		60 { PropertyID.stop_opacity }
+		61 { PropertyID.stroke_opacity }
+		62 { PropertyID.rotate }
+		63 { PropertyID.scale }
+		64 { PropertyID.scroll_timeline_name }
+		65 { PropertyID.transform }
+		66 { PropertyID.transition_behavior }
+		67 { PropertyID.transition_delay }
+		68 { PropertyID.transition_duration }
+		69 { PropertyID.transition_property }
+		70 { PropertyID.transition_timing_function }
+		71 { PropertyID.translate }
+		72 { PropertyID.view_timeline_inset }
+		73 { PropertyID.view_timeline_name }
+		74 { PropertyID.webkit_text_fill_color }
+		75 { PropertyID.word_spacing }
 		else { none }
 	}
 }

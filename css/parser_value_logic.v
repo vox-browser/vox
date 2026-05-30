@@ -253,6 +253,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.outline_style {
 			return parser.parse_outline_style_value(mut tokens)
 		}
+		.overflow_x, .overflow_y {
+			return parser.parse_overflow_value(mut tokens)
+		}
+		.pointer_events {
+			return parser.parse_pointer_events_value(mut tokens)
+		}
 		.position_anchor {
 			return parser.parse_position_anchor_value(mut tokens)
 		}
@@ -1080,6 +1086,22 @@ fn (mut parser Parser) parse_border_or_outline_width_value(mut tokens ComponentV
 
 fn (mut parser Parser) parse_outline_style_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'none', 'dotted', 'dashed', 'solid',
+		'double', 'groove', 'ridge', 'inset', 'outset'])
+}
+
+fn (mut parser Parser) parse_overflow_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'clip', 'hidden', 'scroll', 'visible',
+		'overlay'])
+}
+
+fn (mut parser Parser) parse_pointer_events_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'all', 'none'])
+}
+
+fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	component_value := transaction.consume() or { return none }
@@ -1087,15 +1109,16 @@ fn (mut parser Parser) parse_outline_style_value(mut tokens ComponentValueStream
 		return none
 	}
 	ident := to_ascii_lowercase(component_value.token().ident())
-	if ident !in ['auto', 'none', 'dotted', 'dashed', 'solid', 'double', 'groove', 'ridge', 'inset',
-		'outset'] {
+	if ident !in allowed_keywords {
 		return none
 	}
 	transaction.consume_whitespace()
 	if transaction.has_more_tokens() {
 		return none
 	}
-	keyword := keyword_from_string(ident) or { return none }
+	// `overlay` is a legacy overflow alias whose generated metadata maps it to `auto`.
+	keyword := if ident == 'overlay' { Keyword.auto } else { keyword_from_string(ident) or {
+			return none} }
 	tokens = transaction
 	return StyleValue(KeywordStyleValue.create(keyword))
 }

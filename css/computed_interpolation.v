@@ -426,6 +426,7 @@ pub enum BoxSizing {
 
 pub enum PointerEvents {
 	auto_
+	all
 	none_
 }
 
@@ -934,6 +935,12 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.outline_width {
 			'medium'
 		}
+		.overflow_x, .overflow_y {
+			'visible'
+		}
+		.pointer_events {
+			'auto'
+		}
 		.position_anchor {
 			'auto'
 		}
@@ -988,7 +995,7 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
 		.accent_color, .caret_color, .color, .color_scheme, .fill_opacity, .font_style,
 		.font_weight, .letter_spacing, .list_style_image, .math_depth, .math_style, .orphans,
-		.stroke_opacity, .webkit_text_fill_color, .word_spacing {
+		.pointer_events, .stroke_opacity, .webkit_text_fill_color, .word_spacing {
 			true
 		}
 		else {
@@ -1017,8 +1024,8 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		}
 		.anchor_name, .anchor_scope, .animation_composition, .animation_direction,
 		.animation_fill_mode, .animation_play_state, .color_scheme, .content_visibility,
-		.math_style, .outline_style, .position_anchor, .scroll_timeline_name, .transition_behavior,
-		.transition_property, .view_timeline_name {
+		.math_style, .outline_style, .overflow_x, .overflow_y, .pointer_events, .position_anchor,
+		.scroll_timeline_name, .transition_behavior, .transition_property, .view_timeline_name {
 			false
 		}
 	}
@@ -1046,10 +1053,11 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.caret_color, .color_scheme, .content_visibility, .fill_opacity, .flood_opacity,
 		.font_feature_settings, .font_variation_settings, .line_height, .list_style_image,
 		.mask_image, .math_style, .opacity, .order, .orphans, .outline_color, .outline_offset,
-		.outline_style, .position_anchor, .scroll_timeline_name, .shape_image_threshold,
-		.stop_opacity, .stroke_opacity, .rotate, .scale, .transform, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.translate, .view_timeline_inset, .view_timeline_name, .webkit_text_fill_color {
+		.outline_style, .overflow_x, .overflow_y, .pointer_events, .position_anchor,
+		.scroll_timeline_name, .shape_image_threshold, .stop_opacity, .stroke_opacity, .rotate,
+		.scale, .transform, .transition_behavior, .transition_delay, .transition_duration,
+		.transition_property, .transition_timing_function, .translate, .view_timeline_inset,
+		.view_timeline_name, .webkit_text_fill_color {
 			false
 		}
 	}
@@ -1844,14 +1852,29 @@ pub fn (c &ComputedProperties) justify_self() JustifySelf {
 	return .auto_
 }
 
+fn keyword_to_overflow_for_computed_properties(keyword Keyword) ?Overflow {
+	return match keyword {
+		.visible { Overflow.visible }
+		.hidden { Overflow.hidden }
+		.clip { Overflow.clip }
+		.scroll { Overflow.scroll }
+		.auto { Overflow.auto_ }
+		else { none }
+	}
+}
+
+pub fn (c &ComputedProperties) overflow(property_id PropertyID) Overflow {
+	value := c.property(property_id, .yes) or { return .visible }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .visible }
+	return keyword_to_overflow_for_computed_properties(keyword) or { Overflow.visible }
+}
+
 pub fn (c &ComputedProperties) overflow_x() Overflow {
-	_ = c
-	return .visible
+	return c.overflow(.overflow_x)
 }
 
 pub fn (c &ComputedProperties) overflow_y() Overflow {
-	_ = c
-	return .visible
+	return c.overflow(.overflow_y)
 }
 
 pub fn (c &ComputedProperties) box_shadow(layout_node &dom.LayoutNode) []ShadowData {
@@ -1865,9 +1888,19 @@ pub fn (c &ComputedProperties) box_sizing() BoxSizing {
 	return .content_box
 }
 
+fn keyword_to_pointer_events_for_computed_properties(keyword Keyword) ?PointerEvents {
+	return match keyword {
+		.auto { PointerEvents.auto_ }
+		.all { PointerEvents.all }
+		.none_ { PointerEvents.none_ }
+		else { none }
+	}
+}
+
 pub fn (c &ComputedProperties) pointer_events() PointerEvents {
-	_ = c
-	return .auto_
+	value := c.property(.pointer_events, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return keyword_to_pointer_events_for_computed_properties(keyword) or { PointerEvents.auto_ }
 }
 
 pub fn (c &ComputedProperties) vertical_align() VerticalAlign {
@@ -2827,7 +2860,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 			.custom
 		}
 		.anchor_name, .anchor_scope, .background_image, .border_image_source, .color_scheme,
-		.list_style_image, .mask_image, .position_anchor {
+		.list_style_image, .mask_image, .overflow_x, .overflow_y, .pointer_events,
+		.position_anchor {
 			.discrete
 		}
 	}
@@ -3531,14 +3565,14 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.flood_color, .flood_opacity, .font_feature_settings, .font_style,
 		.font_variation_settings, .font_weight, .font_width, .line_height, .mask_image,
 		.math_depth, .math_style, .opacity, .outline_color, .outline_offset, .outline_style,
-		.outline_width, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity,
-		.rotate, .scale, .scroll_timeline_name, .transform, .transition_behavior,
+		.outline_width, .pointer_events, .shape_image_threshold, .stop_color, .stop_opacity,
+		.stroke_opacity, .rotate, .scale, .scroll_timeline_name, .transform, .transition_behavior,
 		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
 		.translate, .view_timeline_inset, .view_timeline_name, .webkit_text_fill_color {
 			false
 		}
 		.anchor_name, .aspect_ratio, .letter_spacing, .list_style_image, .order, .orphans,
-		.position_anchor, .word_spacing {
+		.overflow_x, .overflow_y, .position_anchor, .word_spacing {
 			true
 		}
 	}
@@ -3563,10 +3597,10 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity,
 		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
 		.letter_spacing, .line_height, .list_style_image, .math_depth, .math_style, .order,
-		.orphans, .outline_color, .outline_offset, .outline_style, .outline_width,
-		.position_anchor, .scroll_timeline_name, .shape_image_threshold, .stop_color,
-		.stop_opacity, .stroke_opacity, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function,
+		.orphans, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x,
+		.overflow_y, .pointer_events, .position_anchor, .scroll_timeline_name,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
 		.view_timeline_inset, .view_timeline_name, .webkit_text_fill_color, .word_spacing {
 			false
 		}
@@ -3602,10 +3636,10 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity,
 		.font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width,
 		.letter_spacing, .line_height, .list_style_image, .math_depth, .math_style, .order,
-		.orphans, .outline_color, .outline_offset, .outline_style, .outline_width,
-		.position_anchor, .scroll_timeline_name, .shape_image_threshold, .stop_color,
-		.stop_opacity, .stroke_opacity, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function,
+		.orphans, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x,
+		.overflow_y, .pointer_events, .position_anchor, .scroll_timeline_name,
+		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_opacity, .transition_behavior,
+		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
 		.view_timeline_inset, .view_timeline_name, .webkit_text_fill_color, .word_spacing {
 			false
 		}
@@ -5824,8 +5858,31 @@ pub fn (s &StyleComputer) start_needed_transitions(old_style &ComputedProperties
 
 pub fn (s &StyleComputer) resolve_effective_overflow_values(mut computed_properties ComputedProperties) {
 	_ = s
-	_ = computed_properties
-	// Boundary: requires overflow-x/overflow-y longhands.
+	// https://www.w3.org/TR/css-overflow-3/#overflow-control
+	// The visible/clip values of overflow compute to auto/hidden (respectively)
+	// if one of overflow-x or overflow-y is neither visible nor clip.
+	overflow_x := computed_properties.overflow_x()
+	overflow_y := computed_properties.overflow_y()
+	overflow_x_is_visible_or_clip := overflow_x == .visible || overflow_x == .clip
+	overflow_y_is_visible_or_clip := overflow_y == .visible || overflow_y == .clip
+	if !overflow_x_is_visible_or_clip || !overflow_y_is_visible_or_clip {
+		if overflow_x == .visible {
+			computed_properties.set_property_without_modifying_flags(.overflow_x,
+				dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto))))
+		}
+		if overflow_x == .clip {
+			computed_properties.set_property_without_modifying_flags(.overflow_x,
+				dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))))
+		}
+		if overflow_y == .visible {
+			computed_properties.set_property_without_modifying_flags(.overflow_y,
+				dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto))))
+		}
+		if overflow_y == .clip {
+			computed_properties.set_property_without_modifying_flags(.overflow_y,
+				dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))))
+		}
+	}
 }
 
 pub fn (s &StyleComputer) transform_box_type_if_needed(mut computed_properties ComputedProperties, abstract_element dom.AbstractElement) {

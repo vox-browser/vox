@@ -88,6 +88,9 @@ pub enum PropertyID {
 	outline_offset
 	outline_style
 	outline_width
+	overflow_x
+	overflow_y
+	pointer_events
 	position_anchor
 	shape_image_threshold
 	stop_color
