@@ -720,8 +720,16 @@ pub fn (c CalculatedStyleValue) resolves_to_length_percentage() bool {
 
 pub fn (value CSSNumericValue) create_an_internal_representation(property PropertyNameAndID, perform_type_check PerformTypeCheck) !StyleValue {
 	return match value {
-		CSSUnitValue { value.create_an_internal_representation(property, perform_type_check)! }
-		CSSMathValueStub { StyleValue(CalculatedStyleValue{}) }
+		CSSUnitValue {
+			value.create_an_internal_representation(property, perform_type_check)!
+		}
+		CSSMathValueStub {
+			StyleValue(CalculatedStyleValue{})
+		}
+		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax,
+		CSSMathClamp {
+			CSSMathValue(value).create_an_internal_representation(property, perform_type_check)!
+		}
 	}
 }
 
@@ -918,22 +926,53 @@ pub fn (component CSSMatrixComponent) create_style_value(property PropertyNameAn
 
 // --- CSSPerspective ---
 
-pub type CSSPerspectiveValue = CSSKeywordValue | CSSMathValueStub | CSSUnitValue | string
+pub type CSSPerspectiveValue = CSSKeywordValue
+	| CSSMathClamp
+	| CSSMathInvert
+	| CSSMathMax
+	| CSSMathMin
+	| CSSMathNegate
+	| CSSMathProduct
+	| CSSMathSum
+	| CSSMathValueStub
+	| CSSUnitValue
+	| string
 
-pub type CSSPerspectiveValueInternal = CSSKeywordValue | CSSMathValueStub | CSSUnitValue
+pub type CSSPerspectiveValueInternal = CSSKeywordValue
+	| CSSMathClamp
+	| CSSMathInvert
+	| CSSMathMax
+	| CSSMathMin
+	| CSSMathNegate
+	| CSSMathProduct
+	| CSSMathSum
+	| CSSMathValueStub
+	| CSSUnitValue
 
 fn css_numeric_value_from_perspective_internal(value CSSPerspectiveValueInternal) ?CSSNumericValue {
 	return match value {
 		CSSUnitValue { CSSNumericValue(value) }
 		CSSMathValueStub { CSSNumericValue(value) }
+		CSSMathSum { CSSNumericValue(value) }
+		CSSMathProduct { CSSNumericValue(value) }
+		CSSMathNegate { CSSNumericValue(value) }
+		CSSMathInvert { CSSNumericValue(value) }
+		CSSMathMin { CSSNumericValue(value) }
+		CSSMathMax { CSSNumericValue(value) }
+		CSSMathClamp { CSSNumericValue(value) }
 		CSSKeywordValue { none }
 	}
 }
 
 fn css_keyword_value_from_perspective_internal(value CSSPerspectiveValueInternal) ?CSSKeywordValue {
 	return match value {
-		CSSKeywordValue { value }
-		CSSUnitValue, CSSMathValueStub { none }
+		CSSKeywordValue {
+			value
+		}
+		CSSUnitValue, CSSMathValueStub, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert,
+		CSSMathMin, CSSMathMax, CSSMathClamp {
+			none
+		}
 	}
 }
 
@@ -941,13 +980,21 @@ fn css_perspective_internal_from_numeric(value CSSNumericValue) CSSPerspectiveVa
 	return match value {
 		CSSUnitValue { CSSPerspectiveValueInternal(value) }
 		CSSMathValueStub { CSSPerspectiveValueInternal(value) }
+		CSSMathSum { CSSPerspectiveValueInternal(value) }
+		CSSMathProduct { CSSPerspectiveValueInternal(value) }
+		CSSMathNegate { CSSPerspectiveValueInternal(value) }
+		CSSMathInvert { CSSPerspectiveValueInternal(value) }
+		CSSMathMin { CSSPerspectiveValueInternal(value) }
+		CSSMathMax { CSSPerspectiveValueInternal(value) }
+		CSSMathClamp { CSSPerspectiveValueInternal(value) }
 	}
 }
 
 fn to_internal_css_perspective_value(value CSSPerspectiveValue) !CSSPerspectiveValueInternal {
 	return match value {
 		// 1. If length is a CSSNumericValue:
-		CSSUnitValue, CSSMathValueStub {
+		CSSUnitValue, CSSMathValueStub, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert,
+		CSSMathMin, CSSMathMax, CSSMathClamp {
 			numeric_value := CSSNumericValue(value)
 			// 1. If length does not match <length>, throw a TypeError.
 			if !numeric_value.type_().matches_length(none) {
@@ -1015,6 +1062,13 @@ pub fn (perspective CSSPerspective) length() CSSPerspectiveValue {
 	return match perspective.length_ {
 		CSSUnitValue { CSSPerspectiveValue(perspective.length_) }
 		CSSMathValueStub { CSSPerspectiveValue(perspective.length_) }
+		CSSMathSum { CSSPerspectiveValue(perspective.length_) }
+		CSSMathProduct { CSSPerspectiveValue(perspective.length_) }
+		CSSMathNegate { CSSPerspectiveValue(perspective.length_) }
+		CSSMathInvert { CSSPerspectiveValue(perspective.length_) }
+		CSSMathMin { CSSPerspectiveValue(perspective.length_) }
+		CSSMathMax { CSSPerspectiveValue(perspective.length_) }
+		CSSMathClamp { CSSPerspectiveValue(perspective.length_) }
 		CSSKeywordValue { CSSPerspectiveValue(perspective.length_) }
 	}
 }
@@ -1026,7 +1080,8 @@ pub fn (perspective CSSPerspective) to_string() !string {
 
 	// 2. Serialize this’s length internal slot, with a minimum of 0px, and append it to s.
 	serialized += match perspective.length_ {
-		CSSUnitValue, CSSMathValueStub {
+		CSSUnitValue, CSSMathValueStub, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert,
+		CSSMathMin, CSSMathMax, CSSMathClamp {
 			CSSNumericValue(perspective.length_).serialize(CSSNumericSerializationParams{
 				minimum: 0
 			})
@@ -1079,7 +1134,8 @@ pub fn (mut perspective CSSPerspective) set_is_2d(value bool) {
 
 pub fn (perspective CSSPerspective) create_style_value(property PropertyNameAndID) !TransformationStyleValue {
 	length := match perspective.length_ {
-		CSSUnitValue, CSSMathValueStub {
+		CSSUnitValue, CSSMathValueStub, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert,
+		CSSMathMin, CSSMathMax, CSSMathClamp {
 			CSSNumericValue(perspective.length_).create_an_internal_representation(property, .no)!
 		}
 		CSSKeywordValue {
@@ -1170,22 +1226,46 @@ pub fn (mut rotate CSSRotate) set_is_2d(value bool) {
 
 pub fn (rotate CSSRotate) x() CSSNumberish {
 	return match rotate.x_ {
-		CSSUnitValue { CSSNumberish(rotate.x_) }
-		CSSMathValueStub { CSSNumberish(rotate.x_) }
+		CSSUnitValue {
+			CSSNumberish(rotate.x_)
+		}
+		CSSMathValueStub {
+			CSSNumberish(rotate.x_)
+		}
+		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax,
+		CSSMathClamp {
+			CSSNumberish(rotate.x_)
+		}
 	}
 }
 
 pub fn (rotate CSSRotate) y() CSSNumberish {
 	return match rotate.y_ {
-		CSSUnitValue { CSSNumberish(rotate.y_) }
-		CSSMathValueStub { CSSNumberish(rotate.y_) }
+		CSSUnitValue {
+			CSSNumberish(rotate.y_)
+		}
+		CSSMathValueStub {
+			CSSNumberish(rotate.y_)
+		}
+		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax,
+		CSSMathClamp {
+			CSSNumberish(rotate.y_)
+		}
 	}
 }
 
 pub fn (rotate CSSRotate) z() CSSNumberish {
 	return match rotate.z_ {
-		CSSUnitValue { CSSNumberish(rotate.z_) }
-		CSSMathValueStub { CSSNumberish(rotate.z_) }
+		CSSUnitValue {
+			CSSNumberish(rotate.z_)
+		}
+		CSSMathValueStub {
+			CSSNumberish(rotate.z_)
+		}
+		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax,
+		CSSMathClamp {
+			CSSNumberish(rotate.z_)
+		}
 	}
 }
 

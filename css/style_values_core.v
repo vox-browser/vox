@@ -2783,14 +2783,38 @@ pub fn CSSMathValueStub.create(type_ NumericType, serialization string) CSSMathV
 	}
 }
 
-pub type CSSNumericValue = CSSMathValueStub | CSSUnitValue
+pub type CSSNumericValue = CSSMathClamp
+	| CSSMathInvert
+	| CSSMathMax
+	| CSSMathMin
+	| CSSMathNegate
+	| CSSMathProduct
+	| CSSMathSum
+	| CSSMathValueStub
+	| CSSUnitValue
 
-pub type CSSNumberish = CSSMathValueStub | CSSUnitValue | f64
+pub type CSSNumberish = CSSMathClamp
+	| CSSMathInvert
+	| CSSMathMax
+	| CSSMathMin
+	| CSSMathNegate
+	| CSSMathProduct
+	| CSSMathSum
+	| CSSMathValueStub
+	| CSSUnitValue
+	| f64
 
 pub fn (value CSSNumericValue) type_() NumericType {
 	return match value {
 		CSSUnitValue { value.type_ }
 		CSSMathValueStub { value.type_ }
+		CSSMathSum { value.type_ }
+		CSSMathProduct { value.type_ }
+		CSSMathNegate { value.type_ }
+		CSSMathInvert { value.type_ }
+		CSSMathMin { value.type_ }
+		CSSMathMax { value.type_ }
+		CSSMathClamp { value.type_ }
 	}
 }
 
@@ -2801,7 +2825,12 @@ pub fn (value CSSNumericValue) add(initial_values []CSSNumberish) !CSSNumericVal
 	//    Otherwise, prepend this to values.
 
 	// NB: We reorder the steps a little to avoid the awkward prepending.
-	mut values := [value]
+	mut values := []CSSNumericValue{}
+	if value is CSSMathSum {
+		values << value.values().values()
+	} else {
+		values << value
+	}
 	for item in initial_values {
 		values << rectify_a_numberish_value(item)
 	}
@@ -2824,7 +2853,7 @@ pub fn (value CSSNumericValue) add(initial_values []CSSNumberish) !CSSNumericVal
 	}
 
 	// 5. Return a new CSSMathSum object whose values internal slot is set to values.
-	return CSSNumericValue(CSSMathValueStub.create(type_, numeric_values_join(values, ' + ')))
+	return CSSNumericValue(CSSMathSum.create(type_, CSSNumericArray.create(values)))
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-sub
@@ -2842,7 +2871,9 @@ pub fn (value CSSNumericValue) sub(initial_values []CSSNumberish) !CSSNumericVal
 // https://drafts.css-houdini.org/css-typed-om-1/#cssmath-negate-a-cssnumericvalue
 pub fn (value CSSNumericValue) negate() CSSNumberish {
 	// 1. If this is a CSSMathNegate object, return this's value internal slot.
-	// Stub: CSSMathNegate is not represented separately.
+	if value is CSSMathNegate {
+		return css_numberish_from_numeric_value(value.value())
+	}
 
 	// 2. If this is a CSSUnitValue object, return a new CSSUnitValue with the same unit internal slot as this, and a
 	//    value internal slot set to the negation of this's.
@@ -2852,7 +2883,7 @@ pub fn (value CSSNumericValue) negate() CSSNumberish {
 	}
 
 	// 3. Otherwise, return a new CSSMathNegate object whose value internal slot is set to this.
-	return CSSNumberish(CSSMathValueStub.create(value.type_(), '-(${value.to_string()})'))
+	return CSSNumberish(CSSMathNegate.create(value.type_(), value))
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-mul
@@ -2862,7 +2893,12 @@ pub fn (value CSSNumericValue) mul(initial_values []CSSNumberish) !CSSNumericVal
 	//    Otherwise, prepend this to values.
 
 	// NB: We reorder the steps a little to avoid the awkward prepending.
-	mut values := [value]
+	mut values := []CSSNumericValue{}
+	if value is CSSMathProduct {
+		values << value.values().values()
+	} else {
+		values << value
+	}
 	for item in initial_values {
 		values << rectify_a_numberish_value(item)
 	}
@@ -2911,7 +2947,7 @@ pub fn (value CSSNumericValue) mul(initial_values []CSSNumberish) !CSSNumericVal
 	}
 
 	// 6. Return a new CSSMathProduct object whose values internal slot is set to values.
-	return CSSNumericValue(CSSMathValueStub.create(type_, numeric_values_join(values, ' * ')))
+	return CSSNumericValue(CSSMathProduct.create(type_, CSSNumericArray.create(values)))
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-div
@@ -2929,7 +2965,9 @@ pub fn (value CSSNumericValue) div(initial_values []CSSNumberish) !CSSNumericVal
 // https://drafts.css-houdini.org/css-typed-om-1/#cssmath-invert-a-cssnumericvalue
 pub fn (value CSSNumericValue) invert() !CSSNumberish {
 	// 1. If this is a CSSMathInvert object, return this's value internal slot.
-	// Stub: CSSMathInvert is not represented separately.
+	if value is CSSMathInvert {
+		return css_numberish_from_numeric_value(value.value())
+	}
 
 	// 2. If this is a CSSUnitValue object with unit internal slot set to "number":
 	value_to_invert := value
@@ -2947,8 +2985,7 @@ pub fn (value CSSNumericValue) invert() !CSSNumberish {
 	}
 
 	// 3. Otherwise, return a new CSSMathInvert object whose value internal slot is set to this.
-	return CSSNumberish(CSSMathValueStub.create(value.type_().inverted(),
-		'1 / (${value.to_string()})'))
+	return CSSNumberish(CSSMathInvert.create(value.type_().inverted(), value))
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-min
@@ -2977,8 +3014,7 @@ pub fn (value CSSNumericValue) min(initial_values []CSSNumberish) !CSSNumericVal
 	}
 
 	// 5. Return a new CSSMathMin object whose values internal slot is set to values.
-	return CSSNumericValue(CSSMathValueStub.create(type_,
-		'min(${numeric_values_join(values, ', ')})'))
+	return CSSNumericValue(CSSMathMin.create(type_, CSSNumericArray.create(values)))
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-max
@@ -3007,8 +3043,7 @@ pub fn (value CSSNumericValue) max(initial_values []CSSNumberish) !CSSNumericVal
 	}
 
 	// 5. Return a new CSSMathMax object whose values internal slot is set to values.
-	return CSSNumericValue(CSSMathValueStub.create(type_,
-		'max(${numeric_values_join(values, ', ')})'))
+	return CSSNumericValue(CSSMathMax.create(type_, CSSNumericArray.create(values)))
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-equals
@@ -3119,9 +3154,62 @@ pub fn (value CSSNumericValue) serialize(params CSSNumericSerializationParams) s
 	// To serialize a CSSNumericValue this, given an optional minimum, a numeric value, and optional maximum, a numeric value:
 	// 1. If this is a CSSUnitValue, serialize a CSSUnitValue from this, passing minimum and maximum. Return the result.
 	return match value {
-		CSSUnitValue { value.serialize_unit_value(params.minimum, params.maximum) }
+		CSSUnitValue {
+			value.serialize_unit_value(params.minimum, params.maximum)
+		}
 		// 2. Otherwise, serialize a CSSMathValue from this, and return the result.
-		CSSMathValueStub { value.serialization }
+		CSSMathValueStub {
+			value.serialization
+		}
+		CSSMathSum {
+			value.serialize_math_value(if params.nested { .yes } else { .no }, if params.parenless {
+				.without
+			} else {
+				.with
+			})
+		}
+		CSSMathProduct {
+			value.serialize_math_value(if params.nested { .yes } else { .no }, if params.parenless {
+				.without
+			} else {
+				.with
+			})
+		}
+		CSSMathNegate {
+			value.serialize_math_value(if params.nested { .yes } else { .no }, if params.parenless {
+				.without
+			} else {
+				.with
+			})
+		}
+		CSSMathInvert {
+			value.serialize_math_value(if params.nested { .yes } else { .no }, if params.parenless {
+				.without
+			} else {
+				.with
+			})
+		}
+		CSSMathMin {
+			value.serialize_math_value(if params.nested { .yes } else { .no }, if params.parenless {
+				.without
+			} else {
+				.with
+			})
+		}
+		CSSMathMax {
+			value.serialize_math_value(if params.nested { .yes } else { .no }, if params.parenless {
+				.without
+			} else {
+				.with
+			})
+		}
+		CSSMathClamp {
+			value.serialize_math_value(if params.nested { .yes } else { .no }, if params.parenless {
+				.without
+			} else {
+				.with
+			})
+		}
 	}
 }
 
@@ -3147,6 +3235,27 @@ pub fn (value CSSNumericValue) is_equal_numeric_value(other CSSNumericValue) boo
 				false
 			}
 		}
+		CSSMathSum {
+			value.is_equal_numeric_value(other)
+		}
+		CSSMathProduct {
+			value.is_equal_numeric_value(other)
+		}
+		CSSMathNegate {
+			value.is_equal_numeric_value(other)
+		}
+		CSSMathInvert {
+			value.is_equal_numeric_value(other)
+		}
+		CSSMathMin {
+			value.is_equal_numeric_value(other)
+		}
+		CSSMathMax {
+			value.is_equal_numeric_value(other)
+		}
+		CSSMathClamp {
+			value.is_equal_numeric_value(other)
+		}
 	}
 }
 
@@ -3154,6 +3263,13 @@ pub fn (value CSSNumericValue) create_a_sum_value() ?SumValue {
 	return match value {
 		CSSUnitValue { value.create_a_sum_value() }
 		CSSMathValueStub { none }
+		CSSMathSum { value.create_a_sum_value() }
+		CSSMathProduct { value.create_a_sum_value() }
+		CSSMathNegate { value.create_a_sum_value() }
+		CSSMathInvert { value.create_a_sum_value() }
+		CSSMathMin { value.create_a_sum_value() }
+		CSSMathMax { value.create_a_sum_value() }
+		CSSMathClamp { value.create_a_sum_value() }
 	}
 }
 
@@ -3172,6 +3288,13 @@ pub fn rectify_a_numberish_value(numberish CSSNumberish) CSSNumericValue {
 		// 1. If num is a CSSNumericValue, return num.
 		CSSUnitValue { CSSNumericValue(numberish) }
 		CSSMathValueStub { CSSNumericValue(numberish) }
+		CSSMathSum { CSSNumericValue(numberish) }
+		CSSMathProduct { CSSNumericValue(numberish) }
+		CSSMathNegate { CSSNumericValue(numberish) }
+		CSSMathInvert { CSSNumericValue(numberish) }
+		CSSMathMin { CSSNumericValue(numberish) }
+		CSSMathMax { CSSNumericValue(numberish) }
+		CSSMathClamp { CSSNumericValue(numberish) }
 		// 2. If num is a double, return a new CSSUnitValue with its value internal slot set to num and its unit
 		//    internal slot set to unit.
 		f64 { CSSNumericValue(CSSUnitValue.create(numberish, 'number')) }
@@ -3426,11 +3549,11 @@ pub fn (unit_value CSSUnitValue) is_equal_numeric_value(other CSSNumericValue) b
 	if other_unit_value !is CSSUnitValue {
 		return false
 	}
+	other_value := other_unit_value as CSSUnitValue
 
 	// 2. If value1 and value2 are both CSSUnitValues, return true if they have equal unit and value internal slots,
 	//    or false otherwise.
-	return unit_value.unit_ == other_unit_value.unit_
-		&& unit_value.value_ == other_unit_value.value_
+	return unit_value.unit_ == other_value.unit_ && unit_value.value_ == other_value.value_
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#create-a-sum-value
