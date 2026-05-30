@@ -99,10 +99,21 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 	}
 	property_id := match lowercase_name {
+		'animation-name' { PropertyID.animation_name }
 		'animation-timeline' { PropertyID.animation_timeline }
+		'border-bottom-width' { PropertyID.border_bottom_width }
+		'border-left-width' { PropertyID.border_left_width }
+		'border-right-width' { PropertyID.border_right_width }
+		'border-top-width' { PropertyID.border_top_width }
 		'color' { PropertyID.color }
 		'color-scheme' { PropertyID.color_scheme }
 		'content-visibility' { PropertyID.content_visibility }
+		'font-feature-settings' { PropertyID.font_feature_settings }
+		'font-variation-settings' { PropertyID.font_variation_settings }
+		'font-width' { PropertyID.font_width }
+		'line-height' { PropertyID.line_height }
+		'opacity' { PropertyID.opacity }
+		'outline-width' { PropertyID.outline_width }
 		else { return none }
 	}
 
@@ -133,6 +144,9 @@ pub fn property_id_from_string(name string) ?PropertyID {
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.animation_name {
+			value_type in [.custom_ident, .string]
+		}
 		.color {
 			value_type == .color
 		}
@@ -145,6 +159,22 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.animation_timeline {
 			value_type in [.dashed_ident, .scroll_function, .view_function]
 		}
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
+		.outline_width {
+			value_type == .length
+		}
+		.font_feature_settings, .font_variation_settings {
+			value_type == .opentype_tag
+		}
+		.font_width {
+			value_type == .percentage
+		}
+		.line_height {
+			value_type in [.length, .number, .percentage]
+		}
+		.opacity {
+			value_type in [.number, .percentage, .opacity]
+		}
 	}
 }
 
@@ -154,6 +184,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		return true
 	}
 	return match property_id {
+		.animation_name {
+			lowercase_value == 'none'
+		}
 		.color {
 			if keyword := keyword_from_string(lowercase_value) {
 				KeywordStyleValue.is_color(keyword)
@@ -173,6 +206,23 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			// animation-timeline = auto | none | <dashed-ident> | scroll() | view()
 			lowercase_value in ['auto', 'none']
 		}
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
+		.outline_width {
+			lowercase_value in ['thin', 'medium', 'thick']
+		}
+		.font_feature_settings, .font_variation_settings {
+			lowercase_value == 'normal'
+		}
+		.font_width {
+			lowercase_value in ['ultra-condensed', 'extra-condensed', 'condensed', 'semi-condensed',
+				'normal', 'semi-expanded', 'expanded', 'extra-expanded', 'ultra-expanded']
+		}
+		.line_height {
+			lowercase_value == 'normal'
+		}
+		.opacity {
+			false
+		}
 	}
 }
 
@@ -182,6 +232,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		return false
 	}
 	return match property_id {
+		.animation_name {
+			lowercase_value !in ['default', 'none']
+		}
 		.color {
 			false
 		}
@@ -197,6 +250,11 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 			// The named timeline branch is a <dashed-ident>, represented by
 			// CustomIdentStyleValue until a dedicated DashedIdent StyleValue exists.
 			value.starts_with('--')
+		}
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
+		.font_feature_settings, .font_variation_settings, .font_width, .line_height, .opacity,
+		.outline_width {
+			false
 		}
 	}
 }
@@ -214,6 +272,12 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		}
 		ColorStyleValue {
 			property_accepts_type(property_id, .color)
+		}
+		OpenTypeTaggedStyleValue {
+			property_accepts_type(property_id, .opentype_tag)
+		}
+		StringStyleValue {
+			property_accepts_type(property_id, .string)
 		}
 		StyleValueList {
 			if property_is_list_valued(property_id) {
@@ -1574,7 +1638,8 @@ pub type DimensionStyleValue = AngleStyleValue
 	| ResolutionStyleValue
 	| TimeStyleValue
 
-pub type StyleValue = AddFunctionStyleValue
+pub type StyleValue = KeywordStyleValue
+	| AddFunctionStyleValue
 	| AnchorSizeStyleValue
 	| AnchorStyleValue
 	| AngleStyleValue
@@ -1607,7 +1672,6 @@ pub type StyleValue = AddFunctionStyleValue
 	| HWBColorStyleValue
 	| ImageStyleValue
 	| IntegerStyleValue
-	| KeywordStyleValue
 	| LabColorStyleValue
 	| LCHColorStyleValue
 	| LengthStyleValue
@@ -3287,7 +3351,8 @@ pub fn CSSMathValueStub.create(type_ NumericType, serialization string) CSSMathV
 	}
 }
 
-pub type CSSNumericValue = CSSMathClamp
+pub type CSSNumericValue = CSSUnitValue
+	| CSSMathClamp
 	| CSSMathInvert
 	| CSSMathMax
 	| CSSMathMin
@@ -3295,9 +3360,9 @@ pub type CSSNumericValue = CSSMathClamp
 	| CSSMathProduct
 	| CSSMathSum
 	| CSSMathValueStub
-	| CSSUnitValue
 
-pub type CSSNumberish = CSSMathClamp
+pub type CSSNumberish = CSSUnitValue
+	| CSSMathClamp
 	| CSSMathInvert
 	| CSSMathMax
 	| CSSMathMin
@@ -3305,7 +3370,6 @@ pub type CSSNumberish = CSSMathClamp
 	| CSSMathProduct
 	| CSSMathSum
 	| CSSMathValueStub
-	| CSSUnitValue
 	| f64
 
 pub fn (value CSSNumericValue) type_() NumericType {

@@ -546,7 +546,10 @@ fn style_scope_keyframe_property_value(property CSSStyleProperty, property_id Pr
 
 fn style_scope_keyframe_property_is_animatable(property_id PropertyID) bool {
 	return match property_id {
-		.color { true }
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
+		.color, .font_width, .line_height, .opacity, .outline_width {
+			true
+		}
 		else { false }
 	}
 }

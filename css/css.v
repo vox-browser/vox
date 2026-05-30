@@ -34,10 +34,21 @@ pub:
 }
 
 pub enum PropertyID {
+	animation_name
 	animation_timeline
+	border_bottom_width
+	border_left_width
+	border_right_width
+	border_top_width
 	color
 	color_scheme
 	content_visibility
+	font_feature_settings
+	font_variation_settings
+	font_width
+	line_height
+	opacity
+	outline_width
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

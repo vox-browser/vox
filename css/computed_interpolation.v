@@ -807,10 +807,20 @@ fn computed_interpolation_property_computation_order() ComputedInterpolationProp
 fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
 	initial_text := match property_id {
+		.animation_name { 'none' }
 		.animation_timeline { 'auto' }
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width {
+			'medium'
+		}
 		.color { 'canvastext' }
 		.color_scheme { 'normal' }
 		.content_visibility { 'visible' }
+		.font_feature_settings { 'normal' }
+		.font_variation_settings { 'normal' }
+		.font_width { 'normal' }
+		.line_height { 'normal' }
+		.opacity { '1' }
+		.outline_width { 'medium' }
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -829,8 +839,14 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 fn computed_interpolation_property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.animation_timeline, .color { true }
-		.color_scheme, .content_visibility { false }
+		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
+		.border_right_width, .border_top_width, .color, .font_feature_settings,
+		.font_variation_settings, .font_width, .line_height, .opacity, .outline_width {
+			true
+		}
+		.color_scheme, .content_visibility {
+			false
+		}
 	}
 }
 
@@ -842,8 +858,14 @@ fn computed_interpolation_property_requires_computation_with_inherited_value(pro
 fn computed_interpolation_property_requires_computation_with_initial_value(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.color { true }
-		.animation_timeline, .color_scheme, .content_visibility { false }
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
+		.color, .font_width, .outline_width {
+			true
+		}
+		.animation_name, .animation_timeline, .color_scheme, .content_visibility,
+		.font_feature_settings, .font_variation_settings, .line_height, .opacity {
+			false
+		}
 	}
 }
 
@@ -2180,8 +2202,13 @@ pub fn interpolate_discrete(from &dom.StyleValue, to &dom.StyleValue, delta f64,
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
-		.animation_timeline { .none_ }
-		.color { .by_computed_value }
+		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings {
+			.none_
+		}
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
+		.color, .font_width, .line_height, .opacity, .outline_width {
+			.by_computed_value
+		}
 		.content_visibility { .custom }
 		.color_scheme { .discrete }
 	}
@@ -2874,7 +2901,12 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		// generated property metadata check. For the currently translated
 		// PropertyID set, the missing generated metadata has no remaining
 		// layout-affecting properties.
-		.animation_timeline, .color, .color_scheme, .content_visibility { false }
+		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
+		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
+		.font_feature_settings, .font_variation_settings, .font_width, .line_height, .opacity,
+		.outline_width {
+			false
+		}
 	}
 }
 
@@ -2883,7 +2915,13 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		// None of the currently translated longhands maps to the C++ generated
 		// affects-stacking-context metadata. ContentVisibility is handled by the
 		// full-invalidation branch above.
-		.animation_timeline, .color, .color_scheme, .content_visibility { false }
+		.opacity { true }
+		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
+		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
+		.font_feature_settings, .font_variation_settings, .font_width, .line_height,
+		.outline_width {
+			false
+		}
 	}
 }
 
@@ -2901,8 +2939,14 @@ fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&d
 fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 	return match property_id {
 		// The translated PropertyID enum does not yet include transform,
-		// perspective, clip, opacity, mix-blend-mode, or filter.
-		.animation_timeline, .color, .color_scheme, .content_visibility { false }
+		// perspective, clip, mix-blend-mode, or filter.
+		.opacity { true }
+		.animation_name, .animation_timeline, .border_bottom_width, .border_left_width,
+		.border_right_width, .border_top_width, .color, .color_scheme, .content_visibility,
+		.font_feature_settings, .font_variation_settings, .font_width, .line_height,
+		.outline_width {
+			false
+		}
 	}
 }
 
@@ -4252,12 +4296,39 @@ pub fn StyleComputer.compute_value_of_custom_property(abstract_element dom.Abstr
 }
 
 pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified_value &dom.StyleValue, get_property_specified_value fn (PropertyID) &dom.StyleValue, computation_context StyleComputationContextStub, device_pixels_per_css_pixel f64) &dom.StyleValue {
-	_ = property_id
 	_ = get_property_specified_value
-	_ = computation_context
-	_ = device_pixels_per_css_pixel
-	// Boundary: property-specific computed-value conversions live in StyleComputer.cpp and depend on typed StyleValue APIs.
-	return unsafe { specified_value }
+	absolutized_value := unsafe { specified_value }
+
+	return match property_id {
+		.animation_name {
+			StyleComputer.compute_animation_name(absolutized_value)
+		}
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
+		.outline_width {
+			StyleComputer.compute_border_or_outline_width(absolutized_value,
+				device_pixels_per_css_pixel)
+		}
+		.font_feature_settings {
+			StyleComputer.compute_font_feature_tag_value_list(absolutized_value,
+				computation_context)
+		}
+		.font_variation_settings {
+			StyleComputer.compute_font_variation_settings(absolutized_value, computation_context)
+		}
+		.font_width {
+			StyleComputer.compute_font_width(absolutized_value)
+		}
+		.line_height {
+			StyleComputer.compute_line_height(absolutized_value,
+				computation_context.length_resolution_context.font_metrics.font_size)
+		}
+		.opacity {
+			StyleComputer.compute_opacity(absolutized_value)
+		}
+		else {
+			unsafe { specified_value }
+		}
+	}
 }
 
 fn computed_interpolation_compute_style_value_list(style_value &dom.StyleValue, compute_entry fn (StyleValue) ?StyleValue) ?&dom.StyleValue {

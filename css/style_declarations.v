@@ -21,10 +21,21 @@ pub fn PropertyNameAndID.from_id(property_id PropertyID) PropertyNameAndID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.animation_name { 'animation-name' }
 		.animation_timeline { 'animation-timeline' }
+		.border_bottom_width { 'border-bottom-width' }
+		.border_left_width { 'border-left-width' }
+		.border_right_width { 'border-right-width' }
+		.border_top_width { 'border-top-width' }
 		.color { 'color' }
 		.color_scheme { 'color-scheme' }
 		.content_visibility { 'content-visibility' }
+		.font_feature_settings { 'font-feature-settings' }
+		.font_variation_settings { 'font-variation-settings' }
+		.font_width { 'font-width' }
+		.line_height { 'line-height' }
+		.opacity { 'opacity' }
+		.outline_width { 'outline-width' }
 	}
 }
 
@@ -35,34 +46,57 @@ pub fn property_is_shorthand(property_id PropertyID) bool {
 
 pub fn property_is_single_valued(property_id PropertyID) bool {
 	return match property_id {
-		.animation_timeline { false }
-		.color, .color_scheme, .content_visibility { true }
+		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings {
+			false
+		}
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
+		.color, .color_scheme, .content_visibility, .font_width, .line_height, .opacity,
+		.outline_width {
+			true
+		}
 	}
 }
 
 pub fn property_is_list_valued(property_id PropertyID) bool {
 	return match property_id {
-		.animation_timeline { true }
-		.color, .color_scheme, .content_visibility { false }
+		.animation_name, .animation_timeline, .font_feature_settings, .font_variation_settings {
+			true
+		}
+		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
+		.color, .color_scheme, .content_visibility, .font_width, .line_height, .opacity,
+		.outline_width {
+			false
+		}
 	}
 }
 
-pub const number_of_longhand_properties = 4
+pub const number_of_longhand_properties = 15
 
 pub fn first_longhand_property_id() PropertyID {
-	return .animation_timeline
+	return .animation_name
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .content_visibility
+	return .outline_width
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
 	return match index {
-		0 { PropertyID.animation_timeline }
-		1 { PropertyID.color }
-		2 { PropertyID.color_scheme }
-		3 { PropertyID.content_visibility }
+		0 { PropertyID.animation_name }
+		1 { PropertyID.animation_timeline }
+		2 { PropertyID.border_bottom_width }
+		3 { PropertyID.border_left_width }
+		4 { PropertyID.border_right_width }
+		5 { PropertyID.border_top_width }
+		6 { PropertyID.color }
+		7 { PropertyID.color_scheme }
+		8 { PropertyID.content_visibility }
+		9 { PropertyID.font_feature_settings }
+		10 { PropertyID.font_variation_settings }
+		11 { PropertyID.font_width }
+		12 { PropertyID.line_height }
+		13 { PropertyID.opacity }
+		14 { PropertyID.outline_width }
 		else { none }
 	}
 }
