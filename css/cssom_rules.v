@@ -515,6 +515,16 @@ pub mut:
 	cached_absolutized_selectors ?SelectorList
 	declaration                  ?&CSSStyleProperties
 	style_map_cache              ?&CSSOMStylePropertyMap
+
+	keyframe_key                ?Percentage
+	layer_name_list             []string
+	page_selectors              PageSelectorList
+	page_descriptors            ?&CSSPageDescriptors
+	margin_name                 string
+	property_rule_name          string
+	property_rule_syntax        string
+	property_rule_inherits      bool
+	property_rule_initial_value ?string
 }
 
 pub fn CSSRule.create(type_ CSSRuleType) &CSSRule {
@@ -782,6 +792,27 @@ pub fn (rule &CSSRule) serialized() string {
 		}
 		.style {
 			rule.serialized_style_rule()
+		}
+		.layer_block {
+			rule.serialized_layer_block_rule()
+		}
+		.layer_statement {
+			rule.serialized_layer_statement_rule()
+		}
+		.keyframes {
+			rule.serialized_keyframes_rule()
+		}
+		.keyframe {
+			rule.serialized_keyframe_rule()
+		}
+		.page {
+			rule.serialized_page_rule()
+		}
+		.margin {
+			rule.serialized_margin_rule()
+		}
+		.property {
+			rule.serialized_property_rule()
 		}
 		.nested_declarations {
 			if declaration := rule.declaration {
