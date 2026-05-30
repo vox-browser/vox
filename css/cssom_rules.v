@@ -947,7 +947,7 @@ fn (rule &CSSRule) serialized_media_rule() string {
 		}
 	}
 	// 5. A newline, followed by the string "}", i.e., RIGHT CURLY BRACKET (U+007D)
-	// AD-HOC: All modern browsers omit the ending newline if there are no CSS rules, so Ladybird does the same.
+	// AD-HOC: All modern browsers omit the ending newline if there are no CSS rules, so let's do the same.
 	//         If there are rules, the required newline will be appended in the for-loop above.
 	builder.write_u8(`}`)
 
@@ -956,7 +956,7 @@ fn (rule &CSSRule) serialized_media_rule() string {
 
 // https://www.w3.org/TR/cssom-1/#serialize-a-css-rule
 fn (rule &CSSRule) serialized_supports_rule() string {
-	// Note: The spec doesn't cover this yet, so Ladybird roughly follows the spec for the @media rule.
+	// Note: The spec doesn't cover this yet, so I'm roughly following the spec for the @media rule.
 	// It should be pretty close!
 	mut builder := strings.new_builder(128)
 

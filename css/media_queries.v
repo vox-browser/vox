@@ -447,6 +447,160 @@ pub fn (media_query &MediaQuery) dump(indent_levels int) string {
 	return builder.str()
 }
 
+// 4.2. The MediaQueryList Interface, https://drafts.csswg.org/cssom-view/#the-mediaquerylist-interface
+@[heap]
+pub struct MediaQueryList {
+	dom.EventTarget
+pub mut:
+	document_          &dom.Document = unsafe { nil }
+	media_queries      []&MediaQuery
+	has_changed_state_ ?bool = false
+}
+
+pub fn MediaQueryList.create(document &dom.Document, media []&MediaQuery) &MediaQueryList {
+	return MediaQueryList.new(document, media)
+}
+
+pub fn MediaQueryList.new(document &dom.Document, media []&MediaQuery) &MediaQueryList {
+	mut media_query_list := &MediaQueryList{
+		document_:     document
+		media_queries: media.clone()
+	}
+	media_query_list.has_changed_state_ = false
+	media_query_list.evaluate()
+	return media_query_list
+}
+
+pub fn (mut media_query_list MediaQueryList) initialize() {
+	// WEB_SET_PROTOTYPE_FOR_INTERFACE(MediaQueryList);
+	media_query_list.EventTarget.initialize()
+}
+
+pub fn (mut media_query_list MediaQueryList) visit_edges(mut visitor dom.CellVisitor) {
+	media_query_list.EventTarget.visit_edges(mut visitor)
+	visitor.visit(media_query_list.document_)
+}
+
+fn (media_query_list &MediaQueryList) event_target() &dom.EventTarget {
+	return unsafe { &dom.EventTarget(media_query_list) }
+}
+
+// https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-media
+pub fn (media_query_list &MediaQueryList) media() string {
+	return serialize_a_media_query_list(media_query_list.media_queries)
+}
+
+// https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-matches
+pub fn (media_query_list &MediaQueryList) matches() bool {
+	if media_query_list.media_queries.len == 0 {
+		return true
+	}
+
+	mut did_match := false
+	for media in media_query_list.media_queries {
+		if media.matches() {
+			did_match = true
+			break
+		}
+	}
+
+	// NOTE: If our document is inside a frame, we need to update layout
+	//       since that may cause our frame (and thus viewport) to resize.
+	if container_document := media_query_list.document_.container_document() {
+		mut mutable_container_document := unsafe { &dom.Document(container_document) }
+		mutable_container_document.update_layout(.media_query_list_matches)
+		mut mutable_media_query_list := unsafe { &MediaQueryList(media_query_list) }
+		mutable_media_query_list.evaluate()
+	}
+
+	mut now_matches := false
+	for media in media_query_list.media_queries {
+		if media.matches() {
+			now_matches = true
+			break
+		}
+	}
+
+	if did_match != now_matches {
+		mut mutable_media_query_list := unsafe { &MediaQueryList(media_query_list) }
+		mutable_media_query_list.has_changed_state_ = true
+	}
+
+	return now_matches
+}
+
+pub fn (media_query_list &MediaQueryList) evaluate() bool {
+	if media_query_list.media_queries.len == 0 {
+		return true
+	}
+
+	mut now_matches := false
+	mut mutable_media_query_list := unsafe { &MediaQueryList(media_query_list) }
+	for i in 0 .. mutable_media_query_list.media_queries.len {
+		mut media_query := unsafe { &MediaQuery(mutable_media_query_list.media_queries[i]) }
+		matches := media_query.evaluate(media_query_list.document_)
+		media_query.matches = matches
+		now_matches = now_matches || matches
+	}
+
+	return now_matches
+}
+
+// https://www.w3.org/TR/cssom-view/#dom-mediaquerylist-addlistener
+pub fn (media_query_list &MediaQueryList) add_listener(listener ?&dom.IDLEventListener) {
+	// 1. If listener is null, terminate these steps.
+	callback := listener or { return }
+
+	// 2. Append an event listener to the associated list of event listeners with type set to change,
+	//    callback set to listener, and capture set to false, unless there already is an event listener
+	//    in that list with the same type, callback, and capture.
+	//    (NOTE: capture is set to false by default)
+	media_query_list.event_target().add_event_listener_without_options('change', callback)
+}
+
+// https://www.w3.org/TR/cssom-view/#dom-mediaquerylist-removelistener
+pub fn (media_query_list &MediaQueryList) remove_listener(listener ?&dom.IDLEventListener) {
+	// 1. Remove an event listener from the associated list of event listeners, whose type is change, callback is listener, and capture is false.
+	// NOTE: While the spec doesn't technically use remove_event_listener and instead manipulates the list directly, every major engine uses remove_event_listener.
+	//       This means if an event listener removes another event listener that comes after it, the removed event listener will not be invoked.
+	if callback := listener {
+		media_query_list.event_target().remove_event_listener_without_options('change', callback)
+	}
+}
+
+pub fn (media_query_list &MediaQueryList) set_onchange(event_handler ?&dom.CallbackType) {
+	media_query_list.event_target().set_event_handler_attribute('change', event_handler)
+}
+
+pub fn (media_query_list &MediaQueryList) onchange() ?&dom.CallbackType {
+	return media_query_list.event_target().event_handler_attribute('change')
+}
+
+pub fn (media_query_list &MediaQueryList) has_changed_state() ?bool {
+	return media_query_list.has_changed_state_
+}
+
+pub fn (mut media_query_list MediaQueryList) set_has_changed_state(has_changed_state bool) {
+	media_query_list.has_changed_state_ = has_changed_state
+}
+
+pub fn (media_query_list &MediaQueryList) dispatch_change_event(matches bool) {
+	mut init := MediaQueryListEventInit{
+		media:   media_query_list.media()
+		matches: matches
+	}
+	init.EventInit = dom.EventInit{}
+	event := MediaQueryListEvent.create('change', init)
+	dom.event_target_dispatch_event(media_query_list.event_target(), event.base_event())
+}
+
+pub fn (media_query_list &MediaQueryList) register_with_document_stub() {
+	_ = media_query_list
+	// Stub: Window::match_media() registers the C++ CSS::MediaQueryList with DOM::Document.
+	// The V DOM module currently owns a small placeholder MediaQueryList to avoid a circular dom <-> css import,
+	// so registration has to stay at this boundary until the shared interface is split out.
+}
+
 pub struct MediaQueryListEntry {
 pub mut:
 	text    string

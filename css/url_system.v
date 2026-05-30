@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2018-2026, Ladybird contributors
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
+// Translated from:
+// - Libraries/LibWeb/CSS/SystemColor.cpp/.h
+// - Libraries/LibWeb/CSS/URL.cpp/.h
 module css
 
 // https://www.w3.org/TR/css-color-4/#css-system-colors
@@ -165,6 +174,9 @@ pub fn (value ReferrerPolicyModifierValue) to_string() string {
 	}
 }
 
+// Stub: These are the Fetch::Infrastructure::Request pieces needed by
+// RequestURLModifier::modify_request(). The full Fetch request implementation is
+// outside this V port, so keep the mutated request fields explicit here.
 pub enum CSSRequestMode {
 	cors
 	no_cors
@@ -293,6 +305,25 @@ pub fn (modifier RequestURLModifier) modify_request(mut request CSSRequest) {
 	}
 }
 
+// RequestURLModifier::operator== is defaulted in C++; compare the stored type
+// and the matching variant value.
+pub fn (modifier RequestURLModifier) equals(other RequestURLModifier) bool {
+	if modifier.type_ != other.type_ {
+		return false
+	}
+	return match modifier.type_ {
+		.cross_origin {
+			(modifier.value_ as CrossOriginModifierValue) == (other.value_ as CrossOriginModifierValue)
+		}
+		.integrity {
+			(modifier.value_ as string) == (other.value_ as string)
+		}
+		.referrer_policy {
+			(modifier.value_ as ReferrerPolicyModifierValue) == (other.value_ as ReferrerPolicyModifierValue)
+		}
+	}
+}
+
 pub fn (modifier RequestURLModifier) to_string() string {
 	return match modifier.type_ {
 		.cross_origin {
@@ -345,6 +376,25 @@ pub fn (url URL) url() string {
 
 pub fn (url URL) request_url_modifiers() []RequestURLModifier {
 	return url.request_url_modifiers
+}
+
+fn request_url_modifier_lists_equal(left []RequestURLModifier, right []RequestURLModifier) bool {
+	if left.len != right.len {
+		return false
+	}
+	for i, modifier in left {
+		if !modifier.equals(right[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// URL::operator== is defaulted in C++; compare the type, URL string, and
+// request URL modifiers in order.
+pub fn (url URL) equals(other URL) bool {
+	return url.type_ == other.type_ && url.url_ == other.url_
+		&& request_url_modifier_lists_equal(url.request_url_modifiers, other.request_url_modifiers)
 }
 
 // https://drafts.csswg.org/cssom-1/#serialize-a-url

@@ -105,6 +105,20 @@ pub fn Screen.create() &Screen {
 	return &Screen{}
 }
 
+pub fn (mut screen Screen) initialize() {
+	_ = screen
+	// WEB_SET_PROTOTYPE_FOR_INTERFACE(Screen);
+	// Base::initialize(realm);
+}
+
+pub fn (mut screen Screen) visit_edges(mut visitor dom.CellVisitor) {
+	// Base::visit_edges(visitor);
+	// visitor.visit(m_window);
+	if orientation := screen.orientation_ {
+		visitor.visit(orientation)
+	}
+}
+
 // https://drafts.csswg.org/cssom-view-1/#dom-screen-width
 pub fn (screen &Screen) width() int {
 	// The width attribute must return the width of the Web-exposed screen area.
@@ -202,6 +216,12 @@ pub mut:
 
 pub fn ScreenOrientation.create() &ScreenOrientation {
 	return &ScreenOrientation{}
+}
+
+pub fn (mut orientation ScreenOrientation) initialize() {
+	_ = orientation
+	// WEB_SET_PROTOTYPE_FOR_INTERFACE(ScreenOrientation);
+	// Base::initialize(realm);
 }
 
 // https://w3c.github.io/screen-orientation/#lock-method
@@ -525,6 +545,8 @@ fn abstract_elements_equal(a dom.AbstractElement, b dom.AbstractElement) bool {
 	return a.pseudo_element_ == b.pseudo_element_
 }
 
+const animation_key_frame_key_scale_factor = 1000
+
 @[heap]
 pub struct CSSAnimation {
 pub mut:
@@ -730,21 +752,28 @@ pub fn (animation &CSSAnimation) is_css_animation() bool {
 @[heap]
 pub struct CSSTransition {
 pub mut:
-	owning_element_                 ?dom.AbstractElement
-	global_animation_list_order_    int
-	transition_property_            PropertyID
-	transition_generation_          int
-	start_time_                     f64
-	end_time_                       f64
-	start_value_                    &dom.StyleValue = unsafe { nil }
-	end_value_                      &dom.StyleValue = unsafe { nil }
+	owning_element_              ?dom.AbstractElement
+	global_animation_list_order_ int
+	transition_property_         PropertyID
+	// https://drafts.csswg.org/css-transitions-2/#transition-generation
+	transition_generation_ int
+	// https://drafts.csswg.org/css-transitions/#transition-start-time
+	start_time_ f64
+	// https://drafts.csswg.org/css-transitions/#transition-end-time
+	end_time_ f64
+	// https://drafts.csswg.org/css-transitions/#transition-start-value
+	start_value_ &dom.StyleValue = unsafe { nil }
+	// https://drafts.csswg.org/css-transitions/#transition-end-value
+	end_value_ &dom.StyleValue = unsafe { nil }
+	// https://drafts.csswg.org/css-transitions/#transition-reversing-adjusted-start-value
 	reversing_adjusted_start_value_ &dom.StyleValue = unsafe { nil }
-	reversing_shortening_factor_    f64
-	keyframe_effect_                &KeyframeEffect = unsafe { nil }
-	cached_declaration              ?&CSSStyleProperties
-	previous_phase_                 CSSTransitionPhase = .idle
-	timeline_                       ?&AnimationTimeline
-	play_state_                     WebAnimationPlayState
+	// https://drafts.csswg.org/css-transitions/#transition-reversing-shortening-factor
+	reversing_shortening_factor_ f64
+	keyframe_effect_             &KeyframeEffect = unsafe { nil }
+	cached_declaration           ?&CSSStyleProperties
+	previous_phase_              CSSTransitionPhase = .idle
+	timeline_                    ?&AnimationTimeline
+	play_state_                  WebAnimationPlayState
 }
 
 // This is designed to be created from AnimationEffect::Phase.
@@ -764,8 +793,22 @@ pub mut:
 pub fn transition_timing_attributes_for_property(abstract_element dom.AbstractElement, property_id PropertyID) TransitionTimingAttributes {
 	_ = abstract_element
 	_ = property_id
-	// Stub: Element::property_transition_attributes() is not translated yet.
+	// Stub: Element::property_transition_attributes(pseudo_element, property_id) is not translated yet.
 	return TransitionTimingAttributes{}
+}
+
+fn document_timeline_for_transition(abstract_element dom.AbstractElement) ?&AnimationTimeline {
+	_ = abstract_element
+	// Stub: abstract_element.document().timeline() is a DOM DocumentTimeline in this partial port,
+	// while CSS animations currently use the local AnimationTimeline model.
+	return &AnimationTimeline{}
+}
+
+fn set_transition_on_element(abstract_element dom.AbstractElement, property_id PropertyID, transition &CSSTransition) {
+	_ = abstract_element
+	_ = property_id
+	_ = transition
+	// Stub: Element::set_transition(pseudo_element, property_id, transition) is not translated yet.
 }
 
 pub fn CSSTransition.start_a_transition(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
@@ -814,16 +857,31 @@ pub fn CSSTransition.new(abstract_element dom.AbstractElement, property_id Prope
 		final_keyframe.properties[property_id] = end_value
 	}
 	key_frame_set.keyframes_by_key[0] = initial_keyframe
-	key_frame_set.keyframes_by_key[100] = final_keyframe
+	key_frame_set.keyframes_by_key[100 * animation_key_frame_key_scale_factor] = final_keyframe
 
 	transition.keyframe_effect_.set_key_frame_set(key_frame_set)
-	transition.set_timeline(&AnimationTimeline{})
+	transition.set_timeline(document_timeline_for_transition(abstract_element))
 	transition.set_owning_element(abstract_element)
 	transition.set_effect(transition.keyframe_effect_)
+	set_transition_on_element(abstract_element, transition.transition_property_, transition)
 
-	// Stub: Element::set_transition() is not translated yet.
+	// Stub: HTML::TemporaryExecutionContext is not translated yet.
 	transition.play() or {}
 	return transition
+}
+
+pub fn (mut transition CSSTransition) initialize() {
+	_ = transition
+	// WEB_SET_PROTOTYPE_FOR_INTERFACE(CSSTransition);
+	// Base::initialize(realm);
+}
+
+pub fn (mut transition CSSTransition) visit_edges(mut visitor dom.CellVisitor) {
+	// Base::visit_edges(visitor);
+	if cached_declaration := transition.cached_declaration {
+		visitor.visit(cached_declaration)
+	}
+	visitor.visit(transition.keyframe_effect_)
 }
 
 pub fn (transition &CSSTransition) transition_property() string {
