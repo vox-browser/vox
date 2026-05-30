@@ -369,8 +369,29 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'table-layout' {
 			PropertyID.table_layout
 		}
+		'text-align' {
+			PropertyID.text_align
+		}
 		'text-anchor' {
 			PropertyID.text_anchor
+		}
+		'text-justify' {
+			PropertyID.text_justify
+		}
+		'text-overflow' {
+			PropertyID.text_overflow
+		}
+		'text-rendering' {
+			PropertyID.text_rendering
+		}
+		'text-transform' {
+			PropertyID.text_transform
+		}
+		'text-wrap-mode' {
+			PropertyID.text_wrap_mode
+		}
+		'text-wrap-style' {
+			PropertyID.text_wrap_style
 		}
 		'transform' {
 			PropertyID.transform
@@ -413,6 +434,15 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 		'-webkit-text-fill-color' {
 			PropertyID.webkit_text_fill_color
+		}
+		'white-space-collapse' {
+			PropertyID.white_space_collapse
+		}
+		'white-space-trim' {
+			PropertyID.white_space_trim
+		}
+		'word-break' {
+			PropertyID.word_break
 		}
 		'word-spacing' {
 			PropertyID.word_spacing
@@ -492,7 +522,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
 		.pointer_events, .position, .shape_rendering, .stroke_linecap, .stroke_linejoin,
-		.table_layout, .text_anchor, .transform_style, .unicode_bidi, .user_select, .visibility {
+		.table_layout, .text_align, .text_anchor, .text_justify, .text_overflow, .text_rendering,
+		.text_transform, .text_wrap_mode, .text_wrap_style, .transform_style, .unicode_bidi,
+		.user_select, .visibility, .white_space_collapse, .white_space_trim, .word_break {
 			false
 		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
@@ -743,11 +775,44 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.text_anchor {
 			lowercase_value in ['start', 'middle', 'end']
 		}
+		.text_align {
+			lowercase_value in ['center', 'justify', 'start', 'end', 'left', 'right', 'match-parent',
+				'-libweb-center', '-libweb-inherit-or-center', '-libweb-left', '-libweb-right']
+		}
+		.text_justify {
+			lowercase_value in ['auto', 'none', 'inter-word', 'inter-character']
+		}
+		.text_overflow {
+			lowercase_value in ['clip', 'ellipsis']
+		}
+		.text_rendering {
+			lowercase_value in ['auto', 'optimizespeed', 'optimizelegibility', 'geometricprecision']
+		}
+		.text_transform {
+			lowercase_value in ['capitalize', 'full-size-kana', 'full-width', 'lowercase',
+				'math-auto', 'none', 'uppercase']
+		}
+		.text_wrap_mode {
+			lowercase_value in ['wrap', 'nowrap']
+		}
+		.text_wrap_style {
+			lowercase_value in ['auto', 'balance', 'stable', 'pretty']
+		}
 		.transform_style {
 			lowercase_value in ['flat', 'preserve-3d']
 		}
 		.user_select {
 			lowercase_value in ['all', 'auto', 'contain', 'none', 'text']
+		}
+		.white_space_collapse {
+			lowercase_value in ['collapse', 'discard', 'preserve', 'preserve-breaks',
+				'preserve-spaces', 'break-spaces']
+		}
+		.white_space_trim {
+			lowercase_value in ['none', 'discard-before', 'discard-after', 'discard-inner']
+		}
+		.word_break {
+			lowercase_value in ['normal', 'keep-all', 'break-all', 'break-word']
 		}
 		.font_feature_settings, .font_variation_settings {
 			lowercase_value == 'normal'
@@ -810,8 +875,10 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.isolation, .list_style_image, .list_style_position, .mask_image, .mask_type,
 		.mix_blend_mode, .object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y,
 		.pointer_events, .position, .shape_rendering, .stop_color, .stroke_linecap,
-		.stroke_linejoin, .table_layout, .text_anchor, .transform_style, .unicode_bidi,
-		.user_select, .view_timeline_inset, .visibility, .webkit_text_fill_color {
+		.stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
+		.unicode_bidi, .user_select, .view_timeline_inset, .visibility, .webkit_text_fill_color,
+		.white_space_collapse, .white_space_trim, .word_break {
 			false
 		}
 		.color_scheme {
@@ -1909,6 +1976,39 @@ pub enum Keyword {
 	start
 	middle
 	end_
+	center
+	justify
+	match_parent
+	libweb_center
+	libweb_inherit_or_center
+	libweb_left
+	libweb_right
+	inter_word
+	inter_character
+	ellipsis
+	optimizelegibility
+	capitalize
+	full_size_kana
+	full_width
+	lowercase
+	math_auto
+	uppercase
+	nowrap
+	wrap
+	balance
+	stable
+	pretty
+	discard
+	preserve
+	preserve_breaks
+	preserve_spaces
+	break_spaces
+	discard_before
+	discard_after
+	discard_inner
+	keep_all
+	break_all
+	break_word
 	separate
 	border_box
 	content_box
@@ -2145,6 +2245,39 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.start { 'start' }
 		.middle { 'middle' }
 		.end_ { 'end' }
+		.center { 'center' }
+		.justify { 'justify' }
+		.match_parent { 'match-parent' }
+		.libweb_center { '-libweb-center' }
+		.libweb_inherit_or_center { '-libweb-inherit-or-center' }
+		.libweb_left { '-libweb-left' }
+		.libweb_right { '-libweb-right' }
+		.inter_word { 'inter-word' }
+		.inter_character { 'inter-character' }
+		.ellipsis { 'ellipsis' }
+		.optimizelegibility { 'optimizelegibility' }
+		.capitalize { 'capitalize' }
+		.full_size_kana { 'full-size-kana' }
+		.full_width { 'full-width' }
+		.lowercase { 'lowercase' }
+		.math_auto { 'math-auto' }
+		.uppercase { 'uppercase' }
+		.nowrap { 'nowrap' }
+		.wrap { 'wrap' }
+		.balance { 'balance' }
+		.stable { 'stable' }
+		.pretty { 'pretty' }
+		.discard { 'discard' }
+		.preserve { 'preserve' }
+		.preserve_breaks { 'preserve-breaks' }
+		.preserve_spaces { 'preserve-spaces' }
+		.break_spaces { 'break-spaces' }
+		.discard_before { 'discard-before' }
+		.discard_after { 'discard-after' }
+		.discard_inner { 'discard-inner' }
+		.keep_all { 'keep-all' }
+		.break_all { 'break-all' }
+		.break_word { 'break-word' }
 		.separate { 'separate' }
 		.border_box { 'border-box' }
 		.content_box { 'content-box' }
@@ -2370,6 +2503,39 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'start' { Keyword.start }
 		'middle' { Keyword.middle }
 		'end' { Keyword.end_ }
+		'center' { Keyword.center }
+		'justify' { Keyword.justify }
+		'match-parent' { Keyword.match_parent }
+		'-libweb-center' { Keyword.libweb_center }
+		'-libweb-inherit-or-center' { Keyword.libweb_inherit_or_center }
+		'-libweb-left' { Keyword.libweb_left }
+		'-libweb-right' { Keyword.libweb_right }
+		'inter-word' { Keyword.inter_word }
+		'inter-character' { Keyword.inter_character }
+		'ellipsis' { Keyword.ellipsis }
+		'optimizelegibility' { Keyword.optimizelegibility }
+		'capitalize' { Keyword.capitalize }
+		'full-size-kana' { Keyword.full_size_kana }
+		'full-width' { Keyword.full_width }
+		'lowercase' { Keyword.lowercase }
+		'math-auto' { Keyword.math_auto }
+		'uppercase' { Keyword.uppercase }
+		'nowrap' { Keyword.nowrap }
+		'wrap' { Keyword.wrap }
+		'balance' { Keyword.balance }
+		'stable' { Keyword.stable }
+		'pretty' { Keyword.pretty }
+		'discard' { Keyword.discard }
+		'preserve' { Keyword.preserve }
+		'preserve-breaks' { Keyword.preserve_breaks }
+		'preserve-spaces' { Keyword.preserve_spaces }
+		'break-spaces' { Keyword.break_spaces }
+		'discard-before' { Keyword.discard_before }
+		'discard-after' { Keyword.discard_after }
+		'discard-inner' { Keyword.discard_inner }
+		'keep-all' { Keyword.keep_all }
+		'break-all' { Keyword.break_all }
+		'break-word' { Keyword.break_word }
 		'separate' { Keyword.separate }
 		'border-box' { Keyword.border_box }
 		'content-box' { Keyword.content_box }

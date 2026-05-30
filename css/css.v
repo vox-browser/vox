@@ -140,6 +140,16 @@ pub enum PropertyID {
 	box_sizing
 	list_style_position
 	transform_style
+	text_align
+	text_justify
+	text_overflow
+	text_rendering
+	text_transform
+	text_wrap_mode
+	text_wrap_style
+	white_space_collapse
+	white_space_trim
+	word_break
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

@@ -120,12 +120,18 @@ pub enum TextAlign {
 	right
 	center
 	justify
+	match_parent
+	libweb_center
+	libweb_inherit_or_center
+	libweb_left
+	libweb_right
 }
 
 pub enum TextJustify {
 	auto_
 	none_
 	inter_word
+	inter_character
 }
 
 pub enum TextOverflow {
@@ -214,8 +220,10 @@ pub fn TabSize.length(value Length) TabSize {
 
 pub enum WhiteSpaceCollapse {
 	collapse
+	discard
 	preserve
 	preserve_breaks
+	preserve_spaces
 	break_spaces
 }
 
@@ -288,6 +296,7 @@ pub enum TextTransform {
 	lowercase
 	full_width
 	full_size_kana
+	math_auto
 }
 
 pub struct TextIndentData {
@@ -300,6 +309,13 @@ pub mut:
 pub enum TextWrapMode {
 	wrap
 	nowrap
+}
+
+pub enum TextWrapStyle {
+	auto_
+	balance
+	stable
+	pretty
 }
 
 pub struct ListStyleType {
@@ -1039,8 +1055,29 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.table_layout {
 			'auto'
 		}
+		.text_align {
+			'start'
+		}
 		.text_anchor {
 			'start'
+		}
+		.text_justify {
+			'auto'
+		}
+		.text_overflow {
+			'clip'
+		}
+		.text_rendering {
+			'auto'
+		}
+		.text_transform {
+			'none'
+		}
+		.text_wrap_mode {
+			'wrap'
+		}
+		.text_wrap_style {
+			'auto'
 		}
 		.transform_style {
 			'flat'
@@ -1075,6 +1112,15 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.visibility {
 			'visible'
 		}
+		.white_space_collapse {
+			'collapse'
+		}
+		.white_space_trim {
+			'none'
+		}
+		.word_break {
+			'normal'
+		}
 		.word_spacing {
 			'normal'
 		}
@@ -1095,8 +1141,10 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		.color_scheme, .direction, .empty_cells, .fill_opacity, .fill_rule, .font_style,
 		.font_weight, .letter_spacing, .list_style_image, .list_style_position, .math_depth,
 		.math_style, .orphans, .pointer_events, .shape_rendering, .stroke_linecap,
-		.stroke_linejoin, .stroke_opacity, .text_anchor, .visibility, .webkit_text_fill_color,
-		.word_spacing, .border_collapse {
+		.stroke_linejoin, .stroke_opacity, .text_align, .text_anchor, .text_justify,
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .word_break, .word_spacing,
+		.border_collapse {
 			true
 		}
 		else {
@@ -1130,9 +1178,10 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.empty_cells, .fill_rule, .float_, .isolation, .list_style_position, .mask_type,
 		.math_style, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
 		.pointer_events, .position, .position_anchor, .scroll_timeline_name, .shape_rendering,
-		.stroke_linecap, .stroke_linejoin, .table_layout, .text_anchor, .transform_style,
-		.transition_behavior, .transition_property, .unicode_bidi, .user_select,
-		.view_timeline_name, .visibility {
+		.stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify,
+		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
+		.transform_style, .transition_behavior, .transition_property, .unicode_bidi, .user_select,
+		.view_timeline_name, .visibility, .white_space_collapse, .white_space_trim, .word_break {
 			false
 		}
 	}
@@ -1167,9 +1216,11 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.overflow_y, .pointer_events, .position, .position_anchor, .scroll_timeline_name,
 		.shape_rendering, .table_layout, .shape_image_threshold, .stop_opacity, .stroke_linecap,
 		.stroke_linejoin, .stroke_opacity, .rotate, .scale, .transform, .transform_style,
-		.text_anchor, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .translate, .unicode_bidi, .user_select,
-		.view_timeline_inset, .view_timeline_name, .visibility, .webkit_text_fill_color, .z_index {
+		.text_align, .text_anchor, .text_justify, .text_overflow, .text_rendering, .text_transform,
+		.text_wrap_mode, .text_wrap_style, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .translate,
+		.unicode_bidi, .user_select, .view_timeline_inset, .view_timeline_name, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .z_index {
 			false
 		}
 	}
@@ -1632,23 +1683,56 @@ pub fn (c &ComputedProperties) dominant_baseline() ?BaselineMetric {
 }
 
 pub fn (c &ComputedProperties) text_align() TextAlign {
-	_ = c
-	return .start
+	value := c.property(.text_align, .yes) or { return .start }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .start }
+	return match keyword {
+		.start { TextAlign.start }
+		.end_ { TextAlign.end_ }
+		.left { TextAlign.left }
+		.right { TextAlign.right }
+		.center { TextAlign.center }
+		.justify { TextAlign.justify }
+		.match_parent { TextAlign.match_parent }
+		.libweb_center { TextAlign.libweb_center }
+		.libweb_inherit_or_center { TextAlign.libweb_inherit_or_center }
+		.libweb_left { TextAlign.libweb_left }
+		.libweb_right { TextAlign.libweb_right }
+		else { TextAlign.start }
+	}
 }
 
 pub fn (c &ComputedProperties) text_justify() TextJustify {
-	_ = c
-	return .auto_
+	value := c.property(.text_justify, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { TextJustify.auto_ }
+		.none_ { TextJustify.none_ }
+		.inter_word { TextJustify.inter_word }
+		.inter_character { TextJustify.inter_character }
+		else { TextJustify.auto_ }
+	}
 }
 
 pub fn (c &ComputedProperties) text_overflow() TextOverflow {
-	_ = c
-	return .clip
+	value := c.property(.text_overflow, .yes) or { return .clip }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .clip }
+	return match keyword {
+		.clip { TextOverflow.clip }
+		.ellipsis { TextOverflow.ellipsis }
+		else { TextOverflow.clip }
+	}
 }
 
 pub fn (c &ComputedProperties) text_rendering() TextRendering {
-	_ = c
-	return .auto_
+	value := c.property(.text_rendering, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { TextRendering.auto_ }
+		.optimizespeed { TextRendering.optimizespeed }
+		.optimizelegibility { TextRendering.optimizelegibility }
+		.geometricprecision { TextRendering.geometricprecision }
+		else { TextRendering.auto_ }
+	}
 }
 
 pub fn (c &ComputedProperties) text_underline_offset() CSSPixels {
@@ -1771,18 +1855,56 @@ pub fn (c &ComputedProperties) tab_size() TabSize {
 }
 
 pub fn (c &ComputedProperties) white_space_collapse() WhiteSpaceCollapse {
-	_ = c
-	return .collapse
+	value := c.property(.white_space_collapse, .yes) or { return .collapse }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .collapse }
+	return match keyword {
+		.collapse { WhiteSpaceCollapse.collapse }
+		.discard { WhiteSpaceCollapse.discard }
+		.preserve { WhiteSpaceCollapse.preserve }
+		.preserve_breaks { WhiteSpaceCollapse.preserve_breaks }
+		.preserve_spaces { WhiteSpaceCollapse.preserve_spaces }
+		.break_spaces { WhiteSpaceCollapse.break_spaces }
+		else { WhiteSpaceCollapse.collapse }
+	}
 }
 
 pub fn (c &ComputedProperties) white_space_trim() WhiteSpaceTrimData {
-	_ = c
+	value := c.property(.white_space_trim, .yes) or { return WhiteSpaceTrimData{} }
+	parsed_value := parse_css_value_logic(.white_space_trim, value.css_text) or {
+		return WhiteSpaceTrimData{}
+	}
+	if parsed_value is KeywordStyleValue {
+		if parsed_value.keyword() == .none_ {
+			return WhiteSpaceTrimData{}
+		}
+	}
+	if parsed_value is StyleValueList {
+		mut trim_data := WhiteSpaceTrimData{}
+		for entry in parsed_value.values() {
+			if entry is KeywordStyleValue {
+				match entry.keyword() {
+					.discard_before { trim_data.discard_before = true }
+					.discard_after { trim_data.discard_after = true }
+					.discard_inner { trim_data.discard_inner = true }
+					else {}
+				}
+			}
+		}
+		return trim_data
+	}
 	return WhiteSpaceTrimData{}
 }
 
 pub fn (c &ComputedProperties) word_break() WordBreak {
-	_ = c
-	return .normal
+	value := c.property(.word_break, .yes) or { return .normal }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .normal }
+	return match keyword {
+		.normal { WordBreak.normal }
+		.keep_all { WordBreak.keep_all }
+		.break_all { WordBreak.break_all }
+		.break_word { WordBreak.break_word }
+		else { WordBreak.normal }
+	}
 }
 
 pub fn (c &ComputedProperties) word_spacing() CSSPixels {
@@ -1867,8 +1989,18 @@ pub fn (c &ComputedProperties) text_decoration_thickness() TextDecorationThickne
 }
 
 pub fn (c &ComputedProperties) text_transform() TextTransform {
-	_ = c
-	return .none_
+	value := c.property(.text_transform, .yes) or { return .none_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .none_ }
+	return match keyword {
+		.none_ { TextTransform.none_ }
+		.capitalize { TextTransform.capitalize }
+		.uppercase { TextTransform.uppercase }
+		.lowercase { TextTransform.lowercase }
+		.full_width { TextTransform.full_width }
+		.full_size_kana { TextTransform.full_size_kana }
+		.math_auto { TextTransform.math_auto }
+		else { TextTransform.none_ }
+	}
 }
 
 pub fn (c &ComputedProperties) text_shadow(layout_node &dom.LayoutNode) []ShadowData {
@@ -1883,8 +2015,25 @@ pub fn (c &ComputedProperties) text_indent() TextIndentData {
 }
 
 pub fn (c &ComputedProperties) text_wrap_mode() TextWrapMode {
-	_ = c
-	return .wrap
+	value := c.property(.text_wrap_mode, .yes) or { return .wrap }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .wrap }
+	return match keyword {
+		.wrap { TextWrapMode.wrap }
+		.nowrap { TextWrapMode.nowrap }
+		else { TextWrapMode.wrap }
+	}
+}
+
+pub fn (c &ComputedProperties) text_wrap_style() TextWrapStyle {
+	value := c.property(.text_wrap_style, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { TextWrapStyle.auto_ }
+		.balance { TextWrapStyle.balance }
+		.stable { TextWrapStyle.stable }
+		.pretty { TextWrapStyle.pretty }
+		else { TextWrapStyle.auto_ }
+	}
 }
 
 pub fn (c &ComputedProperties) list_style_type(registered_counter_styles map[string]string) ListStyleType {
@@ -3178,7 +3327,9 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.empty_cells, .fill_rule, .float_, .isolation, .list_style_image, .list_style_position,
 		.mask_image, .mask_type, .mix_blend_mode, .object_fit, .overflow_x, .overflow_y,
 		.pointer_events, .position, .position_anchor, .shape_rendering, .stroke_linecap,
-		.stroke_linejoin, .table_layout, .text_anchor, .transform_style, .user_select {
+		.stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
+		.user_select, .white_space_collapse, .white_space_trim, .word_break {
 			.discrete
 		}
 	}
@@ -3913,7 +4064,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.stroke_linejoin, .stroke_opacity, .rotate, .scale, .scroll_timeline_name, .transform,
 		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
 		.transition_timing_function, .translate, .user_select, .view_timeline_inset,
-		.view_timeline_name, .webkit_text_fill_color, .z_index {
+		.view_timeline_name, .text_overflow, .text_rendering, .webkit_text_fill_color, .z_index {
 			false
 		}
 		.anchor_name, .aspect_ratio, .border_bottom_style, .border_bottom_width, .border_collapse,
@@ -3921,8 +4072,10 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.border_top_style, .border_top_width, .box_sizing, .caption_side, .clear, .direction,
 		.empty_cells, .float_, .isolation, .letter_spacing, .list_style_image,
 		.list_style_position, .order, .orphans, .overflow_x, .overflow_y, .position,
-		.position_anchor, .shape_rendering, .table_layout, .text_anchor, .transform_style,
-		.unicode_bidi, .visibility, .word_spacing {
+		.position_anchor, .shape_rendering, .table_layout, .text_align, .text_anchor,
+		.text_justify, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
+		.unicode_bidi, .visibility, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing {
 			true
 		}
 	}
@@ -3953,10 +4106,12 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
 		.pointer_events, .shape_rendering, .position, .position_anchor, .scroll_timeline_name,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
-		.stroke_opacity, .table_layout, .text_anchor, .transform_style, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.unicode_bidi, .user_select, .view_timeline_inset, .view_timeline_name, .visibility,
-		.webkit_text_fill_color, .word_spacing {
+		.stroke_opacity, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
+		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
+		.transition_timing_function, .unicode_bidi, .user_select, .view_timeline_inset,
+		.view_timeline_name, .visibility, .webkit_text_fill_color, .white_space_collapse,
+		.white_space_trim, .word_break, .word_spacing {
 			false
 		}
 	}
@@ -4002,10 +4157,12 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_x, .overflow_y,
 		.pointer_events, .shape_rendering, .position, .position_anchor, .scroll_timeline_name,
 		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
-		.stroke_opacity, .table_layout, .text_anchor, .transform_style, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.unicode_bidi, .user_select, .view_timeline_inset, .view_timeline_name, .visibility,
-		.webkit_text_fill_color, .word_spacing, .z_index {
+		.stroke_opacity, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow,
+		.text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .transform_style,
+		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
+		.transition_timing_function, .unicode_bidi, .user_select, .view_timeline_inset,
+		.view_timeline_name, .visibility, .webkit_text_fill_color, .white_space_collapse,
+		.white_space_trim, .word_break, .word_spacing, .z_index {
 			false
 		}
 	}
@@ -4032,6 +4189,15 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 	//       In the future, we should figure out ways to rebuild a smaller part of the tree.
 	if property_requires_full_invalidation(property_id) {
 		return required_invalidation_after_style_change_full()
+	}
+
+	// NOTE: If the text-transform property changes, it may affect layout. Furthermore, since the
+	//       Layout::TextNode caches the post-transform text, we have to update the layout tree.
+	if property_id == .text_transform {
+		invalidation.rebuild_layout_tree = true
+		invalidation.relayout = true
+		invalidation.repaint = true
+		return invalidation
 	}
 
 	// OPTIMIZATION: Special handling for CSS `visibility`:

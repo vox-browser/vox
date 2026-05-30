@@ -398,8 +398,29 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.table_layout {
 			return parser.parse_table_layout_value(mut tokens)
 		}
+		.text_align {
+			return parser.parse_text_align_value(mut tokens)
+		}
 		.text_anchor {
 			return parser.parse_text_anchor_value(mut tokens)
+		}
+		.text_justify {
+			return parser.parse_text_justify_value(mut tokens)
+		}
+		.text_overflow {
+			return parser.parse_text_overflow_value(mut tokens)
+		}
+		.text_rendering {
+			return parser.parse_text_rendering_value(mut tokens)
+		}
+		.text_transform {
+			return parser.parse_text_transform_value(mut tokens)
+		}
+		.text_wrap_mode {
+			return parser.parse_text_wrap_mode_value(mut tokens)
+		}
+		.text_wrap_style {
+			return parser.parse_text_wrap_style_value(mut tokens)
 		}
 		.transform {
 			return parser.parse_transform_value(mut tokens)
@@ -439,6 +460,15 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.visibility {
 			return parser.parse_visibility_value(mut tokens)
+		}
+		.white_space_collapse {
+			return parser.parse_white_space_collapse_value(mut tokens)
+		}
+		.white_space_trim {
+			return parser.parse_white_space_trim_value(mut tokens)
+		}
+		.word_break {
+			return parser.parse_word_break_value(mut tokens)
 		}
 		.z_index {
 			return parser.parse_z_index_value(mut tokens)
@@ -1282,6 +1312,46 @@ fn (mut parser Parser) parse_text_anchor_value(mut tokens ComponentValueStream) 
 	return parse_property_keyword_value(mut tokens, ['start', 'middle', 'end'])
 }
 
+fn (mut parser Parser) parse_text_align_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['center', 'justify', 'start', 'end', 'left',
+		'right', 'match-parent', '-libweb-center', '-libweb-inherit-or-center', '-libweb-left',
+		'-libweb-right'])
+}
+
+fn (mut parser Parser) parse_text_justify_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens,
+		['auto', 'none', 'inter-word', 'inter-character'])
+}
+
+fn (mut parser Parser) parse_text_overflow_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['clip', 'ellipsis'])
+}
+
+fn (mut parser Parser) parse_text_rendering_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'optimizespeed', 'optimizelegibility',
+		'geometricprecision'])
+}
+
+fn (mut parser Parser) parse_text_transform_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['capitalize', 'full-size-kana', 'full-width',
+		'lowercase', 'math-auto', 'none', 'uppercase'])
+}
+
+fn (mut parser Parser) parse_text_wrap_mode_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['wrap', 'nowrap'])
+}
+
+fn (mut parser Parser) parse_text_wrap_style_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'balance', 'stable', 'pretty'])
+}
+
 fn (mut parser Parser) parse_transform_style_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['flat', 'preserve-3d'])
@@ -1301,6 +1371,78 @@ fn (mut parser Parser) parse_user_select_value(mut tokens ComponentValueStream) 
 fn (mut parser Parser) parse_visibility_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['collapse', 'hidden', 'visible'])
+}
+
+fn (mut parser Parser) parse_white_space_collapse_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['collapse', 'discard', 'preserve',
+		'preserve-breaks', 'preserve-spaces', 'break-spaces'])
+}
+
+fn (mut parser Parser) parse_white_space_trim_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	if value := parse_property_keyword_value(mut tokens, ['none']) {
+		return value
+	}
+
+	mut transaction := tokens.clone()
+	mut values := []StyleValue{}
+	mut discard_before := false
+	mut discard_after := false
+	mut discard_inner := false
+
+	for {
+		transaction.consume_whitespace()
+		component_value := transaction.consume() or { break }
+		if !component_value.is(.ident) {
+			return none
+		}
+		ident := to_ascii_lowercase(component_value.token().ident())
+		keyword := match ident {
+			'discard-before' {
+				if discard_before {
+					return none
+				}
+				discard_before = true
+				Keyword.discard_before
+			}
+			'discard-after' {
+				if discard_after {
+					return none
+				}
+				discard_after = true
+				Keyword.discard_after
+			}
+			'discard-inner' {
+				if discard_inner {
+					return none
+				}
+				discard_inner = true
+				Keyword.discard_inner
+			}
+			else {
+				return none
+			}
+		}
+
+		values << StyleValue(KeywordStyleValue.create(keyword))
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			break
+		}
+	}
+
+	if values.len == 0 {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(StyleValueList.create(values, .space, .yes))
+}
+
+fn (mut parser Parser) parse_word_break_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens,
+		['normal', 'keep-all', 'break-all', 'break-word'])
 }
 
 fn (mut parser Parser) parse_z_index_value(mut tokens ComponentValueStream) ?StyleValue {
