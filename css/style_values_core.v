@@ -3199,8 +3199,8 @@ pub fn (value CSSKeywordValue) create_an_internal_representation(property Proper
 			return true
 		}
 		property_id := property.id() or { return false }
+		keyword_from_string(value.value_) or { return false }
 		return property_accepts_keyword_string(property_id, value.value_)
-			|| property_accepts_custom_ident(property_id, value.value_)
 	}()
 	if perform_type_check == .yes && !matches_grammar {
 		return error("Property '${property.name()}' does not accept the keyword '${value.value_}'")
