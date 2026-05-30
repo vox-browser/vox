@@ -75,6 +75,7 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		}
 	}
 	property_id := match lowercase_name {
+		'animation-timeline' { PropertyID.animation_timeline }
 		'color' { PropertyID.color }
 		'color-scheme' { PropertyID.color_scheme }
 		'content-visibility' { PropertyID.content_visibility }

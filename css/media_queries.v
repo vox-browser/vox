@@ -76,15 +76,12 @@ pub mut:
 }
 
 pub fn parse_media_query(context ParsingParams, text string) ?&MediaQuery {
-	_ = context
-	trimmed := text.trim_space()
-	if trimmed.len == 0 {
+	queries := parse_css_media_query_list_value_logic(text)
+	if queries.len != 1 {
 		return none
 	}
-	return &MediaQuery{
-		text:    trimmed
-		matches: media_query_text_matches_stub(trimmed)
-	}
+	_ = context
+	return queries[0]
 }
 
 pub fn (media_query &MediaQuery) evaluate(doc &dom.Document) bool {
@@ -136,7 +133,8 @@ pub fn (media_list &MediaList) media_text() string {
 pub fn (mut media_list MediaList) set_media_text(text string) {
 	media_list.media.clear()
 	if text.trim_space().len != 0 {
-		media_list.media = parse_media_query_list_stub(text)
+		media_list.media =
+			media_query_entries_from_queries(parse_css_media_query_list_value_logic(text))
 	}
 	media_list.invalidate_associated_style_sheet()
 }
@@ -294,16 +292,21 @@ fn parse_media_query_entry_stub(medium string) ?MediaQueryListEntry {
 }
 
 fn parse_media_query_list_stub(text string) []MediaQueryListEntry {
-	mut media := []MediaQueryListEntry{}
-	for part in text.split(',') {
-		if entry := parse_media_query_entry_stub(part) {
-			media << entry
-		}
-	}
-	return media
+	return media_query_entries_from_queries(parse_css_media_query_list_value_logic(text))
 }
 
 fn evaluate_media_query_entry_stub(entry MediaQueryListEntry, document &dom.Document) bool {
 	_ = document
 	return media_query_text_matches_stub(entry.text)
+}
+
+fn media_query_entries_from_queries(queries []&MediaQuery) []MediaQueryListEntry {
+	mut entries := []MediaQueryListEntry{cap: queries.len}
+	for query in queries {
+		entries << MediaQueryListEntry{
+			text:    query.to_string()
+			matches: query.matches()
+		}
+	}
+	return entries
 }

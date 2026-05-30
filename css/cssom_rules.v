@@ -2145,12 +2145,7 @@ fn next_unique_anonymous_layer_name_stub() string {
 }
 
 fn property_id_from_name_stub(property_name string) ?PropertyID {
-	return match property_name.to_lower() {
-		'color' { PropertyID.color }
-		'color-scheme' { PropertyID.color_scheme }
-		'content-visibility' { PropertyID.content_visibility }
-		else { none }
-	}
+	return property_id_from_string(property_name)
 }
 
 fn is_a_custom_property_name_string(name string) bool {
@@ -2158,193 +2153,30 @@ fn is_a_custom_property_name_string(name string) bool {
 }
 
 fn parse_syntax_definition_stub(syntax string) bool {
-	// Stub for consume a syntax definition.
-	return syntax.trim_space().len != 0
+	component_values := parse_component_values_for_value_logic(syntax)
+	return parse_as_syntax(component_values) != none
 }
 
 fn parse_selector_stub(selector_text string, declared_namespaces map[string]bool) ?SelectorList {
-	_ = declared_namespaces
-	trimmed := selector_text.trim_space()
-	if trimmed.len == 0 {
-		return none
-	}
-	mut selectors := SelectorList{}
-	for part in trimmed.split(',') {
-		selector := part.trim_space()
-		if selector.len != 0 {
-			selectors.selectors << Selector{
-				text: selector
-			}
-		}
-	}
-	if selectors.selectors.len == 0 {
-		return none
-	}
-	return selectors
+	return parse_selector_with_parser(selector_text, declared_namespaces)
 }
 
 fn parse_selector_for_nested_style_rule_stub(selector_text string, declared_namespaces map[string]bool) ?SelectorList {
-	return parse_selector_stub(selector_text, declared_namespaces)
+	return parse_selector_for_nested_style_rule_with_parser(selector_text, declared_namespaces)
 }
 
 fn parse_css_property_declaration_block_stub(block string) &CSSStyleProperties {
-	mut declarations := CSSStyleProperties.create()
-	mut text := block.trim_space()
-	if text.starts_with('{') && text.ends_with('}') {
-		text = text[1..text.len - 1]
-	}
-	for declaration_text in text.split(';') {
-		declaration := declaration_text.trim_space()
-		if declaration.len == 0 || !declaration.contains(':') {
-			continue
-		}
-		parts := declaration.split_nth(':', 2)
-		if parts.len != 2 {
-			continue
-		}
-		name := parts[0].trim_space()
-		mut value := parts[1].trim_space()
-		if name.len == 0 || value.len == 0 {
-			continue
-		}
-		mut important := false
-		if value.to_lower().ends_with('!important') {
-			important = true
-			value = value[..value.len - '!important'.len].trim_space()
-		}
-		if name.starts_with('--') {
-			declarations.custom_properties[name] = value
-		} else {
-			declarations.properties << CSSStyleProperty{
-				name:      name
-				value:     value
-				important: important
-			}
-		}
-	}
-	return declarations
+	return parse_css_property_declaration_block_with_parser(block)
 }
 
 fn parse_css_rule_stub(rule_text string, declared_namespaces map[string]bool) ?&CSSRule {
-	text := rule_text.trim_space()
-	if text.len == 0 {
-		return none
-	}
-
-	if text.starts_with('@namespace') {
-		body := text['@namespace'.len..].trim_space().trim_right(';').trim_space()
-		if body.len == 0 {
-			return none
-		}
-		parts := body.split(' ')
-		if parts.len == 1 {
-			return CSSRule.create_namespace(none, parse_css_url_token_stub(parts[0]))
-		}
-		return CSSRule.create_namespace(parts[0], parse_css_url_token_stub(parts[1..].join(' ')))
-	}
-
-	if text.starts_with('@import') {
-		body := text['@import'.len..].trim_space().trim_right(';').trim_space()
-		if body.len == 0 {
-			return none
-		}
-		parts := body.split(' ')
-		url := parse_css_url_token_stub(parts[0])
-		mut media := MediaList.create_empty()
-		if parts.len > 1 {
-			mut mutable_media := unsafe { &MediaList(media) }
-			mutable_media.set_media_text(parts[1..].join(' '))
-		}
-		return CSSRule.create_import(url, none, none, none, media)
-	}
-
-	if text.starts_with('@media') {
-		condition, inner := split_condition_rule_stub(text, '@media') or { return none }
-		mut media := MediaList.create_empty()
-		mut mutable_media := unsafe { &MediaList(media) }
-		mutable_media.set_media_text(condition)
-		return CSSRule.create_media(media, CSSRuleList.create(parse_css_stylesheet_contents_stub(inner,
-			declared_namespaces)))
-	}
-
-	if text.starts_with('@supports') {
-		condition, inner := split_condition_rule_stub(text, '@supports') or { return none }
-		supports := parse_css_supports(ParsingParams{}, condition) or { return none }
-		return CSSRule.create_supports(supports, CSSRuleList.create(parse_css_stylesheet_contents_stub(inner,
-			declared_namespaces)))
-	}
-
-	if text.contains('{') && text.ends_with('}') {
-		open := text.index('{') or { return none }
-		selector_text := text[..open].trim_space()
-		body := text[open + 1..text.len - 1]
-		selectors := parse_selector_stub(selector_text, declared_namespaces) or { return none }
-		declarations := parse_css_property_declaration_block_stub(body)
-		return CSSRule.create_style(selectors, declarations, CSSRuleList.create_empty())
-	}
-
-	return none
+	return parse_css_rule_with_parser(rule_text, declared_namespaces)
 }
 
 fn parse_css_stylesheet_stub(css_text string, location ?string) &CSSStyleSheet {
-	rules := CSSRuleList.create(parse_css_stylesheet_contents_stub(css_text, map[string]bool{}))
-	return CSSStyleSheet.create(rules, MediaList.create_empty(), location)
+	return parse_css_stylesheet_with_parser(css_text, location)
 }
 
 fn parse_css_stylesheet_contents_stub(css_text string, declared_namespaces map[string]bool) []&CSSRule {
-	mut rules := []&CSSRule{}
-	mut remaining := css_text.trim_space()
-	for remaining.len != 0 {
-		next_end := find_next_rule_end_stub(remaining) or { break }
-		rule_text := remaining[..next_end].trim_space()
-		if rule := parse_css_rule_stub(rule_text, declared_namespaces) {
-			rules << rule
-		}
-		remaining = remaining[next_end..].trim_space()
-	}
-	if rules.len == 0 {
-		if rule := parse_css_rule_stub(css_text, declared_namespaces) {
-			rules << rule
-		}
-	}
-	return rules
-}
-
-fn find_next_rule_end_stub(text string) ?int {
-	mut depth := 0
-	for index, ch in text {
-		if ch == `{` {
-			depth++
-		} else if ch == `}` {
-			depth--
-			if depth == 0 {
-				return index + 1
-			}
-		} else if ch == `;` && depth == 0 {
-			return index + 1
-		}
-	}
-	return none
-}
-
-fn split_condition_rule_stub(text string, at_rule_name string) ?(string, string) {
-	open := text.index('{') or { return none }
-	if !text.ends_with('}') {
-		return none
-	}
-	condition := text[at_rule_name.len..open].trim_space()
-	inner := text[open + 1..text.len - 1].trim_space()
-	return condition, inner
-}
-
-fn parse_css_url_token_stub(token string) string {
-	mut value := token.trim_space()
-	if value.starts_with('url(') && value.ends_with(')') {
-		value = value[4..value.len - 1].trim_space()
-	}
-	if (value.starts_with('"') && value.ends_with('"'))
-		|| (value.starts_with("'") && value.ends_with("'")) {
-		value = value[1..value.len - 1]
-	}
-	return value
+	return parse_css_stylesheet_contents_with_parser(css_text, declared_namespaces)
 }

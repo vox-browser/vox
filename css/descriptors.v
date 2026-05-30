@@ -55,12 +55,10 @@ fn descriptor_style_value_to_string(value &dom.StyleValue) string {
 }
 
 fn parse_css_descriptor_stub(at_rule_id AtRuleID, descriptor_id DescriptorID, value string) ?&dom.StyleValue {
-	_ = at_rule_id
-	_ = descriptor_id
-	if value.trim_space().len == 0 {
+	parsed_value := parse_css_descriptor_value_logic(at_rule_id, descriptor_id, value) or {
 		return none
 	}
-	return &dom.StyleValue{}
+	return dom_style_value_from_value_logic(parsed_value)
 }
 
 // A non-spec base class for descriptor-list classes.
@@ -366,10 +364,33 @@ pub fn for_each_expanded_descriptor_longhand(at_rule_id AtRuleID, descriptor_id 
 }
 
 fn parse_descriptor_declaration_block_stub(at_rule_id AtRuleID, text string) []Descriptor {
-	_ = at_rule_id
-	_ = text
-	// Stub for Parser::parse_css_style_declaration(); no descriptors are produced until descriptor parsing is translated.
-	return []
+	mut declarations := []Descriptor{}
+	mut block := text.trim_space()
+	if block.starts_with('{') && block.ends_with('}') {
+		block = block[1..block.len - 1]
+	}
+
+	for declaration_text in block.split(';') {
+		declaration := declaration_text.trim_space()
+		if declaration.len == 0 || !declaration.contains(':') {
+			continue
+		}
+		parts := declaration.split_nth(':', 2)
+		if parts.len != 2 {
+			continue
+		}
+		descriptor_id := descriptor_id_from_string(at_rule_id, parts[0].trim_space()) or {
+			continue
+		}
+		value_text := parts[1].trim_space()
+		value := parse_css_descriptor_stub(at_rule_id, descriptor_id, value_text) or { continue }
+		declarations << Descriptor{
+			descriptor_id: descriptor_id
+			value:         value
+		}
+	}
+
+	return declarations
 }
 
 @[heap]

@@ -43,10 +43,10 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	return false
 }
 
-pub const number_of_longhand_properties = 3
+pub const number_of_longhand_properties = 4
 
 pub fn first_longhand_property_id() PropertyID {
-	return .color
+	return .animation_timeline
 }
 
 pub fn last_longhand_property_id() PropertyID {
@@ -55,9 +55,10 @@ pub fn last_longhand_property_id() PropertyID {
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
 	return match index {
-		0 { PropertyID.color }
-		1 { PropertyID.color_scheme }
-		2 { PropertyID.content_visibility }
+		0 { PropertyID.animation_timeline }
+		1 { PropertyID.color }
+		2 { PropertyID.color_scheme }
+		3 { PropertyID.content_visibility }
 		else { none }
 	}
 }
