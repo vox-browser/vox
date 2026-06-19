@@ -402,6 +402,11 @@ pub enum PropertyID {
 	grid_row
 	grid_column
 	grid_area
+	white_space
+	overflow_clip_margin
+	overflow_clip_margin_block
+	overflow_clip_margin_inline
+	all
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

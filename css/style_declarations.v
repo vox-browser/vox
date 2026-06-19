@@ -388,6 +388,11 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.grid_row { 'grid-row' }
 		.grid_column { 'grid-column' }
 		.grid_area { 'grid-area' }
+		.white_space { 'white-space' }
+		.overflow_clip_margin { 'overflow-clip-margin' }
+		.overflow_clip_margin_block { 'overflow-clip-margin-block' }
+		.overflow_clip_margin_inline { 'overflow-clip-margin-inline' }
+		.all { 'all' }
 	}
 }
 

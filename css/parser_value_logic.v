@@ -772,6 +772,26 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.grid_area {
 			return parser.parse_grid_area_shorthand(mut tokens)
 		}
+		.white_space {
+			return parser.parse_white_space_shorthand(mut tokens)
+		}
+		.overflow_clip_margin {
+			return parser.parse_overflow_clip_margin_shorthand(mut tokens, .overflow_clip_margin,
+				[PropertyID.overflow_clip_margin_top, PropertyID.overflow_clip_margin_right,
+				PropertyID.overflow_clip_margin_bottom, PropertyID.overflow_clip_margin_left])
+		}
+		.overflow_clip_margin_block {
+			return parser.parse_overflow_clip_margin_shorthand(mut tokens, .overflow_clip_margin_block,
+				[PropertyID.overflow_clip_margin_block_start, PropertyID.overflow_clip_margin_block_end])
+		}
+		.overflow_clip_margin_inline {
+			return parser.parse_overflow_clip_margin_shorthand(mut tokens, .overflow_clip_margin_inline,
+				[PropertyID.overflow_clip_margin_inline_start, PropertyID.overflow_clip_margin_inline_end])
+		}
+		.all {
+			// `all` only accepts the CSS-wide keywords, which are handled before this dispatch.
+			return none
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2793,6 +2813,55 @@ fn (mut parser Parser) parse_flex_shorthand(mut tokens ComponentValueStream) ?St
 	resolved_shrink := shrink or { StyleValue(NumberStyleValue.create(1)) }
 	resolved_basis := basis or { StyleValue(PercentageStyleValue.create(Percentage.new(0))) }
 	return flex_shorthand_value(resolved_grow, resolved_shrink, resolved_basis)
+}
+
+// https://drafts.csswg.org/css-text-4/#propdef-white-space
+// normal | pre | pre-wrap | pre-line | <'white-space-collapse'> || <'text-wrap-mode'> || <'white-space-trim'>
+fn (mut parser Parser) parse_white_space_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut keyword_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut keyword_attempt, ['normal', 'pre', 'pre-wrap',
+		'pre-line'])
+	{
+		if value is KeywordStyleValue {
+			mut collapse := Keyword.collapse
+			mut mode := Keyword.wrap
+			match value.keyword() {
+				.pre {
+					collapse = .preserve
+					mode = .nowrap
+				}
+				.pre_wrap {
+					collapse = .preserve
+					mode = .wrap
+				}
+				.pre_line {
+					collapse = .preserve_breaks
+					mode = .wrap
+				}
+				else {}
+			}
+			tokens = keyword_attempt
+			return StyleValue(ShorthandStyleValue.create(.white_space, [PropertyID.white_space_collapse,
+				PropertyID.text_wrap_mode, PropertyID.white_space_trim], [
+				StyleValue(KeywordStyleValue.create(collapse)),
+				StyleValue(KeywordStyleValue.create(mode)),
+				StyleValue(KeywordStyleValue.create(.none_)),
+			]))
+		}
+	}
+
+	return parser.parse_double_bar_shorthand(mut tokens, .white_space, [PropertyID.white_space_collapse,
+		PropertyID.text_wrap_mode, PropertyID.white_space_trim])
+}
+
+// overflow-clip-margin* — a single `<visual-box> || <length [0,∞]>` applied to every referenced edge.
+fn (mut parser Parser) parse_overflow_clip_margin_shorthand(mut tokens ComponentValueStream, shorthand PropertyID, longhands []PropertyID) ?StyleValue {
+	value := parser.parse_overflow_clip_margin_value(mut tokens) or { return none }
+	mut values := []StyleValue{}
+	for _ in longhands {
+		values << value
+	}
+	return StyleValue(ShorthandStyleValue.create(shorthand, longhands, values))
 }
 
 fn grid_split_by_slash(values []ComponentValue) [][]ComponentValue {

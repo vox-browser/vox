@@ -468,8 +468,35 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 			[PropertyID.grid_row_start, PropertyID.grid_column_start, PropertyID.grid_row_end,
 				PropertyID.grid_column_end]
 		}
+		.white_space {
+			[PropertyID.white_space_collapse, PropertyID.text_wrap_mode, PropertyID.white_space_trim]
+		}
+		.overflow_clip_margin {
+			[PropertyID.overflow_clip_margin_top, PropertyID.overflow_clip_margin_right,
+				PropertyID.overflow_clip_margin_bottom, PropertyID.overflow_clip_margin_left]
+		}
+		.overflow_clip_margin_block {
+			[PropertyID.overflow_clip_margin_block_start, PropertyID.overflow_clip_margin_block_end]
+		}
+		.overflow_clip_margin_inline {
+			[PropertyID.overflow_clip_margin_inline_start, PropertyID.overflow_clip_margin_inline_end]
+		}
+		.all { all_shorthand_longhands() }
 		else { []PropertyID{} }
 	}
+}
+
+// The `all` shorthand expands to every longhand except direction and unicode-bidi.
+fn all_shorthand_longhands() []PropertyID {
+	mut result := []PropertyID{}
+	for index in 0 .. number_of_longhand_properties {
+		if longhand_id := property_id_from_longhand_index(index) {
+			if longhand_id != .direction && longhand_id != .unicode_bidi {
+				result << longhand_id
+			}
+		}
+	}
+	return result
 }
 
 pub fn (c &CascadedProperties) property(property_id PropertyID) ?&dom.StyleValue {

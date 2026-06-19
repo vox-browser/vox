@@ -1203,6 +1203,21 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'grid-area' {
 			PropertyID.grid_area
 		}
+		'white-space' {
+			PropertyID.white_space
+		}
+		'overflow-clip-margin' {
+			PropertyID.overflow_clip_margin
+		}
+		'overflow-clip-margin-block' {
+			PropertyID.overflow_clip_margin_block
+		}
+		'overflow-clip-margin-inline' {
+			PropertyID.overflow_clip_margin_inline
+		}
+		'all' {
+			PropertyID.all
+		}
 		else {
 			return none
 		}
@@ -3783,6 +3798,9 @@ pub enum Keyword {
 	no_open_quote
 	no_close_quote
 	historical_forms
+	pre
+	pre_wrap
+	pre_line
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -4251,6 +4269,9 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.no_open_quote { 'no-open-quote' }
 		.no_close_quote { 'no-close-quote' }
 		.historical_forms { 'historical-forms' }
+		.pre { 'pre' }
+		.pre_wrap { 'pre-wrap' }
+		.pre_line { 'pre-line' }
 	}
 }
 
@@ -4708,6 +4729,9 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'no-open-quote' { Keyword.no_open_quote }
 		'no-close-quote' { Keyword.no_close_quote }
 		'historical-forms' { Keyword.historical_forms }
+		'pre' { Keyword.pre }
+		'pre-wrap' { Keyword.pre_wrap }
+		'pre-line' { Keyword.pre_line }
 		else { none }
 	}
 }
