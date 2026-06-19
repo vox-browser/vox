@@ -1119,6 +1119,39 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'border-inline-width' {
 			PropertyID.border_inline_width
 		}
+		'border-top' {
+			PropertyID.border_top
+		}
+		'border-right' {
+			PropertyID.border_right
+		}
+		'border-bottom' {
+			PropertyID.border_bottom
+		}
+		'border-left' {
+			PropertyID.border_left
+		}
+		'border-block-start' {
+			PropertyID.border_block_start
+		}
+		'border-block-end' {
+			PropertyID.border_block_end
+		}
+		'border-inline-start' {
+			PropertyID.border_inline_start
+		}
+		'border-inline-end' {
+			PropertyID.border_inline_end
+		}
+		'border' {
+			PropertyID.border
+		}
+		'border-block' {
+			PropertyID.border_block
+		}
+		'border-inline' {
+			PropertyID.border_inline
+		}
 		else {
 			return none
 		}

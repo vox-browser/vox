@@ -360,6 +360,17 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.border_inline_style { 'border-inline-style' }
 		.border_block_width { 'border-block-width' }
 		.border_inline_width { 'border-inline-width' }
+		.border_top { 'border-top' }
+		.border_right { 'border-right' }
+		.border_bottom { 'border-bottom' }
+		.border_left { 'border-left' }
+		.border_block_start { 'border-block-start' }
+		.border_block_end { 'border-block-end' }
+		.border_inline_start { 'border-inline-start' }
+		.border_inline_end { 'border-inline-end' }
+		.border { 'border' }
+		.border_block { 'border-block' }
+		.border_inline { 'border-inline' }
 	}
 }
 

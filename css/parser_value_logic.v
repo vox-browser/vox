@@ -688,6 +688,39 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_inline_width {
 			return parser.parse_border_inline_width_shorthand(mut tokens)
 		}
+		.border_top {
+			return parser.parse_border_top_shorthand(mut tokens)
+		}
+		.border_right {
+			return parser.parse_border_right_shorthand(mut tokens)
+		}
+		.border_bottom {
+			return parser.parse_border_bottom_shorthand(mut tokens)
+		}
+		.border_left {
+			return parser.parse_border_left_shorthand(mut tokens)
+		}
+		.border_block_start {
+			return parser.parse_border_block_start_shorthand(mut tokens)
+		}
+		.border_block_end {
+			return parser.parse_border_block_end_shorthand(mut tokens)
+		}
+		.border_inline_start {
+			return parser.parse_border_inline_start_shorthand(mut tokens)
+		}
+		.border_inline_end {
+			return parser.parse_border_inline_end_shorthand(mut tokens)
+		}
+		.border {
+			return parser.parse_border_shorthand(mut tokens)
+		}
+		.border_block {
+			return parser.parse_border_block_shorthand(mut tokens)
+		}
+		.border_inline {
+			return parser.parse_border_inline_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2426,6 +2459,141 @@ fn (mut parser Parser) parse_border_inline_width_shorthand(mut tokens ComponentV
 	return parser.parse_box_2_shorthand(mut tokens, .border_inline_width, [PropertyID.border_inline_start_width,
 		PropertyID.border_inline_end_width], .border_width)
 }
+
+struct BorderEdgeComponents {
+	width StyleValue
+	style StyleValue
+	color StyleValue
+}
+
+// <line-width> || <line-style> || <color>  (omitted components fall back to their initial values).
+fn (mut parser Parser) parse_border_edge_components(mut tokens ComponentValueStream) ?BorderEdgeComponents {
+	mut width := ?StyleValue(none)
+	mut style := ?StyleValue(none)
+	mut color := ?StyleValue(none)
+	for {
+		tokens.consume_whitespace()
+		if !tokens.has_more_tokens() {
+			break
+		}
+		if width == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_border_or_outline_width_value(mut attempt) {
+				width = value
+				tokens = attempt
+				continue
+			}
+		}
+		if style == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_line_style_value(mut attempt) {
+				style = value
+				tokens = attempt
+				continue
+			}
+		}
+		if color == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_color_value(mut attempt) {
+				color = value
+				tokens = attempt
+				continue
+			}
+		}
+		break
+	}
+	if width == none && style == none && color == none {
+		return none
+	}
+	return BorderEdgeComponents{
+		width: width or { StyleValue(KeywordStyleValue.create(.medium)) }
+		style: style or { StyleValue(KeywordStyleValue.create(.none_)) }
+		color: color or { StyleValue(KeywordStyleValue.create(.currentcolor)) }
+	}
+}
+
+fn (mut parser Parser) parse_border_edge_shorthand(mut tokens ComponentValueStream, shorthand PropertyID, width_id PropertyID, style_id PropertyID, color_id PropertyID) ?StyleValue {
+	c := parser.parse_border_edge_components(mut tokens) or { return none }
+	return StyleValue(ShorthandStyleValue.create(shorthand, [width_id, style_id, color_id], [c.width,
+		c.style, c.color]))
+}
+
+fn (mut parser Parser) parse_border_top_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_border_edge_shorthand(mut tokens, .border_top, .border_top_width, .border_top_style,
+		.border_top_color)
+}
+
+fn (mut parser Parser) parse_border_right_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_border_edge_shorthand(mut tokens, .border_right, .border_right_width,
+		.border_right_style, .border_right_color)
+}
+
+fn (mut parser Parser) parse_border_bottom_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_border_edge_shorthand(mut tokens, .border_bottom, .border_bottom_width,
+		.border_bottom_style, .border_bottom_color)
+}
+
+fn (mut parser Parser) parse_border_left_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_border_edge_shorthand(mut tokens, .border_left, .border_left_width,
+		.border_left_style, .border_left_color)
+}
+
+fn (mut parser Parser) parse_border_block_start_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_border_edge_shorthand(mut tokens, .border_block_start, .border_block_start_width,
+		.border_block_start_style, .border_block_start_color)
+}
+
+fn (mut parser Parser) parse_border_block_end_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_border_edge_shorthand(mut tokens, .border_block_end, .border_block_end_width,
+		.border_block_end_style, .border_block_end_color)
+}
+
+fn (mut parser Parser) parse_border_inline_start_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_border_edge_shorthand(mut tokens, .border_inline_start, .border_inline_start_width,
+		.border_inline_start_style, .border_inline_start_color)
+}
+
+fn (mut parser Parser) parse_border_inline_end_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_border_edge_shorthand(mut tokens, .border_inline_end, .border_inline_end_width,
+		.border_inline_end_style, .border_inline_end_color)
+}
+
+// https://drafts.csswg.org/css-backgrounds/#propdef-border  ->  width/style/color applied to all four edges.
+// FIXME: the spec also resets border-image to its initial value; that reset is not translated yet.
+fn (mut parser Parser) parse_border_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	c := parser.parse_border_edge_components(mut tokens) or { return none }
+	return StyleValue(ShorthandStyleValue.create(.border, border_shorthand_longhands, [c.width,
+		c.width, c.width, c.width, c.style, c.style, c.style, c.style, c.color, c.color, c.color,
+		c.color]))
+}
+
+fn (mut parser Parser) parse_border_block_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	c := parser.parse_border_edge_components(mut tokens) or { return none }
+	return StyleValue(ShorthandStyleValue.create(.border_block, border_block_shorthand_longhands,
+		[c.width, c.width, c.style, c.style, c.color, c.color]))
+}
+
+fn (mut parser Parser) parse_border_inline_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	c := parser.parse_border_edge_components(mut tokens) or { return none }
+	return StyleValue(ShorthandStyleValue.create(.border_inline, border_inline_shorthand_longhands,
+		[c.width, c.width, c.style, c.style, c.color, c.color]))
+}
+
+const border_shorthand_longhands = [PropertyID.border_top_width, PropertyID.border_right_width,
+	PropertyID.border_bottom_width, PropertyID.border_left_width, PropertyID.border_top_style,
+	PropertyID.border_right_style, PropertyID.border_bottom_style, PropertyID.border_left_style,
+	PropertyID.border_top_color, PropertyID.border_right_color, PropertyID.border_bottom_color,
+	PropertyID.border_left_color]
+
+const border_block_shorthand_longhands = [PropertyID.border_block_start_width,
+	PropertyID.border_block_end_width, PropertyID.border_block_start_style,
+	PropertyID.border_block_end_style, PropertyID.border_block_start_color,
+	PropertyID.border_block_end_color]
+
+const border_inline_shorthand_longhands = [PropertyID.border_inline_start_width,
+	PropertyID.border_inline_end_width, PropertyID.border_inline_start_style,
+	PropertyID.border_inline_end_style, PropertyID.border_inline_start_color,
+	PropertyID.border_inline_end_color]
 
 // https://drafts.csswg.org/css-flexbox-1/#propdef-flex-flow  ->  <'flex-direction'> || <'flex-wrap'>
 fn (mut parser Parser) parse_flex_flow_shorthand(mut tokens ComponentValueStream) ?StyleValue {

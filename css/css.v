@@ -374,6 +374,17 @@ pub enum PropertyID {
 	border_inline_style
 	border_block_width
 	border_inline_width
+	border_top
+	border_right
+	border_bottom
+	border_left
+	border_block_start
+	border_block_end
+	border_inline_start
+	border_inline_end
+	border
+	border_block
+	border_inline
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {
