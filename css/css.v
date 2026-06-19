@@ -338,6 +338,8 @@ pub enum PropertyID {
 	counter_set
 	cursor
 	font_size
+	fill
+	stroke
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

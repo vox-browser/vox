@@ -1568,6 +1568,12 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.font_size {
 			'medium'
 		}
+		.fill {
+			'black'
+		}
+		.stroke {
+			'none'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -1591,7 +1597,7 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		.text_wrap_style, .visibility, .webkit_text_fill_color, .white_space_collapse, .word_break,
 		.word_spacing, .writing_mode, .border_collapse, .border_spacing, .dominant_baseline,
 		.quotes, .text_shadow, .list_style_type, .stroke_dasharray, .font_family, .cursor,
-		.font_size {
+		.font_size, .fill, .stroke {
 			true
 		}
 		else {
@@ -1643,7 +1649,7 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_columns, .grid_auto_rows,
 		.grid_template_columns, .grid_template_rows, .filter, .backdrop_filter, .counter_increment,
-		.counter_reset, .counter_set, .cursor, .font_size {
+		.counter_reset, .counter_set, .cursor, .font_size, .fill, .stroke {
 			true
 		}
 		else {
@@ -1677,7 +1683,7 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .flood_color, .font_style, .font_weight, .font_width,
 		.letter_spacing, .math_depth, .outline_width, .stop_color, .text_decoration_color,
-		.word_spacing, .font_size {
+		.word_spacing, .font_size, .fill {
 			true
 		}
 		else {
@@ -4693,7 +4699,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.top, .transform_origin, .vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate,
 		.scale, .transform, .translate, .webkit_text_fill_color, .word_spacing, .scrollbar_width,
 		.z_index, .flex_basis, .clip, .grid_auto_columns, .grid_auto_rows, .counter_increment,
-		.counter_reset, .counter_set, .font_size {
+		.counter_reset, .counter_set, .font_size, .fill, .stroke {
 			.by_computed_value
 		}
 		.content_visibility, .visibility, .display, .box_shadow, .text_shadow, .stroke_dasharray,
@@ -5480,7 +5486,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.scroll_behavior, .resize, .text_decoration_color, .text_decoration_line,
 		.text_decoration_style, .text_decoration_thickness, .text_overflow, .text_rendering,
 		.webkit_text_fill_color, .z_index, .box_shadow, .text_shadow, .clip, .stroke_dasharray,
-		.filter, .backdrop_filter, .cursor {
+		.filter, .backdrop_filter, .cursor, .fill, .stroke {
 			false
 		}
 		.anchor_name, .aspect_ratio, .block_size, .bottom, .border_block_end_style,

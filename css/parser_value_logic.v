@@ -586,6 +586,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.font_size {
 			return parser.parse_font_size_value(mut tokens)
 		}
+		.fill, .stroke {
+			return parser.parse_paint_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1690,6 +1693,21 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+// https://svgwg.org/svg2-draft/painting.html#SpecifyingFillPaint
+// <paint> = none | <color> | <url> [none | <color>]? | context-fill | context-stroke
+// FIXME: <url> paint servers and context-fill/context-stroke are not translated yet.
+fn (mut parser Parser) parse_paint_value(mut tokens ComponentValueStream) ?StyleValue {
+	if color := parser.parse_color_value(mut tokens) {
+		return color
+	}
+	mut none_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut none_attempt, ['none']) {
+		tokens = none_attempt
+		return value
+	}
+	return none
 }
 
 // https://drafts.csswg.org/css-fonts/#propdef-font-size

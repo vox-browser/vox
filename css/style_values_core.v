@@ -1014,6 +1014,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'font-size' {
 			PropertyID.font_size
 		}
+		'fill' {
+			PropertyID.fill
+		}
+		'stroke' {
+			PropertyID.stroke
+		}
 		else {
 			return none
 		}
@@ -1076,6 +1082,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.background_image, .border_image_source, .list_style_image {
 			value_type == .image
+		}
+		.fill, .stroke {
+			value_type == .paint
 		}
 		.mask_image {
 			value_type in [.image, .url]
@@ -1879,6 +1888,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.font_size {
 			lowercase_value in font_size_keywords
 		}
+		.fill, .stroke {
+			lowercase_value == 'none'
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1954,7 +1966,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
 		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas, .filter,
-		.backdrop_filter, .cursor, .font_size {
+		.backdrop_filter, .cursor, .font_size, .fill, .stroke {
 			false
 		}
 		.color_scheme {
