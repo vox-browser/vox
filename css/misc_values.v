@@ -420,6 +420,131 @@ pub fn display_box_to_string(value DisplayBox) string {
 	}
 }
 
+fn display_outside_from_keyword_string(value string) ?DisplayOutside {
+	return match value {
+		'block' { DisplayOutside.block }
+		'inline' { DisplayOutside.inline_ }
+		'run-in' { DisplayOutside.run_in }
+		else { none }
+	}
+}
+
+fn display_inside_from_keyword_string(value string) ?DisplayInside {
+	return match value {
+		'flow' { DisplayInside.flow }
+		'flow-root' { DisplayInside.flow_root }
+		'table' { DisplayInside.table }
+		'flex' { DisplayInside.flex }
+		'grid' { DisplayInside.grid }
+		'ruby' { DisplayInside.ruby }
+		'math' { DisplayInside.math }
+		else { none }
+	}
+}
+
+fn display_internal_from_keyword_string(value string) ?DisplayInternal {
+	return match value {
+		'table-row-group' { DisplayInternal.table_row_group }
+		'table-header-group' { DisplayInternal.table_header_group }
+		'table-footer-group' { DisplayInternal.table_footer_group }
+		'table-row' { DisplayInternal.table_row }
+		'table-cell' { DisplayInternal.table_cell }
+		'table-column-group' { DisplayInternal.table_column_group }
+		'table-column' { DisplayInternal.table_column }
+		'table-caption' { DisplayInternal.table_caption }
+		'ruby-base' { DisplayInternal.ruby_base }
+		'ruby-text' { DisplayInternal.ruby_text }
+		'ruby-base-container' { DisplayInternal.ruby_base_container }
+		'ruby-text-container' { DisplayInternal.ruby_text_container }
+		else { none }
+	}
+}
+
+// https://drafts.csswg.org/css-display/#typedef-display-legacy and the single
+// <display-outside> / <display-inside> / <display-internal> / <display-box> keywords.
+pub fn display_from_single_keyword_string(value string) ?Display {
+	if value == 'list-item' {
+		return Display.from_short(.list_item)
+	}
+	if outside := display_outside_from_keyword_string(value) {
+		return match outside {
+			.block { Display.from_short(.block) }
+			.inline_ { Display.from_short(.inline_) }
+			.run_in { Display.from_short(.run_in) }
+		}
+	}
+	if inside := display_inside_from_keyword_string(value) {
+		return match inside {
+			.flow { Display.from_short(.flow) }
+			.flow_root { Display.from_short(.flow_root) }
+			.table { Display.from_short(.table) }
+			.flex { Display.from_short(.flex) }
+			.grid { Display.from_short(.grid) }
+			.ruby { Display.from_short(.ruby) }
+			.math { Display.from_short(.math) }
+		}
+	}
+	if internal := display_internal_from_keyword_string(value) {
+		return Display.from_internal(internal)
+	}
+	if value == 'contents' {
+		return Display.from_short(.contents)
+	}
+	if value == 'none' {
+		return Display.from_short(.none_)
+	}
+	return match value {
+		'inline-block' { Display.from_short(.inline_block) }
+		'inline-table' { Display.from_short(.inline_table) }
+		'inline-flex' { Display.from_short(.inline_flex) }
+		'inline-grid' { Display.from_short(.inline_grid) }
+		else { none }
+	}
+}
+
+// <display-outside>? && <display-inside>? && list-item?
+pub fn display_from_multi_keyword_strings(idents []string) ?Display {
+	mut list_item := false
+	mut has_inside := false
+	mut inside := DisplayInside.flow
+	mut has_outside := false
+	mut outside := DisplayOutside.block
+	for ident in idents {
+		if ident == 'list-item' {
+			if list_item {
+				return none
+			}
+			list_item = true
+			continue
+		}
+		if inside_value := display_inside_from_keyword_string(ident) {
+			if has_inside {
+				return none
+			}
+			has_inside = true
+			inside = inside_value
+			continue
+		}
+		if outside_value := display_outside_from_keyword_string(ident) {
+			if has_outside {
+				return none
+			}
+			has_outside = true
+			outside = outside_value
+			continue
+		}
+		return none
+	}
+
+	// The spec does not allow any other inside values to be combined with list-item.
+	if list_item && has_inside && inside != .flow && inside != .flow_root {
+		return none
+	}
+
+	list_item_value := if list_item { DisplayListItem.yes } else { DisplayListItem.no }
+	return Display.from_outside_inside_and_list_item(outside, inside, list_item_value)
+}
+
 // --- Clip ---
 
 pub enum ClipType {

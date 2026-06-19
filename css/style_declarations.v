@@ -299,6 +299,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.ry { 'ry' }
 		.resize { 'resize' }
 		.dominant_baseline { 'dominant-baseline' }
+		.display { 'display' }
 	}
 }
 
@@ -332,14 +333,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 278
+pub const number_of_longhand_properties = 279
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .dominant_baseline
+	return .display
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -622,6 +623,7 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		275 { PropertyID.vertical_align }
 		276 { PropertyID.will_change }
 		277 { PropertyID.dominant_baseline }
+		278 { PropertyID.display }
 		else { none }
 	}
 }

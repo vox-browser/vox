@@ -526,6 +526,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.dominant_baseline {
 			return parser.parse_dominant_baseline_value(mut tokens)
 		}
+		.display {
+			return parser.parse_display_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1508,6 +1511,33 @@ fn (mut parser Parser) parse_dominant_baseline_value(mut tokens ComponentValueSt
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'text-bottom', 'alphabetic',
 		'ideographic', 'middle', 'central', 'mathematical', 'hanging', 'text-top'])
+}
+
+// https://drafts.csswg.org/css-display/#the-display-properties
+fn (mut parser Parser) parse_display_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	mut transaction := tokens.clone()
+	mut idents := []string{}
+	for {
+		transaction.consume_whitespace()
+		component_value := transaction.consume() or { break }
+		if !component_value.is(.ident) {
+			return none
+		}
+		idents << to_ascii_lowercase(component_value.token().ident())
+	}
+	if idents.len == 0 {
+		return none
+	}
+
+	display := if idents.len == 1 {
+		display_from_single_keyword_string(idents[0]) or { return none }
+	} else {
+		display_from_multi_keyword_strings(idents) or { return none }
+	}
+
+	tokens = transaction
+	return StyleValue(DisplayStyleValue.create(display))
 }
 
 fn (mut parser Parser) parse_position_value(mut tokens ComponentValueStream) ?StyleValue {

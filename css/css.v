@@ -312,6 +312,7 @@ pub enum PropertyID {
 	vertical_align
 	will_change
 	dominant_baseline
+	display
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

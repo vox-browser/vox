@@ -1517,6 +1517,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.dominant_baseline {
 			'auto'
 		}
+		.display {
+			'inline'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -4639,7 +4642,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.z_index {
 			.by_computed_value
 		}
-		.content_visibility, .visibility {
+		.content_visibility, .visibility, .display {
 			.custom
 		}
 		.background_clip, .background_origin, .background_position_x, .background_position_y,
@@ -5452,7 +5455,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.text_indent, .text_transform, .text_wrap_mode, .text_wrap_style, .top, .transform_style,
 		.unicode_bidi, .vertical_align, .visibility, .white_space_collapse, .white_space_trim,
 		.width, .word_break, .word_spacing, .writing_mode, .cx, .cy, .x, .y, .r, .rx, .ry,
-		.dominant_baseline {
+		.dominant_baseline, .display {
 			true
 		}
 	}
