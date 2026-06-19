@@ -361,6 +361,30 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 		.padding_inline { [PropertyID.padding_inline_start, PropertyID.padding_inline_end] }
 		.inset_block { [PropertyID.inset_block_start, PropertyID.inset_block_end] }
 		.inset_inline { [PropertyID.inset_inline_start, PropertyID.inset_inline_end] }
+		.border_color {
+			[PropertyID.border_top_color, PropertyID.border_right_color, PropertyID.border_bottom_color,
+				PropertyID.border_left_color]
+		}
+		.border_style {
+			[PropertyID.border_top_style, PropertyID.border_right_style, PropertyID.border_bottom_style,
+				PropertyID.border_left_style]
+		}
+		.border_width {
+			[PropertyID.border_top_width, PropertyID.border_right_width, PropertyID.border_bottom_width,
+				PropertyID.border_left_width]
+		}
+		.border_block_color { [PropertyID.border_block_start_color, PropertyID.border_block_end_color] }
+		.border_inline_color {
+			[PropertyID.border_inline_start_color, PropertyID.border_inline_end_color]
+		}
+		.border_block_style { [PropertyID.border_block_start_style, PropertyID.border_block_end_style] }
+		.border_inline_style {
+			[PropertyID.border_inline_start_style, PropertyID.border_inline_end_style]
+		}
+		.border_block_width { [PropertyID.border_block_start_width, PropertyID.border_block_end_width] }
+		.border_inline_width {
+			[PropertyID.border_inline_start_width, PropertyID.border_inline_end_width]
+		}
 		else { []PropertyID{} }
 	}
 }

@@ -351,6 +351,15 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.padding_inline { 'padding-inline' }
 		.inset_block { 'inset-block' }
 		.inset_inline { 'inset-inline' }
+		.border_color { 'border-color' }
+		.border_style { 'border-style' }
+		.border_width { 'border-width' }
+		.border_block_color { 'border-block-color' }
+		.border_inline_color { 'border-inline-color' }
+		.border_block_style { 'border-block-style' }
+		.border_inline_style { 'border-inline-style' }
+		.border_block_width { 'border-block-width' }
+		.border_inline_width { 'border-inline-width' }
 	}
 }
 

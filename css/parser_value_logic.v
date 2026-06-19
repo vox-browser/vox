@@ -661,6 +661,33 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.inset_inline {
 			return parser.parse_inset_inline_shorthand(mut tokens)
 		}
+		.border_color {
+			return parser.parse_border_color_shorthand(mut tokens)
+		}
+		.border_style {
+			return parser.parse_border_style_shorthand(mut tokens)
+		}
+		.border_width {
+			return parser.parse_border_width_shorthand(mut tokens)
+		}
+		.border_block_color {
+			return parser.parse_border_block_color_shorthand(mut tokens)
+		}
+		.border_inline_color {
+			return parser.parse_border_inline_color_shorthand(mut tokens)
+		}
+		.border_block_style {
+			return parser.parse_border_block_style_shorthand(mut tokens)
+		}
+		.border_inline_style {
+			return parser.parse_border_inline_style_shorthand(mut tokens)
+		}
+		.border_block_width {
+			return parser.parse_border_block_width_shorthand(mut tokens)
+		}
+		.border_inline_width {
+			return parser.parse_border_inline_width_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2257,6 +2284,9 @@ enum BoxSideKind {
 	margin
 	padding
 	inset
+	border_color
+	border_style
+	border_width
 }
 
 fn (mut parser Parser) parse_box_side_value(mut tokens ComponentValueStream, kind BoxSideKind) ?StyleValue {
@@ -2264,6 +2294,9 @@ fn (mut parser Parser) parse_box_side_value(mut tokens ComponentValueStream, kin
 		.margin { parser.parse_margin_value(mut tokens) }
 		.padding { parser.parse_padding_value(mut tokens) }
 		.inset { parser.parse_inset_value(mut tokens) }
+		.border_color { parser.parse_color_value(mut tokens) }
+		.border_style { parser.parse_line_style_value(mut tokens) }
+		.border_width { parser.parse_border_or_outline_width_value(mut tokens) }
 	}
 }
 
@@ -2344,6 +2377,54 @@ fn (mut parser Parser) parse_inset_block_shorthand(mut tokens ComponentValueStre
 fn (mut parser Parser) parse_inset_inline_shorthand(mut tokens ComponentValueStream) ?StyleValue {
 	return parser.parse_box_2_shorthand(mut tokens, .inset_inline, [PropertyID.inset_inline_start,
 		PropertyID.inset_inline_end], .inset)
+}
+
+fn (mut parser Parser) parse_border_color_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_4_shorthand(mut tokens, .border_color, [PropertyID.border_top_color,
+		PropertyID.border_right_color, PropertyID.border_bottom_color, PropertyID.border_left_color],
+		.border_color)
+}
+
+fn (mut parser Parser) parse_border_style_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_4_shorthand(mut tokens, .border_style, [PropertyID.border_top_style,
+		PropertyID.border_right_style, PropertyID.border_bottom_style, PropertyID.border_left_style],
+		.border_style)
+}
+
+fn (mut parser Parser) parse_border_width_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_4_shorthand(mut tokens, .border_width, [PropertyID.border_top_width,
+		PropertyID.border_right_width, PropertyID.border_bottom_width, PropertyID.border_left_width],
+		.border_width)
+}
+
+fn (mut parser Parser) parse_border_block_color_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .border_block_color, [PropertyID.border_block_start_color,
+		PropertyID.border_block_end_color], .border_color)
+}
+
+fn (mut parser Parser) parse_border_inline_color_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .border_inline_color, [PropertyID.border_inline_start_color,
+		PropertyID.border_inline_end_color], .border_color)
+}
+
+fn (mut parser Parser) parse_border_block_style_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .border_block_style, [PropertyID.border_block_start_style,
+		PropertyID.border_block_end_style], .border_style)
+}
+
+fn (mut parser Parser) parse_border_inline_style_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .border_inline_style, [PropertyID.border_inline_start_style,
+		PropertyID.border_inline_end_style], .border_style)
+}
+
+fn (mut parser Parser) parse_border_block_width_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .border_block_width, [PropertyID.border_block_start_width,
+		PropertyID.border_block_end_width], .border_width)
+}
+
+fn (mut parser Parser) parse_border_inline_width_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .border_inline_width, [PropertyID.border_inline_start_width,
+		PropertyID.border_inline_end_width], .border_width)
 }
 
 // https://drafts.csswg.org/css-flexbox-1/#propdef-flex-flow  ->  <'flex-direction'> || <'flex-wrap'>
