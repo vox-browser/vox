@@ -335,6 +335,10 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.content { 'content' }
 		.font_variant_alternates { 'font-variant-alternates' }
 		.overflow { 'overflow' }
+		.gap { 'gap' }
+		.place_items { 'place-items' }
+		.place_content { 'place-content' }
+		.place_self { 'place-self' }
 	}
 }
 

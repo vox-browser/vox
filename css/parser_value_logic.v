@@ -613,6 +613,18 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.overflow {
 			return parser.parse_overflow_shorthand(mut tokens)
 		}
+		.gap {
+			return parser.parse_gap_shorthand(mut tokens)
+		}
+		.place_items {
+			return parser.parse_place_items_shorthand(mut tokens)
+		}
+		.place_content {
+			return parser.parse_place_content_shorthand(mut tokens)
+		}
+		.place_self {
+			return parser.parse_place_self_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2203,6 +2215,62 @@ fn (mut parser Parser) parse_font_variant_tuple(mut tokens ComponentValueStream,
 
 	tokens = transaction
 	return StyleValue(TupleStyleValue.create(slots))
+}
+
+// https://drafts.csswg.org/css-align/#propdef-gap  ->  <'row-gap'> <'column-gap'>?
+fn (mut parser Parser) parse_gap_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	row := parser.parse_gap_value(mut tokens) or { return none }
+	mut column := row
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		column = parser.parse_gap_value(mut transaction) or { return none }
+		tokens = transaction
+	}
+	return StyleValue(ShorthandStyleValue.create(.gap, [PropertyID.row_gap, PropertyID.column_gap],
+		[row, column]))
+}
+
+// https://drafts.csswg.org/css-align/#propdef-place-items  ->  <'align-items'> <'justify-items'>?
+fn (mut parser Parser) parse_place_items_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	align := parser.parse_align_items_value(mut tokens) or { return none }
+	mut justify := align
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		justify = parser.parse_justify_items_value(mut transaction) or { return none }
+		tokens = transaction
+	}
+	return StyleValue(ShorthandStyleValue.create(.place_items, [PropertyID.align_items, PropertyID.justify_items],
+		[align, justify]))
+}
+
+// https://drafts.csswg.org/css-align/#propdef-place-content  ->  <'align-content'> <'justify-content'>?
+fn (mut parser Parser) parse_place_content_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	align := parser.parse_align_content_value(mut tokens) or { return none }
+	mut justify := align
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		justify = parser.parse_justify_content_value(mut transaction) or { return none }
+		tokens = transaction
+	}
+	return StyleValue(ShorthandStyleValue.create(.place_content, [PropertyID.align_content, PropertyID.justify_content],
+		[align, justify]))
+}
+
+// https://drafts.csswg.org/css-align/#propdef-place-self  ->  <'align-self'> <'justify-self'>?
+fn (mut parser Parser) parse_place_self_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	align := parser.parse_align_self_value(mut tokens) or { return none }
+	mut justify := align
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		justify = parser.parse_justify_self_value(mut transaction) or { return none }
+		tokens = transaction
+	}
+	return StyleValue(ShorthandStyleValue.create(.place_self, [PropertyID.align_self, PropertyID.justify_self],
+		[align, justify]))
 }
 
 // https://drafts.csswg.org/css-overflow/#propdef-overflow  ->  <'overflow-x'> <'overflow-y'>?

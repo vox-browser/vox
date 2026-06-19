@@ -1044,6 +1044,18 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'overflow' {
 			PropertyID.overflow
 		}
+		'gap', 'grid-gap' {
+			PropertyID.gap
+		}
+		'place-items' {
+			PropertyID.place_items
+		}
+		'place-content' {
+			PropertyID.place_content
+		}
+		'place-self' {
+			PropertyID.place_self
+		}
 		else {
 			return none
 		}

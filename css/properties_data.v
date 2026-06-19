@@ -339,6 +339,10 @@ fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value St
 fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 	return match property_id {
 		.overflow { [PropertyID.overflow_x, PropertyID.overflow_y] }
+		.gap { [PropertyID.row_gap, PropertyID.column_gap] }
+		.place_items { [PropertyID.align_items, PropertyID.justify_items] }
+		.place_content { [PropertyID.align_content, PropertyID.justify_content] }
+		.place_self { [PropertyID.align_self, PropertyID.justify_self] }
 		else { []PropertyID{} }
 	}
 }
