@@ -318,6 +318,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.grid_template_columns { 'grid-template-columns' }
 		.grid_template_rows { 'grid-template-rows' }
 		.grid_template_areas { 'grid-template-areas' }
+		.filter { 'filter' }
+		.backdrop_filter { 'backdrop-filter' }
 	}
 }
 
@@ -352,14 +354,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 297
+pub const number_of_longhand_properties = 299
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .grid_template_areas
+	return .backdrop_filter
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -661,6 +663,8 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		294 { PropertyID.grid_template_columns }
 		295 { PropertyID.grid_template_rows }
 		296 { PropertyID.grid_template_areas }
+		297 { PropertyID.filter }
+		298 { PropertyID.backdrop_filter }
 		else { none }
 	}
 }

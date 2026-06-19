@@ -331,6 +331,8 @@ pub enum PropertyID {
 	grid_template_columns
 	grid_template_rows
 	grid_template_areas
+	filter
+	backdrop_filter
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

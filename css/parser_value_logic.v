@@ -568,6 +568,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.grid_template_areas {
 			return parser.parse_grid_template_areas_value(mut tokens)
 		}
+		.filter, .backdrop_filter {
+			return parser.parse_filter_value_list_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1672,6 +1675,199 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+fn color_filter_type_from_string(name string) ?ColorFilterType {
+	return match name {
+		'brightness' { ColorFilterType.brightness }
+		'contrast' { ColorFilterType.contrast }
+		'grayscale' { ColorFilterType.grayscale }
+		'invert' { ColorFilterType.invert }
+		'opacity' { ColorFilterType.opacity }
+		'saturate' { ColorFilterType.saturate }
+		'sepia' { ColorFilterType.sepia }
+		else { none }
+	}
+}
+
+// https://drafts.fxtf.org/filter-effects/#FilterProperty  ->  none | <filter-value-list>
+fn (mut parser Parser) parse_filter_value_list_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut none_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut none_attempt, ['none']) {
+		tokens = none_attempt
+		return value
+	}
+
+	// FIXME: <url> filter references are not translated yet.
+	// <filter-value-list> = [ <filter-function> | <url> ]+
+	mut transaction := tokens.clone()
+	mut filter_value_list := []FilterStyleValue{}
+	for {
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			break
+		}
+		token := transaction.consume() or { break }
+		if !token.is_function() {
+			return none
+		}
+		filter_value := parser.parse_filter_function(to_ascii_lowercase(token.function().name),
+			token.function().value) or { return none }
+		filter_value_list << filter_value
+	}
+
+	if filter_value_list.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(FilterValueListStyleValue.create(filter_value_list))
+}
+
+fn (mut parser Parser) parse_filter_function(name string, function_values []ComponentValue) ?FilterStyleValue {
+	mut tokens := ComponentValueStream.new(function_values)
+	tokens.consume_whitespace()
+
+	if name == 'blur' {
+		// blur( <length>? )
+		if !tokens.has_more_tokens() {
+			return FilterStyleValue(FilterOperationBlur{
+				radius: StyleValue(LengthStyleValue.create(Length.make_px(0)))
+			})
+		}
+		blur_radius := parser.parse_length_value(mut tokens) or { return none }
+		if blur_radius is LengthStyleValue && blur_radius.raw_value() < 0 {
+			return none
+		}
+		tokens.consume_whitespace()
+		if tokens.has_more_tokens() {
+			return none
+		}
+		return FilterStyleValue(FilterOperationBlur{
+			radius: blur_radius
+		})
+	}
+
+	if name == 'drop-shadow' {
+		// drop-shadow( [ <color>? && <length>{2,3} ] )
+		if !tokens.has_more_tokens() {
+			return none
+		}
+		mut maybe_color := ?StyleValue(none)
+		if color := parser.parse_color_value(mut tokens) {
+			maybe_color = color
+		}
+		tokens.consume_whitespace()
+		x_offset := parser.parse_length_value(mut tokens) or { return none }
+		tokens.consume_whitespace()
+		if !tokens.has_more_tokens() {
+			return none
+		}
+		y_offset := parser.parse_length_value(mut tokens) or { return none }
+		tokens.consume_whitespace()
+
+		mut maybe_radius := ?StyleValue(none)
+		if tokens.has_more_tokens() {
+			if radius := parser.parse_length_value(mut tokens) {
+				maybe_radius = radius
+			}
+			tokens.consume_whitespace()
+			if maybe_color == none && (maybe_radius == none || tokens.has_more_tokens()) {
+				color := parser.parse_color_value(mut tokens) or { return none }
+				maybe_color = color
+			} else if maybe_radius == none {
+				return none
+			}
+		}
+
+		tokens.consume_whitespace()
+		if tokens.has_more_tokens() {
+			return none
+		}
+		return FilterStyleValue(FilterOperationDropShadow{
+			offset_x: x_offset
+			offset_y: y_offset
+			radius:   maybe_radius
+			color:    maybe_color
+		})
+	}
+
+	if name == 'hue-rotate' {
+		// hue-rotate( [ <angle> | <zero> ]? )
+		if !tokens.has_more_tokens() {
+			return FilterStyleValue(FilterOperationHueRotate{
+				angle: StyleValue(AngleStyleValue.create(Angle.make_degrees(0)))
+			})
+		}
+		if next := tokens.peek() {
+			if next.is(.number) {
+				number_token := tokens.consume() or { return none }
+				number := number_token.token().number()
+				if number.is_integer() && number.integer_value() == 0 {
+					tokens.consume_whitespace()
+					if tokens.has_more_tokens() {
+						return none
+					}
+					return FilterStyleValue(FilterOperationHueRotate{
+						angle: StyleValue(AngleStyleValue.create(Angle.make_degrees(0)))
+					})
+				}
+				return none
+			}
+		}
+		angle := parser.parse_angle_value(mut tokens) or { return none }
+		tokens.consume_whitespace()
+		if tokens.has_more_tokens() {
+			return none
+		}
+		return FilterStyleValue(FilterOperationHueRotate{
+			angle: angle
+		})
+	}
+
+	// Simple color filters: brightness/contrast/grayscale/invert/opacity/saturate/sepia( <number-percentage>? )
+	color_type := color_filter_type_from_string(name) or { return none }
+	if !tokens.has_more_tokens() {
+		return FilterStyleValue(FilterOperationColor{
+			operation: color_type
+			amount:    StyleValue(NumberStyleValue.create(1))
+		})
+	}
+
+	amount_value := parser.parse_number_percentage_value(mut tokens) or { return none }
+	if amount_value is PercentageStyleValue {
+		if amount_value.percentage().value() < 0 {
+			return none
+		}
+	}
+	if amount_value is NumberStyleValue {
+		if amount_value.number() < 0 {
+			return none
+		}
+	}
+
+	mut final_amount := amount_value
+	if color_type in [ColorFilterType.grayscale, .invert, .opacity, .sepia] {
+		if amount_value is PercentageStyleValue {
+			if amount_value.percentage().value() > 100 {
+				final_amount = StyleValue(PercentageStyleValue.create(Percentage.new(100)))
+			}
+		}
+		if amount_value is NumberStyleValue {
+			if amount_value.number() > 1 {
+				final_amount = StyleValue(NumberStyleValue.create(1))
+			}
+		}
+	}
+
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return FilterStyleValue(FilterOperationColor{
+		operation: color_type
+		amount:    final_amount
+	})
 }
 
 // https://www.w3.org/TR/css-grid-2/#grid-template-areas-property  ->  none | <string>+

@@ -993,6 +993,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'grid-template-areas' {
 			PropertyID.grid_template_areas
 		}
+		'filter', '-webkit-filter' {
+			PropertyID.filter
+		}
+		'backdrop-filter', '-webkit-backdrop-filter' {
+			PropertyID.backdrop_filter
+		}
 		else {
 			return none
 		}
@@ -1227,7 +1233,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.animation_composition, .animation_direction, .animation_fill_mode, .animation_play_state,
 		.transition_behavior, .transition_property, .dominant_baseline, .display, .box_shadow,
-		.text_shadow, .clip, .grid_auto_flow {
+		.text_shadow, .clip, .grid_auto_flow, .filter, .backdrop_filter {
 			false
 		}
 	}
@@ -1843,6 +1849,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.grid_template_areas {
 			lowercase_value == 'none'
 		}
+		.filter, .backdrop_filter {
+			lowercase_value == 'none'
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1917,7 +1926,8 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .widows,
 		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
-		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas {
+		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas, .filter,
+		.backdrop_filter {
 			false
 		}
 		.color_scheme {

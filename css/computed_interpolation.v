@@ -1556,6 +1556,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.grid_template_areas {
 			'none'
 		}
+		.filter, .backdrop_filter {
+			'none'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -1629,7 +1632,7 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.transition_delay, .transition_duration, .transition_timing_function, .translate,
 		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_columns, .grid_auto_rows,
-		.grid_template_columns, .grid_template_rows {
+		.grid_template_columns, .grid_template_rows, .filter, .backdrop_filter {
 			true
 		}
 		else {
@@ -4682,7 +4685,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 			.by_computed_value
 		}
 		.content_visibility, .visibility, .display, .box_shadow, .text_shadow, .stroke_dasharray,
-		.grid_template_columns, .grid_template_rows {
+		.grid_template_columns, .grid_template_rows, .filter, .backdrop_filter {
 			.custom
 		}
 		.background_clip, .background_origin, .background_position_x, .background_position_y,
@@ -5463,7 +5466,8 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.view_timeline_name, .view_transition_name, .will_change, .scrollbar_width,
 		.scroll_behavior, .resize, .text_decoration_color, .text_decoration_line,
 		.text_decoration_style, .text_decoration_thickness, .text_overflow, .text_rendering,
-		.webkit_text_fill_color, .z_index, .box_shadow, .text_shadow, .clip, .stroke_dasharray {
+		.webkit_text_fill_color, .z_index, .box_shadow, .text_shadow, .clip, .stroke_dasharray,
+		.filter, .backdrop_filter {
 			false
 		}
 		.anchor_name, .aspect_ratio, .block_size, .bottom, .border_block_end_style,
