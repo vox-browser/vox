@@ -314,6 +314,7 @@ pub enum PropertyID {
 	dominant_baseline
 	display
 	flex_basis
+	quotes
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

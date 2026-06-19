@@ -532,6 +532,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.flex_basis {
 			return parser.parse_flex_basis_value(mut tokens)
 		}
+		.quotes {
+			return parser.parse_quotes_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1514,6 +1517,33 @@ fn (mut parser Parser) parse_dominant_baseline_value(mut tokens ComponentValueSt
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'text-bottom', 'alphabetic',
 		'ideographic', 'middle', 'central', 'mathematical', 'hanging', 'text-top'])
+}
+
+// https://drafts.csswg.org/css-content/#propdef-quotes
+fn (mut parser Parser) parse_quotes_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto', 'none']) {
+		tokens = transaction
+		return value
+	}
+
+	// [ <string> <string> ]+
+	transaction = tokens.clone()
+	mut strings := []StyleValue{}
+	for {
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			break
+		}
+		string_value := parser.parse_string_value(mut transaction) or { return none }
+		strings << StyleValue(string_value)
+	}
+	if strings.len == 0 || strings.len % 2 != 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(strings, .space, .no))
 }
 
 // https://drafts.csswg.org/css-flexbox-1/#propdef-flex-basis
