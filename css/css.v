@@ -320,6 +320,7 @@ pub enum PropertyID {
 	list_style_type
 	clip
 	stroke_dasharray
+	font_family
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

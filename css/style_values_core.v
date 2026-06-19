@@ -960,6 +960,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'stroke-dasharray' {
 			PropertyID.stroke_dasharray
 		}
+		'font-family' {
+			PropertyID.font_family
+		}
 		else {
 			return none
 		}
@@ -998,7 +1001,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.animation_iteration_count {
 			value_type == .number
 		}
-		.animation_name {
+		.animation_name, .font_family {
 			value_type in [.custom_ident, .string]
 		}
 		.animation_timing_function {
@@ -1788,6 +1791,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.stroke_dasharray {
 			lowercase_value == 'none'
 		}
+		.font_family {
+			is_generic_font_family_name(lowercase_value)
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1897,6 +1903,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.transition_property, .list_style_type {
 			lowercase_value != 'none'
+		}
+		.font_family {
+			lowercase_value != 'default' && !is_generic_font_family_name(lowercase_value)
 		}
 		.anchor_name, .position_try_fallbacks, .scroll_timeline_name, .timeline_scope,
 		.view_timeline_name {
@@ -3361,6 +3370,18 @@ pub enum Keyword {
 	central
 	mathematical
 	text_top
+	serif
+	sans_serif
+	monospace
+	cursive
+	fantasy
+	system_ui
+	ui_serif
+	ui_sans_serif
+	ui_monospace
+	ui_rounded
+	math
+	fangsong
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3741,6 +3762,18 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.central { 'central' }
 		.mathematical { 'mathematical' }
 		.text_top { 'text-top' }
+		.serif { 'serif' }
+		.sans_serif { 'sans-serif' }
+		.monospace { 'monospace' }
+		.cursive { 'cursive' }
+		.fantasy { 'fantasy' }
+		.system_ui { 'system-ui' }
+		.ui_serif { 'ui-serif' }
+		.ui_sans_serif { 'ui-sans-serif' }
+		.ui_monospace { 'ui-monospace' }
+		.ui_rounded { 'ui-rounded' }
+		.math { 'math' }
+		.fangsong { 'fangsong' }
 	}
 }
 
@@ -4110,6 +4143,18 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'central' { Keyword.central }
 		'mathematical' { Keyword.mathematical }
 		'text-top' { Keyword.text_top }
+		'serif' { Keyword.serif }
+		'sans-serif' { Keyword.sans_serif }
+		'monospace' { Keyword.monospace }
+		'cursive' { Keyword.cursive }
+		'fantasy' { Keyword.fantasy }
+		'system-ui' { Keyword.system_ui }
+		'ui-serif' { Keyword.ui_serif }
+		'ui-sans-serif' { Keyword.ui_sans_serif }
+		'ui-monospace' { Keyword.ui_monospace }
+		'ui-rounded' { Keyword.ui_rounded }
+		'math' { Keyword.math }
+		'fangsong' { Keyword.fangsong }
 		else { none }
 	}
 }

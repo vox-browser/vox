@@ -550,6 +550,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.stroke_dasharray {
 			return parser.parse_stroke_dasharray_value(mut tokens)
 		}
+		.font_family {
+			return parser.parse_font_family_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1654,6 +1657,96 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+// https://drafts.csswg.org/css-fonts/#propdef-font-family
+// [ <family-name> | <generic-family> ]#
+fn (mut parser Parser) parse_font_family_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	mut families := []StyleValue{}
+	for value in values {
+		mut item_tokens := ComponentValueStream.new(value)
+		family := parser.parse_font_family_item(mut item_tokens) or { return none }
+		families << family
+	}
+	if families.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	if families.len == 1 {
+		return families[0]
+	}
+	return StyleValue(StyleValueList.create(families, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_font_family_item(mut tokens ComponentValueStream) ?StyleValue {
+	tokens.consume_whitespace()
+
+	// <generic-family> is a keyword that occupies the whole comma-segment on its own.
+	if peek := tokens.peek() {
+		if peek.is(.ident) {
+			ident := to_ascii_lowercase(peek.token().ident())
+			if is_generic_font_family_name(ident) {
+				if keyword := keyword_from_string(ident) {
+					tokens.consume()
+					tokens.consume_whitespace()
+					if tokens.has_more_tokens() {
+						return none
+					}
+					return StyleValue(KeywordStyleValue.create(keyword))
+				}
+			}
+		}
+	}
+
+	// <family-name>
+	return parser.parse_family_name_value(mut tokens)
+}
+
+// <family-name> = <string> | <custom-ident>+
+fn (mut parser Parser) parse_family_name_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	tokens.consume_whitespace()
+	mut parts := []string{}
+	for {
+		peek := tokens.peek() or { break }
+		if peek.is(.string) {
+			// `font-family: my cool "font";` is invalid.
+			if parts.len != 0 {
+				return none
+			}
+			tokens.consume()
+			tokens.consume_whitespace()
+			if tokens.has_more_tokens() {
+				return none
+			}
+			return StyleValue(StringStyleValue.create(peek.token().string_value()))
+		}
+		if peek.is(.ident) {
+			component_value := tokens.consume() or { break }
+			parts << component_value.token().ident()
+			tokens.consume_whitespace()
+			continue
+		}
+		break
+	}
+
+	if parts.len == 0 || tokens.has_more_tokens() {
+		return none
+	}
+
+	if parts.len == 1 {
+		// <generic-family> and the CSS-wide keywords (and `default`) are not <family-name>s.
+		first := to_ascii_lowercase(parts[0])
+		if is_css_wide_keyword_string(first) || first == 'default' || is_generic_font_family_name(first) {
+			return none
+		}
+	}
+
+	complete_name := parts.join(' ')
+	return StyleValue(CustomIdentStyleValue.create(complete_name))
 }
 
 // https://svgwg.org/svg2-draft/painting.html#StrokeDashing
