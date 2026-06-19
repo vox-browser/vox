@@ -607,6 +607,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.content {
 			return parser.parse_content_value(mut tokens)
 		}
+		.font_variant_alternates {
+			return parser.parse_font_variant_alternates_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2197,6 +2200,152 @@ fn (mut parser Parser) parse_font_variant_tuple(mut tokens ComponentValueStream,
 
 	tokens = transaction
 	return StyleValue(TupleStyleValue.create(slots))
+}
+
+// https://drafts.csswg.org/css-fonts/#font-variant-alternates-prop
+// normal | [ stylistic() || historical-forms || styleset() || character-variant() || swash() || ornaments() || annotation() ]
+fn (mut parser Parser) parse_font_variant_alternates_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut keyword_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut keyword_attempt, ['normal']) {
+		tokens = keyword_attempt
+		return value
+	}
+
+	mut transaction := tokens.clone()
+	mut stylistic := ?StyleValue(none)
+	mut historical_forms := ?StyleValue(none)
+	mut styleset := ?StyleValue(none)
+	mut character_variant := ?StyleValue(none)
+	mut swash := ?StyleValue(none)
+	mut ornaments := ?StyleValue(none)
+	mut annotation := ?StyleValue(none)
+
+	for {
+		transaction.consume_whitespace()
+		peek := transaction.peek() or { break }
+
+		// historical-forms
+		if peek.is(.ident) && equals_ignoring_ascii_case(peek.token().ident(), 'historical-forms') {
+			if historical_forms != none {
+				return none
+			}
+			keyword := keyword_from_string('historical-forms') or { return none }
+			transaction.consume()
+			historical_forms = StyleValue(KeywordStyleValue.create(keyword))
+			continue
+		}
+
+		if !peek.is_function() {
+			break
+		}
+		function := peek.function()
+		function_name := to_ascii_lowercase(function.name)
+		arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function.value)
+		if arguments.len == 0 {
+			break
+		}
+
+		// <feature-value-name># = <ident>#
+		mut feature_value_names := []StyleValue{}
+		for argument in arguments {
+			mut argument_tokens := ComponentValueStream.new(argument)
+			ident := parser.parse_custom_ident_value(mut argument_tokens, []) or { return none }
+			argument_tokens.consume_whitespace()
+			if argument_tokens.has_more_tokens() {
+				return none
+			}
+			feature_value_names << StyleValue(ident)
+		}
+
+		match function_name {
+			'stylistic' {
+				if feature_value_names.len != 1 || stylistic != none {
+					return none
+				}
+				transaction.consume()
+				stylistic = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.stylistic,
+					feature_value_names))
+			}
+			'styleset' {
+				if styleset != none {
+					return none
+				}
+				transaction.consume()
+				styleset = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.styleset,
+					feature_value_names))
+			}
+			'character-variant' {
+				if character_variant != none {
+					return none
+				}
+				transaction.consume()
+				character_variant = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.character_variant,
+					feature_value_names))
+			}
+			'swash' {
+				if feature_value_names.len != 1 || swash != none {
+					return none
+				}
+				transaction.consume()
+				swash = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.swash,
+					feature_value_names))
+			}
+			'ornaments' {
+				if feature_value_names.len != 1 || ornaments != none {
+					return none
+				}
+				transaction.consume()
+				ornaments = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.ornaments,
+					feature_value_names))
+			}
+			'annotation' {
+				if feature_value_names.len != 1 || annotation != none {
+					return none
+				}
+				transaction.consume()
+				annotation = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.annotation,
+					feature_value_names))
+			}
+			else {
+				break
+			}
+		}
+	}
+
+	// Assemble the non-empty components in canonical order.
+	mut values := []StyleValue{}
+	if value := stylistic {
+		values << value
+	}
+	if value := historical_forms {
+		values << value
+	}
+	if value := styleset {
+		values << value
+	}
+	if value := character_variant {
+		values << value
+	}
+	if value := swash {
+		values << value
+	}
+	if value := ornaments {
+		values << value
+	}
+	if value := annotation {
+		values << value
+	}
+
+	if values.len == 0 {
+		return none
+	}
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(values, .space, .yes))
 }
 
 fn font_variant_ligatures_slot(ident string) ?int {

@@ -1574,7 +1574,8 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.stroke {
 			'none'
 		}
-		.font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian {
+		.font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian,
+		.font_variant_alternates {
 			'normal'
 		}
 		.clip_path, .shape_outside {
@@ -1607,7 +1608,7 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		.word_spacing, .writing_mode, .border_collapse, .border_spacing, .dominant_baseline,
 		.quotes, .text_shadow, .list_style_type, .stroke_dasharray, .font_family, .cursor,
 		.font_size, .fill, .stroke, .font_variant_ligatures, .font_variant_numeric,
-		.font_variant_east_asian {
+		.font_variant_east_asian, .font_variant_alternates {
 			true
 		}
 		else {
@@ -4745,7 +4746,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break,
 		.dominant_baseline, .quotes, .list_style_type, .font_family, .grid_column_start,
 		.grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow, .grid_template_areas,
-		.cursor, .font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .content {
+		.cursor, .font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .content,
+		.font_variant_alternates {
 			.discrete
 		}
 	}
@@ -5535,7 +5537,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows,
 		.grid_template_areas, .counter_increment, .counter_reset, .counter_set, .font_size,
 		.font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .shape_outside,
-		.content {
+		.content, .font_variant_alternates {
 			true
 		}
 	}

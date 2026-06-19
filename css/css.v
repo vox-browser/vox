@@ -346,6 +346,7 @@ pub enum PropertyID {
 	clip_path
 	shape_outside
 	content
+	font_variant_alternates
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

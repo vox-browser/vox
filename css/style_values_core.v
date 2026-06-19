@@ -1038,6 +1038,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'content' {
 			PropertyID.content
 		}
+		'font-variant-alternates' {
+			PropertyID.font_variant_alternates
+		}
 		else {
 			return none
 		}
@@ -1132,7 +1135,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.box_sizing, .caption_side, .clip_rule, .color_interpolation, .content_visibility,
 		.direction, .empty_cells, .fill_rule, .font_kerning, .font_optical_sizing,
 		.font_variant_caps, .font_variant_emoji, .font_variant_position, .font_variant_ligatures,
-		.font_variant_numeric, .font_variant_east_asian, .flex_direction,
+		.font_variant_numeric, .font_variant_east_asian, .font_variant_alternates, .flex_direction,
 		.flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items,
 		.justify_self, .appearance, .column_span, .image_rendering, .transform_box, .touch_action,
 		.writing_mode, .scrollbar_width, .resize, .contain, .container_type, .text_decoration_line,
@@ -1923,6 +1926,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['normal', 'none', 'open-quote', 'close-quote', 'no-open-quote',
 				'no-close-quote']
 		}
+		.font_variant_alternates {
+			lowercase_value in ['normal', 'historical-forms']
+		}
 		.font_variant_ligatures {
 			lowercase_value in font_variant_ligatures_keywords
 		}
@@ -2008,7 +2014,8 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
 		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas, .filter,
 		.backdrop_filter, .cursor, .font_size, .fill, .stroke, .font_variant_ligatures,
-		.font_variant_numeric, .font_variant_east_asian, .clip_path, .shape_outside, .content {
+		.font_variant_numeric, .font_variant_east_asian, .clip_path, .shape_outside, .content,
+		.font_variant_alternates {
 			false
 		}
 		.color_scheme {
@@ -3601,6 +3608,7 @@ pub enum Keyword {
 	close_quote
 	no_open_quote
 	no_close_quote
+	historical_forms
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -4068,6 +4076,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.close_quote { 'close-quote' }
 		.no_open_quote { 'no-open-quote' }
 		.no_close_quote { 'no-close-quote' }
+		.historical_forms { 'historical-forms' }
 	}
 }
 
@@ -4524,6 +4533,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'close-quote' { Keyword.close_quote }
 		'no-open-quote' { Keyword.no_open_quote }
 		'no-close-quote' { Keyword.no_close_quote }
+		'historical-forms' { Keyword.historical_forms }
 		else { none }
 	}
 }
