@@ -385,6 +385,9 @@ pub enum PropertyID {
 	border
 	border_block
 	border_inline
+	outline
+	list_style
+	text_decoration
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

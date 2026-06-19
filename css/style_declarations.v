@@ -371,6 +371,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.border { 'border' }
 		.border_block { 'border-block' }
 		.border_inline { 'border-inline' }
+		.outline { 'outline' }
+		.list_style { 'list-style' }
+		.text_decoration { 'text-decoration' }
 	}
 }
 

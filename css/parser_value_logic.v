@@ -721,6 +721,15 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_inline {
 			return parser.parse_border_inline_shorthand(mut tokens)
 		}
+		.outline {
+			return parser.parse_outline_shorthand(mut tokens)
+		}
+		.list_style {
+			return parser.parse_list_style_shorthand(mut tokens)
+		}
+		.text_decoration {
+			return parser.parse_text_decoration_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2460,6 +2469,66 @@ fn (mut parser Parser) parse_border_inline_width_shorthand(mut tokens ComponentV
 		PropertyID.border_inline_end_width], .border_width)
 }
 
+// Returns the longhand's initial value as a typed StyleValue (re-parsed from its serialized initial).
+fn (mut parser Parser) longhand_initial_typed_value(property_id PropertyID) ?StyleValue {
+	_ = parser
+	dom_initial := computed_interpolation_property_initial_value(property_id)
+	return parse_css_value_logic(property_id, dom_initial.css_text)
+}
+
+// Parses a `||` combination of longhand components in any order (each parsed via its own longhand
+// grammar). Omitted components fall back to their initial value.
+fn (mut parser Parser) parse_double_bar_shorthand(mut tokens ComponentValueStream, shorthand PropertyID, component_ids []PropertyID) ?StyleValue {
+	mut values := []?StyleValue{}
+	for _ in component_ids {
+		values << ?StyleValue(none)
+	}
+
+	for {
+		tokens.consume_whitespace()
+		if !tokens.has_more_tokens() {
+			break
+		}
+		mut matched := false
+		for i, component_id in component_ids {
+			if values[i] != none {
+				continue
+			}
+			mut attempt := tokens.clone()
+			if value := parser.parse_css_value_for_property_tokens(component_id, mut attempt) {
+				values[i] = value
+				tokens = attempt
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			break
+		}
+	}
+
+	mut any_matched := false
+	for value in values {
+		if value != none {
+			any_matched = true
+			break
+		}
+	}
+	if !any_matched {
+		return none
+	}
+
+	mut resolved := []StyleValue{}
+	for i, component_id in component_ids {
+		if value := values[i] {
+			resolved << value
+		} else {
+			resolved << parser.longhand_initial_typed_value(component_id) or { return none }
+		}
+	}
+	return StyleValue(ShorthandStyleValue.create(shorthand, component_ids, resolved))
+}
+
 struct BorderEdgeComponents {
 	width StyleValue
 	style StyleValue
@@ -2594,6 +2663,25 @@ const border_inline_shorthand_longhands = [PropertyID.border_inline_start_width,
 	PropertyID.border_inline_end_width, PropertyID.border_inline_start_style,
 	PropertyID.border_inline_end_style, PropertyID.border_inline_start_color,
 	PropertyID.border_inline_end_color]
+
+// https://drafts.csswg.org/css-ui/#propdef-outline  ->  <'outline-color'> || <'outline-style'> || <'outline-width'>
+fn (mut parser Parser) parse_outline_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_double_bar_shorthand(mut tokens, .outline, [PropertyID.outline_color,
+		PropertyID.outline_style, PropertyID.outline_width])
+}
+
+// https://drafts.csswg.org/css-lists/#propdef-list-style  ->  <'list-style-position'> || <'list-style-image'> || <'list-style-type'>
+// FIXME: a lone `none` should set both list-style-image and list-style-type to none; here it only sets one component.
+fn (mut parser Parser) parse_list_style_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_double_bar_shorthand(mut tokens, .list_style, [PropertyID.list_style_position,
+		PropertyID.list_style_image, PropertyID.list_style_type])
+}
+
+// https://drafts.csswg.org/css-text-decor/#propdef-text-decoration
+fn (mut parser Parser) parse_text_decoration_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_double_bar_shorthand(mut tokens, .text_decoration, [PropertyID.text_decoration_color,
+		PropertyID.text_decoration_line, PropertyID.text_decoration_style, PropertyID.text_decoration_thickness])
+}
 
 // https://drafts.csswg.org/css-flexbox-1/#propdef-flex-flow  ->  <'flex-direction'> || <'flex-wrap'>
 fn (mut parser Parser) parse_flex_flow_shorthand(mut tokens ComponentValueStream) ?StyleValue {

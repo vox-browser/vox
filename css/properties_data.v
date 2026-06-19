@@ -417,6 +417,16 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 		.border { border_shorthand_longhands }
 		.border_block { border_block_shorthand_longhands }
 		.border_inline { border_inline_shorthand_longhands }
+		.outline {
+			[PropertyID.outline_color, PropertyID.outline_style, PropertyID.outline_width]
+		}
+		.list_style {
+			[PropertyID.list_style_position, PropertyID.list_style_image, PropertyID.list_style_type]
+		}
+		.text_decoration {
+			[PropertyID.text_decoration_color, PropertyID.text_decoration_line,
+				PropertyID.text_decoration_style, PropertyID.text_decoration_thickness]
+		}
 		else { []PropertyID{} }
 	}
 }

@@ -1152,6 +1152,15 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'border-inline' {
 			PropertyID.border_inline
 		}
+		'outline' {
+			PropertyID.outline
+		}
+		'list-style' {
+			PropertyID.list_style
+		}
+		'text-decoration' {
+			PropertyID.text_decoration
+		}
 		else {
 			return none
 		}
