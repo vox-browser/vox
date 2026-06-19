@@ -327,6 +327,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.font_size { 'font-size' }
 		.fill { 'fill' }
 		.stroke { 'stroke' }
+		.font_variant_ligatures { 'font-variant-ligatures' }
+		.font_variant_numeric { 'font-variant-numeric' }
+		.font_variant_east_asian { 'font-variant-east-asian' }
 	}
 }
 
@@ -361,14 +364,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 306
+pub const number_of_longhand_properties = 309
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .stroke
+	return .font_variant_east_asian
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -679,6 +682,9 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		303 { PropertyID.font_size }
 		304 { PropertyID.fill }
 		305 { PropertyID.stroke }
+		306 { PropertyID.font_variant_ligatures }
+		307 { PropertyID.font_variant_numeric }
+		308 { PropertyID.font_variant_east_asian }
 		else { none }
 	}
 }

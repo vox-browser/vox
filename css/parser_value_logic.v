@@ -589,6 +589,15 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.fill, .stroke {
 			return parser.parse_paint_value(mut tokens)
 		}
+		.font_variant_ligatures {
+			return parser.parse_font_variant_ligatures_value(mut tokens)
+		}
+		.font_variant_numeric {
+			return parser.parse_font_variant_numeric_value(mut tokens)
+		}
+		.font_variant_east_asian {
+			return parser.parse_font_variant_east_asian_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1694,6 +1703,123 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
 }
+
+// Parses a `||` combination of font-variant keywords into a fixed-size tuple, where
+// `slot_for` maps a lowercased ident to its canonical tuple slot (or none if not a member).
+fn (mut parser Parser) parse_font_variant_tuple(mut tokens ComponentValueStream, slot_count int, slot_for fn (string) ?int) ?StyleValue {
+	_ = parser
+	mut transaction := tokens.clone()
+	mut slots := []?StyleValue{}
+	for _ in 0 .. slot_count {
+		slots << ?StyleValue(none)
+	}
+
+	for {
+		transaction.consume_whitespace()
+		peek := transaction.peek() or { break }
+		if !peek.is(.ident) {
+			break
+		}
+		ident := to_ascii_lowercase(peek.token().ident())
+		slot := slot_for(ident) or { break }
+		if slots[slot] != none {
+			return none
+		}
+		keyword := keyword_from_string(ident) or { break }
+		transaction.consume()
+		slots[slot] = StyleValue(KeywordStyleValue.create(keyword))
+	}
+
+	mut any_filled := false
+	for maybe_value in slots {
+		if maybe_value != none {
+			any_filled = true
+			break
+		}
+	}
+	if !any_filled {
+		return none
+	}
+
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(TupleStyleValue.create(slots))
+}
+
+fn font_variant_ligatures_slot(ident string) ?int {
+	return match ident {
+		'common-ligatures', 'no-common-ligatures' { 0 }
+		'discretionary-ligatures', 'no-discretionary-ligatures' { 1 }
+		'historical-ligatures', 'no-historical-ligatures' { 2 }
+		'contextual', 'no-contextual' { 3 }
+		else { none }
+	}
+}
+
+fn font_variant_numeric_slot(ident string) ?int {
+	return match ident {
+		'lining-nums', 'oldstyle-nums' { 0 }
+		'proportional-nums', 'tabular-nums' { 1 }
+		'diagonal-fractions', 'stacked-fractions' { 2 }
+		'ordinal' { 3 }
+		'slashed-zero' { 4 }
+		else { none }
+	}
+}
+
+fn font_variant_east_asian_slot(ident string) ?int {
+	return match ident {
+		'jis78', 'jis83', 'jis90', 'jis04', 'simplified', 'traditional' { 0 }
+		'full-width', 'proportional-width' { 1 }
+		'ruby' { 2 }
+		else { none }
+	}
+}
+
+// https://drafts.csswg.org/css-fonts/#propdef-font-variant-ligatures  ->  normal | none | [ ... ]
+fn (mut parser Parser) parse_font_variant_ligatures_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut keyword_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut keyword_attempt, ['normal', 'none']) {
+		tokens = keyword_attempt
+		return value
+	}
+	return parser.parse_font_variant_tuple(mut tokens, 4, font_variant_ligatures_slot)
+}
+
+// https://drafts.csswg.org/css-fonts/#propdef-font-variant-numeric  ->  normal | [ ... ]
+fn (mut parser Parser) parse_font_variant_numeric_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut keyword_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut keyword_attempt, ['normal']) {
+		tokens = keyword_attempt
+		return value
+	}
+	return parser.parse_font_variant_tuple(mut tokens, 5, font_variant_numeric_slot)
+}
+
+// https://drafts.csswg.org/css-fonts/#propdef-font-variant-east-asian  ->  normal | [ ... ]
+fn (mut parser Parser) parse_font_variant_east_asian_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut keyword_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut keyword_attempt, ['normal']) {
+		tokens = keyword_attempt
+		return value
+	}
+	return parser.parse_font_variant_tuple(mut tokens, 3, font_variant_east_asian_slot)
+}
+
+const font_variant_ligatures_keywords = ['normal', 'none', 'common-ligatures',
+	'no-common-ligatures', 'discretionary-ligatures', 'no-discretionary-ligatures',
+	'historical-ligatures', 'no-historical-ligatures', 'contextual', 'no-contextual']
+
+const font_variant_numeric_keywords = ['normal', 'lining-nums', 'oldstyle-nums',
+	'proportional-nums', 'tabular-nums', 'diagonal-fractions', 'stacked-fractions', 'ordinal',
+	'slashed-zero']
+
+const font_variant_east_asian_keywords = ['normal', 'jis78', 'jis83', 'jis90', 'jis04',
+	'simplified', 'traditional', 'full-width', 'proportional-width', 'ruby']
 
 // https://svgwg.org/svg2-draft/painting.html#SpecifyingFillPaint
 // <paint> = none | <color> | <url> [none | <color>]? | context-fill | context-stroke

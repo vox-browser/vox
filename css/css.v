@@ -340,6 +340,9 @@ pub enum PropertyID {
 	font_size
 	fill
 	stroke
+	font_variant_ligatures
+	font_variant_numeric
+	font_variant_east_asian
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

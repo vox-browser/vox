@@ -1020,6 +1020,15 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'stroke' {
 			PropertyID.stroke
 		}
+		'font-variant-ligatures' {
+			PropertyID.font_variant_ligatures
+		}
+		'font-variant-numeric' {
+			PropertyID.font_variant_numeric
+		}
+		'font-variant-east-asian' {
+			PropertyID.font_variant_east_asian
+		}
 		else {
 			return none
 		}
@@ -1107,7 +1116,8 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.border_inline_start_style, .border_left_style, .border_right_style, .border_top_style,
 		.box_sizing, .caption_side, .clip_rule, .color_interpolation, .content_visibility,
 		.direction, .empty_cells, .fill_rule, .font_kerning, .font_optical_sizing,
-		.font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_direction,
+		.font_variant_caps, .font_variant_emoji, .font_variant_position, .font_variant_ligatures,
+		.font_variant_numeric, .font_variant_east_asian, .flex_direction,
 		.flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items,
 		.justify_self, .appearance, .column_span, .image_rendering, .transform_box, .touch_action,
 		.writing_mode, .scrollbar_width, .resize, .contain, .container_type, .text_decoration_line,
@@ -1891,6 +1901,15 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.fill, .stroke {
 			lowercase_value == 'none'
 		}
+		.font_variant_ligatures {
+			lowercase_value in font_variant_ligatures_keywords
+		}
+		.font_variant_numeric {
+			lowercase_value in font_variant_numeric_keywords
+		}
+		.font_variant_east_asian {
+			lowercase_value in font_variant_east_asian_keywords
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1966,7 +1985,8 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
 		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas, .filter,
-		.backdrop_filter, .cursor, .font_size, .fill, .stroke {
+		.backdrop_filter, .cursor, .font_size, .fill, .stroke, .font_variant_ligatures,
+		.font_variant_numeric, .font_variant_east_asian {
 			false
 		}
 		.color_scheme {
@@ -3527,6 +3547,30 @@ pub enum Keyword {
 	xxx_large
 	larger
 	smaller
+	jis78
+	jis83
+	jis90
+	jis04
+	simplified
+	traditional
+	proportional_width
+	ruby
+	lining_nums
+	oldstyle_nums
+	proportional_nums
+	tabular_nums
+	diagonal_fractions
+	stacked_fractions
+	ordinal
+	slashed_zero
+	common_ligatures
+	no_common_ligatures
+	discretionary_ligatures
+	no_discretionary_ligatures
+	historical_ligatures
+	no_historical_ligatures
+	contextual
+	no_contextual
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3962,6 +4006,30 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.xxx_large { 'xxx-large' }
 		.larger { 'larger' }
 		.smaller { 'smaller' }
+		.jis78 { 'jis78' }
+		.jis83 { 'jis83' }
+		.jis90 { 'jis90' }
+		.jis04 { 'jis04' }
+		.simplified { 'simplified' }
+		.traditional { 'traditional' }
+		.proportional_width { 'proportional-width' }
+		.ruby { 'ruby' }
+		.lining_nums { 'lining-nums' }
+		.oldstyle_nums { 'oldstyle-nums' }
+		.proportional_nums { 'proportional-nums' }
+		.tabular_nums { 'tabular-nums' }
+		.diagonal_fractions { 'diagonal-fractions' }
+		.stacked_fractions { 'stacked-fractions' }
+		.ordinal { 'ordinal' }
+		.slashed_zero { 'slashed-zero' }
+		.common_ligatures { 'common-ligatures' }
+		.no_common_ligatures { 'no-common-ligatures' }
+		.discretionary_ligatures { 'discretionary-ligatures' }
+		.no_discretionary_ligatures { 'no-discretionary-ligatures' }
+		.historical_ligatures { 'historical-ligatures' }
+		.no_historical_ligatures { 'no-historical-ligatures' }
+		.contextual { 'contextual' }
+		.no_contextual { 'no-contextual' }
 	}
 }
 
@@ -4386,6 +4454,30 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'xxx-large' { Keyword.xxx_large }
 		'larger' { Keyword.larger }
 		'smaller' { Keyword.smaller }
+		'jis78' { Keyword.jis78 }
+		'jis83' { Keyword.jis83 }
+		'jis90' { Keyword.jis90 }
+		'jis04' { Keyword.jis04 }
+		'simplified' { Keyword.simplified }
+		'traditional' { Keyword.traditional }
+		'proportional-width' { Keyword.proportional_width }
+		'ruby' { Keyword.ruby }
+		'lining-nums' { Keyword.lining_nums }
+		'oldstyle-nums' { Keyword.oldstyle_nums }
+		'proportional-nums' { Keyword.proportional_nums }
+		'tabular-nums' { Keyword.tabular_nums }
+		'diagonal-fractions' { Keyword.diagonal_fractions }
+		'stacked-fractions' { Keyword.stacked_fractions }
+		'ordinal' { Keyword.ordinal }
+		'slashed-zero' { Keyword.slashed_zero }
+		'common-ligatures' { Keyword.common_ligatures }
+		'no-common-ligatures' { Keyword.no_common_ligatures }
+		'discretionary-ligatures' { Keyword.discretionary_ligatures }
+		'no-discretionary-ligatures' { Keyword.no_discretionary_ligatures }
+		'historical-ligatures' { Keyword.historical_ligatures }
+		'no-historical-ligatures' { Keyword.no_historical_ligatures }
+		'contextual' { Keyword.contextual }
+		'no-contextual' { Keyword.no_contextual }
 		else { none }
 	}
 }
