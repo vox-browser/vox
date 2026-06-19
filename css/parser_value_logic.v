@@ -529,6 +529,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.display {
 			return parser.parse_display_value(mut tokens)
 		}
+		.flex_basis {
+			return parser.parse_flex_basis_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1511,6 +1514,31 @@ fn (mut parser Parser) parse_dominant_baseline_value(mut tokens ComponentValueSt
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'text-bottom', 'alphabetic',
 		'ideographic', 'middle', 'central', 'mathematical', 'hanging', 'text-top'])
+}
+
+// https://drafts.csswg.org/css-flexbox-1/#propdef-flex-basis
+fn (mut parser Parser) parse_flex_basis_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto', 'content']) {
+		tokens = transaction
+		return value
+	}
+
+	transaction = tokens.clone()
+	if value := parse_stub_keyword_from_set_for_value_logic(mut transaction, ['max-content',
+		'min-content'])
+	{
+		tokens = transaction
+		return value
+	}
+
+	transaction = tokens.clone()
+	if value := parser.parse_fit_content_value(mut transaction) {
+		tokens = transaction
+		return value
+	}
+
+	return parser.parse_nonnegative_length_percentage_value(mut tokens)
 }
 
 // https://drafts.csswg.org/css-display/#the-display-properties

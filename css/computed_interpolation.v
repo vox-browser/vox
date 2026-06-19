@@ -1520,6 +1520,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.display {
 			'inline'
 		}
+		.flex_basis {
+			'auto'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -1590,7 +1593,7 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.text_decoration_thickness, .text_underline_offset, .text_indent, .top, .transform_origin,
 		.vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate, .scale, .transform,
 		.transition_delay, .transition_duration, .transition_timing_function, .translate,
-		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index {
+		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis {
 			true
 		}
 		else {
@@ -4639,7 +4642,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.text_decoration_color, .text_decoration_thickness, .text_underline_offset, .text_indent,
 		.top, .transform_origin, .vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate,
 		.scale, .transform, .translate, .webkit_text_fill_color, .word_spacing, .scrollbar_width,
-		.z_index {
+		.z_index, .flex_basis {
 			.by_computed_value
 		}
 		.content_visibility, .visibility, .display {
@@ -5455,7 +5458,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.text_indent, .text_transform, .text_wrap_mode, .text_wrap_style, .top, .transform_style,
 		.unicode_bidi, .vertical_align, .visibility, .white_space_collapse, .white_space_trim,
 		.width, .word_break, .word_spacing, .writing_mode, .cx, .cy, .x, .y, .r, .rx, .ry,
-		.dominant_baseline, .display {
+		.dominant_baseline, .display, .flex_basis {
 			true
 		}
 	}
