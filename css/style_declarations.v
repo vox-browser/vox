@@ -306,6 +306,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.text_shadow { 'text-shadow' }
 		.list_style_type { 'list-style-type' }
 		.clip { 'clip' }
+		.stroke_dasharray { 'stroke-dasharray' }
 	}
 }
 
@@ -340,14 +341,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 285
+pub const number_of_longhand_properties = 286
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .clip
+	return .stroke_dasharray
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -637,6 +638,7 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		282 { PropertyID.text_shadow }
 		283 { PropertyID.list_style_type }
 		284 { PropertyID.clip }
+		285 { PropertyID.stroke_dasharray }
 		else { none }
 	}
 }

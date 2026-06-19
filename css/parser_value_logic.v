@@ -547,6 +547,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.clip {
 			return parser.parse_clip_value(mut tokens)
 		}
+		.stroke_dasharray {
+			return parser.parse_stroke_dasharray_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1651,6 +1654,58 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+// https://svgwg.org/svg2-draft/painting.html#StrokeDashing
+// none | <dasharray>  where  <dasharray> = [ [ <length-percentage> | <number> ]+ ]#
+fn (mut parser Parser) parse_stroke_dasharray_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['none']) {
+		tokens = transaction
+		return value
+	}
+
+	transaction = tokens.clone()
+	mut dashes := []StyleValue{}
+	for {
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			break
+		}
+
+		// <number> (non-negative). parse_number_value is not transaction-safe, so try a clone.
+		mut number_attempt := transaction.clone()
+		if number := parser.parse_number_value(mut number_attempt) {
+			if number is NumberStyleValue && number.number() < 0 {
+				return none
+			}
+			dashes << number
+			transaction = number_attempt
+		} else {
+			value := parser.parse_length_percentage_value(mut transaction) or { return none }
+			if value is PercentageStyleValue && value.raw_value() < 0 {
+				return none
+			}
+			if value is LengthStyleValue && value.raw_value() < 0 {
+				return none
+			}
+			dashes << value
+		}
+
+		transaction.consume_whitespace()
+		if next := transaction.peek() {
+			if next.is(.comma) {
+				transaction.consume()
+			}
+		}
+	}
+
+	if dashes.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(dashes, .comma, .yes))
 }
 
 // https://drafts.csswg.org/css2/#clipping  ->  auto | rect(<top>, <right>, <bottom>, <left>)

@@ -957,6 +957,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'clip' {
 			PropertyID.clip
 		}
+		'stroke-dasharray' {
+			PropertyID.stroke_dasharray
+		}
 		else {
 			return none
 		}
@@ -1164,7 +1167,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.text_decoration_thickness, .text_underline_offset, .text_indent {
 			value_type in [.length, .percentage]
 		}
-		.stroke_width, .stroke_dashoffset {
+		.stroke_width, .stroke_dashoffset, .stroke_dasharray {
 			value_type in [.length, .number, .percentage]
 		}
 		.math_depth {
@@ -1782,6 +1785,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.clip {
 			lowercase_value == 'auto'
 		}
+		.stroke_dasharray {
+			lowercase_value == 'none'
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1855,7 +1861,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.user_select, .view_timeline_axis, .view_timeline_inset, .visibility,
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .widows,
 		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
-		.box_shadow, .text_shadow, .clip {
+		.box_shadow, .text_shadow, .clip, .stroke_dasharray {
 			false
 		}
 		.color_scheme {
@@ -2131,7 +2137,7 @@ pub fn property_accepts_length(property_id PropertyID, value Length) bool {
 		.padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start,
 		.padding_left, .padding_right, .padding_top, .perspective, .tab_size, .width,
 		.column_width, .column_height, .column_gap, .row_gap, .shape_margin, .r, .rx, .ry,
-		.stroke_width, .stroke_dashoffset, .flex_basis {
+		.stroke_width, .stroke_dashoffset, .flex_basis, .stroke_dasharray {
 			value.raw_value() >= 0
 		}
 		else {
