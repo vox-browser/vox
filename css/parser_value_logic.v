@@ -544,6 +544,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.list_style_type {
 			return parser.parse_list_style_type_value(mut tokens)
 		}
+		.clip {
+			return parser.parse_clip_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1648,6 +1651,77 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+// https://drafts.csswg.org/css2/#clipping  ->  auto | rect(<top>, <right>, <bottom>, <left>)
+fn (mut parser Parser) parse_clip_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['auto']) {
+		tokens = transaction
+		return value
+	}
+
+	transaction = tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is_function_named('rect') {
+		return none
+	}
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+
+	mut argument_tokens := ComponentValueStream.new(component_value.function().value)
+	mut params := []LengthOrAuto{}
+	// Unknown -> 0, RequiresCommas -> 1, RequiresNoCommas -> 2
+	mut comma_requirement := 0
+	for side in 0 .. 4 {
+		argument_tokens.consume_whitespace()
+		next := argument_tokens.peek() or { return none }
+		// Each side is either 'auto' or a <length>. Negative lengths are permitted.
+		if next.is(.ident) && equals_ignoring_ascii_case(next.token().ident(), 'auto') {
+			argument_tokens.consume()
+			params << LengthOrAuto.make_auto()
+		} else {
+			// FIXME: calculated lengths in rect() are not supported yet.
+			length := parser.parse_length(mut argument_tokens) or { return none }
+			params << LengthOrAuto.new(length)
+		}
+		argument_tokens.consume_whitespace()
+
+		if side == 3 {
+			if argument_tokens.has_more_tokens() {
+				return none
+			}
+			break
+		}
+
+		next_token := argument_tokens.peek() or { return none }
+		next_is_comma := next_token.is(.comma)
+		if comma_requirement == 0 {
+			comma_requirement = if next_is_comma { 1 } else { 2 }
+		}
+		if comma_requirement == 1 {
+			if next_is_comma {
+				argument_tokens.consume()
+			} else {
+				return none
+			}
+		} else {
+			if next_is_comma {
+				return none
+			}
+		}
+	}
+
+	tokens = transaction
+	return StyleValue(RectStyleValue.create(EdgeRect{
+		top_edge:    params[0]
+		right_edge:  params[1]
+		bottom_edge: params[2]
+		left_edge:   params[3]
+	}))
 }
 
 // https://drafts.csswg.org/css-lists-3/#propdef-list-style-type

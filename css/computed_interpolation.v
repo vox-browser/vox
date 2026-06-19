@@ -1532,6 +1532,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.list_style_type {
 			'disc'
 		}
+		.clip {
+			'auto'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -1604,7 +1607,7 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate, .scale, .transform,
 		.transition_delay, .transition_duration, .transition_timing_function, .translate,
 		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis,
-		.box_shadow, .text_shadow {
+		.box_shadow, .text_shadow, .clip {
 			true
 		}
 		else {
@@ -4653,7 +4656,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.text_decoration_color, .text_decoration_thickness, .text_underline_offset, .text_indent,
 		.top, .transform_origin, .vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate,
 		.scale, .transform, .translate, .webkit_text_fill_color, .word_spacing, .scrollbar_width,
-		.z_index, .flex_basis {
+		.z_index, .flex_basis, .clip {
 			.by_computed_value
 		}
 		.content_visibility, .visibility, .display, .box_shadow, .text_shadow {
@@ -5436,7 +5439,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.view_timeline_name, .view_transition_name, .will_change, .scrollbar_width,
 		.scroll_behavior, .resize, .text_decoration_color, .text_decoration_line,
 		.text_decoration_style, .text_decoration_thickness, .text_overflow, .text_rendering,
-		.webkit_text_fill_color, .z_index, .box_shadow, .text_shadow {
+		.webkit_text_fill_color, .z_index, .box_shadow, .text_shadow, .clip {
 			false
 		}
 		.anchor_name, .aspect_ratio, .block_size, .bottom, .border_block_end_style,

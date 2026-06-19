@@ -954,6 +954,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'list-style-type' {
 			PropertyID.list_style_type
 		}
+		'clip' {
+			PropertyID.clip
+		}
 		else {
 			return none
 		}
@@ -1184,7 +1187,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.animation_composition, .animation_direction, .animation_fill_mode, .animation_play_state,
 		.transition_behavior, .transition_property, .dominant_baseline, .display, .box_shadow,
-		.text_shadow {
+		.text_shadow, .clip {
 			false
 		}
 	}
@@ -1776,6 +1779,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.list_style_type {
 			lowercase_value == 'none'
 		}
+		.clip {
+			lowercase_value == 'auto'
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1849,7 +1855,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.user_select, .view_timeline_axis, .view_timeline_inset, .visibility,
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .widows,
 		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
-		.box_shadow, .text_shadow {
+		.box_shadow, .text_shadow, .clip {
 			false
 		}
 		.color_scheme {
