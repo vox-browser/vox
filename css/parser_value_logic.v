@@ -541,6 +541,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.text_shadow {
 			return parser.parse_text_shadow_value(mut tokens)
 		}
+		.list_style_type {
+			return parser.parse_list_style_type_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1645,6 +1648,38 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+// https://drafts.csswg.org/css-lists-3/#propdef-list-style-type
+fn (mut parser Parser) parse_list_style_type_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['none']) {
+		tokens = transaction
+		return value
+	}
+
+	// <string>
+	transaction = tokens.clone()
+	if string_value := parser.parse_string_value(mut transaction) {
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			tokens = transaction
+			return StyleValue(string_value)
+		}
+	}
+
+	// FIXME: This accepts a <counter-style-name> as a <custom-ident>; the symbols()
+	// function form of <counter-style> is not translated yet.
+	transaction = tokens.clone()
+	if custom_ident := parser.parse_custom_ident_value(mut transaction, ['none']) {
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			tokens = transaction
+			return StyleValue(custom_ident)
+		}
+	}
+
+	return none
 }
 
 // https://drafts.csswg.org/css-content/#propdef-quotes

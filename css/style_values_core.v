@@ -951,6 +951,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'text-shadow' {
 			PropertyID.text_shadow
 		}
+		'list-style-type' {
+			PropertyID.list_style_type
+		}
 		else {
 			return none
 		}
@@ -1020,7 +1023,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.view_transition_name {
 			value_type == .custom_ident
 		}
-		.font_language_override, .quotes {
+		.font_language_override, .quotes, .list_style_type {
 			value_type == .string
 		}
 		.background_attachment, .background_blend_mode, .background_clip, .background_origin,
@@ -1770,6 +1773,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.box_shadow, .text_shadow {
 			lowercase_value == 'none'
 		}
+		.list_style_type {
+			lowercase_value == 'none'
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1877,7 +1883,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.transition_timing_function, .translate, .word_spacing, .z_index {
 			false
 		}
-		.transition_property {
+		.transition_property, .list_style_type {
 			lowercase_value != 'none'
 		}
 		.anchor_name, .position_try_fallbacks, .scroll_timeline_name, .timeline_scope,
