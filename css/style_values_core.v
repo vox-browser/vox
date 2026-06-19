@@ -1194,6 +1194,15 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'corner-inline-end-shape' {
 			PropertyID.corner_inline_end_shape
 		}
+		'grid-row' {
+			PropertyID.grid_row
+		}
+		'grid-column' {
+			PropertyID.grid_column
+		}
+		'grid-area' {
+			PropertyID.grid_area
+		}
 		else {
 			return none
 		}

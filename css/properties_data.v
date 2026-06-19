@@ -462,6 +462,12 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 		.corner_inline_end_shape {
 			[PropertyID.corner_start_end_shape, PropertyID.corner_end_end_shape]
 		}
+		.grid_row { [PropertyID.grid_row_start, PropertyID.grid_row_end] }
+		.grid_column { [PropertyID.grid_column_start, PropertyID.grid_column_end] }
+		.grid_area {
+			[PropertyID.grid_row_start, PropertyID.grid_column_start, PropertyID.grid_row_end,
+				PropertyID.grid_column_end]
+		}
 		else { []PropertyID{} }
 	}
 }

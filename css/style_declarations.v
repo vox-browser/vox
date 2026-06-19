@@ -385,6 +385,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.corner_block_end_shape { 'corner-block-end-shape' }
 		.corner_inline_start_shape { 'corner-inline-start-shape' }
 		.corner_inline_end_shape { 'corner-inline-end-shape' }
+		.grid_row { 'grid-row' }
+		.grid_column { 'grid-column' }
+		.grid_area { 'grid-area' }
 	}
 }
 

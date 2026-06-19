@@ -763,6 +763,15 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.corner_inline_end_shape {
 			return parser.parse_corner_inline_end_shape_shorthand(mut tokens)
 		}
+		.grid_row {
+			return parser.parse_grid_row_shorthand(mut tokens)
+		}
+		.grid_column {
+			return parser.parse_grid_column_shorthand(mut tokens)
+		}
+		.grid_area {
+			return parser.parse_grid_area_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2784,6 +2793,131 @@ fn (mut parser Parser) parse_flex_shorthand(mut tokens ComponentValueStream) ?St
 	resolved_shrink := shrink or { StyleValue(NumberStyleValue.create(1)) }
 	resolved_basis := basis or { StyleValue(PercentageStyleValue.create(Percentage.new(0))) }
 	return flex_shorthand_value(resolved_grow, resolved_shrink, resolved_basis)
+}
+
+fn grid_split_by_slash(values []ComponentValue) [][]ComponentValue {
+	mut groups := [][]ComponentValue{}
+	mut current := []ComponentValue{}
+	for value in values {
+		if value.is_delim(u32(`/`)) {
+			groups << current
+			current = []ComponentValue{}
+		} else {
+			current << value
+		}
+	}
+	groups << current
+	return groups
+}
+
+struct GridPlacementParse {
+	placement ?GridTrackPlacement // none = the group was empty (caller substitutes the default)
+}
+
+fn (mut parser Parser) parse_grid_placement_group(group []ComponentValue) ?GridPlacementParse {
+	mut stream := ComponentValueStream.new(group)
+	stream.consume_whitespace()
+	if !stream.has_more_tokens() {
+		return GridPlacementParse{
+			placement: none
+		}
+	}
+	value := parser.parse_grid_track_placement(mut stream) or { return none }
+	stream.consume_whitespace()
+	if stream.has_more_tokens() {
+		return none
+	}
+	if value is GridTrackPlacementStyleValue {
+		return GridPlacementParse{
+			placement: value.grid_track_placement()
+		}
+	}
+	return none
+}
+
+// <grid-line> [ / <grid-line> ]?  (grid-row / grid-column)
+fn (mut parser Parser) parse_grid_line_shorthand(mut tokens ComponentValueStream, shorthand PropertyID, start_id PropertyID, end_id PropertyID) ?StyleValue {
+	mut transaction := tokens.clone()
+	groups := grid_split_by_slash(transaction.consume_remaining_component_values())
+	if groups.len < 1 || groups.len > 2 {
+		return none
+	}
+
+	start_result := parser.parse_grid_placement_group(groups[0]) or { return none }
+	start_placement := start_result.placement or { return none }
+
+	mut end_placement := GridTrackPlacement.make_auto()
+	if groups.len == 2 {
+		end_result := parser.parse_grid_placement_group(groups[1]) or { return none }
+		end_placement = end_result.placement or { return none }
+	} else if start_placement.is_custom_ident() {
+		// An omitted end with a <custom-ident> start copies the start; otherwise it is `auto`.
+		end_placement = start_placement
+	}
+
+	tokens = transaction
+	return StyleValue(ShorthandStyleValue.create(shorthand, [start_id, end_id], [
+		StyleValue(GridTrackPlacementStyleValue.create(start_placement)),
+		StyleValue(GridTrackPlacementStyleValue.create(end_placement)),
+	]))
+}
+
+fn (mut parser Parser) parse_grid_row_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_grid_line_shorthand(mut tokens, .grid_row, .grid_row_start, .grid_row_end)
+}
+
+fn (mut parser Parser) parse_grid_column_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_grid_line_shorthand(mut tokens, .grid_column, .grid_column_start, .grid_column_end)
+}
+
+// <grid-line> [ / <grid-line> ]{0,3}  (grid-area)
+fn (mut parser Parser) parse_grid_area_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	groups := grid_split_by_slash(transaction.consume_remaining_component_values())
+	if groups.len < 1 || groups.len > 4 {
+		return none
+	}
+
+	mut placements := []?GridTrackPlacement{}
+	for group in groups {
+		result := parser.parse_grid_placement_group(group) or { return none }
+		placements << result.placement
+	}
+	for placements.len < 4 {
+		placements << ?GridTrackPlacement(none)
+	}
+
+	mut row_start := GridTrackPlacement.make_auto()
+	if maybe := placements[0] {
+		row_start = maybe
+	}
+	mut column_start := GridTrackPlacement.make_auto()
+	if maybe := placements[1] {
+		column_start = maybe
+	} else if row_start.is_custom_ident() {
+		column_start = row_start
+	}
+	mut row_end := GridTrackPlacement.make_auto()
+	if maybe := placements[2] {
+		row_end = maybe
+	} else if row_start.is_custom_ident() {
+		row_end = row_start
+	}
+	mut column_end := GridTrackPlacement.make_auto()
+	if maybe := placements[3] {
+		column_end = maybe
+	} else if column_start.is_custom_ident() {
+		column_end = column_start
+	}
+
+	tokens = transaction
+	return StyleValue(ShorthandStyleValue.create(.grid_area, [PropertyID.grid_row_start, PropertyID.grid_column_start,
+		PropertyID.grid_row_end, PropertyID.grid_column_end], [
+		StyleValue(GridTrackPlacementStyleValue.create(row_start)),
+		StyleValue(GridTrackPlacementStyleValue.create(column_start)),
+		StyleValue(GridTrackPlacementStyleValue.create(row_end)),
+		StyleValue(GridTrackPlacementStyleValue.create(column_end)),
+	]))
 }
 
 fn (mut parser Parser) parse_corner_shape_shorthand(mut tokens ComponentValueStream) ?StyleValue {

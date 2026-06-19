@@ -399,6 +399,9 @@ pub enum PropertyID {
 	corner_block_end_shape
 	corner_inline_start_shape
 	corner_inline_end_shape
+	grid_row
+	grid_column
+	grid_area
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {
