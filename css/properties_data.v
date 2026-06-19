@@ -343,6 +343,9 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 		.place_items { [PropertyID.align_items, PropertyID.justify_items] }
 		.place_content { [PropertyID.align_content, PropertyID.justify_content] }
 		.place_self { [PropertyID.align_self, PropertyID.justify_self] }
+		.flex_flow { [PropertyID.flex_direction, PropertyID.flex_wrap] }
+		.columns { [PropertyID.column_width, PropertyID.column_count] }
+		.text_wrap { [PropertyID.text_wrap_mode, PropertyID.text_wrap_style] }
 		else { []PropertyID{} }
 	}
 }

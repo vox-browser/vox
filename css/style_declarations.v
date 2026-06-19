@@ -339,6 +339,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.place_items { 'place-items' }
 		.place_content { 'place-content' }
 		.place_self { 'place-self' }
+		.flex_flow { 'flex-flow' }
+		.columns { 'columns' }
+		.text_wrap { 'text-wrap' }
 	}
 }
 

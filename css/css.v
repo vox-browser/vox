@@ -353,6 +353,9 @@ pub enum PropertyID {
 	place_items
 	place_content
 	place_self
+	flex_flow
+	columns
+	text_wrap
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

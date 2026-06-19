@@ -1056,6 +1056,15 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'place-self' {
 			PropertyID.place_self
 		}
+		'flex-flow' {
+			PropertyID.flex_flow
+		}
+		'columns' {
+			PropertyID.columns
+		}
+		'text-wrap' {
+			PropertyID.text_wrap
+		}
 		else {
 			return none
 		}

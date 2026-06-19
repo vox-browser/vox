@@ -625,6 +625,15 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.place_self {
 			return parser.parse_place_self_shorthand(mut tokens)
 		}
+		.flex_flow {
+			return parser.parse_flex_flow_shorthand(mut tokens)
+		}
+		.columns {
+			return parser.parse_columns_shorthand(mut tokens)
+		}
+		.text_wrap {
+			return parser.parse_text_wrap_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2215,6 +2224,114 @@ fn (mut parser Parser) parse_font_variant_tuple(mut tokens ComponentValueStream,
 
 	tokens = transaction
 	return StyleValue(TupleStyleValue.create(slots))
+}
+
+// https://drafts.csswg.org/css-flexbox-1/#propdef-flex-flow  ->  <'flex-direction'> || <'flex-wrap'>
+fn (mut parser Parser) parse_flex_flow_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut direction := ?StyleValue(none)
+	mut wrap := ?StyleValue(none)
+	for {
+		tokens.consume_whitespace()
+		if !tokens.has_more_tokens() {
+			break
+		}
+		if direction == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_flex_direction_value(mut attempt) {
+				direction = value
+				tokens = attempt
+				continue
+			}
+		}
+		if wrap == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_flex_wrap_value(mut attempt) {
+				wrap = value
+				tokens = attempt
+				continue
+			}
+		}
+		break
+	}
+	if direction == none && wrap == none {
+		return none
+	}
+	resolved_direction := direction or { StyleValue(KeywordStyleValue.create(.row)) }
+	resolved_wrap := wrap or { StyleValue(KeywordStyleValue.create(.nowrap)) }
+	return StyleValue(ShorthandStyleValue.create(.flex_flow, [PropertyID.flex_direction, PropertyID.flex_wrap],
+		[resolved_direction, resolved_wrap]))
+}
+
+// https://drafts.csswg.org/css-multicol/#propdef-columns  ->  <'column-width'> || <'column-count'>
+fn (mut parser Parser) parse_columns_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut width := ?StyleValue(none)
+	mut count := ?StyleValue(none)
+	for {
+		tokens.consume_whitespace()
+		if !tokens.has_more_tokens() {
+			break
+		}
+		if width == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_auto_or_nonnegative_length_value(mut attempt) {
+				width = value
+				tokens = attempt
+				continue
+			}
+		}
+		if count == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_auto_or_positive_integer_value(mut attempt) {
+				count = value
+				tokens = attempt
+				continue
+			}
+		}
+		break
+	}
+	if width == none && count == none {
+		return none
+	}
+	resolved_width := width or { StyleValue(KeywordStyleValue.create(.auto)) }
+	resolved_count := count or { StyleValue(KeywordStyleValue.create(.auto)) }
+	return StyleValue(ShorthandStyleValue.create(.columns, [PropertyID.column_width, PropertyID.column_count],
+		[resolved_width, resolved_count]))
+}
+
+// https://drafts.csswg.org/css-text-4/#propdef-text-wrap  ->  <'text-wrap-mode'> || <'text-wrap-style'>
+fn (mut parser Parser) parse_text_wrap_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut mode := ?StyleValue(none)
+	mut style := ?StyleValue(none)
+	for {
+		tokens.consume_whitespace()
+		if !tokens.has_more_tokens() {
+			break
+		}
+		if mode == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_text_wrap_mode_value(mut attempt) {
+				mode = value
+				tokens = attempt
+				continue
+			}
+		}
+		if style == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_text_wrap_style_value(mut attempt) {
+				style = value
+				tokens = attempt
+				continue
+			}
+		}
+		break
+	}
+	if mode == none && style == none {
+		return none
+	}
+	resolved_mode := mode or { StyleValue(KeywordStyleValue.create(.wrap)) }
+	resolved_style := style or { StyleValue(KeywordStyleValue.create(.auto)) }
+	return StyleValue(ShorthandStyleValue.create(.text_wrap, [PropertyID.text_wrap_mode, PropertyID.text_wrap_style],
+		[resolved_mode, resolved_style]))
 }
 
 // https://drafts.csswg.org/css-align/#propdef-gap  ->  <'row-gap'> <'column-gap'>?
