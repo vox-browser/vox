@@ -1553,6 +1553,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.grid_template_columns, .grid_template_rows {
 			'none'
 		}
+		.grid_template_areas {
+			'none'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -4709,7 +4712,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .touch_action,
 		.user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break,
 		.dominant_baseline, .quotes, .list_style_type, .font_family, .grid_column_start,
-		.grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow {
+		.grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow, .grid_template_areas {
 			.discrete
 		}
 	}
@@ -5495,7 +5498,8 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.width, .word_break, .word_spacing, .writing_mode, .cx, .cy, .x, .y, .r, .rx, .ry,
 		.dominant_baseline, .display, .flex_basis, .quotes, .list_style_type, .font_family,
 		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow,
-		.grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows {
+		.grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows,
+		.grid_template_areas {
 			true
 		}
 	}

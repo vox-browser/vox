@@ -565,6 +565,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.grid_template_columns, .grid_template_rows {
 			return parser.parse_grid_track_size_list(mut tokens)
 		}
+		.grid_template_areas {
+			return parser.parse_grid_template_areas_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1669,6 +1672,132 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+// https://www.w3.org/TR/css-grid-2/#grid-template-areas-property  ->  none | <string>+
+fn (mut parser Parser) parse_grid_template_areas_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	mut none_attempt := tokens.clone()
+	if _ := parse_property_keyword_value(mut none_attempt, ['none']) {
+		tokens = none_attempt
+		return StyleValue(GridTemplateAreaStyleValue.create(map[string]GridArea{}, 0, 0))
+	}
+
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	mut grid_area_rows := [][]string{}
+	mut has_column_count := false
+	mut column_count := 0
+	for {
+		token := transaction.peek() or { break }
+		if !token.is(.string) {
+			break
+		}
+		transaction.consume()
+		columns := grid_template_area_columns_from_string(token.token().string_value()) or {
+			return none
+		}
+		if columns.len == 0 {
+			return none
+		}
+		if has_column_count {
+			if columns.len != column_count {
+				return none
+			}
+		} else {
+			has_column_count = true
+			column_count = columns.len
+		}
+		grid_area_rows << columns
+		transaction.consume_whitespace()
+	}
+
+	if grid_area_rows.len == 0 {
+		return none
+	}
+
+	// Pre-compute occurrence counts for each named area.
+	mut name_counts := map[string]int{}
+	for row in grid_area_rows {
+		for cell in row {
+			if cell != '.' {
+				name_counts[cell] = name_counts[cell] + 1
+			}
+		}
+	}
+
+	mut grid_areas := map[string]GridArea{}
+	for y in 0 .. grid_area_rows.len {
+		for x in 0 .. grid_area_rows[y].len {
+			name := grid_area_rows[y][x]
+			if name == '.' || name in grid_areas {
+				continue
+			}
+
+			mut x_end := x
+			for x_end < grid_area_rows[y].len && grid_area_rows[y][x_end] == name {
+				x_end++
+			}
+			mut y_end := y
+			for y_end < grid_area_rows.len && grid_area_rows[y_end][x] == name {
+				y_end++
+			}
+
+			// Verify the bounding rectangle is fully filled with this name.
+			for check_y in y .. y_end {
+				for check_x in x .. x_end {
+					if grid_area_rows[check_y][check_x] != name {
+						return none
+					}
+				}
+			}
+
+			// Verify there are no occurrences of this name outside the rectangle.
+			expected_count := (x_end - x) * (y_end - y)
+			if name_counts[name] != expected_count {
+				return none
+			}
+
+			grid_areas[name] = GridArea{
+				row_start:    usize(y)
+				row_end:      usize(y_end)
+				column_start: usize(x)
+				column_end:   usize(x_end)
+			}
+		}
+	}
+
+	tokens = transaction
+	return StyleValue(GridTemplateAreaStyleValue.create(grid_areas, usize(grid_area_rows.len),
+		usize(column_count)))
+}
+
+// Splits one grid-template-areas string into its column cell names (or '.' for a null cell).
+fn grid_template_area_columns_from_string(input string) ?[]string {
+	mut columns := []string{}
+	runes := input.runes()
+	mut i := 0
+	for i < runes.len {
+		if is_whitespace(u32(runes[i])) {
+			for i < runes.len && is_whitespace(u32(runes[i])) {
+				i++
+			}
+		} else if runes[i] == `.` {
+			for i < runes.len && runes[i] == `.` {
+				i++
+			}
+			columns << '.'
+		} else if is_ident_code_point(u32(runes[i])) {
+			start := i
+			for i < runes.len && is_ident_code_point(u32(runes[i])) {
+				i++
+			}
+			columns << runes[start..i].string()
+		} else {
+			return none
+		}
+	}
+	return columns
 }
 
 // https://www.w3.org/TR/css-grid-2/#auto-tracks  ->  <track-size>+

@@ -990,6 +990,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'grid-template-rows' {
 			PropertyID.grid_template_rows
 		}
+		'grid-template-areas' {
+			PropertyID.grid_template_areas
+		}
 		else {
 			return none
 		}
@@ -1062,7 +1065,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.view_transition_name {
 			value_type == .custom_ident
 		}
-		.font_language_override, .quotes, .list_style_type {
+		.font_language_override, .quotes, .list_style_type, .grid_template_areas {
 			value_type == .string
 		}
 		.background_attachment, .background_blend_mode, .background_clip, .background_origin,
@@ -1837,6 +1840,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.grid_template_columns, .grid_template_rows {
 			lowercase_value in ['none', 'auto', 'min-content', 'max-content']
 		}
+		.grid_template_areas {
+			lowercase_value == 'none'
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1911,7 +1917,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .widows,
 		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
-		.grid_auto_rows, .grid_template_columns, .grid_template_rows {
+		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas {
 			false
 		}
 		.color_scheme {
@@ -4320,6 +4326,7 @@ pub type StyleValue = KeywordStyleValue
 	| FontVariantAlternatesFunctionStyleValue
 	| FrequencyStyleValue
 	| GridAutoFlowStyleValue
+	| GridTemplateAreaStyleValue
 	| GridTrackPlacementStyleValue
 	| GridTrackSizeListStyleValue
 	| GuaranteedInvalidStyleValue
@@ -4400,6 +4407,7 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		FontVariantAlternatesFunctionStyleValue { .font_variant_alternates_function }
 		FrequencyStyleValue { .frequency }
 		GridAutoFlowStyleValue { .grid_auto_flow }
+		GridTemplateAreaStyleValue { .grid_template_area }
 		GridTrackPlacementStyleValue { .grid_track_placement }
 		GridTrackSizeListStyleValue { .grid_track_size_list }
 		GuaranteedInvalidStyleValue { .guaranteed_invalid }
@@ -4717,6 +4725,7 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		FontVariantAlternatesFunctionStyleValue { style_value.serialize(mode) }
 		FrequencyStyleValue { style_value.serialize(mode) }
 		GridAutoFlowStyleValue { style_value.serialize(mode) }
+		GridTemplateAreaStyleValue { style_value.serialize(mode) }
 		GridTrackPlacementStyleValue { style_value.serialize(mode) }
 		GridTrackSizeListStyleValue { style_value.serialize(mode) }
 		GuaranteedInvalidStyleValue { style_value.serialize(mode) }
