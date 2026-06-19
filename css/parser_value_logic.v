@@ -571,6 +571,15 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.filter, .backdrop_filter {
 			return parser.parse_filter_value_list_value(mut tokens)
 		}
+		.counter_increment {
+			return parser.parse_counter_increment_value(mut tokens)
+		}
+		.counter_reset {
+			return parser.parse_counter_reset_value(mut tokens)
+		}
+		.counter_set {
+			return parser.parse_counter_set_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1675,6 +1684,59 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+// https://drafts.csswg.org/css-lists-3/#propdef-counter-increment  ->  [ <counter-name> <integer>? ]+ | none
+fn (mut parser Parser) parse_counter_increment_value(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_counter_definitions_value(mut tokens, 1)
+}
+
+fn (mut parser Parser) parse_counter_reset_value(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_counter_definitions_value(mut tokens, 0)
+}
+
+fn (mut parser Parser) parse_counter_set_value(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_counter_definitions_value(mut tokens, 0)
+}
+
+fn (mut parser Parser) parse_counter_definitions_value(mut tokens ComponentValueStream, default_value int) ?StyleValue {
+	mut none_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut none_attempt, ['none']) {
+		tokens = none_attempt
+		return value
+	}
+
+	// FIXME: reversed() counters are not translated yet (the C++ also disables them for now).
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	mut counter_definitions := []CounterDefinition{}
+	for transaction.has_more_tokens() {
+		// <counter-name> cannot be the keyword `none`.
+		counter_name := parser.parse_custom_ident(mut transaction, ['none']) or { break }
+		transaction.consume_whitespace()
+
+		// <integer>?
+		mut value := ?StyleValue(StyleValue(IntegerStyleValue.create(i64(default_value))))
+		mut int_attempt := transaction.clone()
+		if integer_value := parser.parse_integer_value(mut int_attempt) {
+			value = integer_value
+			transaction = int_attempt
+		}
+
+		counter_definitions << CounterDefinition{
+			name:        counter_name
+			is_reversed: false
+			value:       value
+		}
+		transaction.consume_whitespace()
+	}
+
+	if counter_definitions.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(CounterDefinitionsStyleValue.create(counter_definitions))
 }
 
 fn color_filter_type_from_string(name string) ?ColorFilterType {

@@ -333,6 +333,9 @@ pub enum PropertyID {
 	grid_template_areas
 	filter
 	backdrop_filter
+	counter_increment
+	counter_reset
+	counter_set
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

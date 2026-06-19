@@ -320,6 +320,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.grid_template_areas { 'grid-template-areas' }
 		.filter { 'filter' }
 		.backdrop_filter { 'backdrop-filter' }
+		.counter_increment { 'counter-increment' }
+		.counter_reset { 'counter-reset' }
+		.counter_set { 'counter-set' }
 	}
 }
 
@@ -345,7 +348,7 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
 		.transition_property, .transition_timing_function, .view_timeline_axis, .timeline_scope,
 		.view_timeline_inset, .view_timeline_name, .will_change, .position_try_fallbacks, .quotes,
-		.box_shadow, .font_family {
+		.box_shadow, .font_family, .counter_increment, .counter_reset, .counter_set {
 			true
 		}
 		else {
@@ -354,14 +357,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 299
+pub const number_of_longhand_properties = 302
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .backdrop_filter
+	return .counter_set
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -665,6 +668,9 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		296 { PropertyID.grid_template_areas }
 		297 { PropertyID.filter }
 		298 { PropertyID.backdrop_filter }
+		299 { PropertyID.counter_increment }
+		300 { PropertyID.counter_reset }
+		301 { PropertyID.counter_set }
 		else { none }
 	}
 }

@@ -1559,6 +1559,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.filter, .backdrop_filter {
 			'none'
 		}
+		.counter_increment, .counter_reset, .counter_set {
+			'none'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -1632,7 +1635,8 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.transition_delay, .transition_duration, .transition_timing_function, .translate,
 		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_columns, .grid_auto_rows,
-		.grid_template_columns, .grid_template_rows, .filter, .backdrop_filter {
+		.grid_template_columns, .grid_template_rows, .filter, .backdrop_filter, .counter_increment,
+		.counter_reset, .counter_set {
 			true
 		}
 		else {
@@ -4681,7 +4685,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.text_decoration_color, .text_decoration_thickness, .text_underline_offset, .text_indent,
 		.top, .transform_origin, .vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate,
 		.scale, .transform, .translate, .webkit_text_fill_color, .word_spacing, .scrollbar_width,
-		.z_index, .flex_basis, .clip, .grid_auto_columns, .grid_auto_rows {
+		.z_index, .flex_basis, .clip, .grid_auto_columns, .grid_auto_rows, .counter_increment,
+		.counter_reset, .counter_set {
 			.by_computed_value
 		}
 		.content_visibility, .visibility, .display, .box_shadow, .text_shadow, .stroke_dasharray,
@@ -5503,7 +5508,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.dominant_baseline, .display, .flex_basis, .quotes, .list_style_type, .font_family,
 		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow,
 		.grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows,
-		.grid_template_areas {
+		.grid_template_areas, .counter_increment, .counter_reset, .counter_set {
 			true
 		}
 	}
