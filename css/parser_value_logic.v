@@ -583,6 +583,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.cursor {
 			return parser.parse_cursor_value(mut tokens)
 		}
+		.font_size {
+			return parser.parse_font_size_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1688,6 +1691,20 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
 }
+
+// https://drafts.csswg.org/css-fonts/#propdef-font-size
+// <absolute-size> | <relative-size> | <length-percentage [0,∞]> | math
+fn (mut parser Parser) parse_font_size_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, font_size_keywords) {
+		tokens = transaction
+		return value
+	}
+	return parser.parse_nonnegative_length_percentage_value(mut tokens)
+}
+
+const font_size_keywords = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large',
+	'xx-large', 'xxx-large', 'larger', 'smaller', 'math']
 
 // https://drafts.csswg.org/css-ui/#cursor
 // [ [ <url> | <url-set> ] [ <x> <y> ]? ]#  <cursor-predefined>

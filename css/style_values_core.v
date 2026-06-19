@@ -1011,6 +1011,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'cursor' {
 			PropertyID.cursor
 		}
+		'font-size' {
+			PropertyID.font_size
+		}
 		else {
 			return none
 		}
@@ -1147,7 +1150,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 			value_type in [.length, .number]
 		}
 		.transform_origin, .vertical_align, .flex_basis, .grid_auto_columns, .grid_auto_rows,
-		.grid_template_columns, .grid_template_rows {
+		.grid_template_columns, .grid_template_rows, .font_size {
 			value_type in [.length, .percentage]
 		}
 		.will_change {
@@ -1873,6 +1876,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.cursor {
 			lowercase_value in cursor_predefined_keywords
 		}
+		.font_size {
+			lowercase_value in font_size_keywords
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1948,7 +1954,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
 		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas, .filter,
-		.backdrop_filter, .cursor {
+		.backdrop_filter, .cursor, .font_size {
 			false
 		}
 		.color_scheme {
@@ -2230,7 +2236,7 @@ pub fn property_accepts_length(property_id PropertyID, value Length) bool {
 		.padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start,
 		.padding_left, .padding_right, .padding_top, .perspective, .tab_size, .width,
 		.column_width, .column_height, .column_gap, .row_gap, .shape_margin, .r, .rx, .ry,
-		.stroke_width, .stroke_dashoffset, .flex_basis, .stroke_dasharray {
+		.stroke_width, .stroke_dashoffset, .flex_basis, .stroke_dasharray, .font_size {
 			value.raw_value() >= 0
 		}
 		else {
@@ -3499,6 +3505,16 @@ pub enum Keyword {
 	all_scroll
 	zoom_in
 	zoom_out
+	xx_small
+	x_small
+	small
+	medium
+	large
+	x_large
+	xx_large
+	xxx_large
+	larger
+	smaller
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3924,6 +3940,16 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.all_scroll { 'all-scroll' }
 		.zoom_in { 'zoom-in' }
 		.zoom_out { 'zoom-out' }
+		.xx_small { 'xx-small' }
+		.x_small { 'x-small' }
+		.small { 'small' }
+		.medium { 'medium' }
+		.large { 'large' }
+		.x_large { 'x-large' }
+		.xx_large { 'xx-large' }
+		.xxx_large { 'xxx-large' }
+		.larger { 'larger' }
+		.smaller { 'smaller' }
 	}
 }
 
@@ -4338,6 +4364,16 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'all-scroll' { Keyword.all_scroll }
 		'zoom-in' { Keyword.zoom_in }
 		'zoom-out' { Keyword.zoom_out }
+		'xx-small' { Keyword.xx_small }
+		'x-small' { Keyword.x_small }
+		'small' { Keyword.small }
+		'medium' { Keyword.medium }
+		'large' { Keyword.large }
+		'x-large' { Keyword.x_large }
+		'xx-large' { Keyword.xx_large }
+		'xxx-large' { Keyword.xxx_large }
+		'larger' { Keyword.larger }
+		'smaller' { Keyword.smaller }
 		else { none }
 	}
 }

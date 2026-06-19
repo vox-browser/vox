@@ -1565,6 +1565,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.cursor {
 			'auto'
 		}
+		.font_size {
+			'medium'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -1587,7 +1590,8 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		.text_underline_offset, .text_underline_position, .text_indent, .text_wrap_mode,
 		.text_wrap_style, .visibility, .webkit_text_fill_color, .white_space_collapse, .word_break,
 		.word_spacing, .writing_mode, .border_collapse, .border_spacing, .dominant_baseline,
-		.quotes, .text_shadow, .list_style_type, .stroke_dasharray, .font_family, .cursor {
+		.quotes, .text_shadow, .list_style_type, .stroke_dasharray, .font_family, .cursor,
+		.font_size {
 			true
 		}
 		else {
@@ -1639,7 +1643,7 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_columns, .grid_auto_rows,
 		.grid_template_columns, .grid_template_rows, .filter, .backdrop_filter, .counter_increment,
-		.counter_reset, .counter_set, .cursor {
+		.counter_reset, .counter_set, .cursor, .font_size {
 			true
 		}
 		else {
@@ -1673,7 +1677,7 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 		.corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape,
 		.corner_top_right_shape, .flood_color, .font_style, .font_weight, .font_width,
 		.letter_spacing, .math_depth, .outline_width, .stop_color, .text_decoration_color,
-		.word_spacing {
+		.word_spacing, .font_size {
 			true
 		}
 		else {
@@ -4689,7 +4693,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.top, .transform_origin, .vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate,
 		.scale, .transform, .translate, .webkit_text_fill_color, .word_spacing, .scrollbar_width,
 		.z_index, .flex_basis, .clip, .grid_auto_columns, .grid_auto_rows, .counter_increment,
-		.counter_reset, .counter_set {
+		.counter_reset, .counter_set, .font_size {
 			.by_computed_value
 		}
 		.content_visibility, .visibility, .display, .box_shadow, .text_shadow, .stroke_dasharray,
@@ -5512,7 +5516,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.dominant_baseline, .display, .flex_basis, .quotes, .list_style_type, .font_family,
 		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow,
 		.grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows,
-		.grid_template_areas, .counter_increment, .counter_reset, .counter_set {
+		.grid_template_areas, .counter_increment, .counter_reset, .counter_set, .font_size {
 			true
 		}
 	}
