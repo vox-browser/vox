@@ -598,6 +598,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.font_variant_east_asian {
 			return parser.parse_font_variant_east_asian_value(mut tokens)
 		}
+		.clip_path {
+			return parser.parse_clip_path_value(mut tokens)
+		}
+		.shape_outside {
+			return parser.parse_shape_outside_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1702,6 +1708,352 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+fn radial_extent_from_string(ident string) ?RadialExtent {
+	return match ident {
+		'closest-corner' { RadialExtent.closest_corner }
+		'closest-side' { RadialExtent.closest_side }
+		'farthest-corner' { RadialExtent.farthest_corner }
+		'farthest-side' { RadialExtent.farthest_side }
+		else { none }
+	}
+}
+
+// <radial-size> = [ <radial-extent> | <length-percentage [0,∞]> ]{1,2}
+fn (mut parser Parser) parse_radial_size(mut tokens ComponentValueStream) ?RadialSizeStyleValue {
+	mut transaction := tokens.clone()
+	mut values := []RadialSizeStyleValueComponent{}
+	for transaction.has_more_tokens() && values.len < 2 {
+		transaction.consume_whitespace()
+		if peek := transaction.peek() {
+			if peek.is(.ident) {
+				if extent := radial_extent_from_string(to_ascii_lowercase(peek.token().ident())) {
+					transaction.consume()
+					values << RadialSizeStyleValueComponent(RadialExtentComponent{
+						extent: extent
+					})
+					continue
+				}
+			}
+		}
+		mut length_attempt := transaction.clone()
+		if length_percentage := parser.parse_length_percentage_value(mut length_attempt) {
+			if length_percentage is LengthStyleValue && length_percentage.raw_value() < 0 {
+				return none
+			}
+			if length_percentage is PercentageStyleValue && length_percentage.raw_value() < 0 {
+				return none
+			}
+			values << RadialSizeStyleValueComponent(length_percentage)
+			transaction = length_attempt
+			continue
+		}
+		break
+	}
+
+	if values.len == 0 {
+		return none
+	}
+	tokens = transaction
+	return RadialSizeStyleValue.create(values)
+}
+
+fn basic_shape_fill_rule_from_components(components []ComponentValue) ?FillRule {
+	mut tokens := ComponentValueStream.new(components)
+	tokens.consume_whitespace()
+	token := tokens.consume() or { return none }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() || !token.is(.ident) {
+		return none
+	}
+	return match to_ascii_lowercase(token.token().ident()) {
+		'nonzero' { FillRule.nonzero }
+		'evenodd' { FillRule.evenodd }
+		else { none }
+	}
+}
+
+// https://drafts.csswg.org/css-shapes/#typedef-basic-shape
+// FIXME: the `round <'border-radius'>` clause of inset()/xywh()/rect() is not translated yet,
+// and path() stores the raw string without SVG path-data validation.
+fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is_function() {
+		return none
+	}
+	function_name := to_ascii_lowercase(component_value.function().name)
+	function_values := component_value.function().value
+	zero_radius := StyleValue(BorderRadiusRectStyleValue.create_zero())
+
+	if function_name == 'inset' {
+		// inset( <length-percentage>{1,4} [ round <'border-radius'> ]? )
+		mut args := ComponentValueStream.new(function_values)
+		args.consume_whitespace()
+		top := parser.parse_length_percentage_value(mut args) or { return none }
+		args.consume_whitespace()
+		right := parser.parse_length_percentage_value(mut args) or { top }
+		args.consume_whitespace()
+		bottom := parser.parse_length_percentage_value(mut args) or { top }
+		args.consume_whitespace()
+		left := parser.parse_length_percentage_value(mut args) or { right }
+		args.consume_whitespace()
+		if args.has_more_tokens() {
+			return none
+		}
+		tokens = transaction
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeInset{
+			top:           top
+			right:         right
+			bottom:        bottom
+			left:          left
+			border_radius: zero_radius
+		})))
+	}
+
+	if function_name == 'xywh' {
+		// xywh( <length-percentage>{2} <length-percentage [0,∞]>{2} [ round <'border-radius'> ]? )
+		mut args := ComponentValueStream.new(function_values)
+		args.consume_whitespace()
+		x := parser.parse_length_percentage_value(mut args) or { return none }
+		args.consume_whitespace()
+		y := parser.parse_length_percentage_value(mut args) or { return none }
+		args.consume_whitespace()
+		width := parser.parse_length_percentage_value(mut args) or { return none }
+		args.consume_whitespace()
+		height := parser.parse_length_percentage_value(mut args) or { return none }
+		args.consume_whitespace()
+		if args.has_more_tokens() {
+			return none
+		}
+		if width is LengthStyleValue && width.raw_value() < 0 {
+			return none
+		}
+		if width is PercentageStyleValue && width.raw_value() < 0 {
+			return none
+		}
+		if height is LengthStyleValue && height.raw_value() < 0 {
+			return none
+		}
+		if height is PercentageStyleValue && height.raw_value() < 0 {
+			return none
+		}
+		tokens = transaction
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeXywh{
+			x:             x
+			y:             y
+			width:         width
+			height:        height
+			border_radius: zero_radius
+		})))
+	}
+
+	if function_name == 'rect' {
+		// rect( [ <length-percentage> | auto ]{4} [ round <'border-radius'> ]? )
+		mut args := ComponentValueStream.new(function_values)
+		top := parser.parse_length_percentage_or_auto(mut args) or { return none }
+		right := parser.parse_length_percentage_or_auto(mut args) or { return none }
+		bottom := parser.parse_length_percentage_or_auto(mut args) or { return none }
+		left := parser.parse_length_percentage_or_auto(mut args) or { return none }
+		args.consume_whitespace()
+		if args.has_more_tokens() {
+			return none
+		}
+		tokens = transaction
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeRect{
+			top:           top
+			right:         right
+			bottom:        bottom
+			left:          left
+			border_radius: zero_radius
+		})))
+	}
+
+	if function_name == 'circle' {
+		// circle( <radial-size>? [ at <position> ]? )
+		mut args := ComponentValueStream.new(function_values)
+		mut radius := ?RadialSizeStyleValue(none)
+		mut radius_attempt := args.clone()
+		if parsed := parser.parse_radial_size(mut radius_attempt) {
+			if parsed.components().len != 1 {
+				return none
+			}
+			radius = parsed
+			args = radius_attempt
+		}
+		resolved_radius := radius or {
+			RadialSizeStyleValue.create([RadialSizeStyleValueComponent(RadialExtentComponent{
+				extent: .closest_side
+			})])
+		}
+		position := parser.parse_basic_shape_at_position(mut args) or { return none }
+		tokens = transaction
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeCircle{
+			radius:   StyleValue(resolved_radius)
+			position: position.value
+		})))
+	}
+
+	if function_name == 'ellipse' {
+		// ellipse( <radial-size>? [ at <position> ]? )
+		mut args := ComponentValueStream.new(function_values)
+		mut radius := ?RadialSizeStyleValue(none)
+		mut radius_attempt := args.clone()
+		if parsed := parser.parse_radial_size(mut radius_attempt) {
+			if parsed.components().len != 2 {
+				return none
+			}
+			radius = parsed
+			args = radius_attempt
+		}
+		resolved_radius := radius or {
+			RadialSizeStyleValue.create([
+				RadialSizeStyleValueComponent(RadialExtentComponent{
+					extent: .closest_side
+				}),
+				RadialSizeStyleValueComponent(RadialExtentComponent{
+					extent: .closest_side
+				}),
+			])
+		}
+		position := parser.parse_basic_shape_at_position(mut args) or { return none }
+		tokens = transaction
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeEllipse{
+			radius:   StyleValue(resolved_radius)
+			position: position.value
+		})))
+	}
+
+	if function_name == 'polygon' {
+		// polygon( <'fill-rule'>? , [ <length-percentage> <length-percentage> ]# )
+		arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function_values)
+		if arguments.len < 1 {
+			return none
+		}
+		mut fill_rule := FillRule.nonzero
+		mut point_arguments := arguments.clone()
+		if parsed_fill_rule := basic_shape_fill_rule_from_components(arguments[0]) {
+			fill_rule = parsed_fill_rule
+			point_arguments = arguments[1..].clone()
+		}
+		if point_arguments.len < 1 {
+			return none
+		}
+		mut points := []BasicShapePolygonPoint{}
+		for argument in point_arguments {
+			mut argument_tokens := ComponentValueStream.new(argument)
+			argument_tokens.consume_whitespace()
+			x_pos := parser.parse_length_percentage_value(mut argument_tokens) or { return none }
+			argument_tokens.consume_whitespace()
+			y_pos := parser.parse_length_percentage_value(mut argument_tokens) or { return none }
+			argument_tokens.consume_whitespace()
+			if argument_tokens.has_more_tokens() {
+				return none
+			}
+			points << BasicShapePolygonPoint{
+				x: x_pos
+				y: y_pos
+			}
+		}
+		tokens = transaction
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapePolygon{
+			fill_rule: fill_rule
+			points:    points
+		})))
+	}
+
+	if function_name == 'path' {
+		// path( <'fill-rule'>?, <string> )
+		arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function_values)
+		if arguments.len < 1 || arguments.len > 2 {
+			return none
+		}
+		mut fill_rule := FillRule.nonzero
+		if arguments.len == 2 {
+			fill_rule = basic_shape_fill_rule_from_components(arguments[0]) or { return none }
+		}
+		mut string_tokens := ComponentValueStream.new(arguments[arguments.len - 1])
+		string_tokens.consume_whitespace()
+		string_token := string_tokens.consume() or { return none }
+		string_tokens.consume_whitespace()
+		if !string_token.is(.string) || string_tokens.has_more_tokens() {
+			return none
+		}
+		path_string := string_token.token().string_value()
+		if path_string.len == 0 {
+			return none
+		}
+		tokens = transaction
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapePath{
+			fill_rule:         fill_rule
+			path_instructions: path_string
+		})))
+	}
+
+	return none
+}
+
+fn (mut parser Parser) parse_length_percentage_or_auto(mut tokens ComponentValueStream) ?StyleValue {
+	tokens.consume_whitespace()
+	if value := parser.parse_length_percentage_value(mut tokens) {
+		return value
+	}
+	mut auto_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut auto_attempt, ['auto']) {
+		tokens = auto_attempt
+		return value
+	}
+	return none
+}
+
+struct BasicShapePositionResult {
+	value ?StyleValue
+}
+
+// [ at <position> ]?  -- returns the optional position (none result = parse error; the wrapped
+// `.value` is the optional position, absent when there is no `at` clause).
+fn (mut parser Parser) parse_basic_shape_at_position(mut tokens ComponentValueStream) ?BasicShapePositionResult {
+	tokens.consume_whitespace()
+	mut position := ?StyleValue(none)
+	if peek := tokens.peek() {
+		if peek.is(.ident) && equals_ignoring_ascii_case(peek.token().ident(), 'at') {
+			tokens.consume()
+			tokens.consume_whitespace()
+			parsed_position := parser.parse_css_position_value(mut tokens, .normal) or { return none }
+			position = parsed_position
+		}
+	}
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return BasicShapePositionResult{
+		value: position
+	}
+}
+
+// https://drafts.fxtf.org/css-masking/#the-clip-path  ->  none | <basic-shape> || <geometry-box> | <url>
+// FIXME: <geometry-box> and <url> are not translated yet.
+fn (mut parser Parser) parse_clip_path_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut none_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut none_attempt, ['none']) {
+		tokens = none_attempt
+		return value
+	}
+	return parser.parse_basic_shape_value(mut tokens)
+}
+
+// https://drafts.csswg.org/css-shapes/#propdef-shape-outside  ->  none | [ <basic-shape> || <shape-box> ] | <image>
+// FIXME: <shape-box> and <image> are not translated yet.
+fn (mut parser Parser) parse_shape_outside_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut none_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut none_attempt, ['none']) {
+		tokens = none_attempt
+		return value
+	}
+	return parser.parse_basic_shape_value(mut tokens)
 }
 
 // Parses a `||` combination of font-variant keywords into a fixed-size tuple, where

@@ -1029,6 +1029,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'font-variant-east-asian' {
 			PropertyID.font_variant_east_asian
 		}
+		'clip-path' {
+			PropertyID.clip_path
+		}
+		'shape-outside' {
+			PropertyID.shape_outside
+		}
 		else {
 			return none
 		}
@@ -1094,6 +1100,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.fill, .stroke {
 			value_type == .paint
+		}
+		.clip_path, .shape_outside {
+			value_type == .basic_shape
 		}
 		.mask_image {
 			value_type in [.image, .url]
@@ -1901,6 +1910,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.fill, .stroke {
 			lowercase_value == 'none'
 		}
+		.clip_path, .shape_outside {
+			lowercase_value == 'none'
+		}
 		.font_variant_ligatures {
 			lowercase_value in font_variant_ligatures_keywords
 		}
@@ -1986,7 +1998,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
 		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas, .filter,
 		.backdrop_filter, .cursor, .font_size, .fill, .stroke, .font_variant_ligatures,
-		.font_variant_numeric, .font_variant_east_asian {
+		.font_variant_numeric, .font_variant_east_asian, .clip_path, .shape_outside {
 			false
 		}
 		.color_scheme {
@@ -3571,6 +3583,10 @@ pub enum Keyword {
 	no_historical_ligatures
 	contextual
 	no_contextual
+	closest_corner
+	closest_side
+	farthest_corner
+	farthest_side
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -4030,6 +4046,10 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.no_historical_ligatures { 'no-historical-ligatures' }
 		.contextual { 'contextual' }
 		.no_contextual { 'no-contextual' }
+		.closest_corner { 'closest-corner' }
+		.closest_side { 'closest-side' }
+		.farthest_corner { 'farthest-corner' }
+		.farthest_side { 'farthest-side' }
 	}
 }
 
@@ -4478,6 +4498,10 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'no-historical-ligatures' { Keyword.no_historical_ligatures }
 		'contextual' { Keyword.contextual }
 		'no-contextual' { Keyword.no_contextual }
+		'closest-corner' { Keyword.closest_corner }
+		'closest-side' { Keyword.closest_side }
+		'farthest-corner' { Keyword.farthest_corner }
+		'farthest-side' { Keyword.farthest_side }
 		else { none }
 	}
 }

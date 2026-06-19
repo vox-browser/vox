@@ -343,6 +343,8 @@ pub enum PropertyID {
 	font_variant_ligatures
 	font_variant_numeric
 	font_variant_east_asian
+	clip_path
+	shape_outside
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {
