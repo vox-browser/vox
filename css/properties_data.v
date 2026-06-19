@@ -482,6 +482,10 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 			[PropertyID.overflow_clip_margin_inline_start, PropertyID.overflow_clip_margin_inline_end]
 		}
 		.all { all_shorthand_longhands() }
+		.border_radius {
+			[PropertyID.border_top_left_radius, PropertyID.border_top_right_radius,
+				PropertyID.border_bottom_right_radius, PropertyID.border_bottom_left_radius]
+		}
 		else { []PropertyID{} }
 	}
 }

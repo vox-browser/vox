@@ -1218,6 +1218,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'all' {
 			PropertyID.all
 		}
+		'border-radius' {
+			PropertyID.border_radius
+		}
 		else {
 			return none
 		}

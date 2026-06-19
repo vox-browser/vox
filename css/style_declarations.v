@@ -393,6 +393,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.overflow_clip_margin_block { 'overflow-clip-margin-block' }
 		.overflow_clip_margin_inline { 'overflow-clip-margin-inline' }
 		.all { 'all' }
+		.border_radius { 'border-radius' }
 	}
 }
 

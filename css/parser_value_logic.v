@@ -792,6 +792,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 			// `all` only accepts the CSS-wide keywords, which are handled before this dispatch.
 			return none
 		}
+		.border_radius {
+			return parser.parse_border_radius_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2852,6 +2855,55 @@ fn (mut parser Parser) parse_white_space_shorthand(mut tokens ComponentValueStre
 
 	return parser.parse_double_bar_shorthand(mut tokens, .white_space, [PropertyID.white_space_collapse,
 		PropertyID.text_wrap_mode, PropertyID.white_space_trim])
+}
+
+// {1,4} non-negative <length-percentage>s expanded to corner order [ TL, TR, BR, BL ].
+fn (mut parser Parser) parse_border_radius_lp_list(group []ComponentValue) ?[]StyleValue {
+	mut stream := ComponentValueStream.new(group)
+	mut parsed := []StyleValue{}
+	for parsed.len < 4 {
+		stream.consume_whitespace()
+		if !stream.has_more_tokens() {
+			break
+		}
+		value := parser.parse_nonnegative_length_percentage_value(mut stream) or { break }
+		parsed << value
+	}
+	stream.consume_whitespace()
+	if parsed.len == 0 || stream.has_more_tokens() {
+		return none
+	}
+	tl := parsed[0]
+	tr := if parsed.len > 1 { parsed[1] } else { tl }
+	br := if parsed.len > 2 { parsed[2] } else { tl }
+	bl := if parsed.len > 3 { parsed[3] } else { tr }
+	return [tl, tr, br, bl]
+}
+
+// https://drafts.csswg.org/css-backgrounds/#propdef-border-radius
+// <length-percentage [0,∞]>{1,4} [ / <length-percentage [0,∞]>{1,4} ]?
+fn (mut parser Parser) parse_border_radius_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	groups := grid_split_by_slash(transaction.consume_remaining_component_values())
+	if groups.len < 1 || groups.len > 2 {
+		return none
+	}
+
+	horizontals := parser.parse_border_radius_lp_list(groups[0]) or { return none }
+	mut verticals := horizontals.clone()
+	if groups.len == 2 {
+		verticals = parser.parse_border_radius_lp_list(groups[1]) or { return none }
+	}
+
+	mut corners := []StyleValue{}
+	for i in 0 .. 4 {
+		corners << StyleValue(BorderRadiusStyleValue.create(horizontals[i], verticals[i]))
+	}
+
+	tokens = transaction
+	return StyleValue(ShorthandStyleValue.create(.border_radius, [PropertyID.border_top_left_radius,
+		PropertyID.border_top_right_radius, PropertyID.border_bottom_right_radius,
+		PropertyID.border_bottom_left_radius], corners))
 }
 
 // overflow-clip-margin* — a single `<visual-box> || <length [0,∞]>` applied to every referenced edge.
