@@ -523,6 +523,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.float_ {
 			return parser.parse_float_value(mut tokens)
 		}
+		.dominant_baseline {
+			return parser.parse_dominant_baseline_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1499,6 +1502,12 @@ fn (mut parser Parser) parse_float_value(mut tokens ComponentValueStream) ?Style
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['none', 'left', 'right', 'inline-start',
 		'inline-end'])
+}
+
+fn (mut parser Parser) parse_dominant_baseline_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'text-bottom', 'alphabetic',
+		'ideographic', 'middle', 'central', 'mathematical', 'hanging', 'text-top'])
 }
 
 fn (mut parser Parser) parse_position_value(mut tokens ComponentValueStream) ?StyleValue {

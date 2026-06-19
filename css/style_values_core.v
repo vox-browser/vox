@@ -933,6 +933,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'ry' {
 			PropertyID.ry
 		}
+		'dominant-baseline' {
+			PropertyID.dominant_baseline
+		}
 		else {
 			return none
 		}
@@ -1162,7 +1165,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 			value_type == .easing_function
 		}
 		.animation_composition, .animation_direction, .animation_fill_mode, .animation_play_state,
-		.transition_behavior, .transition_property {
+		.transition_behavior, .transition_property, .dominant_baseline {
 			false
 		}
 	}
@@ -1738,6 +1741,10 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.will_change {
 			lowercase_value in ['auto', 'scroll-position', 'contents']
 		}
+		.dominant_baseline {
+			lowercase_value in ['auto', 'text-bottom', 'alphabetic', 'ideographic', 'middle',
+				'central', 'mathematical', 'hanging', 'text-top']
+		}
 	}
 }
 
@@ -1802,7 +1809,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.resize, .scroll_behavior, .math_shift, .contain, .container_type, .unicode_bidi,
 		.user_select, .view_timeline_axis, .view_timeline_inset, .visibility,
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .widows,
-		.cx, .cy, .x, .y, .r, .rx, .ry {
+		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline {
 			false
 		}
 		.color_scheme {
@@ -3296,6 +3303,12 @@ pub enum Keyword {
 	window
 	windowframe
 	windowtext
+	text_bottom
+	alphabetic
+	ideographic
+	central
+	mathematical
+	text_top
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3670,6 +3683,12 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.window { 'window' }
 		.windowframe { 'windowframe' }
 		.windowtext { 'windowtext' }
+		.text_bottom { 'text-bottom' }
+		.alphabetic { 'alphabetic' }
+		.ideographic { 'ideographic' }
+		.central { 'central' }
+		.mathematical { 'mathematical' }
+		.text_top { 'text-top' }
 	}
 }
 
@@ -4033,6 +4052,12 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'window' { Keyword.window }
 		'windowframe' { Keyword.windowframe }
 		'windowtext' { Keyword.windowtext }
+		'text-bottom' { Keyword.text_bottom }
+		'alphabetic' { Keyword.alphabetic }
+		'ideographic' { Keyword.ideographic }
+		'central' { Keyword.central }
+		'mathematical' { Keyword.mathematical }
+		'text-top' { Keyword.text_top }
 		else { none }
 	}
 }

@@ -1514,6 +1514,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.rx, .ry {
 			'auto'
 		}
+		.dominant_baseline {
+			'auto'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -1535,7 +1538,7 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		.text_decoration_line, .paint_order, .text_justify, .text_rendering, .text_transform,
 		.text_underline_offset, .text_underline_position, .text_indent, .text_wrap_mode,
 		.text_wrap_style, .visibility, .webkit_text_fill_color, .white_space_collapse, .word_break,
-		.word_spacing, .writing_mode, .border_collapse, .border_spacing {
+		.word_spacing, .writing_mode, .border_collapse, .border_spacing, .dominant_baseline {
 			true
 		}
 		else {
@@ -4664,7 +4667,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify,
 		.text_overflow, .text_rendering, .text_transform, .text_underline_position,
 		.text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .touch_action,
-		.user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break {
+		.user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break,
+		.dominant_baseline {
 			.discrete
 		}
 	}
@@ -5447,7 +5451,8 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.text_align, .text_anchor, .text_justify, .text_underline_offset, .text_underline_position,
 		.text_indent, .text_transform, .text_wrap_mode, .text_wrap_style, .top, .transform_style,
 		.unicode_bidi, .vertical_align, .visibility, .white_space_collapse, .white_space_trim,
-		.width, .word_break, .word_spacing, .writing_mode, .cx, .cy, .x, .y, .r, .rx, .ry {
+		.width, .word_break, .word_spacing, .writing_mode, .cx, .cy, .x, .y, .r, .rx, .ry,
+		.dominant_baseline {
 			true
 		}
 	}
