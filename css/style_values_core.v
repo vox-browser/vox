@@ -978,6 +978,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'grid-auto-flow' {
 			PropertyID.grid_auto_flow
 		}
+		'grid-auto-columns' {
+			PropertyID.grid_auto_columns
+		}
+		'grid-auto-rows' {
+			PropertyID.grid_auto_rows
+		}
 		else {
 			return none
 		}
@@ -1110,7 +1116,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.tab_size {
 			value_type in [.length, .number]
 		}
-		.transform_origin, .vertical_align, .flex_basis {
+		.transform_origin, .vertical_align, .flex_basis, .grid_auto_columns, .grid_auto_rows {
 			value_type in [.length, .percentage]
 		}
 		.will_change {
@@ -1818,6 +1824,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.grid_auto_flow {
 			lowercase_value in ['row', 'column', 'dense']
 		}
+		.grid_auto_columns, .grid_auto_rows {
+			lowercase_value in ['auto', 'min-content', 'max-content']
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1891,7 +1900,8 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.user_select, .view_timeline_axis, .view_timeline_inset, .visibility,
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .widows,
 		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
-		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow {
+		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
+		.grid_auto_rows {
 			false
 		}
 		.color_scheme {
@@ -4301,6 +4311,7 @@ pub type StyleValue = KeywordStyleValue
 	| FrequencyStyleValue
 	| GridAutoFlowStyleValue
 	| GridTrackPlacementStyleValue
+	| GridTrackSizeListStyleValue
 	| GuaranteedInvalidStyleValue
 	| HSLColorStyleValue
 	| HWBColorStyleValue
@@ -4380,6 +4391,7 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		FrequencyStyleValue { .frequency }
 		GridAutoFlowStyleValue { .grid_auto_flow }
 		GridTrackPlacementStyleValue { .grid_track_placement }
+		GridTrackSizeListStyleValue { .grid_track_size_list }
 		GuaranteedInvalidStyleValue { .guaranteed_invalid }
 		HSLColorStyleValue { .color }
 		HWBColorStyleValue { .color }
@@ -4696,6 +4708,7 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		FrequencyStyleValue { style_value.serialize(mode) }
 		GridAutoFlowStyleValue { style_value.serialize(mode) }
 		GridTrackPlacementStyleValue { style_value.serialize(mode) }
+		GridTrackSizeListStyleValue { style_value.serialize(mode) }
 		GuaranteedInvalidStyleValue { style_value.serialize(mode) }
 		HSLColorStyleValue { style_value.serialize(mode) }
 		HWBColorStyleValue { style_value.serialize(mode) }

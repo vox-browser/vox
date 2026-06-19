@@ -559,6 +559,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.grid_auto_flow {
 			return parser.parse_grid_auto_flow_value(mut tokens)
 		}
+		.grid_auto_columns, .grid_auto_rows {
+			return parser.parse_grid_auto_track_sizes(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1663,6 +1666,149 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+// https://www.w3.org/TR/css-grid-2/#auto-tracks  ->  <track-size>+
+fn (mut parser Parser) parse_grid_auto_track_sizes(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	mut track_list := GridTrackSizeList{}
+	for {
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			break
+		}
+		track_size := parser.parse_grid_track_size(mut transaction) or { break }
+		track_list.append_explicit_track(track_size)
+	}
+	if track_list.is_empty() {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(GridTrackSizeListStyleValue.create(track_list))
+}
+
+// <track-size> = <track-breadth> | minmax( <inflexible-breadth> , <track-breadth> )
+//              | fit-content( <length-percentage [0,∞]> )
+fn (mut parser Parser) parse_grid_track_size(mut tokens ComponentValueStream) ?ExplicitGridTrack {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		return none
+	}
+
+	if peek := transaction.peek() {
+		if peek.is_function_named('minmax') {
+			minmax := parser.parse_grid_minmax(mut transaction) or { return none }
+			tokens = transaction
+			return minmax
+		}
+		if peek.is_function_named('fit-content') {
+			mut fit_tokens := ComponentValueStream.new(peek.function().value)
+			fit_tokens.consume_whitespace()
+			length_percentage := parser.parse_grid_fixed_breadth(mut fit_tokens) or { return none }
+			fit_tokens.consume_whitespace()
+			if fit_tokens.has_more_tokens() {
+				return none
+			}
+			transaction.consume()
+			tokens = transaction
+			return ExplicitGridTrack.from_grid_size(GridSize.from_size(Size.make_fit_content(length_percentage)))
+		}
+	}
+
+	track_breadth := parser.parse_grid_track_breadth(mut transaction) or { return none }
+	tokens = transaction
+	return ExplicitGridTrack.from_grid_size(track_breadth)
+}
+
+// <track-breadth> = <length-percentage [0,∞]> | <flex [0,∞]> | min-content | max-content | auto
+fn (mut parser Parser) parse_grid_track_breadth(mut tokens ComponentValueStream) ?GridSize {
+	if inflexible := parser.parse_grid_inflexible_breadth(mut tokens) {
+		return inflexible
+	}
+
+	// FIXME: calculated flex values are not supported yet.
+	mut flex_attempt := tokens.clone()
+	if flex_value := parser.parse_flex_value(mut flex_attempt) {
+		if flex_value is FlexStyleValue {
+			flex := flex_value.flex()
+			if flex.raw_value() >= 0 {
+				tokens = flex_attempt
+				return GridSize.from_flex(flex)
+			}
+		}
+	}
+
+	return none
+}
+
+// <inflexible-breadth> = <length-percentage [0,∞]> | min-content | max-content | auto
+fn (mut parser Parser) parse_grid_inflexible_breadth(mut tokens ComponentValueStream) ?GridSize {
+	if fixed := parser.parse_grid_fixed_breadth(mut tokens) {
+		return GridSize.from_size(Size.make_length_percentage(fixed))
+	}
+
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	token := transaction.consume() or { return none }
+	if !token.is(.ident) {
+		return none
+	}
+	result := match to_ascii_lowercase(token.token().ident()) {
+		'max-content' { GridSize.from_size(Size.make_max_content()) }
+		'min-content' { GridSize.from_size(Size.make_min_content()) }
+		'auto' { GridSize.make_auto() }
+		else { return none }
+	}
+	tokens = transaction
+	return result
+}
+
+// <fixed-breadth> = <length-percentage [0,∞]>
+fn (mut parser Parser) parse_grid_fixed_breadth(mut tokens ComponentValueStream) ?LengthPercentage {
+	mut transaction := tokens.clone()
+	value := parser.parse_length_percentage_value(mut transaction) or { return none }
+	if value is LengthStyleValue && value.raw_value() < 0 {
+		return none
+	}
+	if value is PercentageStyleValue && value.raw_value() < 0 {
+		return none
+	}
+	tokens = transaction
+	return LengthPercentage.from_style_value_logic(value)
+}
+
+fn (mut parser Parser) parse_grid_minmax(mut tokens ComponentValueStream) ?ExplicitGridTrack {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is_function_named('minmax') {
+		return none
+	}
+
+	parts := parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
+	if parts.len != 2 {
+		return none
+	}
+
+	// minmax( <inflexible-breadth> , <track-breadth> )
+	mut min_tokens := ComponentValueStream.new(parts[0])
+	min_value := parser.parse_grid_inflexible_breadth(mut min_tokens) or { return none }
+	min_tokens.consume_whitespace()
+	if min_tokens.has_more_tokens() {
+		return none
+	}
+
+	mut max_tokens := ComponentValueStream.new(parts[1])
+	max_value := parser.parse_grid_track_breadth(mut max_tokens) or { return none }
+	max_tokens.consume_whitespace()
+	if max_tokens.has_more_tokens() {
+		return none
+	}
+
+	tokens = transaction
+	return ExplicitGridTrack.from_minmax(GridMinMax.new(min_value, max_value))
 }
 
 // https://www.w3.org/TR/css-grid-2/#grid-auto-flow-property  ->  [ row | column ] || dense
