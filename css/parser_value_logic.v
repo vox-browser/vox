@@ -553,6 +553,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.font_family {
 			return parser.parse_font_family_value(mut tokens)
 		}
+		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end {
+			return parser.parse_grid_track_placement(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1657,6 +1660,107 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+// https://www.w3.org/TR/css-grid-2/#line-placement
+// <grid-line> = auto | <custom-ident> | [ [ <integer> ] && <custom-ident>? ] | [ span && [ <integer> || <custom-ident> ] ]
+fn (mut parser Parser) parse_grid_track_placement(mut tokens ComponentValueStream) ?StyleValue {
+	mut auto_attempt := tokens.clone()
+	if _ := parse_property_keyword_value(mut auto_attempt, ['auto']) {
+		tokens = auto_attempt
+		return StyleValue(GridTrackPlacementStyleValue.create(GridTrackPlacement.make_auto()))
+	}
+
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+
+	mut is_span := false
+	mut parsed_custom_ident := ?string(none)
+	mut parsed_integer := ?IntegerOrCalculated(none)
+
+	for transaction.has_more_tokens() {
+		peek := transaction.peek() or { break }
+
+		// span
+		if peek.is(.ident) && equals_ignoring_ascii_case(peek.token().ident(), 'span') {
+			if is_span {
+				return none
+			}
+			transaction.consume()
+			transaction.consume_whitespace()
+			// "span" must not appear in between <custom-ident> and <integer>.
+			if transaction.has_more_tokens() && (parsed_custom_ident != none || parsed_integer != none) {
+				return none
+			}
+			is_span = true
+			continue
+		}
+
+		// <custom-ident> (excluding `auto`)
+		mut ident_attempt := transaction.clone()
+		if custom_ident := parser.parse_custom_ident(mut ident_attempt, ['auto']) {
+			if parsed_custom_ident != none {
+				return none
+			}
+			parsed_custom_ident = custom_ident
+			ident_attempt.consume_whitespace()
+			transaction = ident_attempt
+			continue
+		}
+
+		// <integer>
+		// FIXME: calculated integers in <grid-line> are not supported yet.
+		mut int_attempt := transaction.clone()
+		if integer_value := parser.parse_integer_value(mut int_attempt) {
+			if parsed_integer != none {
+				return none
+			}
+			if integer_value is IntegerStyleValue {
+				parsed_integer = IntegerOrCalculated.from_integer(integer_value.integer())
+			} else {
+				return none
+			}
+			int_attempt.consume_whitespace()
+			transaction = int_attempt
+			continue
+		}
+
+		return none
+	}
+
+	// <custom-ident> | [ [ <integer ≠ 0> ] && <custom-ident>? ]
+	if !is_span && (parsed_integer != none || parsed_custom_ident != none) {
+		mut valid := true
+		if integer := parsed_integer {
+			if !integer.is_calculated() && integer.value() == 0 {
+				valid = false
+			}
+		}
+		if valid {
+			tokens = transaction
+			return StyleValue(GridTrackPlacementStyleValue.create(GridTrackPlacement.make_line(parsed_integer,
+				parsed_custom_ident)))
+		}
+	}
+
+	// [ span && [ <integer [1,∞]> || <custom-ident> ] ]
+	if is_span && (parsed_integer != none || parsed_custom_ident != none) {
+		mut valid := true
+		if integer := parsed_integer {
+			if !integer.is_calculated() && integer.value() <= 0 {
+				valid = false
+			}
+		}
+		if valid {
+			// If the <integer> is omitted, it defaults to 1.
+			span_value := parsed_integer or { IntegerOrCalculated.from_integer(1) }
+			tokens = transaction
+			return StyleValue(GridTrackPlacementStyleValue.create(GridTrackPlacement.make_span(span_value,
+				parsed_custom_ident)))
+		}
+	}
+
+	return none
 }
 
 // https://drafts.csswg.org/css-fonts/#propdef-font-family

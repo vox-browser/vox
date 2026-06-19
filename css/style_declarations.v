@@ -308,6 +308,10 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.clip { 'clip' }
 		.stroke_dasharray { 'stroke-dasharray' }
 		.font_family { 'font-family' }
+		.grid_column_start { 'grid-column-start' }
+		.grid_column_end { 'grid-column-end' }
+		.grid_row_start { 'grid-row-start' }
+		.grid_row_end { 'grid-row-end' }
 	}
 }
 
@@ -342,14 +346,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 287
+pub const number_of_longhand_properties = 291
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .font_family
+	return .grid_row_end
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -641,6 +645,10 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		284 { PropertyID.clip }
 		285 { PropertyID.stroke_dasharray }
 		286 { PropertyID.font_family }
+		287 { PropertyID.grid_column_start }
+		288 { PropertyID.grid_column_end }
+		289 { PropertyID.grid_row_start }
+		290 { PropertyID.grid_row_end }
 		else { none }
 	}
 }

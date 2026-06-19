@@ -321,6 +321,10 @@ pub enum PropertyID {
 	clip
 	stroke_dasharray
 	font_family
+	grid_column_start
+	grid_column_end
+	grid_row_start
+	grid_row_end
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

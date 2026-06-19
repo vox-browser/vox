@@ -963,6 +963,18 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'font-family' {
 			PropertyID.font_family
 		}
+		'grid-column-start' {
+			PropertyID.grid_column_start
+		}
+		'grid-column-end' {
+			PropertyID.grid_column_end
+		}
+		'grid-row-start' {
+			PropertyID.grid_row_start
+		}
+		'grid-row-end' {
+			PropertyID.grid_row_end
+		}
 		else {
 			return none
 		}
@@ -1027,6 +1039,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 			value_type in [.image, .url]
 		}
 		.color_scheme {
+			value_type == .custom_ident
+		}
+		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end {
 			value_type == .custom_ident
 		}
 		.view_transition_name {
@@ -1794,6 +1809,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.font_family {
 			is_generic_font_family_name(lowercase_value)
 		}
+		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end {
+			lowercase_value == 'auto'
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1906,6 +1924,9 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.font_family {
 			lowercase_value != 'default' && !is_generic_font_family_name(lowercase_value)
+		}
+		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end {
+			lowercase_value !in ['auto', 'span']
 		}
 		.anchor_name, .position_try_fallbacks, .scroll_timeline_name, .timeline_scope,
 		.view_timeline_name {
@@ -4272,6 +4293,7 @@ pub type StyleValue = KeywordStyleValue
 	| FontStyleStyleValue
 	| FontVariantAlternatesFunctionStyleValue
 	| FrequencyStyleValue
+	| GridTrackPlacementStyleValue
 	| GuaranteedInvalidStyleValue
 	| HSLColorStyleValue
 	| HWBColorStyleValue
@@ -4349,6 +4371,7 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		FontStyleStyleValue { .font_style }
 		FontVariantAlternatesFunctionStyleValue { .font_variant_alternates_function }
 		FrequencyStyleValue { .frequency }
+		GridTrackPlacementStyleValue { .grid_track_placement }
 		GuaranteedInvalidStyleValue { .guaranteed_invalid }
 		HSLColorStyleValue { .color }
 		HWBColorStyleValue { .color }
@@ -4663,6 +4686,7 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		FontStyleStyleValue { style_value.serialize(mode) }
 		FontVariantAlternatesFunctionStyleValue { style_value.serialize(mode) }
 		FrequencyStyleValue { style_value.serialize(mode) }
+		GridTrackPlacementStyleValue { style_value.serialize(mode) }
 		GuaranteedInvalidStyleValue { style_value.serialize(mode) }
 		HSLColorStyleValue { style_value.serialize(mode) }
 		HWBColorStyleValue { style_value.serialize(mode) }
