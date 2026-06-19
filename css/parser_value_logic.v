@@ -604,6 +604,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.shape_outside {
 			return parser.parse_shape_outside_value(mut tokens)
 		}
+		.content {
+			return parser.parse_content_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1708,6 +1711,100 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+const content_quote_keywords = ['open-quote', 'close-quote', 'no-open-quote', 'no-close-quote']
+
+// https://drafts.csswg.org/css-content/#propdef-content
+// normal | none | [ <content-list> ] [ / [ <string> | <counter> ]+ ]?
+// FIXME: counter()/counters()/content()/attr()/leader() content items are not translated yet.
+fn (mut parser Parser) parse_content_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut keyword_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut keyword_attempt, ['none', 'normal']) {
+		tokens = keyword_attempt
+		return value
+	}
+
+	mut transaction := tokens.clone()
+	mut content_values := []StyleValue{}
+	mut alt_text_values := []StyleValue{}
+	mut in_alt_text := false
+
+	transaction.consume_whitespace()
+	for transaction.has_more_tokens() {
+		next := transaction.peek() or { break }
+		// '/' separates the content from the alt-text.
+		if next.is_delim(u32(`/`)) {
+			if in_alt_text || content_values.len == 0 {
+				return none
+			}
+			in_alt_text = true
+			transaction.consume()
+			transaction.consume_whitespace()
+			continue
+		}
+
+		item := parser.parse_content_item(mut transaction) or { return none }
+		if in_alt_text {
+			// The alt-text only accepts <string> (and <counter>, which is FIXME above).
+			if item !is StringStyleValue {
+				return none
+			}
+			alt_text_values << item
+		} else {
+			content_values << item
+		}
+		transaction.consume_whitespace()
+	}
+
+	if content_values.len == 0 {
+		return none
+	}
+	if in_alt_text && alt_text_values.len == 0 {
+		return none
+	}
+
+	mut alt_text := ?StyleValueList(none)
+	if alt_text_values.len != 0 {
+		alt_text = StyleValueList.create(alt_text_values, .space, .yes)
+	}
+
+	tokens = transaction
+	return StyleValue(ContentStyleValue.create(StyleValueList.create(content_values, .space, .yes),
+		alt_text))
+}
+
+fn (mut parser Parser) parse_content_item(mut tokens ComponentValueStream) ?StyleValue {
+	// <string>
+	mut string_attempt := tokens.clone()
+	if string_value := parser.parse_string_value(mut string_attempt) {
+		tokens = string_attempt
+		return StyleValue(string_value)
+	}
+
+	// <quote> = open-quote | close-quote | no-open-quote | no-close-quote
+	mut keyword_attempt := tokens.clone()
+	keyword_attempt.consume_whitespace()
+	if peek := keyword_attempt.peek() {
+		if peek.is(.ident) {
+			ident := to_ascii_lowercase(peek.token().ident())
+			if ident in content_quote_keywords {
+				keyword := keyword_from_string(ident) or { return none }
+				keyword_attempt.consume()
+				tokens = keyword_attempt
+				return StyleValue(KeywordStyleValue.create(keyword))
+			}
+		}
+	}
+
+	// <image>
+	mut image_attempt := tokens.clone()
+	if image := parser.parse_image_value(mut image_attempt) {
+		tokens = image_attempt
+		return style_value_from_css_image_source_for_value_logic(image)
+	}
+
+	return none
 }
 
 fn radial_extent_from_string(ident string) ?RadialExtent {

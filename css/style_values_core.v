@@ -1035,6 +1035,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'shape-outside' {
 			PropertyID.shape_outside
 		}
+		'content' {
+			PropertyID.content
+		}
 		else {
 			return none
 		}
@@ -1103,6 +1106,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.clip_path, .shape_outside {
 			value_type == .basic_shape
+		}
+		.content {
+			value_type in [.string, .image]
 		}
 		.mask_image {
 			value_type in [.image, .url]
@@ -1913,6 +1919,10 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.clip_path, .shape_outside {
 			lowercase_value == 'none'
 		}
+		.content {
+			lowercase_value in ['normal', 'none', 'open-quote', 'close-quote', 'no-open-quote',
+				'no-close-quote']
+		}
 		.font_variant_ligatures {
 			lowercase_value in font_variant_ligatures_keywords
 		}
@@ -1998,7 +2008,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
 		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas, .filter,
 		.backdrop_filter, .cursor, .font_size, .fill, .stroke, .font_variant_ligatures,
-		.font_variant_numeric, .font_variant_east_asian, .clip_path, .shape_outside {
+		.font_variant_numeric, .font_variant_east_asian, .clip_path, .shape_outside, .content {
 			false
 		}
 		.color_scheme {
@@ -3587,6 +3597,10 @@ pub enum Keyword {
 	closest_side
 	farthest_corner
 	farthest_side
+	open_quote
+	close_quote
+	no_open_quote
+	no_close_quote
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -4050,6 +4064,10 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.closest_side { 'closest-side' }
 		.farthest_corner { 'farthest-corner' }
 		.farthest_side { 'farthest-side' }
+		.open_quote { 'open-quote' }
+		.close_quote { 'close-quote' }
+		.no_open_quote { 'no-open-quote' }
+		.no_close_quote { 'no-close-quote' }
 	}
 }
 
@@ -4502,6 +4520,10 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'closest-side' { Keyword.closest_side }
 		'farthest-corner' { Keyword.farthest_corner }
 		'farthest-side' { Keyword.farthest_side }
+		'open-quote' { Keyword.open_quote }
+		'close-quote' { Keyword.close_quote }
+		'no-open-quote' { Keyword.no_open_quote }
+		'no-close-quote' { Keyword.no_close_quote }
 		else { none }
 	}
 }

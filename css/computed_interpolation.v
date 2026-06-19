@@ -1580,6 +1580,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.clip_path, .shape_outside {
 			'none'
 		}
+		.content {
+			'normal'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -1657,7 +1660,7 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_columns, .grid_auto_rows,
 		.grid_template_columns, .grid_template_rows, .filter, .backdrop_filter, .counter_increment,
 		.counter_reset, .counter_set, .cursor, .font_size, .fill, .stroke, .clip_path,
-		.shape_outside {
+		.shape_outside, .content {
 			true
 		}
 		else {
@@ -4742,7 +4745,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break,
 		.dominant_baseline, .quotes, .list_style_type, .font_family, .grid_column_start,
 		.grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow, .grid_template_areas,
-		.cursor, .font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian {
+		.cursor, .font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .content {
 			.discrete
 		}
 	}
@@ -5531,7 +5534,8 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow,
 		.grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows,
 		.grid_template_areas, .counter_increment, .counter_reset, .counter_set, .font_size,
-		.font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .shape_outside {
+		.font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .shape_outside,
+		.content {
 			true
 		}
 	}
