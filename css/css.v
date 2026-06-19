@@ -315,6 +315,8 @@ pub enum PropertyID {
 	display
 	flex_basis
 	quotes
+	box_shadow
+	text_shadow
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

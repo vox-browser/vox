@@ -535,6 +535,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.quotes {
 			return parser.parse_quotes_value(mut tokens)
 		}
+		.box_shadow {
+			return parser.parse_box_shadow_value(mut tokens)
+		}
+		.text_shadow {
+			return parser.parse_text_shadow_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1517,6 +1523,128 @@ fn (mut parser Parser) parse_dominant_baseline_value(mut tokens ComponentValueSt
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'text-bottom', 'alphabetic',
 		'ideographic', 'middle', 'central', 'mathematical', 'hanging', 'text-top'])
+}
+
+fn (mut parser Parser) parse_box_shadow_value(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_shadow_value(mut tokens, .normal)
+}
+
+fn (mut parser Parser) parse_text_shadow_value(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_shadow_value(mut tokens, .text)
+}
+
+// https://drafts.csswg.org/css-backgrounds/#propdef-box-shadow
+// https://drafts.csswg.org/css-text-decor/#propdef-text-shadow
+fn (mut parser Parser) parse_shadow_value(mut tokens ComponentValueStream, shadow_type ShadowType) ?StyleValue {
+	mut transaction := tokens.clone()
+	if value := parse_property_keyword_value(mut transaction, ['none']) {
+		tokens = transaction
+		return value
+	}
+
+	transaction = tokens.clone()
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	mut shadows := []StyleValue{}
+	for value in values {
+		mut shadow_tokens := ComponentValueStream.new(value)
+		shadow := parser.parse_single_shadow_value(mut shadow_tokens, shadow_type) or { return none }
+		shadows << shadow
+	}
+	if shadows.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(StyleValueList.create(shadows, .comma, .yes))
+}
+
+fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream, shadow_type ShadowType) ?StyleValue {
+	mut transaction := tokens.clone()
+
+	mut color := ?StyleValue(none)
+	mut offset_x := ?StyleValue(none)
+	mut offset_y := ?StyleValue(none)
+	mut blur_radius := ?StyleValue(none)
+	mut spread_distance := ?StyleValue(none)
+	mut placement := ?ShadowPlacement(none)
+
+	for {
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			break
+		}
+
+		if maybe_color := parser.parse_color_value(mut transaction) {
+			if color != none {
+				return none
+			}
+			color = maybe_color
+			continue
+		}
+
+		if maybe_offset_x := parser.parse_length_value(mut transaction) {
+			if offset_x != none {
+				return none
+			}
+			offset_x = maybe_offset_x
+
+			// Vertical offset is required.
+			transaction.consume_whitespace()
+			if !transaction.has_more_tokens() {
+				return none
+			}
+			offset_y = parser.parse_length_value(mut transaction) or { return none }
+
+			// Blur radius (optional).
+			transaction.consume_whitespace()
+			if !transaction.has_more_tokens() {
+				break
+			}
+			maybe_blur := parser.parse_length_value(mut transaction) or { continue }
+			if maybe_blur is LengthStyleValue && maybe_blur.raw_value() < 0 {
+				return none
+			}
+			blur_radius = maybe_blur
+
+			// Spread distance (optional, not allowed for text shadows).
+			transaction.consume_whitespace()
+			if !transaction.has_more_tokens() {
+				break
+			}
+			maybe_spread := parser.parse_length_value(mut transaction) or { continue }
+			if shadow_type == .text {
+				return none
+			}
+			spread_distance = maybe_spread
+			continue
+		}
+
+		token := transaction.peek() or { return none }
+		if shadow_type == .normal && token.is(.ident)
+			&& equals_ignoring_ascii_case(token.token().ident(), 'inset') {
+			if placement != none {
+				return none
+			}
+			placement = ShadowPlacement.inner
+			transaction.consume()
+			continue
+		}
+
+		if token.is(.comma) {
+			break
+		}
+
+		return none
+	}
+
+	// x/y offsets are required.
+	resolved_offset_x := offset_x or { return none }
+	resolved_offset_y := offset_y or { return none }
+	resolved_placement := placement or { ShadowPlacement.outer }
+
+	tokens = transaction
+	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
+		blur_radius, spread_distance, resolved_placement))
 }
 
 // https://drafts.csswg.org/css-content/#propdef-quotes

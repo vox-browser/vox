@@ -1526,6 +1526,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.quotes {
 			'auto'
 		}
+		.box_shadow, .text_shadow {
+			'none'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -1548,7 +1551,7 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		.text_underline_offset, .text_underline_position, .text_indent, .text_wrap_mode,
 		.text_wrap_style, .visibility, .webkit_text_fill_color, .white_space_collapse, .word_break,
 		.word_spacing, .writing_mode, .border_collapse, .border_spacing, .dominant_baseline,
-		.quotes {
+		.quotes, .text_shadow {
 			true
 		}
 		else {
@@ -1597,7 +1600,8 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.text_decoration_thickness, .text_underline_offset, .text_indent, .top, .transform_origin,
 		.vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate, .scale, .transform,
 		.transition_delay, .transition_duration, .transition_timing_function, .translate,
-		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis {
+		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis,
+		.box_shadow, .text_shadow {
 			true
 		}
 		else {
@@ -4649,7 +4653,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.z_index, .flex_basis {
 			.by_computed_value
 		}
-		.content_visibility, .visibility, .display {
+		.content_visibility, .visibility, .display, .box_shadow, .text_shadow {
 			.custom
 		}
 		.background_clip, .background_origin, .background_position_x, .background_position_y,
@@ -5429,7 +5433,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.view_timeline_name, .view_transition_name, .will_change, .scrollbar_width,
 		.scroll_behavior, .resize, .text_decoration_color, .text_decoration_line,
 		.text_decoration_style, .text_decoration_thickness, .text_overflow, .text_rendering,
-		.webkit_text_fill_color, .z_index {
+		.webkit_text_fill_color, .z_index, .box_shadow, .text_shadow {
 			false
 		}
 		.anchor_name, .aspect_ratio, .block_size, .bottom, .border_block_end_style,

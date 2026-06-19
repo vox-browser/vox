@@ -945,6 +945,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'quotes' {
 			PropertyID.quotes
 		}
+		'box-shadow', '-webkit-box-shadow' {
+			PropertyID.box_shadow
+		}
+		'text-shadow' {
+			PropertyID.text_shadow
+		}
 		else {
 			return none
 		}
@@ -1174,7 +1180,8 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 			value_type == .easing_function
 		}
 		.animation_composition, .animation_direction, .animation_fill_mode, .animation_play_state,
-		.transition_behavior, .transition_property, .dominant_baseline, .display {
+		.transition_behavior, .transition_property, .dominant_baseline, .display, .box_shadow,
+		.text_shadow {
 			false
 		}
 	}
@@ -1760,6 +1767,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.quotes {
 			lowercase_value in ['auto', 'none']
 		}
+		.box_shadow, .text_shadow {
+			lowercase_value == 'none'
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1832,7 +1842,8 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.resize, .scroll_behavior, .math_shift, .contain, .container_type, .unicode_bidi,
 		.user_select, .view_timeline_axis, .view_timeline_inset, .visibility,
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .widows,
-		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes {
+		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
+		.box_shadow, .text_shadow {
 			false
 		}
 		.color_scheme {

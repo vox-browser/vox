@@ -302,6 +302,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.display { 'display' }
 		.flex_basis { 'flex-basis' }
 		.quotes { 'quotes' }
+		.box_shadow { 'box-shadow' }
+		.text_shadow { 'text-shadow' }
 	}
 }
 
@@ -326,7 +328,8 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 		.mask_origin, .mask_position, .mask_repeat, .mask_size, .scroll_timeline_axis,
 		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
 		.transition_property, .transition_timing_function, .view_timeline_axis, .timeline_scope,
-		.view_timeline_inset, .view_timeline_name, .will_change, .position_try_fallbacks, .quotes {
+		.view_timeline_inset, .view_timeline_name, .will_change, .position_try_fallbacks, .quotes,
+		.box_shadow {
 			true
 		}
 		else {
@@ -335,14 +338,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 281
+pub const number_of_longhand_properties = 283
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .quotes
+	return .text_shadow
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -628,6 +631,8 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		278 { PropertyID.display }
 		279 { PropertyID.flex_basis }
 		280 { PropertyID.quotes }
+		281 { PropertyID.box_shadow }
+		282 { PropertyID.text_shadow }
 		else { none }
 	}
 }
