@@ -334,12 +334,12 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.shape_outside { 'shape-outside' }
 		.content { 'content' }
 		.font_variant_alternates { 'font-variant-alternates' }
+		.overflow { 'overflow' }
 	}
 }
 
 pub fn property_is_shorthand(property_id PropertyID) bool {
-	_ = property_id
-	return false
+	return longhands_for_shorthand_local(property_id).len > 0
 }
 
 pub fn property_is_single_valued(property_id PropertyID) bool {

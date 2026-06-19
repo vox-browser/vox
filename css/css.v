@@ -347,6 +347,8 @@ pub enum PropertyID {
 	shape_outside
 	content
 	font_variant_alternates
+	// Shorthands (not longhands; excluded from the longhand index/count).
+	overflow
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

@@ -1041,6 +1041,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'font-variant-alternates' {
 			PropertyID.font_variant_alternates
 		}
+		'overflow' {
+			PropertyID.overflow
+		}
 		else {
 			return none
 		}
@@ -1289,6 +1292,10 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.animation_composition, .animation_direction, .animation_fill_mode, .animation_play_state,
 		.transition_behavior, .transition_property, .dominant_baseline, .display, .box_shadow,
 		.text_shadow, .clip, .grid_auto_flow, .filter, .backdrop_filter, .cursor {
+			false
+		}
+		else {
+			// Shorthands accept no value-type directly; they have dedicated parsers.
 			false
 		}
 	}
@@ -1946,6 +1953,10 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 				'ruby-text-container', 'contents', 'none', 'inline-block', 'inline-table',
 				'inline-flex', 'inline-grid']
 		}
+		else {
+			// Shorthands validate keywords via their longhands.
+			false
+		}
 	}
 }
 
@@ -2070,6 +2081,10 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		}
 		.will_change {
 			lowercase_value !in ['all', 'auto', 'contents', 'none', 'scroll-position', 'will-change']
+		}
+		else {
+			// Shorthands don't accept a <custom-ident> directly.
+			false
 		}
 	}
 }

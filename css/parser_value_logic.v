@@ -610,6 +610,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.font_variant_alternates {
 			return parser.parse_font_variant_alternates_value(mut tokens)
 		}
+		.overflow {
+			return parser.parse_overflow_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2200,6 +2203,20 @@ fn (mut parser Parser) parse_font_variant_tuple(mut tokens ComponentValueStream,
 
 	tokens = transaction
 	return StyleValue(TupleStyleValue.create(slots))
+}
+
+// https://drafts.csswg.org/css-overflow/#propdef-overflow  ->  <'overflow-x'> <'overflow-y'>?
+fn (mut parser Parser) parse_overflow_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	x := parser.parse_overflow_value(mut tokens) or { return none }
+	mut y := x
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		y = parser.parse_overflow_value(mut transaction) or { return none }
+		tokens = transaction
+	}
+	return StyleValue(ShorthandStyleValue.create(.overflow, [PropertyID.overflow_x, PropertyID.overflow_y],
+		[x, y]))
 }
 
 // https://drafts.csswg.org/css-fonts/#font-variant-alternates-prop

@@ -337,9 +337,10 @@ fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value St
 }
 
 fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
-	_ = property_id
-	// The current translated PropertyID set contains only longhands.
-	return []PropertyID{}
+	return match property_id {
+		.overflow { [PropertyID.overflow_x, PropertyID.overflow_y] }
+		else { []PropertyID{} }
+	}
 }
 
 pub fn (c &CascadedProperties) property(property_id PropertyID) ?&dom.StyleValue {

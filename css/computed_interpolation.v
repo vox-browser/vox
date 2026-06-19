@@ -1584,6 +1584,10 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.content {
 			'normal'
 		}
+		else {
+			// Shorthands have no initial value of their own; their longhands do.
+			''
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -4750,6 +4754,10 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.font_variant_alternates {
 			.discrete
 		}
+		else {
+			// Shorthands are expanded before reaching this longhand-only classifier.
+			.none_
+		}
 	}
 }
 
@@ -5539,6 +5547,10 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .shape_outside,
 		.content, .font_variant_alternates {
 			true
+		}
+		else {
+			// Shorthands are expanded before reaching this longhand-only classifier.
+			false
 		}
 	}
 }
@@ -6770,7 +6782,17 @@ pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
 }
 
 pub fn StyleComputer.for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn (PropertyID, &dom.StyleValue)) {
-	// Boundary: shorthand expansion requires the generated property metadata table and typed dom.StyleValue.
+	// Cascaded properties store opaque dom.StyleValues that only carry the serialized text. To expand a shorthand we
+	// re-parse that text into a typed ShorthandStyleValue and run the typed expansion, bridging each longhand back to
+	// a dom.StyleValue.
+	if property_is_shorthand(property_id) {
+		if typed_value := parse_css_value_logic(property_id, value.css_text) {
+			for_each_typed_property_expanding_shorthands(property_id, typed_value, fn [set_longhand_property] (longhand_id PropertyID, longhand_value StyleValue) {
+				set_longhand_property(longhand_id, dom_style_value_from_value_logic(longhand_value))
+			})
+			return
+		}
+	}
 	set_longhand_property(property_id, value)
 }
 
