@@ -556,6 +556,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end {
 			return parser.parse_grid_track_placement(mut tokens)
 		}
+		.grid_auto_flow {
+			return parser.parse_grid_auto_flow_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1660,6 +1663,74 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	tokens = transaction
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
+}
+
+// https://www.w3.org/TR/css-grid-2/#grid-auto-flow-property  ->  [ row | column ] || dense
+fn (mut parser Parser) parse_grid_auto_flow_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		return none
+	}
+
+	mut has_axis := false
+	mut axis := GridAutoFlowAxis.row
+	mut has_dense := false
+
+	if parsed_axis := parse_grid_auto_flow_axis(mut transaction) {
+		has_axis = true
+		axis = parsed_axis
+		if parse_grid_auto_flow_dense(mut transaction) {
+			has_dense = true
+		}
+	} else if parse_grid_auto_flow_dense(mut transaction) {
+		has_dense = true
+		if parsed_axis := parse_grid_auto_flow_axis(mut transaction) {
+			has_axis = true
+			axis = parsed_axis
+		}
+	}
+
+	if !has_axis && !has_dense {
+		return none
+	}
+
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+
+	dense := if has_dense { GridAutoFlowDense.yes } else { GridAutoFlowDense.no }
+	tokens = transaction
+	return StyleValue(GridAutoFlowStyleValue.create(axis, dense))
+}
+
+fn parse_grid_auto_flow_axis(mut tokens ComponentValueStream) ?GridAutoFlowAxis {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	token := transaction.consume() or { return none }
+	if !token.is(.ident) {
+		return none
+	}
+	axis := match to_ascii_lowercase(token.token().ident()) {
+		'row' { GridAutoFlowAxis.row }
+		'column' { GridAutoFlowAxis.column }
+		else { return none }
+	}
+	tokens = transaction
+	return axis
+}
+
+fn parse_grid_auto_flow_dense(mut tokens ComponentValueStream) bool {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	token := transaction.consume() or { return false }
+	if !token.is(.ident) || !equals_ignoring_ascii_case(token.token().ident(), 'dense') {
+		return false
+	}
+	tokens = transaction
+	return true
 }
 
 // https://www.w3.org/TR/css-grid-2/#line-placement
