@@ -1008,6 +1008,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'counter-set' {
 			PropertyID.counter_set
 		}
+		'cursor' {
+			PropertyID.cursor
+		}
 		else {
 			return none
 		}
@@ -1245,7 +1248,7 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		}
 		.animation_composition, .animation_direction, .animation_fill_mode, .animation_play_state,
 		.transition_behavior, .transition_property, .dominant_baseline, .display, .box_shadow,
-		.text_shadow, .clip, .grid_auto_flow, .filter, .backdrop_filter {
+		.text_shadow, .clip, .grid_auto_flow, .filter, .backdrop_filter, .cursor {
 			false
 		}
 	}
@@ -1867,6 +1870,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.counter_increment, .counter_reset, .counter_set {
 			lowercase_value == 'none'
 		}
+		.cursor {
+			lowercase_value in cursor_predefined_keywords
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1942,7 +1948,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
 		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas, .filter,
-		.backdrop_filter {
+		.backdrop_filter, .cursor {
 			false
 		}
 		.color_scheme {
@@ -3460,6 +3466,39 @@ pub enum Keyword {
 	ui_rounded
 	math
 	fangsong
+	default
+	context_menu
+	help
+	pointer
+	progress
+	wait
+	cell
+	crosshair
+	vertical_text
+	alias
+	copy
+	move
+	no_drop
+	not_allowed
+	grab
+	grabbing
+	e_resize
+	n_resize
+	ne_resize
+	nw_resize
+	s_resize
+	se_resize
+	sw_resize
+	w_resize
+	ew_resize
+	ns_resize
+	nesw_resize
+	nwse_resize
+	col_resize
+	row_resize
+	all_scroll
+	zoom_in
+	zoom_out
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3852,6 +3891,39 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.ui_rounded { 'ui-rounded' }
 		.math { 'math' }
 		.fangsong { 'fangsong' }
+		.default { 'default' }
+		.context_menu { 'context-menu' }
+		.help { 'help' }
+		.pointer { 'pointer' }
+		.progress { 'progress' }
+		.wait { 'wait' }
+		.cell { 'cell' }
+		.crosshair { 'crosshair' }
+		.vertical_text { 'vertical-text' }
+		.alias { 'alias' }
+		.copy { 'copy' }
+		.move { 'move' }
+		.no_drop { 'no-drop' }
+		.not_allowed { 'not-allowed' }
+		.grab { 'grab' }
+		.grabbing { 'grabbing' }
+		.e_resize { 'e-resize' }
+		.n_resize { 'n-resize' }
+		.ne_resize { 'ne-resize' }
+		.nw_resize { 'nw-resize' }
+		.s_resize { 's-resize' }
+		.se_resize { 'se-resize' }
+		.sw_resize { 'sw-resize' }
+		.w_resize { 'w-resize' }
+		.ew_resize { 'ew-resize' }
+		.ns_resize { 'ns-resize' }
+		.nesw_resize { 'nesw-resize' }
+		.nwse_resize { 'nwse-resize' }
+		.col_resize { 'col-resize' }
+		.row_resize { 'row-resize' }
+		.all_scroll { 'all-scroll' }
+		.zoom_in { 'zoom-in' }
+		.zoom_out { 'zoom-out' }
 	}
 }
 
@@ -4233,6 +4305,39 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'ui-rounded' { Keyword.ui_rounded }
 		'math' { Keyword.math }
 		'fangsong' { Keyword.fangsong }
+		'default' { Keyword.default }
+		'context-menu' { Keyword.context_menu }
+		'help' { Keyword.help }
+		'pointer' { Keyword.pointer }
+		'progress' { Keyword.progress }
+		'wait' { Keyword.wait }
+		'cell' { Keyword.cell }
+		'crosshair' { Keyword.crosshair }
+		'vertical-text' { Keyword.vertical_text }
+		'alias' { Keyword.alias }
+		'copy' { Keyword.copy }
+		'move' { Keyword.move }
+		'no-drop' { Keyword.no_drop }
+		'not-allowed' { Keyword.not_allowed }
+		'grab' { Keyword.grab }
+		'grabbing' { Keyword.grabbing }
+		'e-resize' { Keyword.e_resize }
+		'n-resize' { Keyword.n_resize }
+		'ne-resize' { Keyword.ne_resize }
+		'nw-resize' { Keyword.nw_resize }
+		's-resize' { Keyword.s_resize }
+		'se-resize' { Keyword.se_resize }
+		'sw-resize' { Keyword.sw_resize }
+		'w-resize' { Keyword.w_resize }
+		'ew-resize' { Keyword.ew_resize }
+		'ns-resize' { Keyword.ns_resize }
+		'nesw-resize' { Keyword.nesw_resize }
+		'nwse-resize' { Keyword.nwse_resize }
+		'col-resize' { Keyword.col_resize }
+		'row-resize' { Keyword.row_resize }
+		'all-scroll' { Keyword.all_scroll }
+		'zoom-in' { Keyword.zoom_in }
+		'zoom-out' { Keyword.zoom_out }
 		else { none }
 	}
 }

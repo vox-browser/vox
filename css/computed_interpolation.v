@@ -1562,6 +1562,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.counter_increment, .counter_reset, .counter_set {
 			'none'
 		}
+		.cursor {
+			'auto'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -1584,7 +1587,7 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		.text_underline_offset, .text_underline_position, .text_indent, .text_wrap_mode,
 		.text_wrap_style, .visibility, .webkit_text_fill_color, .white_space_collapse, .word_break,
 		.word_spacing, .writing_mode, .border_collapse, .border_spacing, .dominant_baseline,
-		.quotes, .text_shadow, .list_style_type, .stroke_dasharray, .font_family {
+		.quotes, .text_shadow, .list_style_type, .stroke_dasharray, .font_family, .cursor {
 			true
 		}
 		else {
@@ -1636,7 +1639,7 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_columns, .grid_auto_rows,
 		.grid_template_columns, .grid_template_rows, .filter, .backdrop_filter, .counter_increment,
-		.counter_reset, .counter_set {
+		.counter_reset, .counter_set, .cursor {
 			true
 		}
 		else {
@@ -4720,7 +4723,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .touch_action,
 		.user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break,
 		.dominant_baseline, .quotes, .list_style_type, .font_family, .grid_column_start,
-		.grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow, .grid_template_areas {
+		.grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow, .grid_template_areas,
+		.cursor {
 			.discrete
 		}
 	}
@@ -5472,7 +5476,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.scroll_behavior, .resize, .text_decoration_color, .text_decoration_line,
 		.text_decoration_style, .text_decoration_thickness, .text_overflow, .text_rendering,
 		.webkit_text_fill_color, .z_index, .box_shadow, .text_shadow, .clip, .stroke_dasharray,
-		.filter, .backdrop_filter {
+		.filter, .backdrop_filter, .cursor {
 			false
 		}
 		.anchor_name, .aspect_ratio, .block_size, .bottom, .border_block_end_style,

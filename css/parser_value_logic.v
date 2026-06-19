@@ -580,6 +580,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.counter_set {
 			return parser.parse_counter_set_value(mut tokens)
 		}
+		.cursor {
+			return parser.parse_cursor_value(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1685,6 +1688,20 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y,
 		blur_radius, spread_distance, resolved_placement))
 }
+
+// https://drafts.csswg.org/css-ui/#cursor
+// [ [ <url> | <url-set> ] [ <x> <y> ]? ]#  <cursor-predefined>
+// FIXME: <url> custom cursors are not translated yet; only the predefined keyword form is supported.
+fn (mut parser Parser) parse_cursor_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, cursor_predefined_keywords)
+}
+
+const cursor_predefined_keywords = ['auto', 'default', 'none', 'context-menu', 'help', 'pointer',
+	'progress', 'wait', 'cell', 'crosshair', 'text', 'vertical-text', 'alias', 'copy', 'move',
+	'no-drop', 'not-allowed', 'grab', 'grabbing', 'e-resize', 'n-resize', 'ne-resize', 'nw-resize',
+	's-resize', 'se-resize', 'sw-resize', 'w-resize', 'ew-resize', 'ns-resize', 'nesw-resize',
+	'nwse-resize', 'col-resize', 'row-resize', 'all-scroll', 'zoom-in', 'zoom-out']
 
 // https://drafts.csswg.org/css-lists-3/#propdef-counter-increment  ->  [ <counter-name> <integer>? ]+ | none
 fn (mut parser Parser) parse_counter_increment_value(mut tokens ComponentValueStream) ?StyleValue {
