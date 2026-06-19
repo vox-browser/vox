@@ -356,6 +356,15 @@ pub enum PropertyID {
 	flex_flow
 	columns
 	text_wrap
+	margin
+	padding
+	inset
+	margin_block
+	margin_inline
+	padding_block
+	padding_inline
+	inset_block
+	inset_inline
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

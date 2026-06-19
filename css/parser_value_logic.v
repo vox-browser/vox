@@ -634,6 +634,33 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.text_wrap {
 			return parser.parse_text_wrap_shorthand(mut tokens)
 		}
+		.margin {
+			return parser.parse_margin_shorthand(mut tokens)
+		}
+		.padding {
+			return parser.parse_padding_shorthand(mut tokens)
+		}
+		.inset {
+			return parser.parse_inset_shorthand(mut tokens)
+		}
+		.margin_block {
+			return parser.parse_margin_block_shorthand(mut tokens)
+		}
+		.margin_inline {
+			return parser.parse_margin_inline_shorthand(mut tokens)
+		}
+		.padding_block {
+			return parser.parse_padding_block_shorthand(mut tokens)
+		}
+		.padding_inline {
+			return parser.parse_padding_inline_shorthand(mut tokens)
+		}
+		.inset_block {
+			return parser.parse_inset_block_shorthand(mut tokens)
+		}
+		.inset_inline {
+			return parser.parse_inset_inline_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2224,6 +2251,99 @@ fn (mut parser Parser) parse_font_variant_tuple(mut tokens ComponentValueStream,
 
 	tokens = transaction
 	return StyleValue(TupleStyleValue.create(slots))
+}
+
+enum BoxSideKind {
+	margin
+	padding
+	inset
+}
+
+fn (mut parser Parser) parse_box_side_value(mut tokens ComponentValueStream, kind BoxSideKind) ?StyleValue {
+	return match kind {
+		.margin { parser.parse_margin_value(mut tokens) }
+		.padding { parser.parse_padding_value(mut tokens) }
+		.inset { parser.parse_inset_value(mut tokens) }
+	}
+}
+
+// <v>{1,4} expanded to [ top, right, bottom, left ] like the margin shorthand.
+fn (mut parser Parser) parse_box_4_shorthand(mut tokens ComponentValueStream, shorthand PropertyID, longhands []PropertyID, kind BoxSideKind) ?StyleValue {
+	mut values := []StyleValue{}
+	for values.len < 4 {
+		tokens.consume_whitespace()
+		if !tokens.has_more_tokens() {
+			break
+		}
+		value := parser.parse_box_side_value(mut tokens, kind) or { break }
+		values << value
+	}
+	if values.len == 0 {
+		return none
+	}
+	top := values[0]
+	right := if values.len > 1 { values[1] } else { top }
+	bottom := if values.len > 2 { values[2] } else { top }
+	left := if values.len > 3 { values[3] } else { right }
+	return StyleValue(ShorthandStyleValue.create(shorthand, longhands, [top, right, bottom, left]))
+}
+
+// <v>{1,2} expanded to [ start, end ] (the logical block/inline shorthands).
+fn (mut parser Parser) parse_box_2_shorthand(mut tokens ComponentValueStream, shorthand PropertyID, longhands []PropertyID, kind BoxSideKind) ?StyleValue {
+	start := parser.parse_box_side_value(mut tokens, kind) or { return none }
+	mut end := start
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		end = parser.parse_box_side_value(mut transaction, kind) or { return none }
+		tokens = transaction
+	}
+	return StyleValue(ShorthandStyleValue.create(shorthand, longhands, [start, end]))
+}
+
+fn (mut parser Parser) parse_margin_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_4_shorthand(mut tokens, .margin, [PropertyID.margin_top, PropertyID.margin_right,
+		PropertyID.margin_bottom, PropertyID.margin_left], .margin)
+}
+
+fn (mut parser Parser) parse_padding_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_4_shorthand(mut tokens, .padding, [PropertyID.padding_top, PropertyID.padding_right,
+		PropertyID.padding_bottom, PropertyID.padding_left], .padding)
+}
+
+fn (mut parser Parser) parse_inset_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_4_shorthand(mut tokens, .inset, [PropertyID.top, PropertyID.right,
+		PropertyID.bottom, PropertyID.left], .inset)
+}
+
+fn (mut parser Parser) parse_margin_block_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .margin_block, [PropertyID.margin_block_start,
+		PropertyID.margin_block_end], .margin)
+}
+
+fn (mut parser Parser) parse_margin_inline_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .margin_inline, [PropertyID.margin_inline_start,
+		PropertyID.margin_inline_end], .margin)
+}
+
+fn (mut parser Parser) parse_padding_block_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .padding_block, [PropertyID.padding_block_start,
+		PropertyID.padding_block_end], .padding)
+}
+
+fn (mut parser Parser) parse_padding_inline_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .padding_inline, [PropertyID.padding_inline_start,
+		PropertyID.padding_inline_end], .padding)
+}
+
+fn (mut parser Parser) parse_inset_block_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .inset_block, [PropertyID.inset_block_start,
+		PropertyID.inset_block_end], .inset)
+}
+
+fn (mut parser Parser) parse_inset_inline_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .inset_inline, [PropertyID.inset_inline_start,
+		PropertyID.inset_inline_end], .inset)
 }
 
 // https://drafts.csswg.org/css-flexbox-1/#propdef-flex-flow  ->  <'flex-direction'> || <'flex-wrap'>

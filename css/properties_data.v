@@ -346,6 +346,21 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 		.flex_flow { [PropertyID.flex_direction, PropertyID.flex_wrap] }
 		.columns { [PropertyID.column_width, PropertyID.column_count] }
 		.text_wrap { [PropertyID.text_wrap_mode, PropertyID.text_wrap_style] }
+		.margin {
+			[PropertyID.margin_top, PropertyID.margin_right, PropertyID.margin_bottom,
+				PropertyID.margin_left]
+		}
+		.padding {
+			[PropertyID.padding_top, PropertyID.padding_right, PropertyID.padding_bottom,
+				PropertyID.padding_left]
+		}
+		.inset { [PropertyID.top, PropertyID.right, PropertyID.bottom, PropertyID.left] }
+		.margin_block { [PropertyID.margin_block_start, PropertyID.margin_block_end] }
+		.margin_inline { [PropertyID.margin_inline_start, PropertyID.margin_inline_end] }
+		.padding_block { [PropertyID.padding_block_start, PropertyID.padding_block_end] }
+		.padding_inline { [PropertyID.padding_inline_start, PropertyID.padding_inline_end] }
+		.inset_block { [PropertyID.inset_block_start, PropertyID.inset_block_end] }
+		.inset_inline { [PropertyID.inset_inline_start, PropertyID.inset_inline_end] }
 		else { []PropertyID{} }
 	}
 }

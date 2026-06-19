@@ -342,6 +342,15 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.flex_flow { 'flex-flow' }
 		.columns { 'columns' }
 		.text_wrap { 'text-wrap' }
+		.margin { 'margin' }
+		.padding { 'padding' }
+		.inset { 'inset' }
+		.margin_block { 'margin-block' }
+		.margin_inline { 'margin-inline' }
+		.padding_block { 'padding-block' }
+		.padding_inline { 'padding-inline' }
+		.inset_block { 'inset-block' }
+		.inset_inline { 'inset-inline' }
 	}
 }
 

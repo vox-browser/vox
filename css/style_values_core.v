@@ -1065,6 +1065,33 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'text-wrap' {
 			PropertyID.text_wrap
 		}
+		'margin' {
+			PropertyID.margin
+		}
+		'padding' {
+			PropertyID.padding
+		}
+		'inset' {
+			PropertyID.inset
+		}
+		'margin-block' {
+			PropertyID.margin_block
+		}
+		'margin-inline' {
+			PropertyID.margin_inline
+		}
+		'padding-block' {
+			PropertyID.padding_block
+		}
+		'padding-inline' {
+			PropertyID.padding_inline
+		}
+		'inset-block' {
+			PropertyID.inset_block
+		}
+		'inset-inline' {
+			PropertyID.inset_inline
+		}
 		else {
 			return none
 		}
