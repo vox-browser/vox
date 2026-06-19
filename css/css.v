@@ -388,6 +388,17 @@ pub enum PropertyID {
 	outline
 	list_style
 	text_decoration
+	font_variant
+	flex
+	corner_shape
+	corner_top_shape
+	corner_bottom_shape
+	corner_left_shape
+	corner_right_shape
+	corner_block_start_shape
+	corner_block_end_shape
+	corner_inline_start_shape
+	corner_inline_end_shape
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

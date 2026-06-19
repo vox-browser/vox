@@ -427,6 +427,41 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 			[PropertyID.text_decoration_color, PropertyID.text_decoration_line,
 				PropertyID.text_decoration_style, PropertyID.text_decoration_thickness]
 		}
+		.font_variant {
+			[PropertyID.font_variant_alternates, PropertyID.font_variant_caps,
+				PropertyID.font_variant_east_asian, PropertyID.font_variant_emoji,
+				PropertyID.font_variant_ligatures, PropertyID.font_variant_numeric,
+				PropertyID.font_variant_position]
+		}
+		.flex { [PropertyID.flex_grow, PropertyID.flex_shrink, PropertyID.flex_basis] }
+		.corner_shape {
+			[PropertyID.corner_top_left_shape, PropertyID.corner_top_right_shape,
+				PropertyID.corner_bottom_right_shape, PropertyID.corner_bottom_left_shape]
+		}
+		.corner_top_shape {
+			[PropertyID.corner_top_left_shape, PropertyID.corner_top_right_shape]
+		}
+		.corner_bottom_shape {
+			[PropertyID.corner_bottom_left_shape, PropertyID.corner_bottom_right_shape]
+		}
+		.corner_left_shape {
+			[PropertyID.corner_top_left_shape, PropertyID.corner_bottom_left_shape]
+		}
+		.corner_right_shape {
+			[PropertyID.corner_top_right_shape, PropertyID.corner_bottom_right_shape]
+		}
+		.corner_block_start_shape {
+			[PropertyID.corner_start_start_shape, PropertyID.corner_start_end_shape]
+		}
+		.corner_block_end_shape {
+			[PropertyID.corner_end_start_shape, PropertyID.corner_end_end_shape]
+		}
+		.corner_inline_start_shape {
+			[PropertyID.corner_start_start_shape, PropertyID.corner_end_start_shape]
+		}
+		.corner_inline_end_shape {
+			[PropertyID.corner_start_end_shape, PropertyID.corner_end_end_shape]
+		}
 		else { []PropertyID{} }
 	}
 }

@@ -730,6 +730,39 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.text_decoration {
 			return parser.parse_text_decoration_shorthand(mut tokens)
 		}
+		.font_variant {
+			return parser.parse_font_variant_shorthand(mut tokens)
+		}
+		.flex {
+			return parser.parse_flex_shorthand(mut tokens)
+		}
+		.corner_shape {
+			return parser.parse_corner_shape_shorthand(mut tokens)
+		}
+		.corner_top_shape {
+			return parser.parse_corner_top_shape_shorthand(mut tokens)
+		}
+		.corner_bottom_shape {
+			return parser.parse_corner_bottom_shape_shorthand(mut tokens)
+		}
+		.corner_left_shape {
+			return parser.parse_corner_left_shape_shorthand(mut tokens)
+		}
+		.corner_right_shape {
+			return parser.parse_corner_right_shape_shorthand(mut tokens)
+		}
+		.corner_block_start_shape {
+			return parser.parse_corner_block_start_shape_shorthand(mut tokens)
+		}
+		.corner_block_end_shape {
+			return parser.parse_corner_block_end_shape_shorthand(mut tokens)
+		}
+		.corner_inline_start_shape {
+			return parser.parse_corner_inline_start_shape_shorthand(mut tokens)
+		}
+		.corner_inline_end_shape {
+			return parser.parse_corner_inline_end_shape_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2329,6 +2362,7 @@ enum BoxSideKind {
 	border_color
 	border_style
 	border_width
+	corner_shape
 }
 
 fn (mut parser Parser) parse_box_side_value(mut tokens ComponentValueStream, kind BoxSideKind) ?StyleValue {
@@ -2339,6 +2373,7 @@ fn (mut parser Parser) parse_box_side_value(mut tokens ComponentValueStream, kin
 		.border_color { parser.parse_color_value(mut tokens) }
 		.border_style { parser.parse_line_style_value(mut tokens) }
 		.border_width { parser.parse_border_or_outline_width_value(mut tokens) }
+		.corner_shape { parser.parse_corner_shape_value(mut tokens) }
 	}
 }
 
@@ -2681,6 +2716,120 @@ fn (mut parser Parser) parse_list_style_shorthand(mut tokens ComponentValueStrea
 fn (mut parser Parser) parse_text_decoration_shorthand(mut tokens ComponentValueStream) ?StyleValue {
 	return parser.parse_double_bar_shorthand(mut tokens, .text_decoration, [PropertyID.text_decoration_color,
 		PropertyID.text_decoration_line, PropertyID.text_decoration_style, PropertyID.text_decoration_thickness])
+}
+
+// https://drafts.csswg.org/css-fonts/#propdef-font-variant
+fn (mut parser Parser) parse_font_variant_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_double_bar_shorthand(mut tokens, .font_variant, [PropertyID.font_variant_alternates,
+		PropertyID.font_variant_caps, PropertyID.font_variant_east_asian, PropertyID.font_variant_emoji,
+		PropertyID.font_variant_ligatures, PropertyID.font_variant_numeric, PropertyID.font_variant_position])
+}
+
+fn flex_shorthand_value(grow StyleValue, shrink StyleValue, basis StyleValue) StyleValue {
+	return StyleValue(ShorthandStyleValue.create(.flex, [PropertyID.flex_grow, PropertyID.flex_shrink,
+		PropertyID.flex_basis], [grow, shrink, basis]))
+}
+
+// https://drafts.csswg.org/css-flexbox-1/#propdef-flex  ->  none | [ <'flex-grow'> <'flex-shrink'>? || <'flex-basis'> ]
+fn (mut parser Parser) parse_flex_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut none_attempt := tokens.clone()
+	if _ := parse_property_keyword_value(mut none_attempt, ['none']) {
+		tokens = none_attempt
+		return flex_shorthand_value(StyleValue(NumberStyleValue.create(0)), StyleValue(NumberStyleValue.create(0)),
+			StyleValue(KeywordStyleValue.create(.auto)))
+	}
+
+	mut grow := ?StyleValue(none)
+	mut shrink := ?StyleValue(none)
+	mut basis := ?StyleValue(none)
+	for {
+		tokens.consume_whitespace()
+		if !tokens.has_more_tokens() {
+			break
+		}
+		// <flex-grow> (then an optional <flex-shrink> directly after).
+		if grow == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_nonnegative_number_value(mut attempt) {
+				grow = value
+				tokens = attempt
+				mut shrink_attempt := tokens.clone()
+				shrink_attempt.consume_whitespace()
+				if shrink_attempt.has_more_tokens() {
+					if shrink_value := parser.parse_nonnegative_number_value(mut shrink_attempt) {
+						shrink = shrink_value
+						tokens = shrink_attempt
+					}
+				}
+				continue
+			}
+		}
+		// <flex-basis>
+		if basis == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_flex_basis_value(mut attempt) {
+				basis = value
+				tokens = attempt
+				continue
+			}
+		}
+		break
+	}
+
+	if grow == none && basis == none {
+		return none
+	}
+	// When grow is specified the omitted basis is 0; when only basis is specified grow defaults to 1.
+	resolved_grow := grow or { StyleValue(NumberStyleValue.create(1)) }
+	resolved_shrink := shrink or { StyleValue(NumberStyleValue.create(1)) }
+	resolved_basis := basis or { StyleValue(PercentageStyleValue.create(Percentage.new(0))) }
+	return flex_shorthand_value(resolved_grow, resolved_shrink, resolved_basis)
+}
+
+fn (mut parser Parser) parse_corner_shape_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_4_shorthand(mut tokens, .corner_shape, [PropertyID.corner_top_left_shape,
+		PropertyID.corner_top_right_shape, PropertyID.corner_bottom_right_shape,
+		PropertyID.corner_bottom_left_shape], .corner_shape)
+}
+
+fn (mut parser Parser) parse_corner_top_shape_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .corner_top_shape, [PropertyID.corner_top_left_shape,
+		PropertyID.corner_top_right_shape], .corner_shape)
+}
+
+fn (mut parser Parser) parse_corner_bottom_shape_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .corner_bottom_shape, [PropertyID.corner_bottom_left_shape,
+		PropertyID.corner_bottom_right_shape], .corner_shape)
+}
+
+fn (mut parser Parser) parse_corner_left_shape_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .corner_left_shape, [PropertyID.corner_top_left_shape,
+		PropertyID.corner_bottom_left_shape], .corner_shape)
+}
+
+fn (mut parser Parser) parse_corner_right_shape_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .corner_right_shape, [PropertyID.corner_top_right_shape,
+		PropertyID.corner_bottom_right_shape], .corner_shape)
+}
+
+fn (mut parser Parser) parse_corner_block_start_shape_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .corner_block_start_shape, [PropertyID.corner_start_start_shape,
+		PropertyID.corner_start_end_shape], .corner_shape)
+}
+
+fn (mut parser Parser) parse_corner_block_end_shape_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .corner_block_end_shape, [PropertyID.corner_end_start_shape,
+		PropertyID.corner_end_end_shape], .corner_shape)
+}
+
+fn (mut parser Parser) parse_corner_inline_start_shape_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .corner_inline_start_shape, [PropertyID.corner_start_start_shape,
+		PropertyID.corner_end_start_shape], .corner_shape)
+}
+
+fn (mut parser Parser) parse_corner_inline_end_shape_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .corner_inline_end_shape, [PropertyID.corner_start_end_shape,
+		PropertyID.corner_end_end_shape], .corner_shape)
 }
 
 // https://drafts.csswg.org/css-flexbox-1/#propdef-flex-flow  ->  <'flex-direction'> || <'flex-wrap'>

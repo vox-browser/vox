@@ -374,6 +374,17 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.outline { 'outline' }
 		.list_style { 'list-style' }
 		.text_decoration { 'text-decoration' }
+		.font_variant { 'font-variant' }
+		.flex { 'flex' }
+		.corner_shape { 'corner-shape' }
+		.corner_top_shape { 'corner-top-shape' }
+		.corner_bottom_shape { 'corner-bottom-shape' }
+		.corner_left_shape { 'corner-left-shape' }
+		.corner_right_shape { 'corner-right-shape' }
+		.corner_block_start_shape { 'corner-block-start-shape' }
+		.corner_block_end_shape { 'corner-block-end-shape' }
+		.corner_inline_start_shape { 'corner-inline-start-shape' }
+		.corner_inline_end_shape { 'corner-inline-end-shape' }
 	}
 }
 

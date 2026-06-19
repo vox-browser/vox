@@ -1161,6 +1161,39 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'text-decoration' {
 			PropertyID.text_decoration
 		}
+		'font-variant' {
+			PropertyID.font_variant
+		}
+		'flex' {
+			PropertyID.flex
+		}
+		'corner-shape' {
+			PropertyID.corner_shape
+		}
+		'corner-top-shape' {
+			PropertyID.corner_top_shape
+		}
+		'corner-bottom-shape' {
+			PropertyID.corner_bottom_shape
+		}
+		'corner-left-shape' {
+			PropertyID.corner_left_shape
+		}
+		'corner-right-shape' {
+			PropertyID.corner_right_shape
+		}
+		'corner-block-start-shape' {
+			PropertyID.corner_block_start_shape
+		}
+		'corner-block-end-shape' {
+			PropertyID.corner_block_end_shape
+		}
+		'corner-inline-start-shape' {
+			PropertyID.corner_inline_start_shape
+		}
+		'corner-inline-end-shape' {
+			PropertyID.corner_inline_end_shape
+		}
 		else {
 			return none
 		}
