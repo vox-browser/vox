@@ -562,6 +562,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.grid_auto_columns, .grid_auto_rows {
 			return parser.parse_grid_auto_track_sizes(mut tokens)
 		}
+		.grid_template_columns, .grid_template_rows {
+			return parser.parse_grid_track_size_list(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -1699,7 +1702,10 @@ fn (mut parser Parser) parse_grid_track_size(mut tokens ComponentValueStream) ?E
 
 	if peek := transaction.peek() {
 		if peek.is_function_named('minmax') {
-			minmax := parser.parse_grid_minmax(mut transaction) or { return none }
+			// minmax( <inflexible-breadth> , <track-breadth> )
+			minmax := parser.parse_grid_minmax_kinds(mut transaction, .inflexible, .track) or {
+				return none
+			}
 			tokens = transaction
 			return minmax
 		}
@@ -1779,7 +1785,28 @@ fn (mut parser Parser) parse_grid_fixed_breadth(mut tokens ComponentValueStream)
 	return LengthPercentage.from_style_value_logic(value)
 }
 
-fn (mut parser Parser) parse_grid_minmax(mut tokens ComponentValueStream) ?ExplicitGridTrack {
+enum GridBreadthKind {
+	track
+	inflexible
+	fixed
+}
+
+fn (mut parser Parser) parse_grid_breadth(mut tokens ComponentValueStream, kind GridBreadthKind) ?GridSize {
+	match kind {
+		.track {
+			return parser.parse_grid_track_breadth(mut tokens)
+		}
+		.inflexible {
+			return parser.parse_grid_inflexible_breadth(mut tokens)
+		}
+		.fixed {
+			fixed := parser.parse_grid_fixed_breadth(mut tokens) or { return none }
+			return GridSize.from_size(Size.make_length_percentage(fixed))
+		}
+	}
+}
+
+fn (mut parser Parser) parse_grid_minmax_kinds(mut tokens ComponentValueStream, min_kind GridBreadthKind, max_kind GridBreadthKind) ?ExplicitGridTrack {
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	component_value := transaction.consume() or { return none }
@@ -1792,16 +1819,17 @@ fn (mut parser Parser) parse_grid_minmax(mut tokens ComponentValueStream) ?Expli
 		return none
 	}
 
-	// minmax( <inflexible-breadth> , <track-breadth> )
 	mut min_tokens := ComponentValueStream.new(parts[0])
-	min_value := parser.parse_grid_inflexible_breadth(mut min_tokens) or { return none }
+	min_tokens.consume_whitespace()
+	min_value := parser.parse_grid_breadth(mut min_tokens, min_kind) or { return none }
 	min_tokens.consume_whitespace()
 	if min_tokens.has_more_tokens() {
 		return none
 	}
 
 	mut max_tokens := ComponentValueStream.new(parts[1])
-	max_value := parser.parse_grid_track_breadth(mut max_tokens) or { return none }
+	max_tokens.consume_whitespace()
+	max_value := parser.parse_grid_breadth(mut max_tokens, max_kind) or { return none }
 	max_tokens.consume_whitespace()
 	if max_tokens.has_more_tokens() {
 		return none
@@ -1809,6 +1837,273 @@ fn (mut parser Parser) parse_grid_minmax(mut tokens ComponentValueStream) ?Expli
 
 	tokens = transaction
 	return ExplicitGridTrack.from_minmax(GridMinMax.new(min_value, max_value))
+}
+
+// <fixed-size> = <fixed-breadth> | minmax( <fixed-breadth> , <track-breadth> )
+//              | minmax( <inflexible-breadth> , <fixed-breadth> )
+fn (mut parser Parser) parse_grid_fixed_size(mut tokens ComponentValueStream) ?ExplicitGridTrack {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if !transaction.has_more_tokens() {
+		return none
+	}
+
+	if peek := transaction.peek() {
+		if peek.is_function_named('minmax') {
+			if result := parser.parse_grid_minmax_kinds(mut transaction, .fixed, .track) {
+				tokens = transaction
+				return result
+			}
+			if result := parser.parse_grid_minmax_kinds(mut transaction, .inflexible, .fixed) {
+				tokens = transaction
+				return result
+			}
+			return none
+		}
+	}
+
+	fixed := parser.parse_grid_fixed_breadth(mut transaction) or { return none }
+	tokens = transaction
+	return ExplicitGridTrack.from_grid_size(GridSize.from_size(Size.make_length_percentage(fixed)))
+}
+
+// <line-names> = '[' <custom-ident>* ']'
+// Returns an (possibly empty) GridLineNames when there is no square block (without consuming),
+// the parsed names when there is a valid block, or `none` when the block has invalid content.
+fn (mut parser Parser) parse_grid_line_names(mut tokens ComponentValueStream) ?GridLineNames {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	token := transaction.consume() or { return GridLineNames{} }
+	if !token.is_block() || !token.block().is_square() {
+		return GridLineNames{}
+	}
+
+	mut line_names := GridLineNames{}
+	mut block_tokens := ComponentValueStream.new(token.block().value)
+	block_tokens.consume_whitespace()
+	for block_tokens.has_more_tokens() {
+		ident := parser.parse_custom_ident(mut block_tokens, ['span', 'auto']) or { return none }
+		line_names.append(ident)
+		block_tokens.consume_whitespace()
+	}
+
+	tokens = transaction
+	return line_names
+}
+
+enum GridTrackKind {
+	track_size_or_repeat
+	fixed_size_or_repeat
+	track_size_only
+	fixed_size_only
+}
+
+fn (mut parser Parser) parse_grid_track_for_kind(mut tokens ComponentValueStream, kind GridTrackKind) ?ExplicitGridTrack {
+	match kind {
+		.track_size_or_repeat {
+			if repeat := parser.parse_grid_track_repeat(mut tokens) {
+				return ExplicitGridTrack.from_repeat(repeat)
+			}
+			return parser.parse_grid_track_size(mut tokens)
+		}
+		.fixed_size_or_repeat {
+			if repeat := parser.parse_grid_fixed_repeat(mut tokens) {
+				return ExplicitGridTrack.from_repeat(repeat)
+			}
+			return parser.parse_grid_fixed_size(mut tokens)
+		}
+		.track_size_only {
+			return parser.parse_grid_track_size(mut tokens)
+		}
+		.fixed_size_only {
+			return parser.parse_grid_fixed_size(mut tokens)
+		}
+	}
+}
+
+// [ <line-names>? <track> ]+ <line-names>?  (AllowTrailingLineNamesForEachTrack::No)
+fn (mut parser Parser) parse_track_list_impl(mut tokens ComponentValueStream, mut output GridTrackSizeList, kind GridTrackKind) int {
+	mut parsed_tracks_count := 0
+	tokens.consume_whitespace()
+	for tokens.has_more_tokens() {
+		mut transaction := tokens.clone()
+		line_names := parser.parse_grid_line_names(mut transaction) or { break }
+		transaction.consume_whitespace()
+		track := parser.parse_grid_track_for_kind(mut transaction, kind) or { break }
+		transaction.consume_whitespace()
+
+		if !line_names.is_empty() {
+			output.append_line_names(line_names)
+		}
+		output.append_explicit_track(track)
+
+		tokens = transaction
+		parsed_tracks_count++
+		tokens.consume_whitespace()
+	}
+
+	// Trailing <line-names>?
+	mut trailing_transaction := tokens.clone()
+	if trailing := parser.parse_grid_line_names(mut trailing_transaction) {
+		if !trailing.is_empty() {
+			output.append_line_names(trailing)
+			tokens = trailing_transaction
+		}
+	}
+
+	return parsed_tracks_count
+}
+
+enum GridRepeatCountKind {
+	fixed_integer
+	auto
+}
+
+fn (mut parser Parser) parse_grid_repeat_params(mut tokens ComponentValueStream, count_kind GridRepeatCountKind) ?GridRepeatParams {
+	match count_kind {
+		.fixed_integer {
+			// FIXME: calculated repeat counts are not supported yet.
+			mut int_attempt := tokens.clone()
+			integer_value := parser.parse_integer_value(mut int_attempt) or { return none }
+			if integer_value is IntegerStyleValue {
+				if integer_value.integer() < 1 {
+					return none
+				}
+				tokens = int_attempt
+				return GridRepeatParams{
+					type_: .fixed
+					count: usize(integer_value.integer())
+				}
+			}
+			return none
+		}
+		.auto {
+			mut transaction := tokens.clone()
+			transaction.consume_whitespace()
+			token := transaction.consume() or { return none }
+			if !token.is(.ident) {
+				return none
+			}
+			result := match to_ascii_lowercase(token.token().ident()) {
+				'auto-fill' { GridRepeatParams{
+					type_: .auto_fill
+				} }
+				'auto-fit' { GridRepeatParams{
+					type_: .auto_fit
+				} }
+				else { return none }
+			}
+			tokens = transaction
+			return result
+		}
+	}
+}
+
+fn (mut parser Parser) parse_grid_track_repeat_impl(mut tokens ComponentValueStream, count_kind GridRepeatCountKind, inner_kind GridTrackKind) ?GridRepeat {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is_function_named('repeat') {
+		return none
+	}
+
+	parts := parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
+	if parts.len != 2 {
+		return none
+	}
+
+	mut first_arg_tokens := ComponentValueStream.new(parts[0])
+	first_arg_tokens.consume_whitespace()
+	if !first_arg_tokens.has_more_tokens() {
+		return none
+	}
+	repeat_params := parser.parse_grid_repeat_params(mut first_arg_tokens, count_kind) or {
+		return none
+	}
+	first_arg_tokens.consume_whitespace()
+	if first_arg_tokens.has_more_tokens() {
+		return none
+	}
+
+	mut second_arg_tokens := ComponentValueStream.new(parts[1])
+	second_arg_tokens.consume_whitespace()
+	mut track_list := GridTrackSizeList{}
+	parsed_track_count := parser.parse_track_list_impl(mut second_arg_tokens, mut track_list,
+		inner_kind)
+	if parsed_track_count == 0 || second_arg_tokens.has_more_tokens() {
+		return none
+	}
+
+	tokens = transaction
+	return GridRepeat.from_params(track_list, repeat_params)
+}
+
+// <track-repeat> = repeat( [ <integer [1,∞]> ] , [ <line-names>? <track-size> ]+ <line-names>? )
+fn (mut parser Parser) parse_grid_track_repeat(mut tokens ComponentValueStream) ?GridRepeat {
+	return parser.parse_grid_track_repeat_impl(mut tokens, .fixed_integer, .track_size_only)
+}
+
+// <fixed-repeat> = repeat( [ <integer [1,∞]> ] , [ <line-names>? <fixed-size> ]+ <line-names>? )
+fn (mut parser Parser) parse_grid_fixed_repeat(mut tokens ComponentValueStream) ?GridRepeat {
+	return parser.parse_grid_track_repeat_impl(mut tokens, .fixed_integer, .fixed_size_only)
+}
+
+// <auto-repeat> = repeat( [ auto-fill | auto-fit ] , [ <line-names>? <fixed-size> ]+ <line-names>? )
+fn (mut parser Parser) parse_grid_auto_repeat(mut tokens ComponentValueStream) ?GridRepeat {
+	return parser.parse_grid_track_repeat_impl(mut tokens, .auto, .fixed_size_only)
+}
+
+// <track-list> = [ <line-names>? [ <track-size> | <track-repeat> ] ]+ <line-names>?
+fn (mut parser Parser) parse_grid_track_list(mut tokens ComponentValueStream) ?GridTrackSizeList {
+	mut transaction := tokens.clone()
+	mut track_list := GridTrackSizeList{}
+	parsed_track_count := parser.parse_track_list_impl(mut transaction, mut track_list, .track_size_or_repeat)
+	if parsed_track_count == 0 {
+		return none
+	}
+	tokens = transaction
+	return track_list
+}
+
+// <auto-track-list> = [ <line-names>? [ <fixed-size> | <fixed-repeat> ] ]* <line-names>? <auto-repeat>
+//                     [ <line-names>? [ <fixed-size> | <fixed-repeat> ] ]* <line-names>?
+fn (mut parser Parser) parse_grid_auto_track_list(mut tokens ComponentValueStream) ?GridTrackSizeList {
+	mut transaction := tokens.clone()
+	mut track_list := GridTrackSizeList{}
+
+	parser.parse_track_list_impl(mut transaction, mut track_list, .fixed_size_or_repeat)
+
+	transaction.consume_whitespace()
+	auto_repeat := parser.parse_grid_auto_repeat(mut transaction) or { return none }
+	track_list.append_explicit_track(ExplicitGridTrack.from_repeat(auto_repeat))
+
+	parser.parse_track_list_impl(mut transaction, mut track_list, .fixed_size_or_repeat)
+
+	tokens = transaction
+	return track_list
+}
+
+// none | <track-list> | <auto-track-list>
+fn (mut parser Parser) parse_grid_track_size_list(mut tokens ComponentValueStream) ?StyleValue {
+	mut none_attempt := tokens.clone()
+	if _ := parse_property_keyword_value(mut none_attempt, ['none']) {
+		tokens = none_attempt
+		return StyleValue(GridTrackSizeListStyleValue.make_none())
+	}
+
+	mut auto_attempt := tokens.clone()
+	if auto_track_list := parser.parse_grid_auto_track_list(mut auto_attempt) {
+		tokens = auto_attempt
+		return StyleValue(GridTrackSizeListStyleValue.create(auto_track_list))
+	}
+
+	mut track_attempt := tokens.clone()
+	if track_list := parser.parse_grid_track_list(mut track_attempt) {
+		tokens = track_attempt
+		return StyleValue(GridTrackSizeListStyleValue.create(track_list))
+	}
+
+	return none
 }
 
 // https://www.w3.org/TR/css-grid-2/#grid-auto-flow-property  ->  [ row | column ] || dense

@@ -328,6 +328,8 @@ pub enum PropertyID {
 	grid_auto_flow
 	grid_auto_columns
 	grid_auto_rows
+	grid_template_columns
+	grid_template_rows
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

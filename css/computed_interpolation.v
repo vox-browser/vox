@@ -1550,6 +1550,9 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.grid_auto_columns, .grid_auto_rows {
 			'auto'
 		}
+		.grid_template_columns, .grid_template_rows {
+			'none'
+		}
 	}
 
 	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
@@ -1622,7 +1625,8 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 		.vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate, .scale, .transform,
 		.transition_delay, .transition_duration, .transition_timing_function, .translate,
 		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis,
-		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_columns, .grid_auto_rows {
+		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_columns, .grid_auto_rows,
+		.grid_template_columns, .grid_template_rows {
 			true
 		}
 		else {
@@ -4674,7 +4678,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.z_index, .flex_basis, .clip, .grid_auto_columns, .grid_auto_rows {
 			.by_computed_value
 		}
-		.content_visibility, .visibility, .display, .box_shadow, .text_shadow, .stroke_dasharray {
+		.content_visibility, .visibility, .display, .box_shadow, .text_shadow, .stroke_dasharray,
+		.grid_template_columns, .grid_template_rows {
 			.custom
 		}
 		.background_clip, .background_origin, .background_position_x, .background_position_y,
@@ -5490,7 +5495,7 @@ fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) b
 		.width, .word_break, .word_spacing, .writing_mode, .cx, .cy, .x, .y, .r, .rx, .ry,
 		.dominant_baseline, .display, .flex_basis, .quotes, .list_style_type, .font_family,
 		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow,
-		.grid_auto_columns, .grid_auto_rows {
+		.grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows {
 			true
 		}
 	}

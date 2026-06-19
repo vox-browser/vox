@@ -315,6 +315,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.grid_auto_flow { 'grid-auto-flow' }
 		.grid_auto_columns { 'grid-auto-columns' }
 		.grid_auto_rows { 'grid-auto-rows' }
+		.grid_template_columns { 'grid-template-columns' }
+		.grid_template_rows { 'grid-template-rows' }
 	}
 }
 
@@ -349,14 +351,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	}
 }
 
-pub const number_of_longhand_properties = 294
+pub const number_of_longhand_properties = 296
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .grid_auto_rows
+	return .grid_template_rows
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -655,6 +657,8 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		291 { PropertyID.grid_auto_flow }
 		292 { PropertyID.grid_auto_columns }
 		293 { PropertyID.grid_auto_rows }
+		294 { PropertyID.grid_template_columns }
+		295 { PropertyID.grid_template_rows }
 		else { none }
 	}
 }

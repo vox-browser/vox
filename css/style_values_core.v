@@ -984,6 +984,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'grid-auto-rows' {
 			PropertyID.grid_auto_rows
 		}
+		'grid-template-columns' {
+			PropertyID.grid_template_columns
+		}
+		'grid-template-rows' {
+			PropertyID.grid_template_rows
+		}
 		else {
 			return none
 		}
@@ -1116,7 +1122,8 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.tab_size {
 			value_type in [.length, .number]
 		}
-		.transform_origin, .vertical_align, .flex_basis, .grid_auto_columns, .grid_auto_rows {
+		.transform_origin, .vertical_align, .flex_basis, .grid_auto_columns, .grid_auto_rows,
+		.grid_template_columns, .grid_template_rows {
 			value_type in [.length, .percentage]
 		}
 		.will_change {
@@ -1827,6 +1834,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.grid_auto_columns, .grid_auto_rows {
 			lowercase_value in ['auto', 'min-content', 'max-content']
 		}
+		.grid_template_columns, .grid_template_rows {
+			lowercase_value in ['none', 'auto', 'min-content', 'max-content']
+		}
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
@@ -1901,7 +1911,7 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .widows,
 		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
-		.grid_auto_rows {
+		.grid_auto_rows, .grid_template_columns, .grid_template_rows {
 			false
 		}
 		.color_scheme {
