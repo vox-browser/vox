@@ -9028,11 +9028,13 @@ fn (mut parser Parser) parse_number_value(mut tokens ComponentValueStream) ?Styl
 }
 
 fn (mut parser Parser) parse_number(mut tokens ComponentValueStream) ?Number {
-	tokens.consume_whitespace()
-	component_value := tokens.consume() or { return none }
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
 	if !component_value.is(.number) {
 		return none
 	}
+	tokens = transaction
 	return component_value.token().number()
 }
 
@@ -9047,11 +9049,13 @@ fn (mut parser Parser) parse_percentage_value(mut tokens ComponentValueStream) ?
 }
 
 fn (mut parser Parser) parse_percentage(mut tokens ComponentValueStream) ?Percentage {
-	tokens.consume_whitespace()
-	component_value := tokens.consume() or { return none }
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
 	if !component_value.is(.percentage) {
 		return none
 	}
+	tokens = transaction
 	return Percentage.new(component_value.token().percentage())
 }
 
@@ -9273,15 +9277,18 @@ fn (mut parser Parser) parse_angle_value(mut tokens ComponentValueStream) ?Style
 }
 
 fn (mut parser Parser) parse_angle(mut tokens ComponentValueStream) ?Angle {
-	tokens.consume_whitespace()
-	component_value := tokens.consume() or { return none }
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
 	if component_value.is(.number) && component_value.token().number_value() == 0 {
+		tokens = transaction
 		return Angle.make_degrees(0)
 	}
 	if !component_value.is(.dimension) {
 		return none
 	}
 	unit := string_to_angle_unit(component_value.token().dimension_unit()) or { return none }
+	tokens = transaction
 	return Angle.new(component_value.token().dimension_value(), unit)
 }
 
@@ -9291,15 +9298,18 @@ fn (mut parser Parser) parse_length_value(mut tokens ComponentValueStream) ?Styl
 }
 
 fn (mut parser Parser) parse_length(mut tokens ComponentValueStream) ?Length {
-	tokens.consume_whitespace()
-	component_value := tokens.consume() or { return none }
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
 	if component_value.is(.number) && component_value.token().number_value() == 0 {
+		tokens = transaction
 		return Length.make_px(0)
 	}
 	if !component_value.is(.dimension) {
 		return none
 	}
 	unit := string_to_length_unit(component_value.token().dimension_unit()) or { return none }
+	tokens = transaction
 	return Length.new(component_value.token().dimension_value(), unit)
 }
 
