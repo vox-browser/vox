@@ -819,6 +819,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.grid {
 			return parser.parse_grid_shorthand(mut tokens)
 		}
+		.font {
+			return parser.parse_font_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -3179,6 +3182,160 @@ fn (mut parser Parser) parse_grid_shorthand(mut tokens ComponentValueStream) ?St
 	}
 
 	return none
+}
+
+// The font shorthand's longhands, flattened (font-variant is expanded to its leaf longhands).
+const font_shorthand_longhands = [PropertyID.font_family, PropertyID.font_size,
+	PropertyID.font_width, PropertyID.font_style, PropertyID.font_variant_alternates,
+	PropertyID.font_variant_caps, PropertyID.font_variant_east_asian, PropertyID.font_variant_emoji,
+	PropertyID.font_variant_ligatures, PropertyID.font_variant_numeric, PropertyID.font_variant_position,
+	PropertyID.font_weight, PropertyID.line_height, PropertyID.font_feature_settings,
+	PropertyID.font_kerning, PropertyID.font_language_override, PropertyID.font_optical_sizing,
+	PropertyID.font_variation_settings]
+
+// https://drafts.csswg.org/css-fonts/#font-prop
+// [ [ <'font-style'> || <font-variant-css2> || <'font-weight'> || <font-width-css3> ]? <'font-size'> [ / <'line-height'> ]? <'font-family'># ]
+// FIXME: <system-family-name> (caption, icon, menu, message-box, small-caption, status-bar).
+fn (mut parser Parser) parse_font_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut font_style := ?StyleValue(none)
+	mut font_variant_caps_small := false
+	mut font_weight := ?StyleValue(none)
+	mut font_width := ?StyleValue(none)
+	mut font_size := ?StyleValue(none)
+	mut line_height := ?StyleValue(none)
+	mut font_families := ?StyleValue(none)
+	mut normal_count := 0
+
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	for transaction.has_more_tokens() {
+		peek := transaction.peek() or { break }
+		if peek.is(.ident) {
+			ident := to_ascii_lowercase(peek.token().ident())
+			// Several sub-properties can be "normal" and appear in any order.
+			if ident == 'normal' {
+				normal_count++
+				transaction.consume()
+				transaction.consume_whitespace()
+				continue
+			}
+			// <font-variant-css2> = normal | small-caps (handled manually here).
+			if !font_variant_caps_small && ident == 'small-caps' {
+				transaction.consume()
+				font_variant_caps_small = true
+				transaction.consume_whitespace()
+				continue
+			}
+			// <font-width-css3> keywords (handled manually since only a subset is valid here).
+			if font_width == none {
+				mut width_attempt := transaction.clone()
+				if width_value := parser.parse_font_width_value(mut width_attempt) {
+					font_width = width_value
+					transaction = width_attempt
+					transaction.consume_whitespace()
+					continue
+				}
+			}
+		}
+		// [ <'font-size'> || <'font-style'> || <'font-weight'> ], first match wins in that order.
+		if font_size == none {
+			mut size_attempt := transaction.clone()
+			if size_value := parser.parse_font_size_value(mut size_attempt) {
+				font_size = size_value
+				transaction = size_attempt
+				transaction.consume_whitespace()
+				// [ / <'line-height'> ]?
+				mut slash := false
+				if p := transaction.peek() {
+					slash = p.is_delim(u32(`/`))
+				}
+				if slash {
+					transaction.consume()
+					transaction.consume_whitespace()
+					line_height = parser.parse_line_height_value(mut transaction) or { return none }
+					transaction.consume_whitespace()
+				}
+				// <'font-family'># comes last, so nothing must be left over.
+				families := parser.parse_font_family_value(mut transaction) or { return none }
+				transaction.consume_whitespace()
+				if transaction.has_more_tokens() {
+					return none
+				}
+				font_families = families
+				continue
+			}
+		}
+		if font_style == none {
+			mut style_attempt := transaction.clone()
+			if style_value := parser.parse_font_style_value(mut style_attempt) {
+				font_style = style_value
+				transaction = style_attempt
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		if font_weight == none {
+			mut weight_attempt := transaction.clone()
+			if weight_value := parser.parse_font_weight_value(mut weight_attempt) {
+				font_weight = weight_value
+				transaction = weight_attempt
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		return none
+	}
+
+	// We must not have been given more `normal`s than there are unset properties that accept it.
+	mut unset_value_count := 0
+	if font_style == none {
+		unset_value_count++
+	}
+	if font_weight == none {
+		unset_value_count++
+	}
+	if !font_variant_caps_small {
+		unset_value_count++
+	}
+	if font_width == none {
+		unset_value_count++
+	}
+	if unset_value_count < normal_count {
+		return none
+	}
+
+	size_value := font_size or { return none }
+	families_value := font_families or { return none }
+
+	font_variant_caps_value := if font_variant_caps_small {
+		StyleValue(KeywordStyleValue.create(.small_caps))
+	} else {
+		parser.longhand_initial_typed_value(.font_variant_caps) or { return none }
+	}
+
+	values := [
+		families_value,
+		size_value,
+		font_width or { parser.longhand_initial_typed_value(.font_width) or { return none } },
+		font_style or { parser.longhand_initial_typed_value(.font_style) or { return none } },
+		parser.longhand_initial_typed_value(.font_variant_alternates) or { return none },
+		font_variant_caps_value,
+		parser.longhand_initial_typed_value(.font_variant_east_asian) or { return none },
+		parser.longhand_initial_typed_value(.font_variant_emoji) or { return none },
+		parser.longhand_initial_typed_value(.font_variant_ligatures) or { return none },
+		parser.longhand_initial_typed_value(.font_variant_numeric) or { return none },
+		parser.longhand_initial_typed_value(.font_variant_position) or { return none },
+		font_weight or { parser.longhand_initial_typed_value(.font_weight) or { return none } },
+		line_height or { parser.longhand_initial_typed_value(.line_height) or { return none } },
+		parser.longhand_initial_typed_value(.font_feature_settings) or { return none },
+		parser.longhand_initial_typed_value(.font_kerning) or { return none },
+		parser.longhand_initial_typed_value(.font_language_override) or { return none },
+		parser.longhand_initial_typed_value(.font_optical_sizing) or { return none },
+		parser.longhand_initial_typed_value(.font_variation_settings) or { return none },
+	]
+
+	tokens = transaction
+	return StyleValue(ShorthandStyleValue.create(.font, font_shorthand_longhands, values))
 }
 
 // https://drafts.csswg.org/css-transitions/#propdef-transition

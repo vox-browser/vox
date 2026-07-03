@@ -510,6 +510,16 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 			[PropertyID.grid_auto_flow, PropertyID.grid_auto_rows, PropertyID.grid_auto_columns,
 				PropertyID.grid_template_areas, PropertyID.grid_template_rows, PropertyID.grid_template_columns]
 		}
+		.font {
+			[PropertyID.font_family, PropertyID.font_size, PropertyID.font_width, PropertyID.font_style,
+				PropertyID.font_variant_alternates, PropertyID.font_variant_caps,
+				PropertyID.font_variant_east_asian, PropertyID.font_variant_emoji,
+				PropertyID.font_variant_ligatures, PropertyID.font_variant_numeric,
+				PropertyID.font_variant_position, PropertyID.font_weight, PropertyID.line_height,
+				PropertyID.font_feature_settings, PropertyID.font_kerning,
+				PropertyID.font_language_override, PropertyID.font_optical_sizing,
+				PropertyID.font_variation_settings]
+		}
 		else { []PropertyID{} }
 	}
 }
