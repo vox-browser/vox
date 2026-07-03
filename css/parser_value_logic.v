@@ -813,6 +813,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.background_position {
 			return parser.parse_background_position_shorthand(mut tokens)
 		}
+		.grid_template {
+			return parser.parse_grid_template_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2927,6 +2930,143 @@ fn (mut parser Parser) parse_background_position_shorthand(mut tokens ComponentV
 		StyleValue(StyleValueList.create(xs, .comma, .yes)),
 		StyleValue(StyleValueList.create(ys, .comma, .yes)),
 	]))
+}
+
+// https://drafts.csswg.org/css-grid/#explicit-track-shorthand
+fn (mut parser Parser) parse_grid_template_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_grid_track_size_list_shorthand(.grid_template, mut tokens, false)
+}
+
+// none
+// | <'grid-template-rows'> / <'grid-template-columns'>
+// | [ <line-names>? <string> <track-size>? <line-names>? ]+ [ / <explicit-track-list> ]?
+// When include_grid_auto_properties is set (the `grid` shorthand), grid-auto-flow/rows/columns
+// are prepended as initial values.
+fn (mut parser Parser) parse_grid_track_size_list_shorthand(property_id PropertyID, mut tokens ComponentValueStream, include_grid_auto_properties bool) ?StyleValue {
+	mut sub_properties := []PropertyID{}
+	mut auto_values := []StyleValue{}
+	if include_grid_auto_properties {
+		sub_properties << PropertyID.grid_auto_flow
+		sub_properties << PropertyID.grid_auto_rows
+		sub_properties << PropertyID.grid_auto_columns
+		auto_values << parser.longhand_initial_typed_value(.grid_auto_flow) or { return none }
+		auto_values << parser.longhand_initial_typed_value(.grid_auto_rows) or { return none }
+		auto_values << parser.longhand_initial_typed_value(.grid_auto_columns) or { return none }
+	}
+	sub_properties << PropertyID.grid_template_areas
+	sub_properties << PropertyID.grid_template_rows
+	sub_properties << PropertyID.grid_template_columns
+
+	initial_areas := parser.longhand_initial_typed_value(.grid_template_areas) or { return none }
+	initial_rows := parser.longhand_initial_typed_value(.grid_template_rows) or { return none }
+	initial_columns := parser.longhand_initial_typed_value(.grid_template_columns) or { return none }
+
+	// none
+	mut none_attempt := tokens.clone()
+	none_attempt.consume_whitespace()
+	if _ := parse_property_keyword_value(mut none_attempt, ['none']) {
+		none_attempt.consume_whitespace()
+		if !none_attempt.has_more_tokens() {
+			tokens = none_attempt
+			mut resolved := auto_values.clone()
+			resolved << initial_areas
+			resolved << initial_rows
+			resolved << initial_columns
+			return StyleValue(ShorthandStyleValue.create(property_id, sub_properties, resolved))
+		}
+	}
+
+	// <'grid-template-rows'> / <'grid-template-columns'>
+	mut rows_columns_attempt := tokens.clone()
+	if rows := parser.parse_grid_track_size_list(mut rows_columns_attempt) {
+		rows_columns_attempt.consume_whitespace()
+		mut slash := false
+		if peek := rows_columns_attempt.peek() {
+			slash = peek.is_delim(u32(`/`))
+		}
+		if slash {
+			rows_columns_attempt.consume()
+			rows_columns_attempt.consume_whitespace()
+			if columns := parser.parse_grid_track_size_list(mut rows_columns_attempt) {
+				tokens = rows_columns_attempt
+				mut resolved := auto_values.clone()
+				resolved << initial_areas
+				resolved << rows
+				resolved << columns
+				return StyleValue(ShorthandStyleValue.create(property_id, sub_properties, resolved))
+			}
+		}
+	}
+
+	// [ <line-names>? <string> <track-size>? <line-names>? ]+ [ / <explicit-track-list> ]?
+	mut areas_attempt := tokens.clone()
+	mut track_list := GridTrackSizeList{}
+	mut area_tokens := []ComponentValue{}
+	mut parsed_track_count := 0
+	areas_attempt.consume_whitespace()
+	for areas_attempt.has_more_tokens() {
+		mut row_transaction := areas_attempt.clone()
+		line_names := parser.parse_grid_line_names(mut row_transaction) or { break }
+		row_transaction.consume_whitespace()
+		string_token := row_transaction.peek() or { break }
+		if !string_token.is(.string) {
+			break
+		}
+		row_transaction.consume()
+		row_transaction.consume_whitespace()
+		mut track := ExplicitGridTrack.from_grid_size(GridSize.make_auto())
+		if parsed_track := parser.parse_grid_track_size(mut row_transaction) {
+			track = parsed_track
+		}
+		row_transaction.consume_whitespace()
+		mut trailing_names := GridLineNames{}
+		if trailing := parser.parse_grid_line_names(mut row_transaction) {
+			trailing_names = trailing
+		}
+
+		if !line_names.is_empty() {
+			track_list.append_line_names(line_names)
+		}
+		track_list.append_explicit_track(track)
+		if !trailing_names.is_empty() {
+			track_list.append_line_names(trailing_names)
+		}
+		area_tokens << string_token
+		areas_attempt = row_transaction
+		parsed_track_count++
+		areas_attempt.consume_whitespace()
+	}
+	if parsed_track_count > 0 {
+		mut area_stream := ComponentValueStream.new(area_tokens)
+		grid_areas := parser.parse_grid_template_areas_value(mut area_stream) or { return none }
+		rows_value := StyleValue(GridTrackSizeListStyleValue.create(track_list))
+		areas_attempt.consume_whitespace()
+		mut columns_value := initial_columns
+		mut has_columns_slash := false
+		if peek := areas_attempt.peek() {
+			has_columns_slash = peek.is_delim(u32(`/`))
+		}
+		if has_columns_slash {
+			areas_attempt.consume()
+			areas_attempt.consume_whitespace()
+			mut columns_list := GridTrackSizeList{}
+			count := parser.parse_track_list_impl(mut areas_attempt, mut columns_list, .track_size_only)
+			if count == 0 {
+				return none
+			}
+			columns_value = StyleValue(GridTrackSizeListStyleValue.create(columns_list))
+		} else if areas_attempt.has_more_tokens() {
+			return none
+		}
+		tokens = areas_attempt
+		mut resolved := auto_values.clone()
+		resolved << grid_areas
+		resolved << rows_value
+		resolved << columns_value
+		return StyleValue(ShorthandStyleValue.create(property_id, sub_properties, resolved))
+	}
+
+	return none
 }
 
 // https://drafts.csswg.org/css-transitions/#propdef-transition

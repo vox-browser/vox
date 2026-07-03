@@ -1239,6 +1239,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'background-position' {
 			PropertyID.background_position
 		}
+		'grid-template' {
+			PropertyID.grid_template
+		}
 		else {
 			return none
 		}

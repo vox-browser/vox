@@ -503,6 +503,9 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 		.background_position {
 			[PropertyID.background_position_x, PropertyID.background_position_y]
 		}
+		.grid_template {
+			[PropertyID.grid_template_areas, PropertyID.grid_template_rows, PropertyID.grid_template_columns]
+		}
 		else { []PropertyID{} }
 	}
 }
