@@ -810,6 +810,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_image {
 			return parser.parse_border_image_shorthand(mut tokens)
 		}
+		.background_position {
+			return parser.parse_background_position_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2902,6 +2905,28 @@ fn (mut parser Parser) parse_border_image_shorthand(mut tokens ComponentValueStr
 		repeat or { parser.longhand_initial_typed_value(.border_image_repeat) or { return none } },
 	]
 	return StyleValue(ShorthandStyleValue.create(.border_image, component_ids, resolved))
+}
+
+// https://drafts.csswg.org/css-backgrounds/#propdef-background-position
+// <bg-position># — each layer's position is split into its x and y edges, producing
+// coordinated comma-separated background-position-x and background-position-y lists.
+fn (mut parser Parser) parse_background_position_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	list_value := parser.parse_position_list_value(mut tokens, .background_position) or {
+		return none
+	}
+	list := list_value as StyleValueList
+	mut xs := []StyleValue{}
+	mut ys := []StyleValue{}
+	for position in list.values() {
+		pos := position as PositionStyleValue
+		xs << StyleValue(pos.edge_x())
+		ys << StyleValue(pos.edge_y())
+	}
+	return StyleValue(ShorthandStyleValue.create(.background_position, [PropertyID.background_position_x,
+		PropertyID.background_position_y], [
+		StyleValue(StyleValueList.create(xs, .comma, .yes)),
+		StyleValue(StyleValueList.create(ys, .comma, .yes)),
+	]))
 }
 
 // https://drafts.csswg.org/css-transitions/#propdef-transition

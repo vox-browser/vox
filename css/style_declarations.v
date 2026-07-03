@@ -399,6 +399,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.scroll_timeline { 'scroll-timeline' }
 		.view_timeline { 'view-timeline' }
 		.border_image { 'border-image' }
+		.background_position { 'background-position' }
 	}
 }
 

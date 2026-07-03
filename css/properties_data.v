@@ -500,6 +500,9 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 			[PropertyID.border_image_source, PropertyID.border_image_slice, PropertyID.border_image_width,
 				PropertyID.border_image_outset, PropertyID.border_image_repeat]
 		}
+		.background_position {
+			[PropertyID.background_position_x, PropertyID.background_position_y]
+		}
 		else { []PropertyID{} }
 	}
 }

@@ -1236,6 +1236,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'border-image' {
 			PropertyID.border_image
 		}
+		'background-position' {
+			PropertyID.background_position
+		}
 		else {
 			return none
 		}

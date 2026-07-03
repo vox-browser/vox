@@ -413,6 +413,7 @@ pub enum PropertyID {
 	scroll_timeline
 	view_timeline
 	border_image
+	background_position
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {
