@@ -42,6 +42,24 @@ fn test_multi_component_shorthands() {
 	assert parsed('underline dotted red', PropertyID.text_decoration)?.len > 0
 }
 
+fn test_color_functions() {
+	// Low-level numeric parsers must not consume-on-failure: bare-number hue and
+	// percentage channels must parse (regression).
+	assert parsed('hsl(120, 50%, 50%)', PropertyID.color)?.len > 0
+	assert parsed('hsl(120 50% 50%)', PropertyID.color)?.len > 0
+	assert parsed('rgb(50%, 50%, 50%)', PropertyID.color)?.len > 0
+	assert parsed('rgb(1, 2, 3)', PropertyID.color)?.len > 0
+}
+
+fn test_background_layers() {
+	// Image + repeat + position + size in a single layer (regression: the image
+	// and repeat component parsers used to reject/require trailing tokens).
+	assert parsed('url(a.png) no-repeat center / cover', PropertyID.background)?.len > 0
+	assert parsed('url(a.png) center', PropertyID.background)?.len > 0
+	assert parsed('no-repeat center', PropertyID.background)?.len > 0
+	assert parsed('url(m.png) alpha', PropertyID.mask)?.len > 0
+}
+
 fn test_coordinated_list_shorthands() {
 	// animation/transition components include keyword easings (linear/ease/...);
 	// the easing must bind to timing-function, not fall through to name.
