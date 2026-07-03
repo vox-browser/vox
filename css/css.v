@@ -408,6 +408,7 @@ pub enum PropertyID {
 	overflow_clip_margin_inline
 	all
 	border_radius
+	transition
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

@@ -1221,6 +1221,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'border-radius' {
 			PropertyID.border_radius
 		}
+		'transition' {
+			PropertyID.transition
+		}
 		else {
 			return none
 		}

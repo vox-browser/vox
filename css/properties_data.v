@@ -486,6 +486,11 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 			[PropertyID.border_top_left_radius, PropertyID.border_top_right_radius,
 				PropertyID.border_bottom_right_radius, PropertyID.border_bottom_left_radius]
 		}
+		.transition {
+			[PropertyID.transition_property, PropertyID.transition_duration,
+				PropertyID.transition_timing_function, PropertyID.transition_delay,
+				PropertyID.transition_behavior]
+		}
 		else { []PropertyID{} }
 	}
 }

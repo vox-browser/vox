@@ -795,6 +795,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_radius {
 			return parser.parse_border_radius_shorthand(mut tokens)
 		}
+		.transition {
+			return parser.parse_transition_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2541,6 +2544,163 @@ fn (mut parser Parser) longhand_initial_typed_value(property_id PropertyID) ?Sty
 	_ = parser
 	dom_initial := computed_interpolation_property_initial_value(property_id)
 	return parse_css_value_logic(property_id, dom_initial.css_text)
+}
+
+// Returns a single-value initial for a coordinated (list-valued) longhand: the first element of its
+// initial list, or the initial value itself when it is not a list.
+fn (mut parser Parser) longhand_initial_first_value(property_id PropertyID) ?StyleValue {
+	initial := parser.longhand_initial_typed_value(property_id) or { return none }
+	if initial is StyleValueList {
+		values := initial.values()
+		if values.len == 0 {
+			return none
+		}
+		return values[0]
+	}
+	return initial
+}
+
+// none | all | <custom-ident>  (a single entry of transition-property).
+fn (mut parser Parser) parse_single_transition_property_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if peek := transaction.peek() {
+		if peek.is(.ident) && equals_ignoring_ascii_case(peek.token().ident(), 'none') {
+			transaction.consume()
+			tokens = transaction
+			return StyleValue(KeywordStyleValue.create(.none_))
+		}
+	}
+	custom_ident := parser.parse_custom_ident_value(mut tokens, ['none']) or { return none }
+	return StyleValue(custom_ident)
+}
+
+// Parses one component of a coordinated shorthand item (a single, non-comma-separated value).
+fn (mut parser Parser) parse_single_coordinated_value(longhand_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
+	return match longhand_id {
+		.transition_property {
+			parser.parse_single_transition_property_value(mut tokens)
+		}
+		.transition_duration, .transition_delay {
+			parser.parse_time_value(mut tokens)
+		}
+		.transition_timing_function {
+			parser.parse_easing_value(mut tokens)
+		}
+		.transition_behavior {
+			if keyword := parse_single_keyword_from_set_for_value_logic(mut tokens, ['normal',
+				'allow-discrete'])
+			{
+				StyleValue(KeywordStyleValue.create(keyword))
+			} else {
+				none
+			}
+		}
+		else {
+			none
+		}
+	}
+}
+
+// Generic coordinated (comma-separated) list shorthand: each comma-separated item is a `||` of the
+// longhand components; the result is a ShorthandStyleValue whose per-longhand values are the
+// comma-separated StyleValueLists collected across items.
+fn (mut parser Parser) parse_coordinating_value_list_shorthand(mut tokens ComponentValueStream, shorthand PropertyID, longhand_ids []PropertyID) ?StyleValue {
+	mut longhand_vectors := [][]StyleValue{}
+	for _ in longhand_ids {
+		longhand_vectors << []StyleValue{}
+	}
+
+	mut transaction := tokens.clone()
+	for {
+		mut parsed := []?StyleValue{}
+		for _ in longhand_ids {
+			parsed << ?StyleValue(none)
+		}
+		mut any_parsed := false
+
+		for {
+			transaction.consume_whitespace()
+			next := transaction.peek() or { break }
+			if next.is(.comma) {
+				break
+			}
+			mut matched := false
+			for i, longhand_id in longhand_ids {
+				already := parsed[i]
+				if already != none {
+					continue
+				}
+				mut attempt := transaction.clone()
+				if value := parser.parse_single_coordinated_value(longhand_id, mut attempt) {
+					parsed[i] = value
+					transaction = attempt
+					any_parsed = true
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				return none
+			}
+		}
+
+		if !any_parsed {
+			return none
+		}
+		for i, longhand_id in longhand_ids {
+			maybe := parsed[i]
+			if value := maybe {
+				longhand_vectors[i] << value
+			} else {
+				longhand_vectors[i] << parser.longhand_initial_first_value(longhand_id) or {
+					return none
+				}
+			}
+		}
+
+		transaction.consume_whitespace()
+		next := transaction.peek() or { break }
+		if !next.is(.comma) {
+			return none
+		}
+		transaction.consume()
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() {
+			return none
+		}
+	}
+
+	tokens = transaction
+	mut longhand_values := []StyleValue{}
+	for i, _ in longhand_ids {
+		longhand_values << StyleValue(StyleValueList.create(longhand_vectors[i], .comma, .yes))
+	}
+	return StyleValue(ShorthandStyleValue.create(shorthand, longhand_ids, longhand_values))
+}
+
+// https://drafts.csswg.org/css-transitions/#propdef-transition
+fn (mut parser Parser) parse_transition_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	value := parser.parse_coordinating_value_list_shorthand(mut tokens, .transition, [PropertyID.transition_property,
+		PropertyID.transition_duration, PropertyID.transition_timing_function, PropertyID.transition_delay,
+		PropertyID.transition_behavior]) or { return none }
+
+	// If there is more than one transition and any has a `none` transition-property, it is invalid.
+	if value is ShorthandStyleValue {
+		if property_list := value.longhand(.transition_property) {
+			if property_list is StyleValueList {
+				entries := property_list.values()
+				if entries.len > 1 {
+					for entry in entries {
+						if entry is KeywordStyleValue && entry.keyword() == .none_ {
+							return none
+						}
+					}
+				}
+			}
+		}
+	}
+	return value
 }
 
 // Parses a `||` combination of longhand components in any order (each parsed via its own longhand
