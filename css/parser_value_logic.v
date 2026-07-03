@@ -9488,6 +9488,11 @@ fn (mut parser Parser) parse_easing_value(mut tokens ComponentValueStream) ?Styl
 
 	if part.is(.ident) {
 		name := part.token().ident()
+		// Simple keyword easings: linear | ease | ease-in | ease-out | ease-in-out.
+		if easing_keyword := transition_timing_keyword_from_string(name) {
+			tokens = transaction
+			return StyleValue(KeywordStyleValue.create(easing_keyword))
+		}
 		maybe_simple_easing := if equals_ignoring_ascii_case(name, 'step-start') {
 			?EasingStyleValue(EasingStyleValue.create(EasingStyleValueFunction(EasingSteps{
 				number_of_intervals: StyleValue(IntegerStyleValue.create(1))

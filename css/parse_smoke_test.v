@@ -42,6 +42,15 @@ fn test_multi_component_shorthands() {
 	assert parsed('underline dotted red', PropertyID.text_decoration)?.len > 0
 }
 
+fn test_coordinated_list_shorthands() {
+	// animation/transition components include keyword easings (linear/ease/...);
+	// the easing must bind to timing-function, not fall through to name.
+	anim := parsed('spin 2s linear', PropertyID.animation)?
+	assert anim.contains('linear') && anim.contains('spin')
+	trans := parsed('color 1s ease-in 2s', PropertyID.transition)?
+	assert trans.contains('ease-in')
+}
+
 fn test_css_wide_keyword() {
 	assert parsed('inherit', PropertyID.width)? == 'inherit'
 }
