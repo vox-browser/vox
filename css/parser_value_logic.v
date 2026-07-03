@@ -822,6 +822,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.font {
 			return parser.parse_font_shorthand(mut tokens)
 		}
+		.background {
+			return parser.parse_background_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -3336,6 +3339,227 @@ fn (mut parser Parser) parse_font_shorthand(mut tokens ComponentValueStream) ?St
 
 	tokens = transaction
 	return StyleValue(ShorthandStyleValue.create(.font, font_shorthand_longhands, values))
+}
+
+struct BackgroundLayer {
+	image      StyleValue
+	position_x StyleValue
+	position_y StyleValue
+	size       StyleValue
+	repeat     StyleValue
+	attachment StyleValue
+	origin     StyleValue
+	clip       StyleValue
+}
+
+// Resolve one background layer's per-longhand values, applying the origin/clip defaulting rule:
+// if only one <box> is given it sets both origin and clip; if none are given both use their initial.
+fn (mut parser Parser) complete_background_layer(image ?StyleValue, position_x ?StyleValue, position_y ?StyleValue, size ?StyleValue, repeat ?StyleValue, attachment ?StyleValue, origin_in ?StyleValue, clip_in ?StyleValue) ?BackgroundLayer {
+	mut origin := origin_in
+	mut clip := clip_in
+	if origin == none && clip == none {
+		origin = parser.longhand_initial_first_value(.background_origin) or { return none }
+		clip = parser.longhand_initial_first_value(.background_clip) or { return none }
+	} else if clip == none {
+		clip = origin
+	}
+	return BackgroundLayer{
+		image:      image or {
+			parser.longhand_initial_first_value(.background_image) or { return none }
+		}
+		position_x: position_x or {
+			parser.longhand_initial_first_value(.background_position_x) or { return none }
+		}
+		position_y: position_y or {
+			parser.longhand_initial_first_value(.background_position_y) or { return none }
+		}
+		size:       size or {
+			parser.longhand_initial_first_value(.background_size) or { return none }
+		}
+		repeat:     repeat or {
+			parser.longhand_initial_first_value(.background_repeat) or { return none }
+		}
+		attachment: attachment or {
+			parser.longhand_initial_first_value(.background_attachment) or { return none }
+		}
+		origin:     origin or { return none }
+		clip:       clip or { return none }
+	}
+}
+
+// https://drafts.csswg.org/css-backgrounds/#the-background
+// <bg-layer># , <final-bg-layer>  where the final layer additionally carries <background-color>.
+fn (mut parser Parser) parse_background_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut layers := []BackgroundLayer{}
+	mut background_color := ?StyleValue(none)
+
+	mut image := ?StyleValue(none)
+	mut position_x := ?StyleValue(none)
+	mut position_y := ?StyleValue(none)
+	mut size := ?StyleValue(none)
+	mut repeat := ?StyleValue(none)
+	mut attachment := ?StyleValue(none)
+	mut origin := ?StyleValue(none)
+	mut clip := ?StyleValue(none)
+
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	for transaction.has_more_tokens() {
+		peek := transaction.peek() or { break }
+		if peek.is(.comma) {
+			// A comma ends a non-final layer; background-color is only allowed in the final layer.
+			if background_color != none {
+				return none
+			}
+			if !(image != none || position_x != none || position_y != none || size != none
+				|| repeat != none || attachment != none || origin != none || clip != none) {
+				return none
+			}
+			layer := parser.complete_background_layer(image, position_x, position_y, size,
+				repeat, attachment, origin, clip) or { return none }
+			layers << layer
+			image = none
+			position_x = none
+			position_y = none
+			size = none
+			repeat = none
+			attachment = none
+			origin = none
+			clip = none
+			transaction.consume()
+			transaction.consume_whitespace()
+			continue
+		}
+		if attachment == none {
+			mut attempt := transaction.clone()
+			if value := single_keyword_style_value(mut attempt, ['fixed', 'local', 'scroll']) {
+				attachment = value
+				transaction = attempt
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		if origin == none || clip == none {
+			mut attempt := transaction.clone()
+			if value := single_keyword_style_value(mut attempt, ['border-box', 'content-box',
+				'padding-box', 'text'])
+			{
+				// First <box> sets origin, second sets clip.
+				if origin == none {
+					origin = value
+				} else {
+					clip = value
+				}
+				transaction = attempt
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		if background_color == none {
+			mut attempt := transaction.clone()
+			if value := parser.parse_color_value(mut attempt) {
+				background_color = value
+				transaction = attempt
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		if image == none {
+			mut attempt := transaction.clone()
+			if value := parser.parse_image_or_none_value(mut attempt) {
+				image = value
+				transaction = attempt
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		if position_x == none {
+			mut attempt := transaction.clone()
+			if pos := parser.parse_css_position_value(mut attempt, .background_position) {
+				position_style := pos as PositionStyleValue
+				position_x = StyleValue(position_style.edge_x())
+				position_y = StyleValue(position_style.edge_y())
+				transaction = attempt
+				transaction.consume_whitespace()
+				// Attempt `/ <bg-size>`.
+				mut slash := false
+				if p := transaction.peek() {
+					slash = p.is_delim(u32(`/`))
+				}
+				if slash {
+					mut size_attempt := transaction.clone()
+					size_attempt.consume()
+					size_attempt.consume_whitespace()
+					size = parser.parse_single_background_size_value(mut size_attempt) or {
+						return none
+					}
+					transaction = size_attempt
+				}
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		if repeat == none {
+			mut attempt := transaction.clone()
+			if value := parser.parse_single_repeat_style_value(.background_repeat, mut attempt) {
+				repeat = value
+				transaction = attempt
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		return none
+	}
+
+	// The final layer additionally allows background-color.
+	if background_color == none && !(image != none || position_x != none || position_y != none
+		|| size != none || repeat != none || attachment != none || origin != none || clip != none) {
+		return none
+	}
+	final_layer := parser.complete_background_layer(image, position_x, position_y, size, repeat,
+		attachment, origin, clip) or { return none }
+	layers << final_layer
+
+	color_value := background_color or {
+		parser.longhand_initial_typed_value(.background_color) or { return none }
+	}
+
+	mut images := []StyleValue{}
+	mut xs := []StyleValue{}
+	mut ys := []StyleValue{}
+	mut sizes := []StyleValue{}
+	mut repeats := []StyleValue{}
+	mut attachments := []StyleValue{}
+	mut origins := []StyleValue{}
+	mut clips := []StyleValue{}
+	for layer in layers {
+		images << layer.image
+		xs << layer.position_x
+		ys << layer.position_y
+		sizes << layer.size
+		repeats << layer.repeat
+		attachments << layer.attachment
+		origins << layer.origin
+		clips << layer.clip
+	}
+
+	sub_properties := [PropertyID.background_color, PropertyID.background_image,
+		PropertyID.background_position_x, PropertyID.background_position_y, PropertyID.background_size,
+		PropertyID.background_repeat, PropertyID.background_attachment, PropertyID.background_origin,
+		PropertyID.background_clip]
+	values := [
+		color_value,
+		StyleValue(StyleValueList.create(images, .comma, .yes)),
+		StyleValue(StyleValueList.create(xs, .comma, .yes)),
+		StyleValue(StyleValueList.create(ys, .comma, .yes)),
+		StyleValue(StyleValueList.create(sizes, .comma, .yes)),
+		StyleValue(StyleValueList.create(repeats, .comma, .yes)),
+		StyleValue(StyleValueList.create(attachments, .comma, .yes)),
+		StyleValue(StyleValueList.create(origins, .comma, .yes)),
+		StyleValue(StyleValueList.create(clips, .comma, .yes)),
+	]
+	tokens = transaction
+	return StyleValue(ShorthandStyleValue.create(.background, sub_properties, values))
 }
 
 // https://drafts.csswg.org/css-transitions/#propdef-transition

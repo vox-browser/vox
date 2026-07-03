@@ -1248,6 +1248,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'font' {
 			PropertyID.font
 		}
+		'background' {
+			PropertyID.background
+		}
 		else {
 			return none
 		}

@@ -403,6 +403,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.grid_template { 'grid-template' }
 		.grid { 'grid' }
 		.font { 'font' }
+		.background { 'background' }
 	}
 }
 

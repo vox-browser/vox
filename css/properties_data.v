@@ -510,6 +510,11 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 			[PropertyID.grid_auto_flow, PropertyID.grid_auto_rows, PropertyID.grid_auto_columns,
 				PropertyID.grid_template_areas, PropertyID.grid_template_rows, PropertyID.grid_template_columns]
 		}
+		.background {
+			[PropertyID.background_color, PropertyID.background_image, PropertyID.background_position_x,
+				PropertyID.background_position_y, PropertyID.background_size, PropertyID.background_repeat,
+				PropertyID.background_attachment, PropertyID.background_origin, PropertyID.background_clip]
+		}
 		.font {
 			[PropertyID.font_family, PropertyID.font_size, PropertyID.font_width, PropertyID.font_style,
 				PropertyID.font_variant_alternates, PropertyID.font_variant_caps,
