@@ -32,6 +32,16 @@ fn test_shorthands_first_token_not_dropped() {
 	assert parsed('solid', PropertyID.border)?.len > 0
 }
 
+fn test_multi_component_shorthands() {
+	// `||` shorthands where keyword components are followed by more tokens: a
+	// component parser must not reject trailing tokens (regression).
+	assert parsed('1px solid red', PropertyID.border)?.len > 0
+	assert parsed('2px dashed blue', PropertyID.border_top)? == '2px dashed blue'
+	assert parsed('thick solid green', PropertyID.outline)?.len > 0
+	assert parsed('square inside', PropertyID.list_style)?.len > 0
+	assert parsed('underline dotted red', PropertyID.text_decoration)?.len > 0
+}
+
 fn test_css_wide_keyword() {
 	assert parsed('inherit', PropertyID.width)? == 'inherit'
 }

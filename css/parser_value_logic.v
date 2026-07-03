@@ -1740,8 +1740,13 @@ fn transition_behavior_keyword_from_string(value string) ?Keyword {
 }
 
 fn parse_keyword_as_custom_ident_for_value_logic(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {
-	tokens.consume_whitespace()
-	component_value := tokens.consume() or { return none }
+	// Use a transaction (commit only on success) and do NOT reject trailing tokens:
+	// this is also used as a component parser inside shorthands (e.g. `thick` in
+	// `outline: thick solid green`). Whole-value callers rely on the top-level
+	// leftover-token check in parse_css_value_tokens.
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
 	if !component_value.is(.ident) {
 		return none
 	}
@@ -1749,10 +1754,7 @@ fn parse_keyword_as_custom_ident_for_value_logic(mut tokens ComponentValueStream
 	if ident !in allowed_keywords {
 		return none
 	}
-	tokens.consume_whitespace()
-	if tokens.has_more_tokens() {
-		return none
-	}
+	tokens = transaction
 	return StyleValue(CustomIdentStyleValue.create(ident))
 }
 
@@ -6002,22 +6004,16 @@ fn (mut parser Parser) parse_list_style_type_value(mut tokens ComponentValueStre
 	// <string>
 	transaction = tokens.clone()
 	if string_value := parser.parse_string_value(mut transaction) {
-		transaction.consume_whitespace()
-		if !transaction.has_more_tokens() {
-			tokens = transaction
-			return StyleValue(string_value)
-		}
+		tokens = transaction
+		return StyleValue(string_value)
 	}
 
 	// FIXME: This accepts a <counter-style-name> as a <custom-ident>; the symbols()
 	// function form of <counter-style> is not translated yet.
 	transaction = tokens.clone()
 	if custom_ident := parser.parse_custom_ident_value(mut transaction, ['none']) {
-		transaction.consume_whitespace()
-		if !transaction.has_more_tokens() {
-			tokens = transaction
-			return StyleValue(custom_ident)
-		}
+		tokens = transaction
+		return StyleValue(custom_ident)
 	}
 
 	return none
@@ -7268,8 +7264,9 @@ fn (mut parser Parser) parse_text_decoration_line_value(mut tokens ComponentValu
 		style_values_count++
 	}
 
-	transaction.consume_whitespace()
-	if transaction.has_more_tokens() || style_values_count == 0 {
+	// Do not reject trailing tokens: this is a component parser used inside the
+	// `text-decoration` shorthand (e.g. `underline` in `underline dotted red`).
+	if style_values_count == 0 {
 		return none
 	}
 
@@ -7318,10 +7315,10 @@ fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keyword
 	if ident !in allowed_keywords {
 		return none
 	}
-	transaction.consume_whitespace()
-	if transaction.has_more_tokens() {
-		return none
-	}
+	// Do NOT reject trailing tokens here: this helper is also used as a component
+	// parser inside `||`/`&&` shorthands (e.g. `solid` in `border: 1px solid red`),
+	// where more tokens legitimately follow. Whole-value callers rely on the
+	// top-level leftover-token check in parse_css_value_tokens instead.
 	// `overlay` is a legacy overflow alias whose generated metadata maps it to `auto`.
 	keyword := if ident == 'overlay' { Keyword.auto } else { keyword_from_string(ident) or {
 			return none} }
