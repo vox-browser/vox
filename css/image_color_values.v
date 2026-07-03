@@ -2007,6 +2007,10 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 	// AD-HOC: We need to check the serialized size to determine if it should be included.
 	serialized_size := style_value.size_.serialize(mode)
 
+	// AD-HOC: The port keeps the ending shape separate from the size (unlike upstream,
+	// which folds it into RadialSize), so emit `circle` here. `ellipse` is the default
+	// and is omitted.
+	has_shape := style_value.ending_shape_ == .circle
 	has_size := serialized_size != 'farthest-corner'
 	has_position := !style_value.position_.is_center(mode)
 	has_color_space := if color_interpolation_method := style_value.color_interpolation_method_ {
@@ -2015,12 +2019,19 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 		false
 	}
 
+	if has_shape {
+		result += 'circle'
+	}
+
 	if has_size {
+		if has_shape {
+			result += ' '
+		}
 		result += serialized_size
 	}
 
 	if has_position {
-		if has_size {
+		if has_shape || has_size {
 			result += ' '
 		}
 
@@ -2029,7 +2040,7 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 	}
 
 	if has_color_space {
-		if has_size || has_position {
+		if has_shape || has_size || has_position {
 			result += ' '
 		}
 
@@ -2038,7 +2049,7 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 		}).serialize(mode)
 	}
 
-	if has_size || has_position || has_color_space {
+	if has_shape || has_size || has_position || has_color_space {
 		result += ', '
 	}
 

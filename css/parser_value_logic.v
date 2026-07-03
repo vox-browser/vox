@@ -11803,9 +11803,81 @@ fn (mut parser Parser) parse_radial_gradient_function(function_name string, mut 
 	} else {
 		GradientRepeating.no
 	}
+	// [ <ending-shape> || <size> ]? [ at <position> ]? , <linear-color-stop-list>
+	// The default size is farthest-corner (omitted from serialization).
+	mut ending_shape := RadialGradientEndingShape.ellipse
+	mut size := StyleValue(KeywordStyleValue.create(.farthest_corner))
+	mut position := PositionStyleValue.create_center()
+	mut probe := tokens
+	mut has_prefix := false
+	mut shape_set := false
+	mut size_set := false
+	for {
+		probe.consume_whitespace()
+		next := probe.peek() or { break }
+		if next.is(.ident) {
+			ident := to_ascii_lowercase(next.token().ident())
+			if ident == 'at' {
+				break
+			}
+			if !shape_set && ident in ['circle', 'ellipse'] {
+				ending_shape = if ident == 'circle' {
+					RadialGradientEndingShape.circle
+				} else {
+					RadialGradientEndingShape.ellipse
+				}
+				probe.consume()
+				shape_set = true
+				has_prefix = true
+				continue
+			}
+			if !size_set && ident in ['closest-side', 'closest-corner', 'farthest-side', 'farthest-corner'] {
+				size = StyleValue(KeywordStyleValue.create(keyword_from_string(ident) or {
+					return none
+				}))
+				probe.consume()
+				size_set = true
+				has_prefix = true
+				continue
+			}
+			break
+		}
+		if !size_set {
+			mut size_attempt := probe.clone()
+			if len1 := parser.parse_length_percentage_value(mut size_attempt) {
+				mut two_attempt := size_attempt.clone()
+				two_attempt.consume_whitespace()
+				if len2 := parser.parse_length_percentage_value(mut two_attempt) {
+					size = StyleValue(StyleValueList.create([len1, len2], .space, .no))
+					probe = two_attempt
+				} else {
+					size = len1
+					probe = size_attempt
+				}
+				size_set = true
+				has_prefix = true
+				continue
+			}
+		}
+		break
+	}
+	probe.consume_whitespace()
+	if next := probe.peek() {
+		if next.is(.ident) && equals_ignoring_ascii_case(next.token().ident(), 'at') {
+			probe.consume()
+			position = (parser.parse_css_position_value(mut probe, .normal) or { return none }) as PositionStyleValue
+			has_prefix = true
+		}
+	}
+	if has_prefix {
+		if !probe.consume_a_comma() {
+			return none
+		}
+		tokens = probe
+	}
 	color_stops := parser.parse_linear_color_stop_list(mut tokens) or { return none }
-	return RadialGradientStyleValue.create(.ellipse, StyleValue(KeywordStyleValue.create(.auto)),
-		PositionStyleValue.create_center(), color_stops, repeating, none)
+	return RadialGradientStyleValue.create(ending_shape, size, position, color_stops, repeating,
+		none)
 }
 
 fn (mut parser Parser) parse_conic_gradient_function(function_name string, mut tokens ComponentValueStream) ?ConicGradientStyleValue {
@@ -11814,9 +11886,35 @@ fn (mut parser Parser) parse_conic_gradient_function(function_name string, mut t
 	} else {
 		GradientRepeating.no
 	}
+	// [ from <angle> ]? [ at <position> ]? , <angular-color-stop-list>
+	mut from_angle := ?StyleValue(none)
+	mut position := PositionStyleValue.create_center()
+	mut probe := tokens
+	probe.consume_whitespace()
+	mut has_prefix := false
+	if next := probe.peek() {
+		if next.is(.ident) && equals_ignoring_ascii_case(next.token().ident(), 'from') {
+			probe.consume()
+			from_angle = parser.parse_angle_value(mut probe) or { return none }
+			has_prefix = true
+		}
+	}
+	probe.consume_whitespace()
+	if next := probe.peek() {
+		if next.is(.ident) && equals_ignoring_ascii_case(next.token().ident(), 'at') {
+			probe.consume()
+			position = (parser.parse_css_position_value(mut probe, .normal) or { return none }) as PositionStyleValue
+			has_prefix = true
+		}
+	}
+	if has_prefix {
+		if !probe.consume_a_comma() {
+			return none
+		}
+		tokens = probe
+	}
 	color_stops := parser.parse_angular_color_stop_list(mut tokens) or { return none }
-	return ConicGradientStyleValue.create(none, PositionStyleValue.create_center(), color_stops,
-		repeating, none)
+	return ConicGradientStyleValue.create(from_angle, position, color_stops, repeating, none)
 }
 
 pub fn parse_css_value_logic(property_id PropertyID, text string) ?StyleValue {
