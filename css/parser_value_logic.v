@@ -11058,12 +11058,11 @@ fn (mut parser Parser) parse_image_or_none_value(mut tokens ComponentValueStream
 		return none_value
 	}
 
+	// Do not reject trailing tokens: this is used as a component parser (e.g. the
+	// image in a `background` layer, or border-image source). Whole-value callers
+	// rely on the top-level leftover-token check.
 	mut transaction := tokens.clone()
 	image := parser.parse_image_value(mut transaction) or { return none }
-	transaction.consume_whitespace()
-	if transaction.has_more_tokens() {
-		return none
-	}
 
 	tokens = transaction
 	return style_value_from_css_image_source_for_value_logic(image)
