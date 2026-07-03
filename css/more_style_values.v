@@ -2507,6 +2507,9 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	if s := style_value.serialize_border_radius(mode) {
 		return s
 	}
+	if s := style_value.serialize_font(mode) {
+		return s
+	}
 	// Mirrors the upstream `default_serialize`: the remaining property-specific cases
 	// (font, background, grid, …) are not ported, so they use this default.
 	values := style_value.values_
@@ -2589,6 +2592,70 @@ fn serialize_border_radius_corners(top_left string, top_right string, bottom_rig
 		return '${top_left} ${top_right} ${bottom_right}'
 	}
 	return '${top_left} ${top_right} ${bottom_right} ${bottom_left}'
+}
+
+// font serializes as `[<style> || <variant-css2> || <weight> || <width>]? <size>
+// [/ <line-height>]? <family>` (matching the upstream Font case). Returns none when
+// the value can't be represented as a `font` shorthand.
+fn (style_value ShorthandStyleValue) serialize_font(mode SerializationMode) ?string {
+	// Index layout must match `font_shorthand_longhands`:
+	// 0 family, 1 size, 2 width, 3 style, 4..10 font-variant-* leaves,
+	// 11 weight, 12 line-height, 13..17 reset-only longhands.
+	if style_value.shorthand_ != .font || style_value.values_.len != 18 {
+		return none
+	}
+	mut ser := []string{cap: 18}
+	for value in style_value.values_ {
+		ser << value.serialize(mode)
+	}
+	mut init := []string{cap: 18}
+	for id in style_value.sub_properties_ {
+		init << computed_interpolation_property_initial_value(id).css_text
+	}
+	// The reset-only sub-properties must all be at their initial value.
+	for i in 13 .. 18 {
+		if ser[i] != init[i] {
+			return none
+		}
+	}
+	// <font-variant-css2> = normal | small-caps: only font-variant-caps may differ,
+	// and only to small-caps.
+	for i in [4, 6, 7, 8, 9, 10] {
+		if ser[i] != init[i] {
+			return none
+		}
+	}
+	variant := if ser[5] == init[5] {
+		'normal'
+	} else if ser[5] == 'small-caps' {
+		'small-caps'
+	} else {
+		return none
+	}
+	// <font-width-css3> keyword only (percentages only appear in computed values).
+	if ser[2] !in ['normal', 'ultra-condensed', 'extra-condensed', 'condensed', 'semi-condensed',
+		'semi-expanded', 'expanded', 'extra-expanded', 'ultra-expanded'] {
+		return none
+	}
+	mut parts := []string{}
+	if ser[3] != 'normal' {
+		parts << ser[3]
+	}
+	if variant != 'normal' {
+		parts << variant
+	}
+	if ser[11] != 'normal' && ser[11] != '400' {
+		parts << ser[11]
+	}
+	if ser[2] != 'normal' {
+		parts << ser[2]
+	}
+	parts << ser[1]
+	if ser[12] != 'normal' {
+		parts << '/ ${ser[12]}'
+	}
+	parts << ser[0]
+	return parts.join(' ')
 }
 
 // border-radius serializes as `<horizontal radii> [/ <vertical radii>]`.
