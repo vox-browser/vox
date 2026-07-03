@@ -2498,7 +2498,16 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	if border_serialization := style_value.serialize_border_family(mode) {
 		return border_serialization
 	}
-	// Mirrors the upstream `default_serialize`: the other property-specific cases
+	if s := style_value.serialize_grid_line(mode) {
+		return s
+	}
+	if s := style_value.serialize_flex(mode) {
+		return s
+	}
+	if s := style_value.serialize_border_radius(mode) {
+		return s
+	}
+	// Mirrors the upstream `default_serialize`: the remaining property-specific cases
 	// (font, background, grid, …) are not ported, so they use this default.
 	values := style_value.values_
 	if values.len == 0 {
@@ -2535,7 +2544,76 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 		first = false
 		builder.write_string(s)
 	}
+	// When every longhand was omitted (all equal their initial), serialize the first.
+	if builder.len == 0 {
+		return serialized[0]
+	}
 	return builder.str()
+}
+
+// grid-row / grid-column serialize as `<start> [/ <end>]`, dropping the end when it
+// is `auto` or equal to the start.
+fn (style_value ShorthandStyleValue) serialize_grid_line(mode SerializationMode) ?string {
+	if style_value.shorthand_ !in [PropertyID.grid_row, .grid_column] {
+		return none
+	}
+	if style_value.values_.len != 2 {
+		return none
+	}
+	start := style_value.values_[0].serialize(mode)
+	end := style_value.values_[1].serialize(mode)
+	if end == 'auto' || start == end {
+		return start
+	}
+	return '${start} / ${end}'
+}
+
+// flex serializes its three longhands (grow, shrink, basis), space-separated.
+fn (style_value ShorthandStyleValue) serialize_flex(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .flex || style_value.values_.len != 3 {
+		return none
+	}
+	return '${style_value.values_[0].serialize(mode)} ${style_value.values_[1].serialize(mode)} ${style_value.values_[2].serialize(mode)}'
+}
+
+// Collapse four corner strings the way border-radius does (all-equal -> 1, opposite
+// corners equal -> 2, etc.).
+fn serialize_border_radius_corners(top_left string, top_right string, bottom_right string, bottom_left string) string {
+	if top_left == top_right && top_left == bottom_right && top_left == bottom_left {
+		return top_left
+	}
+	if top_left == bottom_right && top_right == bottom_left {
+		return '${top_left} ${top_right}'
+	}
+	if top_right == bottom_left {
+		return '${top_left} ${top_right} ${bottom_right}'
+	}
+	return '${top_left} ${top_right} ${bottom_right} ${bottom_left}'
+}
+
+// border-radius serializes as `<horizontal radii> [/ <vertical radii>]`.
+fn (style_value ShorthandStyleValue) serialize_border_radius(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .border_radius || style_value.values_.len != 4 {
+		return none
+	}
+	mut h := []string{cap: 4}
+	mut v := []string{cap: 4}
+	for value in style_value.values_ {
+		if value is BorderRadiusStyleValue {
+			h << value.horizontal_radius_().serialize(mode)
+			v << value.vertical_radius_().serialize(mode)
+		} else {
+			s := value.serialize(mode)
+			h << s
+			v << s
+		}
+	}
+	horizontal := serialize_border_radius_corners(h[0], h[1], h[2], h[3])
+	vertical := serialize_border_radius_corners(v[0], v[1], v[2], v[3])
+	if horizontal == vertical {
+		return horizontal
+	}
+	return '${horizontal} / ${vertical}'
 }
 
 pub fn (style_value ShorthandStyleValue) to_string() string {
