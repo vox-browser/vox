@@ -825,6 +825,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.background {
 			return parser.parse_background_shorthand(mut tokens)
 		}
+		.mask {
+			return parser.parse_mask_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -3560,6 +3563,233 @@ fn (mut parser Parser) parse_background_shorthand(mut tokens ComponentValueStrea
 	]
 	tokens = transaction
 	return StyleValue(ShorthandStyleValue.create(.background, sub_properties, values))
+}
+
+struct MaskLayer {
+	image     StyleValue
+	position  StyleValue
+	size      StyleValue
+	repeat    StyleValue
+	origin    StyleValue
+	clip      StyleValue
+	composite StyleValue
+	mode      StyleValue
+}
+
+// Resolve one mask layer's per-longhand values. If no <geometry-box> was given, mask-origin uses
+// its initial; mask-clip defaults to whatever mask-origin resolved to (unless set via no-clip).
+fn (mut parser Parser) complete_mask_layer(image ?StyleValue, position ?StyleValue, size ?StyleValue, repeat ?StyleValue, origin_in ?StyleValue, clip_in ?StyleValue, composite ?StyleValue, mode ?StyleValue) ?MaskLayer {
+	mut origin := origin_in
+	mut clip := clip_in
+	if origin == none {
+		origin = parser.longhand_initial_first_value(.mask_origin) or { return none }
+	}
+	if clip == none {
+		clip = origin
+	}
+	return MaskLayer{
+		image:     image or {
+			parser.longhand_initial_first_value(.mask_image) or { return none }
+		}
+		position:  position or {
+			parser.longhand_initial_first_value(.mask_position) or { return none }
+		}
+		size:      size or {
+			parser.longhand_initial_first_value(.mask_size) or { return none }
+		}
+		repeat:    repeat or {
+			parser.longhand_initial_first_value(.mask_repeat) or { return none }
+		}
+		origin:    origin or { return none }
+		clip:      clip or { return none }
+		composite: composite or {
+			parser.longhand_initial_first_value(.mask_composite) or { return none }
+		}
+		mode:      mode or {
+			parser.longhand_initial_first_value(.mask_mode) or { return none }
+		}
+	}
+}
+
+// https://drafts.fxtf.org/css-masking-1/#the-mask
+// <mask-layer># where <mask-layer> = <mask-reference> || <position> [ / <bg-size> ]? ||
+//   <repeat-style> || <geometry-box> || [ <geometry-box> | no-clip ] || <compositing-operator> || <masking-mode>
+fn (mut parser Parser) parse_mask_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut layers := []MaskLayer{}
+
+	mut image := ?StyleValue(none)
+	mut position := ?StyleValue(none)
+	mut size := ?StyleValue(none)
+	mut repeat := ?StyleValue(none)
+	mut origin := ?StyleValue(none)
+	mut clip := ?StyleValue(none)
+	mut composite := ?StyleValue(none)
+	mut mode := ?StyleValue(none)
+
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	for transaction.has_more_tokens() {
+		peek := transaction.peek() or { break }
+		if peek.is(.comma) {
+			if !(image != none || position != none || size != none || repeat != none
+				|| origin != none || clip != none || composite != none || mode != none) {
+				return none
+			}
+			layer := parser.complete_mask_layer(image, position, size, repeat, origin, clip,
+				composite, mode) or { return none }
+			layers << layer
+			image = none
+			position = none
+			size = none
+			repeat = none
+			origin = none
+			clip = none
+			composite = none
+			mode = none
+			transaction.consume()
+			transaction.consume_whitespace()
+			continue
+		}
+		if image == none {
+			mut attempt := transaction.clone()
+			if value := parser.parse_image_or_none_value(mut attempt) {
+				image = value
+				transaction = attempt
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		if position == none {
+			mut attempt := transaction.clone()
+			if value := parser.parse_css_position_value(mut attempt, .normal) {
+				position = value
+				transaction = attempt
+				transaction.consume_whitespace()
+				// Attempt `/ <bg-size>`.
+				mut slash := false
+				if p := transaction.peek() {
+					slash = p.is_delim(u32(`/`))
+				}
+				if slash {
+					mut size_attempt := transaction.clone()
+					size_attempt.consume()
+					size_attempt.consume_whitespace()
+					size = parser.parse_single_background_size_value(mut size_attempt) or {
+						return none
+					}
+					transaction = size_attempt
+				}
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		if repeat == none {
+			mut attempt := transaction.clone()
+			if value := parser.parse_single_repeat_style_value(.mask_repeat, mut attempt) {
+				repeat = value
+				transaction = attempt
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		// <geometry-box> || [ <geometry-box> | no-clip ]
+		if origin == none || clip == none {
+			mut attempt := transaction.clone()
+			if value := single_keyword_style_value(mut attempt, ['content-box', 'padding-box',
+				'border-box', 'fill-box', 'stroke-box', 'view-box', 'no-clip'])
+			{
+				is_no_clip := if value is KeywordStyleValue {
+					value.keyword() == .no_clip
+				} else {
+					false
+				}
+				mut assigned := false
+				if is_no_clip {
+					if clip == none {
+						clip = value
+						assigned = true
+					}
+				} else if origin == none {
+					origin = value
+					assigned = true
+				} else if clip == none {
+					clip = value
+					assigned = true
+				}
+				if assigned {
+					transaction = attempt
+					transaction.consume_whitespace()
+					continue
+				}
+			}
+		}
+		if composite == none {
+			mut attempt := transaction.clone()
+			if value := single_keyword_style_value(mut attempt, ['add', 'subtract', 'intersect',
+				'exclude'])
+			{
+				composite = value
+				transaction = attempt
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		if mode == none {
+			mut attempt := transaction.clone()
+			if value := single_keyword_style_value(mut attempt, ['alpha', 'luminance',
+				'match-source'])
+			{
+				mode = value
+				transaction = attempt
+				transaction.consume_whitespace()
+				continue
+			}
+		}
+		return none
+	}
+
+	if !(image != none || position != none || size != none || repeat != none || origin != none
+		|| clip != none || composite != none || mode != none) {
+		return none
+	}
+	final_layer := parser.complete_mask_layer(image, position, size, repeat, origin, clip,
+		composite, mode) or { return none }
+	layers << final_layer
+
+	mut images := []StyleValue{}
+	mut positions := []StyleValue{}
+	mut sizes := []StyleValue{}
+	mut repeats := []StyleValue{}
+	mut origins := []StyleValue{}
+	mut clips := []StyleValue{}
+	mut composites := []StyleValue{}
+	mut modes := []StyleValue{}
+	for layer in layers {
+		images << layer.image
+		positions << layer.position
+		sizes << layer.size
+		repeats << layer.repeat
+		origins << layer.origin
+		clips << layer.clip
+		composites << layer.composite
+		modes << layer.mode
+	}
+
+	sub_properties := [PropertyID.mask_image, PropertyID.mask_position, PropertyID.mask_size,
+		PropertyID.mask_repeat, PropertyID.mask_origin, PropertyID.mask_clip, PropertyID.mask_composite,
+		PropertyID.mask_mode]
+	values := [
+		StyleValue(StyleValueList.create(images, .comma, .yes)),
+		StyleValue(StyleValueList.create(positions, .comma, .yes)),
+		StyleValue(StyleValueList.create(sizes, .comma, .yes)),
+		StyleValue(StyleValueList.create(repeats, .comma, .yes)),
+		StyleValue(StyleValueList.create(origins, .comma, .yes)),
+		StyleValue(StyleValueList.create(clips, .comma, .yes)),
+		StyleValue(StyleValueList.create(composites, .comma, .yes)),
+		StyleValue(StyleValueList.create(modes, .comma, .yes)),
+	]
+	tokens = transaction
+	return StyleValue(ShorthandStyleValue.create(.mask, sub_properties, values))
 }
 
 // https://drafts.csswg.org/css-transitions/#propdef-transition

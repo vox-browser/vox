@@ -515,6 +515,10 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 				PropertyID.background_position_y, PropertyID.background_size, PropertyID.background_repeat,
 				PropertyID.background_attachment, PropertyID.background_origin, PropertyID.background_clip]
 		}
+		.mask {
+			[PropertyID.mask_image, PropertyID.mask_position, PropertyID.mask_size, PropertyID.mask_repeat,
+				PropertyID.mask_origin, PropertyID.mask_clip, PropertyID.mask_composite, PropertyID.mask_mode]
+		}
 		.font {
 			[PropertyID.font_family, PropertyID.font_size, PropertyID.font_width, PropertyID.font_style,
 				PropertyID.font_variant_alternates, PropertyID.font_variant_caps,

@@ -1251,6 +1251,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'background' {
 			PropertyID.background
 		}
+		'mask' {
+			PropertyID.mask
+		}
 		else {
 			return none
 		}
