@@ -125,6 +125,13 @@ fn (stream ParserTokenStream) has_next_token() bool {
 	return stream.index < stream.values.len && !stream.values[stream.index].is(.end_of_file)
 }
 
+// remaining_token_count returns the number of real (non-EOF) tokens left from the
+// current position. `values` always ends with an EOF sentinel, so it is excluded.
+fn (stream ParserTokenStream) remaining_token_count() int {
+	remaining := stream.values.len - 1 - stream.index
+	return if remaining < 0 { 0 } else { remaining }
+}
+
 fn (stream ParserTokenStream) next_token() ComponentValue {
 	if stream.index < stream.values.len {
 		return stream.values[stream.index]
