@@ -8159,7 +8159,13 @@ fn (mut parser Parser) parse_single_repeat_style_value(property_id PropertyID, m
 		'repeat',
 		'round',
 		'space',
-	]) or { return none }
+	]) or {
+		// The following token is not a second repeat keyword (e.g. it's the next
+		// component of a `background`/`mask` layer). A single value applies to both
+		// axes; leave the trailing tokens for the caller.
+		tokens = transaction
+		return StyleValue(RepeatStyleStyleValue.create(x_repeat, x_repeat))
+	}
 	y_repeat := repetition_from_keyword_for_value_logic(y_keyword) or { return none }
 
 	tokens = transaction
