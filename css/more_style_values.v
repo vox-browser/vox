@@ -2449,10 +2449,93 @@ pub fn (style_value ShorthandStyleValue) values() []StyleValue {
 	return style_value.values_
 }
 
+// The border-family shorthands (border, border-<edge>, border-block/inline[-start/end])
+// have a uniform structure: `values_` is M widths, then M styles, then M colors (M
+// edges). When every edge in each group is equal, they serialize to the short
+// `<width> <style> <color>` form (omitting initials) which re-parses; the default
+// longhand join does not. Returns none when the collapse doesn't apply.
+fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationMode) ?string {
+	if style_value.shorthand_ !in [PropertyID.border, .border_top, .border_right, .border_bottom,
+		.border_left, .border_block, .border_inline, .border_block_start, .border_block_end,
+		.border_inline_start, .border_inline_end] {
+		return none
+	}
+	values := style_value.values_
+	if values.len == 0 || values.len % 3 != 0 {
+		return none
+	}
+	m := values.len / 3
+	mut ser := []string{cap: values.len}
+	for value in values {
+		ser << value.serialize(mode)
+	}
+	// Every edge within each of the 3 groups (width/style/color) must be identical.
+	for group in 0 .. 3 {
+		for edge in 1 .. m {
+			if ser[group * m + edge] != ser[group * m] {
+				return none
+			}
+		}
+	}
+	sub := style_value.sub_properties_
+	mut parts := []string{}
+	if ser[0] != computed_interpolation_property_initial_value(sub[0]).css_text {
+		parts << ser[0]
+	}
+	if ser[m] != computed_interpolation_property_initial_value(sub[m]).css_text {
+		parts << ser[m]
+	}
+	if ser[2 * m] != computed_interpolation_property_initial_value(sub[2 * m]).css_text {
+		parts << ser[2 * m]
+	}
+	if parts.len == 0 {
+		parts << ser[0]
+	}
+	return parts.join(' ')
+}
+
 pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) string {
-	// The full upstream implementation depends on generated shorthand tables and property-specific initial values.
-	// This explicit fallback mirrors its default serializer: serialize each longhand value separated by spaces.
-	return serialize_style_value_sequence(style_value.values_, ' ', mode)
+	if border_serialization := style_value.serialize_border_family(mode) {
+		return border_serialization
+	}
+	// Mirrors the upstream `default_serialize`: the other property-specific cases
+	// (font, background, grid, …) are not ported, so they use this default.
+	values := style_value.values_
+	if values.len == 0 {
+		return ''
+	}
+	mut serialized := []string{cap: values.len}
+	for value in values {
+		serialized << value.serialize(mode)
+	}
+	// If every longhand has the same value, serialize it once (e.g. `margin: 5px`).
+	mut all_same := true
+	for i := 1; i < serialized.len; i++ {
+		if serialized[i] != serialized[0] {
+			all_same = false
+			break
+		}
+	}
+	if all_same {
+		return serialized[0]
+	}
+	// Otherwise serialize each value, omitting any longhand equal to its initial value.
+	sub_props := style_value.sub_properties_
+	mut builder := strings.new_builder(64)
+	mut first := true
+	for i, s in serialized {
+		if i < sub_props.len && computed_interpolation_is_longhand_property(sub_props[i]) {
+			if s == computed_interpolation_property_initial_value(sub_props[i]).css_text {
+				continue
+			}
+		}
+		if !first {
+			builder.write_string(' ')
+		}
+		first = false
+		builder.write_string(s)
+	}
+	return builder.str()
 }
 
 pub fn (style_value ShorthandStyleValue) to_string() string {

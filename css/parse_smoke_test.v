@@ -19,14 +19,18 @@ fn test_longhands() {
 
 fn test_box_shorthands_expand_all_four_edges() {
 	// margin/padding expand to the four longhands (serialized in T R B L order).
+	// When all four longhands are equal the shorthand serializes as a single value
+	// (matching the upstream `default_serialize`); Ladybird does not do the CSS
+	// 4->2->1 shortest-form collapse for uneven values.
 	assert parsed('1px 2px', PropertyID.margin)? == '1px 2px 1px 2px'
-	assert parsed('5px', PropertyID.margin)? == '5px 5px 5px 5px'
+	assert parsed('5px', PropertyID.margin)? == '5px'
 	assert parsed('1px 2px 3px 4px', PropertyID.padding)? == '1px 2px 3px 4px'
 }
 
 fn test_shorthands_first_token_not_dropped() {
 	// Single-token values must not be swallowed by the CSS-wide-keyword probe.
-	assert parsed('auto', PropertyID.overflow)? == 'auto auto'
+	// (overflow-x == overflow-y == auto serializes as a single `auto`.)
+	assert parsed('auto', PropertyID.overflow)? == 'auto'
 	assert parsed('none', PropertyID.grid_template)?.len > 0
 	assert parsed('1px', PropertyID.border)?.len > 0
 	assert parsed('solid', PropertyID.border)?.len > 0
