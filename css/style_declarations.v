@@ -398,6 +398,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.animation { 'animation' }
 		.scroll_timeline { 'scroll-timeline' }
 		.view_timeline { 'view-timeline' }
+		.border_image { 'border-image' }
 	}
 }
 

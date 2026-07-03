@@ -496,6 +496,10 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 		.view_timeline {
 			[PropertyID.view_timeline_name, PropertyID.view_timeline_axis, PropertyID.view_timeline_inset]
 		}
+		.border_image {
+			[PropertyID.border_image_source, PropertyID.border_image_slice, PropertyID.border_image_width,
+				PropertyID.border_image_outset, PropertyID.border_image_repeat]
+		}
 		else { []PropertyID{} }
 	}
 }

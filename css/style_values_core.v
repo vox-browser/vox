@@ -1233,6 +1233,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'view-timeline' {
 			PropertyID.view_timeline
 		}
+		'border-image' {
+			PropertyID.border_image
+		}
 		else {
 			return none
 		}

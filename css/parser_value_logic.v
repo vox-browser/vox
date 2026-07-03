@@ -807,6 +807,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.view_timeline {
 			return parser.parse_view_timeline_shorthand(mut tokens)
 		}
+		.border_image {
+			return parser.parse_border_image_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2788,6 +2791,117 @@ fn (mut parser Parser) parse_scroll_timeline_shorthand(mut tokens ComponentValue
 fn (mut parser Parser) parse_view_timeline_shorthand(mut tokens ComponentValueStream) ?StyleValue {
 	return parser.parse_coordinating_value_list_shorthand(mut tokens, .view_timeline, [PropertyID.view_timeline_name,
 		PropertyID.view_timeline_axis, PropertyID.view_timeline_inset])
+}
+
+struct BorderImageSlicePortion {
+	slice  StyleValue
+	width  ?StyleValue
+	outset ?StyleValue
+}
+
+// <'border-image-slice'> [ / <'border-image-width'> | / <'border-image-width'>? / <'border-image-outset'> ]?
+fn (mut parser Parser) parse_border_image_slice_portion(mut tokens ComponentValueStream) ?BorderImageSlicePortion {
+	tokens.consume_whitespace()
+	slice := parser.parse_border_image_slice_value(mut tokens) or { return none }
+	mut width := ?StyleValue(none)
+	mut outset := ?StyleValue(none)
+	tokens.consume_whitespace()
+	mut first_slash := false
+	if peek := tokens.peek() {
+		first_slash = peek.is_delim(u32(`/`))
+	}
+	if first_slash {
+		tokens.consume()
+		tokens.consume_whitespace()
+		mut have_width := false
+		if w := parser.parse_border_image_width_value(mut tokens) {
+			width = w
+			have_width = true
+			tokens.consume_whitespace()
+		}
+		mut second_slash := false
+		if peek := tokens.peek() {
+			second_slash = peek.is_delim(u32(`/`))
+		}
+		if !have_width && !second_slash {
+			// A '/' was present but neither a width nor a second '/' for outset followed.
+			return none
+		}
+		if second_slash {
+			tokens.consume()
+			tokens.consume_whitespace()
+			outset = parser.parse_border_image_outset_value(mut tokens) or { return none }
+			tokens.consume_whitespace()
+		}
+	}
+	return BorderImageSlicePortion{
+		slice:  slice
+		width:  width
+		outset: outset
+	}
+}
+
+// https://drafts.csswg.org/css-backgrounds/#the-border-image
+// <'border-image-source'> || <'border-image-slice'> [ / <'border-image-width'> | / <'border-image-width'>? / <'border-image-outset'> ]? || <'border-image-repeat'>
+fn (mut parser Parser) parse_border_image_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut source := ?StyleValue(none)
+	mut slice := ?StyleValue(none)
+	mut width := ?StyleValue(none)
+	mut outset := ?StyleValue(none)
+	mut repeat := ?StyleValue(none)
+
+	for {
+		tokens.consume_whitespace()
+		if !tokens.has_more_tokens() {
+			break
+		}
+		if source == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_image_or_none_value(mut attempt) {
+				source = value
+				tokens = attempt
+				continue
+			}
+		}
+		if repeat == none {
+			mut attempt := tokens.clone()
+			if value := parser.parse_border_image_repeat_value(mut attempt) {
+				repeat = value
+				tokens = attempt
+				continue
+			}
+		}
+		if slice == none {
+			mut attempt := tokens.clone()
+			if portion := parser.parse_border_image_slice_portion(mut attempt) {
+				slice = portion.slice
+				if w := portion.width {
+					width = w
+				}
+				if o := portion.outset {
+					outset = o
+				}
+				tokens = attempt
+				continue
+			}
+		}
+		break
+	}
+
+	if source == none && slice == none && width == none && outset == none && repeat == none {
+		return none
+	}
+
+	component_ids := [PropertyID.border_image_source, PropertyID.border_image_slice,
+		PropertyID.border_image_width, PropertyID.border_image_outset, PropertyID.border_image_repeat]
+	resolved := [
+		source or { parser.longhand_initial_typed_value(.border_image_source) or { return none } },
+		slice or { parser.longhand_initial_typed_value(.border_image_slice) or { return none } },
+		width or { parser.longhand_initial_typed_value(.border_image_width) or { return none } },
+		outset or { parser.longhand_initial_typed_value(.border_image_outset) or { return none } },
+		repeat or { parser.longhand_initial_typed_value(.border_image_repeat) or { return none } },
+	]
+	return StyleValue(ShorthandStyleValue.create(.border_image, component_ids, resolved))
 }
 
 // https://drafts.csswg.org/css-transitions/#propdef-transition
