@@ -11105,7 +11105,17 @@ fn (mut parser Parser) parse_image_value(mut tokens ComponentValueStream) ?CSSIm
 		return CSSImageSourceStyleValue(ImageStyleValue.create_from_url_string(component_value.token().url()))
 	}
 	if component_value.is_function_named('url') {
-		return CSSImageSourceStyleValue(ImageStyleValue.create_from_url_string(component_value.function().value.map(it.to_string()).join('')))
+		// url( <string> <url-modifier>* ): use the string's parsed value (unquoted),
+		// not the joined source text (which would keep the quotes).
+		mut url_tokens := ComponentValueStream.new(component_value.function().value)
+		url_tokens.consume_whitespace()
+		url_arg := url_tokens.consume() or { return none }
+		url_string := if url_arg.is(.string) {
+			url_arg.token().string_value()
+		} else {
+			component_value.function().value.map(it.to_string()).join('')
+		}
+		return CSSImageSourceStyleValue(ImageStyleValue.create_from_url_string(url_string))
 	}
 	if component_value.is_function_named('linear-gradient')
 		|| component_value.is_function_named('repeating-linear-gradient')
