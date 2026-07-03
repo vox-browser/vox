@@ -10223,9 +10223,18 @@ fn (mut parser Parser) parse_light_dark_color_value(component_value ComponentVal
 }
 
 fn (mut parser Parser) parse_color_value(mut tokens ComponentValueStream) ?StyleValue {
-	tokens.consume_whitespace()
-	component_value := tokens.consume() or { return none }
+	// Transactional: only advance `tokens` on success, so a failed color probe
+	// (e.g. on a leading `<length>`) does not swallow the token. Callers such as
+	// the shadow parser rely on this to try color/length in either order.
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	result := parser.parse_color_from_component_value(component_value) or { return none }
+	tokens = transaction
+	return result
+}
 
+fn (mut parser Parser) parse_color_from_component_value(component_value ComponentValue) ?StyleValue {
 	// Keywords: <system-color> | <deprecated-color> | currentColor
 	if component_value.is(.ident) {
 		ident := component_value.token().ident()
