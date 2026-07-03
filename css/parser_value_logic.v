@@ -1050,8 +1050,11 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 }
 
 fn (mut parser Parser) parse_css_wide_keyword_value(mut tokens ComponentValueStream) ?StyleValue {
-	tokens.consume_whitespace()
-	token := tokens.consume() or { return none }
+	// Use a transaction so the tokens are only consumed on success; otherwise a
+	// failed CSS-wide-keyword probe would swallow the first token of the value.
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	token := transaction.consume() or { return none }
 	if !token.is(.ident) {
 		return none
 	}
@@ -1059,6 +1062,7 @@ fn (mut parser Parser) parse_css_wide_keyword_value(mut tokens ComponentValueStr
 	if !keyword.is_css_wide_keyword() {
 		return none
 	}
+	tokens = transaction
 	return StyleValue(KeywordStyleValue.create(keyword))
 }
 
