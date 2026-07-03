@@ -798,6 +798,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.transition {
 			return parser.parse_transition_shorthand(mut tokens)
 		}
+		.animation {
+			return parser.parse_animation_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2560,6 +2563,47 @@ fn (mut parser Parser) longhand_initial_first_value(property_id PropertyID) ?Sty
 	return initial
 }
 
+fn single_keyword_style_value(mut tokens ComponentValueStream, allowed []string) ?StyleValue {
+	keyword := parse_single_keyword_from_set_for_value_logic(mut tokens, allowed) or { return none }
+	return StyleValue(KeywordStyleValue.create(keyword))
+}
+
+// <time [0s,∞]> | auto  (a single entry of animation-duration).
+fn (mut parser Parser) parse_single_animation_duration_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := single_keyword_style_value(mut tokens, ['auto']) {
+		return value
+	}
+	return parser.parse_time_value(mut tokens)
+}
+
+// <number [0,∞]> | infinite  (a single entry of animation-iteration-count).
+fn (mut parser Parser) parse_single_animation_iteration_count_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := single_keyword_style_value(mut tokens, ['infinite']) {
+		return value
+	}
+	return parser.parse_nonnegative_number_value(mut tokens)
+}
+
+// none | <keyframes-name>  where <keyframes-name> = <custom-ident> | <string>  (a single animation-name).
+fn (mut parser Parser) parse_single_animation_name_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut string_attempt := tokens.clone()
+	if string_value := parser.parse_string_value(mut string_attempt) {
+		tokens = string_attempt
+		return StyleValue(string_value)
+	}
+	mut none_attempt := tokens.clone()
+	none_attempt.consume_whitespace()
+	if peek := none_attempt.peek() {
+		if peek.is(.ident) && equals_ignoring_ascii_case(peek.token().ident(), 'none') {
+			none_attempt.consume()
+			tokens = none_attempt
+			return StyleValue(KeywordStyleValue.create(.none_))
+		}
+	}
+	custom_ident := parser.parse_custom_ident_value(mut tokens, ['none', 'default']) or { return none }
+	return StyleValue(custom_ident)
+}
+
 // none | all | <custom-ident>  (a single entry of transition-property).
 fn (mut parser Parser) parse_single_transition_property_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
@@ -2588,13 +2632,35 @@ fn (mut parser Parser) parse_single_coordinated_value(longhand_id PropertyID, mu
 			parser.parse_easing_value(mut tokens)
 		}
 		.transition_behavior {
-			if keyword := parse_single_keyword_from_set_for_value_logic(mut tokens, ['normal',
-				'allow-discrete'])
-			{
-				StyleValue(KeywordStyleValue.create(keyword))
-			} else {
-				none
-			}
+			single_keyword_style_value(mut tokens, ['normal', 'allow-discrete'])
+		}
+		.animation_duration {
+			parser.parse_single_animation_duration_value(mut tokens)
+		}
+		.animation_delay {
+			parser.parse_time_value(mut tokens)
+		}
+		.animation_timing_function {
+			parser.parse_easing_value(mut tokens)
+		}
+		.animation_iteration_count {
+			parser.parse_single_animation_iteration_count_value(mut tokens)
+		}
+		.animation_direction {
+			single_keyword_style_value(mut tokens, ['normal', 'reverse', 'alternate',
+				'alternate-reverse'])
+		}
+		.animation_fill_mode {
+			single_keyword_style_value(mut tokens, ['none', 'forwards', 'backwards', 'both'])
+		}
+		.animation_play_state {
+			single_keyword_style_value(mut tokens, ['running', 'paused'])
+		}
+		.animation_timeline {
+			parser.parse_single_animation_timeline_value(mut tokens)
+		}
+		.animation_name {
+			parser.parse_single_animation_name_value(mut tokens)
 		}
 		else {
 			none
@@ -2677,6 +2743,16 @@ fn (mut parser Parser) parse_coordinating_value_list_shorthand(mut tokens Compon
 		longhand_values << StyleValue(StyleValueList.create(longhand_vectors[i], .comma, .yes))
 	}
 	return StyleValue(ShorthandStyleValue.create(shorthand, longhand_ids, longhand_values))
+}
+
+const animation_shorthand_longhands = [PropertyID.animation_duration, PropertyID.animation_timing_function,
+	PropertyID.animation_delay, PropertyID.animation_iteration_count, PropertyID.animation_direction,
+	PropertyID.animation_fill_mode, PropertyID.animation_play_state, PropertyID.animation_timeline,
+	PropertyID.animation_name]
+
+// https://drafts.csswg.org/css-animations/#propdef-animation
+fn (mut parser Parser) parse_animation_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_coordinating_value_list_shorthand(mut tokens, .animation, animation_shorthand_longhands)
 }
 
 // https://drafts.csswg.org/css-transitions/#propdef-transition

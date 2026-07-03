@@ -491,6 +491,7 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 				PropertyID.transition_timing_function, PropertyID.transition_delay,
 				PropertyID.transition_behavior]
 		}
+		.animation { animation_shorthand_longhands }
 		else { []PropertyID{} }
 	}
 }

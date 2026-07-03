@@ -1224,6 +1224,9 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'transition' {
 			PropertyID.transition
 		}
+		'animation' {
+			PropertyID.animation
+		}
 		else {
 			return none
 		}

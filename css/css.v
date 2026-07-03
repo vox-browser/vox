@@ -409,6 +409,7 @@ pub enum PropertyID {
 	all
 	border_radius
 	transition
+	animation
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

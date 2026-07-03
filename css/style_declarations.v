@@ -395,6 +395,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.all { 'all' }
 		.border_radius { 'border-radius' }
 		.transition { 'transition' }
+		.animation { 'animation' }
 	}
 }
 
