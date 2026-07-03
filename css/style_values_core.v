@@ -1227,6 +1227,12 @@ pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 		'animation' {
 			PropertyID.animation
 		}
+		'scroll-timeline' {
+			PropertyID.scroll_timeline
+		}
+		'view-timeline' {
+			PropertyID.view_timeline
+		}
 		else {
 			return none
 		}

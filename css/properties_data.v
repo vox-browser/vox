@@ -492,6 +492,10 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 				PropertyID.transition_behavior]
 		}
 		.animation { animation_shorthand_longhands }
+		.scroll_timeline { [PropertyID.scroll_timeline_name, PropertyID.scroll_timeline_axis] }
+		.view_timeline {
+			[PropertyID.view_timeline_name, PropertyID.view_timeline_axis, PropertyID.view_timeline_inset]
+		}
 		else { []PropertyID{} }
 	}
 }

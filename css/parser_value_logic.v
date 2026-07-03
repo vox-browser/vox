@@ -801,6 +801,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.animation {
 			return parser.parse_animation_shorthand(mut tokens)
 		}
+		.scroll_timeline {
+			return parser.parse_scroll_timeline_shorthand(mut tokens)
+		}
+		.view_timeline {
+			return parser.parse_view_timeline_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -2604,6 +2610,14 @@ fn (mut parser Parser) parse_single_animation_name_value(mut tokens ComponentVal
 	return StyleValue(custom_ident)
 }
 
+// none | <dashed-ident>  (a single scroll-timeline-name / view-timeline-name entry).
+fn (mut parser Parser) parse_single_timeline_name_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := single_keyword_style_value(mut tokens, ['none']) {
+		return value
+	}
+	return parser.parse_dashed_ident_value(mut tokens, [])
+}
+
 // none | all | <custom-ident>  (a single entry of transition-property).
 fn (mut parser Parser) parse_single_transition_property_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
@@ -2661,6 +2675,15 @@ fn (mut parser Parser) parse_single_coordinated_value(longhand_id PropertyID, mu
 		}
 		.animation_name {
 			parser.parse_single_animation_name_value(mut tokens)
+		}
+		.scroll_timeline_name, .view_timeline_name {
+			parser.parse_single_timeline_name_value(mut tokens)
+		}
+		.scroll_timeline_axis, .view_timeline_axis {
+			single_keyword_style_value(mut tokens, ['block', 'inline', 'x', 'y'])
+		}
+		.view_timeline_inset {
+			parser.parse_view_timeline_inset_value(mut tokens)
 		}
 		else {
 			none
@@ -2753,6 +2776,18 @@ const animation_shorthand_longhands = [PropertyID.animation_duration, PropertyID
 // https://drafts.csswg.org/css-animations/#propdef-animation
 fn (mut parser Parser) parse_animation_shorthand(mut tokens ComponentValueStream) ?StyleValue {
 	return parser.parse_coordinating_value_list_shorthand(mut tokens, .animation, animation_shorthand_longhands)
+}
+
+// https://drafts.csswg.org/scroll-animations-1/#propdef-scroll-timeline
+fn (mut parser Parser) parse_scroll_timeline_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_coordinating_value_list_shorthand(mut tokens, .scroll_timeline, [PropertyID.scroll_timeline_name,
+		PropertyID.scroll_timeline_axis])
+}
+
+// https://drafts.csswg.org/scroll-animations-1/#propdef-view-timeline
+fn (mut parser Parser) parse_view_timeline_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_coordinating_value_list_shorthand(mut tokens, .view_timeline, [PropertyID.view_timeline_name,
+		PropertyID.view_timeline_axis, PropertyID.view_timeline_inset])
 }
 
 // https://drafts.csswg.org/css-transitions/#propdef-transition
