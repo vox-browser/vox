@@ -9016,6 +9016,9 @@ fn (mut parser Parser) parse_content_visibility_value(mut tokens ComponentValueS
 }
 
 fn (mut parser Parser) parse_integer_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parse_calculated_value_of_kind(mut tokens, .integer) {
+		return value
+	}
 	tokens.consume_whitespace()
 	component_value := tokens.consume() or { return none }
 	if !component_value.is(.number) {
@@ -9029,6 +9032,9 @@ fn (mut parser Parser) parse_integer_value(mut tokens ComponentValueStream) ?Sty
 }
 
 fn (mut parser Parser) parse_number_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parse_calculated_value_of_kind(mut tokens, .number) {
+		return value
+	}
 	number := parser.parse_number(mut tokens) or { return none }
 	return StyleValue(NumberStyleValue.create(number.value()))
 }
@@ -9050,6 +9056,9 @@ fn (mut parser Parser) parse_easing_number_value(mut tokens ComponentValueStream
 }
 
 fn (mut parser Parser) parse_percentage_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parse_calculated_value_of_kind(mut tokens, .percentage) {
+		return value
+	}
 	percentage := parser.parse_percentage(mut tokens) or { return none }
 	return StyleValue(PercentageStyleValue.create(percentage))
 }
@@ -9278,6 +9287,9 @@ fn (mut parser Parser) parse_number_percentage_none_value(mut tokens ComponentVa
 }
 
 fn (mut parser Parser) parse_angle_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parse_calculated_value_of_kind(mut tokens, .angle) {
+		return value
+	}
 	angle := parser.parse_angle(mut tokens) or { return none }
 	return StyleValue(AngleStyleValue.create(angle))
 }
@@ -9299,6 +9311,9 @@ fn (mut parser Parser) parse_angle(mut tokens ComponentValueStream) ?Angle {
 }
 
 fn (mut parser Parser) parse_length_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parse_calculated_value_of_kind(mut tokens, .length) {
+		return value
+	}
 	length := parser.parse_length(mut tokens) or { return none }
 	return StyleValue(LengthStyleValue.create(length))
 }
@@ -9320,6 +9335,11 @@ fn (mut parser Parser) parse_length(mut tokens ComponentValueStream) ?Length {
 }
 
 fn (mut parser Parser) parse_length_percentage_value(mut tokens ComponentValueStream) ?StyleValue {
+	// A mixed length+percentage calc (e.g. `calc(100% - 10px)`) matches neither pure
+	// <length> nor pure <percentage>, so accept it here directly.
+	if value := parse_calculated_value_of_kind(mut tokens, .length_percentage) {
+		return value
+	}
 	mut copy := tokens.clone()
 	if value := parser.parse_length_value(mut copy) {
 		tokens = copy
@@ -9334,6 +9354,9 @@ fn (mut parser Parser) parse_length_percentage_value(mut tokens ComponentValueSt
 }
 
 fn (mut parser Parser) parse_flex_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parse_calculated_value_of_kind(mut tokens, .flex) {
+		return value
+	}
 	tokens.consume_whitespace()
 	component_value := tokens.consume() or { return none }
 	if !component_value.is(.dimension) {
@@ -9345,6 +9368,9 @@ fn (mut parser Parser) parse_flex_value(mut tokens ComponentValueStream) ?StyleV
 }
 
 fn (mut parser Parser) parse_frequency_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parse_calculated_value_of_kind(mut tokens, .frequency) {
+		return value
+	}
 	tokens.consume_whitespace()
 	component_value := tokens.consume() or { return none }
 	if !component_value.is(.dimension) {
@@ -9356,6 +9382,9 @@ fn (mut parser Parser) parse_frequency_value(mut tokens ComponentValueStream) ?S
 }
 
 fn (mut parser Parser) parse_resolution_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parse_calculated_value_of_kind(mut tokens, .resolution) {
+		return value
+	}
 	tokens.consume_whitespace()
 	component_value := tokens.consume() or { return none }
 	if !component_value.is(.dimension) {
@@ -9367,6 +9396,9 @@ fn (mut parser Parser) parse_resolution_value(mut tokens ComponentValueStream) ?
 }
 
 fn (mut parser Parser) parse_time_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parse_calculated_value_of_kind(mut tokens, .time) {
+		return value
+	}
 	tokens.consume_whitespace()
 	component_value := tokens.consume() or { return none }
 	if component_value.is(.number) && component_value.token().number_value() == 0 {
