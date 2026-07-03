@@ -506,6 +506,10 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 		.grid_template {
 			[PropertyID.grid_template_areas, PropertyID.grid_template_rows, PropertyID.grid_template_columns]
 		}
+		.grid {
+			[PropertyID.grid_auto_flow, PropertyID.grid_auto_rows, PropertyID.grid_auto_columns,
+				PropertyID.grid_template_areas, PropertyID.grid_template_rows, PropertyID.grid_template_columns]
+		}
 		else { []PropertyID{} }
 	}
 }

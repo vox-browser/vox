@@ -415,6 +415,7 @@ pub enum PropertyID {
 	border_image
 	background_position
 	grid_template
+	grid
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {

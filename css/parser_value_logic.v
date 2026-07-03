@@ -816,6 +816,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.grid_template {
 			return parser.parse_grid_template_shorthand(mut tokens)
 		}
+		.grid {
+			return parser.parse_grid_shorthand(mut tokens)
+		}
 		.math_depth {
 			return parser.parse_math_depth_value(mut tokens)
 		}
@@ -3064,6 +3067,115 @@ fn (mut parser Parser) parse_grid_track_size_list_shorthand(property_id Property
 		resolved << rows_value
 		resolved << columns_value
 		return StyleValue(ShorthandStyleValue.create(property_id, sub_properties, resolved))
+	}
+
+	return none
+}
+
+// [ auto-flow && dense? ]  (auto-flow is a literal keyword; axis is fixed by the caller).
+fn parse_grid_auto_flow_and_dense(mut tokens ComponentValueStream, axis GridAutoFlowAxis) ?StyleValue {
+	mut transaction := tokens.clone()
+	mut found_auto_flow := false
+	mut dense := GridAutoFlowDense.no
+	for _ in 0 .. 2 {
+		transaction.consume_whitespace()
+		token := transaction.peek() or { break }
+		if !token.is(.ident) {
+			break
+		}
+		ident := to_ascii_lowercase(token.token().ident())
+		if ident == 'auto-flow' && !found_auto_flow {
+			transaction.consume()
+			found_auto_flow = true
+		} else if ident == 'dense' && dense == .no {
+			transaction.consume()
+			dense = .yes
+		} else {
+			break
+		}
+	}
+	if !found_auto_flow {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(GridAutoFlowStyleValue.create(axis, dense))
+}
+
+const grid_shorthand_longhands = [PropertyID.grid_auto_flow, PropertyID.grid_auto_rows,
+	PropertyID.grid_auto_columns, PropertyID.grid_template_areas, PropertyID.grid_template_rows,
+	PropertyID.grid_template_columns]
+
+// https://drafts.csswg.org/css-grid/#grid-shorthand
+// <'grid-template'>
+// | [ auto-flow && dense? ] <'grid-auto-rows'>? / <'grid-template-columns'>
+// | <'grid-template-rows'> / [ auto-flow && dense? ] <'grid-auto-columns'>?
+fn (mut parser Parser) parse_grid_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut template_attempt := tokens.clone()
+	if grid_template := parser.parse_grid_track_size_list_shorthand(.grid, mut template_attempt,
+		true)
+	{
+		tokens = template_attempt
+		return grid_template
+	}
+
+	// [ auto-flow && dense? ] <'grid-auto-rows'>? / <'grid-template-columns'>
+	mut branch1 := tokens.clone()
+	branch1.consume_whitespace()
+	if grid_auto_flow := parse_grid_auto_flow_and_dense(mut branch1, .row) {
+		grid_auto_rows := parser.parse_grid_auto_track_sizes(mut branch1) or {
+			parser.longhand_initial_typed_value(.grid_auto_rows) or { return none }
+		}
+		branch1.consume_whitespace()
+		mut slash := false
+		if peek := branch1.peek() {
+			slash = peek.is_delim(u32(`/`))
+		}
+		if slash {
+			branch1.consume()
+			branch1.consume_whitespace()
+			if grid_template_columns := parser.parse_grid_track_size_list(mut branch1) {
+				tokens = branch1
+				return StyleValue(ShorthandStyleValue.create(.grid, grid_shorthand_longhands,
+					[
+					grid_auto_flow,
+					grid_auto_rows,
+					parser.longhand_initial_typed_value(.grid_auto_columns) or { return none },
+					parser.longhand_initial_typed_value(.grid_template_areas) or { return none },
+					parser.longhand_initial_typed_value(.grid_template_rows) or { return none },
+					grid_template_columns,
+				]))
+			}
+		}
+	}
+
+	// <'grid-template-rows'> / [ auto-flow && dense? ] <'grid-auto-columns'>?
+	mut branch2 := tokens.clone()
+	branch2.consume_whitespace()
+	if grid_template_rows := parser.parse_grid_track_size_list(mut branch2) {
+		branch2.consume_whitespace()
+		mut slash := false
+		if peek := branch2.peek() {
+			slash = peek.is_delim(u32(`/`))
+		}
+		if slash {
+			branch2.consume()
+			branch2.consume_whitespace()
+			if grid_auto_flow := parse_grid_auto_flow_and_dense(mut branch2, .column) {
+				grid_auto_columns := parser.parse_grid_auto_track_sizes(mut branch2) or {
+					parser.longhand_initial_typed_value(.grid_auto_columns) or { return none }
+				}
+				tokens = branch2
+				return StyleValue(ShorthandStyleValue.create(.grid, grid_shorthand_longhands,
+					[
+					grid_auto_flow,
+					parser.longhand_initial_typed_value(.grid_auto_rows) or { return none },
+					grid_auto_columns,
+					parser.longhand_initial_typed_value(.grid_template_areas) or { return none },
+					grid_template_rows,
+					parser.longhand_initial_typed_value(.grid_template_columns) or { return none },
+				]))
+			}
+		}
 	}
 
 	return none
