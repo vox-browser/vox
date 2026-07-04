@@ -2798,3 +2798,49 @@ fn test_inline_block_paints() {
 	assert fills.len == 1
 	assert fills[0].color == 'rgb(1 2 3)'
 }
+
+// A table arranges its cells in a grid: columns are content-proportional (scaled to the table width),
+// rows stack, and each cell is a child of the table box.
+fn test_table_grid_layout() {
+	doc := dom.Document.create(dom.url_about_blank())
+	table := styled(doc, 'table', 'width: 300px; font-size: 20px')
+	tbody := styled(doc, 'tbody', '')
+	mut tn := tbody.as_node()
+	// Row 1: "a" (10px max-content) | "bbbb" (40px).
+	r1 := styled(doc, 'tr', '')
+	c1 := styled(doc, 'td', 'padding: 0')
+	mut c1n := c1.as_node()
+	c1n.append_child(doc.create_text_node('a').as_node()) or { panic('${err}') }
+	c2 := styled(doc, 'td', 'padding: 0')
+	mut c2n := c2.as_node()
+	c2n.append_child(doc.create_text_node('bbbb').as_node()) or { panic('${err}') }
+	mut r1n := r1.as_node()
+	r1n.append_child(c1.as_node()) or { panic('${err}') }
+	r1n.append_child(c2.as_node()) or { panic('${err}') }
+	// Row 2: "c" | "d".
+	r2 := styled(doc, 'tr', '')
+	c3 := styled(doc, 'td', 'padding: 0')
+	mut c3n := c3.as_node()
+	c3n.append_child(doc.create_text_node('c').as_node()) or { panic('${err}') }
+	c4 := styled(doc, 'td', 'padding: 0')
+	mut c4n := c4.as_node()
+	c4n.append_child(doc.create_text_node('d').as_node()) or { panic('${err}') }
+	mut r2n := r2.as_node()
+	r2n.append_child(c3.as_node()) or { panic('${err}') }
+	r2n.append_child(c4.as_node()) or { panic('${err}') }
+	tn.append_child(r1.as_node()) or { panic('${err}') }
+	tn.append_child(r2.as_node()) or { panic('${err}') }
+	mut tabn := table.as_node()
+	tabn.append_child(tbody.as_node()) or { panic('${err}') }
+
+	box := layout_block(table, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 4 // 4 cells (rows/tbody not materialized)
+	// Columns content-proportional (10:40) scaled to 300 -> 60 and 240.
+	assert box.children[0].x == 0.0 && box.children[0].width == 60.0
+	assert box.children[1].x == 60.0 && box.children[1].width == 240.0
+	// Row 2 cells sit below row 1 (row height = a text line).
+	line := box.children[0].height // one line of text
+	assert box.children[2].x == 0.0
+	assert box.children[2].y == box.children[0].y + line
+	assert box.height == 2.0 * line // two rows
+}

@@ -1182,3 +1182,25 @@ fn test_inline_block_over_parsed_document() {
 	// Its background reaches the SVG.
 	assert root_box.render_svg(600, root_box.height + 20).contains('fill="rgb(200 0 0)"')
 }
+
+// Full-stack table: a parsed <table> (with the implicit <tbody>) arranges its cells in a grid —
+// columns side by side (wider for wider content), rows stacked, filling the table width.
+fn test_table_over_parsed_document() {
+	doc := html.parse_document('<body><table style="width: 400px"><tr><td id="a">x</td><td id="b">yyyy</td></tr><tr><td id="c">z</td><td id="d">w</td></tr></table></body>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	a := css.query_selector(root, '#a') or { panic('no #a') }
+	b := css.query_selector(root, '#b') or { panic('no #b') }
+	c := css.query_selector(root, '#c') or { panic('no #c') }
+
+	a_rect := root_box.bounding_rect_for(a) or { panic('no #a box') }
+	b_rect := root_box.bounding_rect_for(b) or { panic('no #b box') }
+	c_rect := root_box.bounding_rect_for(c) or { panic('no #c box') }
+	// Row 1: b is to the right of a and its column (yyyy) is wider than a's (x).
+	assert b_rect.x == a_rect.x + a_rect.width
+	assert b_rect.width > a_rect.width
+	// Row 2: c is below a.
+	assert c_rect.y == a_rect.y + a_rect.height
+	// Columns fill the 400px table.
+	assert a_rect.width + b_rect.width == 400.0
+}

@@ -1139,6 +1139,48 @@ fn is_flex_column(element &dom.Element, author_rules []&css.CSSRule) bool {
 	return dir == 'column' || dir == 'column-reverse'
 }
 
+// Whether `element` is a table container (`display: table`).
+fn is_table(element &dom.Element, author_rules []&css.CSSRule) bool {
+	id := css.property_id_from_string('display') or { return false }
+	return css.cascaded_value_with_ua(element, id, author_rules) == 'table'
+}
+
+// The table rows (`display: table-row`) under `element`, in document order, flattening the row groups
+// (`table-row-group`/`table-header-group`/`table-footer-group`, i.e. tbody/thead/tfoot).
+fn table_rows(element &dom.Element, author_rules []&css.CSSRule) []&dom.Element {
+	mut rows := []&dom.Element{}
+	collect_table_rows(element.as_node(), author_rules, mut rows)
+	return rows
+}
+
+fn collect_table_rows(node &dom.Node, author_rules []&css.CSSRule, mut rows []&dom.Element) {
+	display_id := css.property_id_from_string('display') or { return }
+	for child in node.children_as_vector() {
+		if el := child.as_element() {
+			display := css.cascaded_value_with_ua(el, display_id, author_rules)
+			if display == 'table-row' {
+				rows << el
+			} else if display in ['table-row-group', 'table-header-group', 'table-footer-group'] {
+				collect_table_rows(el.as_node(), author_rules, mut rows) // flatten the group
+			}
+		}
+	}
+}
+
+// The cells (`display: table-cell`) of a table row, in document order.
+fn table_cells(row &dom.Element, author_rules []&css.CSSRule) []&dom.Element {
+	display_id := css.property_id_from_string('display') or { return []&dom.Element{} }
+	mut cells := []&dom.Element{}
+	for child in row.as_node().children_as_vector() {
+		if el := child.as_element() {
+			if css.cascaded_value_with_ua(el, display_id, author_rules) == 'table-cell' {
+				cells << el
+			}
+		}
+	}
+	return cells
+}
+
 // The flex items of `node`: its in-flow element children (any display is blockified, so inline and
 // floated children count too), excluding `display: none` and absolutely positioned elements.
 fn flex_item_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Element {
@@ -2212,8 +2254,8 @@ fn establishes_block_formatting_context(element &dom.Element, author_rules []&cs
 	}
 	display_id := css.property_id_from_string('display') or { return false }
 	display := css.cascaded_value_with_ua(element, display_id, author_rules)
-	if display == 'flow-root' || display == 'flex' || display == 'inline-flex' {
-		return true // a flow-root or flex container establishes an independent formatting context
+	if display in ['flow-root', 'flex', 'inline-flex', 'table', 'inline-table'] {
+		return true // a flow-root / flex / table container establishes an independent formatting context
 	}
 	for axis in ['overflow-x', 'overflow-y'] {
 		id := css.property_id_from_string(axis) or { continue }
@@ -2656,6 +2698,71 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		}
 		content_height = total_main
 		has_children = item_boxes.len > 0
+	} else if is_table(element, author_rules) {
+		// TABLE: arrange cells in a grid. Rows come from the row groups (tbody/thead/tfoot) flattened;
+		// each column's width is content-proportional, scaled to fill the table's content width; each
+		// cell is laid out at its column width and a row's height is its tallest cell. Cells become the
+		// table box's children (rows/column boxes aren't materialized).
+		// FIXME: no colspan/rowspan, no shrink-to-fit table width (fills like a block), no border-
+		// collapse, cells aren't stretched to the row height, captions/column groups ignored.
+		rows := table_rows(element, author_rules)
+		mut rows_cells := [][]&dom.Element{}
+		mut n_cols := 0
+		for row in rows {
+			cells := table_cells(row, author_rules)
+			rows_cells << cells
+			if cells.len > n_cols {
+				n_cols = cells.len
+			}
+		}
+		if n_cols > 0 {
+			// Content-based (outer) width of each column: the widest cell's max-content plus its edges.
+			mut col_widths := []f64{}
+			mut content_sum := 0.0
+			for c := 0; c < n_cols; c++ {
+				mut w := 0.0
+				for cells in rows_cells {
+					if c < cells.len {
+						outer := intrinsic_content_width(cells[c], author_rules, false) +
+							horizontal_edges(cells[c], width, author_rules)
+						if outer > w {
+							w = outer
+						}
+					}
+				}
+				col_widths << w
+				content_sum += w
+			}
+			// Scale the columns to fill the table's content width (equal split if there is no content).
+			mut final_widths := []f64{}
+			for w in col_widths {
+				final_widths << if content_sum > 0 { w * width / content_sum } else { width / f64(n_cols) }
+			}
+			mut col_x := []f64{}
+			mut acc := 0.0
+			for w in final_widths {
+				col_x << acc
+				acc += w
+			}
+			// Lay out cells row by row; a row's height is its tallest cell's margin box.
+			mut row_y := 0.0
+			for cells in rows_cells {
+				mut row_height := 0.0
+				for c, cell in cells {
+					cell_content_width := non_negative(final_widths[c] - horizontal_edges(cell,
+						width, author_rules))
+					cb := layout_block_impl(cell, content_x + col_x[c], row_y, width, cell_content_width,
+						author_rules)
+					if cb.margin_box_height() > row_height {
+						row_height = cb.margin_box_height()
+					}
+					local_children << cb
+				}
+				row_y += row_height
+			}
+			content_height = row_y
+			has_children = local_children.len > 0
+		}
 	} else {
 		// BLOCK FLOW: lay children out in a LOCAL frame whose origin is this box's content-box top-left.
 		// Vertical margins collapse (CSS 2.1 §8.3.1) using each child's OUTER (collapsed) margins.
