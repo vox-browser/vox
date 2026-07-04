@@ -6,10 +6,8 @@ import dom
 // resulting structure with a compact serializer (element(children...), "text", <!--comment-->).
 
 fn parse(input string) &dom.Document {
-	doc := dom.Document.create(dom.url_about_blank())
-	mut parser := HTMLParser.create(doc, input)
-	parser.run()
-	return doc
+	// Exercise the public top-level entry point.
+	return parse_document(input)
 }
 
 // element -> local_name(child,child,...); text -> "data"; comment -> <!--data-->; doctype -> <!name>
@@ -324,6 +322,18 @@ fn test_fragment_textarea_context_is_rcdata() {
 	// A <textarea>-context fragment tokenizes as RCDATA, so markup is literal text.
 	nodes := parse_html_fragment(context_element('textarea'), 'a<b>c')
 	assert repr_nodes(nodes) == '"a<b>c"'
+}
+
+fn test_parse_document_end_to_end() {
+	// The one-call entry point produces a full html document.
+	doc := parse_document('<!DOCTYPE html><title>T</title><p>hi</p>')
+	assert doc.document_type() == .html
+	html_el := doc.document_element() or { panic('no document element') }
+	assert html_el.local_name() == 'html'
+	// Structure: doctype + html(head(title), body(p)).
+	assert tree_repr(html_el.as_node()) == 'html(head(title("T")),body(p("hi")))'
+	mut doc_node := unsafe { &dom.Node(doc) }
+	assert doc_node.children_as_vector()[0].node_name() == 'html' // the doctype
 }
 
 fn test_set_inner_html_replaces_children() {
