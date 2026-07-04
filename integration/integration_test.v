@@ -582,3 +582,16 @@ fn test_calc_over_parsed_document() {
 	box := layout.layout_block(div, 0, 0, 500, []&css.CSSRule{})
 	assert box.width == 440.0 // 500 - 60
 }
+
+// Full-stack opacity: every paint command for an opacity:0.5 box (background + text) carries 0.5.
+fn test_opacity_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 100px; height: 40px; opacity: 0.5; background-color: rgb(1, 2, 3)">hi</div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	cmds := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{}).paint_commands()
+	assert cmds.len == 2 // background fill + one text word
+	for c in cmds {
+		assert c.opacity == 0.5
+	}
+}

@@ -1497,3 +1497,34 @@ fn test_calc_percentage_padding() {
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.padding.left == 85.0 // 80 (10% of 800) + 5
 }
+
+// opacity is emitted per paint command (color stays unscaled).
+fn test_paint_opacity() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; height: 50px; background-color: red; opacity: 0.5')
+	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
+	assert cmds[0].opacity == 0.5
+	assert cmds[0].color == 'rgb(255 0 0)' // color itself is not scaled
+}
+
+// Opacity accumulates down the tree: a child's paint opacity is its own times its ancestors'.
+fn test_paint_opacity_cumulative() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 100px; height: 100px; background-color: white; opacity: 0.5')
+	child := styled(doc, 'div', 'width: 50px; height: 50px; background-color: red; opacity: 0.5')
+	mut rn := root.as_node()
+	rn.append_child(child.as_node()) or { panic('${err}') }
+
+	cmds := layout_block(root, 0, 0, 800, []&css.CSSRule{}).paint_commands()
+	assert cmds[0].opacity == 0.5 // root
+	assert cmds[1].opacity == 0.25 // child: 0.5 * 0.5
+}
+
+// Default opacity is 1; values are clamped to 0..1.
+fn test_opacity_field_clamped() {
+	doc := dom.Document.create(dom.url_about_blank())
+	assert layout_block(styled(doc, 'div', 'background-color: blue'), 0, 0, 800, []&css.CSSRule{}).paint_commands()[0].opacity == 1.0
+	assert layout_block(styled(doc, 'div', 'opacity: 0.3'), 0, 0, 800, []&css.CSSRule{}).opacity == 0.3
+	assert layout_block(styled(doc, 'div', 'opacity: 2'), 0, 0, 800, []&css.CSSRule{}).opacity == 1.0
+	assert layout_block(styled(doc, 'div', 'opacity: -0.5'), 0, 0, 800, []&css.CSSRule{}).opacity == 0.0
+}

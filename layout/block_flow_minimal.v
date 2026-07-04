@@ -114,8 +114,11 @@ pub mut:
 	background_color css.Color
 	text_color       css.Color
 	border_color     css.Color
-	children         []BlockBox
-	lines            []TextLine
+	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
+	// cumulative opacity (this box's times its ancestors').
+	opacity  f64 = 1.0
+	children []BlockBox
+	lines    []TextLine
 }
 
 // Flatten this box's subtree into paint order (CSS 2.1 Appendix E, simplified): a box paints before
@@ -127,16 +130,18 @@ pub mut:
 // positioned ancestor establishes; opacity/transform/etc. stacking contexts aren't modeled.
 pub fn (b &BlockBox) paint_order() []BlockBox {
 	mut order := []BlockBox{}
-	b.collect_paint_order(mut order)
+	b.collect_paint_order(mut order, 1.0)
 	return order
 }
 
-fn (b &BlockBox) collect_paint_order(mut order []BlockBox) {
+fn (b &BlockBox) collect_paint_order(mut order []BlockBox, inherited_opacity f64) {
+	effective_opacity := inherited_opacity * b.opacity
 	mut entry := *b
 	entry.children = []
+	entry.opacity = effective_opacity // the entry carries the cumulative opacity
 	order << entry
 	for child in stable_sort_by_z(b.children) {
-		child.collect_paint_order(mut order)
+		child.collect_paint_order(mut order, effective_opacity)
 	}
 }
 
@@ -144,13 +149,14 @@ fn (b &BlockBox) collect_paint_order(mut order []BlockBox) {
 // (`fill_rect`, e.g. a background) or drawn text (`draw_text`). `color` is the serialized paint color.
 pub struct PaintCommand {
 pub:
-	kind   string // 'fill_rect' | 'draw_text'
-	x      f64
-	y      f64
-	width  f64
-	height f64
-	color  string
-	text   string // for 'draw_text'
+	kind    string // 'fill_rect' | 'draw_text'
+	x       f64
+	y       f64
+	width   f64
+	height  f64
+	color   string
+	text    string // for 'draw_text'
+	opacity f64 = 1.0 // the box's cumulative opacity (this box × its ancestors')
 }
 
 // Build the display list for this box tree: for each box in paint order — a background fill (when the
@@ -163,6 +169,7 @@ pub:
 pub fn (b &BlockBox) paint_commands() []PaintCommand {
 	mut commands := []PaintCommand{}
 	for box in b.paint_order() {
+		opacity := box.opacity
 		border_left := box.x - box.padding.left - box.border.left
 		border_top := box.y - box.padding.top - box.border.top
 		border_width := box.width + box.padding.left + box.padding.right + box.border.left +
@@ -172,12 +179,13 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 
 		if box.background_color.a > 0 {
 			commands << PaintCommand{
-				kind:   'fill_rect'
-				x:      border_left
-				y:      border_top
-				width:  border_width
+				kind: 'fill_rect'
+				x: border_left
+				y: border_top
+				width: border_width
 				height: border_height
-				color:  box.background_color.serialize()
+				color: box.background_color.serialize()
+				opacity: opacity
 			}
 		}
 		// Border edges (each along the border box; corners overlap).
@@ -190,6 +198,7 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 				width: border_width
 				height: box.border.top
 				color: border
+				opacity: opacity
 			}
 		}
 		if box.border.bottom > 0 {
@@ -200,6 +209,7 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 				width: border_width
 				height: box.border.bottom
 				color: border
+				opacity: opacity
 			}
 		}
 		if box.border.left > 0 {
@@ -210,6 +220,7 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 				width: box.border.left
 				height: border_height
 				color: border
+				opacity: opacity
 			}
 		}
 		if box.border.right > 0 {
@@ -220,18 +231,20 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 				width: box.border.right
 				height: border_height
 				color: border
+				opacity: opacity
 			}
 		}
 		for line in box.lines {
 			for fragment in line.fragments {
 				commands << PaintCommand{
-					kind:   'draw_text'
-					x:      fragment.x
-					y:      fragment.y
-					width:  fragment.width
+					kind: 'draw_text'
+					x: fragment.x
+					y: fragment.y
+					width: fragment.width
 					height: fragment.height
-					color:  fragment.color.serialize()
-					text:   fragment.text
+					color: fragment.color.serialize()
+					text: fragment.text
+					opacity: opacity
 				}
 			}
 		}
@@ -1388,6 +1401,15 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	border_color := css.computed_color(element, css.property_id_from_string('border-top-color') or {
 		return BlockBox{}
 	}, author_rules) or { text_color }
+	// Opacity (0..1) — this box's own; the display list accumulates it down the tree.
+	mut opacity := css.cascaded_value_with_ua(element, css.property_id_from_string('opacity') or {
+		return BlockBox{}
+	}, author_rules).f64()
+	if opacity < 0.0 {
+		opacity = 0.0
+	} else if opacity > 1.0 {
+		opacity = 1.0
+	}
 
 	return BlockBox{
 		tag_name:            element.local_name()
@@ -1404,6 +1426,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		background_color:    background_color
 		text_color:          text_color
 		border_color:        border_color
+		opacity:             opacity
 		children:            children
 		lines:               lines
 	}
