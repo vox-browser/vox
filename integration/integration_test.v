@@ -1066,3 +1066,17 @@ fn test_align_items_over_parsed_document() {
 	assert item_rect.y == bar_rect.y + 20.0
 	assert item_rect.y + item_rect.height == bar_rect.y + bar_rect.height - 20.0
 }
+
+// Full-stack flex gap: items in a gap:16px row are separated by 16px between adjacent margin boxes.
+fn test_flex_gap_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.row { display: flex; gap: 16px; width: 500px } .box { width: 90px; height: 30px }</style></head><body><div class="row"><div class="box" id="p"></div><div class="box" id="q"></div></div></body></html>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	p := css.query_selector(root, '#p') or { panic('no #p') }
+	q := css.query_selector(root, '#q') or { panic('no #q') }
+
+	p_rect := root_box.bounding_rect_for(p) or { panic('no #p box') }
+	q_rect := root_box.bounding_rect_for(q) or { panic('no #q box') }
+	// q starts 16px after p's right edge.
+	assert q_rect.x == p_rect.x + p_rect.width + 16.0
+}

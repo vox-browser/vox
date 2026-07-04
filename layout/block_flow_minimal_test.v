@@ -2467,3 +2467,34 @@ fn test_align_self_overrides_align_items() {
 	assert box.children[0].y == 0.0 // container flex-start
 	assert box.children[1].y == 40.0 // align-self flex-end -> 60 - 20
 }
+
+// gap adds fixed spacing between flex items along the main axis.
+fn test_flex_gap_basic() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; gap: 20px; width: 300px; height: 20px')
+	a := styled(doc, 'div', 'width: 100px; height: 20px')
+	b := styled(doc, 'div', 'width: 100px; height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].x == 0.0
+	assert box.children[1].x == 120.0 // 100px item + 20px gap
+}
+
+// gap and justify-content compose: the gap is fixed spacing, justify distributes the remaining space.
+fn test_flex_gap_with_center() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; gap: 20px; justify-content: center; width: 300px; height: 20px')
+	a := styled(doc, 'div', 'width: 100px; height: 20px')
+	b := styled(doc, 'div', 'width: 100px; height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	// items+gap = 220; free = 80; center leading = 40.
+	assert box.children[0].x == 40.0
+	assert box.children[1].x == 160.0 // 40 + 100 + 20 gap
+}

@@ -1108,6 +1108,13 @@ fn flex_item_forced_width(element &dom.Element, container_width f64, author_rule
 	return shrink_to_fit(min_content, max_content, container_width)
 }
 
+// The main-axis gap between flex items (a row's `column-gap`; the `gap` shorthand sets it), in px.
+// `normal`/absent is 0.
+fn flex_column_gap(element &dom.Element, author_rules []&css.CSSRule) f64 {
+	id := css.property_id_from_string('column-gap') or { return 0 }
+	return css.computed_length_px(element, id, author_rules) or { 0 }
+}
+
 // The cascaded `justify-content` value, normalized (`normal` and absent behave as `flex-start`).
 fn justify_content_value(element &dom.Element, author_rules []&css.CSSRule) string {
 	id := css.property_id_from_string('justify-content') or { return 'flex-start' }
@@ -2343,9 +2350,13 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		// FIXME: no flex-grow/shrink/basis, no wrap, `align-items: stretch` doesn't re-size items (it
 		// top-aligns like flex-start), no row-reverse/column (those fall to block flow).
 		mut cursor := 0.0
+		gap_main := flex_column_gap(element, author_rules)
 		items := flex_item_elements(element.as_node(), author_rules)
 		mut item_boxes := []BlockBox{}
-		for item in items {
+		for i, item in items {
+			if i > 0 {
+				cursor += gap_main // fixed gap between adjacent items
+			}
 			forced_width := flex_item_forced_width(item, width, author_rules)
 			ib := layout_block_impl(item, content_x + cursor, 0.0, width, forced_width, author_rules)
 			cursor += ib.margin_box_width()
