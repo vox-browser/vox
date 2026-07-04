@@ -1217,3 +1217,76 @@ fn test_z_index_field() {
 	assert layout_block(styled(doc, 'div', 'z-index: 3'), 0, 0, 800, []&css.CSSRule{}).z_index == 0 // static
 	assert layout_block(styled(doc, 'div', 'position: relative'), 0, 0, 800, []&css.CSSRule{}).z_index == 0 // auto
 }
+
+// A line carries its words as positioned fragments laid out left-to-right.
+fn test_inline_fragments_positions() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('Hi there').as_node()) or { panic('${err}') } // 20 + space + 50
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	line := box.lines[0]
+	assert line.fragments.len == 2
+	assert line.fragments[0].text == 'Hi'
+	assert line.fragments[0].x == 0.0
+	assert line.fragments[0].width == 20.0
+	assert line.fragments[1].text == 'there'
+	assert line.fragments[1].x == 30.0 // 20 (Hi) + 10 (space)
+	assert line.fragments[1].width == 50.0
+	assert line.fragments[1].y == line.fragments[0].y // same line
+	assert line.fragments[1].height == 30.0
+}
+
+// Fragments start at the line's text-aligned x.
+fn test_inline_fragments_follow_text_align() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px; text-align: center')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('Hi').as_node()) or { panic('${err}') } // width 20
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines[0].fragments[0].x == 90.0 // (200 - 20) / 2
+}
+
+// Fragments span wrapped lines, each line's words positioned from its own left edge.
+fn test_inline_fragments_across_wrapped_lines() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('aaaa bbbb cccc').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines[0].fragments.len == 2 // "aaaa bbbb"
+	assert box.lines[0].fragments[1].x == 50.0 // aaaa(40) + space(10)
+	assert box.lines[1].fragments.len == 1 // "cccc"
+	assert box.lines[1].fragments[0].text == 'cccc'
+	assert box.lines[1].fragments[0].x == 0.0
+	assert box.lines[1].fragments[0].y == 30.0 // second line
+}
+
+// Fragments ride along when the box is repositioned (relative offset translates them).
+fn test_inline_fragments_translate_with_box() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px; position: relative; top: 15px; left: 25px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('Hi').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines[0].fragments[0].x == 25.0 // content_x includes the left offset
+	assert box.lines[0].fragments[0].y == 15.0 // content_top includes the top offset
+}
+
+// Fragments follow the line's float offset (the first word sits past a left float).
+fn test_inline_fragments_follow_float() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; overflow: hidden; font-size: 20px; line-height: 20px')
+	fl := styled(doc, 'div', 'float: left; width: 150px; height: 40px')
+	mut n := el.as_node()
+	n.append_child(fl.as_node()) or { panic('${err}') }
+	n.append_child(doc.create_text_node('aaaa bbbb cccc').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines[0].fragments[0].x == 150.0 // first word offset past the float
+	assert box.lines[2].fragments[0].x == 0.0 // third line dropped below the float -> full width
+}

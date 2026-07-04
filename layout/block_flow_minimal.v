@@ -40,15 +40,46 @@ pub:
 	left   f64
 }
 
-// A laid-out line box within a block's inline formatting context: `x`/`y` is the top-left of the
-// line's content in CSS px, `width` the used width of the content on the line (after wrapping), and
-// `height` the line-height. `x` reflects `text-align` within the content box.
-pub struct TextLine {
+// A laid-out inline fragment: one word positioned within a line, with its own box and text (for
+// selection, hit-testing, and inline backgrounds).
+pub struct TextFragment {
 pub mut:
 	x      f64
 	y      f64
 	width  f64
 	height f64
+pub:
+	text string
+}
+
+// A laid-out line box within a block's inline formatting context: `x`/`y` is the top-left of the
+// line's content in CSS px, `width` the used width of the content on the line (after wrapping), and
+// `height` the line-height. `x` reflects `text-align` within the content box. `fragments` are the
+// individual words placed left-to-right within the line.
+pub struct TextLine {
+pub mut:
+	x         f64
+	y         f64
+	width     f64
+	height    f64
+	fragments []TextFragment
+}
+
+// Return a copy of `line` (and its fragments) shifted by (`dx`, `dy`).
+fn translate_line(line TextLine, dx f64, dy f64) TextLine {
+	return TextLine{
+		x:      line.x + dx
+		y:      line.y + dy
+		width:  line.width
+		height: line.height
+		fragments: line.fragments.map(TextFragment{
+			x:      it.x + dx
+			y:      it.y + dy
+			width:  it.width
+			height: it.height
+			text:   it.text
+		})
+	}
 }
 
 // A laid-out block box: `x`/`y`/`width`/`height` are the *content box* geometry in CSS px, relative
@@ -123,12 +154,7 @@ fn translate_block(box BlockBox, dx f64, dy f64) BlockBox {
 	moved.x += dx
 	moved.y += dy
 	moved.children = box.children.map(translate_block(it, dx, dy))
-	moved.lines = box.lines.map(TextLine{
-		x:      it.x + dx
-		y:      it.y + dy
-		width:  it.width
-		height: it.height
-	})
+	moved.lines = box.lines.map(translate_line(it, dx, dy))
 	return moved
 }
 
@@ -595,9 +621,9 @@ fn aligned_line_x(content_x f64, content_width f64, line_width f64, align string
 // position (offset past left floats, shortened by right floats), and a line whose first word can't
 // fit beside a float drops below it.
 //
-// FIXME: still stands in for a real inline formatting context — glyph advances are estimated, `pre*`
-// whitespace runs are collapsed (widths approximate), there is no per-inline font/line-height, no
-// inline fragment geometry (individual word positions), no per-word justification, and no bidi.
+// Each line carries its words as positioned fragments. FIXME: still stands in for a real inline
+// formatting context — glyph advances are estimated, `pre*` whitespace runs are collapsed (widths
+// approximate), there is no per-inline font/line-height, no per-word justification, and no bidi.
 fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, float_bands []FloatBand, author_rules []&css.CSSRule) []TextLine {
 	white_space := css.cascaded_value_with_ua(element, css.property_id_from_string('white-space') or {
 		return []TextLine{}
@@ -654,11 +680,27 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 				line_width += needed
 				j++
 			}
+			line_x := aligned_line_x(left, right - left, line_width, align)
+			// Place each word left-to-right within the line, advancing by the word plus one space.
+			mut fragments := []TextFragment{}
+			mut fragment_x := line_x
+			for k := i; k < j; k++ {
+				word_width := f64(words[k].runes().len) * glyph_width
+				fragments << TextFragment{
+					x:      fragment_x
+					y:      y
+					width:  word_width
+					height: line_height
+					text:   words[k]
+				}
+				fragment_x += word_width + glyph_width // word + space
+			}
 			lines << TextLine{
-				x:      aligned_line_x(left, right - left, line_width, align)
-				y:      y
-				width:  line_width
-				height: line_height
+				x:         line_x
+				y:         y
+				width:     line_width
+				height:    line_height
+				fragments: fragments
 			}
 			i = j
 			y += line_height
@@ -1156,12 +1198,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	for placed_float in placed_floats {
 		children << translate_block(placed_float, 0.0, content_top)
 	}
-	lines := local_lines.map(TextLine{
-		x:      it.x
-		y:      it.y + content_top
-		width:  it.width
-		height: it.height
-	})
+	lines := local_lines.map(translate_line(it, 0.0, content_top))
 
 	// If this box is positioned, it is the containing block for its abspos descendants: lay them out
 	// against its padding box (using its final, offset content origin). Their flow siblings above are

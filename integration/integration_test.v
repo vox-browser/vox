@@ -485,3 +485,20 @@ fn test_paint_order_over_parsed_document() {
 	assert order[1].z_index == 1 // backdrop paints below
 	assert order[2].z_index == 10 // modal paints on top (even though it came first in source)
 }
+
+// Full-stack inline fragments: each word in a parsed paragraph gets its own positioned box.
+fn test_inline_fragments_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 500px; font-size: 20px; line-height: 24px">one two three</div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
+	frags := box.lines[0].fragments
+	assert frags.len == 3
+	assert frags[0].text == 'one'
+	assert frags[0].x == 0.0
+	assert frags[1].text == 'two'
+	assert frags[1].x == 40.0 // "one" = 3*10=30, + 10 space
+	assert frags[2].text == 'three'
+	assert frags[2].x == 80.0 // + "two" (20) + space (10) = 40 + 40
+}
