@@ -1237,14 +1237,22 @@ fn effective_align_self(element &dom.Element, container_align string, author_rul
 }
 
 // The cross-axis (vertical, for a row) offset that aligns an item whose margin box is `item_cross` px
-// tall within a `cross_size` px line, per its resolved alignment. `stretch`/`flex-start`/`baseline`
-// top-align (0). FIXME: `stretch` should re-size the item to the line, not just top-align it.
+// tall within a `cross_size` px line, per its resolved alignment. `stretch` (already resized to the
+// line), `flex-start`, and `baseline` top-align (0).
 fn cross_axis_offset(align string, cross_size f64, item_cross f64) f64 {
 	return match align {
 		'flex-end', 'end' { cross_size - item_cross }
 		'center' { (cross_size - item_cross) / 2.0 }
 		else { 0.0 } // flex-start / start / stretch / baseline
 	}
+}
+
+// The content height that stretches a flex item's box to fill a `cross_size` px line: the line minus
+// the item's vertical margins, borders, and padding (so its margin box becomes `cross_size`).
+fn flex_stretched_content_height(box BlockBox, cross_size f64) f64 {
+	v_edges := box.margin.top + box.margin.bottom + box.border.top + box.border.bottom +
+		box.padding.top + box.padding.bottom
+	return non_negative(cross_size - v_edges)
 }
 
 // The flex container's cross size for aligning items: its explicit content-box height when set (box-
@@ -2413,8 +2421,7 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		// formatting context (no margin collapse). Each item's main size is its flex base size adjusted
 		// by flex-grow/shrink over the free space; `justify-content` distributes any leftover; `gap`
 		// spaces items; `align-items`/`align-self` align each on the cross axis.
-		// FIXME: no wrap, `align-items: stretch` doesn't re-size items (top-aligns like flex-start),
-		// no row-reverse/column (those fall to block flow).
+		// FIXME: no wrap, no row-reverse/column (those fall to block flow).
 		gap_main := flex_column_gap(element, author_rules)
 		items := flex_item_elements(element.as_node(), author_rules)
 		// Flex base sizes and outer edges, then the free space to grow/shrink over.
@@ -2450,8 +2457,14 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 			author_rules)
 		for i, ib in item_boxes {
 			align := effective_align_self(items[i], container_align, author_rules)
-			cross := cross_axis_offset(align, cross_size, ib.margin_box_height())
-			local_children << translate_block(ib, leading + f64(i) * gap, cross)
+			mut item := ib
+			// `align-items/self: stretch` grows an auto-height item's box to the line's cross size
+			// (its content stays top-positioned, so no re-layout is needed).
+			if align == 'stretch' && size_is_auto(items[i], 'height', author_rules) {
+				item.height = flex_stretched_content_height(item, cross_size)
+			}
+			cross := cross_axis_offset(align, cross_size, item.margin_box_height())
+			local_children << translate_block(item, leading + f64(i) * gap, cross)
 		}
 		has_children = item_boxes.len > 0
 	} else {

@@ -1095,3 +1095,19 @@ fn test_flex_grow_over_parsed_document() {
 	assert m_rect.width == 400.0 // main grows to fill the remaining 600 - 200
 	assert m_rect.x == s_rect.x + s_rect.width // main starts after the sidebar
 }
+
+// Full-stack align-items: stretch — a card row makes all cards the height of the tallest, even though
+// one card has more content (its natural height is larger).
+fn test_align_items_stretch_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.cards { display: flex; width: 600px; font-size: 20px } .card { width: 200px }</style></head><body><div class="cards"><div class="card" id="short">a</div><div class="card" id="tall">a<br>b<br>c</div></div></body></html>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	short := css.query_selector(root, '#short') or { panic('no #short') }
+	tall := css.query_selector(root, '#tall') or { panic('no #tall') }
+
+	short_rect := root_box.bounding_rect_for(short) or { panic('no #short box') }
+	tall_rect := root_box.bounding_rect_for(tall) or { panic('no #tall box') }
+	// The 3-line card is taller; stretch grows the 1-line card to the same height.
+	assert tall_rect.height > 0.0
+	assert short_rect.height == tall_rect.height
+}

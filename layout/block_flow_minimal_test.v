@@ -2561,3 +2561,47 @@ fn test_flex_no_grow_leaves_free_space() {
 	assert box.children[0].width == 100.0 // not grown
 	assert box.children[0].x == 200.0 // pushed to the end (300 - 100)
 }
+
+// align-items: stretch (the default) grows auto-height items to the container's cross size.
+fn test_align_items_stretch_fills_height() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; width: 300px; height: 80px') // default align-items: stretch
+	a := styled(doc, 'div', 'width: 100px')
+	b := styled(doc, 'div', 'width: 100px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].height == 80.0 // stretched to the 80px container
+	assert box.children[1].height == 80.0
+}
+
+// With an auto-height container, stretch grows auto-height items to match the tallest item (equal rows).
+fn test_align_items_stretch_to_tallest() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; width: 300px') // auto height
+	a := styled(doc, 'div', 'width: 100px; height: 50px') // explicit -> the tallest
+	b := styled(doc, 'div', 'width: 100px') // auto -> stretches to 50
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 50.0
+	assert box.children[0].height == 50.0 // explicit, unchanged
+	assert box.children[1].height == 50.0 // stretched to match
+}
+
+// A definite-height item is not stretched (stretch has no effect on its size) and top-aligns.
+fn test_align_items_stretch_skips_definite_height() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; align-items: stretch; width: 300px; height: 80px')
+	a := styled(doc, 'div', 'width: 100px; height: 30px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].height == 30.0 // unchanged
+	assert box.children[0].y == 0.0 // top-aligned
+}
