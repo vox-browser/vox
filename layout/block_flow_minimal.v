@@ -23,7 +23,8 @@ import dom
 // without disturbing the flow. Text-bearing blocks produce inline line boxes (word-wrapped, `<br>`-
 // and `white-space`-aware) positioned per `text-align`. Floated children are placed at the content
 // edges (out of flow); `clear` moves a block below them, a BFC grows to contain them, and inline
-// content wraps around them. FIXME: floats are placed at the container top, not their flow position.
+// content wraps around them. `BlockBox.paint_order()` flattens the tree into z-index paint order.
+// FIXME: floats are placed at the container top, not their flow position.
 //
 // FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
 // word-boundary wrapping, inline box geometry), mixed block+inline content (anonymous block boxes),
@@ -72,8 +73,46 @@ pub mut:
 	padding             BoxEdges
 	outer_top_margin    f64
 	outer_bottom_margin f64
-	children            []BlockBox
-	lines               []TextLine
+	// The z-index used for paint ordering among siblings: the integer `z-index` of a positioned box,
+	// else 0 (`auto` and non-positioned boxes don't reorder).
+	z_index  int
+	children []BlockBox
+	lines    []TextLine
+}
+
+// Flatten this box's subtree into paint order (CSS 2.1 Appendix E, simplified): a box paints before
+// its children, and its children paint ordered by z-index — negative first, then z-index `auto`/0 in
+// tree order, then positive. Each returned entry is a shallow box (no nested children) carrying the
+// box's own geometry and line boxes.
+//
+// FIXME: z-index is compared only among siblings here, not hoisted to the stacking context a
+// positioned ancestor establishes; opacity/transform/etc. stacking contexts aren't modeled.
+pub fn (b &BlockBox) paint_order() []BlockBox {
+	mut order := []BlockBox{}
+	b.collect_paint_order(mut order)
+	return order
+}
+
+fn (b &BlockBox) collect_paint_order(mut order []BlockBox) {
+	mut entry := *b
+	entry.children = []
+	order << entry
+	for child in stable_sort_by_z(b.children) {
+		child.collect_paint_order(mut order)
+	}
+}
+
+// Stable insertion sort of `items` by z-index (preserving tree order among equal z-indexes).
+fn stable_sort_by_z(items []BlockBox) []BlockBox {
+	mut result := items.clone()
+	for i := 1; i < result.len; i++ {
+		mut j := i
+		for j > 0 && result[j - 1].z_index > result[j].z_index {
+			result[j - 1], result[j] = result[j], result[j - 1]
+			j--
+		}
+	}
+	return result
 }
 
 // Return a copy of `box` with its own geometry, every descendant's, and its line boxes shifted by
@@ -1139,6 +1178,14 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		}
 	}
 
+	// z-index applies only to positioned boxes; `auto`/non-positioned sort as 0.
+	z_index := if is_positioned(position_value(element, author_rules)) {
+		css.cascaded_value_with_ua(element, css.property_id_from_string('z-index') or { return BlockBox{} },
+			author_rules).int()
+	} else {
+		0
+	}
+
 	return BlockBox{
 		tag_name:            element.local_name()
 		x:                   content_x
@@ -1150,6 +1197,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		padding:             padding
 		outer_top_margin:    outer_top_margin
 		outer_bottom_margin: outer_bottom_margin
+		z_index:             z_index
 		children:            children
 		lines:               lines
 	}

@@ -472,3 +472,16 @@ fn test_float_wrap_over_parsed_document() {
 	assert box.lines[2].x == 0.0 // below the float, full width
 	assert box.lines[2].y == 40.0
 }
+
+// Full-stack z-index: a modal (z-index:10) paints above a backdrop (z-index:1) in the same
+// positioned container, regardless of source order.
+fn test_paint_order_over_parsed_document() {
+	doc := html.parse_document('<div style="position: relative"><div style="position: absolute; z-index: 10">modal</div><div style="position: absolute; z-index: 1">backdrop</div></div>')
+	root := unsafe { &dom.Node(doc) }
+	container := css.query_selector(root, 'div') or { panic('no div') }
+
+	order := layout.layout_block(container, 0, 0, 800, []&css.CSSRule{}).paint_order()
+	assert order.len == 3
+	assert order[1].z_index == 1 // backdrop paints below
+	assert order[2].z_index == 10 // modal paints on top (even though it came first in source)
+}

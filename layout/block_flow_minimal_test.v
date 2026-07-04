@@ -1151,3 +1151,69 @@ fn test_inline_wide_word_drops_below_float() {
 	assert box.lines[0].x == 0.0 // full width below the float
 	assert box.lines[0].width == 120.0
 }
+
+// z-index orders positioned siblings in paint order: negative behind, auto/0 in tree order, positive
+// in front. The box itself paints before its children.
+fn test_paint_order_z_index() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
+	front := styled(doc, 'div', 'position: absolute; z-index: 5; top: 0; left: 0; width: 10px; height: 10px')
+	behind := styled(doc, 'div', 'position: absolute; z-index: -1; top: 0; left: 0; width: 10px; height: 10px')
+	auto := styled(doc, 'div', 'position: absolute; top: 0; left: 0; width: 10px; height: 10px') // z auto
+	mut rn := root.as_node()
+	rn.append_child(front.as_node()) or { panic('${err}') }
+	rn.append_child(behind.as_node()) or { panic('${err}') }
+	rn.append_child(auto.as_node()) or { panic('${err}') }
+
+	order := layout_block(root, 0, 0, 800, []&css.CSSRule{}).paint_order()
+	assert order.len == 4
+	assert order[0].z_index == 0 // the root (relative, z-index auto) paints first
+	assert order[1].z_index == -1 // behind
+	assert order[2].z_index == 0 // auto (paints in tree order at 0)
+	assert order[3].z_index == 5 // front
+}
+
+// z-index is ignored for non-positioned boxes: they keep tree order.
+fn test_paint_order_ignores_z_on_static() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px')
+	first := styled(doc, 'div', 'height: 10px; z-index: 5') // static -> z ignored
+	second := styled(doc, 'div', 'height: 20px; z-index: -1') // static -> z ignored
+	mut rn := root.as_node()
+	rn.append_child(first.as_node()) or { panic('${err}') }
+	rn.append_child(second.as_node()) or { panic('${err}') }
+
+	order := layout_block(root, 0, 0, 800, []&css.CSSRule{}).paint_order()
+	assert order.len == 3
+	assert order[1].height == 10.0 // first stays first (z-index:5 has no effect when static)
+	assert order[1].z_index == 0
+	assert order[2].height == 20.0 // second stays second (z-index:-1 has no effect)
+}
+
+// A box's subtree is contiguous in paint order (self, then descendants, before the next sibling).
+fn test_paint_order_subtree_contiguous() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px')
+	parent := styled(doc, 'div', '')
+	grandchild := styled(doc, 'div', 'height: 10px')
+	sibling := styled(doc, 'div', 'height: 20px')
+	mut pn := parent.as_node()
+	pn.append_child(grandchild.as_node()) or { panic('${err}') }
+	mut rn := root.as_node()
+	rn.append_child(parent.as_node()) or { panic('${err}') }
+	rn.append_child(sibling.as_node()) or { panic('${err}') }
+
+	order := layout_block(root, 0, 0, 800, []&css.CSSRule{}).paint_order()
+	assert order.len == 4 // root, parent, grandchild, sibling
+	assert order[2].height == 10.0 // grandchild comes right after its parent
+	assert order[3].height == 20.0 // the sibling comes after the whole parent subtree
+}
+
+// z_index field: an integer for positioned boxes, 0 for auto/non-positioned.
+fn test_z_index_field() {
+	doc := dom.Document.create(dom.url_about_blank())
+	assert layout_block(styled(doc, 'div', 'position: absolute; z-index: 3'), 0, 0, 800, []&css.CSSRule{}).z_index == 3
+	assert layout_block(styled(doc, 'div', 'position: relative; z-index: -2'), 0, 0, 800, []&css.CSSRule{}).z_index == -2
+	assert layout_block(styled(doc, 'div', 'z-index: 3'), 0, 0, 800, []&css.CSSRule{}).z_index == 0 // static
+	assert layout_block(styled(doc, 'div', 'position: relative'), 0, 0, 800, []&css.CSSRule{}).z_index == 0 // auto
+}
