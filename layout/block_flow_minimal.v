@@ -183,6 +183,36 @@ pub fn (b &BlockBox) bounding_rect_for(element &dom.Element) ?LayoutRect {
 	return box.border_box()
 }
 
+// The CSSOM *resolved* value of `property_name` for `element` (analogous to
+// `getComputedStyle(element).getPropertyValue(name)`), backed by this laid-out box tree. The
+// layout-dependent box metrics — width/height (used content-box size) and the used padding/margin/
+// border widths — return their USED px from the box; every other property falls back to the
+// layout-free computed value (`css.computed_style_value`). This closes the getComputedStyle FIXME
+// where a percentage/`auto` width would otherwise return its specified value.
+pub fn (b &BlockBox) resolved_style_value(element &dom.Element, property_name string, author_rules []&css.CSSRule) string {
+	if box := b.find_box(i64(element.as_node().unique_id())) {
+		used := match property_name {
+			'width' { box.width }
+			'height' { box.height }
+			'padding-top' { box.padding.top }
+			'padding-right' { box.padding.right }
+			'padding-bottom' { box.padding.bottom }
+			'padding-left' { box.padding.left }
+			'margin-top' { box.margin.top }
+			'margin-right' { box.margin.right }
+			'margin-bottom' { box.margin.bottom }
+			'margin-left' { box.margin.left }
+			'border-top-width' { box.border.top }
+			'border-right-width' { box.border.right }
+			'border-bottom-width' { box.border.bottom }
+			'border-left-width' { box.border.left }
+			else { return css.computed_style_value(element, property_name, author_rules) }
+		}
+		return '${fmt_px(used)}px'
+	}
+	return css.computed_style_value(element, property_name, author_rules)
+}
+
 // Whether `x`/`y` falls within this box's border box.
 fn (rect LayoutRect) contains(x f64, y f64) bool {
 	return x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height

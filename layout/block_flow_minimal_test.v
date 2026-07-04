@@ -2298,3 +2298,36 @@ fn test_no_gradient_by_default() {
 	assert box.paint_commands().filter(it.kind == 'fill_gradient').len == 0
 	assert !box.render_svg(100, 100).contains('<linearGradient')
 }
+
+// resolved_style_value returns USED px for layout-dependent box metrics (a percentage width resolves
+// against the container), and delegates other properties to the computed value.
+fn test_resolved_style_value_used_metrics() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px')
+	child := styled(doc, 'div', 'width: 50%; height: 30px; padding: 10px; margin-left: 5px; border-top: 2px solid; color: rgb(1, 2, 3)')
+	mut rn := root.as_node()
+	rn.append_child(child.as_node()) or { panic('${err}') }
+	no := []&css.CSSRule{}
+
+	box := layout_block(root, 0, 0, 800, no)
+	// Layout-dependent -> used px (width:50% of the 200px container = 100px).
+	assert box.resolved_style_value(child, 'width', no) == '100px'
+	assert box.resolved_style_value(child, 'height', no) == '30px'
+	assert box.resolved_style_value(child, 'padding-left', no) == '10px'
+	assert box.resolved_style_value(child, 'margin-left', no) == '5px'
+	assert box.resolved_style_value(child, 'border-top-width', no) == '2px'
+	// A non-layout property delegates to the computed value.
+	assert box.resolved_style_value(child, 'color', no) == 'rgb(1 2 3)'
+}
+
+// For an element not in the box tree, resolved_style_value falls back to the layout-free computed
+// value (so width returns the specified `auto`, font-size its computed px).
+fn test_resolved_style_value_orphan_falls_back() {
+	doc := dom.Document.create(dom.url_about_blank())
+	orphan := styled(doc, 'div', 'font-size: 24px')
+	no := []&css.CSSRule{}
+	box := layout_block(styled(doc, 'div', 'width: 100px'), 0, 0, 800, no)
+
+	assert box.resolved_style_value(orphan, 'font-size', no) == '24px'
+	assert box.resolved_style_value(orphan, 'width', no) == 'auto'
+}

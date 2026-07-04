@@ -996,3 +996,20 @@ fn test_linear_gradient_over_parsed_document() {
 	assert svg.contains('stop-color="rgb(10 20 30)"')
 	assert svg.contains('stop-color="rgb(200 210 220)"')
 }
+
+// Full-stack resolved values: getComputedStyle returns the specified `%` width, while the layout-
+// backed resolved_style_value returns the used px after laying out the parsed document.
+fn test_resolved_style_value_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.wrap { width: 400px } .col { width: 25%; padding: 8px }</style></head><body><div class="wrap"><div class="col"></div></div></body></html>')
+	root := unsafe { &dom.Node(doc) }
+	rules := layout.collect_document_author_rules(doc)
+	col := css.query_selector(root, '.col') or { panic('no .col') }
+
+	// Layout-free getComputedStyle: the width is still the specified percentage.
+	assert css.get_computed_style(col, rules).get_property_value('width') == '25%'
+
+	// After layout, the resolved value is the used px (25% of 400 = 100).
+	root_box := layout.layout_document(doc, 800)
+	assert root_box.resolved_style_value(col, 'width', rules) == '100px'
+	assert root_box.resolved_style_value(col, 'padding-left', rules) == '8px'
+}
