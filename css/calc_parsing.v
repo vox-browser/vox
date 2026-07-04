@@ -1,27 +1,41 @@
 module css
 
-// Parser for CSS math functions: calc(), min(), max(), clamp().
+import math
+
+// Parser + evaluator for CSS math functions: calc(), min(), max(), clamp(), and the
+// stepped/trig/exponential functions (round, mod, rem, sin, cos, tan, asin, acos, atan,
+// atan2, pow, sqrt, hypot, log, exp, abs, sign) plus the numeric constants (pi, e,
+// infinity, -infinity, NaN).
 //
-// The port stores a CalculatedStyleValue as a serialization string plus a NumericType
-// (see css.v). Rather than carry a resolvable CalculationNode tree, this builds a
-// lightweight parse tree only long enough to (a) validate type consistency and compute
-// the NumericType (used for property acceptance, e.g. does this calc resolve to a
-// <length>?) and (b) emit a canonical, re-parseable serialization.
-//
-// Deliberate boundaries (matching the port's existing CalculatedStyleValue design):
-//   - No simplification. `calc(1px + 2px)` serializes as `calc(1px + 2px)`, not `calc(3px)`.
-//     It still round-trips (parse -> serialize -> parse is stable).
-//   - Only calc/min/max/clamp. The stepped/trig/exponential functions (round, mod, rem,
-//     sin, cos, tan, pow, sqrt, hypot, abs, sign, log, exp, ...) and numeric constants
-//     (pi, e, infinity, nan) are not parsed yet and fall through as unsupported.
+// A CalcNode tree is built during parsing and stored on the CalculatedStyleValue. It is
+// used to (a) compute the expression's NumericType (for property acceptance and type
+// validation), (b) serialize back to a canonical, re-parseable string, and (c) resolve to
+// a concrete value at computed/used-value time via resolve() using a
+// CalculationResolutionContext (see resolve_calc_node in calc_resolve.v).
 
 // A parsed math-function expression. Recursion runs through the child arrays.
-type CalcNode = CalcNumeric | CalcSum | CalcProduct | CalcNegate | CalcInvert | CalcMinMax | CalcClamp
+type CalcNode = CalcNumeric | CalcSum | CalcProduct | CalcNegate | CalcInvert | CalcFunction
 
-// A leaf: a number, dimension, or percentage literal.
+// The kind of a numeric leaf, mirroring the C++ NumericValue variant.
+enum CalcNumericKind {
+	number
+	length
+	angle
+	time
+	frequency
+	resolution
+	flex
+	percentage
+}
+
+// A leaf: a number, dimension, or percentage literal (numeric constants like pi are folded
+// into number leaves at parse time, matching C++). `value` is the raw value in `unit`
+// (unit is '' for a number, '%' for a percentage, or the dimension unit e.g. 'px'/'deg').
 struct CalcNumeric {
-	text  string      // canonical serialization, e.g. "1px", "100%", "2", "45deg"
-	type_ NumericType // the leaf's numeric type
+	kind  CalcNumericKind
+	value f64
+	unit  string
+	type_ NumericType
 }
 
 // a + b + c. Subtraction is represented by a CalcNegate child.
@@ -34,29 +48,28 @@ struct CalcProduct {
 	children []CalcNode
 }
 
-// -x. Holds exactly one child (in `children[0]`), only ever a CalcSum child.
+// -x. Holds exactly one child in children[0].
 struct CalcNegate {
 	children []CalcNode
 }
 
-// 1/x. Holds exactly one child (in `children[0]`), only ever a CalcProduct child.
+// 1/x. Holds exactly one child in children[0].
 struct CalcInvert {
 	children []CalcNode
 }
 
-// min(...) or max(...).
-struct CalcMinMax {
-	is_max   bool
-	children []CalcNode
-}
-
-// clamp(min, center, max). Holds exactly three children.
-struct CalcClamp {
+// A named math function: min/max/clamp/hypot/abs/sign/sin/cos/tan/asin/acos/atan/atan2/
+// pow/sqrt/exp/log/mod/rem/round. `strategy` is the rounding strategy for round() (one of
+// nearest/up/down/to-zero), empty otherwise.
+struct CalcFunction {
+	name     string
+	strategy string
 	children []CalcNode
 }
 
 fn calc_function_is_supported(name string) bool {
-	return name in ['calc', 'min', 'max', 'clamp']
+	return name in ['calc', 'min', 'max', 'clamp', 'hypot', 'abs', 'sign', 'sin', 'cos', 'tan',
+		'asin', 'acos', 'atan', 'atan2', 'pow', 'sqrt', 'exp', 'log', 'mod', 'rem', 'round']
 }
 
 // Entry point: parse a `<calc-function>` component value into a CalculatedStyleValue.
@@ -79,6 +92,7 @@ fn parse_calculated_value(mut tokens ComponentValueStream) ?StyleValue {
 	return StyleValue(CalculatedStyleValue{
 		serialization: node.serialize_top()
 		numeric_type_: numeric_type
+		node:          [node]
 	})
 }
 
@@ -131,34 +145,82 @@ fn parse_calculated_value_of_kind(mut tokens ComponentValueStream, kind CalcMatc
 
 fn parse_calc_function_node(function Function) ?CalcNode {
 	name := to_ascii_lowercase(function.name)
-	match name {
-		'calc' {
-			mut inner := ComponentValueStream.new(function.value)
-			return parse_a_calculation(mut inner)
-		}
-		'min', 'max' {
-			arguments := parse_calc_arguments(function.value) or { return none }
-			if arguments.len == 0 {
+	if name == 'calc' {
+		mut inner := ComponentValueStream.new(function.value)
+		return parse_a_calculation(mut inner)
+	}
+	if name == 'round' {
+		return parse_round_function(function.value)
+	}
+	if !calc_function_is_supported(name) {
+		return none
+	}
+	arguments := parse_calc_arguments(function.value) or { return none }
+	return build_calc_function(name, arguments, '')
+}
+
+fn calc_rounding_strategy_from_string(ident string) ?string {
+	strategy := to_ascii_lowercase(ident)
+	if strategy in ['nearest', 'up', 'down', 'to-zero'] {
+		return strategy
+	}
+	return none
+}
+
+fn parse_round_function(values []ComponentValue) ?CalcNode {
+	argument_lists := parse_a_comma_separated_list_of_component_values_for_value_logic(values)
+	mut strategy := 'nearest'
+	mut numeric_lists := argument_lists.clone()
+
+	// An optional leading <rounding-strategy> keyword.
+	if argument_lists.len == 3 {
+		first := argument_lists[0]
+		mut probe := ComponentValueStream.new(first)
+		probe.consume_whitespace()
+		if keyword_token := probe.consume() {
+			probe.consume_whitespace()
+			if keyword_token.is(.ident) && !probe.has_more_tokens() {
+				strategy = calc_rounding_strategy_from_string(keyword_token.token().ident()) or {
+					return none
+				}
+				numeric_lists = argument_lists[1..].clone()
+			} else {
 				return none
 			}
-			return CalcNode(CalcMinMax{
-				is_max:   name == 'max'
-				children: arguments
-			})
-		}
-		'clamp' {
-			arguments := parse_calc_arguments(function.value) or { return none }
-			if arguments.len != 3 {
-				return none
-			}
-			return CalcNode(CalcClamp{
-				children: arguments
-			})
-		}
-		else {
-			return none
 		}
 	}
+
+	if numeric_lists.len != 2 {
+		return none
+	}
+	mut arguments := []CalcNode{}
+	for argument in numeric_lists {
+		mut stream := ComponentValueStream.new(argument)
+		arguments << (parse_a_calculation(mut stream) or { return none })
+	}
+	return build_calc_function('round', arguments, strategy)
+}
+
+fn build_calc_function(name string, arguments []CalcNode, strategy string) ?CalcNode {
+	valid_arity := match name {
+		'min', 'max', 'hypot' { arguments.len >= 1 }
+		'clamp' { arguments.len == 3 }
+		'abs', 'sign', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'exp' { arguments.len == 1 }
+		'log' { arguments.len == 1 || arguments.len == 2 }
+		'atan2', 'pow', 'mod', 'rem', 'round' { arguments.len == 2 }
+		else { false }
+	}
+	if !valid_arity {
+		return none
+	}
+	node := CalcNode(CalcFunction{
+		name:     name
+		strategy: strategy
+		children: arguments
+	})
+	// Validate that the argument types satisfy the function and produce a valid result type.
+	node.numeric_type() or { return none }
+	return node
 }
 
 fn parse_calc_arguments(values []ComponentValue) ?[]CalcNode {
@@ -291,28 +353,67 @@ fn convert_calc_leaf(component_value ComponentValue) ?CalcNode {
 		}
 		return parse_calc_function_node(component_value.function())
 	}
+	if component_value.is(.ident) {
+		return calc_constant_from_ident(component_value.token().ident())
+	}
 	if component_value.is(.number) {
 		number := component_value.token().number()
 		return CalcNode(CalcNumeric{
-			text:  serialize_a_number(number.value())
+			kind:  .number
+			value: number.value()
+			unit:  ''
 			type_: NumericType.new()
 		})
 	}
 	if component_value.is(.percentage) {
 		return CalcNode(CalcNumeric{
-			text:  serialize_a_number(component_value.token().percentage()) + '%'
+			kind:  .percentage
+			value: component_value.token().percentage()
+			unit:  '%'
 			type_: NumericType.with_type(.percent, 1)
 		})
 	}
 	if component_value.is(.dimension) {
 		unit := to_ascii_lowercase(component_value.token().dimension_unit())
 		numeric_type := NumericType.create_from_unit(unit) or { return none }
+		dimension := dimension_for_unit(unit) or { return none }
 		return CalcNode(CalcNumeric{
-			text:  serialize_a_number(component_value.token().dimension_value()) + unit
+			kind:  calc_numeric_kind_from_dimension(dimension)
+			value: component_value.token().dimension_value()
+			unit:  unit
 			type_: numeric_type
 		})
 	}
 	return none
+}
+
+fn calc_numeric_kind_from_dimension(dimension DimensionType) CalcNumericKind {
+	return match dimension {
+		.length { CalcNumericKind.length }
+		.angle { CalcNumericKind.angle }
+		.time { CalcNumericKind.time }
+		.frequency { CalcNumericKind.frequency }
+		.resolution { CalcNumericKind.resolution }
+		.flex { CalcNumericKind.flex }
+	}
+}
+
+// https://drafts.csswg.org/css-values-4/#calc-constants - resolved to number leaves at parse time.
+fn calc_constant_from_ident(ident string) ?CalcNode {
+	value := match to_ascii_lowercase(ident) {
+		'e' { math.e }
+		'pi' { math.pi }
+		'infinity' { math.inf(1) }
+		'-infinity' { math.inf(-1) }
+		'nan' { math.nan() }
+		else { return none }
+	}
+	return CalcNode(CalcNumeric{
+		kind:  .number
+		value: value
+		unit:  ''
+		type_: NumericType.new()
+	})
 }
 
 // --- Numeric type computation ---
@@ -345,42 +446,79 @@ fn (node CalcNode) numeric_type() ?NumericType {
 			child_type := node.children[0].numeric_type() or { return none }
 			return child_type.inverted()
 		}
-		CalcMinMax {
-			mut result := node.children[0].numeric_type() or { return none }
-			for index := 1; index < node.children.len; index++ {
-				child_type := node.children[index].numeric_type() or { return none }
-				result = result.consistent_type(child_type) or { return none }
-			}
-			return result
-		}
-		CalcClamp {
-			mut result := node.children[0].numeric_type() or { return none }
-			for index := 1; index < node.children.len; index++ {
-				child_type := node.children[index].numeric_type() or { return none }
-				result = result.consistent_type(child_type) or { return none }
-			}
-			return result
+		CalcFunction {
+			return calc_function_numeric_type(node.name, node.children)
 		}
 	}
 	return none
+}
+
+// The consistent type of all children (used by min/max/clamp/hypot/round/mod/rem/abs/atan2).
+fn calc_consistent_children_type(children []CalcNode) ?NumericType {
+	mut result := children[0].numeric_type() or { return none }
+	for index := 1; index < children.len; index++ {
+		child_type := children[index].numeric_type() or { return none }
+		result = result.consistent_type(child_type) or { return none }
+	}
+	return result
+}
+
+fn calc_function_numeric_type(name string, children []CalcNode) ?NumericType {
+	match name {
+		'min', 'max', 'clamp', 'hypot', 'abs', 'mod', 'rem', 'round' {
+			// Type-preserving: the result has the consistent type of the arguments.
+			return calc_consistent_children_type(children)
+		}
+		'sign' {
+			// <number>|<dimension>|<percentage> in, <number> out.
+			children[0].numeric_type() or { return none }
+			return NumericType.new()
+		}
+		'sin', 'cos', 'tan' {
+			// <number>|<angle> in, <number> out.
+			child_type := children[0].numeric_type() or { return none }
+			if !child_type.matches_number(none) && !child_type.matches_angle(none) {
+				return none
+			}
+			return NumericType.new()
+		}
+		'asin', 'acos', 'atan' {
+			// <number> in, <angle> out.
+			child_type := children[0].numeric_type() or { return none }
+			if !child_type.matches_number(none) {
+				return none
+			}
+			return NumericType.with_type(.angle, 1)
+		}
+		'atan2' {
+			// consistent <number>|<dimension>|<percentage> in, <angle> out.
+			calc_consistent_children_type(children) or { return none }
+			return NumericType.with_type(.angle, 1)
+		}
+		'pow', 'sqrt', 'exp', 'log' {
+			// <number> in, <number> out.
+			for child in children {
+				child_type := child.numeric_type() or { return none }
+				if !child_type.matches_number(none) {
+					return none
+				}
+			}
+			return NumericType.new()
+		}
+		else {
+			return none
+		}
+	}
 }
 
 // --- Serialization ---
 
 // The complete serialization, including the outer `calc(...)`/`min(...)`/... wrapper.
 fn (node CalcNode) serialize_top() string {
-	match node {
-		CalcMinMax {
-			return node.serialize_function()
-		}
-		CalcClamp {
-			return node.serialize_function()
-		}
-		else {
-			return 'calc(' + node.serialize_inner(true) + ')'
-		}
+	if node is CalcFunction {
+		return node.serialize_function()
 	}
-	return ''
+	return 'calc(' + node.serialize_inner(true) + ')'
 }
 
 // The inner text of a node. `is_root` is true for the outermost expression of a calc()
@@ -390,7 +528,7 @@ fn (node CalcNode) serialize_top() string {
 fn (node CalcNode) serialize_inner(is_root bool) string {
 	match node {
 		CalcNumeric {
-			return node.text
+			return node.serialize_leaf()
 		}
 		CalcSum {
 			serialized := serialize_calc_sum(node.children)
@@ -405,14 +543,24 @@ fn (node CalcNode) serialize_inner(is_root bool) string {
 		CalcInvert {
 			return '1 / ' + node.children[0].serialize_inner(false)
 		}
-		CalcMinMax {
-			return node.serialize_function()
-		}
-		CalcClamp {
+		CalcFunction {
 			return node.serialize_function()
 		}
 	}
 	return ''
+}
+
+fn (leaf CalcNumeric) serialize_leaf() string {
+	if math.is_nan(leaf.value) {
+		return 'NaN'
+	}
+	if math.is_inf(leaf.value, 1) {
+		return 'infinity'
+	}
+	if math.is_inf(leaf.value, -1) {
+		return '-infinity'
+	}
+	return serialize_a_number(leaf.value) + leaf.unit
 }
 
 fn serialize_calc_sum(children []CalcNode) string {
@@ -441,19 +589,13 @@ fn serialize_calc_product(children []CalcNode) string {
 	return serialized
 }
 
-fn (node CalcMinMax) serialize_function() string {
-	name := if node.is_max { 'max' } else { 'min' }
+fn (node CalcFunction) serialize_function() string {
 	mut parts := []string{}
+	if node.name == 'round' {
+		parts << node.strategy
+	}
 	for child in node.children {
 		parts << child.serialize_inner(true)
 	}
-	return name + '(' + parts.join(', ') + ')'
-}
-
-fn (node CalcClamp) serialize_function() string {
-	mut parts := []string{}
-	for child in node.children {
-		parts << child.serialize_inner(true)
-	}
-	return 'clamp(' + parts.join(', ') + ')'
+	return node.name + '(' + parts.join(', ') + ')'
 }

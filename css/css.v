@@ -2023,6 +2023,10 @@ pub struct CalculatedStyleValue {
 pub mut:
 	serialization string = 'calc(0px)'
 	numeric_type_ ?NumericType
+	// The parsed calculation tree, when available (0 or 1 element). Values created via
+	// CalculatedStyleValue.create (Typed OM / transforms) leave this empty and fall back to
+	// the serialization-based resolution path.
+	node []CalcNode
 }
 
 pub fn CalculatedStyleValue.create(node CalculationNode, numeric_type NumericType, context CalculationContext) CalculatedStyleValue {
