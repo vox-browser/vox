@@ -19,18 +19,72 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 	return property_initial_values[string_from_property_id(property_id)] or { '' }
 }
 
-// The element's declared value for `property_name` from its inline style attribute, if present.
-fn inline_declared_value(element &dom.Element, property_name string) ?string {
+// A single longhand value taken from a declaration (directly or via an expanded shorthand).
+struct LonghandDeclaration {
+	value     string
+	important bool
+}
+
+// Expand a shorthand's value text into a longhand-name -> value map, using the CSS value-logic
+// typed expansion (e.g. 'margin: 1px 2px' -> margin-top/bottom '1px', margin-left/right '2px').
+fn expand_shorthand_value(shorthand_id PropertyID, value_text string) map[string]string {
+	mut result := map[string]string{}
+	typed := parse_css_value_logic(shorthand_id, value_text) or { return result }
+	result_ptr := &result
+	for_each_typed_property_expanding_shorthands(shorthand_id, typed, fn [result_ptr] (longhand_id PropertyID, longhand_value StyleValue) {
+		unsafe {
+			mut m := *result_ptr
+			m[string_from_property_id(longhand_id)] = longhand_value.to_string()
+			*result_ptr = m
+		}
+	})
+	return result
+}
+
+// The declaration's value for the longhand `property_name`: a direct declaration if present,
+// otherwise a value produced by expanding any shorthand the declaration sets.
+// FIXME: source order between a shorthand and an overlapping longhand within one block is not
+// tracked (a direct longhand always wins here).
+fn declaration_longhand(declaration &CSSStyleProperties, property_name string) ?LonghandDeclaration {
+	direct := declaration.get_property_value(property_name)
+	if direct.len > 0 {
+		return LonghandDeclaration{
+			value:     direct
+			important: declaration.property_priority(property_name) == 'important'
+		}
+	}
+	for i in 0 .. declaration.length() {
+		shorthand_name := declaration.item(usize(i))
+		shorthand_id := property_id_from_string(shorthand_name) or { continue }
+		if !property_is_shorthand(shorthand_id) {
+			continue
+		}
+		expanded := expand_shorthand_value(shorthand_id, declaration.get_property_value(shorthand_name))
+		if value := expanded[property_name] {
+			return LonghandDeclaration{
+				value:     value
+				important: declaration.property_priority(shorthand_name) == 'important'
+			}
+		}
+	}
+	return none
+}
+
+// The element's inline style declaration block, if it has a non-empty style attribute.
+fn inline_declaration_block(element &dom.Element) ?&CSSStyleProperties {
 	style_text := element.get_attribute('style') or { return none }
 	if style_text.len == 0 {
 		return none
 	}
-	block := parse_css_property_declaration_block_with_parser(style_text)
-	value := block.get_property_value(property_name)
-	if value.len == 0 {
-		return none
-	}
-	return value
+	return parse_css_property_declaration_block_with_parser(style_text)
+}
+
+// The element's declared value for `property_name` from its inline style attribute, if present
+// (expanding shorthands).
+fn inline_declared_value(element &dom.Element, property_name string) ?string {
+	block := inline_declaration_block(element) or { return none }
+	longhand := declaration_longhand(block, property_name) or { return none }
+	return longhand.value
 }
 
 // Resolve the cascaded/specified value of `property_id` for `element`:
@@ -76,37 +130,27 @@ fn cascade_match_beats(a CascadeMatch, b CascadeMatch) bool {
 	return a.order >= b.order
 }
 
-// Whether the element's inline declaration for `property_name` is !important.
-fn inline_priority_is_important(element &dom.Element, property_name string) bool {
-	style_text := element.get_attribute('style') or { return false }
-	if style_text.len == 0 {
-		return false
-	}
-	block := parse_css_property_declaration_block_with_parser(style_text)
-	return block.property_priority(property_name) == 'important'
-}
-
 // The specified value of `property_name` on `element`: the winner of the cascade among the inline
 // declaration and every matching author rule in `rules`, ordered by !important, then specificity,
-// then source order. (Inline style is given a specificity higher than any selector, per spec.)
+// then source order. Shorthands are expanded, so e.g. 'margin: 0' contributes to 'margin-top'.
+// (Inline style is given a specificity higher than any selector, per spec.)
 fn specified_value_on(element &dom.Element, property_name string, rules []&CSSRule) ?string {
 	mut matches := []CascadeMatch{}
 
-	if value := inline_declared_value(element, property_name) {
-		matches << CascadeMatch{
-			important:   inline_priority_is_important(element, property_name)
-			specificity: u32(0xffffffff) // higher than any selector
-			order:       0x7fffffff
-			value:       value
+	if block := inline_declaration_block(element) {
+		if longhand := declaration_longhand(block, property_name) {
+			matches << CascadeMatch{
+				important:   longhand.important
+				specificity: u32(0xffffffff) // higher than any selector
+				order:       0x7fffffff
+				value:       longhand.value
+			}
 		}
 	}
 
 	for i, rule in rules {
 		declaration := rule.style() or { continue }
-		value := declaration.get_property_value(property_name)
-		if value.len == 0 {
-			continue
-		}
+		longhand := declaration_longhand(declaration, property_name) or { continue }
 		// Highest specificity among this rule's selectors that match the element.
 		mut rule_mut := rule
 		mut best_specificity := ?u32(none)
@@ -124,10 +168,10 @@ fn specified_value_on(element &dom.Element, property_name string, rules []&CSSRu
 		}
 		if specificity := best_specificity {
 			matches << CascadeMatch{
-				important:   declaration.property_priority(property_name) == 'important'
+				important:   longhand.important
 				specificity: specificity
 				order:       i
-				value:       value
+				value:       longhand.value
 			}
 		}
 	}

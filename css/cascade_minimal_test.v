@@ -113,6 +113,34 @@ fn test_inline_important_beats_author_important() {
 	assert cascaded_value_with_stylesheet(el, pid('color'), rules) == 'blue'
 }
 
+fn test_shorthand_expansion_inline() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'div', 'style', 'margin: 1px 2px 3px 4px')
+	assert cascaded_value_with_stylesheet(el, pid('margin-top'), []&CSSRule{}) == '1px'
+	assert cascaded_value_with_stylesheet(el, pid('margin-right'), []&CSSRule{}) == '2px'
+	assert cascaded_value_with_stylesheet(el, pid('margin-bottom'), []&CSSRule{}) == '3px'
+	assert cascaded_value_with_stylesheet(el, pid('margin-left'), []&CSSRule{}) == '4px'
+}
+
+fn test_shorthand_expansion_author_rule() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'div', 'class', 'box')
+	rules := parse_css_stylesheet_contents_with_parser('.box { padding: 10px 20px }', map[string]bool{})
+	// 2-value padding: top/bottom 10px, left/right 20px.
+	assert cascaded_value_with_stylesheet(el, pid('padding-top'), rules) == '10px'
+	assert cascaded_value_with_stylesheet(el, pid('padding-left'), rules) == '20px'
+}
+
+fn test_longhand_overrides_shorthand_in_cascade() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'div', 'class', 'box')
+	// A later, equally-specific rule's longhand overrides the earlier shorthand's contribution.
+	rules := parse_css_stylesheet_contents_with_parser('.box { margin: 5px } .box { margin-top: 9px }',
+		map[string]bool{})
+	assert cascaded_value_with_stylesheet(el, pid('margin-top'), rules) == '9px'
+	assert cascaded_value_with_stylesheet(el, pid('margin-left'), rules) == '5px'
+}
+
 fn test_author_rule_inheritance() {
 	doc := dom.Document.create(dom.url_about_blank())
 	mut root := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
