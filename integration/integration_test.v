@@ -621,3 +621,18 @@ fn test_render_svg_over_parsed_document() {
 	assert svg.contains('fill="rgb(30 60 90)"') // inner background
 	assert svg.contains('>hi</text>')
 }
+
+// Full-stack getComputedStyle: parse HTML + an author stylesheet, then read computed values as
+// strings over the parsed DOM (color resolved to rgb(), font-size to px, inheritance applied).
+fn test_get_computed_style_over_parsed_document() {
+	doc := html.parse_document('<body><div class="card"><p>text</p></div></body>')
+	root := unsafe { &dom.Node(doc) }
+	rules := css.parse_css_stylesheet_contents_with_parser('.card { color: crimson; font-size: 24px }',
+		map[string]bool{})
+	p := css.query_selector(root, 'p') or { panic('no p') }
+
+	style := css.get_computed_style(p, rules)
+	assert style.get_property_value('color') == 'rgb(220 20 60)' // crimson, inherited to <p>
+	assert style.get_property_value('font-size') == '24px' // inherited from .card
+	assert style.get_property_value('display') == 'block' // UA default for <p>
+}

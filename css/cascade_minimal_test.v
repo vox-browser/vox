@@ -290,3 +290,37 @@ fn test_calc_computed_length() {
 	pct := el_with(doc, 'div', 'style', 'width: calc(100% - 40px)')
 	assert (computed_calc_px(pct, pid('width'), 200.0, []&CSSRule{}) or { panic('calc-pct') }) == 160.0
 }
+
+// get_computed_style / computed_style_value: the CSSOM-style computed value as a string.
+fn test_computed_style_value() {
+	doc := dom.Document.create(dom.url_about_blank())
+	parent := el_with(doc, 'div', 'style', 'color: red; font-size: 20px')
+	child := el_with(doc, 'span', 'style', 'width: 100px; background-color: #00ff00; line-height: 30px')
+	mut pn := parent.as_node()
+	pn.append_child(child.as_node()) or { panic('${err}') }
+
+	style := get_computed_style(child, []&CSSRule{})
+	// color inherits from the parent -> resolved rgb().
+	assert style.get_property_value('color') == 'rgb(255 0 0)'
+	// background-color resolves to rgb().
+	assert style.get_property_value('background-color') == 'rgb(0 255 0)'
+	// font-size inherits (20) -> px.
+	assert style.get_property_value('font-size') == '20px'
+	// line-height -> px.
+	assert style.get_property_value('line-height') == '30px'
+	// an absolute length -> px.
+	assert style.get_property_value('width') == '100px'
+	// display is not set -> its cascaded (initial) value.
+	assert style.get_property_value('display') == 'inline'
+	// unset background-color on a plain element -> transparent.
+	plain := el_with(doc, 'p', 'style', '')
+	assert get_computed_style(plain, []&CSSRule{}).get_property_value('background-color') == 'rgb(0 0 0 / 0)'
+}
+
+// A calc() and an em length compute to px through get_computed_style too.
+fn test_computed_style_value_calc_em() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'div', 'style', 'font-size: 20px; margin-left: calc(10px + 2em)')
+	// 2em @ 20px = 40, + 10 = 50.
+	assert get_computed_style(el, []&CSSRule{}).get_property_value('margin-left') == '50px'
+}
