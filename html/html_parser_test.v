@@ -287,3 +287,41 @@ fn test_content_after_template() {
 	tmpl := unsafe { &dom.HTMLTemplateElement(template) }
 	assert children_repr(tmpl.content().as_node()) == '"t"'
 }
+
+fn context_element(tag string) &dom.Element {
+	doc := dom.Document.create(dom.url_about_blank())
+	return doc.create_element_ns(ns_html, tag) or { panic('context ${tag}: ${err}') }
+}
+
+fn repr_nodes(nodes []&dom.Node) string {
+	mut parts := []string{}
+	for n in nodes {
+		parts << tree_repr(n)
+	}
+	return parts.join(',')
+}
+
+fn test_fragment_div_context() {
+	// The <div>-context fragment (like div.innerHTML = ...) parses with the "in body" rules.
+	nodes := parse_html_fragment(context_element('div'), '<p>hello</p><b>x</b>')
+	assert nodes.len == 2
+	assert repr_nodes(nodes) == 'p("hello"),b("x")'
+}
+
+fn test_fragment_table_context() {
+	// A <table>-context fragment parses with the "in table" rules: a bare <tr> gets an implicit
+	// <tbody> and there is no <table> wrapper in the result.
+	nodes := parse_html_fragment(context_element('table'), '<tr><td>x</td></tr>')
+	assert repr_nodes(nodes) == 'tbody(tr(td("x")))'
+}
+
+fn test_fragment_tbody_context() {
+	nodes := parse_html_fragment(context_element('tbody'), '<tr><td>a</td></tr><tr><td>b</td></tr>')
+	assert repr_nodes(nodes) == 'tr(td("a")),tr(td("b"))'
+}
+
+fn test_fragment_textarea_context_is_rcdata() {
+	// A <textarea>-context fragment tokenizes as RCDATA, so markup is literal text.
+	nodes := parse_html_fragment(context_element('textarea'), 'a<b>c')
+	assert repr_nodes(nodes) == '"a<b>c"'
+}
