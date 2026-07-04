@@ -2832,6 +2832,9 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	if s := style_value.serialize_grid_area(mode) {
 		return s
 	}
+	if s := style_value.serialize_border_image(mode) {
+		return s
+	}
 	if s := style_value.serialize_grid_template(mode) {
 		return s
 	}
@@ -3054,6 +3057,20 @@ fn grid_placement_is_custom_ident(value StyleValue) bool {
 		return value.grid_track_placement().is_custom_ident()
 	}
 	return false
+}
+
+// border-image always serializes the full `<source> <slice> / <width> / <outset> <repeat>`
+// form (upstream does not omit initial longhands here).
+fn (style_value ShorthandStyleValue) serialize_border_image(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .border_image {
+		return none
+	}
+	source := style_value.coordinating_longhand_value(.border_image_source) or { return none }
+	slice := style_value.coordinating_longhand_value(.border_image_slice) or { return none }
+	width := style_value.coordinating_longhand_value(.border_image_width) or { return none }
+	outset := style_value.coordinating_longhand_value(.border_image_outset) or { return none }
+	repeat := style_value.coordinating_longhand_value(.border_image_repeat) or { return none }
+	return '${source.serialize(mode)} ${slice.serialize(mode)} / ${width.serialize(mode)} / ${outset.serialize(mode)} ${repeat.serialize(mode)}'
 }
 
 // grid-area = <grid-line> [ / <grid-line> ]{0,3} — serialize row-start/column-start/
