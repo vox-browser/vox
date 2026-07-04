@@ -960,3 +960,21 @@ fn test_var_custom_properties_over_parsed_document() {
 	// background-color resolved from var(--brand).
 	assert box.background_color.serialize() == 'rgb(30 60 90)'
 }
+
+// Full-stack @media: an author stylesheet gives .col a base width and a wider one inside a
+// min-width media query; the box width depends on the viewport width passed to layout_document.
+fn test_media_query_over_parsed_document() {
+	markup := '<html><head><style>.col { width: 100px } @media (min-width: 600px) { .col { width: 300px } }</style></head><body><div class="col"></div></body></html>'
+
+	// Narrow viewport: the media query does not match -> base 100px.
+	narrow_doc := html.parse_document(markup)
+	narrow_root := layout.layout_document(narrow_doc, 500)
+	narrow_col := css.query_selector(unsafe { &dom.Node(narrow_doc) }, '.col') or { panic('no .col') }
+	assert (narrow_root.find_box(i64(narrow_col.as_node().unique_id())) or { panic('box') }).width == 100.0
+
+	// Wide viewport: the media query matches -> 300px.
+	wide_doc := html.parse_document(markup)
+	wide_root := layout.layout_document(wide_doc, 800)
+	wide_col := css.query_selector(unsafe { &dom.Node(wide_doc) }, '.col') or { panic('no .col') }
+	assert (wide_root.find_box(i64(wide_col.as_node().unique_id())) or { panic('box') }).width == 300.0
+}

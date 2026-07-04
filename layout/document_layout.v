@@ -31,7 +31,8 @@ pub fn collect_document_author_rules(document &dom.Document) []&css.CSSRule {
 // author rules from its <style> elements on top of the UA sheet. Returns the root element's box, or
 // an empty box when the document has no root element.
 pub fn layout_document(document &dom.Document, viewport_width f64) BlockBox {
-	author_rules := collect_document_author_rules(document)
+	// Flatten @media rules against the viewport width so the matching ones participate in the cascade.
+	author_rules := css.flatten_media_rules(collect_document_author_rules(document), viewport_width)
 	root_element := document.document_element() or { return BlockBox{} }
 	mut root_box := layout_block(root_element, 0, 0, viewport_width, author_rules)
 

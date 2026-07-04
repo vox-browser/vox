@@ -468,3 +468,42 @@ fn test_var_fallback_uses_var() {
 
 	assert cascaded_value_with_ua(div, pid('width'), no) == '5px'
 }
+
+// The minimal media-query evaluator: width features and media types against a viewport width.
+fn test_media_condition_matches() {
+	// min-width matches when the viewport is at least as wide.
+	assert media_condition_matches('(min-width: 600px)', 800.0)
+	assert !media_condition_matches('(min-width: 600px)', 500.0)
+	// max-width matches when the viewport is at most that wide.
+	assert media_condition_matches('(max-width: 400px)', 300.0)
+	assert !media_condition_matches('(max-width: 400px)', 500.0)
+	// `screen and (...)`: the type matches and the feature is evaluated.
+	assert media_condition_matches('screen and (max-width: 400px)', 300.0)
+	assert !media_condition_matches('screen and (max-width: 400px)', 500.0)
+	// A bare type / empty condition matches; a non-matching type does not.
+	assert media_condition_matches('all', 100.0)
+	assert media_condition_matches('screen', 100.0)
+	assert !media_condition_matches('print', 100.0)
+	// `and`-joined features must all match.
+	assert media_condition_matches('(min-width: 300px) and (max-width: 900px)', 600.0)
+	assert !media_condition_matches('(min-width: 300px) and (max-width: 900px)', 1000.0)
+	// `only screen` — the leading `only` is a no-op.
+	assert media_condition_matches('only screen and (min-width: 500px)', 700.0)
+}
+
+// flatten_media_rules includes a matching @media's children and drops a non-matching one's.
+fn test_flatten_media_rules() {
+	rules := parse_css_stylesheet_contents_with_parser('.a { color: red } @media (min-width: 600px) { .wide { color: blue } } @media (max-width: 400px) { .narrow { color: green } }',
+		map[string]bool{})
+
+	// At 800px wide: .a + the wide media's child (narrow media dropped).
+	wide := flatten_media_rules(rules, 800.0)
+	assert wide.len == 2
+	assert wide[0].selector_text() == '.a'
+	assert wide[1].selector_text() == '.wide'
+
+	// At 300px wide: .a + the narrow media's child.
+	narrow := flatten_media_rules(rules, 300.0)
+	assert narrow.len == 2
+	assert narrow[1].selector_text() == '.narrow'
+}
