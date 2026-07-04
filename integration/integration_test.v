@@ -312,3 +312,18 @@ fn test_centered_container_over_parsed_document() {
 	assert container.margin.right == 232.0
 	assert container.x == 240.0 // body's 8px content offset + 232 margin
 }
+
+// Full-stack BFC: an overflow:hidden wrapper contains its child paragraph's top margin instead of
+// letting it collapse out (the classic "contain the margin" use of a BFC). Compare the plain-div
+// case where the margin would collapse through.
+fn test_bfc_contains_margin_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 300px; overflow: hidden"><p style="height: 20px; margin-top: 40px"></p></div>')
+	root := unsafe { &dom.Node(doc) }
+	wrapper := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(wrapper, 0, 0, 1000, []&css.CSSRule{})
+	assert box.y == 0.0 // wrapper NOT pushed down; it contains the child's margin
+	assert box.outer_top_margin == 0.0
+	assert box.children[0].y == 40.0 // p's top margin sits inside the wrapper
+	assert box.height == 60.0 // 40 (margin inside) + 20
+}

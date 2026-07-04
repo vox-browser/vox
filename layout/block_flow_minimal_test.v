@@ -541,3 +541,57 @@ fn test_nested_top_margin_collapse_through() {
 	assert box.children[0].y == 30.0 // child at root content top
 	assert box.children[0].children[0].y == 30.0 // grandchild too; all three tops coincide
 }
+
+// overflow != visible establishes a BFC: the child's top margin is CONTAINED (does not collapse
+// through the box). Compare test_parent_child_top_margin_collapse, where the same box without
+// overflow lets the margin collapse out.
+fn test_bfc_overflow_contains_child_top_margin() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; overflow: hidden')
+	child := styled(doc, 'div', 'height: 30px; margin-top: 40px')
+	mut rn := root.as_node()
+	rn.append_child(child.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.outer_top_margin == 0.0 // margin contained, not collapsed through
+	assert box.y == 0.0 // root NOT pushed down
+	assert box.children[0].y == 40.0 // child's top margin held inside the box
+	assert box.height == 70.0 // 40 (margin, inside) + 30
+}
+
+// display: flow-root is the modern explicit BFC trigger; same containment.
+fn test_bfc_flow_root_contains_child_top_margin() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; display: flow-root')
+	child := styled(doc, 'div', 'height: 30px; margin-top: 40px')
+	mut rn := root.as_node()
+	rn.append_child(child.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.y == 0.0
+	assert box.children[0].y == 40.0
+	assert box.height == 70.0
+}
+
+// A BFC also contains the last child's bottom margin (it doesn't collapse out of the box).
+fn test_bfc_contains_child_bottom_margin() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; overflow: auto')
+	child := styled(doc, 'div', 'height: 30px; margin-bottom: 25px')
+	mut rn := root.as_node()
+	rn.append_child(child.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 55.0 // 30 + 25 (bottom margin contained)
+	assert box.outer_bottom_margin == 0.0 // not collapsed out
+}
+
+// establishes_block_formatting_context classification.
+fn test_establishes_bfc_classification() {
+	doc := dom.Document.create(dom.url_about_blank())
+	assert establishes_block_formatting_context(styled(doc, 'div', 'overflow: hidden'), []&css.CSSRule{})
+	assert establishes_block_formatting_context(styled(doc, 'div', 'overflow-y: scroll'), []&css.CSSRule{})
+	assert establishes_block_formatting_context(styled(doc, 'div', 'display: flow-root'), []&css.CSSRule{})
+	assert !establishes_block_formatting_context(styled(doc, 'div', ''), []&css.CSSRule{})
+	assert !establishes_block_formatting_context(styled(doc, 'div', 'overflow: visible'), []&css.CSSRule{})
+}

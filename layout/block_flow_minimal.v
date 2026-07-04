@@ -12,7 +12,9 @@ import dom
 //
 // Adjoining vertical margins collapse (CSS 2.1 §8.3.1): between in-flow siblings, and between a box
 // and its first/last child when no border/padding separates them (parent/child collapsing, via each
-// box's propagated outer margins). A box with no block-level children but with text content gets a
+// box's propagated outer margins) — unless the box establishes a block formatting context
+// (`overflow` != visible / `display: flow-root`), which contains its children's margins. A box with
+// no block-level children but with text content gets a
 // height from a coarse inline pass (line count × line-height). `box-sizing: border-box` makes a
 // specified width/height include padding+border. Used width and height are clamped by min/max-width
 // and min/max-height. Horizontal `auto` margins absorb leftover space (both auto centers the box; a
@@ -248,6 +250,25 @@ fn non_negative(v f64) f64 {
 	return if v > 0 { v } else { 0.0 }
 }
 
+// Whether `element` establishes a new block formatting context, in which case its margins do not
+// collapse with its in-flow children. Detects `display: flow-root` and a non-visible `overflow` on
+// either axis (`hidden`/`scroll`/`auto`/`clip`) — the common explicit triggers. FIXME: floats,
+// absolute positioning, inline-block, table cells, and the document root also establish BFCs.
+fn establishes_block_formatting_context(element &dom.Element, author_rules []&css.CSSRule) bool {
+	display_id := css.property_id_from_string('display') or { return false }
+	if css.cascaded_value_with_ua(element, display_id, author_rules) == 'flow-root' {
+		return true
+	}
+	for axis in ['overflow-x', 'overflow-y'] {
+		id := css.property_id_from_string(axis) or { continue }
+		value := css.cascaded_value_with_ua(element, id, author_rules)
+		if value != 'visible' && value != '' {
+			return true
+		}
+	}
+	return false
+}
+
 // Whether a margin property's cascaded value is the keyword `auto`.
 fn margin_is_auto(element &dom.Element, property_name string, author_rules []&css.CSSRule) bool {
 	id := css.property_id_from_string(property_name) or { return false }
@@ -326,11 +347,16 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 
 	content_x := x + margin.left + border.left + padding.left
 
-	// Whether this box's top/bottom margins can collapse with a first/last child's (no separating
-	// border or padding). FIXME: a box establishing a block formatting context (root, flow-root,
-	// overflow != visible, floats) should not collapse with its children — not modelled.
-	top_adjoins := border.top == 0.0 && padding.top == 0.0
-	bottom_has_border_padding := border.bottom != 0.0 || padding.bottom != 0.0
+	// Whether this box's top/bottom margins can collapse with a first/last child's. They can't when a
+	// border or padding separates them, nor when the box establishes a block formatting context (its
+	// children's margins are contained rather than collapsing through). FIXME: the document root also
+	// establishes a BFC (not detected here — it would need document-identity, and would wrongly fire
+	// on detached elements); floats/abspos likewise establish BFCs but aren't modelled.
+	establishes_bfc := establishes_block_formatting_context(element, author_rules)
+	top_adjoins := !establishes_bfc && border.top == 0.0 && padding.top == 0.0
+	// Whether the last child's bottom margin stays inside this box's content (rather than collapsing
+	// out): true when bottom border/padding separates them, or when the box establishes a BFC.
+	bottom_margin_contained := establishes_bfc || border.bottom != 0.0 || padding.bottom != 0.0
 
 	block_children := block_child_elements(element.as_node(), author_rules)
 
@@ -370,11 +396,11 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	}
 
 	// Auto content height: from the content-box top (local 0) to the last child's border-box bottom,
-	// plus that child's outer bottom margin only when bottom border/padding keeps the margin inside
-	// (otherwise it collapses out of the box). A box with no block children uses the inline text pass.
+	// plus that child's outer bottom margin only when it stays inside the box (otherwise it collapses
+	// out). A box with no block children uses the inline text pass.
 	mut content_height := 0.0
 	if has_children {
-		content_height = if bottom_has_border_padding {
+		content_height = if bottom_margin_contained {
 			flow_bottom + last_child_outer_bottom
 		} else {
 			flow_bottom
@@ -407,7 +433,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	// child's outer top margin when the top edges adjoin; the bottom collapses with the last child's
 	// outer bottom margin when the bottom edges adjoin (no bottom border/padding AND auto height).
 	// FIXME: empty-block self-collapse (a box's own top and bottom margins collapsing) isn't handled.
-	bottom_adjoins := !bottom_has_border_padding && height_is_auto && has_children
+	bottom_adjoins := !bottom_margin_contained && height_is_auto && has_children
 	outer_top_margin := if top_adjoins && has_children {
 		collapse_margins([margin.top, first_child_outer_top])
 	} else {
