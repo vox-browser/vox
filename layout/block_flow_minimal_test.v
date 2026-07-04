@@ -2916,3 +2916,27 @@ fn test_flex_wrap() {
 	assert box.children[2].x == 0.0 && box.children[2].y == 30.0 // wrapped to line 2
 	assert box.height == 60.0 // two 30px lines
 }
+
+// A grid item spanning multiple columns occupies their combined width and shifts auto-flow.
+fn test_grid_column_span() {
+	doc := dom.Document.create(dom.url_about_blank())
+	// 3 columns of 100px each (repeat(3, 1fr) of 300px).
+	root := styled(doc, 'div', 'display: grid; width: 300px; grid-template-columns: repeat(3, 1fr)')
+	mut rn := root.as_node()
+	// item A spans 2 columns; B and C are single. A+B fill row 1 (2+1=3 cols); C wraps to row 2.
+	a := styled(doc, 'div', 'grid-column: span 2; height: 20px')
+	b := styled(doc, 'div', 'height: 20px')
+	c := styled(doc, 'div', 'height: 20px')
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+	rn.append_child(c.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 3
+	// A at column 0, spanning 2 -> width 200, x 0.
+	assert box.children[0].x == 0.0 && box.children[0].width == 200.0
+	// B at column 2 -> x 200, width 100.
+	assert box.children[1].x == 200.0 && box.children[1].width == 100.0
+	// C wraps to row 2, column 0.
+	assert box.children[2].x == 0.0 && box.children[2].y == 20.0
+}

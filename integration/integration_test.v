@@ -1245,3 +1245,21 @@ fn test_flex_wrap_over_parsed_document() {
 	assert rects[2].x == rects[0].x // line 2, first column
 	assert rects[2].y == rects[0].y + 34.0 // 24 height + 10 row-gap
 }
+
+// Full-stack grid span: a feature card spans two of three columns; the next card takes the third.
+fn test_grid_span_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.g { display: grid; width: 300px; grid-template-columns: repeat(3, 1fr) } .feature { grid-column: span 2; height: 40px } .card { height: 40px }</style></head><body><div class="g"><div class="feature" id="f"></div><div class="card" id="c"></div></div></body></html>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	g := css.query_selector(root, '.g') or { panic('no .g') }
+	f := css.query_selector(root, '#f') or { panic('no #f') }
+	c := css.query_selector(root, '#c') or { panic('no #c') }
+
+	g_rect := root_box.bounding_rect_for(g) or { panic('no g') }
+	f_rect := root_box.bounding_rect_for(f) or { panic('no f') }
+	c_rect := root_box.bounding_rect_for(c) or { panic('no c') }
+	assert f_rect.width == 200.0 // spans two 100px columns
+	assert c_rect.width == 100.0 // one column
+	assert c_rect.x == g_rect.x + 200.0 // third column
+	assert c_rect.y == f_rect.y // same row
+}

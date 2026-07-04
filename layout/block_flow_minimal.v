@@ -1187,6 +1187,36 @@ fn is_grid(element &dom.Element, author_rules []&css.CSSRule) bool {
 	return css.cascaded_value_with_ua(element, id, author_rules) == 'grid'
 }
 
+// A grid item's auto-flow placement: its starting column and row, and how many columns it spans.
+struct GridPlacement {
+	col  int
+	row  int
+	span int
+}
+
+// The number of columns a grid item spans (>= 1), from `grid-column` (which sets grid-column-start/
+// end): `span N` gives N; two integer lines `a / b` give `b - a`; otherwise 1.
+// FIXME: the start line is ignored (items are auto-flowed), and named lines aren't supported.
+fn grid_column_span(element &dom.Element, author_rules []&css.CSSRule) int {
+	start_id := css.property_id_from_string('grid-column-start') or { return 1 }
+	end_id := css.property_id_from_string('grid-column-end') or { return 1 }
+	start := css.cascaded_value_with_ua(element, start_id, author_rules)
+	end := css.cascaded_value_with_ua(element, end_id, author_rules)
+	for value in [start, end] {
+		if value.starts_with('span ') {
+			n := value['span '.len..].trim_space().int()
+			return if n >= 1 { n } else { 1 }
+		}
+	}
+	// Two explicit integer lines: the span is their difference.
+	s := start.int()
+	e := end.int()
+	if s > 0 && e > s {
+		return e - s
+	}
+	return 1
+}
+
 // Resolve `grid-template-columns` (`value`) to the column widths in px within a `containing_width`-wide
 // grid whose columns are separated by `gap` px. `repeat(n, ...)` is expanded; each track is a fixed
 // length (px/em/rem/%) or an `fr` fraction that splits the free space (container minus fixed tracks
@@ -2877,12 +2907,13 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 			has_children = local_children.len > 0
 		}
 	} else if is_grid(element, author_rules) {
-		// GRID: resolve the column tracks (grid-template-columns, with fr units) and auto-place the
-		// items row by row (item k -> column k%cols, row k/cols). A row's height is its tallest item;
-		// column-gap/row-gap separate the tracks. Items are sized to their column (forced width) and
-		// become the grid box's children.
-		// FIXME: no grid-template-rows/areas, no explicit placement (grid-column/row), no minmax/auto
-		// tracks, no auto-fit/fill, no alignment (items fill their cell); auto-rows use content height.
+		// GRID: resolve the column tracks (grid-template-columns, with fr units) and auto-place items in
+		// row-major order; an item spanning several columns (grid-column: span N / a / b) occupies that
+		// many tracks and wraps to the next row when it doesn't fit. A row's height is its tallest item;
+		// column-gap/row-gap separate the tracks. Items are sized to their (spanned) columns and become
+		// the grid box's children.
+		// FIXME: no grid-template-rows/areas, no explicit start-line placement (the start column is
+		// auto-flowed), no minmax/auto tracks, no auto-fit/fill, no item alignment (items fill the cell).
 		gap_col := flex_column_gap(element, author_rules)
 		gap_row := flex_row_gap(element, author_rules)
 		template := css.cascaded_value_with_ua(element, css.property_id_from_string('grid-template-columns') or {
@@ -2897,21 +2928,45 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 			xacc += w + gap_col
 		}
 		items := flex_item_elements(element.as_node(), author_rules)
-		// Lay each item out at its column width (at the local origin; repositioned once rows are sized).
-		mut item_boxes := []BlockBox{}
-		for k, item in items {
-			col := k % n_cols
-			cell_content_width := non_negative(col_widths[col] - horizontal_edges(item, width, author_rules))
-			item_boxes << layout_block_impl(item, 0, 0, width, cell_content_width, author_rules)
-		}
-		// Row heights (tallest item's margin box per row), then row y offsets.
-		n_rows := if items.len > 0 { (items.len + n_cols - 1) / n_cols } else { 0 }
-		mut row_heights := []f64{len: n_rows}
-		for k, cb in item_boxes {
-			r := k / n_cols
-			if cb.margin_box_height() > row_heights[r] {
-				row_heights[r] = cb.margin_box_height()
+		// Auto-flow placements (starting column + row per item), honoring each item's column span.
+		mut placements := []GridPlacement{}
+		mut cur_col := 0
+		mut cur_row := 0
+		mut n_rows := 0
+		for item in items {
+			mut span := grid_column_span(item, author_rules)
+			if span > n_cols {
+				span = n_cols
 			}
+			if cur_col + span > n_cols {
+				cur_col = 0
+				cur_row++
+			}
+			placements << GridPlacement{
+				col:  cur_col
+				row:  cur_row
+				span: span
+			}
+			cur_col += span
+			if cur_row + 1 > n_rows {
+				n_rows = cur_row + 1
+			}
+		}
+		// Lay each item out across its spanned columns (at the local origin; repositioned once sized).
+		mut item_boxes := []BlockBox{}
+		mut row_heights := []f64{len: n_rows}
+		for i, item in items {
+			p := placements[i]
+			mut spanned := f64(p.span - 1) * gap_col
+			for c := p.col; c < p.col + p.span; c++ {
+				spanned += col_widths[c]
+			}
+			forced := non_negative(spanned - horizontal_edges(item, width, author_rules))
+			cb := layout_block_impl(item, 0, 0, width, forced, author_rules)
+			if cb.margin_box_height() > row_heights[p.row] {
+				row_heights[p.row] = cb.margin_box_height()
+			}
+			item_boxes << cb
 		}
 		mut row_y := []f64{}
 		mut yacc := 0.0
@@ -2919,9 +2974,10 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 			row_y << yacc
 			yacc += row_heights[r] + if r < n_rows - 1 { gap_row } else { 0.0 }
 		}
-		// Place each item at its column x / row y.
-		for k, cb in item_boxes {
-			local_children << translate_block(cb, content_x + col_x[k % n_cols], row_y[k / n_cols])
+		// Place each item at its (starting) column x / row y.
+		for i, cb in item_boxes {
+			p := placements[i]
+			local_children << translate_block(cb, content_x + col_x[p.col], row_y[p.row])
 		}
 		content_height = yacc
 		has_children = item_boxes.len > 0
