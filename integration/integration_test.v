@@ -668,3 +668,17 @@ fn test_inline_style_over_parsed_document() {
 	box := layout.layout_block(div, 0, 0, 800, []&css.CSSRule{})
 	assert box.width == 250.0
 }
+
+// Full-stack getBoundingClientRect: parse a document, lay it out, and read a queried element's
+// border-box rectangle in document coordinates.
+fn test_bounding_client_rect_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.box { width: 200px; height: 60px; margin-left: 30px }</style></head><body style="margin: 0"><div class="box"></div></body></html>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	target := css.query_selector(root, '.box') or { panic('no .box') }
+
+	rect := root_box.bounding_rect_for(target) or { panic('no rect') }
+	assert rect.x == 30.0 // margin-left, body margin overridden to 0
+	assert rect.width == 200.0
+	assert rect.height == 60.0
+}

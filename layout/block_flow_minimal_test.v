@@ -1622,3 +1622,54 @@ fn test_render_svg_opacity() {
 	svg := layout_block(el, 0, 0, 800, []&css.CSSRule{}).render_svg(50, 50)
 	assert svg.contains('fill="rgb(0 128 0)" fill-opacity="0.5"/>')
 }
+
+// bounding_rect_for finds a laid-out element's border box by its unique_id (a working
+// getBoundingClientRect, in document coordinates when laid out from the root).
+fn test_bounding_rect_for_element() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 300px')
+	first := styled(doc, 'div', 'height: 40px')
+	second := styled(doc, 'div', 'height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(first.as_node()) or { panic('${err}') }
+	rn.append_child(second.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	first_rect := box.bounding_rect_for(first) or { panic('no first') }
+	assert first_rect.x == 0.0 && first_rect.y == 0.0
+	assert first_rect.width == 300.0 && first_rect.height == 40.0
+	second_rect := box.bounding_rect_for(second) or { panic('no second') }
+	assert second_rect.y == 40.0 // stacked below the first
+	assert second_rect.height == 20.0
+
+	// An element not in the tree has no rect.
+	orphan := styled(doc, 'div', '')
+	assert box.bounding_rect_for(orphan) == none
+}
+
+// border_box covers content + padding + border.
+fn test_border_box_rect() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; height: 50px; padding: 10px; border: 5px solid')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	rect := box.border_box()
+	assert rect.x == 0.0 && rect.y == 0.0
+	assert rect.width == 130.0 // 100 + 2*10 + 2*5
+	assert rect.height == 80.0 // 50 + 2*10 + 2*5
+	// Same via bounding_rect_for on the root element.
+	assert (box.bounding_rect_for(el) or { panic('no el') }).width == 130.0
+}
+
+// Absolutely positioned elements are findable too (they're appended to their containing block).
+fn test_bounding_rect_for_abspos() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
+	badge := styled(doc, 'div', 'position: absolute; top: 10px; left: 20px; width: 30px; height: 30px')
+	mut rn := root.as_node()
+	rn.append_child(badge.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	rect := box.bounding_rect_for(badge) or { panic('no badge') }
+	assert rect.x == 20.0 && rect.y == 10.0
+	assert rect.width == 30.0 && rect.height == 30.0
+}

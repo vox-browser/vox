@@ -116,9 +116,51 @@ pub mut:
 	border_color     css.Color
 	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
 	// cumulative opacity (this box's times its ancestors').
-	opacity  f64 = 1.0
+	opacity f64 = 1.0
+	// The `unique_id` of the element this box was laid out for, so a box can be found from its element
+	// (backing getBoundingClientRect).
+	node_id  i64
 	children []BlockBox
 	lines    []TextLine
+}
+
+// A rectangle in the layout coordinate space (document coordinates when laid out from the root).
+pub struct LayoutRect {
+pub:
+	x      f64
+	y      f64
+	width  f64
+	height f64
+}
+
+// This box's border box (content plus padding and border) as a rectangle.
+pub fn (b &BlockBox) border_box() LayoutRect {
+	return LayoutRect{
+		x:      b.x - b.padding.left - b.border.left
+		y:      b.y - b.padding.top - b.border.top
+		width:  b.width + b.padding.left + b.padding.right + b.border.left + b.border.right
+		height: b.height + b.padding.top + b.padding.bottom + b.border.top + b.border.bottom
+	}
+}
+
+// Find the laid-out box for the element with `node_id` (its `unique_id`) anywhere in this subtree.
+pub fn (b &BlockBox) find_box(node_id i64) ?BlockBox {
+	if b.node_id == node_id {
+		return *b
+	}
+	for child in b.children {
+		if found := child.find_box(node_id) {
+			return found
+		}
+	}
+	return none
+}
+
+// The border-box rectangle of `element` within this laid-out tree — a working getBoundingClientRect
+// (in document coordinates when the tree was laid out from the document root). None if not laid out.
+pub fn (b &BlockBox) bounding_rect_for(element &dom.Element) ?LayoutRect {
+	box := b.find_box(i64(element.as_node().unique_id())) or { return none }
+	return box.border_box()
 }
 
 // Flatten this box's subtree into paint order (CSS 2.1 Appendix E, simplified): a box paints before
@@ -1492,6 +1534,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		text_color:          text_color
 		border_color:        border_color
 		opacity:             opacity
+		node_id:             i64(element.as_node().unique_id())
 		children:            children
 		lines:               lines
 	}
