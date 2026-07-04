@@ -172,3 +172,80 @@ fn test_get_element_by_id() {
 	assert (doc.get_element_by_id('target') or { panic('no target') }).tag_name() == 'div'
 	assert doc.get_element_by_id('missing') == none
 }
+
+fn test_text_split_and_whole() {
+	doc := Document.create(url_about_blank())
+	mut root := new_element(doc, 'div')
+	mut rn := root.as_node()
+	mut text := doc.create_text_node('hello world')
+	rn.append_child(text.as_node()) or { panic('${err}') }
+	// split_text creates a new sibling holding the tail.
+	tail := text.split_text(5) or { panic('${err}') }
+	assert text.data() == 'hello'
+	assert tail.data() == ' world'
+	assert rn.child_count() == 2
+	// whole_text concatenates contiguous text siblings.
+	assert text.whole_text() == 'hello world'
+}
+
+fn test_is_equal_node() {
+	doc := Document.create(url_about_blank())
+	a := new_element(doc, 'p')
+	b := new_element(doc, 'p')
+	mut c := new_element(doc, 'p')
+	c.set_attribute_value('id', 'z')
+	// isEqualNode is structural (distinct from isSameNode identity).
+	assert a.as_node().is_equal_node(b.as_node())
+	assert !a.as_node().is_equal_node(new_element(doc, 'div').as_node())
+	assert !a.as_node().is_equal_node(c.as_node())
+}
+
+fn test_insert_adjacent_and_attr() {
+	doc := Document.create(url_about_blank())
+	mut root := new_element(doc, 'div')
+	mut rn := root.as_node()
+	b := new_element(doc, 'b')
+	rn.append_child(b.as_node()) or { panic('${err}') }
+	mut mb := b
+	mb.insert_adjacent_element('beforebegin', new_element(doc, 'c')) or { panic('${err}') }
+	mb.insert_adjacent_element('afterend', new_element(doc, 'd')) or { panic('${err}') }
+	mut names := []string{}
+	for child in rn.children {
+		names << child.node_name()
+	}
+	assert names == ['c', 'b', 'd']
+
+	mut e := new_element(doc, 'a')
+	e.set_attribute_value('href', 'u')
+	attr := e.get_attribute_node('href') or { panic('no attr') }
+	assert attr.name() == 'href'
+	assert attr.value() == 'u'
+}
+
+fn test_tree_walker_and_node_iterator() {
+	doc := Document.create(url_about_blank())
+	mut root := new_element(doc, 'div')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('t').as_node()) or { panic('${err}') }
+	a := new_element(doc, 'a')
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	mut an := a.as_node()
+	an.append_child(new_element(doc, 'b').as_node()) or { panic('${err}') }
+
+	// SHOW_ELEMENT = 0x1. TreeWalker.nextNode starts below root; NodeIterator includes root.
+	mut walker := doc.create_tree_walker(rn, u32(0x1), none)
+	mut walked := []string{}
+	for {
+		node := walker.next_node() or { break }
+		walked << node.node_name()
+	}
+	assert walked == ['a', 'b']
+
+	mut iter := doc.create_node_iterator(rn, u32(0x1), none)
+	mut iterated := []string{}
+	for {
+		node := iter.next_node() or { break }
+		iterated << node.node_name()
+	}
+	assert iterated == ['div', 'a', 'b']
+}
