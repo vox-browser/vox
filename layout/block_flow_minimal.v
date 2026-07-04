@@ -1020,6 +1020,10 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rule
 	line_height := css.computed_line_height_px(element, author_rules)
 	color := css.computed_color(element, css.property_id_from_string('color') or { return },
 		author_rules) or { css.Color{0, 0, 0, 255} }
+	// `text-transform` (inherited) upper/lower/capitalizes this element's own text runs.
+	text_transform := css.cascaded_value_with_ua(element, css.property_id_from_string('text-transform') or {
+		return
+	}, author_rules)
 	for child in element.as_node().children_as_vector() {
 		if child.is_text() {
 			data := unsafe { &dom.Text(child) }.data()
@@ -1029,9 +1033,10 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rule
 					segments << []InlineWord{} // a preserved newline starts a new segment
 				}
 				for word in part.fields() {
+					transformed := apply_text_transform(word, text_transform)
 					segments[segments.len - 1] << InlineWord{
-						text:        word
-						width:       f64(word.runes().len) * glyph_width
+						text:        transformed
+						width:       f64(transformed.runes().len) * glyph_width
 						space_after: glyph_width
 						height:      line_height
 						color:       color
@@ -1052,6 +1057,28 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rule
 			}
 		}
 	}
+}
+
+// Apply the CSS `text-transform` to a rendered text run. `uppercase`/`lowercase` map the whole run;
+// `capitalize` uppercases the first character of the run (each word arrives here separately, so this
+// capitalizes every word). FIXME: `capitalize` should target the first *typographic letter unit*
+// (skipping leading punctuation), and full-width/full-size-kana are not modeled.
+fn apply_text_transform(text string, transform string) string {
+	return match transform {
+		'uppercase' { text.to_upper() }
+		'lowercase' { text.to_lower() }
+		'capitalize' { capitalize_first_letter(text) }
+		else { text } // 'none' and unmodeled values
+	}
+}
+
+// Uppercase the first character (rune) of `word`, leaving the rest unchanged.
+fn capitalize_first_letter(word string) string {
+	if word.len == 0 {
+		return word
+	}
+	runes := word.runes()
+	return runes[0].str().to_upper() + runes[1..].string()
 }
 
 // The `text-align`-adjusted left edge of a line whose content is `line_width` wide, within a content

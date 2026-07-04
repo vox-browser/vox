@@ -1793,3 +1793,64 @@ fn test_inner_text_pre_preserves_whitespace() {
 
 	assert inner_text(root, []&css.CSSRule{}) == 'x  y\nz'
 }
+
+// Collect the text of every inline fragment in a box's line boxes, in order.
+fn tt_fragment_texts(box BlockBox) []string {
+	mut texts := []string{}
+	for line in box.lines {
+		for frag in line.fragments {
+			texts << frag.text
+		}
+	}
+	return texts
+}
+
+// text-transform: uppercase maps each rendered word to upper case.
+fn test_text_transform_uppercase() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; text-transform: uppercase')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('hello world').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert tt_fragment_texts(box) == ['HELLO', 'WORLD']
+}
+
+// text-transform: lowercase maps each rendered word to lower case.
+fn test_text_transform_lowercase() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; text-transform: lowercase')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('HELLO World').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert tt_fragment_texts(box) == ['hello', 'world']
+}
+
+// text-transform: capitalize uppercases the first letter of each word.
+fn test_text_transform_capitalize() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; text-transform: capitalize')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('hello world').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert tt_fragment_texts(box) == ['Hello', 'World']
+}
+
+// text-transform is inherited: a nested inline element gets the container's transform, and can
+// override it with its own value.
+fn test_text_transform_inherits_and_overrides() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; text-transform: uppercase')
+	inner := styled(doc, 'span', 'text-transform: lowercase')
+	mut inner_n := inner.as_node()
+	inner_n.append_child(doc.create_text_node('World').as_node()) or { panic('${err}') }
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
+	rn.append_child(inner.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	// 'hi' inherits uppercase from the div; the span's own text is forced lowercase.
+	assert tt_fragment_texts(box) == ['HI', 'world']
+}

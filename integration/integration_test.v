@@ -743,3 +743,28 @@ fn test_inner_text_set_then_get_roundtrip() {
 	assert kids.len == 3 // text, <br>, text
 	assert kids[1].as_element() or { panic('expected <br>') }.local_name() == 'br'
 }
+
+// Full-stack text-transform: parse a document with an author stylesheet that uppercases a paragraph,
+// lay it out, and confirm the transform flows through to the rendered inline fragments and the SVG.
+fn test_text_transform_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>p { text-transform: uppercase }</style></head><body><p>hello world</p></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	p := css.query_selector(root, 'p') or { panic('no p') }
+
+	// The <p>'s line-box fragments carry the uppercased words.
+	p_box := root_box.find_box(i64(p.as_node().unique_id())) or { panic('no p box') }
+	mut texts := []string{}
+	for line in p_box.lines {
+		for frag in line.fragments {
+			texts << frag.text
+		}
+	}
+	assert texts == ['HELLO', 'WORLD']
+
+	// And the SVG output draws the uppercased text.
+	svg := root_box.render_svg(600, root_box.height + 20)
+	assert svg.contains('HELLO')
+	assert svg.contains('WORLD')
+	assert !svg.contains('hello')
+}
