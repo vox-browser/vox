@@ -636,3 +636,17 @@ fn test_get_computed_style_over_parsed_document() {
 	assert style.get_property_value('font-size') == '24px' // inherited from .card
 	assert style.get_property_value('display') == 'block' // UA default for <p>
 }
+
+// Full-stack dataset: parse HTML with data-* attributes and read them via the DOMStringMap.
+fn test_dataset_over_parsed_document() {
+	doc := html.parse_document('<div data-user-id="42" data-role="admin">x</div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	ds := div.dataset()
+	assert (ds.get('userId') or { 'none' }) == '42'
+	assert (ds.get('role') or { 'none' }) == 'admin'
+	assert ds.get('missing') == none
+	assert 'userId' in ds.keys()
+	assert 'role' in ds.keys()
+}
