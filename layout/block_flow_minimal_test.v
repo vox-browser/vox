@@ -660,3 +660,84 @@ fn test_static_position_ignores_insets() {
 	assert box.x == 0.0
 	assert box.y == 0.0
 }
+
+// An absolutely positioned child is placed by top/left against its containing block (the nearest
+// positioned ancestor's padding box).
+fn test_absolute_position_top_left() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
+	abs := styled(doc, 'div', 'position: absolute; top: 10px; left: 20px; width: 50px; height: 30px')
+	mut rn := root.as_node()
+	rn.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 1
+	assert box.children[0].x == 20.0
+	assert box.children[0].y == 10.0
+	assert box.children[0].width == 50.0
+	assert box.children[0].height == 30.0
+}
+
+// An abspos element is out of flow: it doesn't push its in-flow siblings or grow the container.
+fn test_absolute_position_removed_from_flow() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px')
+	inflow1 := styled(doc, 'div', 'height: 30px')
+	abs := styled(doc, 'div', 'position: absolute; top: 0; height: 999px')
+	inflow2 := styled(doc, 'div', 'height: 40px')
+	mut rn := root.as_node()
+	rn.append_child(inflow1.as_node()) or { panic('${err}') }
+	rn.append_child(abs.as_node()) or { panic('${err}') }
+	rn.append_child(inflow2.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 3 // 2 in-flow + 1 abspos (appended)
+	assert box.children[0].y == 0.0 // inflow1
+	assert box.children[1].y == 30.0 // inflow2 flows right after inflow1, ignoring abs
+	assert box.height == 70.0 // 30 + 40; abs's 999 height doesn't count
+	assert box.children[2].height == 999.0 // the abspos box itself
+}
+
+// right/bottom position the box's far edges against the containing block.
+fn test_absolute_position_right_bottom() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
+	abs := styled(doc, 'div', 'position: absolute; right: 10px; bottom: 15px; width: 40px; height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].x == 150.0 // 200 - 10 - 40
+	assert box.children[0].y == 65.0 // 100 - 15 - 20
+}
+
+// width:auto with both left and right fills the gap between them.
+fn test_absolute_position_auto_width_between_insets() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 300px; height: 100px')
+	abs := styled(doc, 'div', 'position: absolute; left: 20px; right: 30px; height: 40px')
+	mut rn := root.as_node()
+	rn.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].x == 20.0
+	assert box.children[0].width == 250.0 // 300 - 20 - 30
+}
+
+// The containing block is the NEAREST positioned ancestor: a static intermediate is skipped.
+fn test_absolute_position_nearest_positioned_ancestor() {
+	doc := dom.Document.create(dom.url_about_blank())
+	rel := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
+	mid := styled(doc, 'div', 'padding: 5px') // static -- NOT a containing block
+	abs := styled(doc, 'div', 'position: absolute; top: 0; left: 0; width: 10px; height: 10px')
+	mut mn := mid.as_node()
+	mn.append_child(abs.as_node()) or { panic('${err}') }
+	mut rn := rel.as_node()
+	rn.append_child(mid.as_node()) or { panic('${err}') }
+
+	box := layout_block(rel, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 2 // mid (in-flow) + abs (appended to rel, its CB)
+	abs_box := box.children[1]
+	assert abs_box.x == 0.0 // against rel's padding box, ignoring mid's 5px padding
+	assert abs_box.y == 0.0
+}

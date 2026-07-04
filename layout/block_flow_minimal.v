@@ -142,14 +142,18 @@ fn is_block_level_display(display string) bool {
 	return !display.starts_with('inline')
 }
 
-// The block-level element children of `node`, in document order. Text and other node types are
-// skipped (no inline formatting context yet), as are elements whose computed `display` is `none` or
-// inline-level — so `<head>`/`<script>`/`<style>` and inline elements no longer generate boxes.
+// The in-flow block-level element children of `node`, in document order. Text and other node types
+// are skipped (no inline formatting context yet), as are elements whose computed `display` is `none`
+// or inline-level, and absolutely positioned elements (out of flow — laid out separately against
+// their containing block). So `<head>`/`<script>`/`<style>`, inline, and abspos elements don't flow.
 fn block_child_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Element {
 	display_id := css.property_id_from_string('display') or { return []&dom.Element{} }
 	mut elements := []&dom.Element{}
 	for child in node.children_as_vector() {
 		if element := child.as_element() {
+			if is_absolutely_positioned(position_value(element, author_rules)) {
+				continue // out of flow
+			}
 			display := css.cascaded_value_with_ua(element, display_id, author_rules)
 			if is_block_level_display(display) {
 				elements << element
@@ -252,10 +256,13 @@ fn non_negative(v f64) f64 {
 }
 
 // Whether `element` establishes a new block formatting context, in which case its margins do not
-// collapse with its in-flow children. Detects `display: flow-root` and a non-visible `overflow` on
-// either axis (`hidden`/`scroll`/`auto`/`clip`) — the common explicit triggers. FIXME: floats,
-// absolute positioning, inline-block, table cells, and the document root also establish BFCs.
+// collapse with its in-flow children. Detects `display: flow-root`, absolute/fixed positioning, and a
+// non-visible `overflow` on either axis (`hidden`/`scroll`/`auto`/`clip`). FIXME: floats, inline-block,
+// table cells, and the document root also establish BFCs.
 fn establishes_block_formatting_context(element &dom.Element, author_rules []&css.CSSRule) bool {
+	if is_absolutely_positioned(position_value(element, author_rules)) {
+		return true
+	}
 	display_id := css.property_id_from_string('display') or { return false }
 	if css.cascaded_value_with_ua(element, display_id, author_rules) == 'flow-root' {
 		return true
@@ -268,6 +275,136 @@ fn establishes_block_formatting_context(element &dom.Element, author_rules []&cs
 		}
 	}
 	return false
+}
+
+// The rectangle (in absolute px) that an absolutely positioned element resolves its insets, size, and
+// position against — the padding box of its nearest positioned ancestor, or the initial containing
+// block (viewport) if none.
+struct PositionedContainingBlock {
+	x      f64
+	y      f64
+	width  f64
+	height f64
+}
+
+// The cascaded `position` value (`static` when absent).
+fn position_value(element &dom.Element, author_rules []&css.CSSRule) string {
+	id := css.property_id_from_string('position') or { return 'static' }
+	return css.cascaded_value_with_ua(element, id, author_rules)
+}
+
+// Absolutely positioned = out of flow, laid out against a containing block. `fixed` is treated like
+// `absolute` here (its containing block is the viewport rather than a positioned ancestor — FIXME).
+fn is_absolutely_positioned(position string) bool {
+	return position == 'absolute' || position == 'fixed'
+}
+
+// Positioned = anything but `static`; a positioned box is a containing block for abspos descendants.
+fn is_positioned(position string) bool {
+	return position != 'static' && position != ''
+}
+
+// Whether a size property (width/height) has no definite value (`auto`/absent/unresolvable).
+fn size_is_auto(element &dom.Element, property_name string, author_rules []&css.CSSRule) bool {
+	id := css.property_id_from_string(property_name) or { return true }
+	if _ := css.computed_length_px(element, id, author_rules) {
+		return false
+	}
+	if _ := css.computed_percentage(element, id, author_rules) {
+		return false
+	}
+	return true
+}
+
+// Collect the absolutely positioned elements whose nearest positioned ancestor is `node` — i.e. walk
+// `node`'s descendants but do not descend past any positioned box (which is itself a containing block
+// and lays out its own abspos descendants). Skips `display: none` subtrees.
+fn collect_abspos_in_scope(node &dom.Node, author_rules []&css.CSSRule) []&dom.Element {
+	display_id := css.property_id_from_string('display') or { return []&dom.Element{} }
+	mut result := []&dom.Element{}
+	for child_node in node.children_as_vector() {
+		child := child_node.as_element() or { continue }
+		if css.cascaded_value_with_ua(child, display_id, author_rules) == 'none' {
+			continue
+		}
+		position := position_value(child, author_rules)
+		if is_absolutely_positioned(position) {
+			result << child // belongs to this scope; its own abspos descendants are handled when it lays out
+		} else if is_positioned(position) {
+			continue // a positioned (e.g. relative) box establishes its own scope — skip its subtree
+		} else {
+			result << collect_abspos_in_scope(child.as_node(), author_rules)
+		}
+	}
+	return result
+}
+
+// Lay out an absolutely positioned `element` against its containing block `cb` (CSS 2.1 §9.6/§10.3.7/
+// §10.6.4). The element's own content (and nested abspos) is laid out via layout_block with a
+// containing width chosen so the normal width algorithm yields the abspos width; the result is then
+// translated to the position implied by the insets.
+//
+// FIXME: shrink-to-fit width (used when width is auto and left/right aren't both set) is approximated
+// by stretching to the containing block; auto-margin centering between insets isn't done; the
+// static position (when top/left are auto) is approximated by the containing block's origin.
+fn layout_absolute(element &dom.Element, cb PositionedContainingBlock, author_rules []&css.CSSRule) BlockBox {
+	left := offset_length(element, 'left', cb.width, author_rules)
+	right := offset_length(element, 'right', cb.width, author_rules)
+	top := offset_length(element, 'top', cb.height, author_rules)
+	bottom := offset_length(element, 'bottom', cb.height, author_rules)
+	width_auto := size_is_auto(element, 'width', author_rules)
+	height_auto := size_is_auto(element, 'height', author_rules)
+
+	// Choose the containing width fed to layout_block so its width algorithm produces the abspos width:
+	// width:auto stretched between left and right fills the gap; otherwise the width resolves against cb.
+	available_width := if width_auto {
+		if l := left {
+			if r := right {
+				non_negative(cb.width - l - r)
+			} else {
+				cb.width
+			}
+		} else {
+			cb.width
+		}
+	} else {
+		cb.width
+	}
+	mut box := layout_block(element, 0.0, 0.0, available_width, author_rules)
+
+	// height:auto with both top and bottom set fills the gap between them.
+	if height_auto {
+		if t := top {
+			if b := bottom {
+				border_padding_tb := box.border.top + box.border.bottom + box.padding.top +
+					box.padding.bottom
+				box.height = non_negative(cb.height - t - b - box.margin.top - box.margin.bottom -
+					border_padding_tb)
+			}
+		}
+	}
+
+	margin_box_width := box.margin_box_width()
+	margin_box_height := box.margin_box_height()
+	margin_x := if l := left {
+		cb.x + l
+	} else if r := right {
+		cb.x + cb.width - r - margin_box_width
+	} else {
+		cb.x // static-position approximation
+	}
+	margin_y := if t := top {
+		cb.y + t
+	} else if b := bottom {
+		cb.y + cb.height - b - margin_box_height
+	} else {
+		cb.y // static-position approximation
+	}
+	// The provisional box's margin-box origin (it was laid out at (0,0), and abspos establishes a BFC
+	// so no margin collapsed through — its margin-box origin is exactly (0,0)).
+	current_margin_x := box.x - box.padding.left - box.border.left - box.margin.left
+	current_margin_y := box.y - box.padding.top - box.border.top - box.margin.top
+	return translate_block(box, margin_x - current_margin_x, margin_y - current_margin_y)
 }
 
 // An inset property (top/right/bottom/left) resolved to px, or none when `auto`/absent. Percentages
@@ -496,7 +633,22 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	// offset, which does not participate in the flow computed above). Shift the children from the local
 	// frame (content-box top = 0) to the real content-box top.
 	content_top := y + outer_top_margin + border.top + padding.top + rel_y
-	children := local_children.map(translate_block(it, 0.0, content_top))
+	mut children := local_children.map(translate_block(it, 0.0, content_top))
+
+	// If this box is positioned, it is the containing block for its abspos descendants: lay them out
+	// against its padding box (using its final, offset content origin). Their flow siblings above are
+	// unaffected because abspos elements were excluded from the flow.
+	if is_positioned(position_value(element, author_rules)) {
+		this_cb := PositionedContainingBlock{
+			x:      content_x - padding.left
+			y:      content_top - padding.top
+			width:  width + padding.left + padding.right
+			height: height + padding.top + padding.bottom
+		}
+		for abspos in collect_abspos_in_scope(element.as_node(), author_rules) {
+			children << layout_absolute(abspos, this_cb, author_rules)
+		}
+	}
 
 	return BlockBox{
 		tag_name:            element.local_name()

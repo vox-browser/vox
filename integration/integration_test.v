@@ -341,3 +341,20 @@ fn test_relative_position_over_parsed_document() {
 	assert box.children[1].y == 20.0 // flows after the first p's NORMAL box, not its offset one
 	assert box.height == 40.0 // container height from the flow (20 + 20), ignoring the offset
 }
+
+// Full-stack absolute positioning: the classic "badge pinned to a corner of a relative container".
+// The badge is positioned against .rel's padding box and is out of flow.
+fn test_absolute_position_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.rel { position: relative; width: 400px; height: 200px } .badge { position: absolute; top: 5px; right: 8px; width: 30px; height: 30px }</style></head><body><div class="rel"><div class="badge"></div></div></body></html>')
+
+	root_box := layout.layout_document(doc, 1200)
+	rel := root_box.children[0].children[0] // html > body > div.rel
+	assert rel.tag_name == 'div'
+	assert rel.children.len == 1 // the badge (abspos), appended to its containing block
+	badge := rel.children[0]
+	assert badge.width == 30.0
+	assert badge.height == 30.0
+	// pinned to .rel's top-right: x = rel.x + (400 - 8 right - 30 width); y = rel.y + 5 top.
+	assert badge.x == rel.x + 362.0
+	assert badge.y == rel.y + 5.0
+}

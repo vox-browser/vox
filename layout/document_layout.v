@@ -33,5 +33,19 @@ pub fn collect_document_author_rules(document &dom.Document) []&css.CSSRule {
 pub fn layout_document(document &dom.Document, viewport_width f64) BlockBox {
 	author_rules := collect_document_author_rules(document)
 	root_element := document.document_element() or { return BlockBox{} }
-	return layout_block(root_element, 0, 0, viewport_width, author_rules)
+	mut root_box := layout_block(root_element, 0, 0, viewport_width, author_rules)
+
+	// Absolutely positioned elements with no positioned ancestor resolve against the initial
+	// containing block (the viewport). FIXME: viewport height isn't tracked — the root box's height
+	// stands in, which only affects bottom/height percentages of these top-level abspos elements.
+	icb := PositionedContainingBlock{
+		x:      0
+		y:      0
+		width:  viewport_width
+		height: root_box.height
+	}
+	for abspos in collect_abspos_in_scope(unsafe { &dom.Node(document) }, author_rules) {
+		root_box.children << layout_absolute(abspos, icb, author_rules)
+	}
+	return root_box
 }
