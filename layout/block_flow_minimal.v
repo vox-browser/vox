@@ -1148,6 +1148,45 @@ fn justify_offsets(value string, free f64, n int) (f64, f64) {
 	}
 }
 
+// The cascaded `align-items` value, normalized (`normal` and absent behave as `stretch`).
+fn align_items_value(element &dom.Element, author_rules []&css.CSSRule) string {
+	id := css.property_id_from_string('align-items') or { return 'stretch' }
+	value := css.cascaded_value_with_ua(element, id, author_rules)
+	return if value == '' || value == 'normal' { 'stretch' } else { value }
+}
+
+// The effective cross-axis alignment for a flex item: its `align-self` unless that is `auto`/`normal`,
+// in which case the container's `align-items` (`container_align`) applies.
+fn effective_align_self(element &dom.Element, container_align string, author_rules []&css.CSSRule) string {
+	id := css.property_id_from_string('align-self') or { return container_align }
+	value := css.cascaded_value_with_ua(element, id, author_rules)
+	return if value == '' || value == 'auto' || value == 'normal' { container_align } else { value }
+}
+
+// The cross-axis (vertical, for a row) offset that aligns an item whose margin box is `item_cross` px
+// tall within a `cross_size` px line, per its resolved alignment. `stretch`/`flex-start`/`baseline`
+// top-align (0). FIXME: `stretch` should re-size the item to the line, not just top-align it.
+fn cross_axis_offset(align string, cross_size f64, item_cross f64) f64 {
+	return match align {
+		'flex-end', 'end' { cross_size - item_cross }
+		'center' { (cross_size - item_cross) / 2.0 }
+		else { 0.0 } // flex-start / start / stretch / baseline
+	}
+}
+
+// The flex container's cross size for aligning items: its explicit content-box height when set (box-
+// sizing aware), otherwise the flowed content height (the tallest item).
+fn align_cross_size(element &dom.Element, content_height f64, border BoxEdges, padding BoxEdges, border_box bool, author_rules []&css.CSSRule) f64 {
+	height_id := css.property_id_from_string('height') or { return content_height }
+	if px := css.computed_length_px(element, height_id, author_rules) {
+		if border_box {
+			return non_negative(px - border.top - border.bottom - padding.top - padding.bottom)
+		}
+		return px
+	}
+	return content_height
+}
+
 // The cascaded `float` value (`none` when absent); `is_floating` is float left/right.
 fn float_side(element &dom.Element, author_rules []&css.CSSRule) string {
 	id := css.property_id_from_string('float') or { return 'none' }
@@ -2300,12 +2339,13 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		// container's content height is the tallest item's margin box. Flex containers establish a
 		// formatting context (no margin collapse), and an `auto`-width item is shrink-to-fit (its
 		// max-content) rather than filling the line. `justify-content` distributes the free main-axis
-		// space (start/end/center/space-between/around/evenly).
-		// FIXME: no flex-grow/shrink/basis, no wrap, no align-items (items align to the cross-start/top),
-		// no row-reverse/column (those fall to block flow).
+		// space; `align-items`/`align-self` align each item on the cross axis within that height.
+		// FIXME: no flex-grow/shrink/basis, no wrap, `align-items: stretch` doesn't re-size items (it
+		// top-aligns like flex-start), no row-reverse/column (those fall to block flow).
 		mut cursor := 0.0
+		items := flex_item_elements(element.as_node(), author_rules)
 		mut item_boxes := []BlockBox{}
-		for item in flex_item_elements(element.as_node(), author_rules) {
+		for item in items {
 			forced_width := flex_item_forced_width(item, width, author_rules)
 			ib := layout_block_impl(item, content_x + cursor, 0.0, width, forced_width, author_rules)
 			cursor += ib.margin_box_width()
@@ -2314,11 +2354,18 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 			}
 			item_boxes << ib
 		}
-		// Distribute the free main-axis space per justify-content by shifting each item along the row.
+		// Main axis: distribute free space per justify-content. Cross axis: align each item within the
+		// container's cross size (the tallest item / content height) per align-items (or its align-self).
 		leading, gap := justify_offsets(justify_content_value(element, author_rules), width - cursor,
 			item_boxes.len)
+		container_align := align_items_value(element, author_rules)
+		// Align within the container's cross size: its explicit height if set, else the tallest item.
+		cross_size := align_cross_size(element, content_height, border, padding, border_box,
+			author_rules)
 		for i, ib in item_boxes {
-			local_children << translate_block(ib, leading + f64(i) * gap, 0.0)
+			align := effective_align_self(items[i], container_align, author_rules)
+			cross := cross_axis_offset(align, cross_size, ib.margin_box_height())
+			local_children << translate_block(ib, leading + f64(i) * gap, cross)
 		}
 		has_children = item_boxes.len > 0
 	} else {

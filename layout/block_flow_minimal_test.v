@@ -2423,3 +2423,47 @@ fn test_justify_content_distributions() {
 	e0, e1 := jc_item_xs('flex-start')
 	assert e0 == 0.0 && e1 == 100.0
 }
+
+// Build a 60px-tall flex row with a 20px and a 40px item and the given align-items; return item ys.
+fn ai_item_ys(align string) (f64, f64) {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; align-items: ${align}; width: 300px; height: 60px')
+	a := styled(doc, 'div', 'width: 50px; height: 20px')
+	b := styled(doc, 'div', 'width: 50px; height: 40px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	return box.children[0].y, box.children[1].y
+}
+
+// align-items positions items on the cross axis within the container's 60px height.
+fn test_align_items() {
+	// stretch (default, minimal top-aligns): both at the top.
+	s0, s1 := ai_item_ys('stretch')
+	assert s0 == 0.0 && s1 == 0.0
+	// center: each centered within the 60px cross size.
+	c0, c1 := ai_item_ys('center')
+	assert c0 == 20.0 && c1 == 10.0 // (60-20)/2, (60-40)/2
+	// flex-end: bottom-aligned.
+	e0, e1 := ai_item_ys('flex-end')
+	assert e0 == 40.0 && e1 == 20.0 // 60-20, 60-40
+	// flex-start: top-aligned.
+	f0, f1 := ai_item_ys('flex-start')
+	assert f0 == 0.0 && f1 == 0.0
+}
+
+// align-self on an item overrides the container's align-items.
+fn test_align_self_overrides_align_items() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; align-items: flex-start; width: 300px; height: 60px')
+	a := styled(doc, 'div', 'width: 50px; height: 20px')
+	b := styled(doc, 'div', 'width: 50px; height: 20px; align-self: flex-end')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].y == 0.0 // container flex-start
+	assert box.children[1].y == 40.0 // align-self flex-end -> 60 - 20
+}

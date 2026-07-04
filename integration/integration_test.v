@@ -1050,3 +1050,19 @@ fn test_justify_content_over_parsed_document() {
 	assert l_rect.x == nav_rect.x
 	assert r_rect.x + r_rect.width == nav_rect.x + nav_rect.width // last item pushed to the end
 }
+
+// Full-stack align-items: a fixed-height bar centers its items vertically (align-items: center); the
+// shorter item is centered within the bar's cross size.
+fn test_align_items_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.bar { display: flex; align-items: center; width: 500px; height: 80px } .item { width: 100px; height: 40px }</style></head><body><div class="bar"><div class="item" id="i"></div></div></body></html>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	bar := css.query_selector(root, '.bar') or { panic('no .bar') }
+	item := css.query_selector(root, '#i') or { panic('no #i') }
+
+	bar_rect := root_box.bounding_rect_for(bar) or { panic('no bar box') }
+	item_rect := root_box.bounding_rect_for(item) or { panic('no item box') }
+	// The 40px item is centered in the 80px bar: 20px of space above and below.
+	assert item_rect.y == bar_rect.y + 20.0
+	assert item_rect.y + item_rect.height == bar_rect.y + bar_rect.height - 20.0
+}
