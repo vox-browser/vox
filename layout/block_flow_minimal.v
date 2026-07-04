@@ -23,7 +23,8 @@ import dom
 // without disturbing the flow. Text-bearing blocks produce inline line boxes (word-wrapped, `<br>`-
 // and `white-space`-aware) positioned per `text-align`. Floated children are placed at the content
 // edges (out of flow); `clear` moves a block below them, a BFC grows to contain them, and inline
-// content wraps around them. `BlockBox.paint_order()` flattens the tree into z-index paint order.
+// content wraps around them. `BlockBox.paint_order()` flattens the tree into z-index paint order, and
+// `paint_commands()` builds a display list (background fills + text draws) from it.
 // FIXME: floats are placed at the container top, not their flow position.
 //
 // FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
@@ -106,9 +107,12 @@ pub mut:
 	outer_bottom_margin f64
 	// The z-index used for paint ordering among siblings: the integer `z-index` of a positioned box,
 	// else 0 (`auto` and non-positioned boxes don't reorder).
-	z_index  int
-	children []BlockBox
-	lines    []TextLine
+	z_index int
+	// The computed background-color and text color, used to build the display list.
+	background_color css.Color
+	text_color       css.Color
+	children         []BlockBox
+	lines            []TextLine
 }
 
 // Flatten this box's subtree into paint order (CSS 2.1 Appendix E, simplified): a box paints before
@@ -131,6 +135,56 @@ fn (b &BlockBox) collect_paint_order(mut order []BlockBox) {
 	for child in stable_sort_by_z(b.children) {
 		child.collect_paint_order(mut order)
 	}
+}
+
+// A single entry in the display list produced from a laid-out box tree: either a filled rectangle
+// (`fill_rect`, e.g. a background) or drawn text (`draw_text`). `color` is the serialized paint color.
+pub struct PaintCommand {
+pub:
+	kind   string // 'fill_rect' | 'draw_text'
+	x      f64
+	y      f64
+	width  f64
+	height f64
+	color  string
+	text   string // for 'draw_text'
+}
+
+// Build the display list for this box tree: for each box in paint order, a background fill (when the
+// background-color isn't transparent) over its border box, then a draw-text command per inline
+// fragment in the box's text color. This is the layout → rendering bridge.
+//
+// FIXME: borders/outlines/images aren't emitted; text color is per-box, not per-inline fragment.
+pub fn (b &BlockBox) paint_commands() []PaintCommand {
+	mut commands := []PaintCommand{}
+	for box in b.paint_order() {
+		if box.background_color.a > 0 {
+			commands << PaintCommand{
+				kind:   'fill_rect'
+				x:      box.x - box.padding.left - box.border.left
+				y:      box.y - box.padding.top - box.border.top
+				width:  box.width + box.padding.left + box.padding.right + box.border.left +
+					box.border.right
+				height: box.height + box.padding.top + box.padding.bottom + box.border.top +
+					box.border.bottom
+				color:  box.background_color.serialize()
+			}
+		}
+		for line in box.lines {
+			for fragment in line.fragments {
+				commands << PaintCommand{
+					kind:   'draw_text'
+					x:      fragment.x
+					y:      fragment.y
+					width:  fragment.width
+					height: fragment.height
+					color:  box.text_color.serialize()
+					text:   fragment.text
+				}
+			}
+		}
+	}
+	return commands
 }
 
 // Stable insertion sort of `items` by z-index (preserving tree order among equal z-indexes).
@@ -1258,6 +1312,15 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		0
 	}
 
+	// Computed colors for the display list: background-color (default transparent) and text color
+	// (default black).
+	background_color := css.computed_color(element, css.property_id_from_string('background-color') or {
+		return BlockBox{}
+	}, author_rules) or { css.Color{0, 0, 0, 0} }
+	text_color := css.computed_color(element, css.property_id_from_string('color') or {
+		return BlockBox{}
+	}, author_rules) or { css.Color{0, 0, 0, 255} }
+
 	return BlockBox{
 		tag_name:            element.local_name()
 		x:                   content_x
@@ -1270,6 +1333,8 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		outer_top_margin:    outer_top_margin
 		outer_bottom_margin: outer_bottom_margin
 		z_index:             z_index
+		background_color:    background_color
+		text_color:          text_color
 		children:            children
 		lines:               lines
 	}

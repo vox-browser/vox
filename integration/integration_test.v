@@ -532,3 +532,20 @@ fn test_justify_over_parsed_document() {
 	assert box.lines[0].fragments[1].x == 60.0 // bbbb pushed right by the justify slack
 	assert box.lines[1].width == 40.0 // last line: natural width, left-aligned
 }
+
+// Full-stack display list: parse HTML, lay out, and produce paint commands (background fill + text)
+// -- the complete pipeline from HTML source to a paintable display list.
+fn test_display_list_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 200px; height: 100px; background-color: rgb(10, 20, 30); color: rgb(1, 2, 3)">hi</div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	cmds := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{}).paint_commands()
+	assert cmds.len == 2
+	assert cmds[0].kind == 'fill_rect'
+	assert cmds[0].width == 200.0
+	assert cmds[0].color == 'rgb(10 20 30)'
+	assert cmds[1].kind == 'draw_text'
+	assert cmds[1].text == 'hi'
+	assert cmds[1].color == 'rgb(1 2 3)'
+}

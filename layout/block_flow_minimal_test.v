@@ -1363,3 +1363,62 @@ fn test_justify_single_line_not_stretched() {
 	assert box.lines[0].fragments[1].x == 30.0 // 20 (aa) + 10 (space); no slack added
 	assert box.lines[0].width == 50.0 // natural width, not the 500px available
 }
+
+// A background-color produces a fill_rect over the border box; no text -> no draw commands.
+fn test_paint_background_fill() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; height: 50px; background-color: #ff0000')
+	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
+	assert cmds.len == 1
+	assert cmds[0].kind == 'fill_rect'
+	assert cmds[0].x == 0.0
+	assert cmds[0].y == 0.0
+	assert cmds[0].width == 100.0
+	assert cmds[0].height == 50.0
+	assert cmds[0].color == 'rgb(255 0 0)'
+}
+
+// The background fill covers the border box (content + padding + border).
+fn test_paint_background_covers_border_box() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; height: 50px; padding: 10px; border: 5px solid; background-color: blue')
+	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
+	assert cmds[0].x == 0.0
+	assert cmds[0].width == 130.0 // 100 + 2*10 padding + 2*5 border
+	assert cmds[0].height == 80.0 // 50 + 20 + 10
+	assert cmds[0].color == 'rgb(0 0 255)'
+}
+
+// Text produces a draw_text command per word, in the box's color; transparent background emits no fill.
+fn test_paint_draw_text() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 500px; font-size: 20px; line-height: 30px; color: green')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('hi there').as_node()) or { panic('${err}') }
+
+	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
+	assert cmds.len == 2 // no background fill (transparent)
+	assert cmds[0].kind == 'draw_text'
+	assert cmds[0].text == 'hi'
+	assert cmds[0].x == 0.0
+	assert cmds[0].color == 'rgb(0 128 0)'
+	assert cmds[1].text == 'there'
+	assert cmds[1].x == 30.0
+}
+
+// The display list follows z-index paint order: a negative-z box paints before a positive-z one.
+fn test_paint_z_index_order() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 100px; height: 100px; background-color: white')
+	behind := styled(doc, 'div', 'position: absolute; z-index: -1; width: 10px; height: 10px; background-color: red')
+	front := styled(doc, 'div', 'position: absolute; z-index: 1; width: 10px; height: 10px; background-color: blue')
+	mut rn := root.as_node()
+	rn.append_child(behind.as_node()) or { panic('${err}') }
+	rn.append_child(front.as_node()) or { panic('${err}') }
+
+	cmds := layout_block(root, 0, 0, 800, []&css.CSSRule{}).paint_commands()
+	assert cmds.len == 3 // three background fills
+	assert cmds[0].color == 'rgb(255 255 255)' // root paints first
+	assert cmds[1].color == 'rgb(255 0 0)' // behind (z -1)
+	assert cmds[2].color == 'rgb(0 0 255)' // front (z 1)
+}
