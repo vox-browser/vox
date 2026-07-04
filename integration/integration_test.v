@@ -926,3 +926,21 @@ fn test_box_shadow_over_parsed_document() {
 	assert svg.contains('feGaussianBlur')
 	assert svg.contains('filter="url(#blur0)"')
 }
+
+// Full-stack CSS-wide keywords: an author stylesheet uses `inherit` and `initial`; the values resolve
+// through the parsed DOM (inherit -> ancestor's value; initial -> the property's initial).
+fn test_css_wide_keywords_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.parent { color: rgb(20, 40, 60) } .child { color: inherit } .reset { display: initial }</style></head><body><div class="parent"><span class="child">x</span></div><div class="reset"></div></body></html>')
+	root := unsafe { &dom.Node(doc) }
+	rules := layout.collect_document_author_rules(doc)
+	child := css.query_selector(root, '.child') or { panic('no .child') }
+	reset := css.query_selector(root, '.reset') or { panic('no .reset') }
+
+	color := css.property_id_from_string('color') or { panic('color id') }
+	display := css.property_id_from_string('display') or { panic('display id') }
+
+	// .child color: inherit resolves to .parent's rgb(20, 40, 60).
+	assert css.cascaded_value_with_ua(child, color, rules) == 'rgb(20, 40, 60)'
+	// .reset display: initial -> 'inline' (overriding the UA div block).
+	assert css.cascaded_value_with_ua(reset, display, rules) == 'inline'
+}

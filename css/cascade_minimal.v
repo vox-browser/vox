@@ -215,23 +215,47 @@ fn specified_value_on(element &dom.Element, property_name string, author_rules [
 }
 
 // Resolve `property_id` for `element` given `author_rules` and `ua_rules`: the winning specified
-// value (cascade of UA + author + inline), else inheritance, else the initial value.
+// value (cascade of UA + author + inline), else inheritance, else the initial value. The CSS-wide
+// keywords in a specified value are resolved here: `initial`, `inherit`, and `unset` (and `revert`,
+// approximated as `unset`).
 fn cascaded_value_impl(element &dom.Element, property_id PropertyID, author_rules []&CSSRule, ua_rules []&CSSRule) string {
 	name := string_from_property_id(property_id)
 	if value := specified_value_on(element, name, author_rules, ua_rules) {
-		return value
-	}
-	if is_inherited_property(property_id) {
-		mut ancestor := element.as_node().parent_element()
-		for {
-			current := ancestor or { break }
-			if value := specified_value_on(current, name, author_rules, ua_rules) {
-				return value
+		return match value {
+			'initial' {
+				property_initial_value_string(property_id)
 			}
-			ancestor = current.as_node().parent_element()
+			'inherit' {
+				inherited_value(element, property_id, author_rules, ua_rules)
+			}
+			'unset', 'revert' {
+				// `unset` acts as `inherit` for inherited properties and `initial` otherwise. `revert`
+				// is approximated as `unset` here. FIXME: `revert` should roll back to the UA cascade.
+				if is_inherited_property(property_id) {
+					inherited_value(element, property_id, author_rules, ua_rules)
+				} else {
+					property_initial_value_string(property_id)
+				}
+			}
+			else {
+				value
+			}
 		}
 	}
+	if is_inherited_property(property_id) {
+		return inherited_value(element, property_id, author_rules, ua_rules)
+	}
 	return property_initial_value_string(property_id)
+}
+
+// The value `element` inherits for `property_id`: its parent element's fully-resolved cascaded value
+// (so keywords declared up the chain are already resolved), or the property's initial value when
+// there is no parent element (the root).
+fn inherited_value(element &dom.Element, property_id PropertyID, author_rules []&CSSRule, ua_rules []&CSSRule) string {
+	parent := element.as_node().parent_element() or {
+		return property_initial_value_string(property_id)
+	}
+	return cascaded_value_impl(parent, property_id, author_rules, ua_rules)
 }
 
 // Like cascaded_value_for, but also considers a list of author style `rules` (e.g. from

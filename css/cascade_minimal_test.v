@@ -361,3 +361,65 @@ fn test_inline_style_remove() {
 	assert style.get_property_value('width') == '10px' // the other declaration stays
 	assert style.length() == 1
 }
+
+// `inherit` resolves to the parent element's cascaded value, even for a non-inherited property.
+fn test_css_wide_keyword_inherit() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parent := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	parent.set_attribute_value('style', 'color: rgb(10, 20, 30); border-top-width: 7px')
+	mut child := doc.create_element_ns(html_ns, 'span') or { panic('${err}') }
+	child.set_attribute_value('style', 'color: inherit; border-top-width: inherit')
+	mut pn := parent.as_node()
+	pn.append_child(child.as_node()) or { panic('${err}') }
+	no := []&CSSRule{}
+
+	assert cascaded_value_with_ua(child, pid('color'), no) == 'rgb(10, 20, 30)'
+	// border-top-width is NOT inherited by default, but `inherit` forces it.
+	assert cascaded_value_with_ua(child, pid('border-top-width'), no) == '7px'
+}
+
+// `initial` resolves to the property's initial value, overriding a UA default.
+fn test_css_wide_keyword_initial() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut div := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	div.set_attribute_value('style', 'display: initial')
+	no := []&CSSRule{}
+
+	// display: initial -> 'inline' (the initial value), beating the UA `div { display: block }`.
+	assert cascaded_value_with_ua(div, pid('display'), no) == 'inline'
+}
+
+// `unset` acts as inherit for inherited properties and initial for non-inherited ones.
+fn test_css_wide_keyword_unset() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parent := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	parent.set_attribute_value('style', 'color: rgb(1, 2, 3)')
+	mut child := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	child.set_attribute_value('style', 'color: unset; display: unset')
+	mut pn := parent.as_node()
+	pn.append_child(child.as_node()) or { panic('${err}') }
+	no := []&CSSRule{}
+
+	// color is inherited -> unset inherits the parent's color.
+	assert cascaded_value_with_ua(child, pid('color'), no) == 'rgb(1, 2, 3)'
+	// display is not inherited -> unset is the initial value.
+	assert cascaded_value_with_ua(child, pid('display'), no) == 'inline'
+}
+
+// `inherit` chains: an intermediate ancestor that itself declares `inherit` resolves fully.
+fn test_css_wide_keyword_inherit_chain() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut grandparent := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	grandparent.set_attribute_value('style', 'color: rgb(9, 8, 7)')
+	mut parent := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	parent.set_attribute_value('style', 'color: inherit')
+	mut child := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	child.set_attribute_value('style', 'color: inherit')
+	mut gn := grandparent.as_node()
+	gn.append_child(parent.as_node()) or { panic('${err}') }
+	mut pn := parent.as_node()
+	pn.append_child(child.as_node()) or { panic('${err}') }
+	no := []&CSSRule{}
+
+	assert cascaded_value_with_ua(child, pid('color'), no) == 'rgb(9, 8, 7)'
+}
