@@ -556,15 +556,25 @@ fn (node CalcNode) serialize_inner(is_root bool) string {
 
 fn (leaf CalcNumeric) serialize_leaf() string {
 	if math.is_nan(leaf.value) {
-		return 'NaN'
+		return leaf.serialize_non_finite('NaN')
 	}
 	if math.is_inf(leaf.value, 1) {
-		return 'infinity'
+		return leaf.serialize_non_finite('infinity')
 	}
 	if math.is_inf(leaf.value, -1) {
-		return '-infinity'
+		return leaf.serialize_non_finite('-infinity')
 	}
 	return serialize_a_number(leaf.value) + leaf.unit
+}
+
+// A non-finite dimension serializes as `<keyword> * 1<canonical-unit>` (e.g.
+// `infinity * 1px`) so it stays typed and re-parses; a non-finite number is just the
+// keyword. Mirrors upstream serialize_a_math_function.
+fn (leaf CalcNumeric) serialize_non_finite(keyword string) string {
+	if leaf.kind == .number {
+		return keyword
+	}
+	return '${keyword} * 1${leaf.unit}'
 }
 
 fn serialize_calc_sum(children []CalcNode) string {
