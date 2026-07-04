@@ -433,3 +433,13 @@ fn test_pre_over_parsed_document() {
 	assert box.lines.len == 3
 	assert box.height == 60.0 // 3 lines * 20px
 }
+
+// Full-stack intrinsic sizing: a width:max-content div hugs its widest line rather than filling.
+fn test_max_content_over_parsed_document() {
+	doc := html.parse_document('<div style="width: max-content; font-size: 20px">hello world</div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
+	assert box.width == 110.0 // 50 + 10 space + 50, not the 1000 available width
+}

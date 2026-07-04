@@ -941,3 +941,72 @@ fn test_white_space_helpers() {
 	assert !white_space_preserves_newlines('normal')
 	assert !white_space_preserves_newlines('nowrap')
 }
+
+// width: max-content sizes the block to its widest unbroken line. "hello world" at 20px =
+// 50 + 10 (space) + 50 = 110.
+fn test_width_max_content() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: max-content; font-size: 20px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('hello world').as_node()) or { panic('${err}') }
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.width == 110.0
+}
+
+// width: min-content sizes the block to its widest single word (50).
+fn test_width_min_content() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: min-content; font-size: 20px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('hello world').as_node()) or { panic('${err}') }
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.width == 50.0
+}
+
+// width: fit-content clamps to the available space between min-content (50) and max-content (110).
+fn test_width_fit_content() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: fit-content; font-size: 20px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('hello world').as_node()) or { panic('${err}') }
+	// available 80 is between min (50) and max (110) -> 80.
+	assert layout_block(el, 0, 0, 80, []&css.CSSRule{}).width == 80.0
+	// available 500 exceeds max -> clamps to max-content (110).
+	assert layout_block(el, 0, 0, 500, []&css.CSSRule{}).width == 110.0
+}
+
+// intrinsic_content_width directly, and over a block-children tree (widest child wins).
+fn test_intrinsic_content_width() {
+	doc := dom.Document.create(dom.url_about_blank())
+	text := styled(doc, 'div', 'font-size: 20px')
+	mut tn := text.as_node()
+	tn.append_child(doc.create_text_node('hello world').as_node()) or { panic('${err}') }
+	assert intrinsic_content_width(text, []&css.CSSRule{}, false) == 110.0 // max-content
+	assert intrinsic_content_width(text, []&css.CSSRule{}, true) == 50.0 // min-content
+
+	parent := styled(doc, 'div', 'font-size: 20px')
+	child1 := styled(doc, 'div', '')
+	child2 := styled(doc, 'div', '')
+	mut c1 := child1.as_node()
+	c1.append_child(doc.create_text_node('short').as_node()) or { panic('${err}') } // 50
+	mut c2 := child2.as_node()
+	c2.append_child(doc.create_text_node('muchlongerword').as_node()) or { panic('${err}') } // 140
+	mut pn := parent.as_node()
+	pn.append_child(child1.as_node()) or { panic('${err}') }
+	pn.append_child(child2.as_node()) or { panic('${err}') }
+	assert intrinsic_content_width(parent, []&css.CSSRule{}, false) == 140.0 // widest child
+}
+
+// An absolutely positioned box with no width shrinks to fit its content (was: stretched to the CB).
+fn test_absolute_position_shrink_to_fit() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 500px; height: 100px')
+	abs := styled(doc, 'div', 'position: absolute; top: 0; left: 0; font-size: 20px')
+	mut an := abs.as_node()
+	an.append_child(doc.create_text_node('hi there').as_node()) or { panic('${err}') } // max 80, min 50
+	mut rn := root.as_node()
+	rn.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].width == 80.0 // shrink-to-fit to max-content (fits in the 500px CB)
+}

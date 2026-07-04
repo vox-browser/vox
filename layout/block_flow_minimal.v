@@ -17,7 +17,8 @@ import dom
 // no block-level children but with text content gets a
 // height from a coarse inline pass (line count × line-height). `box-sizing: border-box` makes a
 // specified width/height include padding+border. Used width and height are clamped by min/max-width
-// and min/max-height. Horizontal `auto` margins absorb leftover space (both auto centers the box; a
+// and min/max-height; `width` also accepts min-content/max-content/fit-content and abspos boxes
+// shrink-to-fit. Horizontal `auto` margins absorb leftover space (both auto centers the box; a
 // single one right/left-aligns). `position: relative` offsets a box (and its subtree) by its insets
 // without disturbing the flow. Text-bearing blocks produce inline line boxes (word-wrapped, `<br>`-
 // and `white-space`-aware) positioned per `text-align`.
@@ -244,6 +245,95 @@ fn wrapped_line_count(words []string, content_width f64, glyph_width f64, space_
 	return wrap_line_widths(words, content_width, glyph_width, space_width).len
 }
 
+// Shrink-to-fit width: min(max(min-content, available), max-content) (CSS 2.1 §10.3.7).
+fn shrink_to_fit(min_content f64, max_content f64, available f64) f64 {
+	preferred := if available < max_content { available } else { max_content }
+	return if preferred > min_content { preferred } else { min_content }
+}
+
+// Horizontal margins + borders + padding of `element` (auto margins count as 0; percentages resolve
+// against `containing_width`).
+fn horizontal_edges(element &dom.Element, containing_width f64, author_rules []&css.CSSRule) f64 {
+	return used_length_or_zero(element, 'margin-left', containing_width, author_rules) +
+		used_length_or_zero(element, 'margin-right', containing_width, author_rules) +
+		used_border(element, 'left', author_rules) + used_border(element, 'right', author_rules) +
+		used_length_or_zero(element, 'padding-left', containing_width, author_rules) +
+		used_length_or_zero(element, 'padding-right', containing_width, author_rules)
+}
+
+// The intrinsic width of a block's inline (text) content: the widest single word (min-content) or the
+// widest unbroken segment — words + spaces on one line (max-content).
+fn inline_intrinsic_width(element &dom.Element, author_rules []&css.CSSRule, minimum bool) f64 {
+	white_space := css.cascaded_value_with_ua(element, css.property_id_from_string('white-space') or {
+		return 0.0
+	}, author_rules)
+	mut segments := ['']
+	append_inline_segments(element.as_node(), author_rules, white_space_preserves_newlines(white_space),
+		mut segments)
+	glyph_width := 0.5 * css.computed_font_size_px(element, author_rules)
+	mut widest := 0.0
+	for segment in segments {
+		words := segment.fields()
+		if words.len == 0 {
+			continue
+		}
+		if minimum {
+			for word in words {
+				word_width := f64(word.runes().len) * glyph_width
+				if word_width > widest {
+					widest = word_width
+				}
+			}
+		} else {
+			// max-content: the whole segment on one line (no wrapping).
+			segment_width := wrap_line_widths(words, -1.0, glyph_width, glyph_width)
+			if segment_width.len > 0 && segment_width[0] > widest {
+				widest = segment_width[0]
+			}
+		}
+	}
+	return widest
+}
+
+// The intrinsic *content* width of `element`: max-content (preferred, no wrapping) when `minimum` is
+// false, min-content (narrowest without overflow) when true. A block with text measures its inline
+// content; a block with block children takes the widest child's outer intrinsic width. A child with
+// a definite length width contributes that (box-sizing aware); otherwise it recurses.
+fn intrinsic_content_width(element &dom.Element, author_rules []&css.CSSRule, minimum bool) f64 {
+	block_children := block_child_elements(element.as_node(), author_rules)
+	if block_children.len == 0 {
+		return inline_intrinsic_width(element, author_rules, minimum)
+	}
+	mut widest := 0.0
+	for child in block_children {
+		outer := horizontal_edges(child, 0.0, author_rules) +
+			child_intrinsic_content_width(child, author_rules, minimum)
+		if outer > widest {
+			widest = outer
+		}
+	}
+	return widest
+}
+
+// A child's contribution to its parent's intrinsic width: its definite length width if it has one
+// (box-sizing aware), else its recursively computed intrinsic content width.
+fn child_intrinsic_content_width(element &dom.Element, author_rules []&css.CSSRule, minimum bool) f64 {
+	width_id := css.property_id_from_string('width') or {
+		return intrinsic_content_width(element, author_rules, minimum)
+	}
+	if px := css.computed_length_px(element, width_id, author_rules) {
+		if box_sizing_is_border_box(element, author_rules) {
+			border_padding := used_border(element, 'left', author_rules) +
+				used_border(element, 'right', author_rules) +
+				used_length_or_zero(element, 'padding-left', 0.0, author_rules) +
+				used_length_or_zero(element, 'padding-right', 0.0, author_rules)
+			return non_negative(px - border_padding)
+		}
+		return px
+	}
+	return intrinsic_content_width(element, author_rules, minimum)
+}
+
 // Whether a `white-space` value wraps at soft line-break opportunities. `nowrap` and `pre` never
 // wrap; `normal`, `pre-wrap`, `pre-line` do.
 fn white_space_wraps(white_space string) bool {
@@ -361,11 +451,26 @@ fn box_sizing_is_border_box(element &dom.Element, author_rules []&css.CSSRule) b
 
 // The used *content* width for `element` in a containing block `containing_width` px wide. A length
 // or percentage sets the width per the box model: content-box uses it directly; border-box subtracts
-// the horizontal border+padding (`border_padding_lr`). `auto` fills the space left after the
-// horizontal margins, border, and padding. All results are clamped at 0.
+// the horizontal border+padding (`border_padding_lr`). The intrinsic keywords resolve to the element's
+// min/max-content (fit-content shrinks to fit the available space). `auto` fills the space left after
+// the horizontal margins, border, and padding. All results are clamped at 0.
 fn used_content_width(element &dom.Element, containing_width f64, margins_lr f64, border_padding_lr f64, border_box bool, author_rules []&css.CSSRule) f64 {
 	width_id := css.property_id_from_string('width') or {
 		return non_negative(containing_width - margins_lr - border_padding_lr)
+	}
+	match css.cascaded_value_with_ua(element, width_id, author_rules) {
+		'max-content' {
+			return intrinsic_content_width(element, author_rules, false)
+		}
+		'min-content' {
+			return intrinsic_content_width(element, author_rules, true)
+		}
+		'fit-content' {
+			available := non_negative(containing_width - margins_lr - border_padding_lr)
+			return shrink_to_fit(intrinsic_content_width(element, author_rules, true),
+				intrinsic_content_width(element, author_rules, false), available)
+		}
+		else {}
 	}
 	if px := css.computed_length_px(element, width_id, author_rules) {
 		return non_negative(if border_box { px - border_padding_lr } else { px })
@@ -503,9 +608,8 @@ fn collect_abspos_in_scope(node &dom.Node, author_rules []&css.CSSRule) []&dom.E
 // containing width chosen so the normal width algorithm yields the abspos width; the result is then
 // translated to the position implied by the insets.
 //
-// FIXME: shrink-to-fit width (used when width is auto and left/right aren't both set) is approximated
-// by stretching to the containing block; auto-margin centering between insets isn't done; the
-// static position (when top/left are auto) is approximated by the containing block's origin.
+// FIXME: auto-margin centering between insets isn't done; the static position (when top/left are
+// auto) is approximated by the containing block's origin.
 fn layout_absolute(element &dom.Element, cb PositionedContainingBlock, author_rules []&css.CSSRule) BlockBox {
 	left := offset_length(element, 'left', cb.width, author_rules)
 	right := offset_length(element, 'right', cb.width, author_rules)
@@ -514,20 +618,20 @@ fn layout_absolute(element &dom.Element, cb PositionedContainingBlock, author_ru
 	width_auto := size_is_auto(element, 'width', author_rules)
 	height_auto := size_is_auto(element, 'height', author_rules)
 
-	// Choose the containing width fed to layout_block so its width algorithm produces the abspos width:
-	// width:auto stretched between left and right fills the gap; otherwise the width resolves against cb.
-	available_width := if width_auto {
-		if l := left {
-			if r := right {
-				non_negative(cb.width - l - r)
-			} else {
-				cb.width
-			}
-		} else {
-			cb.width
-		}
-	} else {
+	// Choose the containing width fed to layout_block so its width algorithm produces the abspos width.
+	// width:auto between both left and right fills the gap; width:auto otherwise is shrink-to-fit (the
+	// content's min/max-content clamped to the space left after insets and edges); a definite width
+	// resolves against the containing block.
+	available_width := if !width_auto {
 		cb.width
+	} else if left != none && right != none {
+		non_negative(cb.width - left - right)
+	} else {
+		edges := horizontal_edges(element, cb.width, author_rules)
+		available_content := non_negative(cb.width - (left or { 0.0 }) - (right or { 0.0 }) - edges)
+		fit := shrink_to_fit(intrinsic_content_width(element, author_rules, true),
+			intrinsic_content_width(element, author_rules, false), available_content)
+		fit + edges
 	}
 	mut box := layout_block(element, 0.0, 0.0, available_width, author_rules)
 
