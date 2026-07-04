@@ -2829,6 +2829,9 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	if s := style_value.serialize_grid_line(mode) {
 		return s
 	}
+	if s := style_value.serialize_grid_area(mode) {
+		return s
+	}
 	if s := style_value.serialize_flex(mode) {
 		return s
 	}
@@ -2909,6 +2912,77 @@ fn (style_value ShorthandStyleValue) serialize_grid_line(mode SerializationMode)
 		return start
 	}
 	return '${start} / ${end}'
+}
+
+fn grid_placement_is_auto(value StyleValue) bool {
+	if value is GridTrackPlacementStyleValue {
+		return value.grid_track_placement().is_auto()
+	}
+	return false
+}
+
+fn grid_placement_is_custom_ident(value StyleValue) bool {
+	if value is GridTrackPlacementStyleValue {
+		return value.grid_track_placement().is_custom_ident()
+	}
+	return false
+}
+
+// grid-area = <grid-line> [ / <grid-line> ]{0,3} — serialize row-start/column-start/
+// row-end/column-end joined by ` / `, applying the same custom-ident propagation and
+// collapse rules as upstream so the shortest equivalent form is produced.
+fn (style_value ShorthandStyleValue) serialize_grid_area(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .grid_area || style_value.values_.len != 4 {
+		return none
+	}
+	mut row_start := style_value.values_[0]
+	mut column_start := style_value.values_[1]
+	mut row_end := style_value.values_[2]
+	mut column_end := style_value.values_[3]
+
+	// With four explicit (non-auto) lines, serialize as-is (after collapse).
+	if !grid_placement_is_auto(row_start) && !grid_placement_is_auto(column_start)
+		&& !grid_placement_is_auto(row_end) && !grid_placement_is_auto(column_end) {
+		return serialize_grid_area_lines(mode, row_start, column_start, row_end, column_end)
+	}
+
+	// Reconstruct omitted lines from a <custom-ident> start (reverse of the shorthand's rules).
+	if grid_placement_is_auto(column_end) && grid_placement_is_custom_ident(column_start) {
+		column_end = column_start
+	}
+	if grid_placement_is_auto(column_start) && grid_placement_is_custom_ident(row_start) {
+		column_start = row_start
+		row_end = row_start
+		column_end = row_start
+	}
+	if grid_placement_is_auto(row_end) && grid_placement_is_custom_ident(row_start) {
+		row_end = row_start
+	}
+	return serialize_grid_area_lines(mode, row_start, column_start, row_end, column_end)
+}
+
+fn serialize_grid_area_lines(mode SerializationMode, row_start StyleValue, column_start StyleValue, row_end StyleValue, column_end StyleValue) string {
+	row_start_s := row_start.serialize(mode)
+	column_start_s := column_start.serialize(mode)
+	row_end_s := row_end.serialize(mode)
+	column_end_s := column_end.serialize(mode)
+
+	if row_start_s == column_start_s && row_start_s == row_end_s && row_start_s == column_end_s {
+		return row_start_s
+	}
+	if row_start_s == row_end_s && column_start_s == column_end_s {
+		return '${row_start_s} / ${column_start_s}'
+	}
+	if column_start_s == column_end_s {
+		if grid_placement_is_auto(row_end) {
+			if grid_placement_is_auto(column_start) {
+				return row_start_s
+			}
+			return '${row_start_s} / ${column_start_s}'
+		}
+		return '${row_start_s} / ${column_start_s} / ${row_end_s}'
+	}
+	return '${row_start_s} / ${column_start_s} / ${row_end_s} / ${column_end_s}'
 }
 
 // flex serializes its three longhands (grow, shrink, basis), space-separated.
