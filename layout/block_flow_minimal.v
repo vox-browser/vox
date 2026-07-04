@@ -203,6 +203,49 @@ fn find_element_by_node_id(node &dom.Node, node_id i64) ?&dom.Element {
 	return none
 }
 
+// The border-box width/height of `element` (its `offsetWidth`/`offsetHeight`), or none if not laid out.
+pub fn (b &BlockBox) offset_width_for(element &dom.Element) ?f64 {
+	return (b.bounding_rect_for(element) or { return none }).width
+}
+
+pub fn (b &BlockBox) offset_height_for(element &dom.Element) ?f64 {
+	return (b.bounding_rect_for(element) or { return none }).height
+}
+
+// `element`'s offsetParent: the nearest ancestor that is positioned or is a table cell/table/body,
+// else none. (Simplified from the HTML spec — no display:none / rooted-in-document checks.)
+pub fn offset_parent_element(element &dom.Element, author_rules []&css.CSSRule) ?&dom.Element {
+	mut current := element.as_node().parent_element() or { return none }
+	for {
+		local := current.local_name()
+		if is_positioned(position_value(current, author_rules)) || local == 'body' || local == 'td'
+			|| local == 'th' || local == 'table' {
+			return current
+		}
+		current = current.as_node().parent_element() or { return none }
+	}
+	return none
+}
+
+// `element`'s offsetTop: its border-box top relative to its offsetParent's padding-box top (or the
+// document top when there is no offsetParent).
+pub fn (b &BlockBox) offset_top_for(element &dom.Element, author_rules []&css.CSSRule) ?f64 {
+	element_box := b.find_box(i64(element.as_node().unique_id())) or { return none }
+	element_border_top := element_box.y - element_box.padding.top - element_box.border.top
+	parent := offset_parent_element(element, author_rules) or { return element_border_top }
+	parent_box := b.find_box(i64(parent.as_node().unique_id())) or { return element_border_top }
+	return element_border_top - (parent_box.y - parent_box.padding.top)
+}
+
+// `element`'s offsetLeft: its border-box left relative to its offsetParent's padding-box left.
+pub fn (b &BlockBox) offset_left_for(element &dom.Element, author_rules []&css.CSSRule) ?f64 {
+	element_box := b.find_box(i64(element.as_node().unique_id())) or { return none }
+	element_border_left := element_box.x - element_box.padding.left - element_box.border.left
+	parent := offset_parent_element(element, author_rules) or { return element_border_left }
+	parent_box := b.find_box(i64(parent.as_node().unique_id())) or { return element_border_left }
+	return element_border_left - (parent_box.x - parent_box.padding.left)
+}
+
 // Flatten this box's subtree into paint order (CSS 2.1 Appendix E, simplified): a box paints before
 // its children, and its children paint ordered by z-index — negative first, then z-index `auto`/0 in
 // tree order, then positive. Each returned entry is a shallow box (no nested children) carrying the

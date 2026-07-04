@@ -1709,3 +1709,38 @@ fn test_hit_test_topmost_wins() {
 	// Outside the badge but inside the container -> the container.
 	assert box.hit_test(5, 5) or { -1 } == i64(root.as_node().unique_id())
 }
+
+// offsetWidth/Height are the border-box dimensions; offsetTop/Left are relative to the offsetParent's
+// padding box; offsetParent is the nearest positioned ancestor.
+fn test_offset_properties() {
+	doc := dom.Document.create(dom.url_about_blank())
+	container := styled(doc, 'div', 'position: relative; width: 200px; height: 200px; padding: 10px')
+	child := styled(doc, 'div', 'position: absolute; top: 30px; left: 40px; width: 50px; height: 20px; border: 5px solid')
+	mut cn := container.as_node()
+	cn.append_child(child.as_node()) or { panic('${err}') }
+
+	no := []&css.CSSRule{}
+	box := layout_block(container, 0, 0, 800, no)
+
+	assert box.offset_width_for(child) or { -1 } == 60.0 // 50 + 2*5 border
+	assert box.offset_height_for(child) or { -1 } == 30.0 // 20 + 2*5
+	assert box.offset_top_for(child, no) or { -1 } == 30.0 // the `top` inset, vs offsetParent padding box
+	assert box.offset_left_for(child, no) or { -1 } == 40.0 // the `left` inset
+	parent := offset_parent_element(child, no) or { panic('no offsetParent') }
+	assert i64(parent.as_node().unique_id()) == i64(container.as_node().unique_id()) // the relative container
+}
+
+// offsetParent skips a static intermediate ancestor.
+fn test_offset_parent_skips_static() {
+	doc := dom.Document.create(dom.url_about_blank())
+	rel := styled(doc, 'div', 'position: relative')
+	mid := styled(doc, 'div', '') // static
+	child := styled(doc, 'div', 'position: absolute')
+	mut mn := mid.as_node()
+	mn.append_child(child.as_node()) or { panic('${err}') }
+	mut rn := rel.as_node()
+	rn.append_child(mid.as_node()) or { panic('${err}') }
+
+	parent := offset_parent_element(child, []&css.CSSRule{}) or { panic('no offsetParent') }
+	assert i64(parent.as_node().unique_id()) == i64(rel.as_node().unique_id()) // rel, not mid
+}

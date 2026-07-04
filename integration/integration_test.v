@@ -695,3 +695,21 @@ fn test_element_from_point_over_parsed_document() {
 	hit_b := root_box.element_at_point(10, 60, root) or { panic('no hit b') }
 	assert (hit_b.get_attribute('class') or { '' }) == 'b'
 }
+
+// Full-stack offset properties: parse + lay out a positioned container with a child, read offsetTop/
+// Left/Width/Height and offsetParent.
+fn test_offset_properties_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>body { margin: 0 } .box { position: relative; padding: 15px } .item { position: absolute; top: 25px; left: 35px; width: 40px; height: 30px }</style></head><body><div class="box"><div class="item"></div></div></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	item := css.query_selector(root, '.item') or { panic('no .item') }
+	// The .box position:relative comes from the <style>, so offsetParent needs the author rules.
+	rules := layout.collect_document_author_rules(doc)
+
+	assert root_box.offset_width_for(item) or { -1 } == 40.0
+	assert root_box.offset_height_for(item) or { -1 } == 30.0
+	assert root_box.offset_top_for(item, rules) or { -1 } == 25.0 // relative to .box padding box
+	assert root_box.offset_left_for(item, rules) or { -1 } == 35.0
+	parent := layout.offset_parent_element(item, rules) or { panic('no offsetParent') }
+	assert (parent.get_attribute('class') or { '' }) == 'box'
+}
