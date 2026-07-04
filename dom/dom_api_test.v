@@ -191,6 +191,71 @@ fn test_range_to_string_and_delete_contents() {
 	assert text.data() == ' world'
 }
 
+// ChildNode.before / after: insert nodes (and strings, converted to text) around this node
+// (ChildNode-before-previous-sibling, ChildNode-after-next-sibling).
+fn test_child_node_before_after() {
+	doc := Document.create(url_about_blank())
+	mut root := mk(doc, 'div')
+	mut rn := root.as_node()
+	b := mk(doc, 'b')
+	append(mut rn, b.as_node())
+
+	mut bn := b.as_node()
+	a := mk(doc, 'a')
+	bn.before([node_or_string_from_node(a.as_node()), node_or_string_from_string('x')]) or {
+		panic('${err}')
+	}
+	c := mk(doc, 'c')
+	bn.after([node_or_string_from_node(c.as_node())]) or { panic('${err}') }
+
+	mut names := []string{}
+	for child in rn.children {
+		names << child.node_name()
+	}
+	assert names == ['a', '#text', 'b', 'c']
+}
+
+// ChildNode.replaceWith.
+fn test_child_node_replace_with() {
+	doc := Document.create(url_about_blank())
+	mut root := mk(doc, 'div')
+	mut rn := root.as_node()
+	old := mk(doc, 'old')
+	append(mut rn, old.as_node())
+
+	x := mk(doc, 'x')
+	y := mk(doc, 'y')
+	mut on := old.as_node()
+	on.replace_with([node_or_string_from_node(x.as_node()), node_or_string_from_node(y.as_node())]) or {
+		panic('${err}')
+	}
+
+	mut names := []string{}
+	for child in rn.children {
+		names << child.node_name()
+	}
+	assert names == ['x', 'y']
+	assert old.as_node().parent() == none
+}
+
+// NonDocumentTypeChildNode.previousElementSibling / nextElementSibling: skip non-element siblings.
+fn test_element_siblings() {
+	doc := Document.create(url_about_blank())
+	mut root := mk(doc, 'div')
+	mut rn := root.as_node()
+	append(mut rn, doc.create_text_node('t1').as_node())
+	a := mk(doc, 'a')
+	append(mut rn, a.as_node())
+	append(mut rn, doc.create_text_node('t2').as_node())
+	b := mk(doc, 'b')
+	append(mut rn, b.as_node())
+
+	assert (a.as_node().next_element_sibling() or { panic('') }).local_name() == 'b'
+	assert (b.as_node().previous_element_sibling() or { panic('') }).local_name() == 'a'
+	assert a.as_node().previous_element_sibling() == none // only a text node precedes it
+	assert b.as_node().next_element_sibling() == none
+}
+
 // Node.nodeName for the stable non-element node types (Node-nodeName).
 fn test_node_name_variants() {
 	doc := Document.create(url_about_blank())

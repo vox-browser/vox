@@ -594,6 +594,114 @@ pub fn (n &Node) root() &Node {
 	return parent.root()
 }
 
+// ===== NonDocumentTypeChildNode mixin (https://dom.spec.whatwg.org/#nondocumenttypechildnode) =====
+
+// https://dom.spec.whatwg.org/#dom-nondocumenttypechildnode-previouselementsibling
+pub fn (n &Node) previous_element_sibling() ?&Element {
+	mut sibling := n.previous_sibling()
+	for {
+		s := sibling or { break }
+		if element := s.as_element() {
+			return element
+		}
+		sibling = s.previous_sibling()
+	}
+	return none
+}
+
+// https://dom.spec.whatwg.org/#dom-nondocumenttypechildnode-nextelementsibling
+pub fn (n &Node) next_element_sibling() ?&Element {
+	mut sibling := n.next_sibling()
+	for {
+		s := sibling or { break }
+		if element := s.as_element() {
+			return element
+		}
+		sibling = s.next_sibling()
+	}
+	return none
+}
+
+// ===== ChildNode mixin (https://dom.spec.whatwg.org/#childnode) =====
+
+fn node_or_string_list_contains(nodes []NodeOrString, target &Node) bool {
+	for node_or_string in nodes {
+		if node_or_string.is_text {
+			continue
+		}
+		if candidate := node_or_string.node {
+			if candidate.is_same_node(target) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// This's first preceding sibling not in `nodes`, or none.
+fn (n &Node) viable_previous_sibling_for_insertion(nodes []NodeOrString) ?&Node {
+	mut sibling := n.previous_sibling()
+	for {
+		s := sibling or { break }
+		if !node_or_string_list_contains(nodes, s) {
+			return s
+		}
+		sibling = s.previous_sibling()
+	}
+	return none
+}
+
+// This's first following sibling not in `nodes`, or none.
+fn (n &Node) viable_next_sibling_for_insertion(nodes []NodeOrString) ?&Node {
+	mut sibling := n.next_sibling()
+	for {
+		s := sibling or { break }
+		if !node_or_string_list_contains(nodes, s) {
+			return s
+		}
+		sibling = s.next_sibling()
+	}
+	return none
+}
+
+// https://dom.spec.whatwg.org/#dom-childnode-before
+pub fn (mut n Node) before(nodes []NodeOrString) ! {
+	mut parent := n.parent() or { return }
+	viable_previous_sibling := n.viable_previous_sibling_for_insertion(nodes)
+	node_to_insert := convert_nodes_to_single_node(nodes, n.document())!
+	// If viablePreviousSibling is null, use parent's first child; otherwise its next sibling.
+	before_sibling := if vps := viable_previous_sibling {
+		vps.next_sibling()
+	} else {
+		parent.first_child()
+	}
+	parent.pre_insert(node_to_insert, before_sibling)!
+}
+
+// https://dom.spec.whatwg.org/#dom-childnode-after
+pub fn (mut n Node) after(nodes []NodeOrString) ! {
+	mut parent := n.parent() or { return }
+	viable_next_sibling := n.viable_next_sibling_for_insertion(nodes)
+	node_to_insert := convert_nodes_to_single_node(nodes, n.document())!
+	parent.pre_insert(node_to_insert, viable_next_sibling)!
+}
+
+// https://dom.spec.whatwg.org/#dom-childnode-replacewith
+pub fn (mut n Node) replace_with(nodes []NodeOrString) ! {
+	mut parent := n.parent() or { return }
+	viable_next_sibling := n.viable_next_sibling_for_insertion(nodes)
+	node_to_insert := convert_nodes_to_single_node(nodes, n.document())!
+	// If this's parent is still parent, replace this with node within parent (it may have been
+	// inserted into node during the conversion).
+	if current_parent := n.parent() {
+		if current_parent.is_same_node(parent) {
+			parent.replace_child(node_to_insert, n)!
+			return
+		}
+	}
+	parent.pre_insert(node_to_insert, viable_next_sibling)!
+}
+
 pub fn (n &Node) is_descendant_of(other &Node) bool {
 	for ancestor := n.parent(); ancestor != none; {
 		current := ancestor or { break }
