@@ -2531,12 +2531,18 @@ fn (mut parser Parser) parse_basic_shape_at_position(mut tokens ComponentValueSt
 }
 
 // https://drafts.fxtf.org/css-masking/#the-clip-path  ->  none | <basic-shape> || <geometry-box> | <url>
-// FIXME: <geometry-box> and <url> are not translated yet.
+// NOTE: upstream's clip-path accepts only <basic-shape>, <url> and none (no <geometry-box>).
 fn (mut parser Parser) parse_clip_path_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut none_attempt := tokens.clone()
 	if value := parse_property_keyword_value(mut none_attempt, ['none']) {
 		tokens = none_attempt
 		return value
+	}
+	// <url> reference to an SVG <clipPath>.
+	mut url_attempt := tokens.clone()
+	if url := parse_url_function_for_syntax(mut url_attempt) {
+		tokens = url_attempt
+		return StyleValue(URLStyleValue.create(url))
 	}
 	return parser.parse_basic_shape_value(mut tokens)
 }
