@@ -246,6 +246,165 @@ pub fn (b &BlockBox) offset_left_for(element &dom.Element, author_rules []&css.C
 	return element_border_left - (parent_box.x - parent_box.padding.left)
 }
 
+// An item produced by the rendered-text collection: either a run of text or a *required line break
+// count* (a positive integer, held as a negative-tagged marker). We model the variant as a struct
+// with a `line_breaks` count of 0 meaning "this is a text item" and >0 meaning "this is a run of N
+// required line breaks" (the `text` field is then empty).
+struct TextItem {
+	text        string
+	line_breaks int
+}
+
+// The rendered text of `element` — the `innerText`/`outerText` getter, i.e. the HTML "get the text
+// steps" (https://html.spec.whatwg.org/multipage/dom.html#get-the-text-steps). Unlike `textContent`
+// it reflects rendering: `display:none` and `visibility:hidden` subtrees are omitted, runs of
+// collapsible white-space are collapsed to single spaces, `<br>` and block boundaries introduce line
+// breaks, and `<p>` is surrounded by blank lines.
+//
+// FIXME: this is a layout-free approximation of the spec (which collects text from the laid-out CSS
+// boxes): white-space collapsing does not trim at block/line edges, and table-cell/`\t` and
+// table-row breaks are not modeled.
+pub fn inner_text(element &dom.Element, author_rules []&css.CSSRule) string {
+	// Steps 3–6 of "get the text steps", run over the element's children.
+	mut results := []TextItem{}
+	for child in element.as_node().children_as_vector() {
+		results << rendered_text_items(child, author_rules)
+	}
+	// 4. Remove empty-string items.
+	results = results.filter(it.line_breaks > 0 || it.text != '')
+	// 5. Drop runs of required-line-break items at the start and end.
+	for results.len > 0 && results[0].line_breaks > 0 {
+		results.delete(0)
+	}
+	for results.len > 0 && results[results.len - 1].line_breaks > 0 {
+		results.delete(results.len - 1)
+	}
+	// 6. Replace each remaining run of required-line-break items with LFs (the run's maximum count).
+	mut out := ''
+	mut i := 0
+	for i < results.len {
+		item := results[i]
+		if item.line_breaks == 0 {
+			out += item.text
+			i++
+			continue
+		}
+		mut max_breaks := item.line_breaks
+		mut j := i + 1
+		for j < results.len && results[j].line_breaks > 0 {
+			if results[j].line_breaks > max_breaks {
+				max_breaks = results[j].line_breaks
+			}
+			j++
+		}
+		out += '\n'.repeat(max_breaks)
+		i = j
+	}
+	return out
+}
+
+// The rendered-text collection steps for a single node
+// (https://html.spec.whatwg.org/multipage/dom.html#rendered-text-collection-steps).
+fn rendered_text_items(node &dom.Node, author_rules []&css.CSSRule) []TextItem {
+	// A text node contributes its data after white-space processing (using the parent's white-space,
+	// which is inherited). It has no children and is only reached inside a rendered subtree.
+	if node.is_text() {
+		text := unsafe { &dom.Text(node) }.data()
+		white_space := if parent := node.parent_element() {
+			css.cascaded_value_with_ua(parent, css.property_id_from_string('white-space') or {
+				return []TextItem{}
+			}, author_rules)
+		} else {
+			'normal'
+		}
+		return [TextItem{
+			text: collapse_rendered_whitespace(text, white_space)
+		}]
+	}
+
+	element := node.as_element() or { return []TextItem{} }
+
+	// 3. A `display:none` subtree is not rendered and contributes nothing.
+	display := css.cascaded_value_with_ua(element, css.property_id_from_string('display') or {
+		return []TextItem{}
+	}, author_rules)
+	if display == 'none' {
+		return []TextItem{}
+	}
+
+	// 1. Collect the children's items first (tree order).
+	mut items := []TextItem{}
+	for child in node.children_as_vector() {
+		items << rendered_text_items(child, author_rules)
+	}
+
+	// 2. A `visibility:hidden` box hides its own contribution but not its (possibly re-shown) children.
+	visibility := css.cascaded_value_with_ua(element, css.property_id_from_string('visibility') or {
+		return items
+	}, author_rules)
+	if visibility != 'visible' {
+		return items
+	}
+
+	local := element.local_name()
+
+	// 5. `<br>` contributes a single line feed.
+	if local == 'br' {
+		items << TextItem{
+			text: '\n'
+		}
+		return items
+	}
+
+	// 8. `<p>` is surrounded by 2 required line breaks (a blank line).
+	if local == 'p' {
+		items.prepend(TextItem{ line_breaks: 2 })
+		items << TextItem{ line_breaks: 2 }
+		return items
+	}
+
+	// 9. A block-level box is surrounded by 1 required line break.
+	if is_block_level_display(display) {
+		items.prepend(TextItem{ line_breaks: 1 })
+		items << TextItem{ line_breaks: 1 }
+	}
+	return items
+}
+
+// Apply the CSS white-space collapsing that `innerText` observes. For collapsible white-space
+// (`normal`/`nowrap`) every run of ASCII whitespace collapses to a single space. `pre`/`pre-wrap`
+// preserve spaces and newlines verbatim; `pre-line` collapses spaces but keeps newlines.
+fn collapse_rendered_whitespace(text string, white_space string) string {
+	if white_space == 'pre' || white_space == 'pre-wrap' {
+		return text
+	}
+	preserve_newlines := white_space == 'pre-line'
+	mut out := []u8{}
+	mut in_space := false
+	for c in text {
+		is_ws := c == ` ` || c == `\t` || c == `\n` || c == `\r` || c == 12 // FF
+		if preserve_newlines && c == `\n` {
+			// Flush any pending collapsed space run as nothing (a newline absorbs adjacent spaces).
+			in_space = false
+			out << `\n`
+			continue
+		}
+		if is_ws {
+			in_space = true
+			continue
+		}
+		if in_space {
+			out << ` `
+			in_space = false
+		}
+		out << c
+	}
+	if in_space {
+		out << ` `
+	}
+	return out.bytestr()
+}
+
 // Flatten this box's subtree into paint order (CSS 2.1 Appendix E, simplified): a box paints before
 // its children, and its children paint ordered by z-index — negative first, then z-index `auto`/0 in
 // tree order, then positive. Each returned entry is a shallow box (no nested children) carrying the

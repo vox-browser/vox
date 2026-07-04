@@ -713,3 +713,15 @@ fn test_offset_properties_over_parsed_document() {
 	parent := layout.offset_parent_element(item, rules) or { panic('no offsetParent') }
 	assert (parent.get_attribute('class') or { '' }) == 'box'
 }
+
+// Full-stack innerText: parse a document, then read the rendered text of an element — whitespace
+// collapses, <p> is set off by a blank line, a display:none subtree is omitted, and an inline
+// <span> adds no break.
+fn test_inner_text_over_parsed_document() {
+	doc := html.parse_document('<body><div id="host"><p>Hello   world</p><div style="display:none">secret</div><span>tail</span></div></body>')
+	root := unsafe { &dom.Node(doc) }
+	host := css.query_selector(root, '#host') or { panic('no #host') }
+	rules := layout.collect_document_author_rules(doc)
+
+	assert layout.inner_text(host, rules) == 'Hello world\n\ntail'
+}

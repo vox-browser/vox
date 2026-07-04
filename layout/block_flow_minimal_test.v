@@ -1744,3 +1744,52 @@ fn test_offset_parent_skips_static() {
 	parent := offset_parent_element(child, []&css.CSSRule{}) or { panic('no offsetParent') }
 	assert i64(parent.as_node().unique_id()) == i64(rel.as_node().unique_id()) // rel, not mid
 }
+
+// innerText: block children are separated by single line breaks, <p> by blank lines, and a
+// display:none subtree is omitted entirely.
+fn test_inner_text_block_breaks_and_display_none() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', '')
+	one := styled(doc, 'div', '')
+	two := styled(doc, 'div', '')
+	hidden := styled(doc, 'div', 'display: none')
+	para := styled(doc, 'p', '')
+	mut on := one.as_node()
+	on.append_child(doc.create_text_node('one').as_node()) or { panic('${err}') }
+	mut tn := two.as_node()
+	tn.append_child(doc.create_text_node('two').as_node()) or { panic('${err}') }
+	mut hn := hidden.as_node()
+	hn.append_child(doc.create_text_node('hidden').as_node()) or { panic('${err}') }
+	mut pn := para.as_node()
+	pn.append_child(doc.create_text_node('para').as_node()) or { panic('${err}') }
+	mut rn := root.as_node()
+	rn.append_child(one.as_node()) or { panic('${err}') }
+	rn.append_child(two.as_node()) or { panic('${err}') }
+	rn.append_child(hidden.as_node()) or { panic('${err}') }
+	rn.append_child(para.as_node()) or { panic('${err}') }
+
+	assert inner_text(root, []&css.CSSRule{}) == 'one\ntwo\n\npara'
+}
+
+// innerText: collapsible white-space collapses to single spaces and <br> forces a line break.
+fn test_inner_text_whitespace_collapse_and_br() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', '')
+	br := styled(doc, 'br', '')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('a   b').as_node()) or { panic('${err}') }
+	rn.append_child(br.as_node()) or { panic('${err}') }
+	rn.append_child(doc.create_text_node('c').as_node()) or { panic('${err}') }
+
+	assert inner_text(root, []&css.CSSRule{}) == 'a b\nc'
+}
+
+// innerText: `white-space: pre` preserves internal spaces and source newlines.
+fn test_inner_text_pre_preserves_whitespace() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'white-space: pre')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('x  y\nz').as_node()) or { panic('${err}') }
+
+	assert inner_text(root, []&css.CSSRule{}) == 'x  y\nz'
+}
