@@ -789,3 +789,24 @@ fn test_visibility_hidden_over_parsed_document() {
 	assert svg.contains('VISIBLE')
 	assert !svg.contains('SECRET')
 }
+
+// Full-stack text-decoration: an author stylesheet underlines a paragraph; the rendered fragment
+// carries the decoration and the SVG output includes both the word and an underline rect.
+fn test_text_decoration_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>p { text-decoration: underline }</style></head><body><p>linked</p></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	p := css.query_selector(root, 'p') or { panic('no p') }
+
+	p_box := root_box.find_box(i64(p.as_node().unique_id())) or { panic('no p box') }
+	assert p_box.lines[0].fragments[0].decoration.contains('underline')
+
+	// The display list has the word plus an underline fill (the p has no background of its own).
+	cmds := root_box.paint_commands()
+	assert cmds.filter(it.kind == 'draw_text').len == 1
+	assert cmds.filter(it.kind == 'fill_rect').len == 1
+
+	svg := root_box.render_svg(600, root_box.height + 20)
+	assert svg.contains('linked')
+	assert svg.contains('<rect') // the underline
+}

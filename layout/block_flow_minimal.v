@@ -52,6 +52,9 @@ pub mut:
 pub:
 	text  string
 	color css.Color
+	// The computed `text-decoration-line` covering this word (`none`, or a space-separated set of
+	// `underline`/`overline`/`line-through`); drawn in the fragment's color.
+	decoration string = 'none'
 }
 
 // A laid-out line box within a block's inline formatting context: `x`/`y` is the top-left of the
@@ -75,12 +78,13 @@ fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 		width:  line.width
 		height: line.height
 		fragments: line.fragments.map(TextFragment{
-			x:      it.x + dx
-			y:      it.y + dy
-			width:  it.width
-			height: it.height
-			text:   it.text
-			color:  it.color
+			x:          it.x + dx
+			y:          it.y + dy
+			width:      it.width
+			height:     it.height
+			text:       it.text
+			color:      it.color
+			decoration: it.decoration
 		})
 	}
 }
@@ -539,7 +543,55 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 					text: fragment.text
 					opacity: opacity
 				}
+				commands << decoration_commands(fragment, opacity)
 			}
+		}
+	}
+	return commands
+}
+
+// The text-decoration lines for a fragment, drawn in its color: a thin `fill_rect` per decoration
+// keyword (underline near the baseline, line-through through the middle, overline at the top).
+// FIXME: positions/thickness are approximated from the line-height (no real font metrics), and
+// text-decoration-color/style/thickness aren't modeled.
+fn decoration_commands(fragment TextFragment, opacity f64) []PaintCommand {
+	if fragment.decoration == '' || fragment.decoration == 'none' {
+		return []PaintCommand{}
+	}
+	color := fragment.color.serialize()
+	thickness := if fragment.height * 0.0625 > 1.0 { fragment.height * 0.0625 } else { 1.0 }
+	mut commands := []PaintCommand{}
+	if fragment.decoration.contains('underline') {
+		commands << PaintCommand{
+			kind: 'fill_rect'
+			x: fragment.x
+			y: fragment.y + fragment.height * 0.85
+			width: fragment.width
+			height: thickness
+			color: color
+			opacity: opacity
+		}
+	}
+	if fragment.decoration.contains('overline') {
+		commands << PaintCommand{
+			kind: 'fill_rect'
+			x: fragment.x
+			y: fragment.y
+			width: fragment.width
+			height: thickness
+			color: color
+			opacity: opacity
+		}
+	}
+	if fragment.decoration.contains('line-through') {
+		commands << PaintCommand{
+			kind: 'fill_rect'
+			x: fragment.x
+			y: fragment.y + fragment.height * 0.5
+			width: fragment.width
+			height: thickness
+			color: color
+			opacity: opacity
 		}
 	}
 	return commands
@@ -1011,6 +1063,7 @@ struct InlineWord {
 	space_after f64 // the space following this word (~0.5em of its font)
 	height      f64 // this word's line-height contribution
 	color       css.Color // this word's computed text color
+	decoration  string = 'none' // this word's computed text-decoration-line
 }
 
 // Gather a block's inline content as segments of styled words, split at `<br>` and (when
@@ -1033,6 +1086,11 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rule
 	text_transform := css.cascaded_value_with_ua(element, css.property_id_from_string('text-transform') or {
 		return
 	}, author_rules)
+	// `text-decoration-line` (inherited in this port's metadata, matching the decorating-box
+	// propagation) underlines/strikes/overlines this element's text runs.
+	decoration := css.cascaded_value_with_ua(element, css.property_id_from_string('text-decoration-line') or {
+		return
+	}, author_rules)
 	for child in element.as_node().children_as_vector() {
 		if child.is_text() {
 			data := unsafe { &dom.Text(child) }.data()
@@ -1049,6 +1107,7 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rule
 						space_after: glyph_width
 						height:      line_height
 						color:       color
+						decoration:  decoration
 					}
 				}
 			}
@@ -1192,12 +1251,13 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 			mut fragment_x := line_x
 			for k := i; k < j; k++ {
 				fragments << TextFragment{
-					x:      fragment_x
-					y:      y
-					width:  segment[k].width
-					height: segment[k].height
-					text:   segment[k].text
-					color:  segment[k].color
+					x:          fragment_x
+					y:          y
+					width:      segment[k].width
+					height:     segment[k].height
+					text:       segment[k].text
+					color:      segment[k].color
+					decoration: segment[k].decoration
 				}
 				fragment_x += segment[k].width + segment[k].space_after
 				if k < j - 1 {

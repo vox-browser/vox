@@ -1885,3 +1885,65 @@ fn test_visibility_visible_child_of_hidden_paints() {
 	assert fills.len == 1 // only the visible child's background, not the hidden parent's red
 	assert fills[0].color == 'rgb(0 128 0)'
 }
+
+// text-decoration: underline (shorthand) marks the fragment and emits an underline rect near the
+// bottom of the text, in the text color.
+fn test_text_decoration_underline() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; text-decoration: underline')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('hello').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	frag := box.lines[0].fragments[0]
+	assert frag.decoration.contains('underline')
+
+	cmds := box.paint_commands()
+	assert cmds.filter(it.kind == 'draw_text').len == 1
+	underlines := cmds.filter(it.kind == 'fill_rect')
+	assert underlines.len == 1
+	assert underlines[0].y > frag.y + frag.height * 0.5 // near the baseline, below the middle
+	assert underlines[0].width == frag.width
+}
+
+// text-decoration-line: line-through emits a strike rect through the middle of the text.
+fn test_text_decoration_line_through() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; text-decoration-line: line-through')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('gone').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	frag := box.lines[0].fragments[0]
+	strikes := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert strikes.len == 1
+	// The strike sits around the vertical middle of the line.
+	assert strikes[0].y > frag.y && strikes[0].y < frag.y + frag.height * 0.85
+}
+
+// text-decoration propagates to descendant inline text (the decorating box): a span with no
+// decoration of its own inherits the container's underline.
+fn test_text_decoration_propagates_to_descendants() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; text-decoration: underline')
+	span := styled(doc, 'span', '')
+	mut span_n := span.as_node()
+	span_n.append_child(doc.create_text_node('child').as_node()) or { panic('${err}') }
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('parent').as_node()) or { panic('${err}') }
+	rn.append_child(span.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	mut all_decorated := true
+	mut count := 0
+	for line in box.lines {
+		for frag in line.fragments {
+			count++
+			if !frag.decoration.contains('underline') {
+				all_decorated = false
+			}
+		}
+	}
+	assert count == 2 // 'parent' and 'child'
+	assert all_decorated // both underlined, including the span's text
+}
