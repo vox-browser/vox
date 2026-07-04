@@ -1290,3 +1290,44 @@ fn test_inline_fragments_follow_float() {
 	assert box.lines[0].fragments[0].x == 150.0 // first word offset past the float
 	assert box.lines[2].fragments[0].x == 0.0 // third line dropped below the float -> full width
 }
+
+// A nested <span> with a larger font measures its text at that size, and makes the line taller.
+fn test_per_inline_font_size() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 500px; font-size: 20px') // line-height normal -> 24
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('small').as_node()) or { panic('${err}') } // 5*10 = 50
+	span := styled(doc, 'span', 'font-size: 40px') // line-height normal -> 48
+	mut sn := span.as_node()
+	sn.append_child(doc.create_text_node('BIG').as_node()) or { panic('${err}') } // 3*20 = 60
+	n.append_child(span.as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	line := box.lines[0]
+	assert line.fragments.len == 2
+	assert line.fragments[0].text == 'small'
+	assert line.fragments[0].width == 50.0
+	assert line.fragments[0].height == 24.0 // small font's line-height
+	assert line.fragments[1].text == 'BIG'
+	assert line.fragments[1].width == 60.0 // measured at 40px (3 glyphs * 20)
+	assert line.fragments[1].height == 48.0 // big font's line-height
+	assert line.fragments[1].x == 60.0 // 50 (small) + 10 (space at small's font)
+	assert line.height == 48.0 // the tallest word sets the line height
+	assert box.height == 48.0
+}
+
+// Intrinsic width accounts for per-inline fonts: max-content sums mixed-font words + spaces;
+// min-content is the widest single (mixed-font) word.
+fn test_per_inline_intrinsic_width() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'font-size: 20px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('ab').as_node()) or { panic('${err}') } // 2*10 = 20
+	span := styled(doc, 'span', 'font-size: 40px')
+	mut sn := span.as_node()
+	sn.append_child(doc.create_text_node('cd').as_node()) or { panic('${err}') } // 2*20 = 40
+	n.append_child(span.as_node()) or { panic('${err}') }
+
+	assert intrinsic_content_width(el, []&css.CSSRule{}, false) == 70.0 // 20 + 10 space + 40
+	assert intrinsic_content_width(el, []&css.CSSRule{}, true) == 40.0 // widest word (the 40px one)
+}

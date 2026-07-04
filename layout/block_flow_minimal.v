@@ -478,33 +478,33 @@ fn horizontal_edges(element &dom.Element, containing_width f64, author_rules []&
 }
 
 // The intrinsic width of a block's inline (text) content: the widest single word (min-content) or the
-// widest unbroken segment — words + spaces on one line (max-content).
+// widest unbroken segment — words + spaces on one line (max-content). Words are measured with their
+// own element's font.
 fn inline_intrinsic_width(element &dom.Element, author_rules []&css.CSSRule, minimum bool) f64 {
 	white_space := css.cascaded_value_with_ua(element, css.property_id_from_string('white-space') or {
 		return 0.0
 	}, author_rules)
-	mut segments := ['']
-	append_inline_segments(element.as_node(), author_rules, white_space_preserves_newlines(white_space),
-		mut segments)
-	glyph_width := 0.5 * css.computed_font_size_px(element, author_rules)
+	segments := collect_inline_segments(element, white_space_preserves_newlines(white_space),
+		author_rules)
 	mut widest := 0.0
 	for segment in segments {
-		words := segment.fields()
-		if words.len == 0 {
+		if segment.len == 0 {
 			continue
 		}
 		if minimum {
-			for word in words {
-				word_width := f64(word.runes().len) * glyph_width
-				if word_width > widest {
-					widest = word_width
+			for word in segment {
+				if word.width > widest {
+					widest = word.width
 				}
 			}
 		} else {
-			// max-content: the whole segment on one line (no wrapping).
-			segment_width := wrap_line_widths(words, -1.0, glyph_width, glyph_width)
-			if segment_width.len > 0 && segment_width[0] > widest {
-				widest = segment_width[0]
+			// max-content: the whole segment on one line (words + the spaces between them).
+			mut total := segment[0].width
+			for k := 1; k < segment.len; k++ {
+				total += segment[k - 1].space_after + segment[k].width
+			}
+			if total > widest {
+				widest = total
 			}
 		}
 	}
@@ -561,39 +561,57 @@ fn white_space_preserves_newlines(white_space string) bool {
 	return white_space == 'pre' || white_space == 'pre-wrap' || white_space == 'pre-line'
 }
 
-// Gather a block's inline content as text segments split at forced line breaks: `<br>` elements
-// always break, and (when `preserve_newlines`) newlines in text do too. Text between breaks (walking
-// into inline descendants) forms one segment. `display: none` and out-of-flow descendants contribute
-// nothing.
-fn append_inline_segments(node &dom.Node, author_rules []&css.CSSRule, preserve_newlines bool, mut segments []string) {
+// A word of inline content with its own measured metrics, taken from the element it comes from — so
+// a nested inline element with its own font-size measures its text at that size.
+struct InlineWord {
+	text        string
+	width       f64 // rune count × 0.5em of the word's font
+	space_after f64 // the space following this word (~0.5em of its font)
+	height      f64 // this word's line-height contribution
+}
+
+// Gather a block's inline content as segments of styled words, split at `<br>` and (when
+// `preserve_newlines`) at newlines. Each word is measured with the font/line-height of the element it
+// comes from. `display: none` and out-of-flow descendants contribute nothing. The result always has
+// at least one (possibly empty) segment.
+fn collect_inline_segments(element &dom.Element, preserve_newlines bool, author_rules []&css.CSSRule) [][]InlineWord {
+	mut segments := [[]InlineWord{}]
+	append_inline_words(element, preserve_newlines, author_rules, mut segments)
+	return segments
+}
+
+fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rules []&css.CSSRule, mut segments [][]InlineWord) {
 	display_id := css.property_id_from_string('display') or { return }
-	for child in node.children_as_vector() {
+	glyph_width := 0.5 * css.computed_font_size_px(element, author_rules)
+	line_height := css.computed_line_height_px(element, author_rules)
+	for child in element.as_node().children_as_vector() {
 		if child.is_text() {
 			data := unsafe { &dom.Text(child) }.data()
-			if preserve_newlines {
-				parts := data.split('\n')
-				for i, part in parts {
-					if i > 0 {
-						segments << '' // a preserved newline starts a new segment
-					}
-					segments[segments.len - 1] += part
+			parts := if preserve_newlines { data.split('\n') } else { [data] }
+			for i, part in parts {
+				if i > 0 {
+					segments << []InlineWord{} // a preserved newline starts a new segment
 				}
-			} else {
-				segments[segments.len - 1] += data
+				for word in part.fields() {
+					segments[segments.len - 1] << InlineWord{
+						text:        word
+						width:       f64(word.runes().len) * glyph_width
+						space_after: glyph_width
+						height:      line_height
+					}
+				}
 			}
-		} else if element := child.as_element() {
-			if css.cascaded_value_with_ua(element, display_id, author_rules) == 'none' {
+		} else if el := child.as_element() {
+			if css.cascaded_value_with_ua(el, display_id, author_rules) == 'none' {
 				continue
 			}
-			if is_absolutely_positioned(position_value(element, author_rules))
-				|| is_floating(element, author_rules) {
+			if is_absolutely_positioned(position_value(el, author_rules)) || is_floating(el, author_rules) {
 				continue // out of flow — its text is its own content, not the container's
 			}
-			if element.local_name() == 'br' {
-				segments << '' // forced line break starts a new segment
+			if el.local_name() == 'br' {
+				segments << []InlineWord{} // forced line break starts a new segment
 			} else {
-				append_inline_segments(element.as_node(), author_rules, preserve_newlines, mut
-					segments)
+				append_inline_words(el, preserve_newlines, author_rules, mut segments)
 			}
 		}
 	}
@@ -621,23 +639,22 @@ fn aligned_line_x(content_x f64, content_width f64, line_width f64, align string
 // position (offset past left floats, shortened by right floats), and a line whose first word can't
 // fit beside a float drops below it.
 //
-// Each line carries its words as positioned fragments. FIXME: still stands in for a real inline
-// formatting context — glyph advances are estimated, `pre*` whitespace runs are collapsed (widths
-// approximate), there is no per-inline font/line-height, no per-word justification, and no bidi.
+// Each line carries its words as positioned fragments, each measured with its own element's font; a
+// line's height is the tallest word on it. FIXME: still stands in for a real inline formatting
+// context — glyph advances are estimated, `pre*` whitespace runs are collapsed (widths approximate),
+// there is no per-word justification, and no bidi.
 fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, float_bands []FloatBand, author_rules []&css.CSSRule) []TextLine {
 	white_space := css.cascaded_value_with_ua(element, css.property_id_from_string('white-space') or {
 		return []TextLine{}
 	}, author_rules)
 
-	mut segments := ['']
-	append_inline_segments(element.as_node(), author_rules, white_space_preserves_newlines(white_space),
-		mut segments)
-	if segments.len == 1 && segments[0].fields().len == 0 {
+	segments := collect_inline_segments(element, white_space_preserves_newlines(white_space),
+		author_rules)
+	if segments.len == 1 && segments[0].len == 0 {
 		return []TextLine{} // no inline content at all
 	}
 
-	line_height := css.computed_line_height_px(element, author_rules)
-	glyph_width := 0.5 * css.computed_font_size_px(element, author_rules)
+	block_line_height := css.computed_line_height_px(element, author_rules)
 	align := css.cascaded_value_with_ua(element, css.property_id_from_string('text-align') or {
 		return []TextLine{}
 	}, author_rules)
@@ -646,23 +663,23 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 	mut lines := []TextLine{}
 	mut y := 0.0
 	for segment in segments {
-		words := segment.fields()
-		if words.len == 0 {
-			left, right := line_bounds(y, line_height, float_bands, content_x, content_width)
+		if segment.len == 0 {
+			left, right := line_bounds(y, block_line_height, float_bands, content_x, content_width)
 			lines << TextLine{
 				x:      aligned_line_x(left, right - left, 0.0, align)
 				y:      y
 				width:  0.0
-				height: line_height
+				height: block_line_height
 			}
-			y += line_height
+			y += block_line_height
 			continue
 		}
 		mut i := 0
-		for i < words.len {
-			mut left, mut right := line_bounds(y, line_height, float_bands, content_x, content_width)
+		for i < segment.len {
+			mut left, mut right := line_bounds(y, segment[i].height, float_bands, content_x,
+				content_width)
 			// If the first word can't fit beside a float, drop the line below the nearest float.
-			if wraps && f64(words[i].runes().len) * glyph_width > right - left {
+			if wraps && segment[i].width > right - left {
 				dropped := next_float_bottom(y, float_bands)
 				if dropped > y {
 					y = dropped
@@ -670,30 +687,33 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 				}
 			}
 			available := right - left
-			mut line_width := f64(words[i].runes().len) * glyph_width
+			mut line_width := segment[i].width
+			mut line_height := segment[i].height
 			mut j := i + 1
-			for j < words.len {
-				needed := glyph_width + f64(words[j].runes().len) * glyph_width // space + word
+			for j < segment.len {
+				needed := segment[j - 1].space_after + segment[j].width
 				if wraps && line_width + needed > available {
 					break
 				}
 				line_width += needed
+				if segment[j].height > line_height {
+					line_height = segment[j].height
+				}
 				j++
 			}
 			line_x := aligned_line_x(left, right - left, line_width, align)
-			// Place each word left-to-right within the line, advancing by the word plus one space.
+			// Place each word left-to-right within the line, advancing by the word plus its space.
 			mut fragments := []TextFragment{}
 			mut fragment_x := line_x
 			for k := i; k < j; k++ {
-				word_width := f64(words[k].runes().len) * glyph_width
 				fragments << TextFragment{
 					x:      fragment_x
 					y:      y
-					width:  word_width
-					height: line_height
-					text:   words[k]
+					width:  segment[k].width
+					height: segment[k].height
+					text:   segment[k].text
 				}
-				fragment_x += word_width + glyph_width // word + space
+				fragment_x += segment[k].width + segment[k].space_after
 			}
 			lines << TextLine{
 				x:         line_x

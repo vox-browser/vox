@@ -502,3 +502,21 @@ fn test_inline_fragments_over_parsed_document() {
 	assert frags[2].text == 'three'
 	assert frags[2].x == 80.0 // + "two" (20) + space (10) = 40 + 40
 }
+
+// Full-stack per-inline font: a bigger <span> inside a paragraph is measured at its own size and
+// makes the line taller.
+fn test_per_inline_font_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 500px; font-size: 20px">hi <span style="font-size: 40px">BIG</span></div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
+	frags := box.lines[0].fragments
+	assert frags.len == 2
+	assert frags[0].text == 'hi'
+	assert frags[0].height == 24.0 // 20px font -> 24 line-height
+	assert frags[1].text == 'BIG'
+	assert frags[1].width == 60.0 // measured at 40px
+	assert frags[1].height == 48.0 // 40px font -> 48 line-height
+	assert box.lines[0].height == 48.0 // line grows to the tallest word
+}
