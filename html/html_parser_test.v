@@ -46,6 +46,14 @@ fn html_element(doc &dom.Document) &dom.Node {
 	return el.as_node()
 }
 
+fn children_repr(node &dom.Node) string {
+	mut parts := []string{}
+	for k in node.children_as_vector() {
+		parts << tree_repr(k)
+	}
+	return parts.join(',')
+}
+
 fn nth_child(node &dom.Node, index int) &dom.Node {
 	kids := node.children_as_vector()
 	return kids[index]
@@ -257,4 +265,25 @@ fn test_xmp_raw_text() {
 	doc := parse('<body><xmp><b>raw</b></xmp></body>')
 	body := nth_child(html_element(doc), 1)
 	assert tree_repr(body) == 'body(xmp("<b>raw</b>"))'
+}
+
+fn test_template_contents() {
+	doc := parse('<body><template><div>x</div><span>y</span></template></body>')
+	body := nth_child(html_element(doc), 1)
+	template := nth_child(body, 0).as_element() or { panic('no template') }
+	assert template.local_name() == 'template'
+	// The template element itself has no children in the tree; they live in its content fragment.
+	assert template.as_node().children_as_vector().len == 0
+	tmpl := unsafe { &dom.HTMLTemplateElement(template) }
+	assert children_repr(tmpl.content().as_node()) == 'div("x"),span("y")'
+}
+
+fn test_content_after_template() {
+	// After </template>, parsing resumes in the body.
+	doc := parse('<body><template>t</template><p>after</p></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(template,p("after"))'
+	template := nth_child(body, 0).as_element() or { panic('no template') }
+	tmpl := unsafe { &dom.HTMLTemplateElement(template) }
+	assert children_repr(tmpl.content().as_node()) == '"t"'
 }

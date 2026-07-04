@@ -188,11 +188,99 @@ fn (mut p HTMLParser) handle_in_head(mut token HTMLToken) {
 		p.in_head_anything_else(mut token)
 		return
 	}
-	// FIXME: <template> start/end is not supported.
+	if token.is_start_tag() && token.tag_name == 'template' {
+		// FIXME: declarative shadow roots (shadowrootmode) are not handled.
+		p.list_of_active_formatting_elements.add_marker()
+		p.frameset_ok = false
+		p.insertion_mode = .in_template
+		p.stack_of_template_insertion_modes << InsertionMode.in_template
+		p.insert_html_element(token)
+		return
+	}
+	if token.is_end_tag() && token.tag_name == 'template' {
+		if !p.stack_of_open_elements.contains_template_element() {
+			return
+		}
+		p.generate_all_implied_end_tags_thoroughly()
+		p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('template')
+		p.list_of_active_formatting_elements.clear_up_to_the_last_marker()
+		if p.stack_of_template_insertion_modes.len > 0 {
+			p.stack_of_template_insertion_modes.pop()
+		}
+		p.reset_the_insertion_mode_appropriately()
+		return
+	}
 	if (token.is_start_tag() && token.tag_name == 'head') || token.is_end_tag() {
 		return
 	}
 	p.in_head_anything_else(mut token)
+}
+
+fn (mut p HTMLParser) switch_template_insertion_mode(mode InsertionMode) {
+	if p.stack_of_template_insertion_modes.len > 0 {
+		p.stack_of_template_insertion_modes.pop()
+	}
+	p.stack_of_template_insertion_modes << mode
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intemplate
+fn (mut p HTMLParser) handle_in_template(mut token HTMLToken) {
+	if token.is_character() || token.is_comment() || token.is_doctype() {
+		p.handle_in_body(mut token)
+		return
+	}
+	if (token.is_start_tag() && token.tag_name in head_element_start_tags)
+		|| (token.is_end_tag() && token.tag_name == 'template') {
+		p.handle_in_head(mut token)
+		return
+	}
+	if token.is_start_tag() && token.tag_name in ['caption', 'colgroup', 'tbody', 'tfoot', 'thead'] {
+		p.switch_template_insertion_mode(.in_table)
+		p.insertion_mode = .in_table
+		p.process_using_the_rules_for(.in_table, mut token)
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'col' {
+		p.switch_template_insertion_mode(.in_column_group)
+		p.insertion_mode = .in_column_group
+		p.process_using_the_rules_for(.in_column_group, mut token)
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'tr' {
+		p.switch_template_insertion_mode(.in_table_body)
+		p.insertion_mode = .in_table_body
+		p.process_using_the_rules_for(.in_table_body, mut token)
+		return
+	}
+	if token.is_start_tag() && token.tag_name in ['td', 'th'] {
+		p.switch_template_insertion_mode(.in_row)
+		p.insertion_mode = .in_row
+		p.process_using_the_rules_for(.in_row, mut token)
+		return
+	}
+	if token.is_start_tag() {
+		p.switch_template_insertion_mode(.in_body)
+		p.insertion_mode = .in_body
+		p.process_using_the_rules_for(.in_body, mut token)
+		return
+	}
+	if token.is_end_tag() {
+		return
+	}
+	if token.is_end_of_file() {
+		if !p.stack_of_open_elements.contains_template_element() {
+			p.stop_parsing = true
+			return
+		}
+		p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('template')
+		p.list_of_active_formatting_elements.clear_up_to_the_last_marker()
+		if p.stack_of_template_insertion_modes.len > 0 {
+			p.stack_of_template_insertion_modes.pop()
+		}
+		p.reset_the_insertion_mode_appropriately()
+		p.process_using_the_rules_for(p.insertion_mode, mut token)
+		return
+	}
 }
 
 fn (mut p HTMLParser) in_head_anything_else(mut token HTMLToken) {
@@ -343,6 +431,10 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		return
 	}
 	if token.is_end_of_file() {
+		if p.stack_of_template_insertion_modes.len > 0 {
+			p.handle_in_template(mut token)
+			return
+		}
 		p.stop_parsing = true
 		return
 	}

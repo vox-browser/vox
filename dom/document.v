@@ -459,6 +459,25 @@ pub struct HTMLTableSectionElement {
 @[heap]
 pub struct HTMLTemplateElement {
 	HTMLElement
+mut:
+	template_content &DocumentFragment = unsafe { nil }
+}
+
+// https://html.spec.whatwg.org/multipage/scripting.html#dom-template-content
+// The template's contents: a DocumentFragment that holds the template's parsed children (the
+// template element itself stays empty in the tree). Created lazily on first access.
+// FIXME: the spec uses a separate inert "template contents owner" document; we reuse the node
+// document here, which is sufficient for parsing.
+pub fn (t &HTMLTemplateElement) content() &DocumentFragment {
+	if isnil(t.template_content) {
+		mut owner_document := t.document()
+		frag := new_document_fragment(owner_document)
+		unsafe {
+			mut mutable_self := &HTMLTemplateElement(t)
+			mutable_self.template_content = frag
+		}
+	}
+	return t.template_content
 }
 
 @[heap]

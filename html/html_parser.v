@@ -40,7 +40,7 @@ pub enum InsertionMode {
 }
 
 pub struct AdjustedInsertionLocation {
-pub mut:
+pub:
 	parent                ?&dom.Node
 	insert_before_sibling ?&dom.Node
 }
@@ -142,8 +142,9 @@ fn (mut p HTMLParser) process_using_the_rules_for(mode InsertionMode, mut token 
 		.in_cell { p.handle_in_cell(mut token) }
 		.in_caption { p.handle_in_caption(mut token) }
 		.in_column_group { p.handle_in_column_group(mut token) }
-		// FIXME: frameset/template/select modes are not ported yet; fall back to the "in body" rules
-		// so ordinary content still parses.
+		.in_template { p.handle_in_template(mut token) }
+		// FIXME: frameset modes are not ported yet; fall back to the "in body" rules so ordinary
+		// content still parses.
 		else { p.handle_in_body(mut token) }
 	}
 }
@@ -167,39 +168,48 @@ fn (p &HTMLParser) adjusted_current_node() ?&dom.Element {
 // https://html.spec.whatwg.org/multipage/parsing.html#appropriate-place-for-inserting-a-node
 fn (mut p HTMLParser) find_appropriate_place_for_inserting_node() AdjustedInsertionLocation {
 	target := p.current_node() or { return AdjustedInsertionLocation{} }
-	// FIXME: <template> contents are not handled (step 1's last-template branch and step 3).
+	mut location := AdjustedInsertionLocation{
+		parent:                target.as_node()
+		insert_before_sibling: none
+	}
+	// FIXME: the foster-parenting last-template branch is not handled.
 	if p.foster_parenting && target.local_name() in ['table', 'tbody', 'tfoot', 'thead', 'tr'] {
 		last_table := p.stack_of_open_elements.last_element_with_tag_name('table')
-		lt := last_table.element or {
+		if lt := last_table.element {
+			if parent := lt.as_node().parent_node() {
+				// If last table has a parent node, insert immediately before last table.
+				location = AdjustedInsertionLocation{
+					parent:                parent
+					insert_before_sibling: lt.as_node()
+				}
+			} else if previous_element := p.stack_of_open_elements.element_immediately_above(lt) {
+				// Otherwise, inside the element immediately above last table.
+				location = AdjustedInsertionLocation{
+					parent:                previous_element.as_node()
+					insert_before_sibling: none
+				}
+			}
+		} else {
 			// No last table (fragment case): inside the first element, after its last child.
-			return AdjustedInsertionLocation{
+			location = AdjustedInsertionLocation{
 				parent:                p.stack_of_open_elements.first().as_node()
 				insert_before_sibling: none
 			}
 		}
-		// If last table has a parent node, insert immediately before last table.
-		if parent := lt.as_node().parent_node() {
-			return AdjustedInsertionLocation{
-				parent:                parent
-				insert_before_sibling: lt.as_node()
+	}
+	// If the adjusted insertion location is inside a template element, redirect to its contents.
+	if parent := location.parent {
+		if el := parent.as_element() {
+			if element_in_namespace(el, ns_html) && el.local_name() == 'template' {
+				template_element := unsafe { &dom.HTMLTemplateElement(el) }
+				return AdjustedInsertionLocation{
+					parent:                template_element.content().as_node()
+					insert_before_sibling: none
+				}
 			}
 		}
-		// Otherwise, inside the element immediately above last table.
-		previous_element := p.stack_of_open_elements.element_immediately_above(lt) or {
-			return AdjustedInsertionLocation{
-				parent:                target.as_node()
-				insert_before_sibling: none
-			}
-		}
-		return AdjustedInsertionLocation{
-			parent:                previous_element.as_node()
-			insert_before_sibling: none
-		}
 	}
-	return AdjustedInsertionLocation{
-		parent:                target.as_node()
-		insert_before_sibling: none
-	}
+	return location
 }
 
 // ===== table-context stack helpers =====
