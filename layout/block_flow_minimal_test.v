@@ -2331,3 +2331,63 @@ fn test_resolved_style_value_orphan_falls_back() {
 	assert box.resolved_style_value(orphan, 'font-size', no) == '24px'
 	assert box.resolved_style_value(orphan, 'width', no) == 'auto'
 }
+
+// display: flex lays items along a row (side by side) instead of stacking them.
+fn test_flex_row_basic() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; width: 400px; height: 50px')
+	a := styled(doc, 'div', 'width: 100px; height: 30px')
+	b := styled(doc, 'div', 'width: 80px; height: 40px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 2
+	assert box.children[0].x == 0.0 && box.children[0].width == 100.0
+	assert box.children[1].x == 100.0 && box.children[1].width == 80.0 // after a's 100px
+	assert box.children[0].y == 0.0 && box.children[1].y == 0.0 // both at the cross-start (top)
+}
+
+// An auto-width flex item shrinks to its content (max-content) rather than filling the container.
+fn test_flex_item_auto_width_shrinks_to_fit() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; width: 400px; font-size: 20px')
+	item := styled(doc, 'div', '')
+	mut inode := item.as_node()
+	inode.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
+	mut rn := root.as_node()
+	rn.append_child(item.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].width == 20.0 // 'hi' = 2 * 10px glyph, not the 400px container
+}
+
+// Flex items pack by their margin box.
+fn test_flex_items_pack_by_margin_box() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; width: 400px; height: 50px')
+	a := styled(doc, 'div', 'width: 50px; height: 20px; margin-right: 10px')
+	b := styled(doc, 'div', 'width: 60px; height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].x == 0.0
+	assert box.children[1].x == 60.0 // after a's margin box (50 + 10)
+}
+
+// A flex container with auto height takes the tallest item's margin-box height.
+fn test_flex_container_height_is_tallest_item() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; width: 400px')
+	a := styled(doc, 'div', 'width: 50px; height: 30px')
+	b := styled(doc, 'div', 'width: 50px; height: 45px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 45.0
+}

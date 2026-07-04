@@ -1013,3 +1013,22 @@ fn test_resolved_style_value_over_parsed_document() {
 	assert root_box.resolved_style_value(col, 'width', rules) == '100px'
 	assert root_box.resolved_style_value(col, 'padding-left', rules) == '8px'
 }
+
+// Full-stack flexbox: an author stylesheet lays a nav's items in a row; they sit side by side and
+// the bar's height matches the tallest item.
+fn test_flex_row_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.bar { display: flex; width: 600px } .a { width: 120px; height: 40px } .b { width: 80px; height: 60px }</style></head><body><div class="bar"><div class="a"></div><div class="b"></div></div></body></html>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	bar := css.query_selector(root, '.bar') or { panic('no .bar') }
+	a := css.query_selector(root, '.a') or { panic('no .a') }
+	b := css.query_selector(root, '.b') or { panic('no .b') }
+
+	a_rect := root_box.bounding_rect_for(a) or { panic('no .a box') }
+	b_rect := root_box.bounding_rect_for(b) or { panic('no .b box') }
+	// .a and .b are side by side: .b's left edge is at .a's right edge.
+	assert b_rect.x == a_rect.x + a_rect.width
+	assert a_rect.y == b_rect.y // same cross-start
+	// The bar's height is the tallest item (60px).
+	assert (root_box.find_box(i64(bar.as_node().unique_id())) or { panic('no bar') }).height == 60.0
+}

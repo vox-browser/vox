@@ -1064,6 +1064,50 @@ fn block_child_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Elem
 	return elements
 }
 
+// Whether `element` is a row flex container: `display: flex` with a `row` (or default) direction.
+// FIXME: `row-reverse`/`column`/`column-reverse` fall through to block flow rather than being handled.
+fn is_flex_row(element &dom.Element, author_rules []&css.CSSRule) bool {
+	display_id := css.property_id_from_string('display') or { return false }
+	if css.cascaded_value_with_ua(element, display_id, author_rules) != 'flex' {
+		return false
+	}
+	dir_id := css.property_id_from_string('flex-direction') or { return true }
+	dir := css.cascaded_value_with_ua(element, dir_id, author_rules)
+	return dir == 'row' || dir == ''
+}
+
+// The flex items of `node`: its in-flow element children (any display is blockified, so inline and
+// floated children count too), excluding `display: none` and absolutely positioned elements.
+fn flex_item_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Element {
+	display_id := css.property_id_from_string('display') or { return []&dom.Element{} }
+	mut elements := []&dom.Element{}
+	for child in node.children_as_vector() {
+		if element := child.as_element() {
+			if is_absolutely_positioned(position_value(element, author_rules)) {
+				continue // out of flow
+			}
+			if css.cascaded_value_with_ua(element, display_id, author_rules) == 'none' {
+				continue
+			}
+			elements << element
+		}
+	}
+	return elements
+}
+
+// A flex item's forced content width: none for a definite width (the box model resolves it normally),
+// otherwise the shrink-to-fit main size (its max-content clamped to the container's content width) —
+// so an `auto`-width item sizes to its content instead of filling the line.
+// FIXME: flex-basis/grow/shrink aren't modeled; items may overflow the container (no shrink).
+fn flex_item_forced_width(element &dom.Element, container_width f64, author_rules []&css.CSSRule) ?f64 {
+	if !size_is_auto(element, 'width', author_rules) {
+		return none
+	}
+	max_content := intrinsic_content_width(element, author_rules, false)
+	min_content := intrinsic_content_width(element, author_rules, true)
+	return shrink_to_fit(min_content, max_content, container_width)
+}
+
 // The cascaded `float` value (`none` when absent); `is_floating` is float left/right.
 fn float_side(element &dom.Element, author_rules []&css.CSSRule) string {
 	id := css.property_id_from_string('float') or { return 'none' }
@@ -1860,8 +1904,9 @@ fn establishes_block_formatting_context(element &dom.Element, author_rules []&cs
 		return true
 	}
 	display_id := css.property_id_from_string('display') or { return false }
-	if css.cascaded_value_with_ua(element, display_id, author_rules) == 'flow-root' {
-		return true
+	display := css.cascaded_value_with_ua(element, display_id, author_rules)
+	if display == 'flow-root' || display == 'flex' || display == 'inline-flex' {
+		return true // a flow-root or flex container establishes an independent formatting context
 	}
 	for axis in ['overflow-x', 'overflow-y'] {
 		id := css.property_id_from_string(axis) or { continue }
@@ -2111,7 +2156,15 @@ fn resolve_horizontal_auto_margins(containing_width f64, border_box_width f64, l
 // the returned box's content origin is inset by its margin, border, and padding. Children stack
 // vertically within the content box, each advancing the cursor by its own margin-box height; the
 // parent's content height is that stacked total unless it declares an explicit height.
+// Lay out `element` as a block box within a containing block `containing_width` px wide, at
+// margin-box origin (`x`, `y`).
 pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, author_rules []&css.CSSRule) BlockBox {
+	return layout_block_impl(element, x, y, containing_width, none, author_rules)
+}
+
+// Core block layout. When `forced_content_width` is set it overrides the computed content width —
+// used to give a flex item its shrink-to-fit main size instead of filling the line.
+fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, forced_content_width ?f64, author_rules []&css.CSSRule) BlockBox {
 	border := BoxEdges{
 		top:    used_border(element, 'top', author_rules)
 		right:  used_border(element, 'right', author_rules)
@@ -2137,8 +2190,13 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	margin_right_fixed := used_length_or_zero(element, 'margin-right', containing_width, author_rules)
 
 	// Used content width: `auto` margins count as 0 while the width fills; then clamp by min/max.
-	tentative_width := used_content_width(element, containing_width, margin_left_fixed +
-		margin_right_fixed, border_padding_lr, border_box, author_rules)
+	// A flex item passes a forced width (its shrink-to-fit / main size) that overrides the box model.
+	tentative_width := if fw := forced_content_width {
+		fw
+	} else {
+		used_content_width(element, containing_width, margin_left_fixed + margin_right_fixed,
+			border_padding_lr, border_box, author_rules)
+	}
 	min_width := resolve_size_constraint(element, 'min-width', containing_width, border_padding_lr,
 		border_box, author_rules) or { 0.0 }
 	max_width := resolve_size_constraint(element, 'max-width', containing_width, border_padding_lr,
@@ -2191,55 +2249,78 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	// place; the whole set is shifted to the real content-box top once the parent's outer top margin
 	// is known.
 	mut local_children := []BlockBox{}
-	mut flow_bottom := 0.0 // border-box bottom of the last placed child, in the local frame
-	mut prev_outer_bottom := 0.0
+	mut local_lines := []TextLine{}
+	mut content_height := 0.0
 	mut first_child_outer_top := 0.0
 	mut last_child_outer_bottom := 0.0
 	mut has_children := false
-	for child in block_children {
-		mut cb := layout_block(child, content_x, 0.0, width, author_rules)
-		mut desired_border_top := if has_children {
-			flow_bottom + collapse_margins([prev_outer_bottom, cb.outer_top_margin])
-		} else if top_adjoins {
-			0.0 // first child's top margin collapses through into this box's outer top margin
-		} else {
-			cb.outer_top_margin // separated by border/padding: the margin sits inside the content
-		}
-		// `clear` moves the child below the relevant floats.
-		clear_bottom := clearance_bottom(child, left_floats_bottom, right_floats_bottom, author_rules)
-		if clear_bottom > desired_border_top {
-			desired_border_top = clear_bottom
-		}
-		cb = translate_block(cb, 0.0, desired_border_top - cb.outer_top_margin)
-		child_border_bottom := desired_border_top + cb.border.top + cb.padding.top + cb.height +
-			cb.padding.bottom + cb.border.bottom
-		if !has_children {
-			first_child_outer_top = cb.outer_top_margin
-		}
-		last_child_outer_bottom = cb.outer_bottom_margin
-		flow_bottom = child_border_bottom
-		prev_outer_bottom = cb.outer_bottom_margin
-		has_children = true
-		local_children << cb
-	}
 
-	// Auto content height: from the content-box top (local 0) to the last child's border-box bottom,
-	// plus that child's outer bottom margin only when it stays inside the box (otherwise it collapses
-	// out). A box with no block children lays out inline line boxes (also in the local frame) and its
-	// height is the stack of those lines.
-	mut content_height := 0.0
-	mut local_lines := []TextLine{}
-	if has_children {
-		content_height = if bottom_margin_contained {
-			flow_bottom + last_child_outer_bottom
-		} else {
-			flow_bottom
+	if is_flex_row(element, author_rules) {
+		// FLEX (row): lay items along the main axis from the content-left, packed by margin box; the
+		// container's content height is the tallest item's margin box. Flex containers establish a
+		// formatting context (no margin collapse), and an `auto`-width item is shrink-to-fit (its
+		// max-content) rather than filling the line.
+		// FIXME: no flex-grow/shrink/basis, no wrap, no justify-content/align-items (items pack at the
+		// main-start and align to the cross-start/top), no row-reverse/column (those fall to block flow).
+		mut cursor := 0.0
+		for item in flex_item_elements(element.as_node(), author_rules) {
+			forced_width := flex_item_forced_width(item, width, author_rules)
+			ib := layout_block_impl(item, content_x + cursor, 0.0, width, forced_width, author_rules)
+			cursor += ib.margin_box_width()
+			if ib.margin_box_height() > content_height {
+				content_height = ib.margin_box_height()
+			}
+			local_children << ib
+			has_children = true
 		}
 	} else {
-		local_lines = layout_inline_lines(element, content_x, width, float_bands, author_rules)
-		for line in local_lines {
-			if line.y + line.height > content_height {
-				content_height = line.y + line.height
+		// BLOCK FLOW: lay children out in a LOCAL frame whose origin is this box's content-box top-left.
+		// Vertical margins collapse (CSS 2.1 §8.3.1) using each child's OUTER (collapsed) margins.
+		mut flow_bottom := 0.0 // border-box bottom of the last placed child, in the local frame
+		mut prev_outer_bottom := 0.0
+		for child in block_children {
+			mut cb := layout_block(child, content_x, 0.0, width, author_rules)
+			mut desired_border_top := if has_children {
+				flow_bottom + collapse_margins([prev_outer_bottom, cb.outer_top_margin])
+			} else if top_adjoins {
+				0.0 // first child's top margin collapses through into this box's outer top margin
+			} else {
+				cb.outer_top_margin // separated by border/padding: the margin sits inside the content
+			}
+			// `clear` moves the child below the relevant floats.
+			clear_bottom := clearance_bottom(child, left_floats_bottom, right_floats_bottom,
+				author_rules)
+			if clear_bottom > desired_border_top {
+				desired_border_top = clear_bottom
+			}
+			cb = translate_block(cb, 0.0, desired_border_top - cb.outer_top_margin)
+			child_border_bottom := desired_border_top + cb.border.top + cb.padding.top + cb.height +
+				cb.padding.bottom + cb.border.bottom
+			if !has_children {
+				first_child_outer_top = cb.outer_top_margin
+			}
+			last_child_outer_bottom = cb.outer_bottom_margin
+			flow_bottom = child_border_bottom
+			prev_outer_bottom = cb.outer_bottom_margin
+			has_children = true
+			local_children << cb
+		}
+
+		// Auto content height: from the content-box top (local 0) to the last child's border-box bottom,
+		// plus that child's outer bottom margin only when it stays inside the box. A box with no block
+		// children lays out inline line boxes (also in the local frame).
+		if has_children {
+			content_height = if bottom_margin_contained {
+				flow_bottom + last_child_outer_bottom
+			} else {
+				flow_bottom
+			}
+		} else {
+			local_lines = layout_inline_lines(element, content_x, width, float_bands, author_rules)
+			for line in local_lines {
+				if line.y + line.height > content_height {
+					content_height = line.y + line.height
+				}
 			}
 		}
 	}
