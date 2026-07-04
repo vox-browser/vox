@@ -2,6 +2,7 @@ module integration
 
 import html
 import css
+import layout
 import dom
 
 // Full-stack integration: parse an HTML string with the html parser, then query the resulting DOM
@@ -133,4 +134,21 @@ fn test_computed_font_size_over_parsed_document() {
 	assert css.computed_font_size_px(section, no_author) == 30.0
 	// span: 200% of section's 30 = 60.
 	assert css.computed_font_size_px(span, no_author) == 60.0
+}
+
+// Full-stack css -> layout bridge: parse HTML, resolve a computed length to px, and feed it into
+// the layout module's AvailableSize.
+fn test_computed_length_feeds_layout() {
+	doc := html.parse_document('<body><div style="font-size: 16px; width: 10em"></div></body>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	width_id := css.property_id_from_string('width') or { panic('width id') }
+	width_px := css.computed_length_px(div, width_id, []&css.CSSRule{}) or { panic('no computed width') }
+	assert width_px == 160.0 // 10em * 16px
+
+	// Hand the computed px to layout's AvailableSize (css -> layout).
+	available := layout.AvailableSize.make_definite(css.CSSPixels.nearest_value_for(width_px))
+	assert available.is_definite()
+	assert available.to_px_or_zero().to_double() == 160.0
 }

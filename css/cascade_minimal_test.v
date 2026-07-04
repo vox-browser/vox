@@ -178,6 +178,27 @@ fn test_computed_font_size_rem_and_keyword() {
 	assert computed_font_size_px(plain, no_author) == 16.0
 }
 
+fn test_computed_length_px() {
+	doc := dom.Document.create(dom.url_about_blank())
+	html := el_with(doc, 'html', 'style', 'font-size: 10px')
+	// div: em resolves against the div's OWN font-size (20), rem against the root (10).
+	div := el_with(doc, 'div', 'style', 'font-size: 20px; width: 2em; margin-top: 5px; padding-left: 1.5rem')
+	mut html_node := html.as_node()
+	html_node.append_child(div.as_node()) or { panic('${err}') }
+
+	no_author := []&CSSRule{}
+	assert (computed_length_px(div, pid('width'), no_author) or { panic('width') }) == 40.0 // 2em * 20
+	assert (computed_length_px(div, pid('margin-top'), no_author) or { panic('mt') }) == 5.0 // 5px
+	assert (computed_length_px(div, pid('padding-left'), no_author) or { panic('pl') }) == 15.0 // 1.5rem * 10
+
+	// Non-length cascaded values are not resolvable to px here.
+	assert computed_length_px(div, pid('width'), no_author) != none
+	plain := el_with(doc, 'span', 'style', '')
+	assert computed_length_px(plain, pid('width'), no_author) == none // initial 'auto'
+	pct := el_with(doc, 'section', 'style', 'width: 50%')
+	assert computed_length_px(pct, pid('width'), no_author) == none // % needs a containing block
+}
+
 fn test_user_agent_default_display() {
 	doc := dom.Document.create(dom.url_about_blank())
 	display := pid('display')
