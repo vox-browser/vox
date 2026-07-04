@@ -978,3 +978,21 @@ fn test_media_query_over_parsed_document() {
 	wide_col := css.query_selector(unsafe { &dom.Node(wide_doc) }, '.col') or { panic('no .col') }
 	assert (wide_root.find_box(i64(wide_col.as_node().unique_id())) or { panic('box') }).width == 300.0
 }
+
+// Full-stack linear-gradient: an author stylesheet gives a hero a gradient background; it renders to
+// an SVG linearGradient with the stop colors.
+fn test_linear_gradient_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.hero { width: 300px; height: 120px; background: linear-gradient(to bottom, rgb(10, 20, 30), rgb(200, 210, 220)) }</style></head><body><div class="hero"></div></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	hero := css.query_selector(root, '.hero') or { panic('no .hero') }
+
+	hero_box := root_box.find_box(i64(hero.as_node().unique_id())) or { panic('no hero box') }
+	grad := hero_box.background_gradient or { panic('no gradient') }
+	assert grad.colors.len == 2
+
+	svg := root_box.render_svg(600, root_box.height + 20)
+	assert svg.contains('<linearGradient')
+	assert svg.contains('stop-color="rgb(10 20 30)"')
+	assert svg.contains('stop-color="rgb(200 210 220)"')
+}

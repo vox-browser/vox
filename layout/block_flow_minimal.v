@@ -128,6 +128,8 @@ pub mut:
 	// The first `box-shadow` (drop shadow behind the box), or none. Offsets are relative to the border
 	// box so the shadow follows the box when it is translated.
 	shadow ?BoxShadow
+	// A `linear-gradient` background image, painted over the background color, or none.
+	background_gradient ?LinearGradient
 	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
 	// cumulative opacity (this box's times its ancestors').
 	opacity f64 = 1.0
@@ -461,6 +463,8 @@ pub:
 	opacity f64 = 1.0 // the box's cumulative opacity (this box × its ancestors')
 	radius  f64 // corner radius for a rounded 'fill_rect' (0 = square)
 	blur    f64 // Gaussian blur radius for a 'fill_rect' (0 = hard edges), used by box-shadow
+	// The gradient for a 'fill_gradient' command (a linear-gradient background).
+	gradient ?LinearGradient
 }
 
 // A resolved `box-shadow`: pixel offsets from the border box, blur and spread radii, and the color.
@@ -527,6 +531,19 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 				color: box.background_color.serialize()
 				opacity: opacity
 				radius: radius
+			}
+		}
+		// A linear-gradient background image paints over the background color.
+		if grad := box.background_gradient {
+			commands << PaintCommand{
+				kind: 'fill_gradient'
+				x: border_left
+				y: border_top
+				width: border_width
+				height: border_height
+				opacity: opacity
+				radius: radius
+				gradient: grad
 			}
 		}
 		// Border edges (each along the border box; corners overlap). FIXME: with border-radius the
@@ -789,6 +806,19 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 				filter = ' filter="url(#${id})"'
 			}
 			body << '<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}"${corner}${filter} fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
+		} else if command.kind == 'fill_gradient' {
+			if grad := command.gradient {
+				id := 'grad${defs.len}'
+				mut stops := ''
+				n := grad.colors.len
+				for i, c in grad.colors {
+					offset := if n > 1 { f64(i) / f64(n - 1) * 100.0 } else { 0.0 }
+					stops += '<stop offset="${fmt_px(offset)}%" stop-color="${c.serialize()}"/>'
+				}
+				defs << '<linearGradient id="${id}" x1="${fmt_px(grad.x1 * 100.0)}%" y1="${fmt_px(grad.y1 * 100.0)}%" x2="${fmt_px(grad.x2 * 100.0)}%" y2="${fmt_px(grad.y2 * 100.0)}%">${stops}</linearGradient>'
+				corner := if command.radius > 0 { ' rx="${fmt_px(command.radius)}" ry="${fmt_px(command.radius)}"' } else { '' }
+				body << '<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}"${corner} fill="url(#${id})" fill-opacity="${fmt_px(command.opacity)}"/>'
+			}
 		} else if command.kind == 'draw_text' {
 			font_size := command.height * 0.8 // approximate the font-size from the line-height
 			baseline := command.y + font_size
@@ -1395,6 +1425,67 @@ fn parse_box_shadow(element &dom.Element, author_rules []&css.CSSRule) ?BoxShado
 		spread:   if lengths.len > 3 { lengths[3] } else { 0.0 }
 		color:    color
 	}
+}
+
+// A resolved `linear-gradient` background image. The direction is baked into a gradient vector in
+// objectBoundingBox fractions (0..1): (`x1`,`y1`)->(`x2`,`y2`). `colors` are the stop colors, spaced
+// evenly.
+pub struct LinearGradient {
+pub:
+	x1     f64
+	y1     f64
+	x2     f64
+	y2     f64
+	colors []css.Color
+}
+
+// Parse a `linear-gradient(...)` value: an optional leading `to <side>` direction (the four sides;
+// default `to bottom`) followed by 2+ comma-separated color stops (stop positions are ignored — the
+// stops are spaced evenly). Returns none when the value isn't a parseable linear gradient.
+// FIXME: angles, corner directions, explicit stop positions, and radial/conic gradients aren't modeled.
+fn parse_linear_gradient(value string) ?LinearGradient {
+	v := value.trim_space()
+	if !v.starts_with('linear-gradient(') || !v.ends_with(')') {
+		return none
+	}
+	inner := v['linear-gradient('.len..v.len - 1]
+	mut args := split_top_level(inner, `,`)
+	if args.len < 2 {
+		return none
+	}
+	// Direction (default top -> bottom).
+	mut x1, mut y1, mut x2, mut y2 := 0.0, 0.0, 0.0, 1.0
+	first := args[0].trim_space().to_lower()
+	if first.starts_with('to ') {
+		match first {
+			'to right' { x1, y1, x2, y2 = 0.0, 0.0, 1.0, 0.0 }
+			'to left' { x1, y1, x2, y2 = 1.0, 0.0, 0.0, 0.0 }
+			'to top' { x1, y1, x2, y2 = 0.0, 1.0, 0.0, 0.0 }
+			else { x1, y1, x2, y2 = 0.0, 0.0, 0.0, 1.0 } // 'to bottom' and corners (FIXME) -> down
+		}
+		args = args[1..]
+	}
+	// Color stops (positions ignored; the color token is paren-aware so rgb(...) survives).
+	mut colors := []css.Color{}
+	for arg in args {
+		tokens := split_top_level(arg, ` `)
+		if tokens.len == 0 {
+			continue
+		}
+		if c := css.parse_color_string(tokens[0]) {
+			colors << c
+		}
+	}
+	if colors.len < 2 {
+		return none
+	}
+	return LinearGradient{x1, y1, x2, y2, colors}
+}
+
+// The `linear-gradient` background image of `element`, or none when background-image isn't one.
+fn parse_background_gradient(element &dom.Element, author_rules []&css.CSSRule) ?LinearGradient {
+	id := css.property_id_from_string('background-image') or { return none }
+	return parse_linear_gradient(css.cascaded_value_with_ua(element, id, author_rules))
 }
 
 // A word of inline content with its own measured metrics, taken from the element it comes from — so
@@ -2252,6 +2343,11 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	if s := parse_box_shadow(element, author_rules) {
 		shadow = s
 	}
+	// A linear-gradient background image (painted over the background color).
+	mut background_gradient := ?LinearGradient(none)
+	if g := parse_background_gradient(element, author_rules) {
+		background_gradient = g
+	}
 
 	return BlockBox{
 		tag_name:            element.local_name()
@@ -2273,6 +2369,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		outline_offset:      outline_offset
 		outline_color:       outline_color
 		shadow:              shadow
+		background_gradient: background_gradient
 		opacity:             opacity
 		visible:             visible
 		node_id:             i64(element.as_node().unique_id())

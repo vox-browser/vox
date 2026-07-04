@@ -2248,3 +2248,53 @@ fn test_box_shadow_svg_blur_filter() {
 	assert plain_box.paint_commands().filter(it.kind == 'fill_rect').len == 1 // no shadow rect
 	assert !plain_box.render_svg(100, 100).contains('feGaussianBlur')
 }
+
+// A linear-gradient background parses to a gradient (direction + stop colors) and emits a
+// fill_gradient command that renders to an SVG <linearGradient>.
+fn test_linear_gradient_background() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 100px; height: 50px; background: linear-gradient(to right, rgb(255, 0, 0), rgb(0, 0, 255))')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	grad := box.background_gradient or { panic('no gradient') }
+	assert grad.x1 == 0.0 && grad.x2 == 1.0 && grad.y1 == 0.0 && grad.y2 == 0.0 // to right
+	assert grad.colors.len == 2
+	assert grad.colors[0].serialize() == 'rgb(255 0 0)'
+	assert grad.colors[1].serialize() == 'rgb(0 0 255)'
+
+	cmds := box.paint_commands()
+	assert cmds.filter(it.kind == 'fill_gradient').len == 1
+
+	svg := box.render_svg(200, 200)
+	assert svg.contains('<linearGradient id="grad0"')
+	assert svg.contains('stop-color="rgb(255 0 0)"')
+	assert svg.contains('stop-color="rgb(0 0 255)"')
+	assert svg.contains('fill="url(#grad0)"')
+}
+
+// The `to bottom` direction is the default and gives a top-to-bottom vector; three stops space evenly.
+fn test_linear_gradient_default_direction_and_stops() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 40px; height: 40px; background-image: linear-gradient(red, green, blue)')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	grad := box.background_gradient or { panic('no gradient') }
+	assert grad.x1 == 0.0 && grad.y1 == 0.0 && grad.x2 == 0.0 && grad.y2 == 1.0 // default: to bottom
+	assert grad.colors.len == 3
+
+	svg := box.render_svg(100, 100)
+	// Three stops at 0%, 50%, 100%.
+	assert svg.contains('offset="0%"')
+	assert svg.contains('offset="50%"')
+	assert svg.contains('offset="100%"')
+}
+
+// No gradient by default -> no fill_gradient command, no <linearGradient>.
+fn test_no_gradient_by_default() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 40px; height: 40px; background-color: rgb(1, 2, 3)')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	assert box.paint_commands().filter(it.kind == 'fill_gradient').len == 0
+	assert !box.render_svg(100, 100).contains('<linearGradient')
+}
