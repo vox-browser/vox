@@ -120,6 +120,11 @@ pub mut:
 	border_color     css.Color
 	// The uniform border-radius (px) applied when filling the background/border box.
 	border_radius f64
+	// The outline (painted outside the border box, not affecting layout): its width (0 = none), the
+	// gap between the border edge and the outline (`outline-offset`, may be negative), and its color.
+	outline_width  f64
+	outline_offset f64
+	outline_color  css.Color
 	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
 	// cumulative opacity (this box's times its ancestors').
 	opacity f64 = 1.0
@@ -538,6 +543,52 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 				opacity: opacity
 			}
 		}
+		// The outline: four rects drawn outward from the border box expanded by `outline-offset`.
+		// FIXME: outlines don't follow border-radius (drawn square) and share one color.
+		if box.outline_width > 0 {
+			ow := box.outline_width
+			ex := border_left - box.outline_offset
+			ey := border_top - box.outline_offset
+			ew := border_width + 2.0 * box.outline_offset
+			eh := border_height + 2.0 * box.outline_offset
+			oc := box.outline_color.serialize()
+			commands << PaintCommand{
+				kind: 'fill_rect'
+				x: ex - ow
+				y: ey - ow
+				width: ew + 2.0 * ow
+				height: ow
+				color: oc
+				opacity: opacity
+			} // top
+			commands << PaintCommand{
+				kind: 'fill_rect'
+				x: ex - ow
+				y: ey + eh
+				width: ew + 2.0 * ow
+				height: ow
+				color: oc
+				opacity: opacity
+			} // bottom
+			commands << PaintCommand{
+				kind: 'fill_rect'
+				x: ex - ow
+				y: ey
+				width: ow
+				height: eh
+				color: oc
+				opacity: opacity
+			} // left
+			commands << PaintCommand{
+				kind: 'fill_rect'
+				x: ex + ew
+				y: ey
+				width: ow
+				height: eh
+				color: oc
+				opacity: opacity
+			} // right
+		}
 		for line in box.lines {
 			for fragment in line.fragments {
 				commands << PaintCommand{
@@ -848,6 +899,25 @@ fn used_border(element &dom.Element, side string, author_rules []&css.CSSRule) f
 		'thin' { 1.0 }
 		'thick' { 5.0 }
 		else { 3.0 } // 'medium' (the initial value) and any unresolved keyword
+	}
+}
+
+// The used outline width (px): 0 when `outline-style` is `none`/`hidden`; otherwise the outline-width
+// length or the thin/medium/thick keyword scale (1/3/5 px), like a border.
+fn used_outline_width(element &dom.Element, author_rules []&css.CSSRule) f64 {
+	style_id := css.property_id_from_string('outline-style') or { return 0 }
+	style := css.cascaded_value_with_ua(element, style_id, author_rules)
+	if style == 'none' || style == 'hidden' {
+		return 0
+	}
+	width_id := css.property_id_from_string('outline-width') or { return 0 }
+	if px := css.computed_length_px(element, width_id, author_rules) {
+		return px
+	}
+	return match css.cascaded_value_with_ua(element, width_id, author_rules) {
+		'thin' { 1.0 }
+		'thick' { 5.0 }
+		else { 3.0 } // 'medium' (the initial value)
 	}
 }
 
@@ -2054,6 +2124,16 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	border_box_width := width + padding.left + padding.right + border.left + border.right
 	border_radius := resolve_border_radius(element, border_box_width, author_rules)
 
+	// Outline (painted outside the border box, no effect on layout): width, offset, and color
+	// (outline-color defaults to `currentColor`, which resolves to the text color).
+	outline_width := used_outline_width(element, author_rules)
+	outline_offset := css.computed_length_px(element, css.property_id_from_string('outline-offset') or {
+		return BlockBox{}
+	}, author_rules) or { 0.0 }
+	outline_color := css.computed_color(element, css.property_id_from_string('outline-color') or {
+		return BlockBox{}
+	}, author_rules) or { text_color }
+
 	return BlockBox{
 		tag_name:            element.local_name()
 		x:                   content_x
@@ -2070,6 +2150,9 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		text_color:          text_color
 		border_color:        border_color
 		border_radius:       border_radius
+		outline_width:       outline_width
+		outline_offset:      outline_offset
+		outline_color:       outline_color
 		opacity:             opacity
 		visible:             visible
 		node_id:             i64(element.as_node().unique_id())

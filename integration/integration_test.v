@@ -891,3 +891,19 @@ fn test_border_radius_over_parsed_document() {
 	assert svg.contains('rx="12"')
 	assert svg.contains('fill="rgb(10 20 30)"')
 }
+
+// Full-stack outline: an author stylesheet outlines a focused input-like box; the four outline rects
+// reach the SVG, drawn outside the border box in the outline color.
+fn test_outline_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.focus { width: 120px; height: 30px; outline: 2px solid rgb(0, 90, 200) }</style></head><body><div class="focus"></div></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	focus := css.query_selector(root, '.focus') or { panic('no .focus') }
+
+	focus_box := root_box.find_box(i64(focus.as_node().unique_id())) or { panic('no box') }
+	assert focus_box.outline_width == 2.0
+
+	svg := root_box.render_svg(600, root_box.height + 20)
+	// The outline color appears in the SVG (as the four edge rects).
+	assert svg.contains('fill="rgb(0 90 200)"')
+}

@@ -2149,3 +2149,42 @@ fn test_no_border_radius_is_square() {
 	assert fills[0].radius == 0.0
 	assert !box.render_svg(100, 100).contains('rx=')
 }
+
+// outline paints four rects outside the border box, offset by outline-offset, in outline-color.
+fn test_outline_paints_four_edges() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 100px; height: 50px; outline: 3px solid rgb(255, 0, 0); outline-offset: 2px')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	assert box.outline_width == 3.0
+	assert box.outline_offset == 2.0
+	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert fills.len == 4 // four outline edges, no background
+	assert fills.filter(it.color == 'rgb(255 0 0)').len == 4
+	// The top edge spans the expanded box plus the outline width on each side, above it by ow.
+	assert fills[0].y == -5.0 // border_top(0) - offset(2) - width(3)
+	assert fills[0].height == 3.0
+	assert fills[0].width == 110.0 // 100 + 2*offset(2) + 2*width(3)
+}
+
+// No outline by default (outline-style: none) -> only the background is painted.
+fn test_no_outline_by_default() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 50px; height: 50px; background-color: rgb(0, 0, 0)')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	assert box.outline_width == 0.0
+	assert box.paint_commands().filter(it.kind == 'fill_rect').len == 1 // just the background
+}
+
+// outline-width defaults to medium (3px) and outline-color defaults to currentColor (the text color).
+fn test_outline_medium_and_current_color() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 40px; height: 40px; outline-style: solid; color: rgb(0, 200, 0)')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	assert box.outline_width == 3.0 // 'medium'
+	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert fills.len == 4
+	assert fills[0].color == 'rgb(0 200 0)' // currentColor
+}
