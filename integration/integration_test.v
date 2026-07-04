@@ -830,3 +830,17 @@ fn test_list_markers_over_parsed_document() {
 	assert svg.contains('beta')
 	assert svg.contains('•')
 }
+
+// Full-stack letter-spacing: an author stylesheet adds letter-spacing to a paragraph; the rendered
+// fragment width reflects the widened glyph advances.
+fn test_letter_spacing_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>p { font-size: 20px; letter-spacing: 5px }</style></head><body><p>hi</p></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	p := css.query_selector(root, 'p') or { panic('no p') }
+
+	p_box := root_box.find_box(i64(p.as_node().unique_id())) or { panic('no p box') }
+	frag := p_box.lines[0].fragments[0]
+	assert frag.text == 'hi'
+	assert frag.width == 30.0 // 2 runes × (10px glyph + 5px letter-spacing)
+}

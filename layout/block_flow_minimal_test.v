@@ -2000,3 +2000,41 @@ fn test_list_item_none_no_marker() {
 	// The only line is the content 'x' — no bullet was prepended.
 	assert li_box.lines[0].fragments[0].text == 'x'
 }
+
+// letter-spacing widens each glyph advance: a 2-rune word gains 2 × spacing.
+fn test_letter_spacing_widens_words() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; letter-spacing: 4px')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('ab').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	frag := box.lines[0].fragments[0]
+	assert frag.text == 'ab'
+	assert frag.width == 28.0 // 2 runes × (10px glyph + 4px letter-spacing)
+}
+
+// Negative letter-spacing tightens the advance.
+fn test_negative_letter_spacing_tightens() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; letter-spacing: -2px')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('ab').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines[0].fragments[0].width == 16.0 // 2 × (10 - 2)
+}
+
+// word-spacing widens the gap between words (added to the inter-word space).
+fn test_word_spacing_widens_gap() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; word-spacing: 6px')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('a b').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	frags := box.lines[0].fragments
+	assert frags.len == 2
+	// gap from 'a' to 'b' = a.width(10) + space(10) + word-spacing(6) = 26.
+	assert frags[1].x - frags[0].x == 26.0
+}

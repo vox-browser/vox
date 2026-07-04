@@ -1129,6 +1129,13 @@ fn white_space_preserves_newlines(white_space string) bool {
 	return white_space == 'pre' || white_space == 'pre-wrap' || white_space == 'pre-line'
 }
 
+// A `letter-spacing`/`word-spacing` value resolved to px (may be negative). `normal` (the initial) and
+// unresolved keywords give 0; lengths (incl. em/rem, resolved against the element's font) give px.
+fn resolve_spacing(element &dom.Element, property_name string, author_rules []&css.CSSRule) f64 {
+	id := css.property_id_from_string(property_name) or { return 0 }
+	return css.computed_length_px(element, id, author_rules) or { 0 }
+}
+
 // A word of inline content with its own measured metrics, taken from the element it comes from — so
 // a nested inline element with its own font-size measures its text at that size.
 struct InlineWord {
@@ -1165,6 +1172,10 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rule
 	decoration := css.cascaded_value_with_ua(element, css.property_id_from_string('text-decoration-line') or {
 		return
 	}, author_rules)
+	// `letter-spacing`/`word-spacing` (both inherited, `normal` = 0): letter-spacing widens each glyph
+	// advance; word-spacing widens the inter-word gap.
+	letter_spacing := resolve_spacing(element, 'letter-spacing', author_rules)
+	word_spacing := resolve_spacing(element, 'word-spacing', author_rules)
 	for child in element.as_node().children_as_vector() {
 		if child.is_text() {
 			data := unsafe { &dom.Text(child) }.data()
@@ -1175,10 +1186,11 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rule
 				}
 				for word in part.fields() {
 					transformed := apply_text_transform(word, text_transform)
+					runes := transformed.runes().len
 					segments[segments.len - 1] << InlineWord{
 						text:        transformed
-						width:       f64(transformed.runes().len) * glyph_width
-						space_after: glyph_width
+						width:       f64(runes) * (glyph_width + letter_spacing)
+						space_after: glyph_width + word_spacing
 						height:      line_height
 						color:       color
 						decoration:  decoration
