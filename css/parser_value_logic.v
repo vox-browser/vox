@@ -1944,7 +1944,8 @@ const content_quote_keywords = ['open-quote', 'close-quote', 'no-open-quote', 'n
 
 // https://drafts.csswg.org/css-content/#propdef-content
 // normal | none | [ <content-list> ] [ / [ <string> | <counter> ]+ ]?
-// FIXME: counter()/counters()/content()/attr()/leader() content items are not translated yet.
+// FIXME: content()/leader() content items are not translated yet. attr() is an arbitrary
+// substitution function handled before this path (matching upstream).
 fn (mut parser Parser) parse_content_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut keyword_attempt := tokens.clone()
 	if value := parse_property_keyword_value(mut keyword_attempt, ['none', 'normal']) {
@@ -1973,8 +1974,8 @@ fn (mut parser Parser) parse_content_value(mut tokens ComponentValueStream) ?Sty
 
 		item := parser.parse_content_item(mut transaction) or { return none }
 		if in_alt_text {
-			// The alt-text only accepts <string> (and <counter>, which is FIXME above).
-			if item !is StringStyleValue {
+			// The alt-text accepts <string> and <counter>.
+			if item !is StringStyleValue && item !is CounterStyleValue {
 				return none
 			}
 			alt_text_values << item
@@ -2024,6 +2025,13 @@ fn (mut parser Parser) parse_content_item(mut tokens ComponentValueStream) ?Styl
 		}
 	}
 
+	// <counter> = counter() | counters()
+	mut counter_attempt := tokens.clone()
+	if counter := parser.parse_counter_value(mut counter_attempt) {
+		tokens = counter_attempt
+		return counter
+	}
+
 	// <image>
 	mut image_attempt := tokens.clone()
 	if image := parser.parse_image_value(mut image_attempt) {
@@ -2032,6 +2040,82 @@ fn (mut parser Parser) parse_content_item(mut tokens ComponentValueStream) ?Styl
 	}
 
 	return none
+}
+
+// https://drafts.csswg.org/css-lists-3/#counter-functions
+// counter() = counter( <counter-name>, <counter-style>? )
+// counters() = counters( <counter-name>, <string>, <counter-style>? )
+fn (mut parser Parser) parse_counter_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is_function() {
+		return none
+	}
+	function_name := to_ascii_lowercase(component_value.function().name)
+	arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
+	default_counter_style := CounterStyleStyleValue.create_named('decimal')
+
+	if function_name == 'counter' {
+		if arguments.len < 1 || arguments.len > 2 {
+			return none
+		}
+		counter_name := parser.parse_counter_name_argument(arguments[0]) or { return none }
+		mut counter_style := default_counter_style
+		if arguments.len == 2 {
+			counter_style = parser.parse_counter_style_argument(arguments[1]) or { return none }
+		}
+		tokens = transaction
+		return StyleValue(CounterStyleValue.create_counter(counter_name, counter_style))
+	}
+
+	if function_name == 'counters' {
+		if arguments.len < 2 || arguments.len > 3 {
+			return none
+		}
+		counter_name := parser.parse_counter_name_argument(arguments[0]) or { return none }
+		mut join_stream := ComponentValueStream.new(arguments[1])
+		join_stream.consume_whitespace()
+		join_value := parser.parse_string_value(mut join_stream) or { return none }
+		join_stream.consume_whitespace()
+		if join_stream.has_more_tokens() {
+			return none
+		}
+		mut counter_style := default_counter_style
+		if arguments.len == 3 {
+			counter_style = parser.parse_counter_style_argument(arguments[2]) or { return none }
+		}
+		tokens = transaction
+		return StyleValue(CounterStyleValue.create_counters(counter_name, join_value.string_value(),
+			counter_style))
+	}
+
+	return none
+}
+
+// <counter-name> is a <custom-ident> that is not `none`.
+fn (mut parser Parser) parse_counter_name_argument(argument []ComponentValue) ?string {
+	mut stream := ComponentValueStream.new(argument)
+	stream.consume_whitespace()
+	custom_ident := parser.parse_custom_ident_value(mut stream, ['none']) or { return none }
+	stream.consume_whitespace()
+	if stream.has_more_tokens() {
+		return none
+	}
+	return custom_ident.custom_ident()
+}
+
+// FIXME: the symbols() function form of <counter-style> is not translated yet (matching
+// parse_list_style_type_value); a <counter-style-name> is accepted as a <custom-ident>.
+fn (mut parser Parser) parse_counter_style_argument(argument []ComponentValue) ?CounterStyleStyleValue {
+	mut stream := ComponentValueStream.new(argument)
+	stream.consume_whitespace()
+	custom_ident := parser.parse_custom_ident_value(mut stream, ['none']) or { return none }
+	stream.consume_whitespace()
+	if stream.has_more_tokens() {
+		return none
+	}
+	return CounterStyleStyleValue.create_named(custom_ident.custom_ident())
 }
 
 fn radial_extent_from_string(ident string) ?RadialExtent {

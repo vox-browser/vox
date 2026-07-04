@@ -4941,6 +4941,7 @@ pub type StyleValue = KeywordStyleValue
 	| ConicGradientStyleValue
 	| ContentStyleValue
 	| CounterDefinitionsStyleValue
+	| CounterStyleValue
 	| CursorStyleValue
 	| CustomIdentStyleValue
 	| DisplayStyleValue
@@ -5023,6 +5024,7 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		ConicGradientStyleValue { .conic_gradient }
 		ContentStyleValue { .content }
 		CounterDefinitionsStyleValue { .counter_definitions }
+		CounterStyleValue { .counter }
 		CursorStyleValue { .cursor }
 		CustomIdentStyleValue { .custom_ident }
 		DisplayStyleValue { .display }
@@ -5342,6 +5344,7 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		ConicGradientStyleValue { style_value.serialize(mode) }
 		ContentStyleValue { style_value.serialize(mode) }
 		CounterDefinitionsStyleValue { style_value.serialize(mode) }
+		CounterStyleValue { style_value.serialize(mode) }
 		CursorStyleValue { style_value.serialize(mode) }
 		CustomIdentStyleValue { style_value.serialize(mode) }
 		DisplayStyleValue { style_value.serialize(mode) }
