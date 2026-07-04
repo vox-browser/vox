@@ -125,6 +125,9 @@ pub mut:
 	outline_width  f64
 	outline_offset f64
 	outline_color  css.Color
+	// The first `box-shadow` (drop shadow behind the box), or none. Offsets are relative to the border
+	// box so the shadow follows the box when it is translated.
+	shadow ?BoxShadow
 	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
 	// cumulative opacity (this box's times its ancestors').
 	opacity f64 = 1.0
@@ -457,6 +460,18 @@ pub:
 	text    string // for 'draw_text'
 	opacity f64 = 1.0 // the box's cumulative opacity (this box × its ancestors')
 	radius  f64 // corner radius for a rounded 'fill_rect' (0 = square)
+	blur    f64 // Gaussian blur radius for a 'fill_rect' (0 = hard edges), used by box-shadow
+}
+
+// A resolved `box-shadow`: pixel offsets from the border box, blur and spread radii, and the color.
+// `inset` shadows aren't modeled. Offsets/radii are already resolved to px.
+pub struct BoxShadow {
+pub:
+	offset_x f64
+	offset_y f64
+	blur     f64
+	spread   f64
+	color    css.Color
 }
 
 // Build the display list for this box tree: for each box in paint order — a background fill (when the
@@ -484,6 +499,24 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 
 		// The corner radius, clamped so it never exceeds half the smaller border-box dimension.
 		radius := clamp_radius(box.border_radius, border_width, border_height)
+		// box-shadow: a blurred, spread rect offset behind the box, painted before the background.
+		if shadow := box.shadow {
+			shadow_left := border_left + shadow.offset_x - shadow.spread
+			shadow_top := border_top + shadow.offset_y - shadow.spread
+			shadow_width := border_width + 2.0 * shadow.spread
+			shadow_height := border_height + 2.0 * shadow.spread
+			commands << PaintCommand{
+				kind: 'fill_rect'
+				x: shadow_left
+				y: shadow_top
+				width: shadow_width
+				height: shadow_height
+				color: shadow.color.serialize()
+				opacity: opacity
+				radius: clamp_radius(box.border_radius, shadow_width, shadow_height)
+				blur: shadow.blur
+			}
+		}
 		if box.background_color.a > 0 {
 			commands << PaintCommand{
 				kind: 'fill_rect'
@@ -736,23 +769,37 @@ fn escape_xml(text string) string {
 }
 
 // Render this box tree to an SVG document `width`×`height` px: each display-list command becomes a
-// `<rect>` (fills, backgrounds, borders) or `<text>` (in paint order, honoring opacity). This closes
-// the pipeline — an HTML string laid out and turned into a viewable image.
+// `<rect>` (fills, backgrounds, borders) or `<text>` (in paint order, honoring opacity). A blurred
+// fill (box-shadow) gets a Gaussian-blur `<filter>`. This closes the pipeline — an HTML string laid
+// out and turned into a viewable image.
 //
 // FIXME: SVG text uses its own font metrics, so text widths won't match this engine's estimates;
 // baseline/font-size are approximated from the line-height.
 pub fn (b &BlockBox) render_svg(width f64, height f64) string {
-	mut parts := ['<svg xmlns="http://www.w3.org/2000/svg" width="${fmt_px(width)}" height="${fmt_px(height)}">']
+	mut defs := []string{}
+	mut body := []string{}
 	for command in b.paint_commands() {
 		if command.kind == 'fill_rect' {
 			corner := if command.radius > 0 { ' rx="${fmt_px(command.radius)}" ry="${fmt_px(command.radius)}"' } else { '' }
-			parts << '<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}"${corner} fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
+			mut filter := ''
+			if command.blur > 0 {
+				id := 'blur${defs.len}'
+				// The blur can bleed past the rect, so give the filter region generous margins.
+				defs << '<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${fmt_px(command.blur / 2.0)}"/></filter>'
+				filter = ' filter="url(#${id})"'
+			}
+			body << '<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}"${corner}${filter} fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
 		} else if command.kind == 'draw_text' {
 			font_size := command.height * 0.8 // approximate the font-size from the line-height
 			baseline := command.y + font_size
-			parts << '<text x="${fmt_px(command.x)}" y="${fmt_px(baseline)}" font-size="${fmt_px(font_size)}" fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}">${escape_xml(command.text)}</text>'
+			body << '<text x="${fmt_px(command.x)}" y="${fmt_px(baseline)}" font-size="${fmt_px(font_size)}" fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}">${escape_xml(command.text)}</text>'
 		}
 	}
+	mut parts := ['<svg xmlns="http://www.w3.org/2000/svg" width="${fmt_px(width)}" height="${fmt_px(height)}">']
+	if defs.len > 0 {
+		parts << '<defs>${defs.join('')}</defs>'
+	}
+	parts << body
 	parts << '</svg>'
 	return parts.join('\n')
 }
@@ -1281,6 +1328,73 @@ fn resolve_border_radius(element &dom.Element, basis f64, author_rules []&css.CS
 	value := css.cascaded_value_with_ua(element, id, author_rules)
 	first := value.trim_space().split(' ')[0] // a corner may be "<x> <y>"; use the x radius
 	return resolve_length_token(element, first, basis, author_rules)
+}
+
+// Split `s` on `sep`, keeping parenthesized groups (e.g. `rgb(0, 0, 0)`) intact and trimming/dropping
+// empty pieces. Used to tokenize a `box-shadow` value without breaking its color function.
+fn split_top_level(s string, sep u8) []string {
+	mut tokens := []string{}
+	mut depth := 0
+	mut cur := []u8{}
+	for c in s {
+		if c == `(` {
+			depth++
+		} else if c == `)` && depth > 0 {
+			depth--
+		}
+		if c == sep && depth == 0 {
+			tokens << cur.bytestr().trim_space()
+			cur = []u8{}
+		} else {
+			cur << c
+		}
+	}
+	tokens << cur.bytestr().trim_space()
+	return tokens.filter(it != '')
+}
+
+// Whether `token` is a length/number (starts with a digit or sign/dot) rather than a color (which
+// starts with a letter or `#`). A clean discriminator for box-shadow's mixed token list.
+fn is_length_token(token string) bool {
+	if token.len == 0 {
+		return false
+	}
+	c := token[0]
+	return c == `-` || c == `+` || c == `.` || (c >= `0` && c <= `9`)
+}
+
+// Parse `element`'s `box-shadow` (first shadow only) to a resolved BoxShadow, or none when it is
+// `none`/absent/unparseable. Tokens: <offset-x> <offset-y> [<blur>] [<spread>] and a <color>;
+// `inset` is ignored. FIXME: only the first shadow of a comma list; inset shadows aren't modeled.
+fn parse_box_shadow(element &dom.Element, author_rules []&css.CSSRule) ?BoxShadow {
+	id := css.property_id_from_string('box-shadow') or { return none }
+	value := css.cascaded_value_with_ua(element, id, author_rules).trim_space()
+	if value == '' || value == 'none' {
+		return none
+	}
+	first := split_top_level(value, `,`)[0] // the first shadow of the list
+	mut lengths := []f64{}
+	mut color := css.Color{0, 0, 0, 255} // default to opaque black
+	for token in split_top_level(first, ` `) {
+		if token == 'inset' {
+			continue // inset shadows aren't modeled
+		}
+		if is_length_token(token) {
+			lengths << resolve_length_token(element, token, 0.0, author_rules)
+		} else if c := css.parse_color_string(token) {
+			color = c
+		}
+	}
+	if lengths.len < 2 {
+		return none // need at least offset-x and offset-y
+	}
+	return BoxShadow{
+		offset_x: lengths[0]
+		offset_y: lengths[1]
+		blur:     if lengths.len > 2 { lengths[2] } else { 0.0 }
+		spread:   if lengths.len > 3 { lengths[3] } else { 0.0 }
+		color:    color
+	}
 }
 
 // A word of inline content with its own measured metrics, taken from the element it comes from — so
@@ -2133,6 +2247,11 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	outline_color := css.computed_color(element, css.property_id_from_string('outline-color') or {
 		return BlockBox{}
 	}, author_rules) or { text_color }
+	// box-shadow (first shadow only) — a drop shadow painted behind the box.
+	mut shadow := ?BoxShadow(none)
+	if s := parse_box_shadow(element, author_rules) {
+		shadow = s
+	}
 
 	return BlockBox{
 		tag_name:            element.local_name()
@@ -2153,6 +2272,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		outline_width:       outline_width
 		outline_offset:      outline_offset
 		outline_color:       outline_color
+		shadow:              shadow
 		opacity:             opacity
 		visible:             visible
 		node_id:             i64(element.as_node().unique_id())

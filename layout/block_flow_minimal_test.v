@@ -2188,3 +2188,63 @@ fn test_outline_medium_and_current_color() {
 	assert fills.len == 4
 	assert fills[0].color == 'rgb(0 200 0)' // currentColor
 }
+
+// box-shadow: a drop shadow rect offset behind the box, carrying the blur radius.
+fn test_box_shadow_basic() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 100px; height: 50px; box-shadow: 4px 6px 8px rgb(0, 0, 0)')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	sh := box.shadow or { panic('no shadow') }
+	assert sh.offset_x == 4.0
+	assert sh.offset_y == 6.0
+	assert sh.blur == 8.0
+
+	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert fills.len == 1 // just the shadow (no background)
+	assert fills[0].x == 4.0
+	assert fills[0].y == 6.0
+	assert fills[0].blur == 8.0
+	assert fills[0].color == 'rgb(0 0 0)'
+}
+
+// The shadow is painted behind the background (emitted first).
+fn test_box_shadow_behind_background() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 50px; height: 50px; background-color: rgb(0, 128, 0); box-shadow: 2px 2px rgb(0, 0, 0)')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert fills.len == 2
+	assert fills[0].color == 'rgb(0 0 0)' // shadow first (behind)
+	assert fills[0].blur == 0.0 // no blur token given
+	assert fills[1].color == 'rgb(0 128 0)' // background on top
+}
+
+// The spread radius expands the shadow rect outward on all sides.
+fn test_box_shadow_spread() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 100px; height: 40px; box-shadow: 0px 0px 0px 5px rgb(1, 2, 3)')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	sh := box.shadow or { panic('no shadow') }
+	assert sh.spread == 5.0
+	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert fills[0].x == -5.0 // 0 - spread
+	assert fills[0].width == 110.0 // 100 + 2*spread
+}
+
+// A blurred shadow gets a Gaussian-blur filter in the SVG; no shadow -> no filter.
+fn test_box_shadow_svg_blur_filter() {
+	doc := dom.Document.create(dom.url_about_blank())
+	shadowed := styled(doc, 'div', 'width: 50px; height: 50px; box-shadow: 2px 2px 6px rgb(0, 0, 0)')
+	svg := layout_block(shadowed, 0, 0, 800, []&css.CSSRule{}).render_svg(200, 200)
+	assert svg.contains('<filter id="blur0"')
+	assert svg.contains('feGaussianBlur')
+	assert svg.contains('filter="url(#blur0)"')
+
+	plain := styled(doc, 'div', 'width: 50px; height: 50px; background-color: rgb(0, 0, 0)')
+	plain_box := layout_block(plain, 0, 0, 800, []&css.CSSRule{})
+	assert plain_box.paint_commands().filter(it.kind == 'fill_rect').len == 1 // no shadow rect
+	assert !plain_box.render_svg(100, 100).contains('feGaussianBlur')
+}

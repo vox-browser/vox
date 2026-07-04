@@ -907,3 +907,22 @@ fn test_outline_over_parsed_document() {
 	// The outline color appears in the SVG (as the four edge rects).
 	assert svg.contains('fill="rgb(0 90 200)"')
 }
+
+// Full-stack box-shadow: an author stylesheet gives a card a blurred drop shadow; the shadow reaches
+// the SVG as a blur-filtered rect behind the card's background.
+fn test_box_shadow_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.card { width: 200px; height: 80px; background-color: rgb(255, 255, 255); box-shadow: 3px 5px 10px rgb(0, 0, 0) }</style></head><body><div class="card"></div></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	card := css.query_selector(root, '.card') or { panic('no .card') }
+
+	card_box := root_box.find_box(i64(card.as_node().unique_id())) or { panic('no card box') }
+	sh := card_box.shadow or { panic('no shadow') }
+	assert sh.offset_x == 3.0
+	assert sh.offset_y == 5.0
+	assert sh.blur == 10.0
+
+	svg := root_box.render_svg(600, root_box.height + 40)
+	assert svg.contains('feGaussianBlur')
+	assert svg.contains('filter="url(#blur0)"')
+}
