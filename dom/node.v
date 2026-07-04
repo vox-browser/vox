@@ -364,6 +364,26 @@ fn allocate_unique_id(node &Node) UniqueNodeID {
 	return UniqueNodeID(i64(voidptr(node)))
 }
 
+// Node identity is by pointer, but V compares `&Node` structurally (by value), which makes
+// distinct nodes with equal fields (e.g. two fresh empty elements) compare equal and would
+// recurse through parent/child cycles. Every `n == other` in the DOM means "is the same
+// node", so compare the process-local unique id (the node's address) instead. Requires each
+// node to have been assigned its id at creation via assign_unique_node_id.
+pub fn (a Node) == (b Node) bool {
+	return a.unique_id_ == b.unique_id_
+}
+
+// Assign a node its process-local unique id (its own address) right after allocation. Every
+// node factory that builds a node via a struct literal (rather than Node.new) must call this,
+// otherwise the node keeps unique_id_ == 0 and compares equal to every other unassigned node.
+fn assign_unique_node_id[T](node &T) &T {
+	unsafe {
+		mut n := &Node(node)
+		n.unique_id_ = UniqueNodeID(i64(voidptr(node)))
+	}
+	return node
+}
+
 fn deallocate_unique_id(node_id UniqueNodeID) {
 	// Pointer-backed IDs do not have a separate directory entry to remove.
 	_ = node_id
@@ -3915,7 +3935,7 @@ pub fn (n &Node) as_processing_instruction() ?&ProcessingInstruction {
 }
 
 pub fn new_text_node(document &Document, data string) &Text {
-	return &Text{
+	return assign_unique_node_id(&Text{
 		CharacterData: CharacterData{
 			Node:  Node{
 				node_type:  .text_node
@@ -3924,11 +3944,11 @@ pub fn new_text_node(document &Document, data string) &Text {
 			}
 			data_: data
 		}
-	}
+	})
 }
 
 pub fn new_document_fragment(document &Document) &DocumentFragment {
-	return &DocumentFragment{
+	return assign_unique_node_id(&DocumentFragment{
 		ParentNode: ParentNode{
 			Node: Node{
 				node_type:  .document_fragment_node
@@ -3936,7 +3956,7 @@ pub fn new_document_fragment(document &Document) &DocumentFragment {
 				unique_id_: UniqueNodeID(0)
 			}
 		}
-	}
+	})
 }
 
 pub fn (c &CharacterData) data() string {

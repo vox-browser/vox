@@ -977,7 +977,7 @@ pub struct StylePropertyMapReadOnly_ {}
 // --- Constructor ---
 
 pub fn Element.new(doc &Document, qname QualifiedName) &Element {
-	return &Element{
+	return assign_unique_node_id(&Element{
 		ParentNode:     ParentNode{
 			Node: Node{
 				node_type:  .element_node
@@ -987,7 +987,7 @@ pub fn Element.new(doc &Document, qname QualifiedName) &Element {
 		}
 		qualified_name: qname
 		doc_:           doc
-	}
+	})
 }
 
 // --- Core methods ---
@@ -1428,7 +1428,7 @@ pub fn (mut e Element) attach_a_shadow_root(mode ShadowRootMode, clonable bool, 
 			return
 		}
 	}
-	shadow := &ShadowRoot{
+	shadow := assign_unique_node_id(&ShadowRoot{
 		DocumentFragment: DocumentFragment{
 			ParentNode: ParentNode{
 				Node: Node{
@@ -1444,7 +1444,7 @@ pub fn (mut e Element) attach_a_shadow_root(mode ShadowRootMode, clonable bool, 
 		serializable_:    serializable
 		delegates_focus_: delegates_focus
 		slot_assignment_: slot_assignment
-	}
+	})
 	e.shadow_root_ = shadow
 }
 

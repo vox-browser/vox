@@ -3804,7 +3804,7 @@ pub fn (d &Document) create_cdata_section(data string) !&CDATASection {
 	if data.contains(']]>') {
 		return error("InvalidCharacterError: String may not contain ']]>'")
 	}
-	return &CDATASection{
+	return assign_unique_node_id(&CDATASection{
 		Text: Text{
 			CharacterData: CharacterData{
 				Node:  Node{
@@ -3815,11 +3815,11 @@ pub fn (d &Document) create_cdata_section(data string) !&CDATASection {
 				data_: data
 			}
 		}
-	}
+	})
 }
 
 pub fn (d &Document) create_comment(data string) &Comment {
-	return &Comment{
+	return assign_unique_node_id(&Comment{
 		CharacterData: CharacterData{
 			Node:  Node{
 				node_type:  .comment_node
@@ -3828,7 +3828,7 @@ pub fn (d &Document) create_comment(data string) &Comment {
 			}
 			data_: data
 		}
-	}
+	})
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction
@@ -3844,7 +3844,7 @@ pub fn (d &Document) create_processing_instruction(target string, data string) !
 	}
 
 	// 3. Return a new ProcessingInstruction node, with target set to target, data set to data, and node document set to this.
-	return &ProcessingInstruction{
+	return assign_unique_node_id(&ProcessingInstruction{
 		CharacterData: CharacterData{
 			Node:  Node{
 				node_type:  .processing_instruction_node
@@ -3854,7 +3854,7 @@ pub fn (d &Document) create_processing_instruction(target string, data string) !
 			data_: data
 		}
 		target_:       target
-	}
+	})
 }
 
 // https://dom.spec.whatwg.org/#dom-document-createattribute

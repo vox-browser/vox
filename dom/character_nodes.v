@@ -104,7 +104,7 @@ pub fn (d &DocumentType) as_node() &Node {
 // --- Attr ---
 
 pub fn Attr.create(document &Document, qualified_name QualifiedName, value string, owner_element ?&Element) &Attr {
-	return &Attr{
+	return assign_unique_node_id(&Attr{
 		Node:           Node{
 			node_type:  .attribute_node
 			document_:  document
@@ -116,7 +116,7 @@ pub fn Attr.create(document &Document, qualified_name QualifiedName, value strin
 		prefix__:       qualified_name.prefix_
 		namespace_uri_: qualified_name.namespace_
 		owner_element_: owner_element or { unsafe { nil } }
-	}
+	})
 }
 
 pub fn Attr.create_with_local_name(document &Document, local_name string, value string, owner_element ?&Element) &Attr {
@@ -225,14 +225,14 @@ fn get_trusted_types_compliant_attribute_value(local_name string, namespace_uri 
 // --- CharacterData ---
 
 pub fn CharacterData.new(document &Document, node_type NodeType, data string) &CharacterData {
-	return &CharacterData{
+	return assign_unique_node_id(&CharacterData{
 		Node:  Node{
 			node_type:  node_type
 			document_:  document
 			unique_id_: UniqueNodeID(0)
 		}
 		data_: data
-	}
+	})
 }
 
 pub fn (mut c CharacterData) initialize() {
@@ -475,7 +475,7 @@ pub fn Text.new(document &Document, data string) &Text {
 }
 
 pub fn Text.new_with_type(document &Document, node_type NodeType, data string) &Text {
-	return &Text{
+	return assign_unique_node_id(&Text{
 		CharacterData: CharacterData{
 			Node:  Node{
 				node_type:  node_type
@@ -484,7 +484,7 @@ pub fn Text.new_with_type(document &Document, node_type NodeType, data string) &
 			}
 			data_: data
 		}
-	}
+	})
 }
 
 pub fn (mut t Text) initialize() {
@@ -746,7 +746,7 @@ fn is_rtl_code_point_for_directionality(code_point u32) bool {
 // --- Comment ---
 
 pub fn Comment.new(document &Document, data string) &Comment {
-	return &Comment{
+	return assign_unique_node_id(&Comment{
 		CharacterData: CharacterData{
 			Node:  Node{
 				node_type:  .comment_node
@@ -755,7 +755,7 @@ pub fn Comment.new(document &Document, data string) &Comment {
 			}
 			data_: data
 		}
-	}
+	})
 }
 
 // https://dom.spec.whatwg.org/#dom-comment-comment
@@ -775,7 +775,7 @@ pub fn (c &Comment) node_name() string {
 // --- CDATASection ---
 
 pub fn CDATASection.new(document &Document, data string) &CDATASection {
-	return &CDATASection{
+	return assign_unique_node_id(&CDATASection{
 		Text: Text{
 			CharacterData: CharacterData{
 				Node:  Node{
@@ -786,7 +786,7 @@ pub fn CDATASection.new(document &Document, data string) &CDATASection {
 				data_: data
 			}
 		}
-	}
+	})
 }
 
 pub fn (mut c CDATASection) finalize() {
@@ -805,7 +805,7 @@ pub fn (c &CDATASection) node_name() string {
 // --- ProcessingInstruction ---
 
 pub fn ProcessingInstruction.new(document &Document, data string, target string) &ProcessingInstruction {
-	return &ProcessingInstruction{
+	return assign_unique_node_id(&ProcessingInstruction{
 		CharacterData: CharacterData{
 			Node:  Node{
 				node_type:  .processing_instruction_node
@@ -815,7 +815,7 @@ pub fn ProcessingInstruction.new(document &Document, data string, target string)
 			data_: data
 		}
 		target_:       target
-	}
+	})
 }
 
 pub fn (mut p ProcessingInstruction) initialize() {
@@ -834,13 +834,13 @@ pub fn DocumentType.create(document &Document) &DocumentType {
 }
 
 pub fn DocumentType.new(document &Document) &DocumentType {
-	return &DocumentType{
+	return assign_unique_node_id(&DocumentType{
 		Node: Node{
 			node_type:  .document_type_node
 			document_:  document
 			unique_id_: UniqueNodeID(0)
 		}
-	}
+	})
 }
 
 pub fn (mut d DocumentType) initialize() {
@@ -890,7 +890,7 @@ pub fn is_valid_doctype_name(name string) bool {
 // --- DocumentFragment ---
 
 pub fn DocumentFragment.new(document &Document) &DocumentFragment {
-	return &DocumentFragment{
+	return assign_unique_node_id(&DocumentFragment{
 		ParentNode: ParentNode{
 			Node: Node{
 				node_type:  .document_fragment_node
@@ -898,7 +898,7 @@ pub fn DocumentFragment.new(document &Document) &DocumentFragment {
 				unique_id_: UniqueNodeID(0)
 			}
 		}
-	}
+	})
 }
 
 pub fn (mut d DocumentFragment) initialize() {
