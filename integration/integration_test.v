@@ -327,3 +327,17 @@ fn test_bfc_contains_margin_over_parsed_document() {
 	assert box.children[0].y == 40.0 // p's top margin sits inside the wrapper
 	assert box.height == 60.0 // 40 (margin inside) + 20
 }
+
+// Full-stack position: relative -- a nudged element moves but its sibling keeps its flow position.
+fn test_relative_position_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 300px"><p style="height: 20px; position: relative; top: 5px; left: 12px"></p><p style="height: 20px"></p></div>')
+	root := unsafe { &dom.Node(doc) }
+	container := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(container, 0, 0, 1000, []&css.CSSRule{})
+	assert box.children[0].x == 12.0 // left
+	assert box.children[0].y == 5.0 // top, offset from its flow y (0)
+	assert box.children[1].x == 0.0 // sibling unaffected
+	assert box.children[1].y == 20.0 // flows after the first p's NORMAL box, not its offset one
+	assert box.height == 40.0 // container height from the flow (20 + 20), ignoring the offset
+}

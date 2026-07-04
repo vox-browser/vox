@@ -595,3 +595,68 @@ fn test_establishes_bfc_classification() {
 	assert !establishes_block_formatting_context(styled(doc, 'div', ''), []&css.CSSRule{})
 	assert !establishes_block_formatting_context(styled(doc, 'div', 'overflow: visible'), []&css.CSSRule{})
 }
+
+// position: relative offsets the box by top/left from its normal-flow position.
+fn test_relative_position_offsets_box() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; height: 50px; position: relative; top: 15px; left: 25px')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.x == 25.0 // left
+	assert box.y == 15.0 // top
+	assert box.width == 100.0 // size unchanged
+	assert box.height == 50.0
+}
+
+// left/top may be negative; and right/bottom offset the opposite way (used when left/top are auto).
+fn test_relative_position_negative_and_bottom_right() {
+	doc := dom.Document.create(dom.url_about_blank())
+	neg := styled(doc, 'div', 'position: relative; top: -10px; left: -5px; width: 10px')
+	nb := layout_block(neg, 0, 0, 800, []&css.CSSRule{})
+	assert nb.x == -5.0
+	assert nb.y == -10.0
+
+	br := styled(doc, 'div', 'position: relative; bottom: 20px; right: 30px; width: 10px')
+	bb := layout_block(br, 0, 0, 800, []&css.CSSRule{})
+	assert bb.x == -30.0 // right offsets leftward
+	assert bb.y == -20.0 // bottom offsets upward
+}
+
+// A relatively positioned child moves but does NOT affect its siblings' flow positions.
+fn test_relative_position_does_not_affect_siblings() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px')
+	first := styled(doc, 'div', 'height: 30px; position: relative; top: 100px')
+	second := styled(doc, 'div', 'height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(first.as_node()) or { panic('${err}') }
+	rn.append_child(second.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].y == 100.0 // first offset down by 100 from its flow position (0)
+	assert box.children[1].y == 30.0 // second still flows right after first's NORMAL position
+	assert box.height == 50.0 // container height uses the flow, not the offset
+}
+
+// The relative offset carries the box's whole subtree along.
+fn test_relative_position_moves_subtree() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; position: relative; top: 40px; left: 10px')
+	child := styled(doc, 'div', 'height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(child.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.x == 10.0
+	assert box.y == 40.0
+	assert box.children[0].x == 10.0 // child moved with the parent
+	assert box.children[0].y == 40.0
+}
+
+// position: static (the default) ignores insets.
+fn test_static_position_ignores_insets() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; top: 15px; left: 25px') // no position -> static
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.x == 0.0
+	assert box.y == 0.0
+}

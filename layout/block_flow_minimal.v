@@ -18,7 +18,8 @@ import dom
 // height from a coarse inline pass (line count × line-height). `box-sizing: border-box` makes a
 // specified width/height include padding+border. Used width and height are clamped by min/max-width
 // and min/max-height. Horizontal `auto` margins absorb leftover space (both auto centers the box; a
-// single one right/left-aligns).
+// single one right/left-aligns). `position: relative` offsets a box (and its subtree) by its insets
+// without disturbing the flow.
 //
 // FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
 // word-boundary wrapping, inline box geometry), mixed block+inline content (anonymous block boxes),
@@ -269,6 +270,48 @@ fn establishes_block_formatting_context(element &dom.Element, author_rules []&cs
 	return false
 }
 
+// An inset property (top/right/bottom/left) resolved to px, or none when `auto`/absent. Percentages
+// resolve against `basis` (none to skip them). Unlike sizes, insets may be negative — no clamping.
+fn offset_length(element &dom.Element, property_name string, basis ?f64, author_rules []&css.CSSRule) ?f64 {
+	id := css.property_id_from_string(property_name) or { return none }
+	if px := css.computed_length_px(element, id, author_rules) {
+		return px
+	}
+	if b := basis {
+		if pct := css.computed_percentage(element, id, author_rules) {
+			return b * pct / 100.0
+		}
+	}
+	return none
+}
+
+// The relative-positioning offset (dx, dy) for `element`: 0 unless `position: relative`. Then `left`
+// (else `-right`) offsets horizontally and `top` (else `-bottom`) vertically, relative to the box's
+// normal-flow position — without affecting siblings (CSS 2.1 §9.4.3). Percentage insets resolve
+// against the containing block's width for left/right; top/bottom percentages need its height, which
+// isn't tracked, so they're treated as auto.
+fn relative_offset(element &dom.Element, containing_width f64, author_rules []&css.CSSRule) (f64, f64) {
+	position_id := css.property_id_from_string('position') or { return 0.0, 0.0 }
+	if css.cascaded_value_with_ua(element, position_id, author_rules) != 'relative' {
+		return 0.0, 0.0
+	}
+	dx := if left := offset_length(element, 'left', containing_width, author_rules) {
+		left
+	} else if right := offset_length(element, 'right', containing_width, author_rules) {
+		-right
+	} else {
+		0.0
+	}
+	dy := if top := offset_length(element, 'top', none, author_rules) {
+		top
+	} else if bottom := offset_length(element, 'bottom', none, author_rules) {
+		-bottom
+	} else {
+		0.0
+	}
+	return dx, dy
+}
+
 // Whether a margin property's cascaded value is the keyword `auto`.
 fn margin_is_auto(element &dom.Element, property_name string, author_rules []&css.CSSRule) bool {
 	id := css.property_id_from_string(property_name) or { return false }
@@ -345,7 +388,11 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		left:   margin_left
 	}
 
-	content_x := x + margin.left + border.left + padding.left
+	// Relative positioning offsets this box (and its subtree) from the normal-flow position without
+	// affecting siblings: the flow uses the un-offset metrics; the offset rides along here and through
+	// the child translate below.
+	rel_x, rel_y := relative_offset(element, containing_width, author_rules)
+	content_x := x + margin.left + border.left + padding.left + rel_x
 
 	// Whether this box's top/bottom margins can collapse with a first/last child's. They can't when a
 	// border or padding separates them, nor when the box establishes a block formatting context (its
@@ -445,9 +492,10 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		margin.bottom
 	}
 
-	// Place this box: its border-box top is `y` plus its collapsed outer top margin. Shift the
-	// children from the local frame (content-box top = 0) to the real content-box top.
-	content_top := y + outer_top_margin + border.top + padding.top
+	// Place this box: its border-box top is `y` plus its collapsed outer top margin (plus any relative
+	// offset, which does not participate in the flow computed above). Shift the children from the local
+	// frame (content-box top = 0) to the real content-box top.
+	content_top := y + outer_top_margin + border.top + padding.top + rel_y
 	children := local_children.map(translate_block(it, 0.0, content_top))
 
 	return BlockBox{
