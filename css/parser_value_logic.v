@@ -2105,17 +2105,67 @@ fn (mut parser Parser) parse_counter_name_argument(argument []ComponentValue) ?s
 	return custom_ident.custom_ident()
 }
 
-// FIXME: the symbols() function form of <counter-style> is not translated yet (matching
-// parse_list_style_type_value); a <counter-style-name> is accepted as a <custom-ident>.
 fn (mut parser Parser) parse_counter_style_argument(argument []ComponentValue) ?CounterStyleStyleValue {
 	mut stream := ComponentValueStream.new(argument)
-	stream.consume_whitespace()
-	custom_ident := parser.parse_custom_ident_value(mut stream, ['none']) or { return none }
+	value := parser.parse_counter_style_value(mut stream) or { return none }
 	stream.consume_whitespace()
 	if stream.has_more_tokens() {
 		return none
 	}
-	return CounterStyleStyleValue.create_named(custom_ident.custom_ident())
+	return value
+}
+
+// <counter-style> = <counter-style-name> | <symbols()>
+// <symbols()> = symbols( <symbols-type>? [ <string> | <image> ]+ )
+// FIXME: <image> symbols are not translated (as upstream); only <string> symbols are accepted.
+fn (mut parser Parser) parse_counter_style_value(mut tokens ComponentValueStream) ?CounterStyleStyleValue {
+	// <counter-style-name> (a <custom-ident> that is not `none`).
+	mut name_attempt := tokens.clone()
+	if custom_ident := parser.parse_custom_ident_value(mut name_attempt, ['none']) {
+		tokens = name_attempt
+		return CounterStyleStyleValue.create_named(custom_ident.custom_ident())
+	}
+
+	// symbols( <symbols-type>? [ <string> ]+ )
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is_function_named('symbols') {
+		return none
+	}
+	mut arguments := ComponentValueStream.new(component_value.function().value)
+
+	// <symbols-type>? (defaults to symbolic). A leading ident must be a valid symbols-type.
+	mut symbols_type := SymbolsType.symbolic
+	arguments.consume_whitespace()
+	if peek := arguments.peek() {
+		if peek.is(.ident) {
+			symbols_type = symbols_type_from_string(peek.token().ident()) or { return none }
+			arguments.consume() or { return none }
+		}
+	}
+
+	// [ <string> ]+
+	mut symbols := []string{}
+	for {
+		arguments.consume_whitespace()
+		if !arguments.has_more_tokens() {
+			break
+		}
+		string_value := parser.parse_string_value(mut arguments) or { return none }
+		symbols << string_value.string_value()
+	}
+
+	// At least one <string>; alphabetic/numeric systems require at least two.
+	if symbols.len == 0 {
+		return none
+	}
+	if (symbols_type == .alphabetic || symbols_type == .numeric) && symbols.len < 2 {
+		return none
+	}
+
+	tokens = transaction
+	return CounterStyleStyleValue.create_symbols(symbols_type, symbols)
 }
 
 fn radial_extent_from_string(ident string) ?RadialExtent {
@@ -6209,12 +6259,11 @@ fn (mut parser Parser) parse_list_style_type_value(mut tokens ComponentValueStre
 		return StyleValue(string_value)
 	}
 
-	// FIXME: This accepts a <counter-style-name> as a <custom-ident>; the symbols()
-	// function form of <counter-style> is not translated yet.
+	// <counter-style> = <counter-style-name> | symbols()
 	transaction = tokens.clone()
-	if custom_ident := parser.parse_custom_ident_value(mut transaction, ['none']) {
+	if counter_style := parser.parse_counter_style_value(mut transaction) {
 		tokens = transaction
-		return StyleValue(custom_ident)
+		return StyleValue(counter_style)
 	}
 
 	return none

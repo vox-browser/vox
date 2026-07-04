@@ -1614,6 +1614,17 @@ pub fn symbols_type_to_string(type_ SymbolsType) string {
 	}
 }
 
+pub fn symbols_type_from_string(name string) ?SymbolsType {
+	return match to_ascii_lowercase(name) {
+		'cyclic' { SymbolsType.cyclic }
+		'numeric' { SymbolsType.numeric }
+		'alphabetic' { SymbolsType.alphabetic }
+		'symbolic' { SymbolsType.symbolic }
+		'fixed' { SymbolsType.fixed }
+		else { none }
+	}
+}
+
 pub struct CounterStyleSymbolsFunction {
 pub mut:
 	type_   SymbolsType
