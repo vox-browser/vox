@@ -597,6 +597,80 @@ fn decoration_commands(fragment TextFragment, opacity f64) []PaintCommand {
 	return commands
 }
 
+// The marker line for a `display: list-item` element — a bullet or ordinal placed as a single-word
+// line hanging one glyph-width to the left of the content box (list-style-position: outside). Returns
+// none when the element is not a list item or its list-style-type is `none`.
+//
+// FIXME: only `outside` position is modeled (the marker always hangs left, never flows inside the
+// first line); the marker is vertically aligned to the content top, not the first line's baseline.
+fn list_marker_line(element &dom.Element, content_x f64, content_top f64, text_color css.Color, author_rules []&css.CSSRule) ?TextLine {
+	display := css.cascaded_value_with_ua(element, css.property_id_from_string('display') or {
+		return none
+	}, author_rules)
+	if display != 'list-item' {
+		return none
+	}
+	marker := list_marker_text(element, author_rules)
+	if marker == '' {
+		return none
+	}
+	glyph := 0.5 * css.computed_font_size_px(element, author_rules)
+	marker_width := f64(marker.runes().len) * glyph
+	line_height := css.computed_line_height_px(element, author_rules)
+	marker_x := content_x - marker_width - glyph // hang to the left, one glyph-width gap
+	return TextLine{
+		x:      marker_x
+		y:      content_top
+		width:  marker_width
+		height: line_height
+		fragments: [
+			TextFragment{
+				x:      marker_x
+				y:      content_top
+				width:  marker_width
+				height: line_height
+				text:   marker
+				color:  text_color
+			},
+		]
+	}
+}
+
+// The marker string for a list item from its computed `list-style-type`: a bullet glyph for
+// disc/circle/square, or the 1-based ordinal followed by `.` for decimal. `none` -> ''.
+// FIXME: other list-style-types (lower-alpha, roman, etc.) fall back to a disc.
+fn list_marker_text(element &dom.Element, author_rules []&css.CSSRule) string {
+	kind := css.cascaded_value_with_ua(element, css.property_id_from_string('list-style-type') or {
+		return ''
+	}, author_rules)
+	return match kind {
+		'none' { '' }
+		'disc' { '•' } // •
+		'circle' { '◦' } // ◦
+		'square' { '▪' } // ▪
+		'decimal' { '${list_item_ordinal(element, author_rules)}.' }
+		else { '•' }
+	}
+}
+
+// The 1-based position of `element` among its list-item siblings (for ordered markers).
+fn list_item_ordinal(element &dom.Element, author_rules []&css.CSSRule) int {
+	parent := element.as_node().parent_element() or { return 1 }
+	display_id := css.property_id_from_string('display') or { return 1 }
+	mut ordinal := 0
+	for child in parent.as_node().children_as_vector() {
+		if el := child.as_element() {
+			if css.cascaded_value_with_ua(el, display_id, author_rules) == 'list-item' {
+				ordinal++
+				if el.as_node().is_same_node(element.as_node()) {
+					return ordinal
+				}
+			}
+		}
+	}
+	return if ordinal == 0 { 1 } else { ordinal }
+}
+
 // Escape the five XML metacharacters so text can go inside SVG markup.
 fn escape_xml(text string) string {
 	return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"',
@@ -1860,6 +1934,12 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		return BlockBox{}
 	}, author_rules) == 'visible'
 
+	// A `display: list-item` box gets a marker (bullet or ordinal) hanging to the left of its content.
+	mut lines_with_marker := lines.clone()
+	if marker_line := list_marker_line(element, content_x, content_top, text_color, author_rules) {
+		lines_with_marker.prepend(marker_line)
+	}
+
 	return BlockBox{
 		tag_name:            element.local_name()
 		x:                   content_x
@@ -1879,6 +1959,6 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		visible:             visible
 		node_id:             i64(element.as_node().unique_id())
 		children:            children
-		lines:               lines
+		lines:               lines_with_marker
 	}
 }

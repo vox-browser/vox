@@ -810,3 +810,23 @@ fn test_text_decoration_over_parsed_document() {
 	assert svg.contains('linked')
 	assert svg.contains('<rect') // the underline
 }
+
+// Full-stack list markers: parse a <ul>, lay it out, and confirm each <li> gets a disc marker that
+// reaches the SVG output alongside the item text.
+fn test_list_markers_over_parsed_document() {
+	doc := html.parse_document('<body><ul><li>alpha</li><li>beta</li></ul></body>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+
+	lis := css.query_selector_all(root, 'li')
+	assert lis.len == 2
+	for li in lis {
+		li_box := root_box.find_box(i64(li.as_node().unique_id())) or { panic('no li box') }
+		assert li_box.lines[0].fragments[0].text == '•' // marker line prepended
+	}
+
+	svg := root_box.render_svg(600, root_box.height + 20)
+	assert svg.contains('alpha')
+	assert svg.contains('beta')
+	assert svg.contains('•')
+}

@@ -1947,3 +1947,56 @@ fn test_text_decoration_propagates_to_descendants() {
 	assert count == 2 // 'parent' and 'child'
 	assert all_decorated // both underlined, including the span's text
 }
+
+// A display:list-item box gets a disc marker hanging to the left of its content box.
+fn test_list_item_disc_marker() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 300px; font-size: 20px; padding-left: 40px')
+	li := styled(doc, 'li', '') // list-style-type inherits initial 'disc'
+	mut li_n := li.as_node()
+	li_n.append_child(doc.create_text_node('item').as_node()) or { panic('${err}') }
+	mut rn := root.as_node()
+	rn.append_child(li.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	li_box := box.children[0]
+	marker := li_box.lines[0].fragments[0]
+	assert marker.text == '•'
+	assert marker.x < li_box.x // hangs to the left of the content box
+	assert li_box.lines[1].fragments[0].text == 'item' // content follows the marker line
+}
+
+// An ordered list numbers its items (decimal via the UA sheet, inherited to the li).
+fn test_ordered_list_decimal_markers() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'ol', 'width: 300px; font-size: 20px')
+	first := styled(doc, 'li', '')
+	mut fn_ := first.as_node()
+	fn_.append_child(doc.create_text_node('a').as_node()) or { panic('${err}') }
+	second := styled(doc, 'li', '')
+	mut sn := second.as_node()
+	sn.append_child(doc.create_text_node('b').as_node()) or { panic('${err}') }
+	mut rn := root.as_node()
+	rn.append_child(first.as_node()) or { panic('${err}') }
+	rn.append_child(second.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].lines[0].fragments[0].text == '1.'
+	assert box.children[1].lines[0].fragments[0].text == '2.'
+}
+
+// list-style-type: none suppresses the marker.
+fn test_list_item_none_no_marker() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 300px; font-size: 20px')
+	li := styled(doc, 'li', 'list-style-type: none')
+	mut li_n := li.as_node()
+	li_n.append_child(doc.create_text_node('x').as_node()) or { panic('${err}') }
+	mut rn := root.as_node()
+	rn.append_child(li.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	li_box := box.children[0]
+	// The only line is the content 'x' — no bullet was prepended.
+	assert li_box.lines[0].fragments[0].text == 'x'
+}
