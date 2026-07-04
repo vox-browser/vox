@@ -291,3 +291,20 @@ fn test_min_max_over_parsed_document() {
 	assert hero.width == 600.0 // fills the clamped container
 	assert hero.height == 300.0 // empty, raised to min-height
 }
+
+// Full-stack: the canonical centered responsive container -- max-width + margin:0 auto -- against a
+// wide viewport, all from an author <style>.
+fn test_centered_container_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.container { max-width: 960px; margin: 0 auto }</style></head><body><div class="container"></div></body></html>')
+
+	root_box := layout.layout_document(doc, 1440)
+	body_box := root_box.children[0]
+	assert body_box.margin.left == 8.0 // UA body margin narrows the container's containing block
+	container := body_box.children[0] // html > body > div.container
+	assert container.tag_name == 'div'
+	assert container.width == 960.0 // auto width clamped to max-width
+	// centered within body's content box (1440 - 2*8 = 1424): (1424 - 960) / 2 = 232.
+	assert container.margin.left == 232.0
+	assert container.margin.right == 232.0
+	assert container.x == 240.0 // body's 8px content offset + 232 margin
+}

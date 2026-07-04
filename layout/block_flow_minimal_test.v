@@ -410,3 +410,55 @@ fn test_min_max_width_border_box_aware() {
 	assert box.width == 70.0
 	assert box.margin_box_width() == 100.0 // border box hits the max-width
 }
+
+// margin: 0 auto centers a fixed-width block: (800 - 200) / 2 = 300 on each side.
+fn test_auto_margins_center_fixed_width() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; margin: 0 auto')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.margin.left == 300.0
+	assert box.margin.right == 300.0
+	assert box.x == 300.0 // content origin is centered
+	assert box.margin_box_width() == 800.0 // fills the containing block
+}
+
+// A single auto margin absorbs the whole remainder: margin-left:auto right-aligns (600 to the left).
+fn test_single_auto_margin_right_aligns() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; margin-left: auto')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.margin.left == 600.0 // 800 - 200
+	assert box.margin.right == 0.0
+	assert box.x == 600.0
+}
+
+// auto margins on an auto-width box collapse to 0 (the width fills, nothing to center).
+fn test_auto_margins_with_auto_width_are_zero() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'margin: 0 auto') // width auto
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.margin.left == 0.0
+	assert box.margin.right == 0.0
+	assert box.width == 800.0 // fills
+}
+
+// Centering respects the box model: a fixed margin on one side and auto on the other absorbs the
+// rest. width 200, margin-left 100 fixed, margin-right auto -> right = 800 - 200 - 100 = 500.
+fn test_one_fixed_one_auto_margin() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; margin-left: 100px; margin-right: auto')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.margin.left == 100.0
+	assert box.margin.right == 500.0
+	assert box.x == 100.0
+}
+
+// Centering composes with max-width: an auto width capped by max-width, then centered.
+fn test_auto_margins_center_max_width_clamped() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'max-width: 400px; margin: 0 auto') // width auto -> clamped to 400
+	box := layout_block(el, 0, 0, 1000, []&css.CSSRule{})
+	assert box.width == 400.0
+	assert box.margin.left == 300.0 // (1000 - 400) / 2
+	assert box.margin.right == 300.0
+}

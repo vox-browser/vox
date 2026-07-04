@@ -13,7 +13,8 @@ import dom
 // Adjoining vertical margins of in-flow siblings collapse (CSS 2.1 §8.3.1). A box with no block-level
 // children but with text content gets a height from a coarse inline pass (line count × line-height).
 // `box-sizing: border-box` makes a specified width/height include padding+border. Used width and
-// height are clamped by min/max-width and min/max-height.
+// height are clamped by min/max-width and min/max-height. Horizontal `auto` margins absorb leftover
+// space (both auto centers the box; a single one right/left-aligns).
 //
 // FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
 // word-boundary wrapping, inline box geometry), mixed block+inline content (anonymous block boxes),
@@ -240,12 +241,39 @@ fn non_negative(v f64) f64 {
 	return if v > 0 { v } else { 0.0 }
 }
 
+// Whether a margin property's cascaded value is the keyword `auto`.
+fn margin_is_auto(element &dom.Element, property_name string, author_rules []&css.CSSRule) bool {
+	id := css.property_id_from_string(property_name) or { return false }
+	return css.cascaded_value_with_ua(element, id, author_rules) == 'auto'
+}
+
+// Resolve the used left/right margins, distributing the horizontal space left over after the border
+// box and the fixed (non-auto) margins to any `auto` margins (CSS 2.1 §10.3.3): both `auto` centers
+// the box; a single `auto` margin absorbs the whole remainder (so margin-left:auto right-aligns);
+// none `auto` leaves the fixed values (any over-constraint notionally lands on margin-right, which
+// isn't rendered here). Overflow (negative space) spills onto the right margin in LTR.
+fn resolve_horizontal_auto_margins(containing_width f64, border_box_width f64, left_fixed f64, right_fixed f64, left_auto bool, right_auto bool) (f64, f64) {
+	space := containing_width - border_box_width - left_fixed - right_fixed
+	if left_auto && right_auto {
+		if space > 0 {
+			return space / 2, space / 2
+		}
+		return 0.0, space
+	}
+	if left_auto {
+		return space, right_fixed
+	}
+	if right_auto {
+		return left_fixed, space
+	}
+	return left_fixed, right_fixed
+}
+
 // Lay out `element` and its block descendants. `x`/`y` is the top-left of this box's *margin box*;
 // the returned box's content origin is inset by its margin, border, and padding. Children stack
 // vertically within the content box, each advancing the cursor by its own margin-box height; the
 // parent's content height is that stacked total unless it declares an explicit height.
 pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, author_rules []&css.CSSRule) BlockBox {
-	margin := used_margins(element, containing_width, author_rules)
 	border := BoxEdges{
 		top:    used_border(element, 'top', author_rules)
 		right:  used_border(element, 'right', author_rules)
@@ -259,16 +287,35 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		left:   used_length_or_zero(element, 'padding-left', containing_width, author_rules)
 	}
 	border_box := box_sizing_is_border_box(element, author_rules)
-	margins_lr := margin.left + margin.right
 	border_padding_lr := border.left + border.right + padding.left + padding.right
-	tentative_width := used_content_width(element, containing_width, margins_lr, border_padding_lr,
-		border_box, author_rules)
-	// Clamp the width by min-width/max-width (both box-sizing-aware, resolved in content space).
+
+	// Vertical margins resolve directly (auto -> 0). Horizontal margins may be `auto`, which absorbs
+	// leftover space once the width is known (below).
+	margin_top := used_length_or_zero(element, 'margin-top', containing_width, author_rules)
+	margin_bottom := used_length_or_zero(element, 'margin-bottom', containing_width, author_rules)
+	margin_left_auto := margin_is_auto(element, 'margin-left', author_rules)
+	margin_right_auto := margin_is_auto(element, 'margin-right', author_rules)
+	margin_left_fixed := used_length_or_zero(element, 'margin-left', containing_width, author_rules)
+	margin_right_fixed := used_length_or_zero(element, 'margin-right', containing_width, author_rules)
+
+	// Used content width: `auto` margins count as 0 while the width fills; then clamp by min/max.
+	tentative_width := used_content_width(element, containing_width, margin_left_fixed +
+		margin_right_fixed, border_padding_lr, border_box, author_rules)
 	min_width := resolve_size_constraint(element, 'min-width', containing_width, border_padding_lr,
 		border_box, author_rules) or { 0.0 }
 	max_width := resolve_size_constraint(element, 'max-width', containing_width, border_padding_lr,
 		border_box, author_rules)
 	width := clamp_size(tentative_width, min_width, max_width)
+
+	// Distribute leftover horizontal space to `auto` margins (centering / one-sided absorb).
+	margin_left, margin_right := resolve_horizontal_auto_margins(containing_width, width +
+		border_padding_lr, margin_left_fixed, margin_right_fixed, margin_left_auto, margin_right_auto)
+	margin := BoxEdges{
+		top:    margin_top
+		right:  margin_right
+		bottom: margin_bottom
+		left:   margin_left
+	}
 
 	content_x := x + margin.left + border.left + padding.left
 	content_y := y + margin.top + border.top + padding.top
