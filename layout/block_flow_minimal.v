@@ -68,6 +68,30 @@ fn translate_block(box BlockBox, dx f64, dy f64) BlockBox {
 	return moved
 }
 
+// A readable indented dump of the box tree — `tag (x,y) WxH` per box, children nested — for
+// snapshot tests and debugging. Whole numbers print without a trailing `.0`.
+pub fn (b &BlockBox) tree_repr() string {
+	mut lines := []string{}
+	b.append_repr(0, mut lines)
+	return lines.join('\n')
+}
+
+fn (b &BlockBox) append_repr(depth int, mut lines []string) {
+	indent := '  '.repeat(depth)
+	lines << '${indent}${b.tag_name} (${fmt_px(b.x)},${fmt_px(b.y)}) ${fmt_px(b.width)}x${fmt_px(b.height)}'
+	for child in b.children {
+		child.append_repr(depth + 1, mut lines)
+	}
+}
+
+// Format a px value: drop the fractional part for whole numbers so snapshots read cleanly.
+fn fmt_px(v f64) string {
+	if v == f64(int(v)) {
+		return int(v).str()
+	}
+	return v.str()
+}
+
 // The margin-box height: the vertical space this box occupies in its parent's flow.
 pub fn (b &BlockBox) margin_box_height() f64 {
 	return b.margin.top + b.border.top + b.padding.top + b.height + b.padding.bottom +

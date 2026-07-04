@@ -358,3 +358,32 @@ fn test_absolute_position_over_parsed_document() {
 	assert badge.x == rel.x + 362.0
 	assert badge.y == rel.y + 5.0
 }
+
+// Whole-pipeline snapshot: one realistic document exercises box-sizing, max-width clamping,
+// margin:0 auto centering, a UA body-margin override, padding insets, sibling margin-bottom
+// collapsing, display:none exclusion, position:relative establishing a containing block, and a
+// position:absolute badge pinned to a corner -- all locked into one box-tree geometry dump. A
+// regression in any of those features changes exactly one line of this diff.
+fn test_full_pipeline_box_tree_snapshot() {
+	css_rules := '* { box-sizing: border-box }
+		body { margin: 0 }
+		.container { max-width: 600px; margin: 0 auto; padding: 20px }
+		.card { border: 2px solid; padding: 10px; margin-bottom: 16px; height: 50px }
+		.hidden { display: none }
+		.rel { position: relative; height: 80px }
+		.badge { position: absolute; top: 0; right: 0; width: 40px; height: 40px }'
+	markup := '<html><head><style>${css_rules}</style></head><body><div class="container"><div class="card"></div><div class="hidden"></div><div class="rel"><div class="badge"></div></div></div></body></html>'
+
+	doc := html.parse_document(markup)
+	box := layout.layout_document(doc, 1000)
+
+	expected := [
+		'html (0,0) 1000x186', // fills the 1000px viewport; height flows up from content
+		'  body (0,0) 1000x186', // UA 8px margin overridden to 0
+		'    div (220,20) 560x146', // .container: centered (200 margin + 20 pad), 600 border-box -> 560 content
+		'      div (232,32) 536x26', // .card: inset by border+padding; 50 border-box height -> 26 content
+		'      div (220,86) 560x80', // .rel: y = card bottom 70 + collapsed 16px margin (not stacked below .hidden)
+		'        div (740,86) 40x40', // .badge: absolute, pinned to .rel's top-right corner
+	].join('\n')
+	assert box.tree_repr() == expected
+}
