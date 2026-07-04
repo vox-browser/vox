@@ -2844,3 +2844,57 @@ fn test_table_grid_layout() {
 	assert box.children[2].y == box.children[0].y + line
 	assert box.height == 2.0 * line // two rows
 }
+
+// Build a grid with the given template + gap and n items (each 20px tall); return their (x, width, y).
+struct GridCell {
+	x     f64
+	width f64
+	y     f64
+}
+
+fn grid_cells(template string, gap string, n int) []GridCell {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: grid; width: 300px; grid-template-columns: ${template}; gap: ${gap}')
+	mut rn := root.as_node()
+	for _ in 0 .. n {
+		item := styled(doc, 'div', 'height: 20px')
+		rn.append_child(item.as_node()) or { panic('${err}') }
+	}
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	mut out := []GridCell{}
+	for child in box.children {
+		out << GridCell{child.x, child.width, child.y}
+	}
+	return out
+}
+
+// grid-template-columns with fr units splits the width; items auto-place across columns then wrap.
+fn test_grid_fr_columns_and_autoplacement() {
+	// 1fr 2fr in 300px -> columns 100 and 200. 4 items -> 2 rows of 2.
+	cells := grid_cells('1fr 2fr', '0px', 4)
+	assert cells.len == 4
+	assert cells[0].x == 0.0 && cells[0].width == 100.0
+	assert cells[1].x == 100.0 && cells[1].width == 200.0
+	// item 3 wraps to row 2, column 0.
+	assert cells[2].x == 0.0 && cells[2].width == 100.0
+	assert cells[2].y == 20.0 // below row 1 (row height 20)
+	assert cells[3].x == 100.0 && cells[3].y == 20.0
+}
+
+// A fixed track plus an fr track: the fr takes the remaining width (minus the gap).
+fn test_grid_fixed_and_fr_with_gap() {
+	// 100px 1fr in 300px with a 20px gap -> col0 100, col1 = 300 - 100 - 20 = 180.
+	cells := grid_cells('100px 1fr', '20px', 2)
+	assert cells[0].x == 0.0 && cells[0].width == 100.0
+	assert cells[1].x == 120.0 && cells[1].width == 180.0 // 100 + 20 gap
+}
+
+// repeat(n, track) expands to n columns.
+fn test_grid_repeat() {
+	// repeat(3, 1fr) in 300px -> three 100px columns.
+	cells := grid_cells('repeat(3, 1fr)', '0px', 3)
+	assert cells.len == 3
+	assert cells[0].x == 0.0 && cells[0].width == 100.0
+	assert cells[1].x == 100.0 && cells[1].width == 100.0
+	assert cells[2].x == 200.0 && cells[2].width == 100.0
+}

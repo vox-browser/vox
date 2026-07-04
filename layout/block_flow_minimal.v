@@ -1181,6 +1181,70 @@ fn table_cells(row &dom.Element, author_rules []&css.CSSRule) []&dom.Element {
 	return cells
 }
 
+// Whether `element` is a grid container (`display: grid`).
+fn is_grid(element &dom.Element, author_rules []&css.CSSRule) bool {
+	id := css.property_id_from_string('display') or { return false }
+	return css.cascaded_value_with_ua(element, id, author_rules) == 'grid'
+}
+
+// Resolve `grid-template-columns` (`value`) to the column widths in px within a `containing_width`-wide
+// grid whose columns are separated by `gap` px. `repeat(n, ...)` is expanded; each track is a fixed
+// length (px/em/rem/%) or an `fr` fraction that splits the free space (container minus fixed tracks
+// and gaps) by its fraction. `none`/empty yields a single column filling the width.
+// FIXME: minmax(), auto, fit-content(), min/max-content, auto-fit/auto-fill, and named lines aren't
+// modeled (an `auto` or unrecognized track resolves to 0).
+fn parse_grid_tracks(value string, element &dom.Element, containing_width f64, gap f64, author_rules []&css.CSSRule) []f64 {
+	v := value.trim_space()
+	if v == '' || v == 'none' {
+		return [containing_width]
+	}
+	// Expand any repeat(n, tracks...) into the flat track-token list.
+	mut tokens := []string{}
+	for token in split_top_level(v, ` `) {
+		if token.starts_with('repeat(') && token.ends_with(')') {
+			parts := split_top_level(token['repeat('.len..token.len - 1], `,`)
+			if parts.len >= 2 {
+				count := parts[0].trim_space().int()
+				track_tokens := split_top_level(parts[1], ` `)
+				for _ in 0 .. count {
+					tokens << track_tokens
+				}
+			}
+		} else {
+			tokens << token
+		}
+	}
+	// Classify tracks (fr vs fixed) and total the fixed sizes and fr fractions.
+	mut is_fr := []bool{}
+	mut sizes := []f64{}
+	mut fixed_sum := 0.0
+	mut fr_sum := 0.0
+	for token in tokens {
+		if token.ends_with('fr') {
+			fr := token#[..-2].f64()
+			is_fr << true
+			sizes << fr
+			fr_sum += fr
+		} else {
+			px := resolve_length_token(element, token, containing_width, author_rules)
+			is_fr << false
+			sizes << px
+			fixed_sum += px
+		}
+	}
+	total_gaps := if tokens.len > 1 { f64(tokens.len - 1) * gap } else { 0.0 }
+	free := non_negative(containing_width - fixed_sum - total_gaps)
+	mut widths := []f64{}
+	for i in 0 .. tokens.len {
+		widths << if is_fr[i] {
+			if fr_sum > 0 { free * sizes[i] / fr_sum } else { 0.0 }
+		} else {
+			sizes[i]
+		}
+	}
+	return widths
+}
+
 // The flex items of `node`: its in-flow element children (any display is blockified, so inline and
 // floated children count too), excluding `display: none` and absolutely positioned elements.
 fn flex_item_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Element {
@@ -2254,8 +2318,8 @@ fn establishes_block_formatting_context(element &dom.Element, author_rules []&cs
 	}
 	display_id := css.property_id_from_string('display') or { return false }
 	display := css.cascaded_value_with_ua(element, display_id, author_rules)
-	if display in ['flow-root', 'flex', 'inline-flex', 'table', 'inline-table'] {
-		return true // a flow-root / flex / table container establishes an independent formatting context
+	if display in ['flow-root', 'flex', 'inline-flex', 'table', 'inline-table', 'grid', 'inline-grid'] {
+		return true // flow-root / flex / table / grid establish an independent formatting context
 	}
 	for axis in ['overflow-x', 'overflow-y'] {
 		id := css.property_id_from_string(axis) or { continue }
@@ -2763,6 +2827,55 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 			content_height = row_y
 			has_children = local_children.len > 0
 		}
+	} else if is_grid(element, author_rules) {
+		// GRID: resolve the column tracks (grid-template-columns, with fr units) and auto-place the
+		// items row by row (item k -> column k%cols, row k/cols). A row's height is its tallest item;
+		// column-gap/row-gap separate the tracks. Items are sized to their column (forced width) and
+		// become the grid box's children.
+		// FIXME: no grid-template-rows/areas, no explicit placement (grid-column/row), no minmax/auto
+		// tracks, no auto-fit/fill, no alignment (items fill their cell); auto-rows use content height.
+		gap_col := flex_column_gap(element, author_rules)
+		gap_row := flex_row_gap(element, author_rules)
+		template := css.cascaded_value_with_ua(element, css.property_id_from_string('grid-template-columns') or {
+			return BlockBox{}
+		}, author_rules)
+		col_widths := parse_grid_tracks(template, element, width, gap_col, author_rules)
+		n_cols := col_widths.len
+		mut col_x := []f64{}
+		mut xacc := 0.0
+		for w in col_widths {
+			col_x << xacc
+			xacc += w + gap_col
+		}
+		items := flex_item_elements(element.as_node(), author_rules)
+		// Lay each item out at its column width (at the local origin; repositioned once rows are sized).
+		mut item_boxes := []BlockBox{}
+		for k, item in items {
+			col := k % n_cols
+			cell_content_width := non_negative(col_widths[col] - horizontal_edges(item, width, author_rules))
+			item_boxes << layout_block_impl(item, 0, 0, width, cell_content_width, author_rules)
+		}
+		// Row heights (tallest item's margin box per row), then row y offsets.
+		n_rows := if items.len > 0 { (items.len + n_cols - 1) / n_cols } else { 0 }
+		mut row_heights := []f64{len: n_rows}
+		for k, cb in item_boxes {
+			r := k / n_cols
+			if cb.margin_box_height() > row_heights[r] {
+				row_heights[r] = cb.margin_box_height()
+			}
+		}
+		mut row_y := []f64{}
+		mut yacc := 0.0
+		for r in 0 .. n_rows {
+			row_y << yacc
+			yacc += row_heights[r] + if r < n_rows - 1 { gap_row } else { 0.0 }
+		}
+		// Place each item at its column x / row y.
+		for k, cb in item_boxes {
+			local_children << translate_block(cb, content_x + col_x[k % n_cols], row_y[k / n_cols])
+		}
+		content_height = yacc
+		has_children = item_boxes.len > 0
 	} else {
 		// BLOCK FLOW: lay children out in a LOCAL frame whose origin is this box's content-box top-left.
 		// Vertical margins collapse (CSS 2.1 §8.3.1) using each child's OUTER (collapsed) margins.

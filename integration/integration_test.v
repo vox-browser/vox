@@ -1204,3 +1204,27 @@ fn test_table_over_parsed_document() {
 	// Columns fill the 400px table.
 	assert a_rect.width + b_rect.width == 400.0
 }
+
+// Full-stack grid: a parsed card grid (repeat(3, 1fr), gap) places its cards across three equal
+// columns and wraps to the next row.
+fn test_grid_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.grid { display: grid; width: 620px; grid-template-columns: repeat(3, 1fr); gap: 10px } .card { height: 50px }</style></head><body><div class="grid"><div class="card" id="c0"></div><div class="card" id="c1"></div><div class="card" id="c2"></div><div class="card" id="c3"></div></div></body></html>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	grid := css.query_selector(root, '.grid') or { panic('no .grid') }
+	grid_rect := root_box.bounding_rect_for(grid) or { panic('no grid box') }
+
+	mut rects := []layout.LayoutRect{}
+	for id in ['c0', 'c1', 'c2', 'c3'] {
+		el := css.query_selector(root, '#${id}') or { panic('no #${id}') }
+		rects << (root_box.bounding_rect_for(el) or { panic('no box') })
+	}
+	// Three equal columns of (620 - 2*10 gap)/3 = 200 each.
+	assert rects[0].width == 200.0
+	assert rects[0].x == grid_rect.x // first column at the grid's left
+	assert rects[1].x == grid_rect.x + 210.0 // + 200 + 10 gap
+	assert rects[2].x == grid_rect.x + 420.0 // + 2*(200+10)
+	// c3 wraps to row 2, column 0.
+	assert rects[3].x == grid_rect.x
+	assert rects[3].y == rects[0].y + 60.0 // card height 50 + 10 row-gap
+}
