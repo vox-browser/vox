@@ -775,20 +775,67 @@ fn list_marker_line(element &dom.Element, content_x f64, content_top f64, text_c
 }
 
 // The marker string for a list item from its computed `list-style-type`: a bullet glyph for
-// disc/circle/square, or the 1-based ordinal followed by `.` for decimal. `none` -> ''.
-// FIXME: other list-style-types (lower-alpha, roman, etc.) fall back to a disc.
+// disc/circle/square, or a counter (`ordinal.`) for the numeric/alphabetic/roman styles. `none` -> ''.
+// FIXME: other list-style-types (e.g. CJK, Greek, Hebrew) fall back to a disc.
 fn list_marker_text(element &dom.Element, author_rules []&css.CSSRule) string {
 	kind := css.cascaded_value_with_ua(element, css.property_id_from_string('list-style-type') or {
 		return ''
 	}, author_rules)
-	return match kind {
-		'none' { '' }
-		'disc' { '•' } // •
-		'circle' { '◦' } // ◦
-		'square' { '▪' } // ▪
-		'decimal' { '${list_item_ordinal(element, author_rules)}.' }
-		else { '•' }
+	if kind in ['disc', 'circle', 'square', 'none'] {
+		return match kind {
+			'disc' { '•' }
+			'circle' { '◦' }
+			'square' { '▪' }
+			else { '' } // none
+		}
 	}
+	// Counter styles: the 1-based ordinal formatted per the style, followed by `.`.
+	ordinal := list_item_ordinal(element, author_rules)
+	return match kind {
+		'decimal' { '${ordinal}.' }
+		'decimal-leading-zero' { '${if ordinal < 10 { '0' } else { '' }}${ordinal}.' }
+		'lower-alpha', 'lower-latin' { '${alphabetic_marker(ordinal, false)}.' }
+		'upper-alpha', 'upper-latin' { '${alphabetic_marker(ordinal, true)}.' }
+		'lower-roman' { '${roman_marker(ordinal, false)}.' }
+		'upper-roman' { '${roman_marker(ordinal, true)}.' }
+		else { '•' } // unknown -> disc
+	}
+}
+
+// The bijective base-26 alphabetic marker for `n` (1->a, 26->z, 27->aa, ...), in the given case.
+// Falls back to the decimal for n < 1.
+fn alphabetic_marker(n int, upper bool) string {
+	if n < 1 {
+		return n.str()
+	}
+	base := if upper { u8(`A`) } else { u8(`a`) }
+	mut num := n
+	mut out := []u8{}
+	for num > 0 {
+		num--
+		out.prepend(base + u8(num % 26))
+		num /= 26
+	}
+	return out.bytestr()
+}
+
+// The Roman-numeral marker for `n` (1->i, 4->iv, 9->ix, ...), in the given case. Falls back to the
+// decimal for n outside 1..3999.
+fn roman_marker(n int, upper bool) string {
+	if n < 1 || n > 3999 {
+		return n.str()
+	}
+	values := [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+	symbols := ['m', 'cm', 'd', 'cd', 'c', 'xc', 'l', 'xl', 'x', 'ix', 'v', 'iv', 'i']
+	mut num := n
+	mut out := ''
+	for i, value in values {
+		for num >= value {
+			out += symbols[i]
+			num -= value
+		}
+	}
+	return if upper { out.to_upper() } else { out }
 }
 
 // The 1-based position of `element` among its list-item siblings (for ordered markers).

@@ -2703,3 +2703,46 @@ fn test_linear_gradient_still_linear() {
 	assert grad.radial == false
 	assert box.render_svg(100, 100).contains('<linearGradient')
 }
+
+// Bijective base-26 alphabetic markers.
+fn test_alphabetic_marker() {
+	assert alphabetic_marker(1, false) == 'a'
+	assert alphabetic_marker(26, false) == 'z'
+	assert alphabetic_marker(27, false) == 'aa'
+	assert alphabetic_marker(28, false) == 'ab'
+	assert alphabetic_marker(3, true) == 'C'
+}
+
+// Roman-numeral markers.
+fn test_roman_marker() {
+	assert roman_marker(1, false) == 'i'
+	assert roman_marker(4, false) == 'iv'
+	assert roman_marker(9, false) == 'ix'
+	assert roman_marker(14, false) == 'xiv'
+	assert roman_marker(40, false) == 'xl'
+	assert roman_marker(2024, true) == 'MMXXIV'
+}
+
+// Build an <ol> with the given list-style-type and n empty <li>s; return the li markers.
+fn ol_markers(kind string, n int) []string {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'ol', 'width: 300px; font-size: 20px; list-style-type: ${kind}')
+	mut rn := root.as_node()
+	for _ in 0 .. n {
+		li := styled(doc, 'li', '')
+		rn.append_child(li.as_node()) or { panic('${err}') }
+	}
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	mut out := []string{}
+	for child in box.children {
+		out << child.lines[0].fragments[0].text
+	}
+	return out
+}
+
+// list-style-type: lower-alpha / upper-roman / decimal-leading-zero produce the right ordered markers.
+fn test_list_marker_counter_styles() {
+	assert ol_markers('lower-alpha', 3) == ['a.', 'b.', 'c.']
+	assert ol_markers('upper-roman', 3) == ['I.', 'II.', 'III.']
+	assert ol_markers('decimal-leading-zero', 2) == ['01.', '02.']
+}

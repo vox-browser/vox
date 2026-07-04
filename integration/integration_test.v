@@ -1148,3 +1148,19 @@ fn test_radial_gradient_over_parsed_document() {
 	assert svg.contains('stop-color="rgb(240 240 240)"')
 	assert svg.contains('stop-color="rgb(40 40 40)"')
 }
+
+// Full-stack list-style-type: a parsed ordered list with lower-alpha markers renders a./b./c.
+fn test_list_style_type_over_parsed_document() {
+	doc := html.parse_document('<body><ol style="list-style-type: lower-alpha"><li>x</li><li>y</li><li>z</li></ol></body>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	lis := css.query_selector_all(root, 'li')
+	assert lis.len == 3
+
+	mut markers := []string{}
+	for li in lis {
+		li_box := root_box.find_box(i64(li.as_node().unique_id())) or { panic('no li box') }
+		markers << li_box.lines[0].fragments[0].text
+	}
+	assert markers == ['a.', 'b.', 'c.']
+}
