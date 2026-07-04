@@ -1228,3 +1228,20 @@ fn test_grid_over_parsed_document() {
 	assert rects[3].x == grid_rect.x
 	assert rects[3].y == rects[0].y + 60.0 // card height 50 + 10 row-gap
 }
+
+// Full-stack flex-wrap: a wrapping tag row with a gap breaks tags onto a second line with row-gap.
+fn test_flex_wrap_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.tags { display: flex; flex-wrap: wrap; gap: 10px; width: 220px } .tag { width: 100px; height: 24px }</style></head><body><div class="tags"><div class="tag" id="t0"></div><div class="tag" id="t1"></div><div class="tag" id="t2"></div></div></body></html>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	mut rects := []layout.LayoutRect{}
+	for id in ['t0', 't1', 't2'] {
+		el := css.query_selector(root, '#${id}') or { panic('no #${id}') }
+		rects << (root_box.bounding_rect_for(el) or { panic('no box') })
+	}
+	// t0, t1 on line 1 (100 + 10 gap + 100 = 210 <= 220); t2 wraps to line 2.
+	assert rects[0].y == rects[1].y // same line
+	assert rects[1].x == rects[0].x + 110.0 // 100 + 10 gap
+	assert rects[2].x == rects[0].x // line 2, first column
+	assert rects[2].y == rects[0].y + 34.0 // 24 height + 10 row-gap
+}

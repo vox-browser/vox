@@ -2898,3 +2898,21 @@ fn test_grid_repeat() {
 	assert cells[1].x == 100.0 && cells[1].width == 100.0
 	assert cells[2].x == 200.0 && cells[2].width == 100.0
 }
+
+// flex-wrap: wrap breaks items onto multiple lines when they overflow the main size; lines stack.
+fn test_flex_wrap() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; flex-wrap: wrap; width: 200px')
+	// Three 80x30 items: two fit on line 1 (160 <= 200), the third wraps to line 2.
+	for _ in 0 .. 3 {
+		it := styled(doc, 'div', 'width: 80px; height: 30px')
+		mut rn := root.as_node()
+		rn.append_child(it.as_node()) or { panic('${err}') }
+	}
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 3
+	assert box.children[0].x == 0.0 && box.children[0].y == 0.0
+	assert box.children[1].x == 80.0 && box.children[1].y == 0.0
+	assert box.children[2].x == 0.0 && box.children[2].y == 30.0 // wrapped to line 2
+	assert box.height == 60.0 // two 30px lines
+}

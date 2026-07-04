@@ -1343,6 +1343,55 @@ fn resolve_flex_main_sizes(items []&dom.Element, bases []f64, free f64, author_r
 	return finals
 }
 
+// Whether `element` is a multi-line flex container (`flex-wrap: wrap`/`wrap-reverse`).
+// FIXME: `wrap-reverse` is treated as `wrap` (lines not reversed).
+fn flex_wraps(element &dom.Element, author_rules []&css.CSSRule) bool {
+	id := css.property_id_from_string('flex-wrap') or { return false }
+	value := css.cascaded_value_with_ua(element, id, author_rules)
+	return value == 'wrap' || value == 'wrap-reverse'
+}
+
+// Lay out one line of a row flex container: the line's items grow/shrink over its free space, pack
+// along the main axis (with `gap_main`), justify-content distributes the leftover, and each item
+// cross-aligns within `cross_arg` (or the line's tallest item when `cross_arg` < 0) at cross offset
+// `cross_y`. Placed boxes are appended to `out`; returns the line's cross extent (its tallest item's
+// margin box).
+fn place_flex_line(element &dom.Element, line_items []&dom.Element, line_bases []f64, content_x f64, cross_y f64, width f64, gap_main f64, cross_arg f64, author_rules []&css.CSSRule, mut out []BlockBox) f64 {
+	mut total_used := if line_items.len > 1 { f64(line_items.len - 1) * gap_main } else { 0.0 }
+	for i, item in line_items {
+		total_used += line_bases[i] + horizontal_edges(item, width, author_rules)
+	}
+	finals := resolve_flex_main_sizes(line_items, line_bases, width - total_used, author_rules)
+	mut cursor := 0.0
+	mut item_boxes := []BlockBox{}
+	mut tallest := 0.0
+	for i, item in line_items {
+		if i > 0 {
+			cursor += gap_main
+		}
+		ib := layout_block_impl(item, content_x + cursor, 0.0, width, finals[i], author_rules)
+		cursor += ib.margin_box_width()
+		if ib.margin_box_height() > tallest {
+			tallest = ib.margin_box_height()
+		}
+		item_boxes << ib
+	}
+	cross_size := if cross_arg >= 0.0 { cross_arg } else { tallest }
+	leading, gap := justify_offsets(justify_content_value(element, author_rules), width - cursor,
+		item_boxes.len)
+	container_align := align_items_value(element, author_rules)
+	for i, ib in item_boxes {
+		align := effective_align_self(line_items[i], container_align, author_rules)
+		mut item := ib
+		if align == 'stretch' && size_is_auto(line_items[i], 'height', author_rules) {
+			item.height = flex_stretched_content_height(item, cross_size)
+		}
+		cross := cross_axis_offset(align, cross_size, item.margin_box_height())
+		out << translate_block(item, leading + f64(i) * gap, cross_y + cross)
+	}
+	return tallest
+}
+
 // The main-axis gap between flex items (a row's `column-gap`; the `gap` shorthand sets it), in px.
 // `normal`/absent is 0.
 fn flex_column_gap(element &dom.Element, author_rules []&css.CSSRule) f64 {
@@ -2669,57 +2718,57 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 	mut has_children := false
 
 	if is_flex_row(element, author_rules) {
-		// FLEX (row): lay items along the main axis from the content-left, packed by margin box; the
-		// container's content height is the tallest item's margin box. Flex containers establish a
-		// formatting context (no margin collapse). Each item's main size is its flex base size adjusted
-		// by flex-grow/shrink over the free space; `justify-content` distributes any leftover; `gap`
-		// spaces items; `align-items`/`align-self` align each on the cross axis.
-		// FIXME: no wrap, no row-reverse/column (those fall to block flow).
+		// FLEX (row): items flow along the main axis; with flex-wrap they break onto multiple lines. Per
+		// line the items grow/shrink over the line's free space, justify-content distributes the
+		// leftover, gap spaces items, and align-items/self cross-align; lines stack in the cross axis
+		// (row-gap between them). Flex containers establish a formatting context (no margin collapse).
+		// FIXME: no align-content (lines pack at the cross-start), no row-reverse.
+		wrap := flex_wraps(element, author_rules)
 		gap_main := flex_column_gap(element, author_rules)
+		gap_cross := flex_row_gap(element, author_rules)
 		items := flex_item_elements(element.as_node(), author_rules)
-		// Flex base sizes and outer edges, then the free space to grow/shrink over.
 		mut bases := []f64{}
-		mut total_used := if items.len > 1 { f64(items.len - 1) * gap_main } else { 0.0 }
+		mut edges := []f64{}
 		for item in items {
-			base := flex_base_size(item, width, author_rules)
-			bases << base
-			total_used += base + horizontal_edges(item, width, author_rules)
+			bases << flex_base_size(item, width, author_rules)
+			edges << horizontal_edges(item, width, author_rules)
 		}
-		finals := resolve_flex_main_sizes(items, bases, width - total_used, author_rules)
-		// Lay each item out at its final main size, packed along the row (gap between adjacent items).
-		mut cursor := 0.0
-		mut item_boxes := []BlockBox{}
-		for i, item in items {
-			if i > 0 {
-				cursor += gap_main
+		// Group items into flex lines (a single line when nowrap): pack items until the next would
+		// overflow the main size, then break.
+		mut lines_idx := [][]int{}
+		mut cur := []int{}
+		mut used := 0.0
+		for i in 0 .. items.len {
+			item_outer := bases[i] + edges[i]
+			gap := if cur.len > 0 { gap_main } else { 0.0 }
+			if wrap && cur.len > 0 && used + gap + item_outer > width {
+				lines_idx << cur
+				cur = [i]
+				used = item_outer
+			} else {
+				cur << i
+				used += gap + item_outer
 			}
-			ib := layout_block_impl(item, content_x + cursor, 0.0, width, finals[i], author_rules)
-			cursor += ib.margin_box_width()
-			if ib.margin_box_height() > content_height {
-				content_height = ib.margin_box_height()
-			}
-			item_boxes << ib
 		}
-		// Main axis: distribute free space per justify-content. Cross axis: align each item within the
-		// container's cross size (the tallest item / content height) per align-items (or its align-self).
-		leading, gap := justify_offsets(justify_content_value(element, author_rules), width - cursor,
-			item_boxes.len)
-		container_align := align_items_value(element, author_rules)
-		// Align within the container's cross size: its explicit height if set, else the tallest item.
-		cross_size := align_cross_size(element, content_height, border, padding, border_box,
-			author_rules)
-		for i, ib in item_boxes {
-			align := effective_align_self(items[i], container_align, author_rules)
-			mut item := ib
-			// `align-items/self: stretch` grows an auto-height item's box to the line's cross size
-			// (its content stays top-positioned, so no re-layout is needed).
-			if align == 'stretch' && size_is_auto(items[i], 'height', author_rules) {
-				item.height = flex_stretched_content_height(item, cross_size)
-			}
-			cross := cross_axis_offset(align, cross_size, item.margin_box_height())
-			local_children << translate_block(item, leading + f64(i) * gap, cross)
+		if cur.len > 0 {
+			lines_idx << cur
 		}
-		has_children = item_boxes.len > 0
+		// A single (nowrap) line aligns within the container's explicit height if set; wrapped lines
+		// each align within their own tallest item.
+		nowrap_cross := align_cross_size(element, -1.0, border, padding, border_box, author_rules)
+		mut cross_y := 0.0
+		for li, line in lines_idx {
+			if li > 0 {
+				cross_y += gap_cross
+			}
+			line_items := line.map(items[it])
+			line_bases := line.map(bases[it])
+			cross_arg := if wrap { -1.0 } else { nowrap_cross }
+			cross_y += place_flex_line(element, line_items, line_bases, content_x, cross_y, width,
+				gap_main, cross_arg, author_rules, mut local_children)
+		}
+		content_height = cross_y
+		has_children = items.len > 0
 	} else if is_flex_column(element, author_rules) {
 		// FLEX (column): stack items along the vertical MAIN axis. The cross axis is horizontal, so an
 		// item's width fills the container for `align: stretch` (block sizing) and shrink-to-fits
