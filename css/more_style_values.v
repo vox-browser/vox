@@ -2835,6 +2835,9 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	if s := style_value.serialize_grid_template(mode) {
 		return s
 	}
+	if s := style_value.serialize_grid(mode) {
+		return s
+	}
 	if s := style_value.serialize_flex(mode) {
 		return s
 	}
@@ -2927,6 +2930,10 @@ fn (style_value ShorthandStyleValue) serialize_grid_template(mode SerializationM
 	areas := style_value.coordinating_longhand_value(.grid_template_areas) or { return none }
 	rows := style_value.coordinating_longhand_value(.grid_template_rows) or { return none }
 	columns := style_value.coordinating_longhand_value(.grid_template_columns) or { return none }
+	return serialize_grid_template_values(mode, areas, rows, columns)
+}
+
+fn serialize_grid_template_values(mode SerializationMode, areas StyleValue, rows StyleValue, columns StyleValue) ?string {
 	if areas !is GridTemplateAreaStyleValue || rows !is GridTrackSizeListStyleValue
 		|| columns !is GridTrackSizeListStyleValue {
 		return none
@@ -2975,6 +2982,64 @@ fn (style_value ShorthandStyleValue) serialize_grid_template(mode SerializationM
 		return rows_serialization
 	}
 	return '${rows_serialization} / ${columns_value.serialize(mode)}'
+}
+
+// grid = <'grid-template'> | <'grid-template-rows'> / [ auto-flow && dense? ] <'grid-auto-columns'>?
+//      | [ auto-flow && dense? ] <'grid-auto-rows'>? / <'grid-template-columns'>
+fn (style_value ShorthandStyleValue) serialize_grid(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .grid {
+		return none
+	}
+	auto_flow := style_value.coordinating_longhand_value(.grid_auto_flow) or { return none }
+	auto_rows := style_value.coordinating_longhand_value(.grid_auto_rows) or { return none }
+	auto_columns := style_value.coordinating_longhand_value(.grid_auto_columns) or { return none }
+	areas := style_value.coordinating_longhand_value(.grid_template_areas) or { return none }
+	rows := style_value.coordinating_longhand_value(.grid_template_rows) or { return none }
+	columns := style_value.coordinating_longhand_value(.grid_template_columns) or { return none }
+
+	auto_flow_is_initial := auto_flow.serialize(mode) == computed_interpolation_property_initial_value(.grid_auto_flow).css_text
+	auto_rows_is_initial := auto_rows.serialize(mode) == computed_interpolation_property_initial_value(.grid_auto_rows).css_text
+	auto_columns_is_initial := auto_columns.serialize(mode) == computed_interpolation_property_initial_value(.grid_auto_columns).css_text
+
+	// With no grid-auto-* set, `grid` is just a `<'grid-template'>`.
+	if auto_flow_is_initial && auto_rows_is_initial && auto_columns_is_initial {
+		return serialize_grid_template_values(mode, areas, rows, columns)
+	}
+
+	if auto_flow !is GridAutoFlowStyleValue {
+		return none
+	}
+	flow := auto_flow as GridAutoFlowStyleValue
+	areas_is_initial := areas.serialize(mode) == computed_interpolation_property_initial_value(.grid_template_areas).css_text
+	rows_is_initial := rows.serialize(mode) == computed_interpolation_property_initial_value(.grid_template_rows).css_text
+	columns_is_initial := columns.serialize(mode) == computed_interpolation_property_initial_value(.grid_template_columns).css_text
+
+	// [ auto-flow && dense? ] <'grid-auto-rows'>? / <'grid-template-columns'>
+	if flow.is_row() && auto_columns_is_initial && areas_is_initial && rows_is_initial {
+		mut serialized := 'auto-flow'
+		if flow.is_dense() {
+			serialized += ' dense'
+		}
+		if !auto_rows_is_initial {
+			serialized += ' ${auto_rows.serialize(mode)}'
+		}
+		serialized += ' / ${columns.serialize(mode)}'
+		return serialized
+	}
+
+	// <'grid-template-rows'> / [ auto-flow && dense? ] <'grid-auto-columns'>?
+	if flow.is_column() && auto_rows_is_initial && areas_is_initial && columns_is_initial {
+		mut serialized := '${rows.serialize(mode)} / auto-flow'
+		if flow.is_dense() {
+			serialized += ' dense'
+		}
+		if !auto_columns_is_initial {
+			serialized += ' ${auto_columns.serialize(mode)}'
+		}
+		return serialized
+	}
+
+	return none
 }
 
 fn grid_placement_is_auto(value StyleValue) bool {
