@@ -56,26 +56,92 @@ pub fn cascaded_value_for(element &dom.Element, property_id PropertyID) string {
 	return property_initial_value_string(property_id)
 }
 
-// The specified value of `property_name` directly on `element`, considering an inline declaration
-// (highest priority) then the author `rules` that match it (in source order — later wins).
-// FIXME: proper specificity/importance ordering is not applied; matching rules are taken in source
-// order, which is correct only when specificities are equal.
-fn specified_value_on(element &dom.Element, property_name string, rules []&CSSRule) ?string {
-	if value := inline_declared_value(element, property_name) {
-		return value
+// A single declaration competing in the cascade for one property.
+struct CascadeMatch {
+	important   bool
+	specificity u32
+	order       int
+	value       string
+}
+
+// https://drafts.csswg.org/css-cascade/#cascade-sort — within a single (author) origin:
+// !important beats normal; then higher specificity; then later source order.
+fn cascade_match_beats(a CascadeMatch, b CascadeMatch) bool {
+	if a.important != b.important {
+		return a.important
 	}
-	mut result := ?string(none)
-	for rule in rules {
-		if !element_matches_selector(element, rule.selector_text()) {
-			continue
+	if a.specificity != b.specificity {
+		return a.specificity > b.specificity
+	}
+	return a.order >= b.order
+}
+
+// Whether the element's inline declaration for `property_name` is !important.
+fn inline_priority_is_important(element &dom.Element, property_name string) bool {
+	style_text := element.get_attribute('style') or { return false }
+	if style_text.len == 0 {
+		return false
+	}
+	block := parse_css_property_declaration_block_with_parser(style_text)
+	return block.property_priority(property_name) == 'important'
+}
+
+// The specified value of `property_name` on `element`: the winner of the cascade among the inline
+// declaration and every matching author rule in `rules`, ordered by !important, then specificity,
+// then source order. (Inline style is given a specificity higher than any selector, per spec.)
+fn specified_value_on(element &dom.Element, property_name string, rules []&CSSRule) ?string {
+	mut matches := []CascadeMatch{}
+
+	if value := inline_declared_value(element, property_name) {
+		matches << CascadeMatch{
+			important:   inline_priority_is_important(element, property_name)
+			specificity: u32(0xffffffff) // higher than any selector
+			order:       0x7fffffff
+			value:       value
 		}
+	}
+
+	for i, rule in rules {
 		declaration := rule.style() or { continue }
 		value := declaration.get_property_value(property_name)
-		if value.len > 0 {
-			result = value
+		if value.len == 0 {
+			continue
+		}
+		// Highest specificity among this rule's selectors that match the element.
+		mut rule_mut := rule
+		mut best_specificity := ?u32(none)
+		for selector in rule_mut.absolutized_selectors().selectors {
+			if selector_matches(selector, element) {
+				specificity := selector.specificity()
+				if current_best := best_specificity {
+					if specificity > current_best {
+						best_specificity = specificity
+					}
+				} else {
+					best_specificity = specificity
+				}
+			}
+		}
+		if specificity := best_specificity {
+			matches << CascadeMatch{
+				important:   declaration.property_priority(property_name) == 'important'
+				specificity: specificity
+				order:       i
+				value:       value
+			}
 		}
 	}
-	return result
+
+	if matches.len == 0 {
+		return none
+	}
+	mut winner := matches[0]
+	for match_candidate in matches[1..] {
+		if cascade_match_beats(match_candidate, winner) {
+			winner = match_candidate
+		}
+	}
+	return winner.value
 }
 
 // Like cascaded_value_for, but also considers a list of author style `rules` (e.g. from

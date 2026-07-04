@@ -72,6 +72,47 @@ fn test_cascade_with_author_stylesheet() {
 	assert cascaded_value_with_stylesheet(p, pid('margin-top'), rules) == property_initial_value_string(pid('margin-top'))
 }
 
+fn el_with(doc &dom.Document, tag string, attr string, value string) &dom.Element {
+	mut e := doc.create_element_ns(html_ns, tag) or { panic('${err}') }
+	e.set_attribute_value(attr, value)
+	return e
+}
+
+fn test_specificity_beats_source_order() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'div', 'class', 'high')
+	// '.high' (0,1,0) is EARLIER in source but more specific than 'div' (0,0,1) which is LATER.
+	rules := parse_css_stylesheet_contents_with_parser('.high { color: green } div { color: red }',
+		map[string]bool{})
+	assert cascaded_value_with_stylesheet(el, pid('color'), rules) == 'green'
+}
+
+fn test_compound_selector_specificity() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'div', 'class', 'x')
+	// div.x (0,1,1) > .x (0,1,0) > div (0,0,1), regardless of source order.
+	rules := parse_css_stylesheet_contents_with_parser('div.x { color: blue } div { color: red } .x { color: green }',
+		map[string]bool{})
+	assert cascaded_value_with_stylesheet(el, pid('color'), rules) == 'blue'
+}
+
+fn test_important_beats_higher_specificity() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'div', 'id', 'x')
+	// '#x' (id, high specificity) is normal; 'div' (low specificity) is !important -> important wins.
+	rules := parse_css_stylesheet_contents_with_parser('#x { color: green } div { color: red !important }',
+		map[string]bool{})
+	assert cascaded_value_with_stylesheet(el, pid('color'), rules) == 'red'
+}
+
+fn test_inline_important_beats_author_important() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'p', 'style', 'color: blue !important')
+	rules := parse_css_stylesheet_contents_with_parser('p { color: red !important }', map[string]bool{})
+	// Inline !important outranks author !important (inline has the higher specificity).
+	assert cascaded_value_with_stylesheet(el, pid('color'), rules) == 'blue'
+}
+
 fn test_author_rule_inheritance() {
 	doc := dom.Document.create(dom.url_about_blank())
 	mut root := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
