@@ -20,7 +20,7 @@ import dom
 // and min/max-height; `width` also accepts min-content/max-content/fit-content and abspos boxes
 // shrink-to-fit. Horizontal `auto` margins absorb leftover space (both auto centers the box; a
 // single one right/left-aligns). `position: relative` offsets a box (and its subtree) by its insets
-// without disturbing the flow. Text-bearing blocks produce inline line boxes (word-wrapped, `<br>`-
+// without disturbing the flow (as does `transform: translate(...)`). Text-bearing blocks produce inline line boxes (word-wrapped, `<br>`-
 // and `white-space`-aware) positioned per `text-align`. Floated children are placed at the content
 // edges (out of flow); `clear` moves a block below them, a BFC grows to contain them, and inline
 // content wraps around them. `BlockBox.paint_order()` flattens the tree into z-index paint order, and
@@ -1148,6 +1148,41 @@ fn relative_offset(element &dom.Element, containing_width f64, author_rules []&c
 	return dx, dy
 }
 
+// A px length token (`10px`, `-4px`, `0`) as f64. FIXME: only px is supported here (no %/em/calc).
+fn parse_px_length(token string) f64 {
+	trimmed := token.trim_space()
+	if trimmed.ends_with('px') {
+		return trimmed#[..-2].trim_space().f64()
+	}
+	if trimmed == '0' {
+		return 0.0
+	}
+	return 0.0
+}
+
+// The `transform: translate(...)` offset (dx, dy) in px for `element`, or (0, 0) for `none`/other
+// transforms. Handles translate(x[, y]) / translateX(x) / translateY(y). Like relative positioning,
+// this offsets the box (and its subtree) visually without affecting the flow.
+//
+// FIXME: only px translation is modelled — no %, scale/rotate/matrix, or transform-origin.
+fn transform_translate(element &dom.Element, author_rules []&css.CSSRule) (f64, f64) {
+	id := css.property_id_from_string('transform') or { return 0.0, 0.0 }
+	value := css.cascaded_value_with_ua(element, id, author_rules)
+	if value.starts_with('translate(') && value.ends_with(')') {
+		args := value['translate('.len..value.len - 1].split(',')
+		dx := parse_px_length(args[0])
+		dy := if args.len > 1 { parse_px_length(args[1]) } else { 0.0 }
+		return dx, dy
+	}
+	if value.starts_with('translateX(') && value.ends_with(')') {
+		return parse_px_length(value['translateX('.len..value.len - 1]), 0.0
+	}
+	if value.starts_with('translateY(') && value.ends_with(')') {
+		return 0.0, parse_px_length(value['translateY('.len..value.len - 1])
+	}
+	return 0.0, 0.0
+}
+
 // Whether a margin property's cascaded value is the keyword `auto`.
 fn margin_is_auto(element &dom.Element, property_name string, author_rules []&css.CSSRule) bool {
 	id := css.property_id_from_string(property_name) or { return false }
@@ -1228,7 +1263,10 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	// affecting siblings: the flow uses the un-offset metrics; the offset rides along here and through
 	// the child translate below.
 	rel_x, rel_y := relative_offset(element, containing_width, author_rules)
-	content_x := x + margin.left + border.left + padding.left + rel_x
+	// `transform: translate(...)` offsets the box (and its subtree) like relative positioning, without
+	// disturbing the flow.
+	transform_x, transform_y := transform_translate(element, author_rules)
+	content_x := x + margin.left + border.left + padding.left + rel_x + transform_x
 
 	// Whether this box's top/bottom margins can collapse with a first/last child's. They can't when a
 	// border or padding separates them, nor when the box establishes a block formatting context (its
@@ -1356,9 +1394,9 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	}
 
 	// Place this box: its border-box top is `y` plus its collapsed outer top margin (plus any relative
-	// offset, which does not participate in the flow computed above). Shift the children from the local
-	// frame (content-box top = 0) to the real content-box top.
-	content_top := y + outer_top_margin + border.top + padding.top + rel_y
+	// offset / transform translate, which don't participate in the flow computed above). Shift the
+	// children from the local frame (content-box top = 0) to the real content-box top.
+	content_top := y + outer_top_margin + border.top + padding.top + rel_y + transform_y
 	mut children := local_children.map(translate_block(it, 0.0, content_top))
 	// Floats (also laid out in the local frame) join the children, shifted to the content-box top.
 	for placed_float in placed_floats {

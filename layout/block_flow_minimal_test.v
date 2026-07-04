@@ -1528,3 +1528,62 @@ fn test_opacity_field_clamped() {
 	assert layout_block(styled(doc, 'div', 'opacity: 2'), 0, 0, 800, []&css.CSSRule{}).opacity == 1.0
 	assert layout_block(styled(doc, 'div', 'opacity: -0.5'), 0, 0, 800, []&css.CSSRule{}).opacity == 0.0
 }
+
+// transform: translate offsets a box (and its subtree) without disturbing the flow of its siblings.
+fn test_transform_translate() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px')
+	first := styled(doc, 'div', 'height: 30px; transform: translate(15px, 25px)')
+	second := styled(doc, 'div', 'height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(first.as_node()) or { panic('${err}') }
+	rn.append_child(second.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].x == 15.0 // translated right
+	assert box.children[0].y == 25.0 // translated down
+	assert box.children[1].y == 30.0 // second still flows after first's UNTRANSFORMED box
+	assert box.height == 50.0 // container height from the flow, ignoring the transform
+}
+
+// translateX / translateY offset one axis only.
+fn test_transform_translate_single_axis() {
+	doc := dom.Document.create(dom.url_about_blank())
+	x := styled(doc, 'div', 'width: 100px; height: 50px; transform: translateX(12px)')
+	xb := layout_block(x, 0, 0, 800, []&css.CSSRule{})
+	assert xb.x == 12.0
+	assert xb.y == 0.0
+
+	y := styled(doc, 'div', 'width: 100px; height: 50px; transform: translateY(8px)')
+	yb := layout_block(y, 0, 0, 800, []&css.CSSRule{})
+	assert yb.x == 0.0
+	assert yb.y == 8.0
+}
+
+// The transform carries the box's text fragments along.
+fn test_transform_moves_subtree() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px; transform: translate(10px, 20px)')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.x == 10.0
+	assert box.y == 20.0
+	assert box.lines[0].fragments[0].x == 10.0 // fragment moved with the box
+	assert box.lines[0].fragments[0].y == 20.0
+}
+
+// transform_translate + parse_px_length parsing.
+fn test_transform_translate_parse() {
+	doc := dom.Document.create(dom.url_about_blank())
+	assert parse_px_length('10px') == 10.0
+	assert parse_px_length('-4px') == -4.0
+	assert parse_px_length('0') == 0.0
+
+	tx, ty := transform_translate(styled(doc, 'div', 'transform: translate(10px, 20px)'), []&css.CSSRule{})
+	assert tx == 10.0 && ty == 20.0
+	tx2, ty2 := transform_translate(styled(doc, 'div', 'transform: translateX(15px)'), []&css.CSSRule{})
+	assert tx2 == 15.0 && ty2 == 0.0
+	tx3, ty3 := transform_translate(styled(doc, 'div', ''), []&css.CSSRule{}) // none
+	assert tx3 == 0.0 && ty3 == 0.0
+}

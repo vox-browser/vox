@@ -595,3 +595,16 @@ fn test_opacity_over_parsed_document() {
 		assert c.opacity == 0.5
 	}
 }
+
+// Full-stack transform: a translated box moves while its sibling keeps its flow position.
+fn test_transform_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 300px"><div style="height: 40px; transform: translate(20px, 10px)"></div><div style="height: 25px"></div></div>')
+	root := unsafe { &dom.Node(doc) }
+	container := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(container, 0, 0, 1000, []&css.CSSRule{})
+	assert box.children[0].x == 20.0 // translated
+	assert box.children[0].y == 10.0
+	assert box.children[1].y == 40.0 // sibling flows after the untransformed first box
+	assert box.height == 65.0 // 40 + 25 (flow)
+}
