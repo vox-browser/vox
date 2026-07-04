@@ -2605,3 +2605,61 @@ fn test_align_items_stretch_skips_definite_height() {
 	assert box.children[0].height == 30.0 // unchanged
 	assert box.children[0].y == 0.0 // top-aligned
 }
+
+// flex-direction: column stacks items vertically; auto-width items fill the container (stretch).
+fn test_flex_column_basic() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; flex-direction: column; width: 200px; height: 300px')
+	a := styled(doc, 'div', 'height: 50px')
+	b := styled(doc, 'div', 'height: 60px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].y == 0.0 && box.children[1].y == 50.0 // stacked
+	assert box.children[0].width == 200.0 && box.children[1].width == 200.0 // stretch fills
+}
+
+// Column justify-content centers items vertically within the container's height.
+fn test_flex_column_justify_center() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; flex-direction: column; justify-content: center; width: 200px; height: 300px')
+	a := styled(doc, 'div', 'height: 50px')
+	b := styled(doc, 'div', 'height: 60px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	// total 110, free 190, center leading 95.
+	assert box.children[0].y == 95.0 && box.children[1].y == 145.0
+}
+
+// Column align-items centers items horizontally (their width shrink-to-fits or is definite).
+fn test_flex_column_align_center() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; flex-direction: column; align-items: center; width: 200px; height: 300px')
+	a := styled(doc, 'div', 'width: 80px; height: 50px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].width == 80.0 // definite width kept
+	assert box.children[0].x == 60.0 // centered: (200 - 80) / 2
+}
+
+// A column with auto height flows to the total item height (plus gaps).
+fn test_flex_column_auto_height() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; flex-direction: column; row-gap: 10px; width: 200px')
+	a := styled(doc, 'div', 'height: 30px')
+	b := styled(doc, 'div', 'height: 40px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 80.0 // 30 + 10 gap + 40
+	assert box.children[1].y == 40.0 // 30 + 10 gap
+}

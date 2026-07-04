@@ -1065,7 +1065,7 @@ fn block_child_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Elem
 }
 
 // Whether `element` is a row flex container: `display: flex` with a `row` (or default) direction.
-// FIXME: `row-reverse`/`column`/`column-reverse` fall through to block flow rather than being handled.
+// FIXME: `row-reverse` falls through to the row path (not reversed).
 fn is_flex_row(element &dom.Element, author_rules []&css.CSSRule) bool {
 	display_id := css.property_id_from_string('display') or { return false }
 	if css.cascaded_value_with_ua(element, display_id, author_rules) != 'flex' {
@@ -1073,7 +1073,19 @@ fn is_flex_row(element &dom.Element, author_rules []&css.CSSRule) bool {
 	}
 	dir_id := css.property_id_from_string('flex-direction') or { return true }
 	dir := css.cascaded_value_with_ua(element, dir_id, author_rules)
-	return dir == 'row' || dir == ''
+	return dir == 'row' || dir == '' || dir == 'row-reverse'
+}
+
+// Whether `element` is a column flex container: `display: flex` with a `column` direction.
+// FIXME: `column-reverse` is treated as `column` (not reversed).
+fn is_flex_column(element &dom.Element, author_rules []&css.CSSRule) bool {
+	display_id := css.property_id_from_string('display') or { return false }
+	if css.cascaded_value_with_ua(element, display_id, author_rules) != 'flex' {
+		return false
+	}
+	dir_id := css.property_id_from_string('flex-direction') or { return false }
+	dir := css.cascaded_value_with_ua(element, dir_id, author_rules)
+	return dir == 'column' || dir == 'column-reverse'
 }
 
 // The flex items of `node`: its in-flow element children (any display is blockified, so inline and
@@ -1178,6 +1190,12 @@ fn resolve_flex_main_sizes(items []&dom.Element, bases []f64, free f64, author_r
 // `normal`/absent is 0.
 fn flex_column_gap(element &dom.Element, author_rules []&css.CSSRule) f64 {
 	id := css.property_id_from_string('column-gap') or { return 0 }
+	return css.computed_length_px(element, id, author_rules) or { 0 }
+}
+
+// The main-axis gap for a column flex container (`row-gap`; the `gap` shorthand sets it), in px.
+fn flex_row_gap(element &dom.Element, author_rules []&css.CSSRule) f64 {
+	id := css.property_id_from_string('row-gap') or { return 0 }
 	return css.computed_length_px(element, id, author_rules) or { 0 }
 }
 
@@ -2466,6 +2484,48 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 			cross := cross_axis_offset(align, cross_size, item.margin_box_height())
 			local_children << translate_block(item, leading + f64(i) * gap, cross)
 		}
+		has_children = item_boxes.len > 0
+	} else if is_flex_column(element, author_rules) {
+		// FLEX (column): stack items along the vertical MAIN axis. The cross axis is horizontal, so an
+		// item's width fills the container for `align: stretch` (block sizing) and shrink-to-fits
+		// otherwise; `justify-content` distributes vertical free space; `row-gap` spaces items;
+		// `align-items`/`align-self` align items horizontally. Reuses justify_offsets (main) and
+		// cross_axis_offset (cross) with the axes swapped.
+		// FIXME: no main-axis flex-grow/shrink (items keep their natural heights), no wrap.
+		gap_main := flex_row_gap(element, author_rules)
+		items := flex_item_elements(element.as_node(), author_rules)
+		container_align := align_items_value(element, author_rules)
+		mut item_boxes := []BlockBox{}
+		mut aligns := []string{}
+		mut total_main := if items.len > 1 { f64(items.len - 1) * gap_main } else { 0.0 }
+		for item in items {
+			align := effective_align_self(item, container_align, author_rules)
+			aligns << align
+			// Cross size (width): stretch fills the container; a definite width is used as-is; otherwise
+			// (non-stretch, auto width) the item shrink-to-fits its content.
+			forced := if align != 'stretch' && size_is_auto(item, 'width', author_rules) {
+				?f64(flex_content_base(item, width, author_rules))
+			} else {
+				?f64(none)
+			}
+			ib := layout_block_impl(item, content_x, 0.0, width, forced, author_rules)
+			total_main += ib.margin_box_height()
+			item_boxes << ib
+		}
+		// Main axis (vertical): distribute free space up to the container's explicit height, if any.
+		main_size := align_cross_size(element, total_main, border, padding, border_box, author_rules)
+		leading, gap := justify_offsets(justify_content_value(element, author_rules), main_size - total_main,
+			item_boxes.len)
+		mut cursor := 0.0
+		for i, ib in item_boxes {
+			if i > 0 {
+				cursor += gap_main
+			}
+			cross := cross_axis_offset(aligns[i], width, ib.margin_box_width()) // horizontal alignment
+			local_children << translate_block(ib, cross, cursor + leading + f64(i) * gap)
+			cursor += ib.margin_box_height()
+		}
+		content_height = total_main
 		has_children = item_boxes.len > 0
 	} else {
 		// BLOCK FLOW: lay children out in a LOCAL frame whose origin is this box's content-box top-left.

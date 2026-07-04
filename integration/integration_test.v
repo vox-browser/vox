@@ -1111,3 +1111,22 @@ fn test_align_items_stretch_over_parsed_document() {
 	assert tall_rect.height > 0.0
 	assert short_rect.height == tall_rect.height
 }
+
+// Full-stack column flex: a vertical menu stacks its items and centers them horizontally; the second
+// item sits below the first plus the row-gap.
+fn test_flex_column_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.menu { display: flex; flex-direction: column; align-items: center; row-gap: 8px; width: 240px } .item { width: 120px; height: 36px }</style></head><body><div class="menu"><div class="item" id="one"></div><div class="item" id="two"></div></div></body></html>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	menu := css.query_selector(root, '.menu') or { panic('no .menu') }
+	one := css.query_selector(root, '#one') or { panic('no #one') }
+	two := css.query_selector(root, '#two') or { panic('no #two') }
+
+	menu_rect := root_box.bounding_rect_for(menu) or { panic('no .menu box') }
+	one_rect := root_box.bounding_rect_for(one) or { panic('no #one box') }
+	two_rect := root_box.bounding_rect_for(two) or { panic('no #two box') }
+	// stacked vertically with the 8px row-gap.
+	assert two_rect.y == one_rect.y + one_rect.height + 8.0
+	// centered horizontally: (240 - 120)/2 = 60 from the menu's left.
+	assert one_rect.x == menu_rect.x + 60.0
+}
