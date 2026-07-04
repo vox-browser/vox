@@ -265,3 +265,15 @@ fn test_layout_document_entry_point() {
 	// root height spans its content (body + body's margins), so it's at least the body content.
 	assert root_box.height >= 40.0
 }
+
+// Full-stack box-sizing: the near-universal `* { box-sizing: border-box }` reset from an author
+// <style> reaches layout, so .card's specified 200px width includes its padding+border.
+fn test_box_sizing_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>* { box-sizing: border-box } .card { width: 200px; padding: 20px; border: 5px solid }</style></head><body><div class="card"></div></body></html>')
+
+	root_box := layout.layout_document(doc, 800)
+	card := root_box.children[0].children[0] // html > body > div.card
+	assert card.tag_name == 'div'
+	assert card.width == 150.0 // 200 - 2*(20 padding + 5 border)
+	assert card.margin_box_width() == 200.0 // border box stays at the specified width
+}

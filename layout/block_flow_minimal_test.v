@@ -309,3 +309,47 @@ fn test_collect_document_author_rules() {
 	rules := collect_document_author_rules(doc)
 	assert rules.len == 2
 }
+
+// box-sizing: border-box makes the specified width include padding+border, so the content shrinks.
+// width 100, padding 10, border 5 -> content width 100 - 2*(10+5) = 70; border box stays 100.
+fn test_box_sizing_border_box_width() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'box-sizing: border-box; width: 100px; padding: 10px; border: 5px solid')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.width == 70.0 // content
+	assert box.margin_box_width() == 100.0 // border box == specified width (no margins here)
+}
+
+// content-box (the default) leaves the specified width as the content width.
+fn test_box_sizing_content_box_default() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; padding: 10px; border: 5px solid')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.width == 100.0 // content
+	assert box.margin_box_width() == 130.0 // 100 + 2*(10+5)
+}
+
+// border-box height subtracts vertical padding+border from the specified height.
+fn test_box_sizing_border_box_height() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'box-sizing: border-box; height: 100px; padding: 10px; border: 5px solid')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 70.0 // 100 - 2*(10+5)
+	assert box.margin_box_height() == 100.0 // border box == specified height
+}
+
+// A border-box percentage width also has its edges subtracted: 50% of 400 = 200, minus 2*(10+5).
+fn test_box_sizing_border_box_percentage() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'box-sizing: border-box; width: 50%; padding: 10px; border: 5px solid')
+	box := layout_block(el, 0, 0, 400, []&css.CSSRule{})
+	assert box.width == 170.0 // 200 - 30
+}
+
+// border-box never drives the content width negative when edges exceed the specified size.
+fn test_box_sizing_border_box_clamps_to_zero() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'box-sizing: border-box; width: 10px; padding: 20px')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.width == 0.0 // 10 - 40 clamped
+}

@@ -12,6 +12,7 @@ import dom
 //
 // Adjoining vertical margins of in-flow siblings collapse (CSS 2.1 §8.3.1). A box with no block-level
 // children but with text content gets a height from a coarse inline pass (line count × line-height).
+// `box-sizing: border-box` makes a specified width/height include padding+border.
 //
 // FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
 // word-boundary wrapping, inline box geometry), mixed block+inline content (anonymous block boxes),
@@ -176,19 +177,34 @@ fn inline_content_height(element &dom.Element, text string, content_width f64, a
 	return f64(lines) * line_height
 }
 
-// The used content width for `element` in a containing block `containing_width` px wide: a length or
-// percentage gives the content width directly; `auto` fills the space left after the horizontal
-// margins, borders, and padding (`horizontal_extra`), clamped at 0.
-fn used_content_width(element &dom.Element, containing_width f64, horizontal_extra f64, author_rules []&css.CSSRule) f64 {
-	width_id := css.property_id_from_string('width') or { return containing_width - horizontal_extra }
+// Whether `element` uses the border-box box model (specified width/height include padding+border)
+// rather than the default content-box.
+fn box_sizing_is_border_box(element &dom.Element, author_rules []&css.CSSRule) bool {
+	id := css.property_id_from_string('box-sizing') or { return false }
+	return css.cascaded_value_with_ua(element, id, author_rules) == 'border-box'
+}
+
+// The used *content* width for `element` in a containing block `containing_width` px wide. A length
+// or percentage sets the width per the box model: content-box uses it directly; border-box subtracts
+// the horizontal border+padding (`border_padding_lr`). `auto` fills the space left after the
+// horizontal margins, border, and padding. All results are clamped at 0.
+fn used_content_width(element &dom.Element, containing_width f64, margins_lr f64, border_padding_lr f64, author_rules []&css.CSSRule) f64 {
+	border_box := box_sizing_is_border_box(element, author_rules)
+	width_id := css.property_id_from_string('width') or {
+		return non_negative(containing_width - margins_lr - border_padding_lr)
+	}
 	if px := css.computed_length_px(element, width_id, author_rules) {
-		return px
+		return non_negative(if border_box { px - border_padding_lr } else { px })
 	}
 	if pct := css.computed_percentage(element, width_id, author_rules) {
-		return containing_width * pct / 100.0
+		specified := containing_width * pct / 100.0
+		return non_negative(if border_box { specified - border_padding_lr } else { specified })
 	}
-	remaining := containing_width - horizontal_extra
-	return if remaining > 0 { remaining } else { 0 }
+	return non_negative(containing_width - margins_lr - border_padding_lr)
+}
+
+fn non_negative(v f64) f64 {
+	return if v > 0 { v } else { 0.0 }
 }
 
 // Lay out `element` and its block descendants. `x`/`y` is the top-left of this box's *margin box*;
@@ -209,9 +225,9 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		bottom: used_length_or_zero(element, 'padding-bottom', containing_width, author_rules)
 		left:   used_length_or_zero(element, 'padding-left', containing_width, author_rules)
 	}
-	horizontal_extra := margin.left + margin.right + border.left + border.right + padding.left +
-		padding.right
-	width := used_content_width(element, containing_width, horizontal_extra, author_rules)
+	margins_lr := margin.left + margin.right
+	border_padding_lr := border.left + border.right + padding.left + padding.right
+	width := used_content_width(element, containing_width, margins_lr, border_padding_lr, author_rules)
 
 	content_x := x + margin.left + border.left + padding.left
 	content_y := y + margin.top + border.top + padding.top
@@ -257,9 +273,15 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		content_height = inline_content_height(element, text, width, author_rules)
 	}
 
+	// An explicit height sets the content height (content-box) or the border-box height (border-box,
+	// so subtract the vertical border+padding); `auto` uses the flowed content height.
 	height_id := css.property_id_from_string('height') or { return BlockBox{} }
 	height := if px := css.computed_length_px(element, height_id, author_rules) {
-		px
+		if box_sizing_is_border_box(element, author_rules) {
+			non_negative(px - (border.top + border.bottom + padding.top + padding.bottom))
+		} else {
+			px
+		}
 	} else {
 		content_height
 	}
