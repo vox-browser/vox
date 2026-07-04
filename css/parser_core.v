@@ -2014,6 +2014,13 @@ pub fn (component_value ComponentValue) block() SimpleBlock {
 	panic('component value is not a block')
 }
 
+// True if this component value is a {}-block. In this port's component-value stream, a {}-block is
+// a single SimpleBlock (the normalizer pre-parses blocks), so rule consumption must detect it this
+// way rather than checking for a raw <{-token>.
+pub fn (component_value ComponentValue) is_curly_block() bool {
+	return component_value.is_block() && component_value.block().is_curly()
+}
+
 pub fn (component_value ComponentValue) is_function() bool {
 	return component_value.value is Function
 }

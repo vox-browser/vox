@@ -55,3 +55,45 @@ pub fn cascaded_value_for(element &dom.Element, property_id PropertyID) string {
 	}
 	return property_initial_value_string(property_id)
 }
+
+// The specified value of `property_name` directly on `element`, considering an inline declaration
+// (highest priority) then the author `rules` that match it (in source order — later wins).
+// FIXME: proper specificity/importance ordering is not applied; matching rules are taken in source
+// order, which is correct only when specificities are equal.
+fn specified_value_on(element &dom.Element, property_name string, rules []&CSSRule) ?string {
+	if value := inline_declared_value(element, property_name) {
+		return value
+	}
+	mut result := ?string(none)
+	for rule in rules {
+		if !element_matches_selector(element, rule.selector_text()) {
+			continue
+		}
+		declaration := rule.style() or { continue }
+		value := declaration.get_property_value(property_name)
+		if value.len > 0 {
+			result = value
+		}
+	}
+	return result
+}
+
+// Like cascaded_value_for, but also considers a list of author style `rules` (e.g. from
+// parse_css_stylesheet_contents_with_parser): inline > matching author rules > inheritance > initial.
+pub fn cascaded_value_with_stylesheet(element &dom.Element, property_id PropertyID, rules []&CSSRule) string {
+	name := string_from_property_id(property_id)
+	if value := specified_value_on(element, name, rules) {
+		return value
+	}
+	if is_inherited_property(property_id) {
+		mut ancestor := element.as_node().parent_element()
+		for {
+			current := ancestor or { break }
+			if value := specified_value_on(current, name, rules) {
+				return value
+			}
+			ancestor = current.as_node().parent_element()
+		}
+	}
+	return property_initial_value_string(property_id)
+}

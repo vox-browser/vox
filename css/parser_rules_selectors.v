@@ -555,7 +555,7 @@ fn (mut parser RuleSelectorParser) consume_an_at_rule(mut input ParserTokenStrea
 		}
 
 		// <{-token>
-		if token.is(.open_curly) {
+		if token.is_curly_block() {
 			// Consume a block from input, and assign the result to rule's child rules.
 			parser.rule_context << rule_context_type_for_at_rule_local(rule.name)
 			rule.child_rules_and_lists_of_declarations = parser.consume_a_block(mut input)
@@ -627,7 +627,7 @@ fn (mut parser RuleSelectorParser) consume_a_qualified_rule(mut input ParserToke
 		}
 
 		// <{-token>
-		if token.is(.open_curly) {
+		if token.is_curly_block() {
 			// If the first two non-<whitespace-token> values of rule's prelude are an <ident-token> whose value starts
 			// with "--" followed by a <colon-token>, then:
 			mut prelude_tokens := ParserTokenStream.from_values(rule.prelude)
@@ -675,19 +675,16 @@ fn (mut parser RuleSelectorParser) consume_a_qualified_rule(mut input ParserToke
 
 // https://drafts.csswg.org/css-syntax/#consume-block
 fn (mut parser RuleSelectorParser) consume_a_block(mut input ParserTokenStream) []RuleOrListOfDeclarations {
-	// To consume a block, from a token stream input:
-	// Assert: The next token is a <{-token>.
-	assert input.next_token().is(.open_curly)
-
-	// Discard a token from input.
-	input.discard_a_token()
-	// Consume a block's contents from input and let rules be the result.
-	rules := parser.consume_a_blocks_contents(mut input)
-	// Discard a token from input.
-	input.discard_a_token()
-
-	// Return rules.
-	return rules
+	// In this port's component-value stream the {}-block is a single SimpleBlock component value
+	// (the normalizer pre-parses blocks), so consume that block and parse its inner contents,
+	// rather than the spec's raw-token walk between <{-token> and <}-token>.
+	block_value := input.consume_a_token()
+	if !block_value.is_block() {
+		return []RuleOrListOfDeclarations{}
+	}
+	block := block_value.block()
+	mut block_stream := ParserTokenStream.from_values(block.value)
+	return parser.consume_a_blocks_contents(mut block_stream)
 }
 
 // https://drafts.csswg.org/css-syntax/#consume-block-contents

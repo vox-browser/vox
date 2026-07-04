@@ -82,3 +82,20 @@ fn test_cascade_over_parsed_document() {
 	// display is not inherited -> its initial value.
 	assert css.cascaded_value_for(p, display) == 'inline'
 }
+
+// Full-stack cascade WITH an author stylesheet: parse HTML + parse a stylesheet, then resolve
+// cascaded/inherited values (author rules matched by selector + inheritance) over the parsed DOM.
+fn test_cascade_with_stylesheet_over_parsed_document() {
+	doc := html.parse_document('<body><div class="card"><h1>Title</h1><p>Body</p></div></body>')
+	root := unsafe { &dom.Node(doc) }
+	rules := css.parse_css_stylesheet_contents_with_parser('.card { color: navy } h1 { color: crimson }',
+		map[string]bool{})
+	color := css.property_id_from_string('color') or { panic('color id') }
+
+	h1 := css.query_selector(root, 'h1') or { panic('no h1') }
+	p := css.query_selector(root, 'p') or { panic('no p') }
+
+	// h1 matches its own author rule (crimson); p has no rule and inherits .card's navy.
+	assert css.cascaded_value_with_stylesheet(h1, color, rules) == 'crimson'
+	assert css.cascaded_value_with_stylesheet(p, color, rules) == 'navy'
+}
