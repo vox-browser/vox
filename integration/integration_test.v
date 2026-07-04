@@ -204,7 +204,9 @@ fn test_block_box_model_over_parsed_document() {
 	assert box.height == 70.0
 }
 
-// Full-stack margin collapsing: two paragraphs with margin:25px collapse to a 25px gap (not 50px).
+// Full-stack margin collapsing: two paragraphs with margin:25px. The between-siblings margins
+// collapse to a 25px gap (not 50), and -- since the container has no border/padding -- the first
+// p's top margin and the last p's bottom margin collapse OUT of the container (parent/child).
 fn test_margin_collapse_over_parsed_document() {
 	doc := html.parse_document('<div style="width: 300px"><p style="height: 20px; margin: 25px"></p><p style="height: 20px; margin: 25px"></p></div>')
 	root := unsafe { &dom.Node(doc) }
@@ -212,10 +214,12 @@ fn test_margin_collapse_over_parsed_document() {
 
 	box := layout.layout_block(container, 0, 0, 1000, []&css.CSSRule{})
 	assert box.children.len == 2
-	assert box.children[0].y == 25.0 // first p offset by its own top margin
+	assert box.y == 25.0 // container pushed down by the first p's collapsed-out top margin
+	assert box.children[0].y == 25.0 // first p at the container's content top
 	assert box.children[0].width == 250.0 // 300 - 50 (own left+right margins)
-	assert box.children[1].y == 70.0 // 45 (first p's bottom border) + 25 (collapsed margin)
-	assert box.height == 115.0 // 25 + 20 + 25 (collapsed) + 20 + 25
+	assert box.children[1].y == 70.0 // 45 (first p's bottom border) + 25 (collapsed sibling margin)
+	assert box.height == 65.0 // content only: 20 + 25 gap + 20; the outer p margins collapsed out
+	assert box.outer_bottom_margin == 25.0 // last p's bottom margin became the container's
 }
 
 // Full-stack display filter: laying out from <html>, the display:none <head> generates no box, and

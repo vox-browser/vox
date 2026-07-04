@@ -10,11 +10,13 @@ import dom
 // that actually runs on the cascade output — and where percentage widths (which computed_length_px
 // can't resolve without a containing block) get resolved.
 //
-// Adjoining vertical margins of in-flow siblings collapse (CSS 2.1 §8.3.1). A box with no block-level
-// children but with text content gets a height from a coarse inline pass (line count × line-height).
-// `box-sizing: border-box` makes a specified width/height include padding+border. Used width and
-// height are clamped by min/max-width and min/max-height. Horizontal `auto` margins absorb leftover
-// space (both auto centers the box; a single one right/left-aligns).
+// Adjoining vertical margins collapse (CSS 2.1 §8.3.1): between in-flow siblings, and between a box
+// and its first/last child when no border/padding separates them (parent/child collapsing, via each
+// box's propagated outer margins). A box with no block-level children but with text content gets a
+// height from a coarse inline pass (line count × line-height). `box-sizing: border-box` makes a
+// specified width/height include padding+border. Used width and height are clamped by min/max-width
+// and min/max-height. Horizontal `auto` margins absorb leftover space (both auto centers the box; a
+// single one right/left-aligns).
 //
 // FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
 // word-boundary wrapping, inline box geometry), mixed block+inline content (anonymous block boxes),
@@ -32,18 +34,35 @@ pub:
 
 // A laid-out block box: `x`/`y`/`width`/`height` are the *content box* geometry in CSS px, relative
 // to the top-left of the initial containing block; `margin`/`border`/`padding` surround it.
+//
+// `outer_top_margin`/`outer_bottom_margin` are the *collapsed* margins at the box's top/bottom edges:
+// they equal `margin.top`/`margin.bottom` unless a first/last child's adjoining margin collapsed
+// through the box (parent/child collapsing), in which case they may be larger. The parent uses them
+// to collapse this box's margins against its siblings.
 pub struct BlockBox {
 pub:
 	tag_name string
 pub mut:
-	x        f64
-	y        f64
-	width    f64
-	height   f64
-	margin   BoxEdges
-	border   BoxEdges
-	padding  BoxEdges
-	children []BlockBox
+	x                   f64
+	y                   f64
+	width               f64
+	height              f64
+	margin              BoxEdges
+	border              BoxEdges
+	padding             BoxEdges
+	outer_top_margin    f64
+	outer_bottom_margin f64
+	children            []BlockBox
+}
+
+// Return a copy of `box` with its own geometry and every descendant's shifted by (`dx`, `dy`). Used
+// to reposition a subtree after margin collapsing decides where its border box actually lands.
+fn translate_block(box BlockBox, dx f64, dy f64) BlockBox {
+	mut moved := box
+	moved.x += dx
+	moved.y += dy
+	moved.children = box.children.map(translate_block(it, dx, dy))
+	return moved
 }
 
 // The margin-box height: the vertical space this box occupies in its parent's flow.
@@ -56,18 +75,6 @@ pub fn (b &BlockBox) margin_box_height() f64 {
 pub fn (b &BlockBox) margin_box_width() f64 {
 	return b.margin.left + b.border.left + b.padding.left + b.width + b.padding.right +
 		b.border.right + b.margin.right
-}
-
-// The used margins of `element` (each `auto`/absent margin is 0 — no centering yet). Percentages
-// resolve against the containing block's width. Factored out so the parent can peek a child's top
-// margin before laying it out, to position it with margin collapsing.
-fn used_margins(element &dom.Element, containing_width f64, author_rules []&css.CSSRule) BoxEdges {
-	return BoxEdges{
-		top:    used_length_or_zero(element, 'margin-top', containing_width, author_rules)
-		right:  used_length_or_zero(element, 'margin-right', containing_width, author_rules)
-		bottom: used_length_or_zero(element, 'margin-bottom', containing_width, author_rules)
-		left:   used_length_or_zero(element, 'margin-left', containing_width, author_rules)
-	}
 }
 
 // Collapse a set of adjoining vertical margins into one, per CSS 2.1 §8.3.1: the largest positive
@@ -318,44 +325,60 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	}
 
 	content_x := x + margin.left + border.left + padding.left
-	content_y := y + margin.top + border.top + padding.top
+
+	// Whether this box's top/bottom margins can collapse with a first/last child's (no separating
+	// border or padding). FIXME: a box establishing a block formatting context (root, flow-root,
+	// overflow != visible, floats) should not collapse with its children — not modelled.
+	top_adjoins := border.top == 0.0 && padding.top == 0.0
+	bottom_has_border_padding := border.bottom != 0.0 || padding.bottom != 0.0
 
 	block_children := block_child_elements(element.as_node(), author_rules)
 
-	// A box with block-level children establishes a block formatting context; a box with none but
-	// with inline (text) content establishes an inline one. FIXME: a box with BOTH would wrap its
-	// inline runs in anonymous block boxes — here block children win and inline text is ignored.
-	mut children := []BlockBox{}
-	mut content_height := 0.0
-	if block_children.len > 0 {
-		// Lay children out in flow. Adjoining vertical margins collapse (CSS 2.1 §8.3.1): the gap
-		// between a child's top border edge and the previous child's bottom border edge is the
-		// collapse of the previous child's bottom margin with this child's top margin, not their sum.
-		// `flow_bottom` tracks the previous child's bottom *border* edge; each child's margin box is
-		// positioned so its border-box top lands at `flow_bottom + collapsed_gap`.
-		mut flow_bottom := content_y
-		mut prev_bottom_margin := 0.0
-		mut has_prev := false
-		for child in block_children {
-			child_margins := used_margins(child, width, author_rules)
-			gap := if has_prev {
-				collapse_margins([prev_bottom_margin, child_margins.top])
-			} else {
-				child_margins.top // first child: no sibling above to collapse with
-			}
-			margin_box_top := flow_bottom + gap - child_margins.top
-			child_box := layout_block(child, content_x, margin_box_top, width, author_rules)
-			flow_bottom = margin_box_top + child_box.margin.top + child_box.border.top +
-				child_box.padding.top + child_box.height + child_box.padding.bottom +
-				child_box.border.bottom
-			prev_bottom_margin = child_box.margin.bottom
-			has_prev = true
-			children << child_box
+	// Lay children out in a LOCAL frame whose origin is this box's content-box top-left. Vertical
+	// margins collapse (CSS 2.1 §8.3.1) using each child's OUTER (collapsed) margins: between siblings
+	// the gap is collapse(prev outer bottom, this outer top); a first child whose top edge adjoins the
+	// parent contributes its outer top margin to the parent instead of pushing itself down. Children
+	// are laid out provisionally (border-box top at their own outer top margin) and translated into
+	// place; the whole set is shifted to the real content-box top once the parent's outer top margin
+	// is known.
+	mut local_children := []BlockBox{}
+	mut flow_bottom := 0.0 // border-box bottom of the last placed child, in the local frame
+	mut prev_outer_bottom := 0.0
+	mut first_child_outer_top := 0.0
+	mut last_child_outer_bottom := 0.0
+	mut has_children := false
+	for child in block_children {
+		mut cb := layout_block(child, content_x, 0.0, width, author_rules)
+		desired_border_top := if has_children {
+			flow_bottom + collapse_margins([prev_outer_bottom, cb.outer_top_margin])
+		} else if top_adjoins {
+			0.0 // first child's top margin collapses through into this box's outer top margin
+		} else {
+			cb.outer_top_margin // separated by border/padding: the margin sits inside the content
 		}
-		// Auto height spans the children's margin box (the last child's bottom margin is included; it
-		// would collapse with the parent's own bottom margin only if there were no bottom
-		// border/padding — parent/child collapsing is a FIXME, so we keep it inside for now).
-		content_height = flow_bottom + prev_bottom_margin - content_y
+		cb = translate_block(cb, 0.0, desired_border_top - cb.outer_top_margin)
+		child_border_bottom := desired_border_top + cb.border.top + cb.padding.top + cb.height +
+			cb.padding.bottom + cb.border.bottom
+		if !has_children {
+			first_child_outer_top = cb.outer_top_margin
+		}
+		last_child_outer_bottom = cb.outer_bottom_margin
+		flow_bottom = child_border_bottom
+		prev_outer_bottom = cb.outer_bottom_margin
+		has_children = true
+		local_children << cb
+	}
+
+	// Auto content height: from the content-box top (local 0) to the last child's border-box bottom,
+	// plus that child's outer bottom margin only when bottom border/padding keeps the margin inside
+	// (otherwise it collapses out of the box). A box with no block children uses the inline text pass.
+	mut content_height := 0.0
+	if has_children {
+		content_height = if bottom_has_border_padding {
+			flow_bottom + last_child_outer_bottom
+		} else {
+			flow_bottom
+		}
 	} else {
 		text := element.as_node().text_content() or { '' }
 		content_height = inline_content_height(element, text, width, author_rules)
@@ -365,7 +388,9 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	// so subtract the vertical border+padding); `auto` uses the flowed content height.
 	border_padding_tb := border.top + border.bottom + padding.top + padding.bottom
 	height_id := css.property_id_from_string('height') or { return BlockBox{} }
+	mut height_is_auto := true
 	tentative_height := if px := css.computed_length_px(element, height_id, author_rules) {
+		height_is_auto = false
 		if border_box { non_negative(px - border_padding_tb) } else { px }
 	} else {
 		content_height
@@ -378,15 +403,38 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		author_rules)
 	height := clamp_size(tentative_height, min_height, max_height)
 
+	// This box's collapsed outer margins (propagated to the parent). The top collapses with the first
+	// child's outer top margin when the top edges adjoin; the bottom collapses with the last child's
+	// outer bottom margin when the bottom edges adjoin (no bottom border/padding AND auto height).
+	// FIXME: empty-block self-collapse (a box's own top and bottom margins collapsing) isn't handled.
+	bottom_adjoins := !bottom_has_border_padding && height_is_auto && has_children
+	outer_top_margin := if top_adjoins && has_children {
+		collapse_margins([margin.top, first_child_outer_top])
+	} else {
+		margin.top
+	}
+	outer_bottom_margin := if bottom_adjoins {
+		collapse_margins([margin.bottom, last_child_outer_bottom])
+	} else {
+		margin.bottom
+	}
+
+	// Place this box: its border-box top is `y` plus its collapsed outer top margin. Shift the
+	// children from the local frame (content-box top = 0) to the real content-box top.
+	content_top := y + outer_top_margin + border.top + padding.top
+	children := local_children.map(translate_block(it, 0.0, content_top))
+
 	return BlockBox{
-		tag_name: element.local_name()
-		x:        content_x
-		y:        content_y
-		width:    width
-		height:   height
-		margin:   margin
-		border:   border
-		padding:  padding
-		children: children
+		tag_name:            element.local_name()
+		x:                   content_x
+		y:                   content_top
+		width:               width
+		height:              height
+		margin:              margin
+		border:              border
+		padding:             padding
+		outer_top_margin:    outer_top_margin
+		outer_bottom_margin: outer_bottom_margin
+		children:            children
 	}
 }

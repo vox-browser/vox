@@ -88,7 +88,10 @@ fn test_block_box_model_auto_width_subtracts_edges() {
 	assert box.x == 35.0
 }
 
-// Vertical stacking accounts for each child's margin box (no collapsing yet).
+// Vertical stacking with parent/child margin collapsing: the root has no border/padding, so the
+// first child's 10px top margin collapses THROUGH the root (it appears above the root's border box
+// rather than inside), and the root's bottom likewise collapses with... the second child has no
+// bottom margin, so nothing there.
 fn test_block_box_model_stacking_with_margins() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'width: 200px')
@@ -99,13 +102,15 @@ fn test_block_box_model_stacking_with_margins() {
 	root_node.append_child(second.as_node()) or { panic('${err}') }
 
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
-	assert box.children[0].x == 10.0 // margin-left
-	assert box.children[0].y == 10.0 // margin-top
+	assert box.y == 10.0 // root pushed down by the child's collapsed-through 10px top margin
+	assert box.outer_top_margin == 10.0 // that margin becomes the root's outer top margin
+	assert box.children[0].x == 10.0 // margin-left (horizontal margins never collapse)
+	assert box.children[0].y == 10.0 // sits at the root's content top (its top margin collapsed out)
 	assert box.children[0].width == 180.0 // 200 - 20 (auto width minus margins)
 	assert box.children[0].margin_box_height() == 50.0 // 10 + 30 + 10
-	assert box.children[1].y == 50.0 // stacked below the first child's margin box
+	assert box.children[1].y == 50.0 // 40 (first's border bottom) + 10 (first's bottom margin)
 	assert box.children[1].width == 200.0
-	assert box.height == 70.0 // 50 + 20
+	assert box.height == 60.0 // content: 30 + 10 gap + 20; first's top margin collapsed out
 }
 
 // Border width is 0 unless a border-style is set; keywords resolve on the thin/medium/thick scale.
@@ -461,4 +466,78 @@ fn test_auto_margins_center_max_width_clamped() {
 	assert box.width == 400.0
 	assert box.margin.left == 300.0 // (1000 - 400) / 2
 	assert box.margin.right == 300.0
+}
+
+// Parent/child top collapsing: with no border/padding between them, the parent's top margin and the
+// first child's top margin collapse to their max, appearing above the parent's border box.
+fn test_parent_child_top_margin_collapse() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; margin-top: 20px')
+	child := styled(doc, 'div', 'height: 30px; margin-top: 40px')
+	mut rn := root.as_node()
+	rn.append_child(child.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.outer_top_margin == 40.0 // max(20, 40)
+	assert box.y == 40.0 // root border box pushed down by the collapsed margin
+	assert box.children[0].y == 40.0 // child sits at the root's content top (margin collapsed out)
+}
+
+// Top border/padding on the parent stops the collapse: the child's top margin stays inside.
+fn test_parent_border_stops_top_collapse() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; margin-top: 20px; padding-top: 5px')
+	child := styled(doc, 'div', 'height: 30px; margin-top: 40px')
+	mut rn := root.as_node()
+	rn.append_child(child.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.outer_top_margin == 20.0 // no collapse-through
+	assert box.y == 25.0 // 20 margin + 5 padding
+	assert box.children[0].y == 65.0 // 25 content top + 40 own margin, held inside
+}
+
+// Parent/child bottom collapsing: with auto height and no bottom border/padding, the parent's bottom
+// margin collapses with the last child's, and the child's bottom margin leaves the parent's content.
+fn test_parent_child_bottom_margin_collapse() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; margin-bottom: 15px')
+	child := styled(doc, 'div', 'height: 30px; margin-bottom: 25px')
+	mut rn := root.as_node()
+	rn.append_child(child.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 30.0 // child's bottom margin collapsed out of the content
+	assert box.outer_bottom_margin == 25.0 // max(15, 25)
+}
+
+// Bottom border/padding keeps the last child's bottom margin inside the parent's content height.
+fn test_parent_border_stops_bottom_collapse() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; margin-bottom: 15px; padding-bottom: 5px')
+	child := styled(doc, 'div', 'height: 30px; margin-bottom: 25px')
+	mut rn := root.as_node()
+	rn.append_child(child.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 55.0 // 30 + 25 (child bottom margin held inside)
+	assert box.outer_bottom_margin == 15.0 // no collapse-through
+}
+
+// Top margins collapse through multiple nesting levels when nothing separates them.
+fn test_nested_top_margin_collapse_through() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px')
+	child := styled(doc, 'div', '') // no border/padding/margin
+	grandchild := styled(doc, 'div', 'height: 20px; margin-top: 30px')
+	mut cn := child.as_node()
+	cn.append_child(grandchild.as_node()) or { panic('${err}') }
+	mut rn := root.as_node()
+	rn.append_child(child.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.outer_top_margin == 30.0 // collapsed through root <- child <- grandchild
+	assert box.y == 30.0
+	assert box.children[0].y == 30.0 // child at root content top
+	assert box.children[0].children[0].y == 30.0 // grandchild too; all three tops coincide
 }
