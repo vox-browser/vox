@@ -76,3 +76,99 @@ fn test_collection_queries() {
 	})
 	assert all.len == 3
 }
+
+fn test_insert_remove_replace() {
+	doc := Document.create(url_about_blank())
+	mut root := new_element(doc, 'div')
+	mut rn := root.as_node()
+	a := new_element(doc, 'a')
+	c := new_element(doc, 'i')
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(c.as_node()) or { panic('${err}') }
+	b := new_element(doc, 'b')
+	rn.insert_before(b.as_node(), c.as_node(), false)
+	assert rn.child_count() == 3
+	assert (a.as_node().next_sibling() or { panic('no sib') }).is_same_node(b.as_node())
+	assert (c.as_node().previous_sibling() or { panic('no sib') }).is_same_node(b.as_node())
+
+	rn.remove_child(b.as_node()) or { panic('${err}') }
+	assert rn.child_count() == 2
+	assert b.as_node().parent() == none
+	assert rn.is_inclusive_ancestor_of(a.as_node())
+	assert !rn.is_inclusive_ancestor_of(b.as_node())
+
+	p := new_element(doc, 'p')
+	rn.replace_child(p.as_node(), a.as_node()) or { panic('${err}') }
+	assert (rn.first_child() or { panic('no child') }).is_same_node(p.as_node())
+	// a precedes c in tree order.
+	assert p.as_node().compare_document_position(c.as_node()) == 4
+}
+
+fn test_clone_and_attributes() {
+	doc := Document.create(url_about_blank())
+	mut root := new_element(doc, 'div')
+	root.set_attribute_value('id', 'r')
+	root.set_attribute_value('data-x', '1')
+	mut rn := root.as_node()
+	span := new_element(doc, 'span')
+	mut sn := span.as_node()
+	rn.append_child(sn) or { panic('${err}') }
+	sn.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
+
+	assert root.get_attribute_names().len == 2
+	assert root.has_attribute('id')
+	root.remove_attribute('data-x')
+	assert !root.has_attribute('data-x')
+
+	shallow := rn.clone_node(none, false) or { panic('${err}') }
+	deep := rn.clone_node(none, true) or { panic('${err}') }
+	assert shallow.child_count() == 0
+	assert deep.child_count() == 1
+	assert (deep.text_content() or { '' }) == 'hi'
+	assert !rn.is_same_node(deep)
+	assert (shallow.as_element() or { panic('') }).get_attribute('id') or { '' } == 'r'
+
+	mut class_list := root.class_list()
+	class_list.add(['foo', 'bar']) or { panic('${err}') }
+	assert class_list.contains('foo')
+	assert class_list.length() == 2
+	assert (root.get_attribute('class') or { '' }) == 'foo bar'
+}
+
+fn test_character_data_and_fragment() {
+	doc := Document.create(url_about_blank())
+	mut text := doc.create_text_node('hello')
+	assert text.length_in_utf16_code_units() == 5
+	assert (text.substring_data(0, 5) or { '' }) == 'hello'
+	text.insert_data(5, ' world') or { panic('${err}') }
+	text.delete_data(0, 6) or { panic('${err}') }
+	assert text.data() == 'world'
+
+	frag := new_document_fragment(doc)
+	mut frag_node := frag.as_node()
+	frag_node.append_child(new_element(doc, 'a').as_node()) or { panic('${err}') }
+	frag_node.append_child(new_element(doc, 'b').as_node()) or { panic('${err}') }
+	mut host := new_element(doc, 'div')
+	mut host_node := host.as_node()
+	host_node.append_child(frag_node) or { panic('${err}') }
+	// Inserting a fragment moves its children out; the fragment is emptied.
+	assert host_node.child_count() == 2
+	assert frag_node.child_count() == 0
+}
+
+fn test_get_element_by_id() {
+	doc := Document.create(url_about_blank())
+	mut doc_node := unsafe { &Node(doc) }
+	mut root := new_element(doc, 'html')
+	root.set_attribute_value('id', 'top')
+	mut rn := root.as_node()
+	doc_node.append_child(rn) or { panic('${err}') }
+	mut target := new_element(doc, 'div')
+	target.set_attribute_value('id', 'target')
+	rn.append_child(target.as_node()) or { panic('${err}') }
+
+	assert rn.is_connected()
+	assert (doc.get_element_by_id('top') or { panic('no top') }).tag_name() == 'html'
+	assert (doc.get_element_by_id('target') or { panic('no target') }).tag_name() == 'div'
+	assert doc.get_element_by_id('missing') == none
+}
