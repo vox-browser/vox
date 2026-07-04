@@ -1095,17 +1095,83 @@ fn flex_item_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Elemen
 	return elements
 }
 
-// A flex item's forced content width: none for a definite width (the box model resolves it normally),
-// otherwise the shrink-to-fit main size (its max-content clamped to the container's content width) —
-// so an `auto`-width item sizes to its content instead of filling the line.
-// FIXME: flex-basis/grow/shrink aren't modeled; items may overflow the container (no shrink).
-fn flex_item_forced_width(element &dom.Element, container_width f64, author_rules []&css.CSSRule) ?f64 {
-	if !size_is_auto(element, 'width', author_rules) {
-		return none
+// A flex item's flex base main size (content-box px): its `flex-basis` when that is a length/percentage
+// (`0%` → 0), otherwise — for `auto`/`content` — the item's definite `width` if it has one, else its
+// content size (max-content). This is the size grow/shrink then adjust.
+// FIXME: box-sizing isn't applied to a definite width/basis here (treated as content-box).
+fn flex_base_size(element &dom.Element, container_width f64, author_rules []&css.CSSRule) f64 {
+	basis_id := css.property_id_from_string('flex-basis') or {
+		return flex_content_base(element, container_width, author_rules)
 	}
-	max_content := intrinsic_content_width(element, author_rules, false)
-	min_content := intrinsic_content_width(element, author_rules, true)
-	return shrink_to_fit(min_content, max_content, container_width)
+	if px := css.computed_length_px(element, basis_id, author_rules) {
+		return px
+	}
+	if pct := css.computed_percentage(element, basis_id, author_rules) {
+		return container_width * pct / 100.0
+	}
+	// `flex-basis: auto` uses the item's definite width (if any); `content`/unresolved uses content.
+	if css.cascaded_value_with_ua(element, basis_id, author_rules) == 'auto'
+		&& !size_is_auto(element, 'width', author_rules) {
+		width_id := css.property_id_from_string('width') or {
+			return flex_content_base(element, container_width, author_rules)
+		}
+		if wpx := css.computed_length_px(element, width_id, author_rules) {
+			return wpx
+		}
+		if wpct := css.computed_percentage(element, width_id, author_rules) {
+			return container_width * wpct / 100.0
+		}
+	}
+	return flex_content_base(element, container_width, author_rules)
+}
+
+// A flex item's content-based main size: its max-content, shrink-to-fit clamped to the container.
+fn flex_content_base(element &dom.Element, container_width f64, author_rules []&css.CSSRule) f64 {
+	return shrink_to_fit(intrinsic_content_width(element, author_rules, true), intrinsic_content_width(element,
+		author_rules, false), container_width)
+}
+
+// The `flex-grow` factor (default 0) and `flex-shrink` factor (default 1) of a flex item.
+fn flex_grow_value(element &dom.Element, author_rules []&css.CSSRule) f64 {
+	id := css.property_id_from_string('flex-grow') or { return 0.0 }
+	return css.cascaded_value_with_ua(element, id, author_rules).f64()
+}
+
+fn flex_shrink_value(element &dom.Element, author_rules []&css.CSSRule) f64 {
+	id := css.property_id_from_string('flex-shrink') or { return 1.0 }
+	value := css.cascaded_value_with_ua(element, id, author_rules)
+	return if value == '' { 1.0 } else { value.f64() }
+}
+
+// Resolve each flex item's final main (content) size from its base size and the container's `free`
+// main space: positive free grows items by their flex-grow factors; negative free (overflow) shrinks
+// them by flex-shrink weighted by base size (clamped ≥ 0). Zero free (or zero total factor) keeps the
+// base sizes. FIXME: min/max main-size clamping and the freeze-and-repeat loop aren't modeled.
+fn resolve_flex_main_sizes(items []&dom.Element, bases []f64, free f64, author_rules []&css.CSSRule) []f64 {
+	mut finals := bases.clone()
+	if free > 0 {
+		mut total_grow := 0.0
+		for item in items {
+			total_grow += flex_grow_value(item, author_rules)
+		}
+		if total_grow > 0 {
+			for i, item in items {
+				finals[i] = bases[i] + free * flex_grow_value(item, author_rules) / total_grow
+			}
+		}
+	} else if free < 0 {
+		mut total_scaled := 0.0
+		for i, item in items {
+			total_scaled += flex_shrink_value(item, author_rules) * bases[i]
+		}
+		if total_scaled > 0 {
+			for i, item in items {
+				finals[i] = non_negative(bases[i] +
+					free * (flex_shrink_value(item, author_rules) * bases[i]) / total_scaled)
+			}
+		}
+	}
+	return finals
 }
 
 // The main-axis gap between flex items (a row's `column-gap`; the `gap` shorthand sets it), in px.
@@ -2344,21 +2410,30 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 	if is_flex_row(element, author_rules) {
 		// FLEX (row): lay items along the main axis from the content-left, packed by margin box; the
 		// container's content height is the tallest item's margin box. Flex containers establish a
-		// formatting context (no margin collapse), and an `auto`-width item is shrink-to-fit (its
-		// max-content) rather than filling the line. `justify-content` distributes the free main-axis
-		// space; `align-items`/`align-self` align each item on the cross axis within that height.
-		// FIXME: no flex-grow/shrink/basis, no wrap, `align-items: stretch` doesn't re-size items (it
-		// top-aligns like flex-start), no row-reverse/column (those fall to block flow).
-		mut cursor := 0.0
+		// formatting context (no margin collapse). Each item's main size is its flex base size adjusted
+		// by flex-grow/shrink over the free space; `justify-content` distributes any leftover; `gap`
+		// spaces items; `align-items`/`align-self` align each on the cross axis.
+		// FIXME: no wrap, `align-items: stretch` doesn't re-size items (top-aligns like flex-start),
+		// no row-reverse/column (those fall to block flow).
 		gap_main := flex_column_gap(element, author_rules)
 		items := flex_item_elements(element.as_node(), author_rules)
+		// Flex base sizes and outer edges, then the free space to grow/shrink over.
+		mut bases := []f64{}
+		mut total_used := if items.len > 1 { f64(items.len - 1) * gap_main } else { 0.0 }
+		for item in items {
+			base := flex_base_size(item, width, author_rules)
+			bases << base
+			total_used += base + horizontal_edges(item, width, author_rules)
+		}
+		finals := resolve_flex_main_sizes(items, bases, width - total_used, author_rules)
+		// Lay each item out at its final main size, packed along the row (gap between adjacent items).
+		mut cursor := 0.0
 		mut item_boxes := []BlockBox{}
 		for i, item in items {
 			if i > 0 {
-				cursor += gap_main // fixed gap between adjacent items
+				cursor += gap_main
 			}
-			forced_width := flex_item_forced_width(item, width, author_rules)
-			ib := layout_block_impl(item, content_x + cursor, 0.0, width, forced_width, author_rules)
+			ib := layout_block_impl(item, content_x + cursor, 0.0, width, finals[i], author_rules)
 			cursor += ib.margin_box_width()
 			if ib.margin_box_height() > content_height {
 				content_height = ib.margin_box_height()

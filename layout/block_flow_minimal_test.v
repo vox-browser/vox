@@ -2498,3 +2498,66 @@ fn test_flex_gap_with_center() {
 	assert box.children[0].x == 40.0
 	assert box.children[1].x == 160.0 // 40 + 100 + 20 gap
 }
+
+// flex-grow distributes the free main space to items in proportion to their grow factors.
+fn test_flex_grow_distributes_free_space() {
+	doc := dom.Document.create(dom.url_about_blank())
+	// Container 300px; two items with flex-grow 1 and 2, base 0 (flex: N -> basis 0%). Free = 300.
+	root := styled(doc, 'div', 'display: flex; width: 300px; height: 20px')
+	a := styled(doc, 'div', 'flex: 1; height: 20px')
+	b := styled(doc, 'div', 'flex: 2; height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	// 300 split 1:2 -> 100 and 200; they fill the container edge to edge.
+	assert box.children[0].width == 100.0
+	assert box.children[1].width == 200.0
+	assert box.children[0].x == 0.0 && box.children[1].x == 100.0
+}
+
+// flex-grow adds to a non-zero base size (flex-basis) rather than replacing it.
+fn test_flex_grow_adds_to_basis() {
+	doc := dom.Document.create(dom.url_about_blank())
+	// Container 300; two items, base 50px each (100 used), free 200 split 1:1 -> +100 each -> 150 each.
+	root := styled(doc, 'div', 'display: flex; width: 300px; height: 20px')
+	a := styled(doc, 'div', 'flex: 1 1 50px; height: 20px')
+	b := styled(doc, 'div', 'flex: 1 1 50px; height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].width == 150.0
+	assert box.children[1].width == 150.0
+}
+
+// flex-shrink reduces items (weighted by base size) when they overflow the container.
+fn test_flex_shrink_on_overflow() {
+	doc := dom.Document.create(dom.url_about_blank())
+	// Container 300; two 200px items (400 total, overflow 100). Equal base+shrink -> each loses 50 -> 150.
+	root := styled(doc, 'div', 'display: flex; width: 300px; height: 20px')
+	a := styled(doc, 'div', 'width: 200px; flex-shrink: 1; height: 20px')
+	b := styled(doc, 'div', 'width: 200px; flex-shrink: 1; height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].width == 150.0
+	assert box.children[1].width == 150.0
+}
+
+// flex-grow: 0 (the default) items don't grow — free space is left for justify-content.
+fn test_flex_no_grow_leaves_free_space() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; justify-content: flex-end; width: 300px; height: 20px')
+	a := styled(doc, 'div', 'width: 100px; height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].width == 100.0 // not grown
+	assert box.children[0].x == 200.0 // pushed to the end (300 - 100)
+}

@@ -1080,3 +1080,18 @@ fn test_flex_gap_over_parsed_document() {
 	// q starts 16px after p's right edge.
 	assert q_rect.x == p_rect.x + p_rect.width + 16.0
 }
+
+// Full-stack flex-grow: a sidebar has a fixed width and the main area grows to fill the rest of the row.
+fn test_flex_grow_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.row { display: flex; width: 600px } .side { width: 200px; height: 40px } .main { flex: 1; height: 40px }</style></head><body><div class="row"><div class="side" id="s"></div><div class="main" id="m"></div></div></body></html>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	s := css.query_selector(root, '#s') or { panic('no #s') }
+	m := css.query_selector(root, '#m') or { panic('no #m') }
+
+	s_rect := root_box.bounding_rect_for(s) or { panic('no #s box') }
+	m_rect := root_box.bounding_rect_for(m) or { panic('no #m box') }
+	assert s_rect.width == 200.0 // fixed sidebar
+	assert m_rect.width == 400.0 // main grows to fill the remaining 600 - 200
+	assert m_rect.x == s_rect.x + s_rect.width // main starts after the sidebar
+}
