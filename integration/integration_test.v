@@ -183,3 +183,23 @@ fn test_block_flow_layout_over_parsed_document() {
 	assert box.children[1].width == 75.0 // 25% of 300
 	assert box.children[1].y == 40.0 // stacked below the first child
 }
+
+// Full-stack box model: parse HTML, cascade margins/padding, lay out with real box geometry.
+// A 400px container with padding:20 holds a p (margin:10, height:50).
+fn test_block_box_model_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 400px; padding: 20px"><p style="height: 50px; margin: 10px"></p></div>')
+	root := unsafe { &dom.Node(doc) }
+	container := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(container, 0, 0, 1000, []&css.CSSRule{})
+	// container content box inset by its 20px padding (no margin/border).
+	assert box.width == 400.0
+	assert box.x == 20.0
+	assert box.y == 20.0
+	// p: content_x = 20 (container) + 10 (own margin); width auto = 400 - 20 (own margins).
+	assert box.children[0].x == 30.0
+	assert box.children[0].y == 30.0
+	assert box.children[0].width == 380.0
+	// container content height = p's margin box = 10 + 50 + 10.
+	assert box.height == 70.0
+}
