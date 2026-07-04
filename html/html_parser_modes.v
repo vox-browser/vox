@@ -514,6 +514,39 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		p.insert_html_element(token)
 		return
 	}
+	if token.is_start_tag() && token.tag_name in ['dd', 'dt'] {
+		p.frameset_ok = false
+		for i := p.stack_of_open_elements.elements.len - 1; i >= 0; i-- {
+			node := p.stack_of_open_elements.elements[i]
+			if node.local_name() == 'dd' {
+				p.generate_implied_end_tags('dd')
+				p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('dd')
+				break
+			}
+			if node.local_name() == 'dt' {
+				p.generate_implied_end_tags('dt')
+				p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('dt')
+				break
+			}
+			if is_special_tag(node.local_name(), node.namespace_uri())
+				&& node.local_name() !in ['address', 'div', 'p'] {
+				break
+			}
+		}
+		if p.stack_of_open_elements.has_in_button_scope('p') {
+			p.close_a_p_element()
+		}
+		p.insert_html_element(token)
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'plaintext' {
+		if p.stack_of_open_elements.has_in_button_scope('p') {
+			p.close_a_p_element()
+		}
+		p.insert_html_element(token)
+		p.tokenizer.switch_to(.plaintext)
+		return
+	}
 	if token.is_start_tag() && token.tag_name == 'a' {
 		if existing := p.list_of_active_formatting_elements.last_element_with_tag_name_before_marker('a') {
 			p.run_the_adoption_agency_algorithm(token)
@@ -559,6 +592,14 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		}
 		p.generate_implied_end_tags('li')
 		p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('li')
+		return
+	}
+	if token.is_end_tag() && token.tag_name in ['dd', 'dt'] {
+		if !p.stack_of_open_elements.has_in_scope(token.tag_name) {
+			return
+		}
+		p.generate_implied_end_tags(token.tag_name)
+		p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped(token.tag_name)
 		return
 	}
 	if token.is_end_tag() && token.tag_name in heading_tags {
