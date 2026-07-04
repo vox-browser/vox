@@ -423,3 +423,48 @@ fn test_css_wide_keyword_inherit_chain() {
 
 	assert cascaded_value_with_ua(child, pid('color'), no) == 'rgb(9, 8, 7)'
 }
+
+// var() substitutes a custom property's value; an undefined var uses its fallback.
+fn test_var_basic_and_fallback() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut div := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	div.set_attribute_value('style', '--brand: rgb(1, 2, 3); color: var(--brand); width: var(--w, 9px)')
+	no := []&CSSRule{}
+
+	assert cascaded_value_with_ua(div, pid('color'), no) == 'rgb(1, 2, 3)'
+	assert cascaded_value_with_ua(div, pid('width'), no) == '9px' // --w undefined -> fallback
+}
+
+// Custom properties inherit: a var() on a child resolves against an ancestor's declaration.
+fn test_var_inherits_from_ancestor() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parent := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	parent.set_attribute_value('style', '--accent: rgb(200, 100, 0)')
+	mut child := doc.create_element_ns(html_ns, 'span') or { panic('${err}') }
+	child.set_attribute_value('style', 'color: var(--accent)')
+	mut pn := parent.as_node()
+	pn.append_child(child.as_node()) or { panic('${err}') }
+	no := []&CSSRule{}
+
+	assert cascaded_value_with_ua(child, pid('color'), no) == 'rgb(200, 100, 0)'
+}
+
+// A custom property whose value itself references another var() is resolved (re-scan).
+fn test_var_indirection() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut div := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	div.set_attribute_value('style', '--a: 12px; --b: var(--a); width: var(--b)')
+	no := []&CSSRule{}
+
+	assert cascaded_value_with_ua(div, pid('width'), no) == '12px'
+}
+
+// A var() fallback may itself contain a var().
+fn test_var_fallback_uses_var() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut div := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	div.set_attribute_value('style', '--fallback: 5px; width: var(--missing, var(--fallback))')
+	no := []&CSSRule{}
+
+	assert cascaded_value_with_ua(div, pid('width'), no) == '5px'
+}

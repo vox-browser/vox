@@ -944,3 +944,19 @@ fn test_css_wide_keywords_over_parsed_document() {
 	// .reset display: initial -> 'inline' (overriding the UA div block).
 	assert css.cascaded_value_with_ua(reset, display, rules) == 'inline'
 }
+
+// Full-stack var(): an author stylesheet defines a custom property and uses it (with fallback) to
+// drive layout width and a computed color over the parsed DOM.
+fn test_var_custom_properties_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.box { --w: 150px; --brand: rgb(30, 60, 90); width: var(--w); height: var(--h, 40px); background-color: var(--brand) }</style></head><body><div class="box"></div></body></html>')
+	root := unsafe { &dom.Node(doc) }
+	rules := layout.collect_document_author_rules(doc)
+	box_el := css.query_selector(root, '.box') or { panic('no .box') }
+
+	// width from var(--w); height from the var(--h) fallback.
+	box := layout.layout_block(box_el, 0, 0, 1000, rules)
+	assert box.width == 150.0
+	assert box.height == 40.0
+	// background-color resolved from var(--brand).
+	assert box.background_color.serialize() == 'rgb(30 60 90)'
+}

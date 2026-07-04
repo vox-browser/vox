@@ -221,7 +221,9 @@ fn specified_value_on(element &dom.Element, property_name string, author_rules [
 fn cascaded_value_impl(element &dom.Element, property_id PropertyID, author_rules []&CSSRule, ua_rules []&CSSRule) string {
 	name := string_from_property_id(property_id)
 	if value := specified_value_on(element, name, author_rules, ua_rules) {
-		return match value {
+		// Substitute any var() references before interpreting the value.
+		resolved := substitute_var(element, value, author_rules, ua_rules)
+		return match resolved {
 			'initial' {
 				property_initial_value_string(property_id)
 			}
@@ -238,7 +240,7 @@ fn cascaded_value_impl(element &dom.Element, property_id PropertyID, author_rule
 				}
 			}
 			else {
-				value
+				resolved
 			}
 		}
 	}
@@ -246,6 +248,77 @@ fn cascaded_value_impl(element &dom.Element, property_id PropertyID, author_rule
 		return inherited_value(element, property_id, author_rules, ua_rules)
 	}
 	return property_initial_value_string(property_id)
+}
+
+// The declared value of a custom property (`--name`) on `element`, resolved through the cascade and
+// inheritance (all custom properties inherit). Returns none when the property is defined nowhere up
+// the tree. The value is returned RAW; any var() it contains is substituted by the caller.
+fn custom_property_value(element &dom.Element, name string, author_rules []&CSSRule, ua_rules []&CSSRule) ?string {
+	if value := specified_value_on(element, name, author_rules, ua_rules) {
+		return value
+	}
+	parent := element.as_node().parent_element() or { return none }
+	return custom_property_value(parent, name, author_rules, ua_rules)
+}
+
+// Substitute every var(--name[, fallback]) reference in `value` with the custom property's value (or
+// its fallback when the property is undefined), for `element`. Substitution re-scans so a custom
+// property whose value itself uses var() is resolved. A recursion cap guards against cyclic vars.
+// FIXME: an undefined var() with no fallback substitutes to the empty string rather than making the
+// whole declaration invalid (which should fall back to the inherited/initial value).
+fn substitute_var(element &dom.Element, value string, author_rules []&CSSRule, ua_rules []&CSSRule) string {
+	return substitute_var_impl(element, value, author_rules, ua_rules, 0)
+}
+
+fn substitute_var_impl(element &dom.Element, value string, author_rules []&CSSRule, ua_rules []&CSSRule, depth int) string {
+	if depth > 32 || !value.contains('var(') {
+		return value
+	}
+	start := value.index('var(') or { return value }
+	// Find the ')' matching the '(' at start+3.
+	mut inner_depth := 0
+	mut end := -1
+	for i := start + 3; i < value.len; i++ {
+		c := value[i]
+		if c == `(` {
+			inner_depth++
+		} else if c == `)` {
+			inner_depth--
+			if inner_depth == 0 {
+				end = i
+				break
+			}
+		}
+	}
+	if end < 0 {
+		return value // malformed var()
+	}
+	inner := value[start + 4..end]
+	parts := split_first_top_level_comma(inner)
+	var_name := parts[0].trim_space()
+	replacement := custom_property_value(element, var_name, author_rules, ua_rules) or {
+		// Undefined: use the fallback (itself possibly containing var()), else the empty string.
+		if parts.len > 1 { parts[1].trim_space() } else { '' }
+	}
+	rebuilt := value[..start] + replacement + value[end + 1..]
+	return substitute_var_impl(element, rebuilt, author_rules, ua_rules, depth + 1)
+}
+
+// Split `s` at its first top-level comma (commas inside parentheses are ignored), returning either
+// [before, after] or [s] when there is no top-level comma.
+fn split_first_top_level_comma(s string) []string {
+	mut depth := 0
+	for i := 0; i < s.len; i++ {
+		c := s[i]
+		if c == `(` {
+			depth++
+		} else if c == `)` && depth > 0 {
+			depth--
+		} else if c == `,` && depth == 0 {
+			return [s[..i], s[i + 1..]]
+		}
+	}
+	return [s]
 }
 
 // The value `element` inherits for `property_id`: its parent element's fully-resolved cascaded value
