@@ -106,9 +106,12 @@ pub fn (mut p HTMLParser) run() {
 			}
 		}
 
-		// Tree construction dispatcher. The V port has no foreign content yet, so every token is
-		// processed with the rules for the current insertion mode.
-		p.process_using_the_rules_for(p.insertion_mode, mut token)
+		// https://html.spec.whatwg.org/multipage/parsing.html#tree-construction-dispatcher
+		if p.should_process_using_html_rules(token) {
+			p.process_using_the_rules_for(p.insertion_mode, mut token)
+		} else {
+			p.process_using_the_rules_for_foreign_content(mut token)
+		}
 
 		if token.is_end_of_file() {
 			break
@@ -325,10 +328,14 @@ fn (mut p HTMLParser) create_element_for(token &HTMLToken, namespace_ ?string, i
 	mut element := dom.create_element(p.document, local_name, namespace_, none, is_value, false) or {
 		panic('create_element_for(${local_name}): ${err}')
 	}
-	// Append each attribute in the token to element. (FIXME: prefixes/namespaces for foreign content,
-	// form association, custom elements, and speculative parsing are not handled.)
+	// Append each attribute in the token to element. Foreign-content attributes carry a prefix and
+	// namespace (from adjust_foreign_attributes). (FIXME: form association, custom elements, and
+	// speculative parsing are not handled.)
 	for attribute in token.attributes {
-		if !element.has_attribute(attribute.local_name) {
+		if attribute.prefix != none || attribute.namespace_ != none {
+			element.set_attribute_value_ns(attribute.local_name, attribute.value, attribute.prefix,
+				attribute.namespace_)
+		} else if !element.has_attribute(attribute.local_name) {
 			element.set_attribute_value(attribute.local_name, attribute.value)
 		}
 	}

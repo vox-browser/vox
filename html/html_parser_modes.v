@@ -502,6 +502,28 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		p.insertion_mode = .in_table
 		return
 	}
+	if token.is_start_tag() && token.tag_name == 'math' {
+		p.reconstruct_the_active_formatting_elements()
+		adjust_mathml_attributes(mut token)
+		adjust_foreign_attributes(mut token)
+		p.insert_foreign_element(token, ns_mathml, false)
+		if token.is_self_closing() {
+			p.stack_of_open_elements.pop()
+			token.acknowledge_self_closing_flag_if_set()
+		}
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'svg' {
+		p.reconstruct_the_active_formatting_elements()
+		adjust_svg_attributes(mut token)
+		adjust_foreign_attributes(mut token)
+		p.insert_foreign_element(token, ns_svg, false)
+		if token.is_self_closing() {
+			p.stack_of_open_elements.pop()
+			token.acknowledge_self_closing_flag_if_set()
+		}
+		return
+	}
 	// Void elements: area, br, embed, img, keygen, wbr.
 	if token.is_start_tag() && token.tag_name in ['area', 'br', 'embed', 'img', 'keygen', 'wbr'] {
 		p.reconstruct_the_active_formatting_elements()

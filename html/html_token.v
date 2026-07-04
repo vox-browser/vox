@@ -201,6 +201,31 @@ pub fn (t &HTMLToken) has_attribute(attribute_name string) bool {
 	return t.attribute(attribute_name) != none
 }
 
+// Used by the parser's foreign-content adjustments (MathML/SVG).
+pub fn (mut t HTMLToken) adjust_tag_name(old_name string, new_name string) {
+	if old_name == t.tag_name {
+		t.tag_name = new_name
+	}
+}
+
+pub fn (mut t HTMLToken) adjust_attribute_name(old_name string, new_name string) {
+	for i in 0 .. t.attributes.len {
+		if t.attributes[i].local_name == old_name {
+			t.attributes[i].local_name = new_name
+		}
+	}
+}
+
+pub fn (mut t HTMLToken) adjust_foreign_attribute(old_name string, prefix ?string, local_name string, namespace_ ?string) {
+	for i in 0 .. t.attributes.len {
+		if t.attributes[i].local_name == old_name {
+			t.attributes[i].prefix = prefix
+			t.attributes[i].local_name = local_name
+			t.attributes[i].namespace_ = namespace_
+		}
+	}
+}
+
 pub fn (mut t HTMLToken) ensure_doctype_data() &DoctypeData {
 	return &t.doctype
 }

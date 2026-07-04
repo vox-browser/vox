@@ -16,6 +16,12 @@ fn parse(input string) &dom.Document {
 fn tree_repr(node &dom.Node) string {
 	if el := node.as_element() {
 		mut out := el.local_name()
+		ns := el.namespace_uri() or { '' }
+		if ns == ns_svg {
+			out = 'svg:' + out
+		} else if ns == ns_mathml {
+			out = 'math:' + out
+		}
 		kids := node.children_as_vector()
 		if kids.len > 0 {
 			mut parts := []string{}
@@ -166,4 +172,50 @@ fn test_void_elements_in_body() {
 	doc := parse('<body><p>a<br><img>b</p></body>')
 	body := nth_child(html_element(doc), 1)
 	assert tree_repr(body) == 'body(p("a",br,img,"b"))'
+}
+
+fn test_inline_svg() {
+	doc := parse('<body><svg><rect></rect><circle></circle></svg></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(svg:svg(svg:rect,svg:circle))'
+}
+
+fn test_svg_tag_name_casing() {
+	// The tokenizer lowercases <clipPath>; adjust_svg_tag_names restores the camelCase local name.
+	doc := parse('<body><svg><clipPath></clipPath></svg></body>')
+	body := nth_child(html_element(doc), 1)
+	svg := nth_child(body, 0)
+	child := nth_child(svg, 0).as_element() or { panic('no svg child') }
+	assert child.local_name() == 'clipPath'
+	assert tree_repr(body) == 'body(svg:svg(svg:clipPath))'
+}
+
+fn test_svg_attribute_casing() {
+	doc := parse('<body><svg viewBox="0 0 1 1"></svg></body>')
+	body := nth_child(html_element(doc), 1)
+	svg := nth_child(body, 0).as_element() or { panic('no svg') }
+	// 'viewbox' (lowercased by the tokenizer) is restored to 'viewBox'.
+	assert (svg.get_attribute('viewBox') or { '' }) == '0 0 1 1'
+}
+
+fn test_mathml() {
+	// <mi> is a MathML text integration point, so its text child is parsed with HTML rules.
+	doc := parse('<body><math><mi>x</mi></math></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(math:math(math:mi("x")))'
+}
+
+fn test_svg_html_integration_point() {
+	// <foreignObject> is an HTML integration point: its <div> child is an HTML-namespace element.
+	doc := parse('<body><svg><foreignObject><div>hi</div></foreignObject></svg></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(svg:svg(svg:foreignObject(div("hi"))))'
+}
+
+fn test_foreign_content_breakout() {
+	// A <p> start tag inside SVG breaks out of foreign content back to HTML.
+	doc := parse('<body><svg><rect></rect><p>out</p></svg></body>')
+	body := nth_child(html_element(doc), 1)
+	// The <p> pops back out of the <svg> and becomes an HTML sibling of it in the body.
+	assert tree_repr(body) == 'body(svg:svg(svg:rect),p("out"))'
 }
