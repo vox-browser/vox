@@ -117,6 +117,10 @@ pub mut:
 	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
 	// cumulative opacity (this box's times its ancestors').
 	opacity f64 = 1.0
+	// Whether this box paints its own background/border/text (`visibility: visible`). A
+	// `visibility: hidden` box still takes up space but is not painted; because `visibility` inherits,
+	// each box carries its own resolved value, so a visible descendant of a hidden box still paints.
+	visible bool = true
 	// The `unique_id` of the element this box was laid out for, so a box can be found from its element
 	// (backing getBoundingClientRect).
 	node_id  i64
@@ -453,6 +457,11 @@ pub:
 pub fn (b &BlockBox) paint_commands() []PaintCommand {
 	mut commands := []PaintCommand{}
 	for box in b.paint_order() {
+		// A `visibility: hidden` box takes up space but paints nothing (its visible descendants are
+		// separate paint-order entries and still paint).
+		if !box.visible {
+			continue
+		}
 		opacity := box.opacity
 		border_left := box.x - box.padding.left - box.border.left
 		border_top := box.y - box.padding.top - box.border.top
@@ -1786,6 +1795,10 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	} else if opacity > 1.0 {
 		opacity = 1.0
 	}
+	// `visibility` (inherited): a hidden box still occupies space but paints nothing.
+	visible := css.cascaded_value_with_ua(element, css.property_id_from_string('visibility') or {
+		return BlockBox{}
+	}, author_rules) == 'visible'
 
 	return BlockBox{
 		tag_name:            element.local_name()
@@ -1803,6 +1816,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		text_color:          text_color
 		border_color:        border_color
 		opacity:             opacity
+		visible:             visible
 		node_id:             i64(element.as_node().unique_id())
 		children:            children
 		lines:               lines

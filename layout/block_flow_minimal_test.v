@@ -1854,3 +1854,34 @@ fn test_text_transform_inherits_and_overrides() {
 	// 'hi' inherits uppercase from the div; the span's own text is forced lowercase.
 	assert tt_fragment_texts(box) == ['HI', 'world']
 }
+
+// visibility: hidden still reserves layout space but paints nothing.
+fn test_visibility_hidden_reserves_space_but_no_paint() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 100px')
+	hidden := styled(doc, 'div', 'visibility: hidden; height: 30px; background-color: rgb(255, 0, 0)')
+	mut rn := root.as_node()
+	rn.append_child(hidden.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 30.0 // the hidden child still occupies its 30px
+	assert box.paint_commands().len == 0 // ...but produces no paint commands
+}
+
+// A visibility: visible descendant of a visibility: hidden box still paints (visibility is inherited
+// but each box carries its own resolved value).
+fn test_visibility_visible_child_of_hidden_paints() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 100px')
+	hidden := styled(doc, 'div', 'visibility: hidden; background-color: rgb(255, 0, 0)')
+	shown := styled(doc, 'div', 'visibility: visible; height: 20px; background-color: rgb(0, 128, 0)')
+	mut hn := hidden.as_node()
+	hn.append_child(shown.as_node()) or { panic('${err}') }
+	mut rn := root.as_node()
+	rn.append_child(hidden.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert fills.len == 1 // only the visible child's background, not the hidden parent's red
+	assert fills[0].color == 'rgb(0 128 0)'
+}

@@ -768,3 +768,24 @@ fn test_text_transform_over_parsed_document() {
 	assert svg.contains('WORLD')
 	assert !svg.contains('hello')
 }
+
+// Full-stack visibility: an author stylesheet hides a paragraph's text; it still occupies layout
+// space (the following paragraph sits below it) but its text is absent from the SVG output.
+fn test_visibility_hidden_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>body { margin: 0 } p { margin: 0; height: 20px } .gone { visibility: hidden }</style></head><body><p class="gone">SECRET</p><p class="shown">VISIBLE</p></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	gone := css.query_selector(root, '.gone') or { panic('no .gone') }
+	shown := css.query_selector(root, '.shown') or { panic('no .shown') }
+
+	// Both paragraphs are laid out and reserve space: the shown one sits below the hidden one.
+	gone_rect := root_box.bounding_rect_for(gone) or { panic('no .gone box') }
+	shown_rect := root_box.bounding_rect_for(shown) or { panic('no .shown box') }
+	assert gone_rect.y == 0.0
+	assert shown_rect.y == 20.0 // below the hidden paragraph, which still took 20px
+
+	// The SVG draws the visible text but not the hidden text.
+	svg := root_box.render_svg(600, root_box.height + 20)
+	assert svg.contains('VISIBLE')
+	assert !svg.contains('SECRET')
+}
