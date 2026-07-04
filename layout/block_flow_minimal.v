@@ -163,6 +163,46 @@ pub fn (b &BlockBox) bounding_rect_for(element &dom.Element) ?LayoutRect {
 	return box.border_box()
 }
 
+// Whether `x`/`y` falls within this box's border box.
+fn (rect LayoutRect) contains(x f64, y f64) bool {
+	return x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height
+}
+
+// Hit-test the point (`x`, `y`): the `node_id` of the topmost box whose border box contains it, or
+// none. Walks the paint order back-to-front, so the last-painted (topmost, z-index-aware) box wins —
+// backing document.elementFromPoint.
+pub fn (b &BlockBox) hit_test(x f64, y f64) ?i64 {
+	order := b.paint_order()
+	for i := order.len - 1; i >= 0; i-- {
+		box := order[i]
+		if box.node_id != 0 && box.border_box().contains(x, y) {
+			return box.node_id
+		}
+	}
+	return none
+}
+
+// The element at the point (`x`, `y`) — hit-test the box tree, then resolve the box's `node_id` back
+// to its element by walking `root`'s subtree. Analogous to document.elementFromPoint.
+pub fn (b &BlockBox) element_at_point(x f64, y f64, root &dom.Node) ?&dom.Element {
+	node_id := b.hit_test(x, y) or { return none }
+	return find_element_by_node_id(root, node_id)
+}
+
+fn find_element_by_node_id(node &dom.Node, node_id i64) ?&dom.Element {
+	if element := node.as_element() {
+		if i64(element.as_node().unique_id()) == node_id {
+			return element
+		}
+	}
+	for child in node.children_as_vector() {
+		if found := find_element_by_node_id(child, node_id) {
+			return found
+		}
+	}
+	return none
+}
+
 // Flatten this box's subtree into paint order (CSS 2.1 Appendix E, simplified): a box paints before
 // its children, and its children paint ordered by z-index — negative first, then z-index `auto`/0 in
 // tree order, then positive. Each returned entry is a shallow box (no nested children) carrying the

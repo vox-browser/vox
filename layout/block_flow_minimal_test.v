@@ -1673,3 +1673,39 @@ fn test_bounding_rect_for_abspos() {
 	assert rect.x == 20.0 && rect.y == 10.0
 	assert rect.width == 30.0 && rect.height == 30.0
 }
+
+// hit_test returns the topmost element's node_id under a point (document.elementFromPoint).
+fn test_hit_test() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px')
+	first := styled(doc, 'div', 'height: 40px')
+	second := styled(doc, 'div', 'height: 30px')
+	mut rn := root.as_node()
+	rn.append_child(first.as_node()) or { panic('${err}') }
+	rn.append_child(second.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.hit_test(50, 20) or { -1 } == i64(first.as_node().unique_id()) // in the first block
+	assert box.hit_test(50, 55) or { -1 } == i64(second.as_node().unique_id()) // in the second block
+	assert box.hit_test(50, 200) == none // below everything
+	assert box.hit_test(-5, 10) == none // left of everything
+
+	// element_at_point resolves back to the element.
+	hit := box.element_at_point(50, 20, root.as_node()) or { panic('no hit') }
+	assert i64(hit.as_node().unique_id()) == i64(first.as_node().unique_id())
+}
+
+// A box painted on top (absolutely positioned) wins the hit test over what's beneath it.
+fn test_hit_test_topmost_wins() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
+	badge := styled(doc, 'div', 'position: absolute; top: 10px; left: 20px; width: 50px; height: 50px')
+	mut rn := root.as_node()
+	rn.append_child(badge.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	// Inside the badge -> the badge (topmost), not the container beneath it.
+	assert box.hit_test(30, 30) or { -1 } == i64(badge.as_node().unique_id())
+	// Outside the badge but inside the container -> the container.
+	assert box.hit_test(5, 5) or { -1 } == i64(root.as_node().unique_id())
+}

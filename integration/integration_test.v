@@ -682,3 +682,16 @@ fn test_bounding_client_rect_over_parsed_document() {
 	assert rect.width == 200.0
 	assert rect.height == 60.0
 }
+
+// Full-stack elementFromPoint: parse + lay out a document, then hit-test a point and get the element.
+fn test_element_from_point_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>body { margin: 0 } .a { height: 50px } .b { height: 40px }</style></head><body><div class="a"></div><div class="b"></div></body></html>')
+	root_box := layout.layout_document(doc, 400)
+	root := unsafe { &dom.Node(doc) }
+
+	// y=20 is inside .a (0..50); y=60 is inside .b (50..90).
+	hit_a := root_box.element_at_point(10, 20, root) or { panic('no hit a') }
+	assert (hit_a.get_attribute('class') or { '' }) == 'a'
+	hit_b := root_box.element_at_point(10, 60, root) or { panic('no hit b') }
+	assert (hit_b.get_attribute('class') or { '' }) == 'b'
+}
