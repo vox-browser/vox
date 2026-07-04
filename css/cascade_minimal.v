@@ -110,19 +110,31 @@ pub fn cascaded_value_for(element &dom.Element, property_id PropertyID) string {
 	return property_initial_value_string(property_id)
 }
 
-// A single declaration competing in the cascade for one property.
+// A single declaration competing in the cascade for one property. (CascadeOrigin is the existing
+// css enum: user_agent / user / author / transition / animation.)
 struct CascadeMatch {
+	origin      CascadeOrigin
 	important   bool
 	specificity u32
 	order       int
 	value       string
 }
 
-// https://drafts.csswg.org/css-cascade/#cascade-sort — within a single (author) origin:
-// !important beats normal; then higher specificity; then later source order.
+// The cascade tier of a declaration (higher wins), per https://drafts.csswg.org/css-cascade/#cascade-sort
+// origin+importance order (ignoring user/transition/animation origins): UA !important > author
+// !important > author normal > UA normal.
+fn (m CascadeMatch) tier() int {
+	if m.important {
+		return if m.origin == .user_agent { 3 } else { 2 }
+	}
+	return if m.origin == .author { 1 } else { 0 }
+}
+
+// https://drafts.csswg.org/css-cascade/#cascade-sort: origin/importance tier, then specificity,
+// then source order.
 fn cascade_match_beats(a CascadeMatch, b CascadeMatch) bool {
-	if a.important != b.important {
-		return a.important
+	if a.tier() != b.tier() {
+		return a.tier() > b.tier()
 	}
 	if a.specificity != b.specificity {
 		return a.specificity > b.specificity
@@ -134,21 +146,13 @@ fn cascade_match_beats(a CascadeMatch, b CascadeMatch) bool {
 // declaration and every matching author rule in `rules`, ordered by !important, then specificity,
 // then source order. Shorthands are expanded, so e.g. 'margin: 0' contributes to 'margin-top'.
 // (Inline style is given a specificity higher than any selector, per spec.)
-fn specified_value_on(element &dom.Element, property_name string, rules []&CSSRule) ?string {
-	mut matches := []CascadeMatch{}
-
-	if block := inline_declaration_block(element) {
-		if longhand := declaration_longhand(block, property_name) {
-			matches << CascadeMatch{
-				important:   longhand.important
-				specificity: u32(0xffffffff) // higher than any selector
-				order:       0x7fffffff
-				value:       longhand.value
-			}
-		}
-	}
-
-	for i, rule in rules {
+// CascadeMatches from every rule in `rules` (with the given `origin`) that matches `element` and
+// contributes `property_name`, numbering source order from `start_order`.
+fn rule_matches_for(element &dom.Element, property_name string, rules []&CSSRule, origin CascadeOrigin, start_order int) []CascadeMatch {
+	mut result := []CascadeMatch{}
+	mut order := start_order
+	for rule in rules {
+		order++
 		declaration := rule.style() or { continue }
 		longhand := declaration_longhand(declaration, property_name) or { continue }
 		// Highest specificity among this rule's selectors that match the element.
@@ -167,10 +171,32 @@ fn specified_value_on(element &dom.Element, property_name string, rules []&CSSRu
 			}
 		}
 		if specificity := best_specificity {
-			matches << CascadeMatch{
+			result << CascadeMatch{
+				origin:      origin
 				important:   longhand.important
 				specificity: specificity
-				order:       i
+				order:       order
+				value:       longhand.value
+			}
+		}
+	}
+	return result
+}
+
+fn specified_value_on(element &dom.Element, property_name string, author_rules []&CSSRule, ua_rules []&CSSRule) ?string {
+	mut matches := []CascadeMatch{}
+	// UA origin first (lowest source order), then author rules.
+	matches << rule_matches_for(element, property_name, ua_rules, .user_agent, 0)
+	matches << rule_matches_for(element, property_name, author_rules, .author, ua_rules.len)
+
+	// Inline style is an author-origin declaration with a specificity higher than any selector.
+	if block := inline_declaration_block(element) {
+		if longhand := declaration_longhand(block, property_name) {
+			matches << CascadeMatch{
+				origin:      .author
+				important:   longhand.important
+				specificity: u32(0xffffffff)
+				order:       0x7fffffff
 				value:       longhand.value
 			}
 		}
@@ -188,22 +214,35 @@ fn specified_value_on(element &dom.Element, property_name string, rules []&CSSRu
 	return winner.value
 }
 
-// Like cascaded_value_for, but also considers a list of author style `rules` (e.g. from
-// parse_css_stylesheet_contents_with_parser): inline > matching author rules > inheritance > initial.
-pub fn cascaded_value_with_stylesheet(element &dom.Element, property_id PropertyID, rules []&CSSRule) string {
+// Resolve `property_id` for `element` given `author_rules` and `ua_rules`: the winning specified
+// value (cascade of UA + author + inline), else inheritance, else the initial value.
+fn cascaded_value_impl(element &dom.Element, property_id PropertyID, author_rules []&CSSRule, ua_rules []&CSSRule) string {
 	name := string_from_property_id(property_id)
-	if value := specified_value_on(element, name, rules) {
+	if value := specified_value_on(element, name, author_rules, ua_rules) {
 		return value
 	}
 	if is_inherited_property(property_id) {
 		mut ancestor := element.as_node().parent_element()
 		for {
 			current := ancestor or { break }
-			if value := specified_value_on(current, name, rules) {
+			if value := specified_value_on(current, name, author_rules, ua_rules) {
 				return value
 			}
 			ancestor = current.as_node().parent_element()
 		}
 	}
 	return property_initial_value_string(property_id)
+}
+
+// Like cascaded_value_for, but also considers a list of author style `rules` (e.g. from
+// parse_css_stylesheet_contents_with_parser): inline > matching author rules > inheritance > initial.
+pub fn cascaded_value_with_stylesheet(element &dom.Element, property_id PropertyID, rules []&CSSRule) string {
+	return cascaded_value_impl(element, property_id, rules, []&CSSRule{})
+}
+
+// The full minimal cascade INCLUDING the user-agent stylesheet as the lowest origin, so unstyled
+// elements get their UA defaults (e.g. div -> display: block, head -> display: none). Order:
+// UA/author/importance tier -> specificity -> source order, then inheritance, then initial.
+pub fn cascaded_value_with_ua(element &dom.Element, property_id PropertyID, author_rules []&CSSRule) string {
+	return cascaded_value_impl(element, property_id, author_rules, user_agent_rules())
 }

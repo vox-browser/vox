@@ -99,3 +99,22 @@ fn test_cascade_with_stylesheet_over_parsed_document() {
 	assert css.cascaded_value_with_stylesheet(h1, color, rules) == 'crimson'
 	assert css.cascaded_value_with_stylesheet(p, color, rules) == 'navy'
 }
+
+// Full-stack UA cascade: parse HTML, then resolve UA-default display values over the parsed DOM
+// (no author styles) — div/li/span/head get their user-agent defaults.
+fn test_ua_cascade_over_parsed_document() {
+	doc := html.parse_document('<body><div><ul><li>x</li></ul><span>y</span></div></body>')
+	root := unsafe { &dom.Node(doc) }
+	display := css.property_id_from_string('display') or { panic('display id') }
+	no_author := []&css.CSSRule{}
+
+	div := css.query_selector(root, 'div') or { panic('no div') }
+	li := css.query_selector(root, 'li') or { panic('no li') }
+	span := css.query_selector(root, 'span') or { panic('no span') }
+	head := css.query_selector(root, 'head') or { panic('no head') }
+
+	assert css.cascaded_value_with_ua(div, display, no_author) == 'block'
+	assert css.cascaded_value_with_ua(li, display, no_author) == 'list-item'
+	assert css.cascaded_value_with_ua(span, display, no_author) == 'inline'
+	assert css.cascaded_value_with_ua(head, display, no_author) == 'none'
+}

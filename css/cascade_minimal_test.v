@@ -141,6 +141,37 @@ fn test_longhand_overrides_shorthand_in_cascade() {
 	assert cascaded_value_with_stylesheet(el, pid('margin-left'), rules) == '5px'
 }
 
+fn test_user_agent_default_display() {
+	doc := dom.Document.create(dom.url_about_blank())
+	display := pid('display')
+	no_author := []&CSSRule{}
+	el_div := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	el_head := doc.create_element_ns(html_ns, 'head') or { panic('${err}') }
+	el_li := doc.create_element_ns(html_ns, 'li') or { panic('${err}') }
+	el_ul := doc.create_element_ns(html_ns, 'ul') or { panic('${err}') }
+	assert cascaded_value_with_ua(el_div, display, no_author) == 'block'
+	assert cascaded_value_with_ua(el_head, display, no_author) == 'none'
+	assert cascaded_value_with_ua(el_li, display, no_author) == 'list-item'
+	assert cascaded_value_with_ua(el_ul, display, no_author) == 'block'
+}
+
+fn test_author_normal_beats_ua_default() {
+	doc := dom.Document.create(dom.url_about_blank())
+	div := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	// An author rule (normal) overrides the UA default (normal), even at equal specificity.
+	rules := parse_css_stylesheet_contents_with_parser('div { display: inline }', map[string]bool{})
+	assert cascaded_value_with_ua(div, pid('display'), rules) == 'inline'
+	// Without the author rule, the UA default (block) applies.
+	assert cascaded_value_with_ua(div, pid('display'), []&CSSRule{}) == 'block'
+}
+
+fn test_inline_beats_ua_default() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut span := doc.create_element_ns(html_ns, 'span') or { panic('${err}') }
+	span.set_attribute_value('style', 'display: flex')
+	assert cascaded_value_with_ua(span, pid('display'), []&CSSRule{}) == 'flex'
+}
+
 fn test_author_rule_inheritance() {
 	doc := dom.Document.create(dom.url_about_blank())
 	mut root := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
