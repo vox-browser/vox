@@ -63,7 +63,7 @@ fn own_font_size(element &dom.Element, author_rules []&CSSRule) ?string {
 
 // The document root element's computed font-size (px), used to resolve rem. The root's reference is
 // the initial 16px (it has no parent element).
-fn root_font_size_px(element &dom.Element, author_rules []&CSSRule) f64 {
+pub fn root_font_size_px(element &dom.Element, author_rules []&CSSRule) f64 {
 	mut root := element
 	for {
 		parent := root.as_node().parent_element() or { break }

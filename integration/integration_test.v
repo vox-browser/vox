@@ -861,3 +861,18 @@ fn test_logical_properties_over_parsed_document() {
 	ul_box := layout.layout_block(ul, 0, 0, 1000, []&css.CSSRule{})
 	assert ul_box.padding.left == 40.0 // UA padding-inline-start: 40px -> padding-left
 }
+
+// Full-stack text-indent: an author stylesheet indents a paragraph's first line; the rendered first
+// fragment starts at the indent offset.
+fn test_text_indent_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>body { margin: 0 } p { margin: 0; font-size: 20px; text-indent: 40px }</style></head><body><p>hello</p></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	p := css.query_selector(root, 'p') or { panic('no p') }
+
+	p_box := root_box.find_box(i64(p.as_node().unique_id())) or { panic('no p box') }
+	frag := p_box.lines[0].fragments[0]
+	assert frag.text == 'hello'
+	// The <p>'s content-box left is 0 (body margin 0, no padding); the first line is indented 40px.
+	assert frag.x == p_box.x + 40.0
+}

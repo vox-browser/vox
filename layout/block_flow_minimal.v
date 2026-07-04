@@ -1167,6 +1167,27 @@ fn resolve_spacing(element &dom.Element, property_name string, author_rules []&c
 	return css.computed_length_px(element, id, author_rules) or { 0 }
 }
 
+// The `text-indent` value resolved to px (may be negative). Its value-logic wraps the length in a
+// composite type (it also accepts `each-line`/`hanging`), so `computed_length_px` can't extract it —
+// parse the cascaded string directly for the common px/em/% forms. `%` is of the content width.
+fn resolve_text_indent(element &dom.Element, content_width f64, author_rules []&css.CSSRule) f64 {
+	id := css.property_id_from_string('text-indent') or { return 0 }
+	value := css.cascaded_value_with_ua(element, id, author_rules).trim_space()
+	if value.ends_with('px') {
+		return value#[..-2].f64()
+	}
+	if value.ends_with('rem') {
+		return value#[..-3].f64() * css.root_font_size_px(element, author_rules)
+	}
+	if value.ends_with('em') {
+		return value#[..-2].f64() * css.computed_font_size_px(element, author_rules)
+	}
+	if value.ends_with('%') {
+		return value#[..-1].f64() * content_width / 100.0
+	}
+	return 0
+}
+
 // A word of inline content with its own measured metrics, taken from the element it comes from — so
 // a nested inline element with its own font-size measures its text at that size.
 struct InlineWord {
@@ -1308,18 +1329,25 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 		return []TextLine{}
 	}, author_rules)
 	wraps := white_space_wraps(white_space)
+	// `text-indent` (inherited) indents the start of the *first* line box (%: of the content width).
+	text_indent := resolve_text_indent(element, content_width, author_rules)
 
 	mut lines := []TextLine{}
 	mut y := 0.0
+	mut first_line := true
 	for segment in segments {
 		if segment.len == 0 {
-			left, right := line_bounds(y, block_line_height, float_bands, content_x, content_width)
+			mut left, right := line_bounds(y, block_line_height, float_bands, content_x, content_width)
+			if first_line {
+				left += text_indent
+			}
 			lines << TextLine{
 				x:      aligned_line_x(left, right - left, 0.0, align)
 				y:      y
 				width:  0.0
 				height: block_line_height
 			}
+			first_line = false
 			y += block_line_height
 			continue
 		}
@@ -1327,6 +1355,9 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 		for i < segment.len {
 			mut left, mut right := line_bounds(y, segment[i].height, float_bands, content_x,
 				content_width)
+			if first_line {
+				left += text_indent // indent the first line's content start
+			}
 			// If the first word can't fit beside a float, drop the line below the nearest float.
 			if wraps && segment[i].width > right - left {
 				dropped := next_float_bottom(y, float_bands)
@@ -1388,6 +1419,7 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 				height:    line_height
 				fragments: fragments
 			}
+			first_line = false
 			i = j
 			y += line_height
 		}

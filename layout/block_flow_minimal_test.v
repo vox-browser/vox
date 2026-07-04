@@ -2066,3 +2066,38 @@ fn test_physical_edge_wins_over_logical() {
 	assert box.margin.top == 5.0 // physical wins
 	assert box.margin.bottom == 16.0 // still the UA logical margin-block-end
 }
+
+// text-indent shifts the first line's content start to the right.
+fn test_text_indent_first_line() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; text-indent: 30px')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines[0].fragments[0].x == 30.0 // content_x (0) + 30px indent
+}
+
+// Only the first line is indented; wrapped lines start at the content edge.
+fn test_text_indent_only_first_line() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 100px; font-size: 20px; text-indent: 30px')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('aaaaa bbbbb').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines.len == 2
+	assert box.lines[0].fragments[0].x == 30.0 // first line indented
+	assert box.lines[1].fragments[0].x == 0.0 // wrapped line not indented
+}
+
+// A negative text-indent outdents the first line.
+fn test_negative_text_indent() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px; text-indent: -10px')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('x').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines[0].fragments[0].x == -10.0
+}
