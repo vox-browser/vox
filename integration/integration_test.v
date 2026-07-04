@@ -118,3 +118,19 @@ fn test_ua_cascade_over_parsed_document() {
 	assert css.cascaded_value_with_ua(span, display, no_author) == 'inline'
 	assert css.cascaded_value_with_ua(head, display, no_author) == 'none'
 }
+
+// Full-stack computed font-size: parse HTML with font-sizes, then resolve computed px over the
+// parsed DOM (em/% resolve up the inheritance chain).
+fn test_computed_font_size_over_parsed_document() {
+	doc := html.parse_document('<html style="font-size: 20px"><body><section style="font-size: 1.5em"><span style="font-size: 200%">x</span></section></body></html>')
+	root := unsafe { &dom.Node(doc) }
+	no_author := []&css.CSSRule{}
+
+	section := css.query_selector(root, 'section') or { panic('no section') }
+	span := css.query_selector(root, 'span') or { panic('no span') }
+
+	// section: 1.5em of html's 20px (body inherits 20) = 30.
+	assert css.computed_font_size_px(section, no_author) == 30.0
+	// span: 200% of section's 30 = 60.
+	assert css.computed_font_size_px(span, no_author) == 60.0
+}

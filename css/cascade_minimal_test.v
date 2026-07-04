@@ -141,6 +141,43 @@ fn test_longhand_overrides_shorthand_in_cascade() {
 	assert cascaded_value_with_stylesheet(el, pid('margin-left'), rules) == '5px'
 }
 
+fn test_computed_font_size_inherit_em_percent() {
+	doc := dom.Document.create(dom.url_about_blank())
+	html := el_with(doc, 'html', 'style', 'font-size: 20px')
+	body := doc.create_element_ns(html_ns, 'body') or { panic('${err}') } // no own font-size
+	div := el_with(doc, 'div', 'style', 'font-size: 1.5em') // 1.5 * parent
+	span := el_with(doc, 'span', 'style', 'font-size: 150%') // 1.5 * parent
+	mut html_node := html.as_node()
+	html_node.append_child(body.as_node()) or { panic('${err}') }
+	mut body_node := body.as_node()
+	body_node.append_child(div.as_node()) or { panic('${err}') }
+	mut div_node := div.as_node()
+	div_node.append_child(span.as_node()) or { panic('${err}') }
+
+	no_author := []&CSSRule{}
+	assert computed_font_size_px(html, no_author) == 20.0
+	assert computed_font_size_px(body, no_author) == 20.0 // inherited computed value
+	assert computed_font_size_px(div, no_author) == 30.0 // 1.5em of 20
+	assert computed_font_size_px(span, no_author) == 45.0 // 150% of 30
+}
+
+fn test_computed_font_size_rem_and_keyword() {
+	doc := dom.Document.create(dom.url_about_blank())
+	html := el_with(doc, 'html', 'style', 'font-size: 10px')
+	rem_el := el_with(doc, 'p', 'style', 'font-size: 2rem') // 2 * root(10) = 20
+	mut html_node := html.as_node()
+	html_node.append_child(rem_el.as_node()) or { panic('${err}') }
+	no_author := []&CSSRule{}
+	assert computed_font_size_px(rem_el, no_author) == 20.0
+
+	// Absolute-size keyword (large = 6/5 * 16).
+	kw_el := el_with(doc, 'span', 'style', 'font-size: large')
+	assert computed_font_size_px(kw_el, no_author) == default_font_size_px * 6.0 / 5.0
+	// Default (no font-size anywhere) is medium = 16px.
+	plain := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	assert computed_font_size_px(plain, no_author) == 16.0
+}
+
 fn test_user_agent_default_display() {
 	doc := dom.Document.create(dom.url_about_blank())
 	display := pid('display')
