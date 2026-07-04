@@ -170,7 +170,7 @@ fn test_computed_color_over_parsed_document() {
 // Full-stack block layout: parse HTML, cascade computed widths/heights, run the minimal block-flow
 // engine over the real DOM. A 300px container with two block children (auto width; 25% width).
 fn test_block_flow_layout_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 300px"><p style="height: 40px"></p><p style="width: 25%; height: 10px"></p></div>')
+	doc := html.parse_document('<div style="width: 300px"><div style="height: 40px"></div><div style="width: 25%; height: 10px"></div></div>')
 	root := unsafe { &dom.Node(doc) }
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -317,20 +317,20 @@ fn test_centered_container_over_parsed_document() {
 // letting it collapse out (the classic "contain the margin" use of a BFC). Compare the plain-div
 // case where the margin would collapse through.
 fn test_bfc_contains_margin_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 300px; overflow: hidden"><p style="height: 20px; margin-top: 40px"></p></div>')
+	doc := html.parse_document('<div style="width: 300px; overflow: hidden"><div style="height: 20px; margin-top: 40px"></div></div>')
 	root := unsafe { &dom.Node(doc) }
 	wrapper := css.query_selector(root, 'div') or { panic('no div') }
 
 	box := layout.layout_block(wrapper, 0, 0, 1000, []&css.CSSRule{})
 	assert box.y == 0.0 // wrapper NOT pushed down; it contains the child's margin
 	assert box.outer_top_margin == 0.0
-	assert box.children[0].y == 40.0 // p's top margin sits inside the wrapper
+	assert box.children[0].y == 40.0 // the child's top margin sits inside the wrapper
 	assert box.height == 60.0 // 40 (margin inside) + 20
 }
 
 // Full-stack position: relative -- a nudged element moves but its sibling keeps its flow position.
 fn test_relative_position_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 300px"><p style="height: 20px; position: relative; top: 5px; left: 12px"></p><p style="height: 20px"></p></div>')
+	doc := html.parse_document('<div style="width: 300px"><div style="height: 20px; position: relative; top: 5px; left: 12px"></div><div style="height: 20px"></div></div>')
 	root := unsafe { &dom.Node(doc) }
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -338,7 +338,7 @@ fn test_relative_position_over_parsed_document() {
 	assert box.children[0].x == 12.0 // left
 	assert box.children[0].y == 5.0 // top, offset from its flow y (0)
 	assert box.children[1].x == 0.0 // sibling unaffected
-	assert box.children[1].y == 20.0 // flows after the first p's NORMAL box, not its offset one
+	assert box.children[1].y == 20.0 // flows after the first child's NORMAL box, not its offset one
 	assert box.height == 40.0 // container height from the flow (20 + 20), ignoring the offset
 }
 
@@ -843,4 +843,21 @@ fn test_letter_spacing_over_parsed_document() {
 	frag := p_box.lines[0].fragments[0]
 	assert frag.text == 'hi'
 	assert frag.width == 30.0 // 2 runes × (10px glyph + 5px letter-spacing)
+}
+
+// Full-stack CSS logical properties: the UA sheet expresses block/inline edges logically
+// (`p { margin-block: 1em }`, `ul { padding-inline-start: 40px }`); in LTR these map to the physical
+// margin-top/bottom and padding-left the layout reads, so a parsed <p>/<ul> gets its real UA edges.
+fn test_logical_properties_over_parsed_document() {
+	doc := html.parse_document('<body><p></p><ul><li>x</li></ul></body>')
+	root := unsafe { &dom.Node(doc) }
+	p := css.query_selector(root, 'p') or { panic('no p') }
+	ul := css.query_selector(root, 'ul') or { panic('no ul') }
+
+	p_box := layout.layout_block(p, 0, 0, 1000, []&css.CSSRule{})
+	assert p_box.margin.top == 16.0 // UA margin-block: 1em -> margin-top
+	assert p_box.margin.bottom == 16.0
+
+	ul_box := layout.layout_block(ul, 0, 0, 1000, []&css.CSSRule{})
+	assert ul_box.padding.left == 40.0 // UA padding-inline-start: 40px -> padding-left
 }

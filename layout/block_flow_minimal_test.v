@@ -2038,3 +2038,31 @@ fn test_word_spacing_widens_gap() {
 	// gap from 'a' to 'b' = a.width(10) + space(10) + word-spacing(6) = 26.
 	assert frags[1].x - frags[0].x == 26.0
 }
+
+// CSS logical properties: a bare <p> gets its UA margin-block (1em = 16px top and bottom) via the
+// logical->physical fallback, even though only `p { margin-block: 1em }` (logical) is in the UA sheet.
+fn test_logical_margin_block_on_paragraph() {
+	doc := dom.Document.create(dom.url_about_blank())
+	p := styled(doc, 'p', '')
+	box := layout_block(p, 0, 0, 800, []&css.CSSRule{})
+	assert box.margin.top == 16.0 // 1em of the default 16px font
+	assert box.margin.bottom == 16.0
+}
+
+// A <ul> gets its UA padding-inline-start (40px) mapped to padding-left in LTR.
+fn test_logical_padding_inline_on_list() {
+	doc := dom.Document.create(dom.url_about_blank())
+	ul := styled(doc, 'ul', '')
+	box := layout_block(ul, 0, 0, 800, []&css.CSSRule{})
+	assert box.padding.left == 40.0
+}
+
+// A physical property that is explicitly set wins over the logical fallback (per-side): an author
+// margin-top:5px is used, while margin-bottom still falls back to the UA logical 1em.
+fn test_physical_edge_wins_over_logical() {
+	doc := dom.Document.create(dom.url_about_blank())
+	p := styled(doc, 'p', 'margin-top: 5px')
+	box := layout_block(p, 0, 0, 800, []&css.CSSRule{})
+	assert box.margin.top == 5.0 // physical wins
+	assert box.margin.bottom == 16.0 // still the UA logical margin-block-end
+}

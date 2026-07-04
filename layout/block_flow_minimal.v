@@ -778,8 +778,21 @@ fn collapse_margins(margins []f64) f64 {
 
 // A length/percentage/calc() property resolved to px, or 0 when it's `auto`/absent/other. Percentages
 // (and `%` inside a calc) resolve against `basis` (for margins and padding, the containing width).
+//
+// When the physical property is absent (no length/percentage/calc resolves), its CSS *logical*
+// equivalent is tried (e.g. `padding-left` <- `padding-inline-start`), so the UA sheet's logical
+// margins/padding (`p { margin-block: 1em }`, `ul { padding-inline-start: 40px }`, ...) take effect.
+// This assumes a left-to-right, horizontal-tb writing mode (the only mode this engine supports).
 fn used_length_or_zero(element &dom.Element, property_name string, basis f64, author_rules []&css.CSSRule) f64 {
 	id := css.property_id_from_string(property_name) or { return 0 }
+	// If the physical property was never declared, defer to its CSS logical equivalent (once; a logical
+	// property has no further mapping). The cascade always yields the initial value for an unset
+	// property, so "declared?" must be asked explicitly rather than inferred from the resolved value.
+	if !css.is_property_specified(element, id, author_rules) {
+		if logical := logical_equivalent(property_name) {
+			return used_length_or_zero(element, logical, basis, author_rules)
+		}
+	}
 	if px := css.computed_length_px(element, id, author_rules) {
 		return px
 	}
@@ -790,6 +803,24 @@ fn used_length_or_zero(element &dom.Element, property_name string, basis f64, au
 		return calc
 	}
 	return 0
+}
+
+// The CSS logical property that maps to `physical` in a left-to-right, horizontal-tb writing mode
+// (inline-start = left, inline-end = right, block-start = top, block-end = bottom), or none when
+// `physical` has no logical counterpart. FIXME: only this one writing mode is handled; an explicit
+// physical `auto` margin is treated as absent here, so it wrongly falls back to a logical value.
+fn logical_equivalent(physical string) ?string {
+	return match physical {
+		'padding-left' { 'padding-inline-start' }
+		'padding-right' { 'padding-inline-end' }
+		'padding-top' { 'padding-block-start' }
+		'padding-bottom' { 'padding-block-end' }
+		'margin-left' { 'margin-inline-start' }
+		'margin-right' { 'margin-inline-end' }
+		'margin-top' { 'margin-block-start' }
+		'margin-bottom' { 'margin-block-end' }
+		else { none }
+	}
 }
 
 // The used border width for one side. Per spec the computed border width is 0 when the corresponding

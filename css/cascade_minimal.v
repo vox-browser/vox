@@ -246,3 +246,15 @@ pub fn cascaded_value_with_stylesheet(element &dom.Element, property_id Property
 pub fn cascaded_value_with_ua(element &dom.Element, property_id PropertyID, author_rules []&CSSRule) string {
 	return cascaded_value_impl(element, property_id, author_rules, user_agent_rules())
 }
+
+// Whether `property_id` is explicitly declared for `element` by any UA, author, or inline declaration
+// (shorthands expanded), as opposed to falling back to inheritance or the initial value. Lets the
+// layout decide whether a physical box edge that was never set should defer to its CSS logical
+// equivalent (e.g. an unset `margin-top` deferring to a declared `margin-block-start`).
+pub fn is_property_specified(element &dom.Element, property_id PropertyID, author_rules []&CSSRule) bool {
+	name := string_from_property_id(property_id)
+	if _ := specified_value_on(element, name, author_rules, user_agent_rules()) {
+		return true
+	}
+	return false
+}
