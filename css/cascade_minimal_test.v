@@ -199,6 +199,27 @@ fn test_computed_length_px() {
 	assert computed_length_px(pct, pid('width'), no_author) == none // % needs a containing block
 }
 
+fn test_computed_color() {
+	doc := dom.Document.create(dom.url_about_blank())
+	parent := el_with(doc, 'div', 'style', 'color: red')
+	child := el_with(doc, 'span', 'style', 'background-color: #00ff00; border-top-color: currentColor')
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node()) or { panic('${err}') }
+
+	no_author := []&CSSRule{}
+	// color inherits red from the parent.
+	assert (computed_color(child, pid('color'), no_author) or { panic('color') }).serialize() == 'rgb(255 0 0)'
+	// explicit green background.
+	assert (computed_color(child, pid('background-color'), no_author) or { panic('bg') }).serialize() == 'rgb(0 255 0)'
+	// currentColor resolves to the element's computed color (red).
+	assert (computed_color(child, pid('border-top-color'), no_author) or { panic('bc') }).serialize() == 'rgb(255 0 0)'
+
+	// Initial values: color is canvastext (black), background-color is transparent.
+	plain := el_with(doc, 'p', 'style', '')
+	assert (computed_color(plain, pid('color'), no_author) or { panic('pc') }).serialize() == 'rgb(0 0 0)'
+	assert (computed_color(plain, pid('background-color'), no_author) or { panic('pb') }).serialize() == 'rgb(0 0 0 / 0)'
+}
+
 fn test_user_agent_default_display() {
 	doc := dom.Document.create(dom.url_about_blank())
 	display := pid('display')

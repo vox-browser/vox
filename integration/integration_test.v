@@ -152,3 +152,17 @@ fn test_computed_length_feeds_layout() {
 	assert available.is_definite()
 	assert available.to_px_or_zero().to_double() == 160.0
 }
+
+// Full-stack computed color: parse HTML, resolve inherited color + currentColor over the DOM.
+fn test_computed_color_over_parsed_document() {
+	doc := html.parse_document('<body style="color: rgb(1, 2, 3)"><div><span style="border-top-color: currentColor">x</span></div></body>')
+	root := unsafe { &dom.Node(doc) }
+	span := css.query_selector(root, 'span') or { panic('no span') }
+	no := []&css.CSSRule{}
+	color_id := css.property_id_from_string('color') or { panic('color id') }
+	border_id := css.property_id_from_string('border-top-color') or { panic('border id') }
+
+	// span inherits color rgb(1 2 3) from body; border-top-color: currentColor resolves to it.
+	assert (css.computed_color(span, color_id, no) or { panic('color') }).serialize() == 'rgb(1 2 3)'
+	assert (css.computed_color(span, border_id, no) or { panic('border') }).serialize() == 'rgb(1 2 3)'
+}
