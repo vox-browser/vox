@@ -1130,3 +1130,21 @@ fn test_flex_column_over_parsed_document() {
 	// centered horizontally: (240 - 120)/2 = 60 from the menu's left.
 	assert one_rect.x == menu_rect.x + 60.0
 }
+
+// Full-stack radial-gradient: an author stylesheet gives an element a radial background; it renders
+// to an SVG radialGradient with the stop colors.
+fn test_radial_gradient_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.orb { width: 120px; height: 120px; background: radial-gradient(circle, rgb(240, 240, 240), rgb(40, 40, 40)) }</style></head><body><div class="orb"></div></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	orb := css.query_selector(root, '.orb') or { panic('no .orb') }
+
+	orb_box := root_box.find_box(i64(orb.as_node().unique_id())) or { panic('no orb box') }
+	grad := orb_box.background_gradient or { panic('no gradient') }
+	assert grad.radial == true
+
+	svg := root_box.render_svg(600, root_box.height + 20)
+	assert svg.contains('<radialGradient')
+	assert svg.contains('stop-color="rgb(240 240 240)"')
+	assert svg.contains('stop-color="rgb(40 40 40)"')
+}

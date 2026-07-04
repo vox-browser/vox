@@ -2663,3 +2663,43 @@ fn test_flex_column_auto_height() {
 	assert box.height == 80.0 // 30 + 10 gap + 40
 	assert box.children[1].y == 40.0 // 30 + 10 gap
 }
+
+// radial-gradient background renders to an SVG <radialGradient> with the stop colors.
+fn test_radial_gradient_background() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 100px; height: 100px; background: radial-gradient(rgb(255, 0, 0), rgb(0, 0, 255))')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	grad := box.background_gradient or { panic('no gradient') }
+	assert grad.radial == true
+	assert grad.colors.len == 2
+
+	svg := box.render_svg(200, 200)
+	assert svg.contains('<radialGradient id="grad0"')
+	assert svg.contains('stop-color="rgb(255 0 0)"')
+	assert svg.contains('fill="url(#grad0)"')
+	assert !svg.contains('<linearGradient')
+}
+
+// A leading shape/size keyword (e.g. `circle`) is skipped; the color stops still parse.
+fn test_radial_gradient_skips_shape() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 60px; height: 60px; background-image: radial-gradient(circle, rgb(1, 2, 3), rgb(4, 5, 6))')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	grad := box.background_gradient or { panic('no gradient') }
+	assert grad.radial == true
+	assert grad.colors.len == 2
+	assert grad.colors[0].serialize() == 'rgb(1 2 3)'
+}
+
+// linear-gradient still parses as non-radial and renders a <linearGradient>.
+fn test_linear_gradient_still_linear() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 60px; height: 60px; background: linear-gradient(to right, rgb(1, 1, 1), rgb(2, 2, 2))')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	grad := box.background_gradient or { panic('no gradient') }
+	assert grad.radial == false
+	assert box.render_svg(100, 100).contains('<linearGradient')
+}

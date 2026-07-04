@@ -845,7 +845,11 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 					offset := if n > 1 { f64(i) / f64(n - 1) * 100.0 } else { 0.0 }
 					stops += '<stop offset="${fmt_px(offset)}%" stop-color="${c.serialize()}"/>'
 				}
-				defs << '<linearGradient id="${id}" x1="${fmt_px(grad.x1 * 100.0)}%" y1="${fmt_px(grad.y1 * 100.0)}%" x2="${fmt_px(grad.x2 * 100.0)}%" y2="${fmt_px(grad.y2 * 100.0)}%">${stops}</linearGradient>'
+				if grad.radial {
+					defs << '<radialGradient id="${id}">${stops}</radialGradient>'
+				} else {
+					defs << '<linearGradient id="${id}" x1="${fmt_px(grad.x1 * 100.0)}%" y1="${fmt_px(grad.y1 * 100.0)}%" x2="${fmt_px(grad.x2 * 100.0)}%" y2="${fmt_px(grad.y2 * 100.0)}%">${stops}</linearGradient>'
+				}
 				corner := if command.radius > 0 { ' rx="${fmt_px(command.radius)}" ry="${fmt_px(command.radius)}"' } else { '' }
 				body << '<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}"${corner} fill="url(#${id})" fill-opacity="${fmt_px(command.opacity)}"/>'
 			}
@@ -1684,24 +1688,44 @@ fn parse_box_shadow(element &dom.Element, author_rules []&css.CSSRule) ?BoxShado
 // evenly.
 pub struct LinearGradient {
 pub:
+	// A linear gradient's vector (objectBoundingBox fractions); unused when `radial`.
 	x1     f64
 	y1     f64
 	x2     f64
 	y2     f64
 	colors []css.Color
+	radial bool // a `radial-gradient` (centered, farthest-corner) rather than a linear one
+}
+
+// The evenly-spaced stop colors of a comma-separated gradient `args` list. The color is the first
+// paren-aware token of each arg (any stop position is ignored). Returns none when fewer than 2 parse.
+fn parse_gradient_stops(args []string) ?[]css.Color {
+	mut colors := []css.Color{}
+	for arg in args {
+		tokens := split_top_level(arg, ` `)
+		if tokens.len == 0 {
+			continue
+		}
+		if c := css.parse_color_string(tokens[0]) {
+			colors << c
+		}
+	}
+	if colors.len < 2 {
+		return none
+	}
+	return colors
 }
 
 // Parse a `linear-gradient(...)` value: an optional leading `to <side>` direction (the four sides;
 // default `to bottom`) followed by 2+ comma-separated color stops (stop positions are ignored — the
 // stops are spaced evenly). Returns none when the value isn't a parseable linear gradient.
-// FIXME: angles, corner directions, explicit stop positions, and radial/conic gradients aren't modeled.
+// FIXME: angles, corner directions, explicit stop positions, and conic gradients aren't modeled.
 fn parse_linear_gradient(value string) ?LinearGradient {
 	v := value.trim_space()
 	if !v.starts_with('linear-gradient(') || !v.ends_with(')') {
 		return none
 	}
-	inner := v['linear-gradient('.len..v.len - 1]
-	mut args := split_top_level(inner, `,`)
+	mut args := split_top_level(v['linear-gradient('.len..v.len - 1], `,`)
 	if args.len < 2 {
 		return none
 	}
@@ -1717,27 +1741,55 @@ fn parse_linear_gradient(value string) ?LinearGradient {
 		}
 		args = args[1..]
 	}
-	// Color stops (positions ignored; the color token is paren-aware so rgb(...) survives).
-	mut colors := []css.Color{}
-	for arg in args {
-		tokens := split_top_level(arg, ` `)
-		if tokens.len == 0 {
-			continue
-		}
-		if c := css.parse_color_string(tokens[0]) {
-			colors << c
-		}
+	colors := parse_gradient_stops(args)?
+	return LinearGradient{
+		x1:     x1
+		y1:     y1
+		x2:     x2
+		y2:     y2
+		colors: colors
 	}
-	if colors.len < 2 {
-		return none
-	}
-	return LinearGradient{x1, y1, x2, y2, colors}
 }
 
-// The `linear-gradient` background image of `element`, or none when background-image isn't one.
+// Parse a `radial-gradient(...)` value: an optional leading shape/size/position (ignored — rendered
+// centered, farthest-corner) followed by 2+ color stops. Returns none when it isn't a radial gradient.
+// FIXME: shape (circle/ellipse), size, and position are ignored; explicit stop positions too.
+fn parse_radial_gradient(value string) ?LinearGradient {
+	v := value.trim_space()
+	if !v.starts_with('radial-gradient(') || !v.ends_with(')') {
+		return none
+	}
+	mut args := split_top_level(v['radial-gradient('.len..v.len - 1], `,`)
+	if args.len < 2 {
+		return none
+	}
+	// If the first arg isn't a color, it's the shape/size/position configuration — skip it.
+	first_tokens := split_top_level(args[0], ` `)
+	mut first_is_color := false
+	if first_tokens.len > 0 {
+		if _ := css.parse_color_string(first_tokens[0]) {
+			first_is_color = true
+		}
+	}
+	if !first_is_color {
+		args = args[1..]
+	}
+	colors := parse_gradient_stops(args)?
+	return LinearGradient{
+		colors: colors
+		radial: true
+	}
+}
+
+// The `linear-gradient`/`radial-gradient` background image of `element`, or none when background-image
+// isn't a gradient.
 fn parse_background_gradient(element &dom.Element, author_rules []&css.CSSRule) ?LinearGradient {
 	id := css.property_id_from_string('background-image') or { return none }
-	return parse_linear_gradient(css.cascaded_value_with_ua(element, id, author_rules))
+	value := css.cascaded_value_with_ua(element, id, author_rules)
+	if g := parse_linear_gradient(value) {
+		return g
+	}
+	return parse_radial_gradient(value)
 }
 
 // A word of inline content with its own measured metrics, taken from the element it comes from — so
