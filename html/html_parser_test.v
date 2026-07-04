@@ -219,3 +219,42 @@ fn test_foreign_content_breakout() {
 	// The <p> pops back out of the <svg> and becomes an HTML sibling of it in the body.
 	assert tree_repr(body) == 'body(svg:svg(svg:rect),p("out"))'
 }
+
+fn test_select_options() {
+	doc := parse('<body><select><option>a</option><option>b</option></select></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(select(option("a"),option("b")))'
+}
+
+fn test_select_option_auto_close() {
+	// An <option> is implicitly closed by the next <option> and by </select>.
+	doc := parse('<body><select><option>a<option>b</select></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(select(option("a"),option("b")))'
+}
+
+fn test_select_optgroup() {
+	doc := parse('<body><select><optgroup><option>a</option></optgroup></select></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(select(optgroup(option("a"))))'
+}
+
+fn test_button() {
+	doc := parse('<body><button>click</button></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(button("click"))'
+}
+
+fn test_textarea_rcdata_and_newline_skip() {
+	// <textarea> is RCDATA (so '<b>' is literal text) and a leading newline is dropped.
+	doc := parse('<body><textarea>\nhi<b>there</textarea></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(textarea("hi<b>there"))'
+}
+
+fn test_xmp_raw_text() {
+	// <xmp> is a raw-text element: markup inside is literal text.
+	doc := parse('<body><xmp><b>raw</b></xmp></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(xmp("<b>raw</b>"))'
+}

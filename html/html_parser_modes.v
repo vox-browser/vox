@@ -493,6 +493,88 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		}
 		return
 	}
+	if token.is_start_tag() && token.tag_name == 'button' {
+		if p.stack_of_open_elements.has_in_scope('button') {
+			p.generate_implied_end_tags('')
+			p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('button')
+		}
+		p.reconstruct_the_active_formatting_elements()
+		p.insert_html_element(token)
+		p.frameset_ok = false
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'textarea' {
+		p.insert_html_element(token)
+		// A leading newline inside <textarea> is ignored.
+		p.next_line_feed_can_be_ignored = true
+		p.tokenizer.switch_to(.rcdata)
+		p.original_insertion_mode = p.insertion_mode
+		p.frameset_ok = false
+		p.insertion_mode = .text
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'xmp' {
+		if p.stack_of_open_elements.has_in_button_scope('p') {
+			p.close_a_p_element()
+		}
+		p.reconstruct_the_active_formatting_elements()
+		p.frameset_ok = false
+		p.parse_generic_raw_text_element(token)
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'iframe' {
+		p.frameset_ok = false
+		p.parse_generic_raw_text_element(token)
+		return
+	}
+	if token.is_start_tag()
+		&& (token.tag_name == 'noembed' || (token.tag_name == 'noscript' && p.scripting_enabled)) {
+		p.parse_generic_raw_text_element(token)
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'select' {
+		mut is_fragment_select := false
+		if p.parsing_fragment {
+			if ctx := p.context_element {
+				is_fragment_select = ctx.local_name() == 'select'
+			}
+		}
+		if is_fragment_select {
+			// Ignore the token.
+		} else if p.stack_of_open_elements.has_in_scope('select') {
+			// Nested selects collapse: pop until a select has been popped.
+			p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('select')
+		} else {
+			p.reconstruct_the_active_formatting_elements()
+			p.insert_html_element(token)
+			p.frameset_ok = false
+		}
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'option' {
+		if p.stack_of_open_elements.has_in_scope('select') {
+			p.generate_implied_end_tags('optgroup')
+		} else if cn := p.current_node() {
+			if cn.local_name() == 'option' {
+				p.stack_of_open_elements.pop()
+			}
+		}
+		p.reconstruct_the_active_formatting_elements()
+		p.insert_html_element(token)
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'optgroup' {
+		if p.stack_of_open_elements.has_in_scope('select') {
+			p.generate_implied_end_tags('')
+		} else if cn := p.current_node() {
+			if cn.local_name() == 'option' {
+				p.stack_of_open_elements.pop()
+			}
+		}
+		p.reconstruct_the_active_formatting_elements()
+		p.insert_html_element(token)
+		return
+	}
 	if token.is_start_tag() && token.tag_name == 'table' {
 		if !p.document.in_quirks_mode() && p.stack_of_open_elements.has_in_button_scope('p') {
 			p.close_a_p_element()
