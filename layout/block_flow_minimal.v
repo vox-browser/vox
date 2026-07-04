@@ -252,6 +252,33 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 	return commands
 }
 
+// Escape the five XML metacharacters so text can go inside SVG markup.
+fn escape_xml(text string) string {
+	return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"',
+		'&quot;').replace("'", '&apos;')
+}
+
+// Render this box tree to an SVG document `width`×`height` px: each display-list command becomes a
+// `<rect>` (fills, backgrounds, borders) or `<text>` (in paint order, honoring opacity). This closes
+// the pipeline — an HTML string laid out and turned into a viewable image.
+//
+// FIXME: SVG text uses its own font metrics, so text widths won't match this engine's estimates;
+// baseline/font-size are approximated from the line-height.
+pub fn (b &BlockBox) render_svg(width f64, height f64) string {
+	mut parts := ['<svg xmlns="http://www.w3.org/2000/svg" width="${fmt_px(width)}" height="${fmt_px(height)}">']
+	for command in b.paint_commands() {
+		if command.kind == 'fill_rect' {
+			parts << '<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}" fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
+		} else if command.kind == 'draw_text' {
+			font_size := command.height * 0.8 // approximate the font-size from the line-height
+			baseline := command.y + font_size
+			parts << '<text x="${fmt_px(command.x)}" y="${fmt_px(baseline)}" font-size="${fmt_px(font_size)}" fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}">${escape_xml(command.text)}</text>'
+		}
+	}
+	parts << '</svg>'
+	return parts.join('\n')
+}
+
 // Stable insertion sort of `items` by z-index (preserving tree order among equal z-indexes).
 fn stable_sort_by_z(items []BlockBox) []BlockBox {
 	mut result := items.clone()

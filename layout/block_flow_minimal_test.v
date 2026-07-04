@@ -1587,3 +1587,38 @@ fn test_transform_translate_parse() {
 	tx3, ty3 := transform_translate(styled(doc, 'div', ''), []&css.CSSRule{}) // none
 	assert tx3 == 0.0 && ty3 == 0.0
 }
+
+// render_svg turns the display list into an SVG document: a filled rect for the background and a
+// <text> for the word.
+fn test_render_svg() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; height: 40px; background-color: #ff0000; font-size: 20px; line-height: 30px; color: blue')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
+
+	svg := layout_block(el, 0, 0, 800, []&css.CSSRule{}).render_svg(100, 40)
+	assert svg.starts_with('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40">')
+	assert svg.ends_with('</svg>')
+	assert svg.contains('<rect x="0" y="0" width="100" height="40" fill="rgb(255 0 0)" fill-opacity="1"/>')
+	assert svg.contains('fill="rgb(0 0 255)"') // the text in blue
+	assert svg.contains('>hi</text>')
+}
+
+// SVG text is XML-escaped.
+fn test_render_svg_escapes_text() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('a<b>&c').as_node()) or { panic('${err}') } // one "word"
+
+	svg := layout_block(el, 0, 0, 800, []&css.CSSRule{}).render_svg(200, 30)
+	assert svg.contains('>a&lt;b&gt;&amp;c</text>')
+}
+
+// Opacity flows into the SVG as fill-opacity.
+fn test_render_svg_opacity() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 50px; height: 50px; background-color: green; opacity: 0.5')
+	svg := layout_block(el, 0, 0, 800, []&css.CSSRule{}).render_svg(50, 50)
+	assert svg.contains('fill="rgb(0 128 0)" fill-opacity="0.5"/>')
+}

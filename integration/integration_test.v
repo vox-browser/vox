@@ -608,3 +608,16 @@ fn test_transform_over_parsed_document() {
 	assert box.children[1].y == 40.0 // sibling flows after the untransformed first box
 	assert box.height == 65.0 // 40 + 25 (flow)
 }
+
+// Full-stack render: parse HTML, lay it out, and render to SVG -- the whole pipeline, HTML -> image.
+fn test_render_svg_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 120px; height: 60px; background-color: rgb(240, 240, 240)"><div style="width: 50px; height: 20px; background-color: rgb(30, 60, 90); color: white; font-size: 16px; line-height: 20px">hi</div></div>')
+	root := unsafe { &dom.Node(doc) }
+	container := css.query_selector(root, 'div') or { panic('no div') }
+
+	svg := layout.layout_block(container, 0, 0, 200, []&css.CSSRule{}).render_svg(120, 60)
+	assert svg.contains('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60">')
+	assert svg.contains('fill="rgb(240 240 240)"') // outer background
+	assert svg.contains('fill="rgb(30 60 90)"') // inner background
+	assert svg.contains('>hi</text>')
+}
