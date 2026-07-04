@@ -549,3 +549,26 @@ fn test_display_list_over_parsed_document() {
 	assert cmds[1].text == 'hi'
 	assert cmds[1].color == 'rgb(1 2 3)'
 }
+
+// Full-stack borders + per-inline colors in the display list: a bordered div whose two words paint
+// in their own colors.
+fn test_border_and_inline_color_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 200px; border: 4px solid green">text <span style="color: red">red</span></div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	cmds := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{}).paint_commands()
+	assert cmds[0].kind == 'fill_rect' // first: the green border edges (no background)
+	assert cmds[0].color == 'rgb(0 128 0)'
+	mut texts := []layout.PaintCommand{}
+	for c in cmds {
+		if c.kind == 'draw_text' {
+			texts << c
+		}
+	}
+	assert texts.len == 2
+	assert texts[0].text == 'text'
+	assert texts[0].color == 'rgb(0 0 0)' // div default color
+	assert texts[1].text == 'red'
+	assert texts[1].color == 'rgb(255 0 0)' // the span's color
+}

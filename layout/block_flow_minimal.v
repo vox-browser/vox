@@ -41,8 +41,8 @@ pub:
 	left   f64
 }
 
-// A laid-out inline fragment: one word positioned within a line, with its own box and text (for
-// selection, hit-testing, and inline backgrounds).
+// A laid-out inline fragment: one word positioned within a line, with its own box, text, and color
+// (for selection, hit-testing, inline backgrounds, and painting).
 pub struct TextFragment {
 pub mut:
 	x      f64
@@ -50,7 +50,8 @@ pub mut:
 	width  f64
 	height f64
 pub:
-	text string
+	text  string
+	color css.Color
 }
 
 // A laid-out line box within a block's inline formatting context: `x`/`y` is the top-left of the
@@ -79,6 +80,7 @@ fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 			width:  it.width
 			height: it.height
 			text:   it.text
+			color:  it.color
 		})
 	}
 }
@@ -108,9 +110,10 @@ pub mut:
 	// The z-index used for paint ordering among siblings: the integer `z-index` of a positioned box,
 	// else 0 (`auto` and non-positioned boxes don't reorder).
 	z_index int
-	// The computed background-color and text color, used to build the display list.
+	// The computed background-color, text color, and border color, used to build the display list.
 	background_color css.Color
 	text_color       css.Color
+	border_color     css.Color
 	children         []BlockBox
 	lines            []TextLine
 }
@@ -150,24 +153,73 @@ pub:
 	text   string // for 'draw_text'
 }
 
-// Build the display list for this box tree: for each box in paint order, a background fill (when the
-// background-color isn't transparent) over its border box, then a draw-text command per inline
-// fragment in the box's text color. This is the layout → rendering bridge.
+// Build the display list for this box tree: for each box in paint order — a background fill (when the
+// background-color isn't transparent) over its border box, then one fill per non-zero border edge,
+// then a draw-text command per inline fragment in that fragment's color. This is the layout →
+// rendering bridge.
 //
-// FIXME: borders/outlines/images aren't emitted; text color is per-box, not per-inline fragment.
+// FIXME: border edges overlap at the corners (no mitered corners) and share one color per box;
+// outlines/images/gradients aren't emitted.
 pub fn (b &BlockBox) paint_commands() []PaintCommand {
 	mut commands := []PaintCommand{}
 	for box in b.paint_order() {
+		border_left := box.x - box.padding.left - box.border.left
+		border_top := box.y - box.padding.top - box.border.top
+		border_width := box.width + box.padding.left + box.padding.right + box.border.left +
+			box.border.right
+		border_height := box.height + box.padding.top + box.padding.bottom + box.border.top +
+			box.border.bottom
+
 		if box.background_color.a > 0 {
 			commands << PaintCommand{
 				kind:   'fill_rect'
-				x:      box.x - box.padding.left - box.border.left
-				y:      box.y - box.padding.top - box.border.top
-				width:  box.width + box.padding.left + box.padding.right + box.border.left +
-					box.border.right
-				height: box.height + box.padding.top + box.padding.bottom + box.border.top +
-					box.border.bottom
+				x:      border_left
+				y:      border_top
+				width:  border_width
+				height: border_height
 				color:  box.background_color.serialize()
+			}
+		}
+		// Border edges (each along the border box; corners overlap).
+		border := box.border_color.serialize()
+		if box.border.top > 0 {
+			commands << PaintCommand{
+				kind: 'fill_rect'
+				x: border_left
+				y: border_top
+				width: border_width
+				height: box.border.top
+				color: border
+			}
+		}
+		if box.border.bottom > 0 {
+			commands << PaintCommand{
+				kind: 'fill_rect'
+				x: border_left
+				y: border_top + border_height - box.border.bottom
+				width: border_width
+				height: box.border.bottom
+				color: border
+			}
+		}
+		if box.border.left > 0 {
+			commands << PaintCommand{
+				kind: 'fill_rect'
+				x: border_left
+				y: border_top
+				width: box.border.left
+				height: border_height
+				color: border
+			}
+		}
+		if box.border.right > 0 {
+			commands << PaintCommand{
+				kind: 'fill_rect'
+				x: border_left + border_width - box.border.right
+				y: border_top
+				width: box.border.right
+				height: border_height
+				color: border
 			}
 		}
 		for line in box.lines {
@@ -178,7 +230,7 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 					y:      fragment.y
 					width:  fragment.width
 					height: fragment.height
-					color:  box.text_color.serialize()
+					color:  fragment.color.serialize()
 					text:   fragment.text
 				}
 			}
@@ -622,6 +674,7 @@ struct InlineWord {
 	width       f64 // rune count × 0.5em of the word's font
 	space_after f64 // the space following this word (~0.5em of its font)
 	height      f64 // this word's line-height contribution
+	color       css.Color // this word's computed text color
 }
 
 // Gather a block's inline content as segments of styled words, split at `<br>` and (when
@@ -638,6 +691,8 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rule
 	display_id := css.property_id_from_string('display') or { return }
 	glyph_width := 0.5 * css.computed_font_size_px(element, author_rules)
 	line_height := css.computed_line_height_px(element, author_rules)
+	color := css.computed_color(element, css.property_id_from_string('color') or { return },
+		author_rules) or { css.Color{0, 0, 0, 255} }
 	for child in element.as_node().children_as_vector() {
 		if child.is_text() {
 			data := unsafe { &dom.Text(child) }.data()
@@ -652,6 +707,7 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rule
 						width:       f64(word.runes().len) * glyph_width
 						space_after: glyph_width
 						height:      line_height
+						color:       color
 					}
 				}
 			}
@@ -778,6 +834,7 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 					width:  segment[k].width
 					height: segment[k].height
 					text:   segment[k].text
+					color:  segment[k].color
 				}
 				fragment_x += segment[k].width + segment[k].space_after
 				if k < j - 1 {
@@ -1320,6 +1377,10 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	text_color := css.computed_color(element, css.property_id_from_string('color') or {
 		return BlockBox{}
 	}, author_rules) or { css.Color{0, 0, 0, 255} }
+	// Border color defaults to `currentColor` (the text color), which computed_color resolves.
+	border_color := css.computed_color(element, css.property_id_from_string('border-top-color') or {
+		return BlockBox{}
+	}, author_rules) or { text_color }
 
 	return BlockBox{
 		tag_name:            element.local_name()
@@ -1335,6 +1396,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		z_index:             z_index
 		background_color:    background_color
 		text_color:          text_color
+		border_color:        border_color
 		children:            children
 		lines:               lines
 	}

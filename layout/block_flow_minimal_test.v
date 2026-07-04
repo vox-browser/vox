@@ -1422,3 +1422,53 @@ fn test_paint_z_index_order() {
 	assert cmds[1].color == 'rgb(255 0 0)' // behind (z -1)
 	assert cmds[2].color == 'rgb(0 0 255)' // front (z 1)
 }
+
+// A visible border emits one fill_rect per edge in the border color.
+fn test_paint_border_edges() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; height: 50px; border: 5px solid red')
+	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
+	assert cmds.len == 4 // no background; 4 border edges
+	assert cmds[0].width == 110.0 && cmds[0].height == 5.0 // top edge spans the border box
+	assert cmds[0].color == 'rgb(255 0 0)'
+	assert cmds[1].y == 55.0 // bottom edge at border-box bottom - 5
+	assert cmds[2].width == 5.0 && cmds[2].height == 60.0 // left edge
+	assert cmds[3].x == 105.0 // right edge at border-box right - 5
+}
+
+// Background paints first, then borders.
+fn test_paint_background_then_border() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; height: 50px; border: 2px solid black; background-color: yellow')
+	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
+	assert cmds.len == 5 // background + 4 edges
+	assert cmds[0].color == 'rgb(255 255 0)' // yellow background first
+	assert cmds[1].color == 'rgb(0 0 0)' // then black border
+}
+
+// A border with no explicit color uses currentColor (the text color).
+fn test_paint_border_current_color() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; height: 50px; border: 3px solid; color: blue')
+	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
+	assert cmds[0].color == 'rgb(0 0 255)' // border resolves currentColor to blue
+}
+
+// Each text fragment paints in its own element's color (per-inline color).
+fn test_paint_per_inline_color() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 500px; font-size: 20px; line-height: 30px') // color default black
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
+	span := styled(doc, 'span', 'color: red')
+	mut sn := span.as_node()
+	sn.append_child(doc.create_text_node('RED').as_node()) or { panic('${err}') }
+	n.append_child(span.as_node()) or { panic('${err}') }
+
+	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
+	assert cmds.len == 2 // two draw_text, no background/border
+	assert cmds[0].text == 'hi'
+	assert cmds[0].color == 'rgb(0 0 0)' // default text color
+	assert cmds[1].text == 'RED'
+	assert cmds[1].color == 'rgb(255 0 0)' // the span's own color
+}
