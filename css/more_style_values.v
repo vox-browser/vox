@@ -2632,6 +2632,91 @@ fn (style_value ShorthandStyleValue) serialize_background(mode SerializationMode
 	return layers.join(', ')
 }
 
+fn mask_longhand_initial(property_id PropertyID) string {
+	return computed_interpolation_property_initial_value(property_id).css_text
+}
+
+// mask: zip the per-layer longhands, mirroring the upstream Mask serialize_layer. Unlike
+// background, mask emits `position / size` (with the slash) and special-cases origin/clip.
+fn (style_value ShorthandStyleValue) serialize_mask(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .mask {
+		return none
+	}
+	image := style_value.coordinating_longhand_value(.mask_image) or { return none }
+	position := style_value.coordinating_longhand_value(.mask_position) or { return none }
+	size := style_value.coordinating_longhand_value(.mask_size) or { return none }
+	repeat := style_value.coordinating_longhand_value(.mask_repeat) or { return none }
+	origin := style_value.coordinating_longhand_value(.mask_origin) or { return none }
+	clip := style_value.coordinating_longhand_value(.mask_clip) or { return none }
+	composite := style_value.coordinating_longhand_value(.mask_composite) or { return none }
+	mask_mode := style_value.coordinating_longhand_value(.mask_mode) or { return none }
+
+	mut layer_count := shorthand_layer_count_of(image)
+	for value in [position, size, repeat, origin, clip, composite, mask_mode] {
+		count := shorthand_layer_count_of(value)
+		if count > layer_count {
+			layer_count = count
+		}
+	}
+
+	mut layers := []string{}
+	for index := 0; index < layer_count; index++ {
+		layers << serialize_mask_layer(mode, shorthand_layer_value(image, index), shorthand_layer_value(position,
+			index), shorthand_layer_value(size, index), shorthand_layer_value(repeat, index),
+			shorthand_layer_value(origin, index), shorthand_layer_value(clip, index), shorthand_layer_value(composite,
+			index), shorthand_layer_value(mask_mode, index))
+	}
+	return layers.join(', ')
+}
+
+fn serialize_mask_layer(mode SerializationMode, image StyleValue, position StyleValue, size StyleValue, repeat StyleValue, origin StyleValue, clip StyleValue, composite StyleValue, mask_mode StyleValue) string {
+	image_serialized := image.serialize(mode)
+	position_serialized := position.serialize(mode)
+	size_serialized := size.serialize(mode)
+	repeat_serialized := repeat.serialize(mode)
+	origin_serialized := origin.serialize(mode)
+	clip_serialized := clip.serialize(mode)
+	composite_serialized := composite.serialize(mode)
+	mode_serialized := mask_mode.serialize(mode)
+
+	size_is_initial := size_serialized == mask_longhand_initial(.mask_size)
+	clip_is_initial := clip_serialized == mask_longhand_initial(.mask_clip)
+
+	mut parts := []string{}
+	if image_serialized != mask_longhand_initial(.mask_image) {
+		parts << image_serialized
+	}
+	// mask-position is kept when it (or the size) is non-initial; a non-initial size is
+	// appended after a `/`.
+	if !(position_serialized == mask_longhand_initial(.mask_position) && size_is_initial) {
+		if size_is_initial {
+			parts << position_serialized
+		} else {
+			parts << '${position_serialized} / ${size_serialized}'
+		}
+	}
+	if repeat_serialized != mask_longhand_initial(.mask_repeat) {
+		parts << repeat_serialized
+	}
+	// mask-origin can be omitted when initial and the clip is initial or `no-clip`.
+	origin_can_skip := clip_is_initial || clip_serialized == 'no-clip'
+	if !(origin_serialized == mask_longhand_initial(.mask_origin) && origin_can_skip) {
+		parts << origin_serialized
+	}
+	// mask-clip is omitted when initial or identical to mask-origin.
+	if !(clip_is_initial || clip_serialized == origin_serialized) {
+		parts << clip_serialized
+	}
+	if composite_serialized != mask_longhand_initial(.mask_composite) {
+		parts << composite_serialized
+	}
+	if mode_serialized != mask_longhand_initial(.mask_mode) {
+		parts << mode_serialized
+	}
+
+	return if parts.len == 0 { 'none' } else { parts.join(' ') }
+}
+
 // background-position: zip background-position-x/-y per layer as `<x> <y>`.
 fn (style_value ShorthandStyleValue) serialize_background_position(mode SerializationMode) ?string {
 	if style_value.shorthand_ != .background_position {
@@ -2760,6 +2845,9 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 		return s
 	}
 	if s := style_value.serialize_background_position(mode) {
+		return s
+	}
+	if s := style_value.serialize_mask(mode) {
 		return s
 	}
 	// Mirrors the upstream `default_serialize`: the remaining property-specific cases
