@@ -86,8 +86,12 @@ fn parse_calculated_value(mut tokens ComponentValueStream) ?StyleValue {
 	if !calc_function_is_supported(name) {
 		return none
 	}
-	node := parse_calc_function_node(component_value.function()) or { return none }
-	numeric_type := node.numeric_type() or { return none }
+	parsed := parse_calc_function_node(component_value.function()) or { return none }
+	// Compute the type before simplification (the simplified tree has the same type, but
+	// this also rejects type-invalid expressions).
+	numeric_type := parsed.numeric_type() or { return none }
+	// Simplify the constant parts at parse time so the specified value matches upstream.
+	node := simplify_calc(parsed)
 	tokens = transaction
 	return StyleValue(CalculatedStyleValue{
 		serialization: node.serialize_top()
@@ -569,6 +573,15 @@ fn serialize_calc_sum(children []CalcNode) string {
 		child := children[index]
 		if child is CalcNegate {
 			serialized += ' - ' + child.children[0].serialize_inner(false)
+		} else if child is CalcNumeric && child.value < 0 {
+			// A negative numeric leaf serializes as `- x`, not `+ -x`.
+			negated := CalcNumeric{
+				kind:  child.kind
+				value: -child.value
+				unit:  child.unit
+				type_: child.type_
+			}
+			serialized += ' - ' + negated.serialize_leaf()
 		} else {
 			serialized += ' + ' + child.serialize_inner(false)
 		}
