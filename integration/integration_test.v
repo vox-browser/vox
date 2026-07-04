@@ -61,3 +61,24 @@ fn test_selectors_and_inline_style_over_parsed_document() {
 	hidden_block := css.parse_css_property_declaration_block_with_parser(hidden.get_attribute('style') or { '' })
 	assert hidden_block.get_property_value('display') == 'none'
 }
+
+// Full-stack CSS cascade: parse HTML, then resolve cascaded/inherited property values over the
+// parser-built DOM using the minimal cascade (inline + inheritance + initial). This composes the
+// html parser + dom + css metadata/inline-parsing.
+fn test_cascade_over_parsed_document() {
+	doc := html.parse_document('<body style="color: navy"><div><p>text</p><span style="color: red">red</span></div></body>')
+	root := unsafe { &dom.Node(doc) }
+	body := css.query_selector(root, 'body') or { panic('no body') }
+	p := css.query_selector(root, 'p') or { panic('no p') }
+	span := css.query_selector(root, 'span') or { panic('no span') }
+
+	color := css.property_id_from_string('color') or { panic('color id') }
+	display := css.property_id_from_string('display') or { panic('display id') }
+
+	// color inherits from <body> down through <div> to <p>; <span> overrides it inline.
+	assert css.cascaded_value_for(body, color) == 'navy'
+	assert css.cascaded_value_for(p, color) == 'navy'
+	assert css.cascaded_value_for(span, color) == 'red'
+	// display is not inherited -> its initial value.
+	assert css.cascaded_value_for(p, display) == 'inline'
+}
