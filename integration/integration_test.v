@@ -231,3 +231,15 @@ fn test_display_filter_over_parsed_document() {
 	assert box.children[0].children.len == 1 // the inline <span> is skipped, only <div> lays out
 	assert box.children[0].children[0].tag_name == 'div'
 }
+
+// Full-stack inline text: a text-only div gets a one-line height from the cascade's font/line-height.
+// "Some words here" = 15 glyphs * 0.5*20 = 150px < 500px -> 1 line * 24px line-height.
+fn test_inline_text_height_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 500px; font-size: 20px; line-height: 24px">Some words here</div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
+	assert box.height == 24.0
+	assert box.children.len == 0 // text is not a block box
+}

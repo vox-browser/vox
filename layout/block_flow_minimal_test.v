@@ -200,3 +200,63 @@ fn test_is_block_level_display() {
 	assert !is_block_level_display('inline')
 	assert !is_block_level_display('inline-block')
 }
+
+// A text-only block gets a height from line count x line-height. "Hello" = 5 glyphs at 0.5*20 =
+// 10px each = 50px < 200px content width -> 1 line * 30px line-height.
+fn test_inline_text_single_line_height() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('Hello').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 30.0
+	assert box.children.len == 0 // text isn't a block box
+}
+
+// Text wider than the content box wraps to multiple lines. 30 glyphs * 10px = 300px over a 100px
+// content width -> ceil(300/100) = 3 lines * 30px = 90px.
+fn test_inline_text_wraps_to_multiple_lines() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('a'.repeat(30)).as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 90.0
+}
+
+// A block with block children ignores its own stray text (anonymous-block FIXME): the text does not
+// add a line box; height comes from the children.
+fn test_block_children_win_over_stray_text() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; line-height: 30px')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('stray').as_node()) or { panic('${err}') }
+	child := styled(doc, 'div', 'height: 25px')
+	rn.append_child(child.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 1
+	assert box.height == 25.0 // just the child; stray text contributes no line box
+}
+
+// Whitespace-only text collapses to nothing -> no line box -> height 0.
+fn test_inline_whitespace_only_is_empty() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('   \n  ').as_node()) or { panic('${err}') }
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 0.0
+}
+
+// line-height: normal approximates 1.2 * font-size.
+fn test_inline_normal_line_height() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 500px; font-size: 20px') // line-height defaults to normal
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 24.0 // 1.2 * 20
+}

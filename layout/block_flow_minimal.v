@@ -10,12 +10,13 @@ import dom
 // that actually runs on the cascade output — and where percentage widths (which computed_length_px
 // can't resolve without a containing block) get resolved.
 //
-// Adjoining vertical margins of in-flow siblings collapse (CSS 2.1 §8.3.1).
+// Adjoining vertical margins of in-flow siblings collapse (CSS 2.1 §8.3.1). A box with no block-level
+// children but with text content gets a height from a coarse inline pass (line count × line-height).
 //
-// FIXME (deliberately out of scope for this slice): inline/text layout, `display` handling (every
-// element child is treated as a block), floats, parent/child and self (empty-block) margin
-// collapsing, `auto` margin resolution (centering / distributing remaining space — `auto` margins
-// are treated as 0 here), and definite percentage heights.
+// FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
+// word-boundary wrapping, inline box geometry), mixed block+inline content (anonymous block boxes),
+// floats, parent/child and self (empty-block) margin collapsing, `auto` margin resolution (centering
+// / distributing remaining space — `auto` margins are treated as 0 here), and definite % heights.
 
 // The used thickness of a box's four edges (margin / padding / border), in CSS px.
 pub struct BoxEdges {
@@ -145,6 +146,36 @@ fn block_child_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Elem
 	return elements
 }
 
+// The height of a block whose content is inline (text) rather than block-level children: the number
+// of line boxes times the line-height. Line count is a coarse estimate — text is measured at ~0.5em
+// per glyph (no real font metrics) and wrapped against the content width — so it is at least one line
+// when there is any non-whitespace text.
+//
+// FIXME: this stands in for a real inline formatting context. It ignores real glyph advances, breaks
+// only on width (not at word boundaries, so it can over/under-count near the wrap point), and uses
+// the block's own font/line-height for all text rather than each inline box's.
+fn inline_content_height(element &dom.Element, text string, content_width f64, author_rules []&css.CSSRule) f64 {
+	glyphs := text.fields().join(' ').runes().len // collapse whitespace runs, count code points
+	if glyphs == 0 {
+		return 0.0
+	}
+	line_height := css.computed_line_height_px(element, author_rules)
+	font_px := css.computed_font_size_px(element, author_rules)
+	text_width := f64(glyphs) * 0.5 * font_px
+	mut lines := 1
+	if content_width > 0 {
+		exact := text_width / content_width
+		lines = int(exact)
+		if f64(lines) < exact {
+			lines++ // ceil
+		}
+		if lines < 1 {
+			lines = 1
+		}
+	}
+	return f64(lines) * line_height
+}
+
 // The used content width for `element` in a containing block `containing_width` px wide: a length or
 // percentage gives the content width directly; `auto` fills the space left after the horizontal
 // margins, borders, and padding (`horizontal_extra`), clamped at 0.
@@ -185,34 +216,46 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	content_x := x + margin.left + border.left + padding.left
 	content_y := y + margin.top + border.top + padding.top
 
-	// Lay children out in flow. Adjoining vertical margins collapse (CSS 2.1 §8.3.1): the gap
-	// between a child's top border edge and the previous child's bottom border edge is the collapse
-	// of the previous child's bottom margin with this child's top margin, not their sum. `flow_bottom`
-	// tracks the previous child's bottom *border* edge; each child's margin box is positioned so its
-	// border-box top lands at `flow_bottom + collapsed_gap`.
+	block_children := block_child_elements(element.as_node(), author_rules)
+
+	// A box with block-level children establishes a block formatting context; a box with none but
+	// with inline (text) content establishes an inline one. FIXME: a box with BOTH would wrap its
+	// inline runs in anonymous block boxes — here block children win and inline text is ignored.
 	mut children := []BlockBox{}
-	mut flow_bottom := content_y
-	mut prev_bottom_margin := 0.0
-	mut has_prev := false
-	for child in block_child_elements(element.as_node(), author_rules) {
-		child_margins := used_margins(child, width, author_rules)
-		gap := if has_prev {
-			collapse_margins([prev_bottom_margin, child_margins.top])
-		} else {
-			child_margins.top // first child: no sibling above to collapse with
+	mut content_height := 0.0
+	if block_children.len > 0 {
+		// Lay children out in flow. Adjoining vertical margins collapse (CSS 2.1 §8.3.1): the gap
+		// between a child's top border edge and the previous child's bottom border edge is the
+		// collapse of the previous child's bottom margin with this child's top margin, not their sum.
+		// `flow_bottom` tracks the previous child's bottom *border* edge; each child's margin box is
+		// positioned so its border-box top lands at `flow_bottom + collapsed_gap`.
+		mut flow_bottom := content_y
+		mut prev_bottom_margin := 0.0
+		mut has_prev := false
+		for child in block_children {
+			child_margins := used_margins(child, width, author_rules)
+			gap := if has_prev {
+				collapse_margins([prev_bottom_margin, child_margins.top])
+			} else {
+				child_margins.top // first child: no sibling above to collapse with
+			}
+			margin_box_top := flow_bottom + gap - child_margins.top
+			child_box := layout_block(child, content_x, margin_box_top, width, author_rules)
+			flow_bottom = margin_box_top + child_box.margin.top + child_box.border.top +
+				child_box.padding.top + child_box.height + child_box.padding.bottom +
+				child_box.border.bottom
+			prev_bottom_margin = child_box.margin.bottom
+			has_prev = true
+			children << child_box
 		}
-		margin_box_top := flow_bottom + gap - child_margins.top
-		child_box := layout_block(child, content_x, margin_box_top, width, author_rules)
-		flow_bottom = margin_box_top + child_box.margin.top + child_box.border.top +
-			child_box.padding.top + child_box.height + child_box.padding.bottom + child_box.border.bottom
-		prev_bottom_margin = child_box.margin.bottom
-		has_prev = true
-		children << child_box
+		// Auto height spans the children's margin box (the last child's bottom margin is included; it
+		// would collapse with the parent's own bottom margin only if there were no bottom
+		// border/padding — parent/child collapsing is a FIXME, so we keep it inside for now).
+		content_height = flow_bottom + prev_bottom_margin - content_y
+	} else {
+		text := element.as_node().text_content() or { '' }
+		content_height = inline_content_height(element, text, width, author_rules)
 	}
-	// Auto height spans the children's margin box (the last child's bottom margin is included; it
-	// would collapse with the parent's own bottom margin only if there were no bottom border/padding
-	// — parent/child collapsing is a FIXME, so we keep it inside for now).
-	content_height := if has_prev { flow_bottom + prev_bottom_margin - content_y } else { 0.0 }
 
 	height_id := css.property_id_from_string('height') or { return BlockBox{} }
 	height := if px := css.computed_length_px(element, height_id, author_rules) {
