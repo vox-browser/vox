@@ -2099,8 +2099,37 @@ fn basic_shape_fill_rule_from_components(components []ComponentValue) ?FillRule 
 }
 
 // https://drafts.csswg.org/css-shapes/#typedef-basic-shape
-// FIXME: the `round <'border-radius'>` clause of inset()/xywh()/rect() is not translated yet,
-// and path() stores the raw string without SVG path-data validation.
+// Parse the optional `[ round <'border-radius'> ]?` tail of inset()/xywh()/rect(). When no
+// `round` keyword is present, `zero_radius` is returned and nothing is consumed.
+fn (mut parser Parser) parse_basic_shape_round_clause(mut args ComponentValueStream, zero_radius StyleValue) ?StyleValue {
+	args.consume_whitespace()
+	next := args.peek() or { return zero_radius }
+	if !(next.is(.ident) && equals_ignoring_ascii_case(next.token().ident(), 'round')) {
+		return zero_radius
+	}
+	args.consume() or { return none } // 'round'
+	return parser.parse_border_radius_rect_value(mut args)
+}
+
+// Parse a `<'border-radius'>` value: `<length-percentage>{1,4} [ / <length-percentage>{1,4} ]?`
+// into a BorderRadiusRectStyleValue (top-left, top-right, bottom-right, bottom-left).
+fn (mut parser Parser) parse_border_radius_rect_value(mut args ComponentValueStream) ?StyleValue {
+	groups := grid_split_by_slash(args.consume_remaining_component_values())
+	if groups.len < 1 || groups.len > 2 {
+		return none
+	}
+	horizontals := parser.parse_border_radius_lp_list(groups[0]) or { return none }
+	mut verticals := horizontals.clone()
+	if groups.len == 2 {
+		verticals = parser.parse_border_radius_lp_list(groups[1]) or { return none }
+	}
+	return StyleValue(BorderRadiusRectStyleValue.create(StyleValue(BorderRadiusStyleValue.create(horizontals[0],
+		verticals[0])), StyleValue(BorderRadiusStyleValue.create(horizontals[1], verticals[1])),
+		StyleValue(BorderRadiusStyleValue.create(horizontals[2], verticals[2])), StyleValue(BorderRadiusStyleValue.create(horizontals[3],
+		verticals[3]))))
+}
+
+// FIXME: path() stores the raw string without SVG path-data validation.
 fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
@@ -2123,6 +2152,9 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		bottom := parser.parse_length_percentage_value(mut args) or { top }
 		args.consume_whitespace()
 		left := parser.parse_length_percentage_value(mut args) or { right }
+		border_radius := parser.parse_basic_shape_round_clause(mut args, zero_radius) or {
+			return none
+		}
 		args.consume_whitespace()
 		if args.has_more_tokens() {
 			return none
@@ -2133,7 +2165,7 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 			right:         right
 			bottom:        bottom
 			left:          left
-			border_radius: zero_radius
+			border_radius: border_radius
 		})))
 	}
 
@@ -2148,6 +2180,9 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		width := parser.parse_length_percentage_value(mut args) or { return none }
 		args.consume_whitespace()
 		height := parser.parse_length_percentage_value(mut args) or { return none }
+		border_radius := parser.parse_basic_shape_round_clause(mut args, zero_radius) or {
+			return none
+		}
 		args.consume_whitespace()
 		if args.has_more_tokens() {
 			return none
@@ -2170,7 +2205,7 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 			y:             y
 			width:         width
 			height:        height
-			border_radius: zero_radius
+			border_radius: border_radius
 		})))
 	}
 
@@ -2181,6 +2216,9 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		right := parser.parse_length_percentage_or_auto(mut args) or { return none }
 		bottom := parser.parse_length_percentage_or_auto(mut args) or { return none }
 		left := parser.parse_length_percentage_or_auto(mut args) or { return none }
+		border_radius := parser.parse_basic_shape_round_clause(mut args, zero_radius) or {
+			return none
+		}
 		args.consume_whitespace()
 		if args.has_more_tokens() {
 			return none
@@ -2191,7 +2229,7 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 			right:         right
 			bottom:        bottom
 			left:          left
-			border_radius: zero_radius
+			border_radius: border_radius
 		})))
 	}
 
