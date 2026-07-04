@@ -90,14 +90,80 @@ pub mut:
 	is_custom_ bool
 }
 
+// Legacy property-name aliases (Properties.json `legacy-alias-for`): these resolve to a
+// canonical property so e.g. `-webkit-transform` is treated as `transform`.
+fn resolve_legacy_property_alias(name string) string {
+	return match name {
+		'-moz-appearance', '-webkit-appearance' { 'appearance' }
+		'-webkit-align-content' { 'align-content' }
+		'-webkit-align-items', '-webkit-box-align' { 'align-items' }
+		'-webkit-align-self' { 'align-self' }
+		'-webkit-animation' { 'animation' }
+		'-webkit-animation-delay' { 'animation-delay' }
+		'-webkit-animation-direction' { 'animation-direction' }
+		'-webkit-animation-duration' { 'animation-duration' }
+		'-webkit-animation-fill-mode' { 'animation-fill-mode' }
+		'-webkit-animation-iteration-count' { 'animation-iteration-count' }
+		'-webkit-animation-name' { 'animation-name' }
+		'-webkit-animation-play-state' { 'animation-play-state' }
+		'-webkit-animation-timing-function' { 'animation-timing-function' }
+		'-webkit-background-clip' { 'background-clip' }
+		'-webkit-background-origin' { 'background-origin' }
+		'-webkit-background-size' { 'background-size' }
+		'-webkit-border-bottom-left-radius' { 'border-bottom-left-radius' }
+		'-webkit-border-bottom-right-radius' { 'border-bottom-right-radius' }
+		'-webkit-border-radius' { 'border-radius' }
+		'-webkit-border-top-left-radius' { 'border-top-left-radius' }
+		'-webkit-border-top-right-radius' { 'border-top-right-radius' }
+		'-webkit-box-flex' { 'flex-grow' }
+		'-webkit-box-ordinal-group', '-webkit-order' { 'order' }
+		'-webkit-box-orient', '-webkit-flex-direction' { 'flex-direction' }
+		'-webkit-box-pack', '-webkit-justify-content' { 'justify-content' }
+		'-webkit-box-shadow' { 'box-shadow' }
+		'-webkit-box-sizing' { 'box-sizing' }
+		'-webkit-filter' { 'filter' }
+		'-webkit-flex' { 'flex' }
+		'-webkit-flex-basis' { 'flex-basis' }
+		'-webkit-flex-flow' { 'flex-flow' }
+		'-webkit-flex-grow' { 'flex-grow' }
+		'-webkit-flex-shrink' { 'flex-shrink' }
+		'-webkit-flex-wrap' { 'flex-wrap' }
+		'-webkit-mask' { 'mask' }
+		'-webkit-mask-clip' { 'mask-clip' }
+		'-webkit-mask-composite' { 'mask-composite' }
+		'-webkit-mask-image' { 'mask-image' }
+		'-webkit-mask-origin' { 'mask-origin' }
+		'-webkit-mask-position' { 'mask-position' }
+		'-webkit-mask-repeat' { 'mask-repeat' }
+		'-webkit-mask-size' { 'mask-size' }
+		'-webkit-perspective' { 'perspective' }
+		'-webkit-perspective-origin' { 'perspective-origin' }
+		'-webkit-transform' { 'transform' }
+		'-webkit-transform-origin' { 'transform-origin' }
+		'-webkit-transform-style' { 'transform-style' }
+		'-webkit-transition' { 'transition' }
+		'-webkit-transition-delay' { 'transition-delay' }
+		'-webkit-transition-duration' { 'transition-duration' }
+		'-webkit-transition-property' { 'transition-property' }
+		'-webkit-transition-timing-function' { 'transition-timing-function' }
+		'-webkit-user-select' { 'user-select' }
+		'font-stretch' { 'font-width' }
+		'grid-column-gap' { 'column-gap' }
+		'grid-gap' { 'gap' }
+		'grid-row-gap' { 'row-gap' }
+		'word-wrap' { 'overflow-wrap' }
+		else { name }
+	}
+}
+
 pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
-	lowercase_name := to_ascii_lowercase(name)
 	if is_a_custom_property_name_string(name) {
 		return PropertyNameAndID{
 			name_:      name
 			is_custom_: true
 		}
 	}
+	lowercase_name := resolve_legacy_property_alias(to_ascii_lowercase(name))
 	property_id := match lowercase_name {
 		'accent-color' {
 			PropertyID.accent_color
