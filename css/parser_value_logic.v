@@ -2589,11 +2589,9 @@ fn (mut parser Parser) parse_font_variant_tuple(mut tokens ComponentValueStream,
 		return none
 	}
 
-	transaction.consume_whitespace()
-	if transaction.has_more_tokens() {
-		return none
-	}
-
+	// Do NOT reject trailing tokens here: as a `||` component (e.g. inside the font-variant
+	// shorthand) this parser must leave the tokens for the next component. The no-leftover
+	// rule is enforced at the top level.
 	tokens = transaction
 	return StyleValue(TupleStyleValue.create(slots))
 }
