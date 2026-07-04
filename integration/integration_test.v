@@ -421,3 +421,15 @@ fn test_text_align_over_parsed_document() {
 	assert box.lines[0].width == 24.0
 	assert box.lines[0].x == 138.0 // (300 - 24) / 2
 }
+
+// Full-stack <pre>: the UA sheet gives <pre> white-space: pre, so its newlines become forced line
+// breaks (and it doesn't wrap) -- three source lines -> three line boxes.
+fn test_pre_over_parsed_document() {
+	doc := html.parse_document('<pre style="line-height: 20px">line one\nline two\nline three</pre>')
+	root := unsafe { &dom.Node(doc) }
+	pre := css.query_selector(root, 'pre') or { panic('no pre') }
+
+	box := layout.layout_block(pre, 0, 0, 1000, []&css.CSSRule{})
+	assert box.lines.len == 3
+	assert box.height == 60.0 // 3 lines * 20px
+}

@@ -891,3 +891,53 @@ fn test_line_boxes_follow_relative_offset() {
 	assert box.lines[0].x == 25.0 // content_x includes the left offset
 	assert box.lines[0].y == 15.0 // content_top includes the top offset
 }
+
+// white-space: nowrap keeps text on a single line even when it would otherwise wrap.
+fn test_white_space_nowrap() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px; white-space: nowrap')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('aaaa bbbb cccc').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines.len == 1 // no wrapping despite 3 words over a 100px box
+	assert box.height == 30.0
+	assert box.lines[0].width == 140.0 // 40 + 10 + 40 + 10 + 40, all on one line (overflowing)
+}
+
+// white-space: pre turns newlines in text into forced line breaks and does not wrap.
+fn test_white_space_pre_newlines() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px; white-space: pre')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('aaaa bbbb\ncccc').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines.len == 2 // split at the newline; neither part wraps
+	assert box.height == 60.0
+	assert box.lines[0].width == 90.0 // "aaaa bbbb"
+	assert box.lines[1].width == 40.0 // "cccc"
+}
+
+// normal white-space (default) collapses the newline and wraps normally.
+fn test_white_space_normal_collapses_newline() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 500px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('aaaa\nbbbb').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines.len == 1 // newline collapses to a space; both words fit the 500px line
+}
+
+// white_space helper classification.
+fn test_white_space_helpers() {
+	assert white_space_wraps('normal')
+	assert white_space_wraps('pre-wrap')
+	assert !white_space_wraps('nowrap')
+	assert !white_space_wraps('pre')
+	assert white_space_preserves_newlines('pre')
+	assert white_space_preserves_newlines('pre-line')
+	assert !white_space_preserves_newlines('normal')
+	assert !white_space_preserves_newlines('nowrap')
+}

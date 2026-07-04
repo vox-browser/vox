@@ -19,8 +19,8 @@ import dom
 // specified width/height include padding+border. Used width and height are clamped by min/max-width
 // and min/max-height. Horizontal `auto` margins absorb leftover space (both auto centers the box; a
 // single one right/left-aligns). `position: relative` offsets a box (and its subtree) by its insets
-// without disturbing the flow. Text-bearing blocks produce inline line boxes (word-wrapped, `<br>`
-// aware) positioned per `text-align`.
+// without disturbing the flow. Text-bearing blocks produce inline line boxes (word-wrapped, `<br>`-
+// and `white-space`-aware) positioned per `text-align`.
 //
 // FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
 // word-boundary wrapping, inline box geometry), mixed block+inline content (anonymous block boxes),
@@ -244,14 +244,37 @@ fn wrapped_line_count(words []string, content_width f64, glyph_width f64, space_
 	return wrap_line_widths(words, content_width, glyph_width, space_width).len
 }
 
-// Gather a block's inline content as text segments split at `<br>` forced line breaks: the text
-// between consecutive `<br>`s (walking into inline descendants) forms one segment. `display: none`
-// and out-of-flow (absolutely positioned) descendants contribute nothing.
-fn append_inline_segments(node &dom.Node, author_rules []&css.CSSRule, mut segments []string) {
+// Whether a `white-space` value wraps at soft line-break opportunities. `nowrap` and `pre` never
+// wrap; `normal`, `pre-wrap`, `pre-line` do.
+fn white_space_wraps(white_space string) bool {
+	return white_space != 'nowrap' && white_space != 'pre'
+}
+
+// Whether a `white-space` value keeps newlines in text as forced line breaks (the `pre*` family).
+fn white_space_preserves_newlines(white_space string) bool {
+	return white_space == 'pre' || white_space == 'pre-wrap' || white_space == 'pre-line'
+}
+
+// Gather a block's inline content as text segments split at forced line breaks: `<br>` elements
+// always break, and (when `preserve_newlines`) newlines in text do too. Text between breaks (walking
+// into inline descendants) forms one segment. `display: none` and out-of-flow descendants contribute
+// nothing.
+fn append_inline_segments(node &dom.Node, author_rules []&css.CSSRule, preserve_newlines bool, mut segments []string) {
 	display_id := css.property_id_from_string('display') or { return }
 	for child in node.children_as_vector() {
 		if child.is_text() {
-			segments[segments.len - 1] += unsafe { &dom.Text(child) }.data()
+			data := unsafe { &dom.Text(child) }.data()
+			if preserve_newlines {
+				parts := data.split('\n')
+				for i, part in parts {
+					if i > 0 {
+						segments << '' // a preserved newline starts a new segment
+					}
+					segments[segments.len - 1] += part
+				}
+			} else {
+				segments[segments.len - 1] += data
+			}
 		} else if element := child.as_element() {
 			if css.cascaded_value_with_ua(element, display_id, author_rules) == 'none' {
 				continue
@@ -262,7 +285,8 @@ fn append_inline_segments(node &dom.Node, author_rules []&css.CSSRule, mut segme
 			if element.local_name() == 'br' {
 				segments << '' // forced line break starts a new segment
 			} else {
-				append_inline_segments(element.as_node(), author_rules, mut segments)
+				append_inline_segments(element.as_node(), author_rules, preserve_newlines, mut
+					segments)
 			}
 		}
 	}
@@ -280,17 +304,23 @@ fn aligned_line_x(content_x f64, content_width f64, line_width f64, align string
 }
 
 // Lay out a block's inline (text) content as line boxes in a LOCAL frame (the first line's top at
-// y = 0), to be translated to the content-box top by the caller. Content is split at `<br>` breaks
-// into segments, each wrapped at word boundaries against `content_width`; every line is placed at
-// `content_x` adjusted for `text-align`. An empty segment between breaks is still an (empty) line;
-// truly empty content yields no lines.
+// y = 0), to be translated to the content-box top by the caller. Content is split into segments at
+// `<br>` (and, under `white-space: pre*`, at newlines); each segment wraps at word boundaries against
+// `content_width` unless `white-space` forbids wrapping (`nowrap`/`pre`, in which case a segment is a
+// single line). Every line is placed at `content_x` adjusted for `text-align`. An empty segment
+// between breaks is still an (empty) line; truly empty content yields no lines.
 //
-// FIXME: still stands in for a real inline formatting context — glyph advances are estimated, there
-// is no per-inline font/line-height, no inline fragment geometry (individual word positions), no
-// per-word justification, and no bidi.
+// FIXME: still stands in for a real inline formatting context — glyph advances are estimated, `pre*`
+// whitespace runs are collapsed (widths approximate), there is no per-inline font/line-height, no
+// inline fragment geometry (individual word positions), no per-word justification, and no bidi.
 fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, author_rules []&css.CSSRule) []TextLine {
+	white_space := css.cascaded_value_with_ua(element, css.property_id_from_string('white-space') or {
+		return []TextLine{}
+	}, author_rules)
+
 	mut segments := ['']
-	append_inline_segments(element.as_node(), author_rules, mut segments)
+	append_inline_segments(element.as_node(), author_rules, white_space_preserves_newlines(white_space),
+		mut segments)
 	if segments.len == 1 && segments[0].fields().len == 0 {
 		return []TextLine{} // no inline content at all
 	}
@@ -300,12 +330,14 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, a
 	align := css.cascaded_value_with_ua(element, css.property_id_from_string('text-align') or {
 		return []TextLine{}
 	}, author_rules)
+	// `nowrap`/`pre` never wrap: a width of -1 makes each segment a single line.
+	wrap_width := if white_space_wraps(white_space) { content_width } else { -1.0 }
 
 	mut lines := []TextLine{}
 	mut y := 0.0
 	for segment in segments {
 		words := segment.fields()
-		line_widths := if words.len == 0 { [0.0] } else { wrap_line_widths(words, content_width,
+		line_widths := if words.len == 0 { [0.0] } else { wrap_line_widths(words, wrap_width,
 				glyph_width, glyph_width) }
 		for line_width in line_widths {
 			lines << TextLine{
