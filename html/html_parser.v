@@ -1,0 +1,534 @@
+module html
+
+import dom
+
+// Translation of the core of Libraries/LibWeb/HTML/Parser/HTMLParser.cpp — the tree-construction
+// stage that turns tokens into a DOM tree.
+//
+// SCOPE: This is a faithful port of the "happy path" — the insertion modes needed to parse ordinary
+// documents (initial → before html → before head → in head → after head → in body, plus text,
+// after body, after after body) and the shared tree-building primitives (create an element for a
+// token, insert an HTML element, insert a character / comment, reconstruct the active formatting
+// elements, and the full adoption agency algorithm). The following are stubbed (FIXME) because they
+// pull in whole subsystems the V port does not have yet: foster parenting, <template> contents and
+// declarative shadow roots, foreign (SVG/MathML) content, scripting/JS execution, custom elements,
+// form association, and the table/frameset/caption/column/cell/template insertion modes (those modes
+// currently fall back to the "in body" rules).
+
+pub enum InsertionMode {
+	initial
+	before_html
+	before_head
+	in_head
+	in_head_noscript
+	after_head
+	in_body
+	text
+	in_table
+	in_table_text
+	in_caption
+	in_column_group
+	in_table_body
+	in_row
+	in_cell
+	in_template
+	after_body
+	in_frameset
+	after_frameset
+	after_after_body
+	after_after_frameset
+}
+
+pub struct AdjustedInsertionLocation {
+pub mut:
+	parent                ?&dom.Node
+	insert_before_sibling ?&dom.Node
+}
+
+pub struct HTMLParser {
+pub mut:
+	document                           &dom.Document = unsafe { nil }
+	tokenizer                          HTMLTokenizer
+	insertion_mode                     InsertionMode = .initial
+	original_insertion_mode            InsertionMode = .initial
+	stack_of_open_elements             StackOfOpenElements
+	list_of_active_formatting_elements ListOfActiveFormattingElements
+	stack_of_template_insertion_modes  []InsertionMode
+	head_element                       ?&dom.Element
+	form_element                       ?&dom.Element
+	frameset_ok                        bool = true
+	parsing_fragment                   bool
+	// Scripting is disabled: this port has no JS engine, so <noscript> content is parsed as normal
+	// markup (the "scripting flag is disabled" branches).
+	scripting_enabled             bool
+	next_line_feed_can_be_ignored bool
+	foster_parenting              bool
+	stop_parsing                  bool
+	aborted                       bool
+	context_element               ?&dom.Element
+
+	character_insertion_node    ?&dom.Text
+	character_insertion_builder []rune
+}
+
+// Parse `input` into `document`. The document is marked as an HTML document so that HTML-namespaced
+// elements report uppercase tag names, matching a real parse.
+pub fn HTMLParser.create(document &dom.Document, input string) &HTMLParser {
+	mut doc := document
+	doc.set_document_type(.html)
+	return &HTMLParser{
+		document:  document
+		tokenizer: HTMLTokenizer.new(input)
+	}
+}
+
+fn same_node(a &dom.Node, b &dom.Node) bool {
+	return a.is_same_node(b)
+}
+
+fn node_as_text(n &dom.Node) &dom.Text {
+	return unsafe { &dom.Text(n) }
+}
+
+// ===== the run loop =====
+
+pub fn (mut p HTMLParser) run() {
+	p.stop_parsing = false
+	for {
+		mut token := p.tokenizer.next_token() or { break }
+
+		if p.next_line_feed_can_be_ignored {
+			p.next_line_feed_can_be_ignored = false
+			if token.is_character() && token.code_point == `\n` {
+				continue
+			}
+		}
+
+		// Tree construction dispatcher. The V port has no foreign content yet, so every token is
+		// processed with the rules for the current insertion mode.
+		p.process_using_the_rules_for(p.insertion_mode, mut token)
+
+		if token.is_end_of_file() {
+			break
+		}
+		if p.stop_parsing {
+			break
+		}
+	}
+	p.flush_character_insertions()
+}
+
+fn (mut p HTMLParser) process_using_the_rules_for(mode InsertionMode, mut token HTMLToken) {
+	match mode {
+		.initial { p.handle_initial(mut token) }
+		.before_html { p.handle_before_html(mut token) }
+		.before_head { p.handle_before_head(mut token) }
+		.in_head { p.handle_in_head(mut token) }
+		.in_head_noscript { p.handle_in_head_noscript(mut token) }
+		.after_head { p.handle_after_head(mut token) }
+		.in_body { p.handle_in_body(mut token) }
+		.text { p.handle_text(mut token) }
+		.after_body { p.handle_after_body(mut token) }
+		.after_after_body { p.handle_after_after_body(mut token) }
+		// FIXME: table/frameset/template/caption/column/cell modes are not ported yet; fall back to
+		// the "in body" rules so ordinary content still parses.
+		else { p.handle_in_body(mut token) }
+	}
+}
+
+// ===== tree-building primitives =====
+
+fn (p &HTMLParser) current_node() ?&dom.Element {
+	if p.stack_of_open_elements.is_empty() {
+		return none
+	}
+	return p.stack_of_open_elements.current_node()
+}
+
+fn (p &HTMLParser) adjusted_current_node() ?&dom.Element {
+	if p.parsing_fragment && p.stack_of_open_elements.elements.len == 1 {
+		return p.context_element
+	}
+	return p.current_node()
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#appropriate-place-for-inserting-a-node
+fn (mut p HTMLParser) find_appropriate_place_for_inserting_node() AdjustedInsertionLocation {
+	// FIXME: foster parenting and <template> contents are not handled.
+	target := p.current_node() or { return AdjustedInsertionLocation{} }
+	return AdjustedInsertionLocation{
+		parent:                target.as_node()
+		insert_before_sibling: none
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#create-an-element-for-the-token
+fn (mut p HTMLParser) create_element_for(token &HTMLToken, namespace_ ?string, intended_parent &dom.Node) &dom.Element {
+	// FIXME: the C++ uses intendedParent only to find the node document; here it is always p.document.
+	_ = intended_parent
+	local_name := token.tag_name
+	is_value := token.attribute('is')
+	mut element := dom.create_element(p.document, local_name, namespace_, none, is_value, false) or {
+		panic('create_element_for(${local_name}): ${err}')
+	}
+	// Append each attribute in the token to element. (FIXME: prefixes/namespaces for foreign content,
+	// form association, custom elements, and speculative parsing are not handled.)
+	for attribute in token.attributes {
+		if !element.has_attribute(attribute.local_name) {
+			element.set_attribute_value(attribute.local_name, attribute.value)
+		}
+	}
+	return element
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#insert-a-foreign-element
+fn (mut p HTMLParser) insert_foreign_element(token &HTMLToken, namespace_ ?string, only_add_to_element_stack bool) &dom.Element {
+	location := p.find_appropriate_place_for_inserting_node()
+	parent := location.parent or { panic('insert_foreign_element with no insertion parent') }
+	element := p.create_element_for(token, namespace_, parent)
+	if !only_add_to_element_stack {
+		p.insert_an_element_at_the_adjusted_insertion_location(element)
+	}
+	p.stack_of_open_elements.push(element)
+	return element
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#insert-an-html-element
+fn (mut p HTMLParser) insert_html_element(token &HTMLToken) &dom.Element {
+	return p.insert_foreign_element(token, ns_html, false)
+}
+
+fn (mut p HTMLParser) insert_an_element_at_the_adjusted_insertion_location(element &dom.Element) {
+	location := p.find_appropriate_place_for_inserting_node()
+	mut parent := location.parent or { return }
+	parent.insert_before(element.as_node(), location.insert_before_sibling, false)
+}
+
+fn (mut p HTMLParser) insert_comment(token &HTMLToken) {
+	location := p.find_appropriate_place_for_inserting_node()
+	mut parent := location.parent or { return }
+	comment := p.document.create_comment(token.comment())
+	parent.insert_before(comment.as_node(), location.insert_before_sibling, false)
+}
+
+fn (mut p HTMLParser) find_character_insertion_node() ?&dom.Text {
+	location := p.find_appropriate_place_for_inserting_node()
+	mut parent := location.parent or { return none }
+	if sibling := location.insert_before_sibling {
+		if prev := sibling.previous_sibling() {
+			if prev.is_text() {
+				return node_as_text(prev)
+			}
+		}
+		new_text := p.document.create_text_node('')
+		parent.insert_before(new_text.as_node(), sibling, false)
+		return new_text
+	}
+	if parent.is_document() {
+		return none
+	}
+	if last := parent.last_child() {
+		if last.is_text() {
+			return node_as_text(last)
+		}
+	}
+	mut new_text := p.document.create_text_node('')
+	parent.append_child(new_text.as_node()) or {}
+	return new_text
+}
+
+fn (mut p HTMLParser) flush_character_insertions() {
+	if p.character_insertion_builder.len == 0 {
+		return
+	}
+	mut node := p.character_insertion_node or {
+		p.character_insertion_builder = []
+		return
+	}
+	data := runes_to_string(p.character_insertion_builder)
+	if node.data() == '' {
+		node.set_data(data)
+	} else {
+		node.append_data(data) or {}
+	}
+	p.character_insertion_builder = []
+}
+
+fn (mut p HTMLParser) insert_character(data rune) {
+	node := p.find_character_insertion_node() or { return }
+	if cin := p.character_insertion_node {
+		if same_node(node.as_node(), cin.as_node()) {
+			p.character_insertion_builder << data
+			return
+		}
+		p.flush_character_insertions()
+		p.character_insertion_node = node
+		p.character_insertion_builder << data
+		return
+	}
+	p.character_insertion_node = node
+	p.character_insertion_builder << data
+}
+
+// ===== implied end tags / p closing =====
+
+const implied_end_tag_names = ['dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc']
+
+fn (mut p HTMLParser) generate_implied_end_tags(exception string) {
+	for {
+		cn := p.current_node() or { break }
+		if cn.local_name() == exception || cn.local_name() !in implied_end_tag_names {
+			break
+		}
+		p.stack_of_open_elements.pop()
+	}
+}
+
+fn (mut p HTMLParser) generate_all_implied_end_tags_thoroughly() {
+	all := ['caption', 'colgroup', 'dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt',
+		'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr']
+	for {
+		cn := p.current_node() or { break }
+		if cn.local_name() !in all {
+			break
+		}
+		p.stack_of_open_elements.pop()
+	}
+}
+
+fn (mut p HTMLParser) close_a_p_element() {
+	p.generate_implied_end_tags('p')
+	p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('p')
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#reconstruct-the-active-formatting-elements
+fn (mut p HTMLParser) reconstruct_the_active_formatting_elements() {
+	if p.list_of_active_formatting_elements.is_empty() {
+		return
+	}
+	entries := p.list_of_active_formatting_elements.entries
+	last := entries[entries.len - 1]
+	if last.is_marker() {
+		return
+	}
+	if last_el := last.element {
+		if p.stack_of_open_elements.contains(last_el) {
+			return
+		}
+	}
+
+	mut index := entries.len - 1
+	// Rewind.
+	for {
+		if index == 0 {
+			break
+		}
+		index--
+		entry := p.list_of_active_formatting_elements.entries[index]
+		if entry.is_marker() {
+			index++ // Advance.
+			break
+		}
+		if el := entry.element {
+			if p.stack_of_open_elements.contains(el) {
+				index++ // Advance.
+				break
+			}
+		}
+	}
+
+	// Create / Advance loop.
+	for {
+		entry := p.list_of_active_formatting_elements.entries[index]
+		token := entry.token or { break }
+		old_element := entry.element or { break }
+		new_element := p.insert_html_element(token)
+		p.list_of_active_formatting_elements.replace(old_element, new_element, token)
+		if index == p.list_of_active_formatting_elements.entries.len - 1 {
+			break
+		}
+		index++
+	}
+}
+
+fn (mut p HTMLParser) parse_generic_raw_text_element(token &HTMLToken) {
+	p.insert_html_element(token)
+	p.tokenizer.switch_to(.rawtext)
+	p.original_insertion_mode = p.insertion_mode
+	p.insertion_mode = .text
+}
+
+fn (mut p HTMLParser) which_quirks_mode(token &HTMLToken) dom.QuirksMode {
+	if token.doctype.force_quirks {
+		return .yes
+	}
+	// NOTE: the tokenizer lower-cases the name for us.
+	if token.doctype.name != 'html' {
+		return .yes
+	}
+	// FIXME: the public/system identifier quirks tables are not ported.
+	return .no
+}
+
+// ===== adoption agency algorithm =====
+// https://html.spec.whatwg.org/multipage/parsing.html#adoption-agency-algorithm
+
+enum AdoptionAgencyOutcome {
+	do_nothing
+	run_any_other_end_tag_steps
+}
+
+fn (mut p HTMLParser) run_the_adoption_agency_algorithm(token &HTMLToken) AdoptionAgencyOutcome {
+	subject := token.tag_name
+
+	// 2. If the current node is an HTML element whose tag name is subject, and is not in the list of
+	//    active formatting elements, pop it and return.
+	if cn := p.current_node() {
+		if cn.local_name() == subject && !p.list_of_active_formatting_elements.contains(cn) {
+			p.stack_of_open_elements.pop()
+			return .do_nothing
+		}
+	}
+
+	mut outer_loop_counter := 0
+	for {
+		if outer_loop_counter >= 8 {
+			return .do_nothing
+		}
+		outer_loop_counter++
+
+		// 3. formattingElement = last element with tag name subject before the last marker.
+		formatting_element := p.list_of_active_formatting_elements.last_element_with_tag_name_before_marker(subject) or {
+			return .run_any_other_end_tag_steps
+		}
+
+		// 4. Not in the stack of open elements -> remove from AFE and return.
+		if !p.stack_of_open_elements.contains(formatting_element) {
+			p.list_of_active_formatting_elements.remove(formatting_element)
+			return .do_nothing
+		}
+
+		// 5. In the stack but not in scope -> return.
+		if !p.stack_of_open_elements.has_in_scope_element(formatting_element) {
+			return .do_nothing
+		}
+
+		// 7. furthestBlock = topmost special node below formattingElement.
+		furthest_block := p.stack_of_open_elements.topmost_special_node_below(formatting_element) or {
+			// 8. No furthestBlock: pop up to and including formattingElement, remove from AFE, return.
+			for {
+				cn := p.current_node() or { break }
+				if same_element(cn, formatting_element) {
+					break
+				}
+				p.stack_of_open_elements.pop()
+			}
+			p.stack_of_open_elements.pop()
+			p.list_of_active_formatting_elements.remove(formatting_element)
+			return .do_nothing
+		}
+
+		// 9. commonAncestor = element immediately above formattingElement.
+		common_ancestor := p.stack_of_open_elements.element_immediately_above(formatting_element) or {
+			return .do_nothing
+		}
+
+		// 10. bookmark.
+		mut bookmark := p.list_of_active_formatting_elements.find_index(formatting_element) or { 0 }
+
+		// 11. node and lastNode = furthestBlock.
+		mut node := furthest_block
+		mut last_node := furthest_block
+		mut node_above_node := p.stack_of_open_elements.element_immediately_above(node)
+
+		mut inner_loop_counter := 0
+		for {
+			inner_loop_counter++
+
+			// 2. node = element immediately above node.
+			node = node_above_node or { break }
+			node_above_node = p.stack_of_open_elements.element_immediately_above(node)
+
+			// 3. If node is formattingElement, break.
+			if same_element(node, formatting_element) {
+				break
+			}
+
+			mut node_index := p.list_of_active_formatting_elements.find_index(node)
+
+			// 4. innerLoopCounter > 3 and node in AFE -> remove from AFE.
+			if inner_loop_counter > 3 {
+				if idx := node_index {
+					if idx < bookmark {
+						bookmark--
+					}
+					p.list_of_active_formatting_elements.remove(node)
+					node_index = none
+				}
+			}
+
+			// 5. node not in AFE -> remove from stack and continue.
+			idx := node_index or {
+				p.stack_of_open_elements.remove(node)
+				continue
+			}
+
+			// 6. Create a new element for node's token, replace entries, node = new element.
+			entry := p.list_of_active_formatting_elements.entries[idx]
+			entry_token := entry.token or { continue }
+			element := p.create_element_for(entry_token, ns_html, common_ancestor.as_node())
+			p.list_of_active_formatting_elements.replace(node, element, entry_token)
+			p.stack_of_open_elements.replace(node, element)
+			node = element
+
+			// 7. If lastNode is furthestBlock, move bookmark after new node.
+			if same_element(last_node, furthest_block) {
+				bookmark = (p.list_of_active_formatting_elements.find_index(node) or { 0 }) + 1
+			}
+
+			// 8. Append lastNode to node.
+			mut node_dom := node.as_node()
+			node_dom.append_child(last_node.as_node()) or {}
+
+			// 9. lastNode = node.
+			last_node = node
+		}
+
+		// 14. Insert lastNode at the appropriate place with commonAncestor as override target.
+		//     (No foster parenting in the minimal parser, so this is inside commonAncestor.)
+		mut common_ancestor_node := common_ancestor.as_node()
+		common_ancestor_node.append_child(last_node.as_node()) or {}
+
+		// 15. Create a new element for formattingElement's token, with furthestBlock as intended parent.
+		formatting_element_index := p.list_of_active_formatting_elements.find_index(formatting_element) or {
+			return .do_nothing
+		}
+		fe_entry := p.list_of_active_formatting_elements.entries[formatting_element_index]
+		fe_token := fe_entry.token or { return .do_nothing }
+		token_data := create_own_token(fe_token)
+		new_element := p.create_element_for(token_data, ns_html, furthest_block.as_node())
+
+		// 16. Move furthestBlock's children into the new element.
+		mut fb_node := furthest_block.as_node()
+		mut new_element_node := new_element.as_node()
+		for child in fb_node.children_as_vector() {
+			removed := fb_node.remove_child(child) or { continue }
+			new_element_node.append_child(removed) or {}
+		}
+
+		// 17. Append the new element to furthestBlock.
+		fb_node.append_child(new_element.as_node()) or {}
+
+		// 18. Remove formattingElement from AFE, insert new element at bookmark.
+		if formatting_element_index < bookmark {
+			bookmark--
+		}
+		p.list_of_active_formatting_elements.remove(formatting_element)
+		p.list_of_active_formatting_elements.insert_at(bookmark, new_element, token_data)
+
+		// 19. Remove formattingElement from the stack, insert new element below furthestBlock.
+		p.stack_of_open_elements.remove(formatting_element)
+		p.stack_of_open_elements.insert_immediately_below(new_element, furthest_block)
+	}
+	return .do_nothing
+}
