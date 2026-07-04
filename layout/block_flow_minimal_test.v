@@ -260,3 +260,52 @@ fn test_inline_normal_line_height() {
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 24.0 // 1.2 * 20
 }
+
+// layout_document on an empty document (no root element) returns an empty box.
+fn test_layout_document_no_root() {
+	doc := dom.Document.create(dom.url_about_blank())
+	box := layout_document(doc, 800)
+	assert box.tag_name == ''
+	assert box.width == 0.0
+}
+
+// layout_document over a manually built html>body>div tree: root fills the viewport, body keeps its
+// explicit width, the div's height flows through.
+fn test_layout_document_manual_root() {
+	doc := dom.Document.create(dom.url_about_blank())
+	html_el := styled(doc, 'html', '')
+	body := styled(doc, 'body', 'width: 300px')
+	child := styled(doc, 'div', 'height: 50px')
+	mut bn := body.as_node()
+	bn.append_child(child.as_node()) or { panic('${err}') }
+	mut hn := html_el.as_node()
+	hn.append_child(body.as_node()) or { panic('${err}') }
+	mut docn := unsafe { &dom.Node(doc) }
+	docn.append_child(html_el.as_node()) or { panic('${err}') }
+
+	box := layout_document(doc, 800)
+	assert box.tag_name == 'html'
+	assert box.width == 800.0 // fills the viewport
+	assert box.children.len == 1
+	assert box.children[0].tag_name == 'body'
+	assert box.children[0].width == 300.0
+	assert box.children[0].children[0].height == 50.0
+}
+
+// collect_document_author_rules parses each <style> element's text into rules.
+fn test_collect_document_author_rules() {
+	doc := dom.Document.create(dom.url_about_blank())
+	html_el := styled(doc, 'html', '')
+	style_el := styled(doc, 'style', '')
+	mut sn := style_el.as_node()
+	sn.append_child(doc.create_text_node('div { color: red } .x { width: 5px }').as_node()) or {
+		panic('${err}')
+	}
+	mut hn := html_el.as_node()
+	hn.append_child(style_el.as_node()) or { panic('${err}') }
+	mut docn := unsafe { &dom.Node(doc) }
+	docn.append_child(html_el.as_node()) or { panic('${err}') }
+
+	rules := collect_document_author_rules(doc)
+	assert rules.len == 2
+}

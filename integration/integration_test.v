@@ -243,3 +243,25 @@ fn test_inline_text_height_over_parsed_document() {
 	assert box.height == 24.0
 	assert box.children.len == 0 // text is not a block box
 }
+
+// layout_document is the one-call reflow: parse HTML -> collect <style> author rules -> lay out from
+// the root element within the viewport. Verifies author styles reach the cascade during layout.
+fn test_layout_document_entry_point() {
+	doc := html.parse_document('<html><head><style>.box { height: 40px; width: 120px }</style></head><body><div class="box"></div><p>text here</p></body></html>')
+
+	root_box := layout.layout_document(doc, 800)
+	assert root_box.tag_name == 'html'
+	assert root_box.width == 800.0 // root fills the viewport (width:auto)
+	assert root_box.children.len == 1 // <head> is display:none, only <body>
+	body_box := root_box.children[0]
+	assert body_box.tag_name == 'body'
+
+	assert body_box.children.len == 2 // div.box and p
+	assert body_box.children[0].tag_name == 'div'
+	assert body_box.children[0].height == 40.0 // from the author <style> rule
+	assert body_box.children[0].width == 120.0
+	assert body_box.children[1].tag_name == 'p'
+	assert body_box.children[1].height > 0.0 // text gives the paragraph a line box
+	// root height spans its content (body + body's margins), so it's at least the body content.
+	assert root_box.height >= 40.0
+}
