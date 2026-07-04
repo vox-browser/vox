@@ -317,8 +317,8 @@ fn collapse_margins(margins []f64) f64 {
 	return max_positive + min_negative
 }
 
-// A length/percentage property resolved to px, or 0 when it's `auto`/absent/other. Percentages
-// resolve against `basis` (for margins and padding that's the containing block's width, per spec).
+// A length/percentage/calc() property resolved to px, or 0 when it's `auto`/absent/other. Percentages
+// (and `%` inside a calc) resolve against `basis` (for margins and padding, the containing width).
 fn used_length_or_zero(element &dom.Element, property_name string, basis f64, author_rules []&css.CSSRule) f64 {
 	id := css.property_id_from_string(property_name) or { return 0 }
 	if px := css.computed_length_px(element, id, author_rules) {
@@ -326,6 +326,9 @@ fn used_length_or_zero(element &dom.Element, property_name string, basis f64, au
 	}
 	if pct := css.computed_percentage(element, id, author_rules) {
 		return basis * pct / 100.0
+	}
+	if calc := css.computed_calc_px(element, id, basis, author_rules) {
+		return calc
 	}
 	return 0
 }
@@ -891,6 +894,10 @@ fn used_content_width(element &dom.Element, containing_width f64, margins_lr f64
 	if pct := css.computed_percentage(element, width_id, author_rules) {
 		specified := containing_width * pct / 100.0
 		return non_negative(if border_box { specified - border_padding_lr } else { specified })
+	}
+	// A calc() width, resolving any `%` inside against the containing width.
+	if calc := css.computed_calc_px(element, width_id, containing_width, author_rules) {
+		return non_negative(if border_box { calc - border_padding_lr } else { calc })
 	}
 	return non_negative(containing_width - margins_lr - border_padding_lr)
 }

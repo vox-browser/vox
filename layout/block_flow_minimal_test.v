@@ -1472,3 +1472,28 @@ fn test_paint_per_inline_color() {
 	assert cmds[1].text == 'RED'
 	assert cmds[1].color == 'rgb(255 0 0)' // the span's own color
 }
+
+// A calc() width resolves against the containing width (calc(100% - 40px) in a 300px block -> 260).
+fn test_calc_width() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: calc(100% - 40px)')
+	box := layout_block(el, 0, 0, 300, []&css.CSSRule{})
+	assert box.width == 260.0
+}
+
+// An absolute calc() margin resolves without a basis (calc(20px + 5px) -> 25).
+fn test_calc_absolute_margin() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; margin-left: calc(20px + 5px)')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.margin.left == 25.0
+	assert box.x == 25.0
+}
+
+// A calc() with a percentage in a padding resolves against the containing width (10% of 800 + 5).
+fn test_calc_percentage_padding() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; padding-left: calc(10% + 5px)')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.padding.left == 85.0 // 80 (10% of 800) + 5
+}

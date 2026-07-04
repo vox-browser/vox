@@ -572,3 +572,13 @@ fn test_border_and_inline_color_over_parsed_document() {
 	assert texts[1].text == 'red'
 	assert texts[1].color == 'rgb(255 0 0)' // the span's color
 }
+
+// Full-stack calc(): a width:calc(100% - 60px) box resolves against the containing width.
+fn test_calc_over_parsed_document() {
+	doc := html.parse_document('<div style="width: calc(100% - 60px)"></div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(div, 0, 0, 500, []&css.CSSRule{})
+	assert box.width == 440.0 // 500 - 60
+}

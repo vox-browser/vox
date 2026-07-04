@@ -278,3 +278,15 @@ fn test_inheritance_walks_multiple_ancestors() {
 	// color inherits down two levels to the leaf.
 	assert cascaded_value_for(leaf, pid('color')) == 'green'
 }
+
+// calc() resolution: absolute calc (with em) via computed_length_px; percentage calc against a basis
+// via computed_calc_px.
+fn test_calc_computed_length() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'div', 'style', 'font-size: 20px; margin-top: calc(10px + 2em)')
+	// 2em at 20px = 40, + 10 = 50.
+	assert (computed_length_px(el, pid('margin-top'), []&CSSRule{}) or { panic('calc-abs') }) == 50.0
+
+	pct := el_with(doc, 'div', 'style', 'width: calc(100% - 40px)')
+	assert (computed_calc_px(pct, pid('width'), 200.0, []&CSSRule{}) or { panic('calc-pct') }) == 160.0
+}
