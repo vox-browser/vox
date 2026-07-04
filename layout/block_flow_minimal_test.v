@@ -353,3 +353,60 @@ fn test_box_sizing_border_box_clamps_to_zero() {
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.width == 0.0 // 10 - 40 clamped
 }
+
+// max-width clamps an auto (full-fill) width down: 800 available, max-width 100 -> 100.
+fn test_max_width_clamps_auto() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'max-width: 100px')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.width == 100.0
+}
+
+// min-width raises a smaller specified width: width 50, min-width 120 -> 120.
+fn test_min_width_raises() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 50px; min-width: 120px')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.width == 120.0
+}
+
+// min-width wins when it crosses max-width (min applied last): width 500, max 100, min 200 -> 200.
+fn test_min_width_beats_max_width() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 500px; max-width: 100px; min-width: 200px')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.width == 200.0
+}
+
+// min-height raises an empty box's height: no content, min-height 50 -> 50.
+fn test_min_height_raises_empty_box() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'min-height: 50px')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 50.0
+}
+
+// max-height clamps a taller explicit height: height 200, max-height 80 -> 80.
+fn test_max_height_clamps() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'height: 200px; max-height: 80px')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 80.0
+}
+
+// max-width percentage resolves against the containing width: 25% of 400 = 100.
+fn test_max_width_percentage() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'max-width: 25%')
+	box := layout_block(el, 0, 0, 400, []&css.CSSRule{})
+	assert box.width == 100.0
+}
+
+// min/max-width are box-sizing-aware: border-box max-width 100 leaves content 100 - 2*(10+5) = 70.
+fn test_min_max_width_border_box_aware() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'box-sizing: border-box; max-width: 100px; padding: 10px; border: 5px solid')
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.width == 70.0
+	assert box.margin_box_width() == 100.0 // border box hits the max-width
+}

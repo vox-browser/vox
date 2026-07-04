@@ -277,3 +277,17 @@ fn test_box_sizing_over_parsed_document() {
 	assert card.width == 150.0 // 200 - 2*(20 padding + 5 border)
 	assert card.margin_box_width() == 200.0 // border box stays at the specified width
 }
+
+// Full-stack min/max: the classic responsive container -- width:auto capped by max-width -- clamps
+// against a wide viewport, while a short element is raised to a min-height, all via author <style>.
+fn test_min_max_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.wrap { max-width: 600px } .hero { min-height: 300px }</style></head><body><div class="wrap"><div class="hero"></div></div></body></html>')
+
+	root_box := layout.layout_document(doc, 1440)
+	wrap := root_box.children[0].children[0] // html > body > div.wrap
+	assert wrap.tag_name == 'div'
+	assert wrap.width == 600.0 // auto width clamped by max-width against the 1440 viewport
+	hero := wrap.children[0]
+	assert hero.width == 600.0 // fills the clamped container
+	assert hero.height == 300.0 // empty, raised to min-height
+}

@@ -12,7 +12,8 @@ import dom
 //
 // Adjoining vertical margins of in-flow siblings collapse (CSS 2.1 §8.3.1). A box with no block-level
 // children but with text content gets a height from a coarse inline pass (line count × line-height).
-// `box-sizing: border-box` makes a specified width/height include padding+border.
+// `box-sizing: border-box` makes a specified width/height include padding+border. Used width and
+// height are clamped by min/max-width and min/max-height.
 //
 // FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
 // word-boundary wrapping, inline box geometry), mixed block+inline content (anonymous block boxes),
@@ -188,8 +189,7 @@ fn box_sizing_is_border_box(element &dom.Element, author_rules []&css.CSSRule) b
 // or percentage sets the width per the box model: content-box uses it directly; border-box subtracts
 // the horizontal border+padding (`border_padding_lr`). `auto` fills the space left after the
 // horizontal margins, border, and padding. All results are clamped at 0.
-fn used_content_width(element &dom.Element, containing_width f64, margins_lr f64, border_padding_lr f64, author_rules []&css.CSSRule) f64 {
-	border_box := box_sizing_is_border_box(element, author_rules)
+fn used_content_width(element &dom.Element, containing_width f64, margins_lr f64, border_padding_lr f64, border_box bool, author_rules []&css.CSSRule) f64 {
 	width_id := css.property_id_from_string('width') or {
 		return non_negative(containing_width - margins_lr - border_padding_lr)
 	}
@@ -201,6 +201,39 @@ fn used_content_width(element &dom.Element, containing_width f64, margins_lr f64
 		return non_negative(if border_box { specified - border_padding_lr } else { specified })
 	}
 	return non_negative(containing_width - margins_lr - border_padding_lr)
+}
+
+// Resolve a min-/max-size property to a *content-space* px constraint, or none when it imposes no
+// limit (`none`/`auto`/unset, or a percentage with no basis). `basis` is the containing measure for
+// percentages (none to skip them, as for heights with no definite containing height); border-box
+// subtracts the relevant border+padding (`border_padding`), matching how width/height are treated.
+fn resolve_size_constraint(element &dom.Element, property_name string, basis ?f64, border_padding f64, border_box bool, author_rules []&css.CSSRule) ?f64 {
+	id := css.property_id_from_string(property_name) or { return none }
+	if px := css.computed_length_px(element, id, author_rules) {
+		return non_negative(if border_box { px - border_padding } else { px })
+	}
+	if b := basis {
+		if pct := css.computed_percentage(element, id, author_rules) {
+			specified := b * pct / 100.0
+			return non_negative(if border_box { specified - border_padding } else { specified })
+		}
+	}
+	return none
+}
+
+// Clamp a used size by its min/max constraints (CSS 2.1 §10.4/§10.7): apply max first, then min, so
+// min wins when the two cross. `max` is none when there is no upper limit.
+fn clamp_size(value f64, min f64, max ?f64) f64 {
+	mut v := value
+	if m := max {
+		if v > m {
+			v = m
+		}
+	}
+	if v < min {
+		v = min
+	}
+	return v
 }
 
 fn non_negative(v f64) f64 {
@@ -225,9 +258,17 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		bottom: used_length_or_zero(element, 'padding-bottom', containing_width, author_rules)
 		left:   used_length_or_zero(element, 'padding-left', containing_width, author_rules)
 	}
+	border_box := box_sizing_is_border_box(element, author_rules)
 	margins_lr := margin.left + margin.right
 	border_padding_lr := border.left + border.right + padding.left + padding.right
-	width := used_content_width(element, containing_width, margins_lr, border_padding_lr, author_rules)
+	tentative_width := used_content_width(element, containing_width, margins_lr, border_padding_lr,
+		border_box, author_rules)
+	// Clamp the width by min-width/max-width (both box-sizing-aware, resolved in content space).
+	min_width := resolve_size_constraint(element, 'min-width', containing_width, border_padding_lr,
+		border_box, author_rules) or { 0.0 }
+	max_width := resolve_size_constraint(element, 'max-width', containing_width, border_padding_lr,
+		border_box, author_rules)
+	width := clamp_size(tentative_width, min_width, max_width)
 
 	content_x := x + margin.left + border.left + padding.left
 	content_y := y + margin.top + border.top + padding.top
@@ -275,16 +316,20 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 
 	// An explicit height sets the content height (content-box) or the border-box height (border-box,
 	// so subtract the vertical border+padding); `auto` uses the flowed content height.
+	border_padding_tb := border.top + border.bottom + padding.top + padding.bottom
 	height_id := css.property_id_from_string('height') or { return BlockBox{} }
-	height := if px := css.computed_length_px(element, height_id, author_rules) {
-		if box_sizing_is_border_box(element, author_rules) {
-			non_negative(px - (border.top + border.bottom + padding.top + padding.bottom))
-		} else {
-			px
-		}
+	tentative_height := if px := css.computed_length_px(element, height_id, author_rules) {
+		if border_box { non_negative(px - border_padding_tb) } else { px }
 	} else {
 		content_height
 	}
+	// Clamp the height by min-height/max-height. Percentages need a definite containing height we
+	// don't track, so only length constraints apply here (basis none).
+	min_height := resolve_size_constraint(element, 'min-height', none, border_padding_tb, border_box,
+		author_rules) or { 0.0 }
+	max_height := resolve_size_constraint(element, 'max-height', none, border_padding_tb, border_box,
+		author_rules)
+	height := clamp_size(tentative_height, min_height, max_height)
 
 	return BlockBox{
 		tag_name: element.local_name()
