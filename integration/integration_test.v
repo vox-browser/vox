@@ -650,3 +650,21 @@ fn test_dataset_over_parsed_document() {
 	assert 'userId' in ds.keys()
 	assert 'role' in ds.keys()
 }
+
+// Full-stack element.style: parse HTML, read + mutate inline style via the CSSStyleDeclaration, and
+// see the change flow through to layout.
+fn test_inline_style_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 100px; color: red">x</div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	style := css.inline_style(div)
+	assert style.get_property_value('width') == '100px'
+	assert style.get_property_value('color') == 'red'
+
+	// Mutate the inline style, then lay out -- the new width takes effect.
+	style.set_property('width', '250px')
+	assert style.get_property_value('width') == '250px'
+	box := layout.layout_block(div, 0, 0, 800, []&css.CSSRule{})
+	assert box.width == 250.0
+}

@@ -324,3 +324,40 @@ fn test_computed_style_value_calc_em() {
 	// 2em @ 20px = 40, + 10 = 50.
 	assert get_computed_style(el, []&CSSRule{}).get_property_value('margin-left') == '50px'
 }
+
+// inline_style: read/write an element's `style` attribute as a CSSStyleDeclaration.
+fn test_inline_style_read() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'div', 'style', 'color: red; width: 10px')
+	style := inline_style(el)
+	assert style.get_property_value('color') == 'red'
+	assert style.get_property_value('width') == '10px'
+	assert style.get_property_value('height') == '' // unset
+	assert style.length() == 2
+}
+
+// Setting a property updates the style attribute and round-trips.
+fn test_inline_style_set() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'div', 'style', 'color: red')
+	style := inline_style(el)
+
+	style.set_property('color', 'blue') // replace existing
+	style.set_property('display', 'flex') // add new
+	assert style.get_property_value('color') == 'blue'
+	assert style.get_property_value('display') == 'flex'
+	// The change is persisted to the element's style attribute.
+	assert (el.get_attribute('style') or { '' }).contains('blue')
+	assert (el.get_attribute('style') or { '' }).contains('flex')
+}
+
+// Removing a property drops it from the inline style.
+fn test_inline_style_remove() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := el_with(doc, 'div', 'style', 'color: red; width: 10px')
+	style := inline_style(el)
+	style.remove_property('color')
+	assert style.get_property_value('color') == ''
+	assert style.get_property_value('width') == '10px' // the other declaration stays
+	assert style.length() == 1
+}
