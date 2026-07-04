@@ -1685,12 +1685,13 @@ fn scope_match_a_selectors_string(node &ParentNode, selector_text string, return
 
 	// 3. Return the result of match a selector against a tree with s and node's root using scoping root node.
 	mut results := []&Node{}
+	results_ptr := &results
 	if return_matches == .first {
-		node.as_node().for_each_in_subtree(fn [selectors, node, mut results] (tree_node &Node) TraversalDecision {
+		node.as_node().for_each_in_subtree(fn [selectors, node, results_ptr] (tree_node &Node) TraversalDecision {
 			element := tree_node.as_element() or { return .@continue }
 			for selector in selectors.selectors {
 				if selector_engine_matches(selector, element, node) {
-					results << element.as_node()
+					dom_ptr_push(results_ptr, element.as_node())
 					return .@break
 				}
 			}
@@ -1703,11 +1704,11 @@ fn scope_match_a_selectors_string(node &ParentNode, selector_text string, return
 		}
 		return NodeList{}
 	}
-	node.as_node().for_each_in_subtree(fn [selectors, node, mut results] (tree_node &Node) TraversalDecision {
+	node.as_node().for_each_in_subtree(fn [selectors, node, results_ptr] (tree_node &Node) TraversalDecision {
 		element := tree_node.as_element() or { return .@continue }
 		for selector in selectors.selectors {
 			if selector_engine_matches(selector, element, node) {
-				results << element.as_node()
+				dom_ptr_push(results_ptr, element.as_node())
 				break
 			}
 		}
@@ -2957,13 +2958,14 @@ pub fn (mut r Range) delete_contents() ! {
 	}
 	// 4. Let nodes to remove be all contained nodes, omitting any node whose parent is also contained.
 	mut nodes_to_remove := []&Node{}
-	r.for_each_contained(fn [r, mut nodes_to_remove] (node &Node) TraversalDecision {
+	nodes_to_remove_ptr := &nodes_to_remove
+	r.for_each_contained(fn [r, nodes_to_remove_ptr] (node &Node) TraversalDecision {
 		if parent := node.parent_node() {
 			if r.contains_node(parent) {
 				return .@continue
 			}
 		}
-		nodes_to_remove << node
+		dom_ptr_push(nodes_to_remove_ptr, node)
 		return .@continue
 	})
 	// 5-6. Compute the new boundary point.
