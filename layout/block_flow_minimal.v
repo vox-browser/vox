@@ -21,7 +21,9 @@ import dom
 // shrink-to-fit. Horizontal `auto` margins absorb leftover space (both auto centers the box; a
 // single one right/left-aligns). `position: relative` offsets a box (and its subtree) by its insets
 // without disturbing the flow. Text-bearing blocks produce inline line boxes (word-wrapped, `<br>`-
-// and `white-space`-aware) positioned per `text-align`.
+// and `white-space`-aware) positioned per `text-align`. Floated children are placed at the content
+// edges (out of flow); `clear` moves a block below them and a BFC grows to contain them. FIXME:
+// inline content does not yet wrap around floats, and floats are placed at the container top.
 //
 // FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
 // word-boundary wrapping, inline box geometry), mixed block+inline content (anonymous block boxes),
@@ -201,6 +203,9 @@ fn block_child_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Elem
 			if is_absolutely_positioned(position_value(element, author_rules)) {
 				continue // out of flow
 			}
+			if is_floating(element, author_rules) {
+				continue // out of normal flow (placed separately at the container edge)
+			}
 			display := css.cascaded_value_with_ua(element, display_id, author_rules)
 			if is_block_level_display(display) {
 				elements << element
@@ -208,6 +213,101 @@ fn block_child_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Elem
 		}
 	}
 	return elements
+}
+
+// The cascaded `float` value (`none` when absent); `is_floating` is float left/right.
+fn float_side(element &dom.Element, author_rules []&css.CSSRule) string {
+	id := css.property_id_from_string('float') or { return 'none' }
+	return css.cascaded_value_with_ua(element, id, author_rules)
+}
+
+fn is_floating(element &dom.Element, author_rules []&css.CSSRule) bool {
+	side := float_side(element, author_rules)
+	return side == 'left' || side == 'right'
+}
+
+// The floated element children of `node`, in document order (skipping display:none). Absolutely
+// positioned elements are handled elsewhere and take precedence over float.
+fn float_children(node &dom.Node, author_rules []&css.CSSRule) []&dom.Element {
+	display_id := css.property_id_from_string('display') or { return []&dom.Element{} }
+	mut elements := []&dom.Element{}
+	for child in node.children_as_vector() {
+		if element := child.as_element() {
+			if css.cascaded_value_with_ua(element, display_id, author_rules) == 'none' {
+				continue
+			}
+			if is_absolutely_positioned(position_value(element, author_rules)) {
+				continue
+			}
+			if is_floating(element, author_rules) {
+				elements << element
+			}
+		}
+	}
+	return elements
+}
+
+// The y (local frame) an in-flow block must clear down to, given the current left/right float bottoms
+// and the element's `clear` value: `left`/`right`/`both` clear the respective floats (0 = no clear).
+fn clearance_bottom(element &dom.Element, left_floats_bottom f64, right_floats_bottom f64, author_rules []&css.CSSRule) f64 {
+	id := css.property_id_from_string('clear') or { return 0.0 }
+	return match css.cascaded_value_with_ua(element, id, author_rules) {
+		'left' { left_floats_bottom }
+		'right' { right_floats_bottom }
+		'both' { if left_floats_bottom > right_floats_bottom { left_floats_bottom } else { right_floats_bottom } }
+		else { 0.0 }
+	}
+}
+
+// Lay out a floated `element` at the local origin, sized shrink-to-fit when its width is auto (else
+// per the box model), within a `content_width`-wide containing block. Returned box is placed later.
+fn layout_float(element &dom.Element, content_width f64, author_rules []&css.CSSRule) BlockBox {
+	available_width := if size_is_auto(element, 'width', author_rules) {
+		edges := horizontal_edges(element, content_width, author_rules)
+		fit := shrink_to_fit(intrinsic_content_width(element, author_rules, true),
+			intrinsic_content_width(element, author_rules, false), non_negative(content_width - edges))
+		fit + edges
+	} else {
+		content_width
+	}
+	return layout_block(element, 0.0, 0.0, available_width, author_rules)
+}
+
+// Place floated boxes at the container's content-box edges (left floats packed from the left, right
+// floats from the right), all at the content top (local y = 0). Returns the placed boxes plus the
+// lowest bottom reached by left and right floats (for `clear` and BFC height).
+//
+// FIXME (v1): floats are placed at the container top, not interleaved at their in-flow position, and
+// they don't wrap to a new row when a row is full; inline content does not yet wrap around them.
+fn place_floats(elements []&dom.Element, content_x f64, content_width f64, author_rules []&css.CSSRule) ([]BlockBox, f64, f64) {
+	mut placed := []BlockBox{}
+	mut left_edge := content_x
+	mut right_edge := content_x + content_width
+	mut left_bottom := 0.0
+	mut right_bottom := 0.0
+	for element in elements {
+		mut box := layout_float(element, content_width, author_rules)
+		margin_box_width := box.margin_box_width()
+		margin_box_height := box.margin_box_height()
+		// The provisional box's margin-box origin (floats establish a BFC, so no collapse-through).
+		current_margin_x := box.x - box.padding.left - box.border.left - box.margin.left
+		current_margin_y := box.y - box.padding.top - box.border.top - box.margin.top
+		if float_side(element, author_rules) == 'left' {
+			box = translate_block(box, left_edge - current_margin_x, -current_margin_y)
+			left_edge += margin_box_width
+			if margin_box_height > left_bottom {
+				left_bottom = margin_box_height
+			}
+		} else {
+			box = translate_block(box, (right_edge - margin_box_width) - current_margin_x, -current_margin_y)
+			right_edge -= margin_box_width
+			if margin_box_height > right_bottom {
+				right_bottom = margin_box_height
+			}
+		}
+		placed << box
+	}
+	return placed, left_bottom, right_bottom
 }
 
 // Greedily break `words` into lines that fit `content_width`, returning the used content width of
@@ -369,8 +469,9 @@ fn append_inline_segments(node &dom.Node, author_rules []&css.CSSRule, preserve_
 			if css.cascaded_value_with_ua(element, display_id, author_rules) == 'none' {
 				continue
 			}
-			if is_absolutely_positioned(position_value(element, author_rules)) {
-				continue // out of flow
+			if is_absolutely_positioned(position_value(element, author_rules))
+				|| is_floating(element, author_rules) {
+				continue // out of flow — its text is its own content, not the container's
 			}
 			if element.local_name() == 'br' {
 				segments << '' // forced line break starts a new segment
@@ -520,11 +621,14 @@ fn non_negative(v f64) f64 {
 }
 
 // Whether `element` establishes a new block formatting context, in which case its margins do not
-// collapse with its in-flow children. Detects `display: flow-root`, absolute/fixed positioning, and a
-// non-visible `overflow` on either axis (`hidden`/`scroll`/`auto`/`clip`). FIXME: floats, inline-block,
-// table cells, and the document root also establish BFCs.
+// collapse with its in-flow children. Detects `display: flow-root`, absolute/fixed positioning,
+// floats, and a non-visible `overflow` on either axis (`hidden`/`scroll`/`auto`/`clip`). FIXME:
+// inline-block, table cells, and the document root also establish BFCs.
 fn establishes_block_formatting_context(element &dom.Element, author_rules []&css.CSSRule) bool {
 	if is_absolutely_positioned(position_value(element, author_rules)) {
+		return true
+	}
+	if is_floating(element, author_rules) {
 		return true
 	}
 	display_id := css.property_id_from_string('display') or { return false }
@@ -805,6 +909,12 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	// out): true when bottom border/padding separates them, or when the box establishes a BFC.
 	bottom_margin_contained := establishes_bfc || border.bottom != 0.0 || padding.bottom != 0.0
 
+	// Floated children are taken out of normal flow and placed at the content-box edges; the lowest
+	// bottom reached by left/right floats drives `clear` and (in a BFC) the container's height.
+	float_elements := float_children(element.as_node(), author_rules)
+	placed_floats, left_floats_bottom, right_floats_bottom := place_floats(float_elements, content_x,
+		width, author_rules)
+
 	block_children := block_child_elements(element.as_node(), author_rules)
 
 	// Lay children out in a LOCAL frame whose origin is this box's content-box top-left. Vertical
@@ -822,12 +932,17 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	mut has_children := false
 	for child in block_children {
 		mut cb := layout_block(child, content_x, 0.0, width, author_rules)
-		desired_border_top := if has_children {
+		mut desired_border_top := if has_children {
 			flow_bottom + collapse_margins([prev_outer_bottom, cb.outer_top_margin])
 		} else if top_adjoins {
 			0.0 // first child's top margin collapses through into this box's outer top margin
 		} else {
 			cb.outer_top_margin // separated by border/padding: the margin sits inside the content
+		}
+		// `clear` moves the child below the relevant floats.
+		clear_bottom := clearance_bottom(child, left_floats_bottom, right_floats_bottom, author_rules)
+		if clear_bottom > desired_border_top {
+			desired_border_top = clear_bottom
 		}
 		cb = translate_block(cb, 0.0, desired_border_top - cb.outer_top_margin)
 		child_border_bottom := desired_border_top + cb.border.top + cb.padding.top + cb.height +
@@ -860,6 +975,16 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 			if line.y + line.height > content_height {
 				content_height = line.y + line.height
 			}
+		}
+	}
+	// A box that establishes a BFC grows to contain its floats (the `overflow:hidden`/`flow-root`
+	// clearfix). Otherwise floats can overflow the box's bottom.
+	if establishes_bfc {
+		if left_floats_bottom > content_height {
+			content_height = left_floats_bottom
+		}
+		if right_floats_bottom > content_height {
+			content_height = right_floats_bottom
 		}
 	}
 
@@ -903,6 +1028,10 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	// frame (content-box top = 0) to the real content-box top.
 	content_top := y + outer_top_margin + border.top + padding.top + rel_y
 	mut children := local_children.map(translate_block(it, 0.0, content_top))
+	// Floats (also laid out in the local frame) join the children, shifted to the content-box top.
+	for placed_float in placed_floats {
+		children << translate_block(placed_float, 0.0, content_top)
+	}
 	lines := local_lines.map(TextLine{
 		x:      it.x
 		y:      it.y + content_top

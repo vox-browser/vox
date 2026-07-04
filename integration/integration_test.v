@@ -443,3 +443,18 @@ fn test_max_content_over_parsed_document() {
 	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
 	assert box.width == 110.0 // 50 + 10 space + 50, not the 1000 available width
 }
+
+// Full-stack floats: an overflow:hidden container clears its floated children (the clearfix): a
+// float:left and a float:right are placed at the edges and the container grows to contain them.
+fn test_floats_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 400px; overflow: hidden"><div style="float: left; width: 120px; height: 60px"></div><div style="float: right; width: 80px; height: 30px"></div></div>')
+	root := unsafe { &dom.Node(doc) }
+	container := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(container, 0, 0, 1000, []&css.CSSRule{})
+	assert box.children.len == 2 // the two floats
+	assert box.children[0].x == 0.0 // left float at the left edge
+	assert box.children[0].width == 120.0
+	assert box.children[1].x == 320.0 // right float: 400 - 80
+	assert box.height == 60.0 // BFC contains the taller (left) float
+}

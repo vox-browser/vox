@@ -1010,3 +1010,91 @@ fn test_absolute_position_shrink_to_fit() {
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.children[0].width == 80.0 // shrink-to-fit to max-content (fits in the 500px CB)
 }
+
+// A left float is placed at the container's left edge; a BFC (overflow:hidden) grows to contain it.
+fn test_float_left_placement_bfc_contains() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 300px; overflow: hidden')
+	fl := styled(doc, 'div', 'float: left; width: 100px; height: 50px')
+	mut rn := root.as_node()
+	rn.append_child(fl.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 1
+	assert box.children[0].x == 0.0
+	assert box.children[0].y == 0.0
+	assert box.children[0].width == 100.0
+	assert box.children[0].height == 50.0
+	assert box.height == 50.0 // BFC contains the float
+}
+
+// A right float is placed against the container's right edge.
+fn test_float_right_placement() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 300px; overflow: hidden')
+	fr := styled(doc, 'div', 'float: right; width: 80px; height: 40px')
+	mut rn := root.as_node()
+	rn.append_child(fr.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].x == 220.0 // 300 - 80
+	assert box.children[0].width == 80.0
+	assert box.height == 40.0
+}
+
+// Two left floats pack horizontally.
+fn test_two_left_floats_stack() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 300px; overflow: hidden')
+	f1 := styled(doc, 'div', 'float: left; width: 100px; height: 50px')
+	f2 := styled(doc, 'div', 'float: left; width: 60px; height: 30px')
+	mut rn := root.as_node()
+	rn.append_child(f1.as_node()) or { panic('${err}') }
+	rn.append_child(f2.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].x == 0.0
+	assert box.children[1].x == 100.0 // packed to the right of the first float
+	assert box.children[1].width == 60.0
+	assert box.height == 50.0 // tallest float
+}
+
+// clear: left moves an in-flow block below a left float; without a BFC the float isn't contained.
+fn test_clear_left() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 300px')
+	fl := styled(doc, 'div', 'float: left; width: 100px; height: 50px')
+	cleared := styled(doc, 'div', 'height: 20px; clear: left')
+	mut rn := root.as_node()
+	rn.append_child(fl.as_node()) or { panic('${err}') }
+	rn.append_child(cleared.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 2 // the in-flow block + the float
+	assert box.children[0].y == 50.0 // cleared below the float
+	assert box.children[0].height == 20.0
+	assert box.children[1].y == 0.0 // the float itself
+	assert box.height == 70.0 // 50 (clearance) + 20; float not contained (no BFC)
+}
+
+// Without a BFC, a float overflows its container (the container's height ignores it).
+fn test_float_overflows_without_bfc() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 300px') // static, not a BFC
+	fl := styled(doc, 'div', 'float: left; width: 100px; height: 80px')
+	mut rn := root.as_node()
+	rn.append_child(fl.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].height == 80.0 // float still placed
+	assert box.height == 0.0 // but NOT contained -- no BFC, no in-flow content
+}
+
+// clearance_bottom classification.
+fn test_clearance_bottom() {
+	doc := dom.Document.create(dom.url_about_blank())
+	assert clearance_bottom(styled(doc, 'div', 'clear: left'), 50, 30, []&css.CSSRule{}) == 50.0
+	assert clearance_bottom(styled(doc, 'div', 'clear: right'), 50, 30, []&css.CSSRule{}) == 30.0
+	assert clearance_bottom(styled(doc, 'div', 'clear: both'), 50, 30, []&css.CSSRule{}) == 50.0
+	assert clearance_bottom(styled(doc, 'div', ''), 50, 30, []&css.CSSRule{}) == 0.0
+}
