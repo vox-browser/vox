@@ -2449,6 +2449,150 @@ pub fn (style_value ShorthandStyleValue) values() []StyleValue {
 	return style_value.values_
 }
 
+// Configuration for the coordinating-list shorthands (transition/animation/scroll-timeline/
+// view-timeline), whose longhands are parallel comma-separated lists that must be zipped by
+// index when serializing.
+struct CoordinatingListConfig {
+	entry_when_all_initial string
+	required_longhands     []PropertyID
+	reset_only_longhands   []PropertyID
+}
+
+fn coordinating_list_config(shorthand PropertyID) ?CoordinatingListConfig {
+	return match shorthand {
+		.animation {
+			CoordinatingListConfig{
+				entry_when_all_initial: 'none'
+				reset_only_longhands:   [PropertyID.animation_timeline]
+			}
+		}
+		.transition {
+			CoordinatingListConfig{
+				entry_when_all_initial: 'all'
+			}
+		}
+		.scroll_timeline {
+			CoordinatingListConfig{
+				required_longhands: [PropertyID.scroll_timeline_name]
+			}
+		}
+		.view_timeline {
+			CoordinatingListConfig{
+				required_longhands: [PropertyID.view_timeline_name]
+			}
+		}
+		else {
+			none
+		}
+	}
+}
+
+// Serialize a coordinating-list shorthand by zipping its parallel longhand lists per entry,
+// mirroring the upstream `coordinating_value_list_shorthand_serialize`. Returns none when
+// the value can't be serialized this way (so the caller falls back to default_serialize).
+fn (style_value ShorthandStyleValue) serialize_coordinating_list(mode SerializationMode) ?string {
+	config := coordinating_list_config(style_value.shorthand_) or { return none }
+
+	// Reset-only longhands must all hold their initial value (the port stores them as a
+	// per-entry list, so every entry must be initial).
+	for reset_only in config.reset_only_longhands {
+		index := style_value.coordinating_longhand_index(reset_only) or { return none }
+		initial_css := computed_interpolation_property_initial_value(reset_only).css_text
+		value := style_value.values_[index]
+		if value is StyleValueList {
+			for item in value.values() {
+				if item.serialize(mode) != initial_css {
+					return none
+				}
+			}
+		} else if value.serialize(mode) != initial_css {
+			return none
+		}
+	}
+
+	// Every non-reset-only longhand must be a value list with the same entry count.
+	mut entry_count := -1
+	for index, sub_property in style_value.sub_properties_ {
+		if sub_property in config.reset_only_longhands {
+			continue
+		}
+		value := style_value.values_[index]
+		if value !is StyleValueList {
+			return none
+		}
+		count := (value as StyleValueList).values().len
+		if entry_count == -1 {
+			entry_count = count
+		} else if count != entry_count {
+			return none
+		}
+	}
+	if entry_count <= 0 {
+		return none
+	}
+
+	mut entries := []string{}
+	for entry_index := 0; entry_index < entry_count; entry_index++ {
+		mut parts := []string{}
+		for longhand_index, _ in style_value.sub_properties_ {
+			if !style_value.should_serialize_coordinating_longhand(entry_index, longhand_index,
+				config, mode) {
+				continue
+			}
+			list := style_value.values_[longhand_index] as StyleValueList
+			parts << list.values()[entry_index].serialize(mode)
+		}
+		if parts.len == 0 {
+			entries << config.entry_when_all_initial
+		} else {
+			entries << parts.join(' ')
+		}
+	}
+	return entries.join(', ')
+}
+
+fn (style_value ShorthandStyleValue) coordinating_longhand_index(property_id PropertyID) ?int {
+	for index, sub_property in style_value.sub_properties_ {
+		if sub_property == property_id {
+			return index
+		}
+	}
+	return none
+}
+
+fn (style_value ShorthandStyleValue) should_serialize_coordinating_longhand(entry_index int, longhand_index int, config CoordinatingListConfig, mode SerializationMode) bool {
+	longhand_id := style_value.sub_properties_[longhand_index]
+	if longhand_id in config.reset_only_longhands {
+		return false
+	}
+	if longhand_id in config.required_longhands {
+		return true
+	}
+
+	entry_value := (style_value.values_[longhand_index] as StyleValueList).values()[entry_index]
+	if entry_value.serialize(mode) != computed_interpolation_property_initial_value(longhand_id).css_text {
+		return true
+	}
+
+	// Disambiguation: serialize this (initial) longhand if a later, non-initial longhand's
+	// value could be mis-parsed as this longhand once the earlier ones are omitted.
+	for other_index := longhand_index + 1; other_index < style_value.sub_properties_.len; other_index++ {
+		other_id := style_value.sub_properties_[other_index]
+		if other_id in config.reset_only_longhands {
+			continue
+		}
+		other_value := (style_value.values_[other_index] as StyleValueList).values()[entry_index]
+		other_serialized := other_value.serialize(mode)
+		if other_serialized == computed_interpolation_property_initial_value(other_id).css_text {
+			continue
+		}
+		if _ := parse_css_value_logic(longhand_id, other_serialized) {
+			return true
+		}
+	}
+	return false
+}
+
 // The border-family shorthands (border, border-<edge>, border-block/inline[-start/end])
 // have a uniform structure: `values_` is M widths, then M styles, then M colors (M
 // edges). When every edge in each group is equal, they serialize to the short
@@ -2508,6 +2652,9 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 		return s
 	}
 	if s := style_value.serialize_font(mode) {
+		return s
+	}
+	if s := style_value.serialize_coordinating_list(mode) {
 		return s
 	}
 	// Mirrors the upstream `default_serialize`: the remaining property-specific cases
