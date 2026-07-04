@@ -36,3 +36,15 @@ pub fn computed_length_px(element &dom.Element, property_id PropertyID, author_r
 	}
 	return none // FIXME: viewport units need the viewport size
 }
+
+// The percentage value of `property_id`'s cascaded value (e.g. 50.0 for `50%`), or none when the
+// value isn't a percentage. Layout resolves this against the relevant containing-block basis (a
+// percentage width against the containing block's width, etc.).
+pub fn computed_percentage(element &dom.Element, property_id PropertyID, author_rules []&CSSRule) ?f64 {
+	specified := cascaded_value_with_ua(element, property_id, author_rules)
+	value := parse_css_value_logic(property_id, specified) or { return none }
+	if !value.is_percentage() {
+		return none
+	}
+	return value.as_percentage().percentage().value()
+}

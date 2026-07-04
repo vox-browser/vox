@@ -166,3 +166,20 @@ fn test_computed_color_over_parsed_document() {
 	assert (css.computed_color(span, color_id, no) or { panic('color') }).serialize() == 'rgb(1 2 3)'
 	assert (css.computed_color(span, border_id, no) or { panic('border') }).serialize() == 'rgb(1 2 3)'
 }
+
+// Full-stack block layout: parse HTML, cascade computed widths/heights, run the minimal block-flow
+// engine over the real DOM. A 300px container with two block children (auto width; 25% width).
+fn test_block_flow_layout_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 300px"><p style="height: 40px"></p><p style="width: 25%; height: 10px"></p></div>')
+	root := unsafe { &dom.Node(doc) }
+	container := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(container, 0, 0, 1000, []&css.CSSRule{})
+	assert box.width == 300.0 // explicit px, not the 1000 available width
+	assert box.height == 50.0 // auto -> 40 + 10
+	assert box.children.len == 2
+	assert box.children[0].width == 300.0 // auto fills the 300px container
+	assert box.children[0].height == 40.0
+	assert box.children[1].width == 75.0 // 25% of 300
+	assert box.children[1].y == 40.0 // stacked below the first child
+}
