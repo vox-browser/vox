@@ -3074,24 +3074,25 @@ pub fn (mut d Document) update_base_element() {
 	// Scan tree for <base> elements and update cached first-with-href / first-with-target.
 	d.first_base_element_with_href_in_tree_order = unsafe { nil }
 	d.first_base_element_with_target_in_tree_order = unsafe { nil }
+	mut d_ptr := &d
 	document_node := unsafe { &Node(&d) }
-	document_node.for_each_in_subtree(fn [mut d] (node &Node) TraversalDecision {
+	document_node.for_each_in_subtree(fn [mut d_ptr] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if !is_html_element_with_local_name(element, 'base') {
 			return .@continue
 		}
 		base_element := unsafe { &HTMLBaseElement(element) }
-		if d.first_base_element_with_href_in_tree_order == unsafe { nil }
+		if d_ptr.first_base_element_with_href_in_tree_order == unsafe { nil }
 			&& element.has_attribute('href') {
-			d.first_base_element_with_href_in_tree_order = base_element
-			if d.first_base_element_with_target_in_tree_order != unsafe { nil } {
+			d_ptr.first_base_element_with_href_in_tree_order = base_element
+			if d_ptr.first_base_element_with_target_in_tree_order != unsafe { nil } {
 				return .@break
 			}
 		}
-		if d.first_base_element_with_target_in_tree_order == unsafe { nil }
+		if d_ptr.first_base_element_with_target_in_tree_order == unsafe { nil }
 			&& element.has_attribute('target') {
-			d.first_base_element_with_target_in_tree_order = base_element
-			if d.first_base_element_with_href_in_tree_order != unsafe { nil } {
+			d_ptr.first_base_element_with_target_in_tree_order = base_element
+			if d_ptr.first_base_element_with_href_in_tree_order != unsafe { nil } {
 				return .@break
 			}
 		}
@@ -3327,20 +3328,18 @@ pub fn (d &Document) head() ?&HTMLHeadElement {
 // https://html.spec.whatwg.org/multipage/dom.html#the-title-element-2
 pub fn (d &Document) title_element() ?&HTMLTitleElement {
 	// The title element is the first title element in the document (in tree order).
-	mut found := ?&HTMLTitleElement(none)
+	mut found := []&HTMLTitleElement{}
+	found_ptr := &found
 	document_node := unsafe { &Node(d) }
-	document_node.for_each_in_subtree(fn [mut found] (node &Node) TraversalDecision {
-		if found != none {
-			return .@break
-		}
+	document_node.for_each_in_subtree(fn [found_ptr] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if is_html_element_with_local_name(element, 'title') {
-			found = unsafe { &HTMLTitleElement(element) }
+			dom_ptr_push(found_ptr, unsafe { &HTMLTitleElement(element) })
 			return .@break
 		}
 		return .@continue
 	})
-	return found
+	return if found.len > 0 { found[0] } else { none }
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#the-body-element-2
@@ -3941,12 +3940,13 @@ pub fn (mut d Document) adopt_node(node &Node) {
 	}
 
 	// 3. If document is not oldDocument, then:
+	d_ptr := &d
 	if old_document != &d {
 		// 1. For each inclusiveDescendant in node's shadow-including inclusive descendants:
-		node.for_each_shadow_including_inclusive_descendant(fn [mut d] (inclusive_descendant &Node) TraversalDecision {
+		node.for_each_shadow_including_inclusive_descendant(fn [d_ptr] (inclusive_descendant &Node) TraversalDecision {
 			// 1. Set inclusiveDescendant's node document to document.
 			mut mutable_descendant := unsafe { &Node(inclusive_descendant) }
-			mutable_descendant.set_document(&d)
+			mutable_descendant.set_document(d_ptr)
 
 			// 2. If inclusiveDescendant is an element, then set the node document of each attribute in inclusiveDescendant's attribute list to document.
 			// Element attributes in this V port are not Node-backed yet.
@@ -5088,13 +5088,18 @@ pub fn (mut d Document) set_navigation_id(id ?string) {
 pub fn (d &Document) descendant_navigables() []&Navigable {
 	// 1. Let navigables be new list.
 	mut navigables := []&Navigable{}
+	navigables_ptr := &navigables
 	// 2-3. For each shadow-including descendant that is a navigable container:
-	d.for_each_shadow_including_descendant(fn [mut navigables] (node &Node) TraversalDecision {
+	d.for_each_shadow_including_descendant(fn [navigables_ptr] (node &Node) TraversalDecision {
 		nc := as_navigable_container_stub(node) or { return .@continue }
 		content_nav := nc.content_navigable() or { return .@continue }
 		active_doc := content_nav.active_document() or { return .@continue }
 		// Extend navigables with active document's inclusive descendant navigables.
-		navigables << active_doc.inclusive_descendant_navigables()
+		unsafe {
+			mut a := *navigables_ptr
+			a << active_doc.inclusive_descendant_navigables()
+			*navigables_ptr = a
+		}
 		return .@continue
 	})
 	// 4. Return navigables.

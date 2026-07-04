@@ -736,13 +736,25 @@ pub fn (n &Node) alternative_text() ?string {
 	return none
 }
 
+// A closure can only mutate a captured value-type (array/builder/map) through a pointer,
+// because V captures such variables by value. Append to an array through its pointer.
+@[inline]
+fn dom_ptr_push[T](p &[]T, item T) {
+	unsafe {
+		mut a := *p
+		a << item
+		*p = a
+	}
+}
+
 // https://dom.spec.whatwg.org/#concept-descendant-text-content
 pub fn (n &Node) descendant_text_content() string {
 	mut builder := strings.new_builder(0)
-	n.for_each_in_subtree(fn [mut builder] (node &Node) TraversalDecision {
+	builder_ptr := &builder
+	n.for_each_in_subtree(fn [builder_ptr] (node &Node) TraversalDecision {
 		if node.is_text() {
 			if data := node.character_data() {
-				builder.write_string(data.data_)
+				unsafe { builder_ptr.write_string(data.data_) }
 			}
 		}
 		return .@continue
@@ -804,9 +816,10 @@ pub fn (mut n Node) set_text_content(maybe_content ?string) ! {
 pub fn (mut n Node) normalize() ! {
 	// The normalize() method steps are to run these steps for each descendant exclusive Text node node of this.
 	mut text_nodes := []&Node{}
-	n.for_each_in_inclusive_subtree(fn [mut text_nodes] (node &Node) TraversalDecision {
+	text_nodes_ptr := &text_nodes
+	n.for_each_in_inclusive_subtree(fn [text_nodes_ptr] (node &Node) TraversalDecision {
 		if node.is_exclusive_text() {
-			text_nodes << node
+			dom_ptr_push(text_nodes_ptr, node)
 		}
 		return .@continue
 	})
@@ -1663,9 +1676,10 @@ pub fn (mut n Node) insert_before(node &Node, child ?&Node, suppress_observers b
 	// Let staticNodeList be a list of nodes, initially << >>. We collect before running post-connection steps, because
 	// those steps can modify the tree and make live traversal unsafe.
 	mut static_node_list := []&Node{}
+	static_node_list_ptr := &static_node_list
 	for node_to_insert in nodes {
-		node_to_insert.for_each_shadow_including_inclusive_descendant(fn [mut static_node_list] (inclusive_descendant &Node) TraversalDecision {
-			static_node_list << inclusive_descendant
+		node_to_insert.for_each_shadow_including_inclusive_descendant(fn [static_node_list_ptr] (inclusive_descendant &Node) TraversalDecision {
+			dom_ptr_push(static_node_list_ptr, inclusive_descendant)
 			return .@continue
 		})
 	}

@@ -2640,10 +2640,11 @@ fn (mut e Element) exit_fullscreen_on_element_removal() {
 	// 2. Let nodes be removedNode's shadow-including inclusive descendants that
 	//    have their fullscreen flag set, in shadow-including tree order.
 	mut fullscreen_elements := []&Element{}
-	e.as_node().for_each_shadow_including_inclusive_descendant(fn [mut fullscreen_elements] (node &Node) TraversalDecision {
+	fullscreen_elements_ptr := &fullscreen_elements
+	e.as_node().for_each_shadow_including_inclusive_descendant(fn [fullscreen_elements_ptr] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if element.is_fullscreen_element() {
-			fullscreen_elements << element
+			dom_ptr_push(fullscreen_elements_ptr, element)
 		}
 		return .@continue
 	})

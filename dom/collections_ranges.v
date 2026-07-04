@@ -217,30 +217,28 @@ fn node_matches_name_filter(node &Node, name string) bool {
 
 fn collect_nodes_for_scope(root &Node, scope CollectionScope, filter fn (&Node) bool) []&Node {
 	mut nodes := []&Node{}
+	nodes_ptr := &nodes
+	node_filter := fn [nodes_ptr, filter] (node &Node) TraversalDecision {
+		if filter(node) {
+			dom_ptr_push(nodes_ptr, node)
+		}
+		return .@continue
+	}
 	if scope == .descendants {
-		root.for_each_in_subtree(fn [mut nodes, filter] (node &Node) TraversalDecision {
-			if filter(node) {
-				nodes << node
-			}
-			return .@continue
-		})
+		root.for_each_in_subtree(node_filter)
 	} else {
-		root.for_each_child(fn [mut nodes, filter] (node &Node) TraversalDecision {
-			if filter(node) {
-				nodes << node
-			}
-			return .@continue
-		})
+		root.for_each_child(node_filter)
 	}
 	return nodes
 }
 
 fn collect_elements_for_scope(root &Node, scope CollectionScope, filter fn (&Element) bool) []&Element {
 	mut elements := []&Element{}
-	node_filter := fn [mut elements, filter] (node &Node) TraversalDecision {
+	elements_ptr := &elements
+	node_filter := fn [elements_ptr, filter] (node &Node) TraversalDecision {
 		if element := node.as_element() {
 			if filter(element) {
-				elements << element
+				dom_ptr_push(elements_ptr, element)
 			}
 		}
 		return .@continue

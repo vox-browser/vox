@@ -577,16 +577,21 @@ pub fn (shadow_root &ShadowRoot) part_element_map() map[string][]AbstractElement
 pub fn (shadow_root &ShadowRoot) calculate_part_element_map() map[string][]AbstractElement {
 	// To calculate the part element map of a shadow root, outerRoot:
 	mut part_element_map := map[string][]AbstractElement{}
+	map_ptr := &part_element_map
 
 	// 1. For each descendant el within outerRoot:
-	shadow_root_as_node(shadow_root).for_each_in_subtree(fn [mut part_element_map] (node &Node) TraversalDecision {
+	shadow_root_as_node(shadow_root).for_each_in_subtree(fn [map_ptr] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 
 		// 1. For each name in el's part name list, append el to outerRoot's part element map[name].
 		for name in element.parts {
-			mut entries := part_element_map[name] or { []AbstractElement{} }
-			entries << AbstractElement.new(element, none)
-			part_element_map[name] = entries
+			unsafe {
+				mut current := *map_ptr
+				mut entries := current[name] or { []AbstractElement{} }
+				entries << AbstractElement.new(element, none)
+				current[name] = entries
+				*map_ptr = current
+			}
 		}
 
 		// FIXME: The rest concerns forwarded part names, which are not implemented yet.
