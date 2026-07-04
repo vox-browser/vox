@@ -493,7 +493,48 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		}
 		return
 	}
-	// FIXME: table/select/foreign and several other start tags are not handled specially.
+	if token.is_start_tag() && token.tag_name == 'table' {
+		if !p.document.in_quirks_mode() && p.stack_of_open_elements.has_in_button_scope('p') {
+			p.close_a_p_element()
+		}
+		p.insert_html_element(token)
+		p.frameset_ok = false
+		p.insertion_mode = .in_table
+		return
+	}
+	// Void elements: area, br, embed, img, keygen, wbr.
+	if token.is_start_tag() && token.tag_name in ['area', 'br', 'embed', 'img', 'keygen', 'wbr'] {
+		p.reconstruct_the_active_formatting_elements()
+		p.insert_html_element(token)
+		p.stack_of_open_elements.pop()
+		token.acknowledge_self_closing_flag_if_set()
+		p.frameset_ok = false
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'input' {
+		p.reconstruct_the_active_formatting_elements()
+		p.insert_html_element(token)
+		p.stack_of_open_elements.pop()
+		token.acknowledge_self_closing_flag_if_set()
+		// FIXME: frameset-ok flag is only kept for type=hidden.
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'hr' {
+		if p.stack_of_open_elements.has_in_button_scope('p') {
+			p.close_a_p_element()
+		}
+		p.insert_html_element(token)
+		p.stack_of_open_elements.pop()
+		token.acknowledge_self_closing_flag_if_set()
+		p.frameset_ok = false
+		return
+	}
+	// Stray table-structure start tags outside a table are ignored.
+	if token.is_start_tag()
+		&& token.tag_name in ['caption', 'col', 'colgroup', 'frame', 'head', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr'] {
+		return
+	}
+	// FIXME: select/option/foreign and several other start tags are not handled specially.
 	if token.is_start_tag() {
 		p.reconstruct_the_active_formatting_elements()
 		p.insert_html_element(token)

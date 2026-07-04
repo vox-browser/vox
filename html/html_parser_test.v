@@ -121,3 +121,49 @@ fn test_text_before_html_is_moved_into_body() {
 	body := nth_child(html_element(doc), 1)
 	assert tree_repr(body) == 'body("Hello",p("world"))'
 }
+
+fn test_table_implicit_tbody() {
+	// A bare <tr> inside <table> gets an implicit <tbody> wrapper.
+	doc := parse('<body><table><tr><td>a</td></tr></table></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(table(tbody(tr(td("a")))))'
+}
+
+fn test_table_cells_auto_close() {
+	// <td>/<tr> auto-close each other.
+	doc := parse('<body><table><tbody><tr><td>x<td>y</tr></tbody></table></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(table(tbody(tr(td("x"),td("y")))))'
+}
+
+fn test_table_thead_and_tbody() {
+	doc := parse('<table><thead><tr><th>H</th></tr></thead><tbody><tr><td>D</td></tr></tbody></table>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(table(thead(tr(th("H"))),tbody(tr(td("D")))))'
+}
+
+fn test_table_caption() {
+	doc := parse('<table><caption>C</caption><tr><td>x</td></tr></table>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(table(caption("C"),tbody(tr(td("x")))))'
+}
+
+fn test_table_colgroup() {
+	doc := parse('<table><colgroup><col></colgroup><tr><td>x</td></tr></table>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(table(colgroup(col),tbody(tr(td("x")))))'
+}
+
+fn test_table_foster_parenting() {
+	// Non-whitespace text directly inside <table> is foster-parented out, before the table.
+	doc := parse('<table>foo<tr><td>x</td></tr></table>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body("foo",table(tbody(tr(td("x")))))'
+}
+
+fn test_void_elements_in_body() {
+	// <br>/<img> are void: they must not swallow following siblings.
+	doc := parse('<body><p>a<br><img>b</p></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(p("a",br,img,"b"))'
+}

@@ -69,6 +69,8 @@ pub mut:
 
 	character_insertion_node    ?&dom.Text
 	character_insertion_builder []rune
+
+	pending_table_character_tokens []HTMLToken
 }
 
 // Parse `input` into `document`. The document is marked as an HTML document so that HTML-namespaced
@@ -130,8 +132,15 @@ fn (mut p HTMLParser) process_using_the_rules_for(mode InsertionMode, mut token 
 		.text { p.handle_text(mut token) }
 		.after_body { p.handle_after_body(mut token) }
 		.after_after_body { p.handle_after_after_body(mut token) }
-		// FIXME: table/frameset/template/caption/column/cell modes are not ported yet; fall back to
-		// the "in body" rules so ordinary content still parses.
+		.in_table { p.handle_in_table(mut token) }
+		.in_table_text { p.handle_in_table_text(mut token) }
+		.in_table_body { p.handle_in_table_body(mut token) }
+		.in_row { p.handle_in_row(mut token) }
+		.in_cell { p.handle_in_cell(mut token) }
+		.in_caption { p.handle_in_caption(mut token) }
+		.in_column_group { p.handle_in_column_group(mut token) }
+		// FIXME: frameset/template/select modes are not ported yet; fall back to the "in body" rules
+		// so ordinary content still parses.
 		else { p.handle_in_body(mut token) }
 	}
 }
@@ -154,11 +163,156 @@ fn (p &HTMLParser) adjusted_current_node() ?&dom.Element {
 
 // https://html.spec.whatwg.org/multipage/parsing.html#appropriate-place-for-inserting-a-node
 fn (mut p HTMLParser) find_appropriate_place_for_inserting_node() AdjustedInsertionLocation {
-	// FIXME: foster parenting and <template> contents are not handled.
 	target := p.current_node() or { return AdjustedInsertionLocation{} }
+	// FIXME: <template> contents are not handled (step 1's last-template branch and step 3).
+	if p.foster_parenting && target.local_name() in ['table', 'tbody', 'tfoot', 'thead', 'tr'] {
+		last_table := p.stack_of_open_elements.last_element_with_tag_name('table')
+		lt := last_table.element or {
+			// No last table (fragment case): inside the first element, after its last child.
+			return AdjustedInsertionLocation{
+				parent:                p.stack_of_open_elements.first().as_node()
+				insert_before_sibling: none
+			}
+		}
+		// If last table has a parent node, insert immediately before last table.
+		if parent := lt.as_node().parent_node() {
+			return AdjustedInsertionLocation{
+				parent:                parent
+				insert_before_sibling: lt.as_node()
+			}
+		}
+		// Otherwise, inside the element immediately above last table.
+		previous_element := p.stack_of_open_elements.element_immediately_above(lt) or {
+			return AdjustedInsertionLocation{
+				parent:                target.as_node()
+				insert_before_sibling: none
+			}
+		}
+		return AdjustedInsertionLocation{
+			parent:                previous_element.as_node()
+			insert_before_sibling: none
+		}
+	}
 	return AdjustedInsertionLocation{
 		parent:                target.as_node()
 		insert_before_sibling: none
+	}
+}
+
+// ===== table-context stack helpers =====
+
+fn (mut p HTMLParser) clear_the_stack_back_to_a_table_context() {
+	for {
+		cn := p.current_node() or { break }
+		if cn.local_name() in ['table', 'template', 'html'] {
+			break
+		}
+		p.stack_of_open_elements.pop()
+	}
+}
+
+fn (mut p HTMLParser) clear_the_stack_back_to_a_table_row_context() {
+	for {
+		cn := p.current_node() or { break }
+		if cn.local_name() in ['tr', 'template', 'html'] {
+			break
+		}
+		p.stack_of_open_elements.pop()
+	}
+}
+
+fn (mut p HTMLParser) clear_the_stack_back_to_a_table_body_context() {
+	for {
+		cn := p.current_node() or { break }
+		if cn.local_name() in ['tbody', 'tfoot', 'thead', 'template', 'html'] {
+			break
+		}
+		p.stack_of_open_elements.pop()
+	}
+}
+
+fn (mut p HTMLParser) close_the_cell() {
+	p.generate_implied_end_tags('')
+	for {
+		cn := p.current_node() or { break }
+		if cn.local_name() in ['td', 'th'] {
+			break
+		}
+		p.stack_of_open_elements.pop()
+	}
+	p.stack_of_open_elements.pop()
+	p.list_of_active_formatting_elements.clear_up_to_the_last_marker()
+	p.insertion_mode = .in_row
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately
+fn (mut p HTMLParser) reset_the_insertion_mode_appropriately() {
+	mut last := false
+	for i := p.stack_of_open_elements.elements.len - 1; i >= 0; i-- {
+		mut node := p.stack_of_open_elements.elements[i]
+		if i == 0 {
+			last = true
+			if p.parsing_fragment {
+				if ctx := p.context_element {
+					node = ctx
+				}
+			}
+		}
+		if element_in_namespace(node, ns_html) {
+			ln := node.local_name()
+			if !last && ln in ['td', 'th'] {
+				p.insertion_mode = .in_cell
+				return
+			}
+			if ln == 'tr' {
+				p.insertion_mode = .in_row
+				return
+			}
+			if ln in ['tbody', 'thead', 'tfoot'] {
+				p.insertion_mode = .in_table_body
+				return
+			}
+			if ln == 'caption' {
+				p.insertion_mode = .in_caption
+				return
+			}
+			if ln == 'colgroup' {
+				p.insertion_mode = .in_column_group
+				return
+			}
+			if ln == 'table' {
+				p.insertion_mode = .in_table
+				return
+			}
+			if ln == 'template' {
+				p.insertion_mode = if p.stack_of_template_insertion_modes.len > 0 {
+					p.stack_of_template_insertion_modes[p.stack_of_template_insertion_modes.len - 1]
+				} else {
+					InsertionMode.in_body
+				}
+				return
+			}
+			if !last && ln == 'head' {
+				p.insertion_mode = .in_head
+				return
+			}
+			if ln == 'body' {
+				p.insertion_mode = .in_body
+				return
+			}
+			if ln == 'frameset' {
+				p.insertion_mode = .in_frameset
+				return
+			}
+			if ln == 'html' {
+				p.insertion_mode = if p.head_element == none { InsertionMode.before_head } else { InsertionMode.after_head }
+				return
+			}
+		}
+		if last {
+			p.insertion_mode = .in_body
+			return
+		}
 	}
 }
 
