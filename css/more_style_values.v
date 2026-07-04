@@ -2832,6 +2832,9 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	if s := style_value.serialize_grid_area(mode) {
 		return s
 	}
+	if s := style_value.serialize_grid_template(mode) {
+		return s
+	}
 	if s := style_value.serialize_flex(mode) {
 		return s
 	}
@@ -2912,6 +2915,35 @@ fn (style_value ShorthandStyleValue) serialize_grid_line(mode SerializationMode)
 		return start
 	}
 	return '${start} / ${end}'
+}
+
+// grid-template: `none | <'grid-template-rows'> / <'grid-template-columns'>` (the
+// non-named-areas form) and `none`. The named `[<line-names>? <string> <track>?]+` form,
+// which interleaves the area strings with the row tracks, still uses default_serialize.
+fn (style_value ShorthandStyleValue) serialize_grid_template(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .grid_template {
+		return none
+	}
+	areas := style_value.coordinating_longhand_value(.grid_template_areas) or { return none }
+	rows := style_value.coordinating_longhand_value(.grid_template_rows) or { return none }
+	columns := style_value.coordinating_longhand_value(.grid_template_columns) or { return none }
+	if areas !is GridTemplateAreaStyleValue || rows !is GridTrackSizeListStyleValue
+		|| columns !is GridTrackSizeListStyleValue {
+		return none
+	}
+	areas_value := areas as GridTemplateAreaStyleValue
+	rows_value := rows as GridTrackSizeListStyleValue
+	columns_value := columns as GridTrackSizeListStyleValue
+
+	if areas_value.row_count() == 0 && rows_value.grid_track_size_list().is_empty()
+		&& columns_value.grid_track_size_list().is_empty() {
+		return 'none'
+	}
+	// The named-areas form is left to default_serialize for now.
+	if areas_value.row_count() != 0 {
+		return none
+	}
+	return '${rows_value.serialize(mode)} / ${columns_value.serialize(mode)}'
 }
 
 fn grid_placement_is_auto(value StyleValue) bool {
