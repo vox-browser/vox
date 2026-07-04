@@ -2153,10 +2153,24 @@ pub mut:
 
 // https://drafts.csswg.org/css-values-4/#calc-computed-value
 pub fn (c CalculatedStyleValue) resolve_value(resolution_context CalculationResolutionContext) ?CalculatedResolvedValue {
-	_ = resolution_context
-	// The calculation tree is again simplified at used value time; with used value time information.
-	// Boundary: the full CalculationNode tree is not translated yet, so reify the currently supported serialized
-	// numeric/math functions through Typed OM and require a single sum item.
+	// When the parsed calculation tree is available, evaluate it directly with the
+	// resolution context (relative-length resolution, percentage basis, canonical units).
+	if c.node.len == 1 {
+		result := resolve_calc_node(c.node[0], resolution_context) or { return none }
+		mut raw_value := result.value
+		// https://drafts.csswg.org/css-values/#calc-ieee
+		// NaN does not escape a top-level calculation; it's censored into a zero value.
+		if math.is_nan(raw_value) {
+			raw_value = 0
+		}
+		return CalculatedResolvedValue{
+			value: raw_value
+			type_: result.type_
+		}
+	}
+
+	// Fallback for values created via the Typed OM / transforms factory (no stored tree):
+	// reify the serialized numeric/math functions through Typed OM and require a single sum item.
 	numeric_value := CSSNumericValue.parse(c.serialize(.normal)) or { return none }
 	sum := numeric_value.create_a_sum_value() or { return none }
 	if sum.len != 1 {
