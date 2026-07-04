@@ -2551,6 +2551,105 @@ fn (style_value ShorthandStyleValue) serialize_coordinating_list(mode Serializat
 	return entries.join(', ')
 }
 
+fn (style_value ShorthandStyleValue) coordinating_longhand_value(property_id PropertyID) ?StyleValue {
+	index := style_value.coordinating_longhand_index(property_id) or { return none }
+	return style_value.values_[index]
+}
+
+// The number of layers a longhand value carries (a comma list's length, or 1).
+fn shorthand_layer_count_of(value StyleValue) int {
+	if value is StyleValueList {
+		return value.values().len
+	}
+	return 1
+}
+
+// The StyleValue for one layer of a longhand (looping short lists, as upstream does).
+fn shorthand_layer_value(value StyleValue, index int) StyleValue {
+	if value is StyleValueList {
+		return value.value_at(index, true)
+	}
+	return value
+}
+
+fn shorthand_append_if_not_initial(mut parts []string, value StyleValue, property_id PropertyID, mode SerializationMode) {
+	serialized := value.serialize(mode)
+	if serialized != computed_interpolation_property_initial_value(property_id).css_text {
+		parts << serialized
+	}
+}
+
+// background: zip the per-layer longhands (color only on the last layer), mirroring the
+// upstream Background serialize_layer. AD-HOC (as upstream): no `/` is emitted before the
+// background-size, so a layer with a non-initial size does not round-trip.
+fn (style_value ShorthandStyleValue) serialize_background(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .background {
+		return none
+	}
+	color := style_value.coordinating_longhand_value(.background_color) or { return none }
+	image := style_value.coordinating_longhand_value(.background_image) or { return none }
+	position_x := style_value.coordinating_longhand_value(.background_position_x) or { return none }
+	position_y := style_value.coordinating_longhand_value(.background_position_y) or { return none }
+	size := style_value.coordinating_longhand_value(.background_size) or { return none }
+	repeat := style_value.coordinating_longhand_value(.background_repeat) or { return none }
+	attachment := style_value.coordinating_longhand_value(.background_attachment) or { return none }
+	origin := style_value.coordinating_longhand_value(.background_origin) or { return none }
+	clip := style_value.coordinating_longhand_value(.background_clip) or { return none }
+
+	mut layer_count := shorthand_layer_count_of(image)
+	for value in [position_x, position_y, size, repeat, attachment, origin, clip] {
+		count := shorthand_layer_count_of(value)
+		if count > layer_count {
+			layer_count = count
+		}
+	}
+
+	mut layers := []string{}
+	for index := 0; index < layer_count; index++ {
+		mut parts := []string{}
+		// The background-color belongs to the final layer only.
+		if index == layer_count - 1 {
+			shorthand_append_if_not_initial(mut parts, color, .background_color, mode)
+		}
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(image, index),
+			.background_image, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(position_x, index),
+			.background_position_x, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(position_y, index),
+			.background_position_y, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(size, index),
+			.background_size, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(repeat, index),
+			.background_repeat, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(attachment, index),
+			.background_attachment, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(origin, index),
+			.background_origin, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(clip, index),
+			.background_clip, mode)
+		layers << if parts.len == 0 { 'none' } else { parts.join(' ') }
+	}
+	return layers.join(', ')
+}
+
+// background-position: zip background-position-x/-y per layer as `<x> <y>`.
+fn (style_value ShorthandStyleValue) serialize_background_position(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .background_position {
+		return none
+	}
+	position_x := style_value.coordinating_longhand_value(.background_position_x) or { return none }
+	position_y := style_value.coordinating_longhand_value(.background_position_y) or { return none }
+	x_count := shorthand_layer_count_of(position_x)
+	y_count := shorthand_layer_count_of(position_y)
+	layer_count := if x_count > y_count { x_count } else { y_count }
+	mut layers := []string{}
+	for index := 0; index < layer_count; index++ {
+		layers << '${shorthand_layer_value(position_x, index).serialize(mode)} ${shorthand_layer_value(position_y,
+			index).serialize(mode)}'
+	}
+	return layers.join(', ')
+}
+
 fn (style_value ShorthandStyleValue) coordinating_longhand_index(property_id PropertyID) ?int {
 	for index, sub_property in style_value.sub_properties_ {
 		if sub_property == property_id {
@@ -2655,6 +2754,12 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 		return s
 	}
 	if s := style_value.serialize_coordinating_list(mode) {
+		return s
+	}
+	if s := style_value.serialize_background(mode) {
+		return s
+	}
+	if s := style_value.serialize_background_position(mode) {
 		return s
 	}
 	// Mirrors the upstream `default_serialize`: the remaining property-specific cases
