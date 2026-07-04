@@ -4947,11 +4947,56 @@ const font_size_keywords = ['xx-small', 'x-small', 'small', 'medium', 'large', '
 	'xx-large', 'xxx-large', 'larger', 'smaller', 'math']
 
 // https://drafts.csswg.org/css-ui/#cursor
-// [ [ <url> | <url-set> ] [ <x> <y> ]? ]#  <cursor-predefined>
-// FIXME: <url> custom cursors are not translated yet; only the predefined keyword form is supported.
+// [ <cursor-image> , ]* <cursor-predefined>   where <cursor-image> = <image> <number>{2}?
+// (a comma-separated list of custom cursors and then a mandatory predefined keyword).
 fn (mut parser Parser) parse_cursor_value(mut tokens ComponentValueStream) ?StyleValue {
-	_ = parser
-	return parse_property_keyword_value(mut tokens, cursor_predefined_keywords)
+	mut transaction := tokens.clone()
+	parts := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	if parts.len == 0 {
+		return none
+	}
+
+	mut cursors := []StyleValue{}
+	for index, part in parts {
+		mut part_tokens := ComponentValueStream.new(part)
+		part_tokens.consume_whitespace()
+
+		if index == parts.len - 1 {
+			// The mandatory trailing predefined cursor keyword.
+			keyword := parse_property_keyword_value(mut part_tokens, cursor_predefined_keywords) or {
+				return none
+			}
+			part_tokens.consume_whitespace()
+			if part_tokens.has_more_tokens() {
+				return none
+			}
+			cursors << keyword
+			continue
+		}
+
+		// <cursor-image> = <image> <number>{2}?  (the two numbers are the hotspot x/y).
+		image := parser.parse_image_value(mut part_tokens) or { return none }
+		cursor_image := CursorImageValue.create(image.serialize(.normal))
+		part_tokens.consume_whitespace()
+		if part_tokens.has_more_tokens() {
+			x := parser.parse_number_value(mut part_tokens) or { return none }
+			part_tokens.consume_whitespace()
+			y := parser.parse_number_value(mut part_tokens) or { return none }
+			part_tokens.consume_whitespace()
+			if part_tokens.has_more_tokens() {
+				return none
+			}
+			cursors << StyleValue(CursorStyleValue.create(cursor_image, x, y))
+		} else {
+			cursors << StyleValue(CursorStyleValue.create(cursor_image, none, none))
+		}
+	}
+
+	tokens = transaction
+	if cursors.len == 1 {
+		return cursors[0]
+	}
+	return StyleValue(StyleValueList.create(cursors, .comma, .yes))
 }
 
 const cursor_predefined_keywords = ['auto', 'default', 'none', 'context-menu', 'help', 'pointer',
