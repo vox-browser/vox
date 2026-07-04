@@ -95,6 +95,13 @@ pub fn (s AvailableSize) is_intrinsic_sizing_constraint() bool {
 	return s.type_ in [.min_content, .max_content]
 }
 
+pub fn (s AvailableSize) to_px_or_zero() css.CSSPixels {
+	if !s.is_definite() {
+		return css.CSSPixels.new(0)
+	}
+	return s.value
+}
+
 pub fn (s AvailableSize) to_string() string {
 	return match s.type_ {
 		.definite { '${s.value.to_double():.2f}px' }
@@ -104,10 +111,54 @@ pub fn (s AvailableSize) to_string() string {
 	}
 }
 
+// Comparisons between a CSSPixels length and an AvailableSize, mirroring the free operators in
+// Layout/AvailableSpace.h (min-content acts as the smallest possible size, max-content/indefinite as
+// the largest).
+
+// Is `px` less than this available size? (C++ operator<(CSSPixels, AvailableSize))
+pub fn (s AvailableSize) px_is_less(px css.CSSPixels) bool {
+	if s.is_max_content() || s.is_indefinite() {
+		return true
+	}
+	if s.is_min_content() {
+		return false
+	}
+	return px.raw_value() < s.to_px_or_zero().raw_value()
+}
+
+// Is `px` greater than this available size? (C++ operator>(CSSPixels, AvailableSize))
+pub fn (s AvailableSize) px_is_greater(px css.CSSPixels) bool {
+	if s.is_max_content() || s.is_indefinite() {
+		return false
+	}
+	if s.is_min_content() {
+		return true
+	}
+	return px.raw_value() > s.to_px_or_zero().raw_value()
+}
+
+// Is this available size less than `px`? (C++ operator<(AvailableSize, CSSPixels))
+pub fn (s AvailableSize) is_less_than_px(px css.CSSPixels) bool {
+	if s.is_min_content() {
+		return true
+	}
+	if s.is_max_content() || s.is_indefinite() {
+		return false
+	}
+	return s.to_px_or_zero().raw_value() < px.raw_value()
+}
+
 pub struct AvailableSpace {
 pub mut:
 	width  AvailableSize
 	height AvailableSize
+}
+
+pub fn AvailableSpace.new(width AvailableSize, height AvailableSize) AvailableSpace {
+	return AvailableSpace{
+		width:  width
+		height: height
+	}
 }
 
 pub fn (s AvailableSpace) to_string() string {
