@@ -256,6 +256,48 @@ fn test_element_siblings() {
 	assert b.as_node().next_element_sibling() == none
 }
 
+// Node.contains: true iff other is an inclusive descendant (null -> false).
+fn test_contains() {
+	doc := Document.create(url_about_blank())
+	mut root := mk(doc, 'div')
+	mut rn := root.as_node()
+	child := mk(doc, 'span')
+	append(mut rn, child.as_node())
+	grandchild := mk(doc, 'a')
+	mut cn := child.as_node()
+	append(mut cn, grandchild.as_node())
+	other := mk(doc, 'p') // not in the tree
+
+	assert rn.contains(rn) // inclusive: a node contains itself
+	assert rn.contains(child.as_node())
+	assert rn.contains(grandchild.as_node()) // deep descendant
+	assert !rn.contains(other.as_node())
+	assert !child.as_node().contains(rn) // a child does not contain its parent
+	assert !rn.contains(none) // null -> false
+}
+
+// Node.lookupNamespaceURI / isDefaultNamespace (Node-lookupNamespaceURI, Node-isDefaultNamespace).
+fn test_namespace_lookups() {
+	doc := Document.create(url_about_blank())
+	html_el := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	svg_el := doc.create_element_ns(svg_ns, 'rect') or { panic('${err}') }
+
+	// lookupNamespaceURI(null) returns the element's own namespace.
+	assert (html_el.as_node().lookup_namespace_uri(none) or { '' }) == html_ns
+	assert (svg_el.as_node().lookup_namespace_uri(none) or { '' }) == svg_ns
+	// The xml prefix is always bound.
+	assert (html_el.as_node().lookup_namespace_uri('xml') or { '' }) == 'http://www.w3.org/XML/1998/namespace'
+
+	// isDefaultNamespace.
+	assert html_el.as_node().is_default_namespace(html_ns)
+	assert !html_el.as_node().is_default_namespace(svg_ns)
+
+	// A non-namespaced element's default namespace is null.
+	plain := mk(doc, 'div') // Document.create -> namespace none
+	assert plain.as_node().is_default_namespace(none)
+	assert !plain.as_node().is_default_namespace(html_ns)
+}
+
 // Node.nodeName for the stable non-element node types (Node-nodeName).
 fn test_node_name_variants() {
 	doc := Document.create(url_about_blank())

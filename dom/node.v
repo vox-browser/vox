@@ -725,6 +725,13 @@ pub fn (n &Node) is_inclusive_ancestor_of(other &Node) bool {
 	return n == other || n.is_ancestor_of(other)
 }
 
+// https://dom.spec.whatwg.org/#dom-node-contains
+// Returns true if `other` is an inclusive descendant of this node (false when `other` is null).
+pub fn (n &Node) contains(other ?&Node) bool {
+	target := other or { return false }
+	return n.is_inclusive_ancestor_of(target)
+}
+
 pub fn (n &Node) as_element() ?&Element {
 	if !n.is_element() {
 		return none
