@@ -216,22 +216,56 @@ fn wrapped_line_count(words []string, content_width f64, glyph_width f64, space_
 	return lines
 }
 
+// Gather a block's inline content as text segments split at `<br>` forced line breaks: the text
+// between consecutive `<br>`s (walking into inline descendants) forms one segment. `display: none`
+// and out-of-flow (absolutely positioned) descendants contribute nothing.
+fn append_inline_segments(node &dom.Node, author_rules []&css.CSSRule, mut segments []string) {
+	display_id := css.property_id_from_string('display') or { return }
+	for child in node.children_as_vector() {
+		if child.is_text() {
+			segments[segments.len - 1] += unsafe { &dom.Text(child) }.data()
+		} else if element := child.as_element() {
+			if css.cascaded_value_with_ua(element, display_id, author_rules) == 'none' {
+				continue
+			}
+			if is_absolutely_positioned(position_value(element, author_rules)) {
+				continue // out of flow
+			}
+			if element.local_name() == 'br' {
+				segments << '' // forced line break starts a new segment
+			} else {
+				append_inline_segments(element.as_node(), author_rules, mut segments)
+			}
+		}
+	}
+}
+
 // The height of a block whose content is inline (text) rather than block-level children: the number
-// of line boxes times the line-height. Text is split into whitespace-separated words and wrapped at
-// word boundaries against the content width; each glyph is measured at ~0.5em (no real font metrics).
+// of line boxes times the line-height. The content is split at `<br>` breaks into segments, each
+// segment is wrapped at word boundaries against the content width (glyphs ~0.5em, no real metrics),
+// and an empty segment between breaks still occupies one (empty) line. Truly empty content is 0.
 //
-// FIXME: this stands in for a real inline formatting context — glyph advances are estimated, there is
-// no per-inline font/line-height, no inline fragment geometry (word positions), and no soft-hyphen /
-// forced-break (<br>) / bidi handling.
-fn inline_content_height(element &dom.Element, text string, content_width f64, author_rules []&css.CSSRule) f64 {
-	words := text.fields() // split on whitespace runs, dropping empties (whitespace collapses)
-	if words.len == 0 {
+// FIXME: still stands in for a real inline formatting context — glyph advances are estimated, there
+// is no per-inline font/line-height, no inline fragment geometry (word positions), and no bidi.
+fn inline_content_height(element &dom.Element, content_width f64, author_rules []&css.CSSRule) f64 {
+	mut segments := ['']
+	append_inline_segments(element.as_node(), author_rules, mut segments)
+
+	glyph_width := 0.5 * css.computed_font_size_px(element, author_rules)
+	mut lines := 0
+	for segment in segments {
+		words := segment.fields()
+		lines += if words.len == 0 {
+			1 // an empty segment (from a <br>) is still a line box
+		} else {
+			wrapped_line_count(words, content_width, glyph_width, glyph_width)
+		}
+	}
+	// A single empty segment means there was no inline content at all — no line box.
+	if segments.len == 1 && segments[0].fields().len == 0 {
 		return 0.0
 	}
-	line_height := css.computed_line_height_px(element, author_rules)
-	glyph_width := 0.5 * css.computed_font_size_px(element, author_rules)
-	lines := wrapped_line_count(words, content_width, glyph_width, glyph_width) // space ~= 0.5em too
-	return f64(lines) * line_height
+	return f64(lines) * css.computed_line_height_px(element, author_rules)
 }
 
 // Whether `element` uses the border-box box model (specified width/height include padding+border)
@@ -631,8 +665,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 			flow_bottom
 		}
 	} else {
-		text := element.as_node().text_content() or { '' }
-		content_height = inline_content_height(element, text, width, author_rules)
+		content_height = inline_content_height(element, width, author_rules)
 	}
 
 	// An explicit height sets the content height (content-box) or the border-box height (border-box,

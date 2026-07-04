@@ -398,3 +398,13 @@ fn test_word_wrap_over_parsed_document() {
 	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
 	assert box.height == 50.0
 }
+
+// Full-stack <br>: three <br>-separated lines each fit the 500px box, so height is 3 line-heights.
+fn test_br_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 500px; line-height: 20px">line one<br>line two<br>line three</div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
+	assert box.height == 60.0 // 3 lines * 20px
+}

@@ -768,3 +768,60 @@ fn test_wrapped_line_count() {
 	// no room to wrap -> single line regardless.
 	assert wrapped_line_count(['a', 'b', 'c'], 0, 10, 10) == 1
 }
+
+// A <br> forces a line break: "one<br>two" is two lines even though both fit on one line width.
+fn test_br_forces_line_break() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 500px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('one').as_node()) or { panic('${err}') }
+	n.append_child(styled(doc, 'br', '').as_node()) or { panic('${err}') }
+	n.append_child(doc.create_text_node('two').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 60.0 // 2 lines * 30, though "one two" would fit on one 500px line
+}
+
+// Consecutive <br><br> creates an empty line between segments.
+fn test_double_br_empty_line() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 500px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('a').as_node()) or { panic('${err}') }
+	n.append_child(styled(doc, 'br', '').as_node()) or { panic('${err}') }
+	n.append_child(styled(doc, 'br', '').as_node()) or { panic('${err}') }
+	n.append_child(doc.create_text_node('b').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 90.0 // "a" | (empty) | "b" -> 3 lines * 30
+}
+
+// A <br> combines with word wrapping: a wrapping segment then a forced break then another segment.
+fn test_br_combines_with_wrapping() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	// "aaaa bbbb cccc" wraps to 2 lines (2 words + 1), then <br>, then "dddd" one line = 3 lines.
+	n.append_child(doc.create_text_node('aaaa bbbb cccc').as_node()) or { panic('${err}') }
+	n.append_child(styled(doc, 'br', '').as_node()) or { panic('${err}') }
+	n.append_child(doc.create_text_node('dddd').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 90.0 // 2 (wrapped) + 1 (after break) = 3 lines * 30
+}
+
+// <br> inside a nested inline element still breaks the block's line.
+fn test_br_nested_in_inline() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 500px; font-size: 20px; line-height: 30px')
+	span := styled(doc, 'span', '')
+	mut sn := span.as_node()
+	sn.append_child(doc.create_text_node('x').as_node()) or { panic('${err}') }
+	sn.append_child(styled(doc, 'br', '').as_node()) or { panic('${err}') }
+	sn.append_child(doc.create_text_node('y').as_node()) or { panic('${err}') }
+	mut n := el.as_node()
+	n.append_child(span.as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 60.0 // the <br> inside the span breaks the div's inline flow -> 2 lines
+}
