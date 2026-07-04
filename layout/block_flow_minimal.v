@@ -22,8 +22,8 @@ import dom
 // single one right/left-aligns). `position: relative` offsets a box (and its subtree) by its insets
 // without disturbing the flow. Text-bearing blocks produce inline line boxes (word-wrapped, `<br>`-
 // and `white-space`-aware) positioned per `text-align`. Floated children are placed at the content
-// edges (out of flow); `clear` moves a block below them and a BFC grows to contain them. FIXME:
-// inline content does not yet wrap around floats, and floats are placed at the container top.
+// edges (out of flow); `clear` moves a block below them, a BFC grows to contain them, and inline
+// content wraps around them. FIXME: floats are placed at the container top, not their flow position.
 //
 // FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
 // word-boundary wrapping, inline box geometry), mixed block+inline content (anonymous block boxes),
@@ -273,14 +273,27 @@ fn layout_float(element &dom.Element, content_width f64, author_rules []&css.CSS
 	return layout_block(element, 0.0, 0.0, available_width, author_rules)
 }
 
+// A float's vertical band and the inner edge past which in-flow inline content sits: for a left
+// float `inner_edge` is its right margin edge (content starts to the right); for a right float it is
+// its left margin edge (content ends to the left). Coordinates are in the local (content-top = 0)
+// frame, matching line boxes.
+struct FloatBand {
+	is_left    bool
+	top        f64
+	bottom     f64
+	inner_edge f64
+}
+
 // Place floated boxes at the container's content-box edges (left floats packed from the left, right
-// floats from the right), all at the content top (local y = 0). Returns the placed boxes plus the
-// lowest bottom reached by left and right floats (for `clear` and BFC height).
+// floats from the right), all at the content top (local y = 0). Returns the placed boxes, the lowest
+// bottom reached by left and right floats (for `clear` and BFC height), and the float bands (so that
+// inline content wraps around them).
 //
 // FIXME (v1): floats are placed at the container top, not interleaved at their in-flow position, and
-// they don't wrap to a new row when a row is full; inline content does not yet wrap around them.
-fn place_floats(elements []&dom.Element, content_x f64, content_width f64, author_rules []&css.CSSRule) ([]BlockBox, f64, f64) {
+// they don't wrap to a new row when a row is full.
+fn place_floats(elements []&dom.Element, content_x f64, content_width f64, author_rules []&css.CSSRule) ([]BlockBox, f64, f64, []FloatBand) {
 	mut placed := []BlockBox{}
+	mut bands := []FloatBand{}
 	mut left_edge := content_x
 	mut right_edge := content_x + content_width
 	mut left_bottom := 0.0
@@ -292,22 +305,60 @@ fn place_floats(elements []&dom.Element, content_x f64, content_width f64, autho
 		// The provisional box's margin-box origin (floats establish a BFC, so no collapse-through).
 		current_margin_x := box.x - box.padding.left - box.border.left - box.margin.left
 		current_margin_y := box.y - box.padding.top - box.border.top - box.margin.top
-		if float_side(element, author_rules) == 'left' {
-			box = translate_block(box, left_edge - current_margin_x, -current_margin_y)
+		is_left := float_side(element, author_rules) == 'left'
+		margin_left := if is_left { left_edge } else { right_edge - margin_box_width }
+		box = translate_block(box, margin_left - current_margin_x, -current_margin_y)
+		if is_left {
 			left_edge += margin_box_width
 			if margin_box_height > left_bottom {
 				left_bottom = margin_box_height
 			}
 		} else {
-			box = translate_block(box, (right_edge - margin_box_width) - current_margin_x, -current_margin_y)
 			right_edge -= margin_box_width
 			if margin_box_height > right_bottom {
 				right_bottom = margin_box_height
 			}
 		}
+		bands << FloatBand{
+			is_left:    is_left
+			top:        0.0
+			bottom:     margin_box_height
+			inner_edge: if is_left { margin_left + margin_box_width } else { margin_left }
+		}
 		placed << box
 	}
-	return placed, left_bottom, right_bottom
+	return placed, left_bottom, right_bottom, bands
+}
+
+// The horizontal bounds [left, right] available to a line box spanning [`y`, `y + line_height`],
+// after subtracting floats whose bands overlap it.
+fn line_bounds(y f64, line_height f64, bands []FloatBand, content_x f64, content_width f64) (f64, f64) {
+	mut left := content_x
+	mut right := content_x + content_width
+	for band in bands {
+		if band.top < y + line_height && band.bottom > y { // overlaps the line's band
+			if band.is_left {
+				if band.inner_edge > left {
+					left = band.inner_edge
+				}
+			} else if band.inner_edge < right {
+				right = band.inner_edge
+			}
+		}
+	}
+	return left, if right > left { right } else { left }
+}
+
+// The nearest float bottom strictly below `y` (so a line that can't fit beside a float can drop to
+// clear it). Returns `y` when no float extends below.
+fn next_float_bottom(y f64, bands []FloatBand) f64 {
+	mut best := y
+	for band in bands {
+		if band.bottom > y && (best == y || band.bottom < best) {
+			best = band.bottom
+		}
+	}
+	return best
 }
 
 // Greedily break `words` into lines that fit `content_width`, returning the used content width of
@@ -501,10 +552,14 @@ fn aligned_line_x(content_x f64, content_width f64, line_width f64, align string
 // single line). Every line is placed at `content_x` adjusted for `text-align`. An empty segment
 // between breaks is still an (empty) line; truly empty content yields no lines.
 //
+// Line boxes flow around `float_bands`: each line uses the horizontal room left at its vertical
+// position (offset past left floats, shortened by right floats), and a line whose first word can't
+// fit beside a float drops below it.
+//
 // FIXME: still stands in for a real inline formatting context — glyph advances are estimated, `pre*`
 // whitespace runs are collapsed (widths approximate), there is no per-inline font/line-height, no
 // inline fragment geometry (individual word positions), no per-word justification, and no bidi.
-fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, author_rules []&css.CSSRule) []TextLine {
+fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, float_bands []FloatBand, author_rules []&css.CSSRule) []TextLine {
 	white_space := css.cascaded_value_with_ua(element, css.property_id_from_string('white-space') or {
 		return []TextLine{}
 	}, author_rules)
@@ -521,22 +576,52 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, a
 	align := css.cascaded_value_with_ua(element, css.property_id_from_string('text-align') or {
 		return []TextLine{}
 	}, author_rules)
-	// `nowrap`/`pre` never wrap: a width of -1 makes each segment a single line.
-	wrap_width := if white_space_wraps(white_space) { content_width } else { -1.0 }
+	wraps := white_space_wraps(white_space)
 
 	mut lines := []TextLine{}
 	mut y := 0.0
 	for segment in segments {
 		words := segment.fields()
-		line_widths := if words.len == 0 { [0.0] } else { wrap_line_widths(words, wrap_width,
-				glyph_width, glyph_width) }
-		for line_width in line_widths {
+		if words.len == 0 {
+			left, right := line_bounds(y, line_height, float_bands, content_x, content_width)
 			lines << TextLine{
-				x:      aligned_line_x(content_x, content_width, line_width, align)
+				x:      aligned_line_x(left, right - left, 0.0, align)
+				y:      y
+				width:  0.0
+				height: line_height
+			}
+			y += line_height
+			continue
+		}
+		mut i := 0
+		for i < words.len {
+			mut left, mut right := line_bounds(y, line_height, float_bands, content_x, content_width)
+			// If the first word can't fit beside a float, drop the line below the nearest float.
+			if wraps && f64(words[i].runes().len) * glyph_width > right - left {
+				dropped := next_float_bottom(y, float_bands)
+				if dropped > y {
+					y = dropped
+					continue
+				}
+			}
+			available := right - left
+			mut line_width := f64(words[i].runes().len) * glyph_width
+			mut j := i + 1
+			for j < words.len {
+				needed := glyph_width + f64(words[j].runes().len) * glyph_width // space + word
+				if wraps && line_width + needed > available {
+					break
+				}
+				line_width += needed
+				j++
+			}
+			lines << TextLine{
+				x:      aligned_line_x(left, right - left, line_width, align)
 				y:      y
 				width:  line_width
 				height: line_height
 			}
+			i = j
 			y += line_height
 		}
 	}
@@ -912,8 +997,8 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	// Floated children are taken out of normal flow and placed at the content-box edges; the lowest
 	// bottom reached by left/right floats drives `clear` and (in a BFC) the container's height.
 	float_elements := float_children(element.as_node(), author_rules)
-	placed_floats, left_floats_bottom, right_floats_bottom := place_floats(float_elements, content_x,
-		width, author_rules)
+	placed_floats, left_floats_bottom, right_floats_bottom, float_bands := place_floats(float_elements,
+		content_x, width, author_rules)
 
 	block_children := block_child_elements(element.as_node(), author_rules)
 
@@ -970,7 +1055,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 			flow_bottom
 		}
 	} else {
-		local_lines = layout_inline_lines(element, content_x, width, author_rules)
+		local_lines = layout_inline_lines(element, content_x, width, float_bands, author_rules)
 		for line in local_lines {
 			if line.y + line.height > content_height {
 				content_height = line.y + line.height

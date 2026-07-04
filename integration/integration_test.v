@@ -458,3 +458,17 @@ fn test_floats_over_parsed_document() {
 	assert box.children[1].x == 320.0 // right float: 400 - 80
 	assert box.height == 60.0 // BFC contains the taller (left) float
 }
+
+// Full-stack float wrap-around: text in a container flows to the right of a left float, then
+// returns to full width below it (the classic "float an image, text wraps around it").
+fn test_float_wrap_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 200px; overflow: hidden; font-size: 20px; line-height: 20px"><div style="float: left; width: 150px; height: 40px"></div>aaaa bbbb cccc</div>')
+	root := unsafe { &dom.Node(doc) }
+	container := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(container, 0, 0, 1000, []&css.CSSRule{})
+	assert box.lines.len == 3
+	assert box.lines[0].x == 150.0 // beside the float
+	assert box.lines[2].x == 0.0 // below the float, full width
+	assert box.lines[2].y == 40.0
+}

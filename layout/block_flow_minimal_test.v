@@ -1098,3 +1098,56 @@ fn test_clearance_bottom() {
 	assert clearance_bottom(styled(doc, 'div', 'clear: both'), 50, 30, []&css.CSSRule{}) == 50.0
 	assert clearance_bottom(styled(doc, 'div', ''), 50, 30, []&css.CSSRule{}) == 0.0
 }
+
+// Inline text wraps around a left float: lines in the float's band are offset to its right and
+// shortened; a line below the float returns to full width. Float 150 wide/40 tall; 200px box;
+// 20px font/line-height so ~one 40px word fits beside the float (available 50).
+fn test_inline_wraps_around_left_float() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; overflow: hidden; font-size: 20px; line-height: 20px')
+	fl := styled(doc, 'div', 'float: left; width: 150px; height: 40px')
+	mut rn := root.as_node()
+	rn.append_child(fl.as_node()) or { panic('${err}') }
+	rn.append_child(doc.create_text_node('aaaa bbbb cccc').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines.len == 3
+	assert box.lines[0].x == 150.0 // offset past the float
+	assert box.lines[0].y == 0.0
+	assert box.lines[1].x == 150.0
+	assert box.lines[1].y == 20.0
+	assert box.lines[2].x == 0.0 // third line drops below the float -> full width
+	assert box.lines[2].y == 40.0
+	assert box.height == 60.0 // 3 lines * 20 (taller than the 40px float)
+}
+
+// A right float shortens the lines in its band (forcing wrapping) without offsetting them.
+fn test_inline_wraps_around_right_float() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; overflow: hidden; font-size: 20px; line-height: 20px')
+	fr := styled(doc, 'div', 'float: right; width: 150px; height: 40px')
+	mut rn := root.as_node()
+	rn.append_child(fr.as_node()) or { panic('${err}') }
+	rn.append_child(doc.create_text_node('aaaa bbbb cccc').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines.len == 3 // without the float these 3 words fit on one 200px line
+	assert box.lines[0].x == 0.0 // not offset (float is on the right); just shortened
+	assert box.lines[2].y == 40.0 // third line clears the float
+}
+
+// A word too wide to fit beside a float drops below it rather than overflowing into it.
+fn test_inline_wide_word_drops_below_float() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px; overflow: hidden; font-size: 20px; line-height: 20px')
+	fl := styled(doc, 'div', 'float: left; width: 170px; height: 30px')
+	mut rn := root.as_node()
+	rn.append_child(fl.as_node()) or { panic('${err}') }
+	rn.append_child(doc.create_text_node('verylongword').as_node()) or { panic('${err}') } // 120px
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines.len == 1
+	assert box.lines[0].y == 30.0 // dropped below the 30px float (couldn't fit in the 30px gap)
+	assert box.lines[0].x == 0.0 // full width below the float
+	assert box.lines[0].width == 120.0
+}
