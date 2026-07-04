@@ -1857,6 +1857,41 @@ pub fn (mut e Element) set_outer_html(value string) ! {
 	mutable_parent.replace_child(fragment.as_node(), e.as_node())!
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-innertext (the setter)
+// Set the element's contents to `input` as rendered text: each run of characters that are not a line
+// break becomes a Text node, and each line break (LF, CR, or a CRLF pair) becomes a `<br>` element.
+// The resulting fragment replaces all of the element's children.
+pub fn (mut e Element) set_inner_text(input string) {
+	doc := e.document()
+	// 1. Build the rendered text fragment.
+	frag := doc.create_document_fragment()
+	mut fragment_node := unsafe { &Node(frag) }
+	mut i := 0
+	for i < input.len {
+		// Collect a run of characters that are not U+000A LF or U+000D CR.
+		start := i
+		for i < input.len && input[i] != `\n` && input[i] != `\r` {
+			i++
+		}
+		if i > start {
+			fragment_node.append_child(doc.create_text_node(input[start..i]).as_node()) or {}
+		}
+		// Each following line break becomes a <br> (a CRLF pair counts as a single break).
+		for i < input.len && (input[i] == `\n` || input[i] == `\r`) {
+			if input[i] == `\r` && i + 1 < input.len && input[i + 1] == `\n` {
+				i++
+			}
+			i++
+			br := doc.create_element_ns(namespace_html_, 'br') or { continue }
+			fragment_node.append_child(br.as_node()) or {}
+		}
+	}
+	// 2. Replace all within the element with the fragment.
+	mut node := unsafe { &Node(&e) }
+	node.replace_all(fragment_node)
+	node.set_needs_style_update(true)
+}
+
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtmlunsafe
 pub fn (mut e Element) set_html_unsafe(html string) ! {
 	mut node := unsafe { &Node(&e) }

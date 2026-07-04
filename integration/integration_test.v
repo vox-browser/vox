@@ -725,3 +725,21 @@ fn test_inner_text_over_parsed_document() {
 
 	assert layout.inner_text(host, rules) == 'Hello world\n\ntail'
 }
+
+// Full-stack innerText round-trip: set an element's innerText (DOM setter builds Text + <br>), then
+// read it back with the rendered-text getter — line breaks survive the round-trip, and the DOM has
+// the expected Text/<br>/Text structure.
+fn test_inner_text_set_then_get_roundtrip() {
+	doc := html.parse_document('<body><div id="host">old contents</div></body>')
+	root := unsafe { &dom.Node(doc) }
+	host := css.query_selector(root, '#host') or { panic('no #host') }
+	mut mutable_host := unsafe { &dom.Element(host) }
+	mutable_host.set_inner_text('line1\nline2')
+
+	rules := layout.collect_document_author_rules(doc)
+	assert layout.inner_text(host, rules) == 'line1\nline2'
+
+	kids := host.as_node().children_as_vector()
+	assert kids.len == 3 // text, <br>, text
+	assert kids[1].as_element() or { panic('expected <br>') }.local_name() == 'br'
+}
