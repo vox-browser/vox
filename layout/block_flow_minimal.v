@@ -1542,7 +1542,7 @@ fn inline_intrinsic_width(element &dom.Element, author_rules []&css.CSSRule, min
 		return 0.0
 	}, author_rules)
 	segments := collect_inline_segments(element, white_space_preserves_newlines(white_space),
-		author_rules)
+		0.0, author_rules)
 	mut widest := 0.0
 	for segment in segments {
 		if segment.len == 0 {
@@ -1843,24 +1843,27 @@ fn parse_background_gradient(element &dom.Element, author_rules []&css.CSSRule) 
 // a nested inline element with its own font-size measures its text at that size.
 struct InlineWord {
 	text        string
-	width       f64 // rune count × 0.5em of the word's font
+	width       f64 // rune count × 0.5em of the word's font (or an atomic box's margin-box width)
 	space_after f64 // the space following this word (~0.5em of its font)
-	height      f64 // this word's line-height contribution
+	height      f64 // this word's line-height contribution (or an atomic box's margin-box height)
 	color       css.Color // this word's computed text color
 	decoration  string = 'none' // this word's computed text-decoration-line
+	// For an atomic inline (an `inline-block`), the laid-out box (at margin-box origin (0,0)); the item
+	// occupies `width`×`height` on the line and is painted as its own box rather than as text.
+	box ?BlockBox
 }
 
 // Gather a block's inline content as segments of styled words, split at `<br>` and (when
 // `preserve_newlines`) at newlines. Each word is measured with the font/line-height of the element it
 // comes from. `display: none` and out-of-flow descendants contribute nothing. The result always has
 // at least one (possibly empty) segment.
-fn collect_inline_segments(element &dom.Element, preserve_newlines bool, author_rules []&css.CSSRule) [][]InlineWord {
+fn collect_inline_segments(element &dom.Element, preserve_newlines bool, containing_width f64, author_rules []&css.CSSRule) [][]InlineWord {
 	mut segments := [[]InlineWord{}]
-	append_inline_words(element, preserve_newlines, author_rules, mut segments)
+	append_inline_words(element, preserve_newlines, containing_width, author_rules, mut segments)
 	return segments
 }
 
-fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rules []&css.CSSRule, mut segments [][]InlineWord) {
+fn append_inline_words(element &dom.Element, preserve_newlines bool, containing_width f64, author_rules []&css.CSSRule, mut segments [][]InlineWord) {
 	display_id := css.property_id_from_string('display') or { return }
 	glyph_width := 0.5 * css.computed_font_size_px(element, author_rules)
 	line_height := css.computed_line_height_px(element, author_rules)
@@ -1901,7 +1904,8 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rule
 				}
 			}
 		} else if el := child.as_element() {
-			if css.cascaded_value_with_ua(el, display_id, author_rules) == 'none' {
+			display := css.cascaded_value_with_ua(el, display_id, author_rules)
+			if display == 'none' {
 				continue
 			}
 			if is_absolutely_positioned(position_value(el, author_rules)) || is_floating(el, author_rules) {
@@ -1909,8 +1913,24 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, author_rule
 			}
 			if el.local_name() == 'br' {
 				segments << []InlineWord{} // forced line break starts a new segment
+			} else if display == 'inline-block' {
+				// An atomic inline: lay the box out (auto width -> shrink to max-content) and add it as a
+				// single item that occupies its margin box on the line.
+				forced := if size_is_auto(el, 'width', author_rules) {
+					?f64(intrinsic_content_width(el, author_rules, false))
+				} else {
+					?f64(none)
+				}
+				box := layout_block_impl(el, 0, 0, containing_width, forced, author_rules)
+				segments[segments.len - 1] << InlineWord{
+					width:       box.margin_box_width()
+					space_after: glyph_width
+					height:      box.margin_box_height()
+					color:       color
+					box:         box
+				}
 			} else {
-				append_inline_words(el, preserve_newlines, author_rules, mut segments)
+				append_inline_words(el, preserve_newlines, containing_width, author_rules, mut segments)
 			}
 		}
 	}
@@ -1964,26 +1984,30 @@ fn aligned_line_x(content_x f64, content_width f64, line_width f64, align string
 // line's height is the tallest word on it; `text-align: justify` spreads slack across word gaps.
 // FIXME: still stands in for a real inline formatting context — glyph advances are estimated, `pre*`
 // whitespace runs are collapsed (widths approximate), and there is no bidi.
-fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, float_bands []FloatBand, author_rules []&css.CSSRule) []TextLine {
+// Returns the text line boxes AND the atomic inline (`inline-block`) boxes, both positioned in the
+// content-box local frame; the caller translates them to the content-box top and paints the boxes as
+// children.
+fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, float_bands []FloatBand, author_rules []&css.CSSRule) ([]TextLine, []BlockBox) {
 	white_space := css.cascaded_value_with_ua(element, css.property_id_from_string('white-space') or {
-		return []TextLine{}
+		return []TextLine{}, []BlockBox{}
 	}, author_rules)
 
 	segments := collect_inline_segments(element, white_space_preserves_newlines(white_space),
-		author_rules)
+		content_width, author_rules)
 	if segments.len == 1 && segments[0].len == 0 {
-		return []TextLine{} // no inline content at all
+		return []TextLine{}, []BlockBox{} // no inline content at all
 	}
 
 	block_line_height := css.computed_line_height_px(element, author_rules)
 	align := css.cascaded_value_with_ua(element, css.property_id_from_string('text-align') or {
-		return []TextLine{}
+		return []TextLine{}, []BlockBox{}
 	}, author_rules)
 	wraps := white_space_wraps(white_space)
 	// `text-indent` (inherited) indents the start of the *first* line box (%: of the content width).
 	text_indent := resolve_text_indent(element, content_width, author_rules)
 
 	mut lines := []TextLine{}
+	mut inline_boxes := []BlockBox{}
 	mut y := 0.0
 	mut first_line := true
 	for segment in segments {
@@ -2049,14 +2073,20 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 			mut fragments := []TextFragment{}
 			mut fragment_x := line_x
 			for k := i; k < j; k++ {
-				fragments << TextFragment{
-					x:          fragment_x
-					y:          y
-					width:      segment[k].width
-					height:     segment[k].height
-					text:       segment[k].text
-					color:      segment[k].color
-					decoration: segment[k].decoration
+				if b := segment[k].box {
+					// An atomic inline (inline-block): place its box (margin-box top-left at the item's
+					// position, top-aligned to the line), painted as its own box rather than as text.
+					inline_boxes << translate_block(b, fragment_x, y)
+				} else {
+					fragments << TextFragment{
+						x:          fragment_x
+						y:          y
+						width:      segment[k].width
+						height:     segment[k].height
+						text:       segment[k].text
+						color:      segment[k].color
+						decoration: segment[k].decoration
+					}
 				}
 				fragment_x += segment[k].width + segment[k].space_after
 				if k < j - 1 {
@@ -2075,7 +2105,7 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 			y += line_height
 		}
 	}
-	return lines
+	return lines, inline_boxes
 }
 
 // Whether `element` uses the border-box box model (specified width/height include padding+border)
@@ -2669,7 +2699,11 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 				flow_bottom
 			}
 		} else {
-			local_lines = layout_inline_lines(element, content_x, width, float_bands, author_rules)
+			lines, inline_boxes := layout_inline_lines(element, content_x, width, float_bands,
+				author_rules)
+			local_lines = lines.clone()
+			// Atomic inline (inline-block) boxes join the children so they are painted and measured.
+			local_children << inline_boxes
 			for line in local_lines {
 				if line.y + line.height > content_height {
 					content_height = line.y + line.height

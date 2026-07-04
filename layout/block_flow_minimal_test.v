@@ -2746,3 +2746,55 @@ fn test_list_marker_counter_styles() {
 	assert ol_markers('upper-roman', 3) == ['I.', 'II.', 'III.']
 	assert ol_markers('decimal-leading-zero', 2) == ['01.', '02.']
 }
+
+// An inline-block is an atomic item on the line: its box is laid out and placed as a child, occupying
+// its own width; surrounding text flows around it on the line.
+fn test_inline_block_atomic() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px')
+	ib := styled(doc, 'span', 'display: inline-block; width: 40px; height: 30px; background-color: rgb(0, 128, 0)')
+	mut rn := root.as_node()
+	rn.append_child(doc.create_text_node('a').as_node()) or { panic('${err}') }
+	rn.append_child(ib.as_node()) or { panic('${err}') }
+	rn.append_child(doc.create_text_node('b').as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	// The inline-block box becomes a child (painted as its own box), 40x30.
+	assert box.children.len == 1
+	assert box.children[0].width == 40.0
+	assert box.children[0].height == 30.0
+	// 'a' is at x=0; the inline-block sits after 'a' + a space (10px each at font-size 20).
+	assert box.children[0].x == 20.0 // a-width(10) + space(10)
+	// Line height grows to the inline-block's 30px (taller than the 20px text line-height... actually
+	// line-height for 20px font is ~24; the 30px box wins).
+	assert box.height == 30.0
+}
+
+// An inline-block with auto width shrink-to-fits its own content.
+fn test_inline_block_auto_width_shrink_to_fit() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px')
+	ib := styled(doc, 'span', 'display: inline-block; height: 20px')
+	mut ibn := ib.as_node()
+	ibn.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
+	mut rn := root.as_node()
+	rn.append_child(ib.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 1
+	assert box.children[0].width == 20.0 // 'hi' max-content = 2 * 10px, not the 500px container
+}
+
+// The inline-block box paints (its background reaches the display list).
+fn test_inline_block_paints() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 500px; font-size: 20px')
+	ib := styled(doc, 'span', 'display: inline-block; width: 30px; height: 30px; background-color: rgb(1, 2, 3)')
+	mut rn := root.as_node()
+	rn.append_child(ib.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert fills.len == 1
+	assert fills[0].color == 'rgb(1 2 3)'
+}

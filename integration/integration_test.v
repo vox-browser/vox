@@ -1164,3 +1164,21 @@ fn test_list_style_type_over_parsed_document() {
 	}
 	assert markers == ['a.', 'b.', 'c.']
 }
+
+// Full-stack inline-block: a badge with display:inline-block sits inline within a paragraph and is
+// laid out as its own box (with its size), painted alongside the text.
+fn test_inline_block_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>body { margin: 0 } p { margin: 0; font-size: 20px } .badge { display: inline-block; width: 50px; height: 24px; background-color: rgb(200, 0, 0) }</style></head><body><p>x<span class="badge" id="b"></span>y</p></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	badge := css.query_selector(root, '#b') or { panic('no #b') }
+
+	badge_rect := root_box.bounding_rect_for(badge) or { panic('no badge box') }
+	assert badge_rect.width == 50.0
+	assert badge_rect.height == 24.0
+	// It sits after the 'x' glyph and a space (10px each at 20px font).
+	assert badge_rect.x == 20.0
+
+	// Its background reaches the SVG.
+	assert root_box.render_svg(600, root_box.height + 20).contains('fill="rgb(200 0 0)"')
+}
