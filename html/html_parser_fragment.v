@@ -82,3 +82,26 @@ pub fn parse_html_fragment(context_element &dom.Element, markup string) []&dom.N
 	}
 	return children
 }
+
+// https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-innerhtml
+// The Element.innerHTML setter: parse `markup` as a fragment with `element` as context, then
+// replace all children of `element` (or of its template contents, if it is a template) with the
+// result. (The dom module cannot call this — it would be an import cycle — so callers use this html
+// free function, mirroring how css owns querySelector.)
+pub fn set_inner_html(element &dom.Element, markup string) {
+	nodes := parse_html_fragment(element, markup)
+
+	mut container := element.as_node()
+	if element_in_namespace(element, ns_html) && element.local_name() == 'template' {
+		template_element := unsafe { &dom.HTMLTemplateElement(element) }
+		container = template_element.content().as_node()
+	}
+
+	for {
+		child := container.first_child() or { break }
+		container.remove_child(child) or { break }
+	}
+	for node in nodes {
+		container.append_child(node) or {}
+	}
+}

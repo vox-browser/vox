@@ -325,3 +325,15 @@ fn test_fragment_textarea_context_is_rcdata() {
 	nodes := parse_html_fragment(context_element('textarea'), 'a<b>c')
 	assert repr_nodes(nodes) == '"a<b>c"'
 }
+
+fn test_set_inner_html_replaces_children() {
+	// div.innerHTML = ... : the div's existing children are replaced by the parsed fragment.
+	doc := dom.Document.create(dom.url_about_blank())
+	mut div := doc.create_element_ns(ns_html, 'div') or { panic('div') }
+	mut div_node := div.as_node()
+	div_node.append_child(doc.create_text_node('old').as_node()) or {}
+	assert children_repr(div_node) == '"old"'
+
+	set_inner_html(div, '<span>a</span><span>b</span>')
+	assert children_repr(div_node) == 'span("a"),span("b")'
+}
