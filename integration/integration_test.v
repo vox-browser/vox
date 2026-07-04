@@ -387,3 +387,14 @@ fn test_full_pipeline_box_tree_snapshot() {
 	].join('\n')
 	assert box.tree_repr() == expected
 }
+
+// Full-stack word wrapping: "alpha beta gamma" over a 100px line -- "alpha beta" (50+10+40=100)
+// fills the first line, "gamma" wraps to a second -> 2 lines * 25px line-height.
+fn test_word_wrap_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 100px; font-size: 20px; line-height: 25px">alpha beta gamma</div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
+	assert box.height == 50.0
+}

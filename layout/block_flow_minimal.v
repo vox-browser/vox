@@ -187,33 +187,50 @@ fn block_child_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Elem
 	return elements
 }
 
+// Greedily break `words` into lines that fit `content_width`, returning the line count. Each glyph is
+// `glyph_width` wide and inter-word spaces `space_width` (no real font metrics). A word that doesn't
+// fit on the current line starts a new one; a word wider than the whole line still takes a single line
+// (unbreakable — matching `overflow-wrap: normal`, it overflows rather than splitting mid-word).
+fn wrapped_line_count(words []string, content_width f64, glyph_width f64, space_width f64) int {
+	if words.len == 0 {
+		return 0
+	}
+	if content_width <= 0 {
+		return 1 // nowhere to wrap
+	}
+	mut lines := 1
+	mut line_width := 0.0
+	for i, word in words {
+		word_width := f64(word.runes().len) * glyph_width
+		if i == 0 {
+			line_width = word_width
+			continue
+		}
+		if line_width + space_width + word_width <= content_width {
+			line_width += space_width + word_width
+		} else {
+			lines++
+			line_width = word_width // the word starts a fresh line (may overflow if wider than the line)
+		}
+	}
+	return lines
+}
+
 // The height of a block whose content is inline (text) rather than block-level children: the number
-// of line boxes times the line-height. Line count is a coarse estimate — text is measured at ~0.5em
-// per glyph (no real font metrics) and wrapped against the content width — so it is at least one line
-// when there is any non-whitespace text.
+// of line boxes times the line-height. Text is split into whitespace-separated words and wrapped at
+// word boundaries against the content width; each glyph is measured at ~0.5em (no real font metrics).
 //
-// FIXME: this stands in for a real inline formatting context. It ignores real glyph advances, breaks
-// only on width (not at word boundaries, so it can over/under-count near the wrap point), and uses
-// the block's own font/line-height for all text rather than each inline box's.
+// FIXME: this stands in for a real inline formatting context — glyph advances are estimated, there is
+// no per-inline font/line-height, no inline fragment geometry (word positions), and no soft-hyphen /
+// forced-break (<br>) / bidi handling.
 fn inline_content_height(element &dom.Element, text string, content_width f64, author_rules []&css.CSSRule) f64 {
-	glyphs := text.fields().join(' ').runes().len // collapse whitespace runs, count code points
-	if glyphs == 0 {
+	words := text.fields() // split on whitespace runs, dropping empties (whitespace collapses)
+	if words.len == 0 {
 		return 0.0
 	}
 	line_height := css.computed_line_height_px(element, author_rules)
-	font_px := css.computed_font_size_px(element, author_rules)
-	text_width := f64(glyphs) * 0.5 * font_px
-	mut lines := 1
-	if content_width > 0 {
-		exact := text_width / content_width
-		lines = int(exact)
-		if f64(lines) < exact {
-			lines++ // ceil
-		}
-		if lines < 1 {
-			lines = 1
-		}
-	}
+	glyph_width := 0.5 * css.computed_font_size_px(element, author_rules)
+	lines := wrapped_line_count(words, content_width, glyph_width, glyph_width) // space ~= 0.5em too
 	return f64(lines) * line_height
 }
 

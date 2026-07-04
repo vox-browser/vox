@@ -219,13 +219,13 @@ fn test_inline_text_single_line_height() {
 	assert box.children.len == 0 // text isn't a block box
 }
 
-// Text wider than the content box wraps to multiple lines. 30 glyphs * 10px = 300px over a 100px
-// content width -> ceil(300/100) = 3 lines * 30px = 90px.
+// Text wraps at WORD boundaries: six 4-char words (40px each) + spaces (10px) over a 100px line fit
+// two per line ("word word" = 40+10+40 = 90 <= 100; a third would be 140) -> 3 lines * 30px = 90px.
 fn test_inline_text_wraps_to_multiple_lines() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px')
 	mut n := el.as_node()
-	n.append_child(doc.create_text_node('a'.repeat(30)).as_node()) or { panic('${err}') }
+	n.append_child(doc.create_text_node('aaaa bbbb cccc dddd eeee ffff').as_node()) or { panic('${err}') }
 
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 90.0
@@ -740,4 +740,31 @@ fn test_absolute_position_nearest_positioned_ancestor() {
 	abs_box := box.children[1]
 	assert abs_box.x == 0.0 // against rel's padding box, ignoring mid's 5px padding
 	assert abs_box.y == 0.0
+}
+
+// An unbreakable long word does NOT split mid-word (overflow-wrap: normal): it stays on one line
+// (and overflows the box), unlike the old width-only estimate that split it into 3.
+fn test_inline_long_word_stays_on_one_line() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('a'.repeat(30)).as_node()) or { panic('${err}') } // one 30-char word
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 30.0 // one line, overflowing -- not 3
+}
+
+// wrapped_line_count: greedy word wrapping with an unbreakable overflow word.
+fn test_wrapped_line_count() {
+	// glyph 10, space 10, width 100. "aaaa"(40) fits 2 per line.
+	six := ['aaaa', 'bbbb', 'cccc', 'dddd', 'eeee', 'ffff']
+	assert wrapped_line_count(six, 100, 10, 10) == 3
+	// single word (any width) is one line.
+	assert wrapped_line_count(['hello'], 100, 10, 10) == 1
+	// an overlong word still occupies exactly one line.
+	assert wrapped_line_count(['aaaaaaaaaaaaaaa'], 50, 10, 10) == 1
+	// empty -> zero lines.
+	assert wrapped_line_count([]string{}, 100, 10, 10) == 0
+	// no room to wrap -> single line regardless.
+	assert wrapped_line_count(['a', 'b', 'c'], 0, 10, 10) == 1
 }
