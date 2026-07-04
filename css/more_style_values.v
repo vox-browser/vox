@@ -53,29 +53,44 @@ fn serialize_style_value_options(values []?StyleValue, separator string, mode Se
 	return builder.str()
 }
 
+// The shorthands marked `positional-value-list-shorthand` in Properties.json, whose values
+// collapse `{1,4}`/`{1,2}` -> shortest form (upstream serialize_a_positional_value_list).
+fn property_is_positional_value_list_shorthand(shorthand PropertyID) bool {
+	return shorthand in [PropertyID.border_block_color, .border_block_style, .border_block_width,
+		.border_color, .border_inline_color, .border_inline_style, .border_inline_width,
+		.corner_block_end_shape, .corner_block_start_shape, .corner_bottom_shape,
+		.corner_inline_end_shape, .corner_inline_start_shape, .corner_left_shape, .corner_right_shape,
+		.corner_shape, .corner_top_shape, .gap, .inset, .inset_block, .inset_inline, .margin,
+		.margin_block, .margin_inline, .overflow, .padding, .padding_block, .padding_inline,
+		.border_style, .border_width]
+}
+
 fn serialize_a_positional_value_list(values []StyleValue, mode SerializationMode) string {
+	if values.len == 2 {
+		first := values[0].serialize(mode)
+		second := values[1].serialize(mode)
+		return if first == second { first } else { '${first} ${second}' }
+	}
+
 	if values.len != 4 {
 		return serialize_style_value_sequence(values, ' ', mode)
 	}
 
-	top := values[0]
-	right := values[1]
-	bottom := values[2]
-	left := values[3]
+	top := values[0].serialize(mode)
+	right := values[1].serialize(mode)
+	bottom := values[2].serialize(mode)
+	left := values[3].serialize(mode)
 
 	if top == right && top == bottom && top == left {
-		return top.serialize(mode)
+		return top
 	}
-
 	if top == bottom && right == left {
-		return '${top.serialize(mode)} ${right.serialize(mode)}'
+		return '${top} ${right}'
 	}
-
 	if right == left {
-		return '${top.serialize(mode)} ${right.serialize(mode)} ${bottom.serialize(mode)}'
+		return '${top} ${right} ${bottom}'
 	}
-
-	return '${top.serialize(mode)} ${right.serialize(mode)} ${bottom.serialize(mode)} ${left.serialize(mode)}'
+	return '${top} ${right} ${bottom} ${left}'
 }
 
 fn absolutized_style_value_option(value ?StyleValue, context ComputationContext) ?StyleValue {
@@ -2834,6 +2849,13 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	}
 	if s := style_value.serialize_border_image(mode) {
 		return s
+	}
+	// The box `{1,4}`/`{1,2}` shorthands (margin/padding/inset/border-color/style/width/
+	// corner-*-shape/gap/overflow and their logical variants) collapse via the positional
+	// value list serializer rather than default_serialize.
+	if property_is_positional_value_list_shorthand(style_value.shorthand_)
+		|| style_value.shorthand_ in [PropertyID.place_content, .place_items, .place_self] {
+		return serialize_a_positional_value_list(style_value.values_, mode)
 	}
 	if s := style_value.serialize_grid_template(mode) {
 		return s

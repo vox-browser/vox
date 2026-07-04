@@ -25,10 +25,15 @@ fn test_all_equal_longhands_collapse_to_single_value() {
 	assert serialize_of('10px', PropertyID.gap)? == '10px'
 }
 
-fn test_uneven_box_values_are_not_collapsed() {
-	// Ladybird does not do CSS shortest-form (4->2->1); uneven values stay full.
-	assert serialize_of('1px 2px', PropertyID.margin)? == '1px 2px 1px 2px'
+fn test_box_values_collapse_to_shortest_form() {
+	// Positional-value-list shorthands collapse 4->2->1 (upstream
+	// serialize_a_positional_value_list); uneven values stay full.
+	assert serialize_of('1px 2px', PropertyID.margin)? == '1px 2px'
+	assert serialize_of('1px 2px 1px 2px', PropertyID.margin)? == '1px 2px'
 	assert serialize_of('1px 2px 3px 4px', PropertyID.padding)? == '1px 2px 3px 4px'
+	assert serialize_of('1px 2px 3px', PropertyID.padding)? == '1px 2px 3px'
+	assert serialize_of('round bevel', PropertyID.corner_shape)? == 'round bevel'
+	assert serialize_of('normal 20px', PropertyID.gap)? == 'normal 20px'
 }
 
 fn test_border_family_short_form() {
