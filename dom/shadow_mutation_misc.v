@@ -2898,6 +2898,12 @@ pub fn create_element_internal(document &Document, local_name string, namespace_
 	} else {
 		Element.new(document, qualified_name)
 	}
+	// Assign the address-based unique node id to the FINAL heap object. The html/svg/mathml
+	// factories build their element subclasses via struct literals that leave unique_id_ == 0, so
+	// without this every HTML-namespaced element would share id 0 and compare equal under the DOM's
+	// identity operator (Node `==` compares unique_id_). (Element.new already assigns it for the
+	// non-HTML fallback; re-assigning is idempotent since the id is derived from the pointer.)
+	assign_unique_node_id(element)
 	element.set_custom_element_state(state)
 	element.is_value = is_value
 	return element
