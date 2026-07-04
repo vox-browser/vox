@@ -825,3 +825,69 @@ fn test_br_nested_in_inline() {
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 60.0 // the <br> inside the span breaks the div's inline flow -> 2 lines
 }
+
+// Text produces a line box with geometry; default alignment (start) puts it at the content's left.
+fn test_line_box_left_aligned() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('Hi').as_node()) or { panic('${err}') } // 2 glyphs * 10 = 20px
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines.len == 1
+	assert box.lines[0].x == 0.0 // left
+	assert box.lines[0].y == 0.0
+	assert box.lines[0].width == 20.0
+	assert box.lines[0].height == 30.0
+	assert box.children.len == 0 // lines aren't block children
+}
+
+// text-align: center centers the line within the content box.
+fn test_line_box_centered() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px; text-align: center')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('Hi').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines[0].x == 90.0 // (200 - 20) / 2
+}
+
+// text-align: right pushes the line to the content's right edge.
+fn test_line_box_right_aligned() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px; text-align: right')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('Hi').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines[0].x == 180.0 // 200 - 20
+}
+
+// Wrapped text produces a line box per line, stacked by line-height, each with its own used width.
+fn test_line_boxes_stacked() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('aaaa bbbb cccc').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines.len == 2
+	assert box.lines[0].y == 0.0
+	assert box.lines[0].width == 90.0 // "aaaa bbbb" = 40 + 10 + 40
+	assert box.lines[1].y == 30.0
+	assert box.lines[1].width == 40.0 // "cccc"
+	assert box.height == 60.0
+}
+
+// Line boxes are positioned in absolute coordinates: a relative offset carries them along.
+fn test_line_boxes_follow_relative_offset() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px; position: relative; top: 15px; left: 25px')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('Hi').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines[0].x == 25.0 // content_x includes the left offset
+	assert box.lines[0].y == 15.0 // content_top includes the top offset
+}

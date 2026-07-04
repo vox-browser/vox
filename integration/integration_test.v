@@ -408,3 +408,16 @@ fn test_br_over_parsed_document() {
 	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
 	assert box.height == 60.0 // 3 lines * 20px
 }
+
+// Full-stack text-align: centered text in a 300px box. "hey" = 3 glyphs * 8 (16px font) = 24px,
+// centered -> x = (300 - 24) / 2.
+fn test_text_align_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 300px; text-align: center; line-height: 20px">hey</div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
+	assert box.lines.len == 1
+	assert box.lines[0].width == 24.0
+	assert box.lines[0].x == 138.0 // (300 - 24) / 2
+}

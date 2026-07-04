@@ -19,7 +19,8 @@ import dom
 // specified width/height include padding+border. Used width and height are clamped by min/max-width
 // and min/max-height. Horizontal `auto` margins absorb leftover space (both auto centers the box; a
 // single one right/left-aligns). `position: relative` offsets a box (and its subtree) by its insets
-// without disturbing the flow.
+// without disturbing the flow. Text-bearing blocks produce inline line boxes (word-wrapped, `<br>`
+// aware) positioned per `text-align`.
 //
 // FIXME (deliberately out of scope for this slice): a real inline formatting context (glyph metrics,
 // word-boundary wrapping, inline box geometry), mixed block+inline content (anonymous block boxes),
@@ -35,6 +36,17 @@ pub:
 	left   f64
 }
 
+// A laid-out line box within a block's inline formatting context: `x`/`y` is the top-left of the
+// line's content in CSS px, `width` the used width of the content on the line (after wrapping), and
+// `height` the line-height. `x` reflects `text-align` within the content box.
+pub struct TextLine {
+pub mut:
+	x      f64
+	y      f64
+	width  f64
+	height f64
+}
+
 // A laid-out block box: `x`/`y`/`width`/`height` are the *content box* geometry in CSS px, relative
 // to the top-left of the initial containing block; `margin`/`border`/`padding` surround it.
 //
@@ -42,6 +54,8 @@ pub:
 // they equal `margin.top`/`margin.bottom` unless a first/last child's adjoining margin collapsed
 // through the box (parent/child collapsing), in which case they may be larger. The parent uses them
 // to collapse this box's margins against its siblings.
+//
+// `lines` are the inline line boxes of a text-bearing block (empty for a block with block children).
 pub struct BlockBox {
 pub:
 	tag_name string
@@ -56,15 +70,23 @@ pub mut:
 	outer_top_margin    f64
 	outer_bottom_margin f64
 	children            []BlockBox
+	lines               []TextLine
 }
 
-// Return a copy of `box` with its own geometry and every descendant's shifted by (`dx`, `dy`). Used
-// to reposition a subtree after margin collapsing decides where its border box actually lands.
+// Return a copy of `box` with its own geometry, every descendant's, and its line boxes shifted by
+// (`dx`, `dy`). Used to reposition a subtree after margin collapsing / positioning decides where its
+// border box actually lands.
 fn translate_block(box BlockBox, dx f64, dy f64) BlockBox {
 	mut moved := box
 	moved.x += dx
 	moved.y += dy
 	moved.children = box.children.map(translate_block(it, dx, dy))
+	moved.lines = box.lines.map(TextLine{
+		x:      it.x + dx
+		y:      it.y + dy
+		width:  it.width
+		height: it.height
+	})
 	return moved
 }
 
@@ -187,33 +209,39 @@ fn block_child_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Elem
 	return elements
 }
 
-// Greedily break `words` into lines that fit `content_width`, returning the line count. Each glyph is
-// `glyph_width` wide and inter-word spaces `space_width` (no real font metrics). A word that doesn't
-// fit on the current line starts a new one; a word wider than the whole line still takes a single line
-// (unbreakable — matching `overflow-wrap: normal`, it overflows rather than splitting mid-word).
-fn wrapped_line_count(words []string, content_width f64, glyph_width f64, space_width f64) int {
+// Greedily break `words` into lines that fit `content_width`, returning the used content width of
+// each line. Each glyph is `glyph_width` wide and inter-word spaces `space_width` (no real font
+// metrics). A word that doesn't fit on the current line starts a new one; a word wider than the whole
+// line still takes its own line (unbreakable — matching `overflow-wrap: normal`, it overflows rather
+// than splitting mid-word). With no room to wrap (`content_width <= 0`) everything is one line.
+fn wrap_line_widths(words []string, content_width f64, glyph_width f64, space_width f64) []f64 {
 	if words.len == 0 {
-		return 0
+		return []f64{}
 	}
-	if content_width <= 0 {
-		return 1 // nowhere to wrap
-	}
-	mut lines := 1
+	mut widths := []f64{}
 	mut line_width := 0.0
-	for i, word in words {
+	mut started := false
+	for word in words {
 		word_width := f64(word.runes().len) * glyph_width
-		if i == 0 {
+		if !started {
 			line_width = word_width
+			started = true
 			continue
 		}
-		if line_width + space_width + word_width <= content_width {
-			line_width += space_width + word_width
+		if content_width > 0 && line_width + space_width + word_width > content_width {
+			widths << line_width
+			line_width = word_width // the word starts a fresh line
 		} else {
-			lines++
-			line_width = word_width // the word starts a fresh line (may overflow if wider than the line)
+			line_width += space_width + word_width
 		}
 	}
-	return lines
+	widths << line_width
+	return widths
+}
+
+// The number of lines `words` wrap to (0 when empty).
+fn wrapped_line_count(words []string, content_width f64, glyph_width f64, space_width f64) int {
+	return wrap_line_widths(words, content_width, glyph_width, space_width).len
 }
 
 // Gather a block's inline content as text segments split at `<br>` forced line breaks: the text
@@ -240,32 +268,56 @@ fn append_inline_segments(node &dom.Node, author_rules []&css.CSSRule, mut segme
 	}
 }
 
-// The height of a block whose content is inline (text) rather than block-level children: the number
-// of line boxes times the line-height. The content is split at `<br>` breaks into segments, each
-// segment is wrapped at word boundaries against the content width (glyphs ~0.5em, no real metrics),
-// and an empty segment between breaks still occupies one (empty) line. Truly empty content is 0.
+// The `text-align`-adjusted left edge of a line whose content is `line_width` wide, within a content
+// box that starts at `content_x` and is `content_width` wide. `center` centers it, `right`/`end` push
+// it to the right edge; everything else (left/start/justify — no per-word justification yet) is left.
+fn aligned_line_x(content_x f64, content_width f64, line_width f64, align string) f64 {
+	return match align {
+		'center' { content_x + (content_width - line_width) / 2.0 }
+		'right', 'end' { content_x + content_width - line_width }
+		else { content_x }
+	}
+}
+
+// Lay out a block's inline (text) content as line boxes in a LOCAL frame (the first line's top at
+// y = 0), to be translated to the content-box top by the caller. Content is split at `<br>` breaks
+// into segments, each wrapped at word boundaries against `content_width`; every line is placed at
+// `content_x` adjusted for `text-align`. An empty segment between breaks is still an (empty) line;
+// truly empty content yields no lines.
 //
 // FIXME: still stands in for a real inline formatting context — glyph advances are estimated, there
-// is no per-inline font/line-height, no inline fragment geometry (word positions), and no bidi.
-fn inline_content_height(element &dom.Element, content_width f64, author_rules []&css.CSSRule) f64 {
+// is no per-inline font/line-height, no inline fragment geometry (individual word positions), no
+// per-word justification, and no bidi.
+fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, author_rules []&css.CSSRule) []TextLine {
 	mut segments := ['']
 	append_inline_segments(element.as_node(), author_rules, mut segments)
+	if segments.len == 1 && segments[0].fields().len == 0 {
+		return []TextLine{} // no inline content at all
+	}
 
+	line_height := css.computed_line_height_px(element, author_rules)
 	glyph_width := 0.5 * css.computed_font_size_px(element, author_rules)
-	mut lines := 0
+	align := css.cascaded_value_with_ua(element, css.property_id_from_string('text-align') or {
+		return []TextLine{}
+	}, author_rules)
+
+	mut lines := []TextLine{}
+	mut y := 0.0
 	for segment in segments {
 		words := segment.fields()
-		lines += if words.len == 0 {
-			1 // an empty segment (from a <br>) is still a line box
-		} else {
-			wrapped_line_count(words, content_width, glyph_width, glyph_width)
+		line_widths := if words.len == 0 { [0.0] } else { wrap_line_widths(words, content_width,
+				glyph_width, glyph_width) }
+		for line_width in line_widths {
+			lines << TextLine{
+				x:      aligned_line_x(content_x, content_width, line_width, align)
+				y:      y
+				width:  line_width
+				height: line_height
+			}
+			y += line_height
 		}
 	}
-	// A single empty segment means there was no inline content at all — no line box.
-	if segments.len == 1 && segments[0].fields().len == 0 {
-		return 0.0
-	}
-	return f64(lines) * css.computed_line_height_px(element, author_rules)
+	return lines
 }
 
 // Whether `element` uses the border-box box model (specified width/height include padding+border)
@@ -656,8 +708,10 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 
 	// Auto content height: from the content-box top (local 0) to the last child's border-box bottom,
 	// plus that child's outer bottom margin only when it stays inside the box (otherwise it collapses
-	// out). A box with no block children uses the inline text pass.
+	// out). A box with no block children lays out inline line boxes (also in the local frame) and its
+	// height is the stack of those lines.
 	mut content_height := 0.0
+	mut local_lines := []TextLine{}
 	if has_children {
 		content_height = if bottom_margin_contained {
 			flow_bottom + last_child_outer_bottom
@@ -665,7 +719,12 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 			flow_bottom
 		}
 	} else {
-		content_height = inline_content_height(element, width, author_rules)
+		local_lines = layout_inline_lines(element, content_x, width, author_rules)
+		for line in local_lines {
+			if line.y + line.height > content_height {
+				content_height = line.y + line.height
+			}
+		}
 	}
 
 	// An explicit height sets the content height (content-box) or the border-box height (border-box,
@@ -708,6 +767,12 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	// frame (content-box top = 0) to the real content-box top.
 	content_top := y + outer_top_margin + border.top + padding.top + rel_y
 	mut children := local_children.map(translate_block(it, 0.0, content_top))
+	lines := local_lines.map(TextLine{
+		x:      it.x
+		y:      it.y + content_top
+		width:  it.width
+		height: it.height
+	})
 
 	// If this box is positioned, it is the containing block for its abspos descendants: lay them out
 	// against its padding box (using its final, offset content origin). Their flow siblings above are
@@ -736,5 +801,6 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		outer_top_margin:    outer_top_margin
 		outer_bottom_margin: outer_bottom_margin
 		children:            children
+		lines:               lines
 	}
 }
