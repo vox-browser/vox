@@ -1032,3 +1032,21 @@ fn test_flex_row_over_parsed_document() {
 	// The bar's height is the tallest item (60px).
 	assert (root_box.find_box(i64(bar.as_node().unique_id())) or { panic('no bar') }).height == 60.0
 }
+
+// Full-stack justify-content: a space-between nav puts the first item at the start and the last at
+// the end of the parsed, laid-out bar.
+fn test_justify_content_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.nav { display: flex; justify-content: space-between; width: 500px } .item { width: 100px; height: 30px }</style></head><body><div class="nav"><div class="item" id="l"></div><div class="item" id="r"></div></div></body></html>')
+	root_box := layout.layout_document(doc, 800)
+	root := unsafe { &dom.Node(doc) }
+	nav := css.query_selector(root, '.nav') or { panic('no .nav') }
+	l := css.query_selector(root, '#l') or { panic('no #l') }
+	r := css.query_selector(root, '#r') or { panic('no #r') }
+
+	nav_rect := root_box.bounding_rect_for(nav) or { panic('no .nav box') }
+	l_rect := root_box.bounding_rect_for(l) or { panic('no #l box') }
+	r_rect := root_box.bounding_rect_for(r) or { panic('no #r box') }
+	// first item at the nav's start, last item's right edge at the nav's right edge.
+	assert l_rect.x == nav_rect.x
+	assert r_rect.x + r_rect.width == nav_rect.x + nav_rect.width // last item pushed to the end
+}

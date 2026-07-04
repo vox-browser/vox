@@ -1108,6 +1108,46 @@ fn flex_item_forced_width(element &dom.Element, container_width f64, author_rule
 	return shrink_to_fit(min_content, max_content, container_width)
 }
 
+// The cascaded `justify-content` value, normalized (`normal` and absent behave as `flex-start`).
+fn justify_content_value(element &dom.Element, author_rules []&css.CSSRule) string {
+	id := css.property_id_from_string('justify-content') or { return 'flex-start' }
+	value := css.cascaded_value_with_ua(element, id, author_rules)
+	return if value == '' || value == 'normal' { 'flex-start' } else { value }
+}
+
+// The main-axis distribution for `n` flex items given `free` px of leftover space: returns the leading
+// offset before the first item and the gap added between adjacent items, so item `i` shifts by
+// `leading + i*gap`. The `space-*` distributions only add space when there is free space (on overflow
+// they pack at the start); `center`/`flex-end` shift by the raw free space (which may be negative).
+fn justify_offsets(value string, free f64, n int) (f64, f64) {
+	if n == 0 {
+		return 0.0, 0.0
+	}
+	positive_free := if free > 0 { free } else { 0.0 }
+	return match value {
+		'flex-end', 'end', 'right' {
+			free, 0.0
+		}
+		'center' {
+			free / 2.0, 0.0
+		}
+		'space-between' {
+			if n > 1 { 0.0, positive_free / f64(n - 1) } else { 0.0, 0.0 }
+		}
+		'space-around' {
+			gap := positive_free / f64(n)
+			gap / 2.0, gap
+		}
+		'space-evenly' {
+			gap := positive_free / f64(n + 1)
+			gap, gap
+		}
+		else {
+			0.0, 0.0 // flex-start / start / normal
+		}
+	}
+}
+
 // The cascaded `float` value (`none` when absent); `is_floating` is float left/right.
 fn float_side(element &dom.Element, author_rules []&css.CSSRule) string {
 	id := css.property_id_from_string('float') or { return 'none' }
@@ -2259,10 +2299,12 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		// FLEX (row): lay items along the main axis from the content-left, packed by margin box; the
 		// container's content height is the tallest item's margin box. Flex containers establish a
 		// formatting context (no margin collapse), and an `auto`-width item is shrink-to-fit (its
-		// max-content) rather than filling the line.
-		// FIXME: no flex-grow/shrink/basis, no wrap, no justify-content/align-items (items pack at the
-		// main-start and align to the cross-start/top), no row-reverse/column (those fall to block flow).
+		// max-content) rather than filling the line. `justify-content` distributes the free main-axis
+		// space (start/end/center/space-between/around/evenly).
+		// FIXME: no flex-grow/shrink/basis, no wrap, no align-items (items align to the cross-start/top),
+		// no row-reverse/column (those fall to block flow).
 		mut cursor := 0.0
+		mut item_boxes := []BlockBox{}
 		for item in flex_item_elements(element.as_node(), author_rules) {
 			forced_width := flex_item_forced_width(item, width, author_rules)
 			ib := layout_block_impl(item, content_x + cursor, 0.0, width, forced_width, author_rules)
@@ -2270,9 +2312,15 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 			if ib.margin_box_height() > content_height {
 				content_height = ib.margin_box_height()
 			}
-			local_children << ib
-			has_children = true
+			item_boxes << ib
 		}
+		// Distribute the free main-axis space per justify-content by shifting each item along the row.
+		leading, gap := justify_offsets(justify_content_value(element, author_rules), width - cursor,
+			item_boxes.len)
+		for i, ib in item_boxes {
+			local_children << translate_block(ib, leading + f64(i) * gap, 0.0)
+		}
+		has_children = item_boxes.len > 0
 	} else {
 		// BLOCK FLOW: lay children out in a LOCAL frame whose origin is this box's content-box top-left.
 		// Vertical margins collapse (CSS 2.1 §8.3.1) using each child's OUTER (collapsed) margins.

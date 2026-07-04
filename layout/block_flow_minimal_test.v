@@ -2391,3 +2391,35 @@ fn test_flex_container_height_is_tallest_item() {
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 45.0
 }
+
+// Build a 300px flex row with two 100px items and the given justify-content, returning the item xs.
+fn jc_item_xs(justify string) (f64, f64) {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'display: flex; justify-content: ${justify}; width: 300px; height: 20px')
+	a := styled(doc, 'div', 'width: 100px; height: 20px')
+	b := styled(doc, 'div', 'width: 100px; height: 20px')
+	mut rn := root.as_node()
+	rn.append_child(a.as_node()) or { panic('${err}') }
+	rn.append_child(b.as_node()) or { panic('${err}') }
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	return box.children[0].x, box.children[1].x
+}
+
+// justify-content distributes the 100px of free space (300 container - 200 items) along the row.
+fn test_justify_content_distributions() {
+	// flex-end packs both items at the end.
+	a0, a1 := jc_item_xs('flex-end')
+	assert a0 == 100.0 && a1 == 200.0
+	// center offsets both by half the free space.
+	b0, b1 := jc_item_xs('center')
+	assert b0 == 50.0 && b1 == 150.0
+	// space-between: first at start, last at end.
+	c0, c1 := jc_item_xs('space-between')
+	assert c0 == 0.0 && c1 == 200.0
+	// space-around: half-gaps at the ends (free/n/2 = 25 leading, then a 50 gap).
+	d0, d1 := jc_item_xs('space-around')
+	assert d0 == 25.0 && d1 == 175.0
+	// default (normal -> flex-start): packed at the start.
+	e0, e1 := jc_item_xs('flex-start')
+	assert e0 == 0.0 && e1 == 100.0
+}
