@@ -116,13 +116,30 @@ fn used_border(element &dom.Element, side string, author_rules []&css.CSSRule) f
 	}
 }
 
-// The element children of `node`, in document order (text and other node types are skipped — this
-// engine models block boxes only).
-fn block_child_elements(node &dom.Node) []&dom.Element {
+// Whether a computed `display` value generates a block-level box in this engine. `none` generates
+// no box at all; inline-level values (inline / inline-block / inline-*) are skipped because there is
+// no inline formatting context yet. Everything else (block, list-item, flow-root, and — as a coarse
+// approximation — flex/grid/table, which are block-level in their parent's flow) is laid out as a
+// block. FIXME: `display: contents` should hoist the children rather than generate a box.
+fn is_block_level_display(display string) bool {
+	if display == 'none' {
+		return false
+	}
+	return !display.starts_with('inline')
+}
+
+// The block-level element children of `node`, in document order. Text and other node types are
+// skipped (no inline formatting context yet), as are elements whose computed `display` is `none` or
+// inline-level — so `<head>`/`<script>`/`<style>` and inline elements no longer generate boxes.
+fn block_child_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Element {
+	display_id := css.property_id_from_string('display') or { return []&dom.Element{} }
 	mut elements := []&dom.Element{}
 	for child in node.children_as_vector() {
 		if element := child.as_element() {
-			elements << element
+			display := css.cascaded_value_with_ua(element, display_id, author_rules)
+			if is_block_level_display(display) {
+				elements << element
+			}
 		}
 	}
 	return elements
@@ -177,7 +194,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	mut flow_bottom := content_y
 	mut prev_bottom_margin := 0.0
 	mut has_prev := false
-	for child in block_child_elements(element.as_node()) {
+	for child in block_child_elements(element.as_node(), author_rules) {
 		child_margins := used_margins(child, width, author_rules)
 		gap := if has_prev {
 			collapse_margins([prev_bottom_margin, child_margins.top])

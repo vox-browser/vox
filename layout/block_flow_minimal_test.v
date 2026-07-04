@@ -166,3 +166,37 @@ fn test_collapse_margins_helper() {
 	assert collapse_margins([-10.0, 20.0]) == 10.0
 	assert collapse_margins([]f64{}) == 0.0
 }
+
+// display:none and inline-level children generate no block box; block-level ones (block, list-item)
+// do. The skipped children's geometry must not leak into the parent.
+fn test_display_none_and_inline_children_skipped() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px')
+	visible := styled(doc, 'div', 'height: 10px')
+	hidden := styled(doc, 'div', 'display: none; height: 999px')
+	inline := styled(doc, 'span', 'height: 999px') // <span> is inline via the UA sheet
+	item := styled(doc, 'li', 'height: 20px') // list-item is block-level
+	mut rn := root.as_node()
+	rn.append_child(visible.as_node()) or { panic('${err}') }
+	rn.append_child(hidden.as_node()) or { panic('${err}') }
+	rn.append_child(inline.as_node()) or { panic('${err}') }
+	rn.append_child(item.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children.len == 2 // only the visible div and the li
+	assert box.children[0].tag_name == 'div'
+	assert box.children[1].tag_name == 'li'
+	assert box.children[1].y == 10.0 // li stacks directly under the 10px div
+	assert box.height == 30.0 // 10 + 20; none/inline children contribute nothing
+}
+
+// is_block_level_display classification.
+fn test_is_block_level_display() {
+	assert is_block_level_display('block')
+	assert is_block_level_display('list-item')
+	assert is_block_level_display('flow-root')
+	assert is_block_level_display('flex')
+	assert !is_block_level_display('none')
+	assert !is_block_level_display('inline')
+	assert !is_block_level_display('inline-block')
+}

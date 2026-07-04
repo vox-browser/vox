@@ -217,3 +217,17 @@ fn test_margin_collapse_over_parsed_document() {
 	assert box.children[1].y == 70.0 // 45 (first p's bottom border) + 25 (collapsed margin)
 	assert box.height == 115.0 // 25 + 20 + 25 (collapsed) + 20 + 25
 }
+
+// Full-stack display filter: laying out from <html>, the display:none <head> generates no box, and
+// inside <body> an inline <span> generates no box while a block <div> does.
+fn test_display_filter_over_parsed_document() {
+	doc := html.parse_document('<html><head><title>t</title><style>x{}</style></head><body style="height: 50px"><span style="height: 999px">inline</span><div style="height: 30px"></div></body></html>')
+	root := unsafe { &dom.Node(doc) }
+	html_el := css.query_selector(root, 'html') or { panic('no html') }
+
+	box := layout.layout_block(html_el, 0, 0, 1000, []&css.CSSRule{})
+	assert box.children.len == 1 // <head> is display:none, only <body> remains
+	assert box.children[0].tag_name == 'body'
+	assert box.children[0].children.len == 1 // the inline <span> is skipped, only <div> lays out
+	assert box.children[0].children[0].tag_name == 'div'
+}
