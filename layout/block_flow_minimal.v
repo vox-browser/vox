@@ -10,10 +10,12 @@ import dom
 // that actually runs on the cascade output — and where percentage widths (which computed_length_px
 // can't resolve without a containing block) get resolved.
 //
+// Adjoining vertical margins of in-flow siblings collapse (CSS 2.1 §8.3.1).
+//
 // FIXME (deliberately out of scope for this slice): inline/text layout, `display` handling (every
-// element child is treated as a block), floats, vertical margin collapsing, `auto` margin resolution
-// (centering / distributing remaining space — `auto` margins are treated as 0 here), and definite
-// percentage heights.
+// element child is treated as a block), floats, parent/child and self (empty-block) margin
+// collapsing, `auto` margin resolution (centering / distributing remaining space — `auto` margins
+// are treated as 0 here), and definite percentage heights.
 
 // The used thickness of a box's four edges (margin / padding / border), in CSS px.
 pub struct BoxEdges {
@@ -50,6 +52,35 @@ pub fn (b &BlockBox) margin_box_height() f64 {
 pub fn (b &BlockBox) margin_box_width() f64 {
 	return b.margin.left + b.border.left + b.padding.left + b.width + b.padding.right +
 		b.border.right + b.margin.right
+}
+
+// The used margins of `element` (each `auto`/absent margin is 0 — no centering yet). Percentages
+// resolve against the containing block's width. Factored out so the parent can peek a child's top
+// margin before laying it out, to position it with margin collapsing.
+fn used_margins(element &dom.Element, containing_width f64, author_rules []&css.CSSRule) BoxEdges {
+	return BoxEdges{
+		top:    used_length_or_zero(element, 'margin-top', containing_width, author_rules)
+		right:  used_length_or_zero(element, 'margin-right', containing_width, author_rules)
+		bottom: used_length_or_zero(element, 'margin-bottom', containing_width, author_rules)
+		left:   used_length_or_zero(element, 'margin-left', containing_width, author_rules)
+	}
+}
+
+// Collapse a set of adjoining vertical margins into one, per CSS 2.1 §8.3.1: the largest positive
+// margin plus the most negative margin (so max positive when all positive; their difference when
+// mixed; the most negative when all negative).
+fn collapse_margins(margins []f64) f64 {
+	mut max_positive := 0.0
+	mut min_negative := 0.0
+	for m in margins {
+		if m > max_positive {
+			max_positive = m
+		}
+		if m < min_negative {
+			min_negative = m
+		}
+	}
+	return max_positive + min_negative
 }
 
 // A length/percentage property resolved to px, or 0 when it's `auto`/absent/other. Percentages
@@ -117,12 +148,7 @@ fn used_content_width(element &dom.Element, containing_width f64, horizontal_ext
 // vertically within the content box, each advancing the cursor by its own margin-box height; the
 // parent's content height is that stacked total unless it declares an explicit height.
 pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, author_rules []&css.CSSRule) BlockBox {
-	margin := BoxEdges{
-		top:    used_length_or_zero(element, 'margin-top', containing_width, author_rules)
-		right:  used_length_or_zero(element, 'margin-right', containing_width, author_rules)
-		bottom: used_length_or_zero(element, 'margin-bottom', containing_width, author_rules)
-		left:   used_length_or_zero(element, 'margin-left', containing_width, author_rules)
-	}
+	margin := used_margins(element, containing_width, author_rules)
 	border := BoxEdges{
 		top:    used_border(element, 'top', author_rules)
 		right:  used_border(element, 'right', author_rules)
@@ -142,14 +168,34 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 	content_x := x + margin.left + border.left + padding.left
 	content_y := y + margin.top + border.top + padding.top
 
+	// Lay children out in flow. Adjoining vertical margins collapse (CSS 2.1 §8.3.1): the gap
+	// between a child's top border edge and the previous child's bottom border edge is the collapse
+	// of the previous child's bottom margin with this child's top margin, not their sum. `flow_bottom`
+	// tracks the previous child's bottom *border* edge; each child's margin box is positioned so its
+	// border-box top lands at `flow_bottom + collapsed_gap`.
 	mut children := []BlockBox{}
-	mut child_y := content_y
+	mut flow_bottom := content_y
+	mut prev_bottom_margin := 0.0
+	mut has_prev := false
 	for child in block_child_elements(element.as_node()) {
-		child_box := layout_block(child, content_x, child_y, width, author_rules)
-		child_y += child_box.margin_box_height()
+		child_margins := used_margins(child, width, author_rules)
+		gap := if has_prev {
+			collapse_margins([prev_bottom_margin, child_margins.top])
+		} else {
+			child_margins.top // first child: no sibling above to collapse with
+		}
+		margin_box_top := flow_bottom + gap - child_margins.top
+		child_box := layout_block(child, content_x, margin_box_top, width, author_rules)
+		flow_bottom = margin_box_top + child_box.margin.top + child_box.border.top +
+			child_box.padding.top + child_box.height + child_box.padding.bottom + child_box.border.bottom
+		prev_bottom_margin = child_box.margin.bottom
+		has_prev = true
 		children << child_box
 	}
-	content_height := child_y - content_y
+	// Auto height spans the children's margin box (the last child's bottom margin is included; it
+	// would collapse with the parent's own bottom margin only if there were no bottom border/padding
+	// — parent/child collapsing is a FIXME, so we keep it inside for now).
+	content_height := if has_prev { flow_bottom + prev_bottom_margin - content_y } else { 0.0 }
 
 	height_id := css.property_id_from_string('height') or { return BlockBox{} }
 	height := if px := css.computed_length_px(element, height_id, author_rules) {

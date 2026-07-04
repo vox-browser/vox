@@ -203,3 +203,17 @@ fn test_block_box_model_over_parsed_document() {
 	// container content height = p's margin box = 10 + 50 + 10.
 	assert box.height == 70.0
 }
+
+// Full-stack margin collapsing: two paragraphs with margin:25px collapse to a 25px gap (not 50px).
+fn test_margin_collapse_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 300px"><p style="height: 20px; margin: 25px"></p><p style="height: 20px; margin: 25px"></p></div>')
+	root := unsafe { &dom.Node(doc) }
+	container := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(container, 0, 0, 1000, []&css.CSSRule{})
+	assert box.children.len == 2
+	assert box.children[0].y == 25.0 // first p offset by its own top margin
+	assert box.children[0].width == 250.0 // 300 - 50 (own left+right margins)
+	assert box.children[1].y == 70.0 // 45 (first p's bottom border) + 25 (collapsed margin)
+	assert box.height == 115.0 // 25 + 20 + 25 (collapsed) + 20 + 25
+}

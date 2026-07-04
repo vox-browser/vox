@@ -123,3 +123,46 @@ fn test_block_border_style_gating_and_keywords() {
 	medium := styled(doc, 'div', 'border: solid')
 	assert layout_block(medium, 0, 0, 800, []&css.CSSRule{}).border.top == 3.0 // medium (initial) = 3px
 }
+
+// Adjoining sibling margins collapse to their maximum (not their sum): a 30px bottom margin meeting
+// a 20px top margin yields a 30px gap, so the second child's border-box top is 30px below the first.
+fn test_block_sibling_margin_collapse_positive() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px')
+	first := styled(doc, 'div', 'height: 40px; margin-bottom: 30px')
+	second := styled(doc, 'div', 'height: 60px; margin-top: 20px')
+	mut root_node := root.as_node()
+	root_node.append_child(first.as_node()) or { panic('${err}') }
+	root_node.append_child(second.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	assert box.children[0].y == 0.0
+	// gap between first's bottom border edge (40) and second's top border edge is max(30, 20) = 30.
+	assert box.children[1].y == 70.0 // 40 + 30 (collapsed), not 40 + 30 + 20 = 90
+	assert box.height == 130.0 // 40 + 30 + 60 (no trailing margin)
+}
+
+// A negative margin offsets a positive one: max(positive) + min(negative) = 30 + (-50) = -20.
+fn test_block_sibling_margin_collapse_negative() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 200px')
+	first := styled(doc, 'div', 'height: 40px; margin-bottom: 30px')
+	second := styled(doc, 'div', 'height: 60px; margin-top: -50px')
+	mut root_node := root.as_node()
+	root_node.append_child(first.as_node()) or { panic('${err}') }
+	root_node.append_child(second.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	// collapsed gap = 30 + (-50) = -20, so the second child overlaps upward.
+	assert box.children[1].y == 20.0 // 40 + (-20)
+	assert box.height == 80.0 // 40 + (-20) + 60
+}
+
+// collapse_margins directly: max positive + most negative.
+fn test_collapse_margins_helper() {
+	assert collapse_margins([30.0, 20.0]) == 30.0
+	assert collapse_margins([30.0, -50.0]) == -20.0
+	assert collapse_margins([-10.0, -30.0]) == -30.0
+	assert collapse_margins([-10.0, 20.0]) == 10.0
+	assert collapse_margins([]f64{}) == 0.0
+}
