@@ -4885,8 +4885,42 @@ const font_variant_east_asian_keywords = ['normal', 'jis78', 'jis83', 'jis90', '
 
 // https://svgwg.org/svg2-draft/painting.html#SpecifyingFillPaint
 // <paint> = none | <color> | <url> [none | <color>]? | context-fill | context-stroke
-// FIXME: <url> paint servers and context-fill/context-stroke are not translated yet.
+// <paint> = none | <color> | <url> [none | <color>]? | context-fill | context-stroke
+// FIXME: context-fill/context-stroke are not translated yet.
 fn (mut parser Parser) parse_paint_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parser.parse_paint_color_or_none(mut tokens) {
+		return value
+	}
+
+	// <url> [none | <color>]?  — a paint server reference with an optional fallback.
+	mut transaction := tokens.clone()
+	url := parse_url_function_for_syntax(mut transaction) or { return none }
+	transaction.consume_whitespace()
+
+	if transaction.has_more_tokens() {
+		// A <color> fallback is retained.
+		mut color_attempt := transaction.clone()
+		if color := parser.parse_color_value(mut color_attempt) {
+			tokens = color_attempt
+			return StyleValue(URLStyleValue.create_with_paint_fallback(url, color))
+		}
+		// A `none` fallback is valid but ignored.
+		mut none_attempt := transaction.clone()
+		if _ := parse_property_keyword_value(mut none_attempt, ['none']) {
+			tokens = none_attempt
+			return StyleValue(URLStyleValue.create(url))
+		}
+		// Any other trailing token is an invalid fallback.
+		return none
+	}
+
+	tokens = transaction
+	return StyleValue(URLStyleValue.create(url))
+}
+
+// Parse the `<color> | none` alternatives shared by <paint>. Returns none when there is
+// nothing color-like to consume (so the caller can try <url>).
+fn (mut parser Parser) parse_paint_color_or_none(mut tokens ComponentValueStream) ?StyleValue {
 	if color := parser.parse_color_value(mut tokens) {
 		return color
 	}

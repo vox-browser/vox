@@ -6264,6 +6264,8 @@ pub fn (style_value GuaranteedInvalidStyleValue) tokenize() []ComponentValue {
 pub struct URLStyleValue {
 pub mut:
 	url_ URL
+	// Optional SVG paint fallback (0 or 1 element), e.g. the `red` in `fill: url(#g) red`.
+	paint_fallback_ []StyleValue
 }
 
 pub fn URLStyleValue.create(url URL) URLStyleValue {
@@ -6272,13 +6274,23 @@ pub fn URLStyleValue.create(url URL) URLStyleValue {
 	}
 }
 
+pub fn URLStyleValue.create_with_paint_fallback(url URL, paint_fallback StyleValue) URLStyleValue {
+	return URLStyleValue{
+		url_:            url
+		paint_fallback_: [paint_fallback]
+	}
+}
+
 pub fn (style_value URLStyleValue) url() URL {
 	return style_value.url_
 }
 
 pub fn (style_value URLStyleValue) serialize(mode SerializationMode) string {
-	_ = mode
-	return style_value.url_.to_string()
+	mut serialized := style_value.url_.to_string()
+	if style_value.paint_fallback_.len == 1 {
+		serialized += ' ${style_value.paint_fallback_[0].serialize(mode)}'
+	}
+	return serialized
 }
 
 // https://drafts.csswg.org/css-values-5/#pending-substitution-value
