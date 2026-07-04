@@ -2917,9 +2917,9 @@ fn (style_value ShorthandStyleValue) serialize_grid_line(mode SerializationMode)
 	return '${start} / ${end}'
 }
 
-// grid-template: `none | <'grid-template-rows'> / <'grid-template-columns'>` (the
-// non-named-areas form) and `none`. The named `[<line-names>? <string> <track>?]+` form,
-// which interleaves the area strings with the row tracks, still uses default_serialize.
+// grid-template: `none`, the `<'grid-template-rows'> / <'grid-template-columns'>` form, and
+// the named `[<line-names>? <string> <track-size>?]+ [/ <explicit-track-list>]?` form (which
+// interleaves the area-row strings with the row tracks).
 fn (style_value ShorthandStyleValue) serialize_grid_template(mode SerializationMode) ?string {
 	if style_value.shorthand_ != .grid_template {
 		return none
@@ -2939,11 +2939,42 @@ fn (style_value ShorthandStyleValue) serialize_grid_template(mode SerializationM
 		&& columns_value.grid_track_size_list().is_empty() {
 		return 'none'
 	}
-	// The named-areas form is left to default_serialize for now.
-	if areas_value.row_count() != 0 {
+
+	// Without named areas, the simple `<rows> / <columns>` form.
+	if areas_value.row_count() == 0 {
+		return '${rows_value.serialize(mode)} / ${columns_value.serialize(mode)}'
+	}
+
+	// Named-areas form: interleave each area-row string with the row track sizes (omitting
+	// `auto` track sizes), keeping any line-names.
+	mut parts := []string{}
+	mut area_index := 0
+	for item in rows_value.grid_track_size_list().list() {
+		if item is GridLineNames {
+			parts << item.serialize()
+		} else if item is ExplicitGridTrack {
+			if area_index < int(areas_value.row_count()) {
+				mut cells := []string{}
+				for column in 0 .. int(areas_value.column_count()) {
+					cells << areas_value.cell_name_at(usize(area_index), usize(column))
+				}
+				parts << serialize_a_string(cells.join(' '))
+			}
+			track_serialization := item.serialize(mode)
+			if track_serialization != 'auto' {
+				parts << track_serialization
+			}
+			area_index++
+		}
+	}
+	if parts.len == 0 {
 		return none
 	}
-	return '${rows_value.serialize(mode)} / ${columns_value.serialize(mode)}'
+	rows_serialization := parts.join(' ')
+	if columns_value.grid_track_size_list().is_empty() {
+		return rows_serialization
+	}
+	return '${rows_serialization} / ${columns_value.serialize(mode)}'
 }
 
 fn grid_placement_is_auto(value StyleValue) bool {
