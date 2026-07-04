@@ -1331,3 +1331,35 @@ fn test_per_inline_intrinsic_width() {
 	assert intrinsic_content_width(el, []&css.CSSRule{}, false) == 70.0 // 20 + 10 space + 40
 	assert intrinsic_content_width(el, []&css.CSSRule{}, true) == 40.0 // widest word (the 40px one)
 }
+
+// text-align: justify spreads slack across the word gaps of every line but the last.
+fn test_text_align_justify() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px; text-align: justify')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('aaaa bbbb cccc').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	// Line 0 "aaaa bbbb": natural width 90, available 100 -> 10px slack over the single gap.
+	assert box.lines[0].width == 100.0 // fills the line
+	assert box.lines[0].fragments[0].x == 0.0
+	assert box.lines[0].fragments[1].x == 60.0 // 40 (aaaa) + 10 (space) + 10 (justify slack)
+	// Line 1 "cccc" is the last line -> left-aligned, not justified.
+	assert box.lines[1].fragments.len == 1
+	assert box.lines[1].fragments[0].x == 0.0
+	assert box.lines[1].width == 40.0
+}
+
+// A single-line (last-line) justified paragraph is left-aligned, not stretched.
+fn test_justify_single_line_not_stretched() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div', 'width: 500px; font-size: 20px; line-height: 30px; text-align: justify')
+	mut n := el.as_node()
+	n.append_child(doc.create_text_node('aa bb').as_node()) or { panic('${err}') }
+
+	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
+	assert box.lines.len == 1
+	assert box.lines[0].fragments[0].x == 0.0
+	assert box.lines[0].fragments[1].x == 30.0 // 20 (aa) + 10 (space); no slack added
+	assert box.lines[0].width == 50.0 // natural width, not the 500px available
+}

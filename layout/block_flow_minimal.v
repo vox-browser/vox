@@ -640,9 +640,9 @@ fn aligned_line_x(content_x f64, content_width f64, line_width f64, align string
 // fit beside a float drops below it.
 //
 // Each line carries its words as positioned fragments, each measured with its own element's font; a
-// line's height is the tallest word on it. FIXME: still stands in for a real inline formatting
-// context — glyph advances are estimated, `pre*` whitespace runs are collapsed (widths approximate),
-// there is no per-word justification, and no bidi.
+// line's height is the tallest word on it; `text-align: justify` spreads slack across word gaps.
+// FIXME: still stands in for a real inline formatting context — glyph advances are estimated, `pre*`
+// whitespace runs are collapsed (widths approximate), and there is no bidi.
 fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, float_bands []FloatBand, author_rules []&css.CSSRule) []TextLine {
 	white_space := css.cascaded_value_with_ua(element, css.property_id_from_string('white-space') or {
 		return []TextLine{}
@@ -701,8 +701,20 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 				}
 				j++
 			}
-			line_x := aligned_line_x(left, right - left, line_width, align)
-			// Place each word left-to-right within the line, advancing by the word plus its space.
+			// `text-align: justify` spreads the slack across the word gaps of every line except the
+			// last of a segment (and lines with a single word).
+			is_last_line := j == segment.len
+			mut extra_per_gap := 0.0
+			if align == 'justify' && !is_last_line && j - i > 1 {
+				extra_per_gap = (available - line_width) / f64(j - i - 1)
+				if extra_per_gap < 0.0 {
+					extra_per_gap = 0.0
+				}
+			}
+			justified := extra_per_gap > 0.0
+			line_x := aligned_line_x(left, right - left, line_width, align) // justify -> left edge
+			// Place each word left-to-right within the line, advancing by the word, its space, and
+			// (when justified) the distributed slack between words.
 			mut fragments := []TextFragment{}
 			mut fragment_x := line_x
 			for k := i; k < j; k++ {
@@ -714,11 +726,14 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 					text:   segment[k].text
 				}
 				fragment_x += segment[k].width + segment[k].space_after
+				if k < j - 1 {
+					fragment_x += extra_per_gap
+				}
 			}
 			lines << TextLine{
 				x:         line_x
 				y:         y
-				width:     line_width
+				width:     if justified { available } else { line_width }
 				height:    line_height
 				fragments: fragments
 			}

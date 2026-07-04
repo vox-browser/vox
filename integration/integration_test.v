@@ -520,3 +520,15 @@ fn test_per_inline_font_over_parsed_document() {
 	assert frags[1].height == 48.0 // 40px font -> 48 line-height
 	assert box.lines[0].height == 48.0 // line grows to the tallest word
 }
+
+// Full-stack justify: a wrapped justified paragraph fills each full line; the last line stays left.
+fn test_justify_over_parsed_document() {
+	doc := html.parse_document('<div style="width: 100px; font-size: 20px; line-height: 30px; text-align: justify">aaaa bbbb cccc</div>')
+	root := unsafe { &dom.Node(doc) }
+	div := css.query_selector(root, 'div') or { panic('no div') }
+
+	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
+	assert box.lines[0].width == 100.0 // first line fills the width
+	assert box.lines[0].fragments[1].x == 60.0 // bbbb pushed right by the justify slack
+	assert box.lines[1].width == 40.0 // last line: natural width, left-aligned
+}
