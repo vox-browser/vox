@@ -876,3 +876,18 @@ fn test_text_indent_over_parsed_document() {
 	// The <p>'s content-box left is 0 (body margin 0, no padding); the first line is indented 40px.
 	assert frag.x == p_box.x + 40.0
 }
+
+// Full-stack border-radius: an author stylesheet rounds a card's background; the SVG rect gets rx/ry.
+fn test_border_radius_over_parsed_document() {
+	doc := html.parse_document('<html><head><style>.card { width: 200px; height: 100px; background-color: rgb(10, 20, 30); border-radius: 12px }</style></head><body><div class="card"></div></body></html>')
+	root_box := layout.layout_document(doc, 600)
+	root := unsafe { &dom.Node(doc) }
+	card := css.query_selector(root, '.card') or { panic('no .card') }
+
+	card_box := root_box.find_box(i64(card.as_node().unique_id())) or { panic('no card box') }
+	assert card_box.border_radius == 12.0
+
+	svg := root_box.render_svg(600, root_box.height + 20)
+	assert svg.contains('rx="12"')
+	assert svg.contains('fill="rgb(10 20 30)"')
+}

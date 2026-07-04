@@ -118,6 +118,8 @@ pub mut:
 	background_color css.Color
 	text_color       css.Color
 	border_color     css.Color
+	// The uniform border-radius (px) applied when filling the background/border box.
+	border_radius f64
 	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
 	// cumulative opacity (this box's times its ancestors').
 	opacity f64 = 1.0
@@ -449,6 +451,7 @@ pub:
 	color   string
 	text    string // for 'draw_text'
 	opacity f64 = 1.0 // the box's cumulative opacity (this box × its ancestors')
+	radius  f64 // corner radius for a rounded 'fill_rect' (0 = square)
 }
 
 // Build the display list for this box tree: for each box in paint order — a background fill (when the
@@ -474,6 +477,8 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 		border_height := box.height + box.padding.top + box.padding.bottom + box.border.top +
 			box.border.bottom
 
+		// The corner radius, clamped so it never exceeds half the smaller border-box dimension.
+		radius := clamp_radius(box.border_radius, border_width, border_height)
 		if box.background_color.a > 0 {
 			commands << PaintCommand{
 				kind: 'fill_rect'
@@ -483,9 +488,11 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 				height: border_height
 				color: box.background_color.serialize()
 				opacity: opacity
+				radius: radius
 			}
 		}
-		// Border edges (each along the border box; corners overlap).
+		// Border edges (each along the border box; corners overlap). FIXME: with border-radius the
+		// edges stay square (no arced corners) — only the background fill is rounded.
 		border := box.border_color.serialize()
 		if box.border.top > 0 {
 			commands << PaintCommand{
@@ -687,7 +694,8 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 	mut parts := ['<svg xmlns="http://www.w3.org/2000/svg" width="${fmt_px(width)}" height="${fmt_px(height)}">']
 	for command in b.paint_commands() {
 		if command.kind == 'fill_rect' {
-			parts << '<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}" fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
+			corner := if command.radius > 0 { ' rx="${fmt_px(command.radius)}" ry="${fmt_px(command.radius)}"' } else { '' }
+			parts << '<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}"${corner} fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
 		} else if command.kind == 'draw_text' {
 			font_size := command.height * 0.8 // approximate the font-size from the line-height
 			baseline := command.y + font_size
@@ -1167,25 +1175,42 @@ fn resolve_spacing(element &dom.Element, property_name string, author_rules []&c
 	return css.computed_length_px(element, id, author_rules) or { 0 }
 }
 
-// The `text-indent` value resolved to px (may be negative). Its value-logic wraps the length in a
-// composite type (it also accepts `each-line`/`hanging`), so `computed_length_px` can't extract it —
-// parse the cascaded string directly for the common px/em/% forms. `%` is of the content width.
-fn resolve_text_indent(element &dom.Element, content_width f64, author_rules []&css.CSSRule) f64 {
-	id := css.property_id_from_string('text-indent') or { return 0 }
-	value := css.cascaded_value_with_ua(element, id, author_rules).trim_space()
-	if value.ends_with('px') {
-		return value#[..-2].f64()
+// Resolve a single length/percentage TOKEN (px/em/rem/%, possibly negative) to px against `basis`
+// (used for `%`). Returns 0 for an unrecognized token. Used for properties whose value-logic wraps
+// the length in a composite type — text-indent, border-radius corners — that `computed_length_px`
+// can't extract, so the cascaded string is parsed directly.
+fn resolve_length_token(element &dom.Element, token string, basis f64, author_rules []&css.CSSRule) f64 {
+	t := token.trim_space()
+	if t.ends_with('px') {
+		return t#[..-2].f64()
 	}
-	if value.ends_with('rem') {
-		return value#[..-3].f64() * css.root_font_size_px(element, author_rules)
+	if t.ends_with('rem') {
+		return t#[..-3].f64() * css.root_font_size_px(element, author_rules)
 	}
-	if value.ends_with('em') {
-		return value#[..-2].f64() * css.computed_font_size_px(element, author_rules)
+	if t.ends_with('em') {
+		return t#[..-2].f64() * css.computed_font_size_px(element, author_rules)
 	}
-	if value.ends_with('%') {
-		return value#[..-1].f64() * content_width / 100.0
+	if t.ends_with('%') {
+		return t#[..-1].f64() * basis / 100.0
 	}
 	return 0
+}
+
+// The `text-indent` value resolved to px (may be negative). `%` is of the content width.
+fn resolve_text_indent(element &dom.Element, content_width f64, author_rules []&css.CSSRule) f64 {
+	id := css.property_id_from_string('text-indent') or { return 0 }
+	return resolve_length_token(element, css.cascaded_value_with_ua(element, id, author_rules),
+		content_width, author_rules)
+}
+
+// The uniform border-radius (top-left corner's horizontal radius) resolved to px. `%` is of the
+// `basis` (the border-box width). FIXME: per-corner and separate x/y radii aren't modeled — the first
+// token of the top-left corner is used for all corners.
+fn resolve_border_radius(element &dom.Element, basis f64, author_rules []&css.CSSRule) f64 {
+	id := css.property_id_from_string('border-top-left-radius') or { return 0 }
+	value := css.cascaded_value_with_ua(element, id, author_rules)
+	first := value.trim_space().split(' ')[0] // a corner may be "<x> <y>"; use the x radius
+	return resolve_length_token(element, first, basis, author_rules)
 }
 
 // A word of inline content with its own measured metrics, taken from the element it comes from — so
@@ -1506,6 +1531,16 @@ fn clamp_size(value f64, min f64, max ?f64) f64 {
 
 fn non_negative(v f64) f64 {
 	return if v > 0 { v } else { 0.0 }
+}
+
+// Clamp a corner radius so it never exceeds half of the smaller box dimension (a larger specified
+// radius is reduced proportionally to that limit, per CSS border-radius overflow handling).
+fn clamp_radius(radius f64, width f64, height f64) f64 {
+	if radius <= 0 {
+		return 0
+	}
+	limit := (if width < height { width } else { height }) / 2.0
+	return if radius > limit { limit } else { radius }
 }
 
 // Whether `element` establishes a new block formatting context, in which case its margins do not
@@ -2015,6 +2050,10 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		lines_with_marker.prepend(marker_line)
 	}
 
+	// border-radius (% is of the border-box width) rounds the background/border box when painted.
+	border_box_width := width + padding.left + padding.right + border.left + border.right
+	border_radius := resolve_border_radius(element, border_box_width, author_rules)
+
 	return BlockBox{
 		tag_name:            element.local_name()
 		x:                   content_x
@@ -2030,6 +2069,7 @@ pub fn layout_block(element &dom.Element, x f64, y f64, containing_width f64, au
 		background_color:    background_color
 		text_color:          text_color
 		border_color:        border_color
+		border_radius:       border_radius
 		opacity:             opacity
 		visible:             visible
 		node_id:             i64(element.as_node().unique_id())

@@ -2101,3 +2101,51 @@ fn test_negative_text_indent() {
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.lines[0].fragments[0].x == -10.0
 }
+
+// border-radius rounds the background fill: the fill_rect carries the radius and the SVG rect gets rx/ry.
+fn test_border_radius_rounds_background() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 100px; height: 50px; background-color: rgb(0, 128, 0); border-radius: 8px')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	assert box.border_radius == 8.0
+	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert fills.len == 1
+	assert fills[0].radius == 8.0
+
+	svg := box.render_svg(200, 200)
+	assert svg.contains('rx="8"')
+	assert svg.contains('ry="8"')
+}
+
+// A radius larger than half the smaller dimension is clamped (a 50% pill on a 100x40 box -> 20px).
+fn test_border_radius_clamped() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 100px; height: 40px; background-color: rgb(0, 0, 0); border-radius: 999px')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert fills[0].radius == 20.0 // clamped to min(100, 40)/2
+}
+
+// border-radius: 50% resolves against the border-box width, then clamps to half the smaller side.
+fn test_border_radius_percentage() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 80px; height: 80px; background-color: rgb(1, 2, 3); border-radius: 50%')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	// 50% of 80 = 40, clamped to min(80,80)/2 = 40.
+	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert fills[0].radius == 40.0
+}
+
+// No border-radius -> square fill (radius 0, no rx in SVG).
+fn test_no_border_radius_is_square() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'width: 50px; height: 50px; background-color: rgb(9, 9, 9)')
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+
+	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	assert fills[0].radius == 0.0
+	assert !box.render_svg(100, 100).contains('rx=')
+}
