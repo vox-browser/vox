@@ -99,3 +99,72 @@ fn test_compute_logical_alias_mapping_context() {
 	assert context.writing_mode == .vertical_rl
 	assert context.direction == .rtl
 }
+
+// The dom<->css bridge round-trips a css object through its DOM placeholder handle, and an empty
+// placeholder resolves to none.
+fn test_dom_css_bridge_round_trip() {
+	mut computed := ComputedProperties.new()
+	placeholder := computed_properties_to_dom(computed)
+	round_tripped := computed_properties_from_dom(placeholder) or { panic('computed handle missing') }
+	assert voidptr(round_tripped) == voidptr(computed)
+
+	mut cascaded := CascadedProperties.new()
+	c_placeholder := cascaded_properties_to_dom(cascaded)
+	c_round := cascaded_properties_from_dom(c_placeholder) or { panic('cascaded handle missing') }
+	assert voidptr(c_round) == voidptr(cascaded)
+
+	empty := &dom.CSSComputedProperties_{}
+	if _ := computed_properties_from_dom(empty) {
+		panic('empty placeholder should not resolve to a css object')
+	}
+}
+
+// compute_style runs the whole cascade->compute pipeline end-to-end via the bridge (style scope,
+// matching rules, cascade, compute_properties) and yields a computed style reflecting the inline style.
+fn test_compute_style_end_to_end() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	el.set_attribute_value('style', 'overflow-x: hidden; overflow-y: hidden')
+	abstract_element := dom.AbstractElement.new(el, none)
+
+	s := StyleComputer.new(doc)
+	computed := s.compute_style(abstract_element)
+	assert computed.overflow_x() == .hidden
+	assert computed.overflow_y() == .hidden
+}
+
+// A child inherits an inherited property (color) from its parent's stored computed style, retrieved
+// across the dom<->css bridge.
+fn test_compute_style_inherits_from_parent_via_bridge() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	parent.set_attribute_value('style', 'color: red')
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut parent_node := parent.as_node()
+	child_node := child.as_node()
+	parent_node.append_child(child_node) or { panic('append failed: ${err}') }
+
+	s := StyleComputer.new(doc)
+
+	// Compute the parent's style and store it (bridged) so the child can inherit through it.
+	mut parent_ae := dom.AbstractElement.new(parent, none)
+	parent_computed := s.compute_style(parent_ae)
+	parent_ae.set_computed_properties(computed_properties_to_dom(parent_computed))
+
+	// The child declares no color, so it inherits the parent's computed color.
+	child_ae := dom.AbstractElement.new(child, none)
+	child_computed := s.compute_style(child_ae)
+
+	// Baseline: a parentless element with no color falls back to the initial color.
+	mut orphan := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	orphan_ae := dom.AbstractElement.new(orphan, none)
+	orphan_computed := s.compute_style(orphan_ae)
+
+	parent_color := parent_computed.property(.color, .no) or { panic('parent has no computed color') }
+	child_color := child_computed.property(.color, .no) or { panic('child did not inherit color') }
+	orphan_color := orphan_computed.property(.color, .no) or { panic('orphan has no computed color') }
+	// The child inherited the parent's color...
+	assert child_color.css_text == parent_color.css_text
+	// ...which is a real inherited value, not the initial color the orphan falls back to.
+	assert child_color.css_text != orphan_color.css_text
+}

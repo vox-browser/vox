@@ -4089,6 +4089,12 @@ pub fn (abstract_element &AbstractElement) computed_properties() ?&CSSComputedPr
 	return abstract_element.element_.computed_properties_for_pseudo(pseudo)
 }
 
+pub fn (mut abstract_element AbstractElement) set_computed_properties(computed_properties ?&CSSComputedProperties_) {
+	pseudo := if p := abstract_element.pseudo_element_ { int(p) } else { none }
+	mut element := unsafe { &Element(abstract_element.element_) }
+	element.set_computed_properties(pseudo, computed_properties)
+}
+
 pub fn (abstract_element &AbstractElement) custom_property_data() ?&CSSCustomPropertyData_ {
 	pseudo := if p := abstract_element.pseudo_element_ { int(p) } else { none }
 	return abstract_element.element_.custom_property_data(pseudo)

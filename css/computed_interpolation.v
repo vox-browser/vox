@@ -6867,9 +6867,11 @@ pub fn (s &StyleComputer) create_document_style() &ComputedProperties {
 }
 
 pub fn (s &StyleComputer) compute_style(abstract_element dom.AbstractElement) &ComputedProperties {
-	_ = s
-	_ = abstract_element
-	return ComputedProperties.new()
+	// StyleComputer::compute_style (StyleComputer.cpp:1780): resolve the element's style scope and run the
+	// normal-mode style computation. In .normal mode compute_style_impl always yields a value; fall back to
+	// an empty ComputedProperties defensively (upstream dereferences the returned pointer).
+	scope := css_style_scope_for(abstract_element)
+	return s.compute_style_impl(abstract_element, .normal, none, scope) or { ComputedProperties.new() }
 }
 
 pub fn (mut s StyleComputer) compute_style_with_seeded_ancestors(abstract_element dom.AbstractElement) &ComputedProperties {
@@ -6977,9 +6979,13 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 
 pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) &ComputedProperties {
 	mut properties := ComputedProperties.new()
-	// Boundary: DOM::AbstractElement exposes only the DOM-side computed style
-	// placeholder here, not this port's ComputedProperties map.
-	inherited_source_available := false
+	// Parent computed style to inherit from, bridged from the DOM-side placeholder. Available only if the
+	// inheritance source element has already had its (bridged) computed style stored.
+	inherited_computed := parent_computed_properties(abstract_element)
+	mut inherited_source_available := false
+	if _ := inherited_computed {
+		inherited_source_available = true
+	}
 
 	for property_id in computed_interpolation_property_computation_order() {
 		mut value := ?&dom.StyleValue(none)
@@ -7020,12 +7026,16 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		}
 
 		if should_inherit && inherited_source_available {
-			// Boundary: DOM::AbstractElement exposes only the DOM-side computed style
-			// placeholder here, not this port's ComputedProperties map.
 			properties.set_property_inherited(property_id, .yes)
-			value = computed_interpolation_property_initial_value(property_id)
+			if src := inherited_computed {
+				if inherited_value := src.property(property_id, .no) {
+					value = inherited_value
+				}
+			}
 			requires_computation =
 				computed_interpolation_property_requires_computation_with_inherited_value(property_id)
+			// FIXME (boundary): the animated inherited-value copy (StyleComputer.cpp:2089-2096) is omitted
+			// (animations not ported).
 		}
 
 		if style_value := value {
@@ -7950,10 +7960,37 @@ pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element
 }
 
 pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?bool, scope &StyleScope) ?&ComputedProperties {
-	_ = mode
 	_ = did_change_custom_properties
-	_ = scope
-	return s.compute_style(abstract_element)
+	// StyleComputer::compute_style_impl (StyleComputer.cpp:1806).
+	scope.build_rule_cache_if_needed()
+
+	// FIXME (boundary): the use_pseudo_element internal-shadow-tree special path (1811-1836), the custom-property
+	// resolution block (1861-1896, needs CustomPropertyData bridging), and the CreatePseudoElementStyleIfNeeded
+	// content:none/normal bail (1902-1923) are omitted.
+
+	// 1. Perform the cascade. This produces the "specified style".
+	mut did_match_any_pseudo_element_rules := false
+	mut attempted_pseudo_class_matches := PseudoClassBitmap{}
+	matching_rule_set := s.build_matching_rule_set(abstract_element, mut attempted_pseudo_class_matches,
+		&did_match_any_pseudo_element_rules, mode, scope)
+
+	if mode == .create_pseudo_element_style_if_needed {
+		if !did_match_any_pseudo_element_rules {
+			return none
+		}
+	}
+
+	logical_alias_mapping_context := s.compute_logical_alias_mapping_context(abstract_element, mode,
+		matching_rule_set)
+	mut cascaded_properties := s.compute_cascaded_values(abstract_element, did_match_any_pseudo_element_rules,
+		mode, matching_rule_set, logical_alias_mapping_context, []PropertyID{})
+
+	// Store the cascaded properties on the element (bridged) so descendants can inherit through it.
+	mut mutable_abstract_element := abstract_element
+	mutable_abstract_element.set_cascaded_properties(cascaded_properties_to_dom(cascaded_properties))
+
+	computed_properties := s.compute_properties(mutable_abstract_element, mut cascaded_properties)
+	return computed_properties
 }
 
 pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) &CascadedProperties {

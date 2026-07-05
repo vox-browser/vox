@@ -317,6 +317,10 @@ pub mut:
 	font_weight_        f64                   = 400
 	math_depth_         int
 	math_style_         CSSMathStyle_ = .normal
+	// dom<->css bridge: opaque handle to the real css.ComputedProperties this placeholder mirrors.
+	// The CSS module (which owns the type) sets/reads it via unsafe cast; dom cannot name the type
+	// because it cannot import css. See css/dom_css_bridge.v.
+	css_handle voidptr = unsafe { nil }
 }
 
 pub fn (c &CSSComputedProperties_) display() CSSDisplay_ {
@@ -406,7 +410,11 @@ pub enum CSSMathStyle_ {
 }
 
 @[heap]
-pub struct CSSCascadedProperties_ {}
+pub struct CSSCascadedProperties_ {
+pub mut:
+	// dom<->css bridge: opaque handle to the real css.CascadedProperties. See css/dom_css_bridge.v.
+	css_handle voidptr = unsafe { nil }
+}
 
 @[heap]
 pub struct CSSCustomPropertyData_ {

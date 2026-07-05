@@ -874,7 +874,12 @@ pub mut:
 	selectors []CSSSelector
 }
 
-pub struct StyleScope {}
+pub struct StyleScope {
+pub mut:
+	// dom<->css bridge: opaque handle to the persistent css.StyleScope for this document/shadow root.
+	// Lazily created and cached by the CSS module. See css/dom_css_bridge.v.
+	css_handle voidptr = unsafe { nil }
+}
 
 pub struct StyleValue {
 pub mut:
