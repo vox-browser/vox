@@ -1,5 +1,7 @@
 module css
 
+import dom
+
 // Faithful translation of Ladybird's CSS/StyleComputer.cpp, built up bottom-up (see the
 // libweb-v-stylecomputer-translation plan). This replaces the from-scratch minimal cascade
 // (cascade_minimal.v) as each real piece lands; until then the minimal cascade stays in use.
@@ -33,4 +35,31 @@ fn pseudo_element_supports_property(pseudo_element PseudoElement, property_id Pr
 	_ = pseudo_element
 	_ = property_id
 	return true
+}
+
+// The typed declaration properties of `declaration`, mirroring Ladybird's
+// CSSStyleProperties::properties() (Vector<StyleProperty>). The port stores each declaration entry as
+// a serialized CSSStyleProperty{name, value, important, style_value?}; this re-types it into the
+// StyleProperty{property_id, value: &dom.StyleValue, important} the cascade iterates over — using the
+// already-parsed opaque `style_value` when present, else parsing the serialized text. Custom
+// properties (`--*`, kept separately in `custom_properties`) are not included; entries whose name
+// isn't a known property, or whose value fails to parse, are skipped.
+fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty {
+	mut result := []StyleProperty{}
+	for property in declaration.properties {
+		property_id := property_id_from_string(property.name) or { continue }
+		mut value := &dom.StyleValue(unsafe { nil })
+		if style_value := property.style_value {
+			value = style_value
+		} else {
+			typed := parse_css_value_logic(property_id, property.value) or { continue }
+			value = dom_style_value_from_value_logic(typed)
+		}
+		result << StyleProperty{
+			property_id: property_id
+			value:       value
+			important:   if property.important { Important.yes } else { Important.no }
+		}
+	}
+	return result
 }
