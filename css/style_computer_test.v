@@ -222,3 +222,33 @@ fn test_recompute_style_stores_and_inherits() {
 	// The stored parent style also mirrors layout fields (default display is not none for a div's initial).
 	assert stored_parent.display().is_none() == false
 }
+
+// recompute_style_for_subtree styles a whole tree top-down in one pass, so an inherited property flows
+// down multiple levels (grandparent -> parent -> grandchild) via each element's stored computed style.
+fn test_recompute_style_for_subtree_inherits_down_levels() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	root.set_attribute_value('style', 'color: green')
+	mut mid := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	mut leaf := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut root_node := root.as_node()
+	mut mid_node := mid.as_node()
+	root_node.append_child(mid.as_node()) or { panic('append mid failed: ${err}') }
+	mid_node.append_child(leaf.as_node()) or { panic('append leaf failed: ${err}') }
+
+	mut s := StyleComputer.new(doc)
+	recompute_style_for_subtree(mut s, root_node)
+
+	// Every element got a stored computed style, and green flowed all the way to the leaf.
+	root_ae := dom.AbstractElement.new(root, none)
+	leaf_ae := dom.AbstractElement.new(leaf, none)
+	root_computed := computed_properties_from_dom(root_ae.computed_properties() or { panic('root not styled') }) or {
+		panic('root handle missing')
+	}
+	leaf_computed := computed_properties_from_dom(leaf_ae.computed_properties() or { panic('leaf not styled') }) or {
+		panic('leaf handle missing')
+	}
+	root_color := root_computed.property(.color, .no) or { panic('root has no color') }
+	leaf_color := leaf_computed.property(.color, .no) or { panic('leaf did not inherit color') }
+	assert leaf_color.css_text == root_color.css_text
+}

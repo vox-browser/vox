@@ -206,3 +206,30 @@ pub fn (s &StyleComputer) recompute_style(mut abstract_element dom.AbstractEleme
 	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
 	return computed
 }
+
+// Recompute style for `node` and its whole subtree, top-down — the recursive core of
+// DOM::update_style_recursively (Document.cpp:1646). For each element: push it onto the ancestor filter,
+// recompute+store its style, recurse into its children (so each child inherits from its just-stored
+// parent), then pop it off the filter.
+// FIXME: the needs-style-update / child-needs-update / custom-property / display-change invalidation
+// gating (which lets upstream SKIP unchanged subtrees) is omitted — this always recomputes the whole
+// subtree. Shadow roots and the invalidation return value are also not handled.
+pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.Node) {
+	element_opt := node.as_element()
+	if element := element_opt {
+		style_computer.push_ancestor(element)
+		mut abstract_element := dom.AbstractElement.new(element, none)
+		style_computer.recompute_style(mut abstract_element)
+	}
+
+	mut child := node.first_child()
+	for {
+		current := child or { break }
+		recompute_style_for_subtree(mut style_computer, current)
+		child = current.next_sibling()
+	}
+
+	if element := element_opt {
+		style_computer.pop_ancestor(element)
+	}
+}
