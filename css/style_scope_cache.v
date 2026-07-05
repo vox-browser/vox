@@ -395,6 +395,10 @@ pub fn (scope &StyleScope) build_rule_cache_if_needed() {
 }
 
 fn style_scope_user_agent_stylesheet(name string) ?&CSSStyleSheet {
+	// Reuse the shared, parsed-once user-agent stylesheet instead of re-parsing Default.css per document.
+	if sheet := user_agent_default_style_sheet(name) {
+		return sheet
+	}
 	source := user_agent_style_sheet_source(name) or { return none }
 	return parse_css_stylesheet_with_parser(source, none)
 }

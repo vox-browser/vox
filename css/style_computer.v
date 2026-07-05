@@ -243,10 +243,17 @@ pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.N
 pub fn computed_value_for(element &dom.Element, property_id PropertyID) ?string {
 	mut document := element.as_node().document()
 	css_style_computer_for(document)
-	document.needs_full_style_update = true
-	document.update_style()
 
 	abstract_element := dom.AbstractElement.new(element, none)
+	// Style the document once (a full UA + author + inline pass over the tree is expensive), then read the
+	// stored value; only restyle if this element hasn't been styled yet. FIXME: this doesn't re-style on
+	// DOM/style mutation — a real browser would use the needs-style-update invalidation flags for that.
+	if _ := abstract_element.computed_properties() {
+	} else {
+		document.needs_full_style_update = true
+		document.update_style()
+	}
+
 	dom_computed := abstract_element.computed_properties() or { return none }
 	computed := computed_properties_from_dom(dom_computed) or { return none }
 	value := computed.property(property_id, .no) or { return none }
