@@ -168,3 +168,23 @@ fn test_compute_style_inherits_from_parent_via_bridge() {
 	// ...which is a real inherited value, not the initial color the orphan falls back to.
 	assert child_color.css_text != orphan_color.css_text
 }
+
+// computed_properties_to_dom mirrors the css computed values into the DOM placeholder's concrete fields,
+// so DOM/layout code reading them directly (without importing css) sees the real computed style.
+fn test_computed_properties_to_dom_mirrors_fields() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	el.set_attribute_value('style', 'overflow-x: hidden; overflow-y: hidden; visibility: hidden')
+	abstract_element := dom.AbstractElement.new(el, none)
+
+	s := StyleComputer.new(doc)
+	computed := s.compute_style(abstract_element)
+	placeholder := computed_properties_to_dom(computed)
+
+	// The DOM-side accessors read the mirrored fields (default would be .visible).
+	assert placeholder.overflow_x() == .hidden
+	assert placeholder.overflow_y() == .hidden
+	assert placeholder.visibility() == .hidden
+	// The handle still round-trips to the same css object.
+	assert voidptr(computed_properties_from_dom(placeholder) or { panic('handle missing') }) == voidptr(computed)
+}

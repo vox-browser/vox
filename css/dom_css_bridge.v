@@ -17,13 +17,60 @@ import dom
 
 // --- ComputedProperties ---
 
-// Wrap a css.ComputedProperties into a DOM placeholder carrying a handle back to it.
-// FIXME: also mirror the concrete layout-facing fields (display/overflow/visibility/opacity/font-weight/
-// math) so DOM/layout code that reads them directly off the placeholder stays correct. For now only the
-// handle is populated, which is what the CSS pipeline (parent inheritance, round-trip) needs.
+// Wrap a css.ComputedProperties into a DOM placeholder: store the handle back to it AND mirror the
+// concrete layout-facing fields the DOM/layout read directly off the placeholder (which cannot name the
+// css enums). The css module owns both sides of each enum, so it does the translation here.
 fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProperties_ {
+	display := computed.display()
 	return &dom.CSSComputedProperties_{
-		css_handle: voidptr(computed)
+		display_:            dom.CSSDisplay_{
+			is_none_:      display.is_none()
+			is_list_item_: display.is_list_item()
+		}
+		overflow_x_:         overflow_to_dom(computed.overflow_x())
+		overflow_y_:         overflow_to_dom(computed.overflow_y())
+		content_visibility_: content_visibility_to_dom(computed.content_visibility())
+		opacity_:            computed.opacity()
+		visibility_:         visibility_to_dom(computed.visibility())
+		font_weight_:        computed.font_weight()
+		math_depth_:         computed.math_depth()
+		math_style_:         math_style_to_dom(computed.math_style())
+		css_handle:          voidptr(computed)
+	}
+}
+
+// css -> dom enum translations for the layout-facing computed fields mirrored above.
+
+fn overflow_to_dom(overflow Overflow) dom.CSSOverflow_ {
+	return match overflow {
+		.visible { dom.CSSOverflow_.visible }
+		.hidden { dom.CSSOverflow_.hidden }
+		.clip { dom.CSSOverflow_.clip }
+		.scroll { dom.CSSOverflow_.scroll }
+		.auto_ { dom.CSSOverflow_.auto_ }
+	}
+}
+
+fn content_visibility_to_dom(content_visibility ContentVisibility) dom.CSSContentVisibility_ {
+	return match content_visibility {
+		.auto_ { dom.CSSContentVisibility_.auto_ }
+		.visible { dom.CSSContentVisibility_.visible }
+		.hidden { dom.CSSContentVisibility_.hidden }
+	}
+}
+
+fn visibility_to_dom(visibility Visibility) dom.CSSVisibility_ {
+	return match visibility {
+		.visible { dom.CSSVisibility_.visible }
+		.hidden { dom.CSSVisibility_.hidden }
+		.collapse { dom.CSSVisibility_.collapse }
+	}
+}
+
+fn math_style_to_dom(math_style MathStyle) dom.CSSMathStyle_ {
+	return match math_style {
+		.normal { dom.CSSMathStyle_.normal }
+		.compact { dom.CSSMathStyle_.compact }
 	}
 }
 
