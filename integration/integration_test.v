@@ -1263,3 +1263,23 @@ fn test_grid_span_over_parsed_document() {
 	assert c_rect.x == g_rect.x + 200.0 // third column
 	assert c_rect.y == f_rect.y // same row
 }
+
+// Full-stack REAL StyleComputer (not the minimal cascade) over a parser-built document: the whole
+// pipeline (css_style_computer_for -> update_style -> bridge -> computed_value_for) resolves inline
+// styles + inheritance over the html-parser-built DOM tree.
+fn test_real_style_computer_over_parsed_document() {
+	doc := html.parse_document('<body style="color: navy"><div><p>text</p><span style="color: red">red</span></div></body>')
+	root := unsafe { &dom.Node(doc) }
+	body := css.query_selector(root, 'body') or { panic('no body') }
+	p := css.query_selector(root, 'p') or { panic('no p') }
+	span := css.query_selector(root, 'span') or { panic('no span') }
+	color := css.property_id_from_string('color') or { panic('color id') }
+
+	body_color := css.computed_value_for(body, color) or { panic('no computed body color') }
+	p_color := css.computed_value_for(p, color) or { panic('no computed p color') }
+	span_color := css.computed_value_for(span, color) or { panic('no computed span color') }
+
+	// color inherits from <body> through <div> to <p>; <span> overrides it inline -- all by the REAL StyleComputer.
+	assert p_color == body_color
+	assert span_color != body_color
+}
