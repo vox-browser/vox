@@ -7055,6 +7055,23 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		properties.set_property_without_modifying_flags(property_id, computed_value)
 	}
 
+	// FIXME (boundary): root-element font metrics for <html> (calculate_root_element_font_metrics) are
+	// omitted — they mutate StyleComputer state through a non-mut receiver and need the HTMLHtmlElement check.
+
+	// Compute the value of custom properties.
+	s.compute_custom_properties(mut properties, abstract_element)
+
+	// FIXME (boundary): clear_computation_context_caches, process_animation_definitions + the
+	// get_animations/collect_animation_into loop, compute_text_align, element.adjust_computed_style, and
+	// the transition steps (compute_transitioned_properties / start_needed_transitions) are omitted — they
+	// depend on animation/DOM surfaces not yet ported.
+
+	// Run automatic box type transformations.
+	s.transform_box_type_if_needed(mut properties, abstract_element)
+
+	// Apply any property-specific computed value logic.
+	s.resolve_effective_overflow_values(mut properties)
+
 	return properties
 }
 

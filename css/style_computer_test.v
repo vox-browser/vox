@@ -60,3 +60,22 @@ fn test_cascade_declarations_inline_style() {
 	padding_top := cascaded.property(padding_top_id) or { panic('padding-top not cascaded (shorthand not expanded)') }
 	assert padding_top.css_text == '10px'
 }
+
+// compute_properties turns cascaded values into computed values and runs the tail adjustments; here the
+// effective-overflow rule applies: overflow-y: scroll forces overflow-x: visible to compute to auto.
+fn test_compute_properties_resolves_effective_overflow() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	el.set_attribute_value('style', 'overflow-x: visible; overflow-y: scroll')
+	abstract_element := dom.AbstractElement.new(el, none)
+
+	s := StyleComputer.new(doc)
+	mut cascaded := CascadedProperties.new()
+	s.cascade_declarations(mut cascaded, abstract_element, []MatchingRule{}, CascadeOrigin.author,
+		Important.no, none, none, []PropertyID{})
+
+	mut computed := s.compute_properties(abstract_element, mut cascaded)
+	assert computed.overflow_y() == .scroll
+	// overflow-x: visible computes to auto because overflow-y is neither visible nor clip.
+	assert computed.overflow_x() == .auto_
+}
