@@ -862,6 +862,16 @@ pub:
 	dispatch_change_event CSSMediaQueryListDispatchChangeEventCallback = unsafe { nil }
 }
 
+// The DOM can't import css, so Document::update_style() runs the CSS style pass through this registered
+// callback. The css module installs it with `target` = the document pointer; update_style invokes it.
+pub type DocumentStyleUpdateCallback = fn (voidptr)
+
+pub struct DocumentStyleUpdateHook {
+pub:
+	target   voidptr                     = unsafe { nil }
+	callback DocumentStyleUpdateCallback = unsafe { nil }
+}
+
 pub struct BackgroundLayerData {}
 
 pub struct CSSSelector {
@@ -2502,6 +2512,7 @@ pub mut:
 	style_computer                                 &StyleComputer  = unsafe { nil }
 	font_computer                                  &FontComputer   = unsafe { nil }
 	style_sheets_                                  &StyleSheetList = unsafe { nil }
+	style_update_hook_                             ?DocumentStyleUpdateHook
 	needs_full_style_update                        bool
 	needs_full_layout_tree_update                  bool
 	is_running_update_layout                       bool
@@ -3673,6 +3684,10 @@ pub fn (mut d Document) obtain_theme_color() {
 
 // --- Style ---
 
+pub fn (mut d Document) set_style_update_hook(hook DocumentStyleUpdateHook) {
+	d.style_update_hook_ = hook
+}
+
 pub fn (mut d Document) update_style() {
 	// In the C++ implementation, this runs style computation recursively through
 	// the DOM tree, updating computed styles for all elements that need it.
@@ -3681,8 +3696,14 @@ pub fn (mut d Document) update_style() {
 	if !d.needs_full_style_update && !d.needs_animated_style_update {
 		return
 	}
-	// Stub: would call update_style_recursively on document tree,
-	// then clear needs_full_style_update flag.
+	// Run the CSS style pass over the tree through the registered hook (the css module can't be called
+	// directly from dom). FIXME: the invalidation bookkeeping, media-rule evaluation, animated-style
+	// update, and stacking-context tracking around it are still stubbed.
+	if hook := d.style_update_hook_ {
+		if hook.callback != unsafe { nil } {
+			hook.callback(hook.target)
+		}
+	}
 	d.needs_full_style_update = false
 }
 

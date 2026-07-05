@@ -107,6 +107,28 @@ fn cascaded_properties_from_dom(placeholder &dom.CSSCascadedProperties_) ?&Casca
 
 // --- StyleScope ---
 
+// --- Document style-update hook ---
+
+// The DOM->CSS callback DOM::Document.update_style() invokes: run the CSS style pass (recompute_style_for_subtree)
+// over the document's element tree. `target` is the &dom.Document passed at install time.
+fn document_style_update_callback(target voidptr) {
+	document := unsafe { &dom.Document(target) }
+	root_element := document.document_element() or { return }
+	mut style_computer := StyleComputer.new(document)
+	recompute_style_for_subtree(mut style_computer, root_element.as_node())
+}
+
+// Register the CSS style pass as DOM::Document.update_style()'s hook, so a plain doc.update_style() call
+// styles the whole tree. (dom cannot import css, so it calls back through this fn(voidptr), following the
+// same pattern as the CSSMediaQueryList registrations.)
+pub fn install_document_style_hook(document &dom.Document) {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_style_update_hook(dom.DocumentStyleUpdateHook{
+		target:   voidptr(document)
+		callback: document_style_update_callback
+	})
+}
+
 // The persistent css.StyleScope for `abstract_element`'s document/shadow root: created on first use and
 // cached on the DOM-side dom.StyleScope placeholder via its handle, so repeated style computations share
 // one scope (and its rule cache), as in Ladybird where the scope is owned by the Document/ShadowRoot.

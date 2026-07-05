@@ -252,3 +252,32 @@ fn test_recompute_style_for_subtree_inherits_down_levels() {
 	leaf_color := leaf_computed.property(.color, .no) or { panic('leaf did not inherit color') }
 	assert leaf_color.css_text == root_color.css_text
 }
+
+// DOM::Document.update_style() runs the CSS style pass over the whole tree through the installed hook:
+// after a single update_style() call, every element is styled and inherited color reaches a descendant.
+fn test_document_update_style_runs_css_pass_via_hook() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	root.set_attribute_value('style', 'color: blue')
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(child.as_node()) or { panic('append child failed: ${err}') }
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(root.as_node()) or { panic('append root failed: ${err}') }
+
+	install_document_style_hook(doc)
+	doc.needs_full_style_update = true
+	doc.update_style()
+
+	root_ae := dom.AbstractElement.new(root, none)
+	child_ae := dom.AbstractElement.new(child, none)
+	root_computed := computed_properties_from_dom(root_ae.computed_properties() or { panic('root not styled by update_style') }) or {
+		panic('root handle missing')
+	}
+	child_computed := computed_properties_from_dom(child_ae.computed_properties() or { panic('child not styled by update_style') }) or {
+		panic('child handle missing')
+	}
+	root_color := root_computed.property(.color, .no) or { panic('root has no color') }
+	child_color := child_computed.property(.color, .no) or { panic('child did not inherit color') }
+	assert child_color.css_text == root_color.css_text
+}
