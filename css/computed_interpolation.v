@@ -7928,11 +7928,25 @@ pub fn (s &StyleComputer) build_matching_rule_set(abstract_element dom.AbstractE
 }
 
 pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element dom.AbstractElement, mode ComputeStyleMode, matching_rule_set MatchingRuleSet) LogicalAliasMappingContext {
-	_ = s
-	_ = abstract_element
-	_ = mode
-	_ = matching_rule_set
-	return LogicalAliasMappingContext{}
+	// StyleComputer::compute_logical_alias_mapping_context (StyleComputer.cpp:1408): cascade only
+	// writing-mode + direction, normalize each to a concrete keyword, and build the flow-relative context
+	// used to resolve logical property aliases (e.g. margin-inline-start -> margin-left/right).
+	did_match_any_pseudo_element_rules := false
+	properties_to_cascade := [PropertyID.writing_mode, PropertyID.direction]
+	cascaded_properties := s.compute_cascaded_values(abstract_element, did_match_any_pseudo_element_rules,
+		mode, matching_rule_set, none, properties_to_cascade)
+
+	writing_mode_value := logical_alias_normalize_value(abstract_element, .writing_mode,
+		cascaded_properties.property(.writing_mode))
+	direction_value := logical_alias_normalize_value(abstract_element, .direction, cascaded_properties.property(.direction))
+
+	writing_mode_keyword := computed_interpolation_style_value_keyword(writing_mode_value) or { Keyword.horizontal_tb }
+	direction_keyword := computed_interpolation_style_value_keyword(direction_value) or { Keyword.ltr }
+
+	return LogicalAliasMappingContext{
+		writing_mode: keyword_to_writing_mode(writing_mode_keyword) or { WritingMode.horizontal_tb }
+		direction:    keyword_to_direction(direction_keyword) or { Direction.ltr }
+	}
 }
 
 pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?bool, scope &StyleScope) ?&ComputedProperties {

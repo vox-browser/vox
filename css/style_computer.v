@@ -150,3 +150,46 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 // NOTE: the outer `cascade_declarations` (StyleComputer.cpp:476, the matching-rules + inline-style
 // driver) is the method `(s &StyleComputer) cascade_declarations` in computed_interpolation.v — it
 // delegates each declaration to cascade_one_declaration above.
+
+// Map a CSS `writing-mode` keyword to the WritingMode enum (Ladybird's generated keyword_to_writing_mode).
+fn keyword_to_writing_mode(keyword Keyword) ?WritingMode {
+	return match keyword {
+		.horizontal_tb { WritingMode.horizontal_tb }
+		.vertical_rl { WritingMode.vertical_rl }
+		.vertical_lr { WritingMode.vertical_lr }
+		.sideways_rl { WritingMode.sideways_rl }
+		.sideways_lr { WritingMode.sideways_lr }
+		else { none }
+	}
+}
+
+// Map a CSS `direction` keyword to the Direction enum (Ladybird's generated keyword_to_direction).
+fn keyword_to_direction(keyword Keyword) ?Direction {
+	return match keyword {
+		.ltr { Direction.ltr }
+		.rtl { Direction.rtl }
+		else { none }
+	}
+}
+
+// The `normalize_value` lambda of StyleComputer::compute_logical_alias_mapping_context (StyleComputer.cpp:1409):
+// resolve a cascaded writing-mode/direction value to a concrete keyword, turning absent/inherit/unset/initial
+// into a usable value.
+// FIXME (boundary): upstream resolves inherit/unset to the inheritance parent's computed value; the parent's
+// full ComputedProperties isn't retrievable across the port's DOM surface (only a placeholder), so we fall
+// back to the property's initial value.
+fn logical_alias_normalize_value(abstract_element dom.AbstractElement, property_id PropertyID, value ?&dom.StyleValue) &dom.StyleValue {
+	_ = abstract_element
+	initial := computed_interpolation_property_initial_value(property_id)
+	if current := value {
+		if computed_interpolation_style_value_is_inherit(current)
+			|| computed_interpolation_style_value_is_unset(current) {
+			return initial
+		}
+		if computed_interpolation_style_value_is_initial(current) {
+			return initial
+		}
+		return current
+	}
+	return initial
+}

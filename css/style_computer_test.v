@@ -79,3 +79,23 @@ fn test_compute_properties_resolves_effective_overflow() {
 	// overflow-x: visible computes to auto because overflow-y is neither visible nor clip.
 	assert computed.overflow_x() == .auto_
 }
+
+// compute_logical_alias_mapping_context cascades only writing-mode + direction and maps them to the
+// flow-relative context used for resolving logical property aliases.
+fn test_compute_logical_alias_mapping_context() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	el.set_attribute_value('style', 'writing-mode: vertical-rl; direction: rtl')
+	abstract_element := dom.AbstractElement.new(el, none)
+
+	s := StyleComputer.new(doc)
+	// One (empty) author layer so the author-origin cascade runs and reads the element's inline style
+	// (the real build_matching_rule_set always yields at least the un-named author layer).
+	matching_rule_set := MatchingRuleSet{
+		author_rules: [LayerMatchingRules{}]
+	}
+	context := s.compute_logical_alias_mapping_context(abstract_element, ComputeStyleMode.normal,
+		matching_rule_set)
+	assert context.writing_mode == .vertical_rl
+	assert context.direction == .rtl
+}
