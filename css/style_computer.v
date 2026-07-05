@@ -193,3 +193,16 @@ fn logical_alias_normalize_value(abstract_element dom.AbstractElement, property_
 	}
 	return initial
 }
+
+// The compute-and-store core of DOM::Element::recompute_style (Element.cpp:855): compute the element's
+// style and store it (bridged) on the element, so descendants inherit through it and layout can read the
+// mirrored fields off the placeholder. The DOM-side Element.recompute_style is a stub because dom cannot
+// import css; this is its CSS half, meant to be driven top-down over the tree (parents before children).
+// FIXME: the style-flag resets, invalidation diffing (compute_required_invalidation), the
+// HTMLTableElement text-align fixup, display-change animation replay, and pseudo-element
+// (::before/::after/::selection/::backdrop) styles are omitted.
+pub fn (s &StyleComputer) recompute_style(mut abstract_element dom.AbstractElement) &ComputedProperties {
+	computed := s.compute_style(abstract_element)
+	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
+	return computed
+}

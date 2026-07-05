@@ -188,3 +188,37 @@ fn test_computed_properties_to_dom_mirrors_fields() {
 	// The handle still round-trips to the same css object.
 	assert voidptr(computed_properties_from_dom(placeholder) or { panic('handle missing') }) == voidptr(computed)
 }
+
+// recompute_style computes and STORES an element's style on the element (bridged), so a top-down pass
+// leaves each element styled and lets a child inherit from its already-stored parent -- the CSS half of
+// DOM::Element::recompute_style, driving the whole pipeline onto the DOM tree.
+fn test_recompute_style_stores_and_inherits() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	parent.set_attribute_value('style', 'color: red')
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut parent_node := parent.as_node()
+	child_node := child.as_node()
+	parent_node.append_child(child_node) or { panic('append failed: ${err}') }
+
+	s := StyleComputer.new(doc)
+
+	// Top-down: parent first (so its computed style is stored before the child inherits).
+	mut parent_ae := dom.AbstractElement.new(parent, none)
+	s.recompute_style(mut parent_ae)
+	mut child_ae := dom.AbstractElement.new(child, none)
+	s.recompute_style(mut child_ae)
+
+	// Both elements now carry a stored (bridged) computed style.
+	stored_parent := parent_ae.computed_properties() or { panic('parent style not stored') }
+	stored_child := child_ae.computed_properties() or { panic('child style not stored') }
+	parent_computed := computed_properties_from_dom(stored_parent) or { panic('parent handle missing') }
+	child_computed := computed_properties_from_dom(stored_child) or { panic('child handle missing') }
+
+	// The child inherited the parent's computed color from the stored parent style.
+	parent_color := parent_computed.property(.color, .no) or { panic('parent has no computed color') }
+	child_color := child_computed.property(.color, .no) or { panic('child did not inherit color') }
+	assert child_color.css_text == parent_color.css_text
+	// The stored parent style also mirrors layout fields (default display is not none for a div's initial).
+	assert stored_parent.display().is_none() == false
+}
