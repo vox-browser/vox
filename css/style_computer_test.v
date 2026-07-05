@@ -340,3 +340,32 @@ fn test_computed_value_for_inline_and_inheritance() {
 	assert para_color == body_color
 	assert span_color != body_color
 }
+
+// With the UA stylesheet wired in, the real StyleComputer applies user-agent display defaults
+// (head { display: none }, li { display: list-item }, div { display: block }), not just inline/inheritance.
+fn test_ua_default_stylesheet_applies_display() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut head := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'head') or { panic('${err}') }
+	mut body := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'body') or { panic('${err}') }
+	mut div := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	mut li := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'li') or { panic('${err}') }
+	mut span := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('append html failed: ${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(head.as_node()) or { panic('append head failed: ${err}') }
+	html_node.append_child(body.as_node()) or { panic('append body failed: ${err}') }
+	mut body_node := body.as_node()
+	body_node.append_child(div.as_node()) or { panic('append div failed: ${err}') }
+	body_node.append_child(li.as_node()) or { panic('append li failed: ${err}') }
+	body_node.append_child(span.as_node()) or { panic('append span failed: ${err}') }
+
+	display := property_id_from_string('display') or { panic('display id') }
+	assert computed_value_for(head, display) or { panic('no head display') } == 'none'
+	assert computed_value_for(li, display) or { panic('no li display') } == 'list-item'
+	assert computed_value_for(div, display) or { panic('no div display') } == 'block'
+	// span has no UA rule; inline is the initial value.
+	assert computed_value_for(span, display) or { panic('no span display') } == 'inline'
+}

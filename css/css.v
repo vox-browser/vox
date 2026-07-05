@@ -467,6 +467,13 @@ pub fn (r RequiredInvalidationAfterStyleChange) is_none() bool {
 // --- StyleComputer user agent source ---
 
 pub fn user_agent_style_sheet_source(url string) ?string {
+	// The main CSS user-agent stylesheet is embedded verbatim from Ladybird's CSS/Default.css
+	// (css/ua_default.css). This is what gives the real StyleComputer its UA cascade origin, so unstyled
+	// elements get their defaults (div { display: block }, head { display: none }, li { display: list-item }...).
+	// FIXME: QuirksMode.css / MathML/Default.css / SVG/Default.css are not embedded yet.
+	if url == 'CSS/Default.css' {
+		return user_agent_stylesheet_source
+	}
 	return none
 }
 
