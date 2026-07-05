@@ -233,3 +233,22 @@ pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.N
 		style_computer.pop_ancestor(element)
 	}
 }
+
+// The computed value of `property_id` for `element`, serialized — the real-StyleComputer equivalent of the
+// from-scratch minimal `cascaded_value_for`. Runs a full style pass over the element's document (so
+// inheritance from ancestors resolves), then reads the element's stored computed value.
+// NOTE: UA-default rules are NOT applied yet (the UA stylesheet is not embedded — user_agent_style_sheet_source
+// returns none), so this reflects inline styles + author stylesheets (when attached to the document) +
+// inheritance + initial values, but not user-agent display/etc. defaults.
+pub fn computed_value_for(element &dom.Element, property_id PropertyID) ?string {
+	mut document := element.as_node().document()
+	css_style_computer_for(document)
+	document.needs_full_style_update = true
+	document.update_style()
+
+	abstract_element := dom.AbstractElement.new(element, none)
+	dom_computed := abstract_element.computed_properties() or { return none }
+	computed := computed_properties_from_dom(dom_computed) or { return none }
+	value := computed.property(property_id, .no) or { return none }
+	return value.css_text
+}

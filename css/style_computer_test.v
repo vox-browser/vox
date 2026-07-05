@@ -311,3 +311,32 @@ fn test_css_style_computer_for_caches_and_autowires() {
 		panic('child has no computed color after auto-wired update_style')
 	}
 }
+
+// computed_value_for is the real-StyleComputer cascade query (drop-in for the minimal cascaded_value_for):
+// a full style pass over the document resolves inline styles + inheritance, read back per element.
+fn test_computed_value_for_inline_and_inheritance() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut body := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'body') or { panic('${err}') }
+	body.set_attribute_value('style', 'color: navy')
+	mut para := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic('${err}') }
+	mut span := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	span.set_attribute_value('style', 'color: red')
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('append html failed: ${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(body.as_node()) or { panic('append body failed: ${err}') }
+	mut body_node := body.as_node()
+	body_node.append_child(para.as_node()) or { panic('append p failed: ${err}') }
+	body_node.append_child(span.as_node()) or { panic('append span failed: ${err}') }
+
+	color := property_id_from_string('color') or { panic('color id') }
+	body_color := computed_value_for(body, color) or { panic('no computed color for body') }
+	para_color := computed_value_for(para, color) or { panic('no computed color for p') }
+	span_color := computed_value_for(span, color) or { panic('no computed color for span') }
+
+	// p (no color) inherits body's navy; span overrides it inline.
+	assert para_color == body_color
+	assert span_color != body_color
+}
