@@ -281,3 +281,33 @@ fn test_document_update_style_runs_css_pass_via_hook() {
 	child_color := child_computed.property(.color, .no) or { panic('child did not inherit color') }
 	assert child_color.css_text == root_color.css_text
 }
+
+// css_style_computer_for caches one persistent StyleComputer per document and installs the update hook,
+// so plain doc.update_style() runs the CSS pass without a separate install_document_style_hook call.
+fn test_css_style_computer_for_caches_and_autowires() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	root.set_attribute_value('style', 'color: teal')
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(child.as_node()) or { panic('append child failed: ${err}') }
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(root.as_node()) or { panic('append root failed: ${err}') }
+
+	// Same persistent StyleComputer on repeat calls.
+	first := css_style_computer_for(doc)
+	second := css_style_computer_for(doc)
+	assert voidptr(first) == voidptr(second)
+
+	// The hook was installed as a side effect, so update_style works without an explicit install call.
+	doc.needs_full_style_update = true
+	doc.update_style()
+	child_ae := dom.AbstractElement.new(child, none)
+	child_computed := computed_properties_from_dom(child_ae.computed_properties() or {
+		panic('child not styled by auto-wired update_style')
+	}) or { panic('child handle missing') }
+	if _ := child_computed.property(.color, .no) {
+	} else {
+		panic('child has no computed color after auto-wired update_style')
+	}
+}

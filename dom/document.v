@@ -799,7 +799,12 @@ pub struct DisplayList {}
 
 // CSS stubs
 @[heap]
-pub struct StyleComputer {}
+pub struct StyleComputer {
+pub mut:
+	// dom<->css bridge: opaque handle to the persistent css.StyleComputer for this document (Ladybird's
+	// Document owns its StyleComputer). Set/read by the css module via unsafe cast. See css/dom_css_bridge.v.
+	css_handle voidptr = unsafe { nil }
+}
 
 @[heap]
 pub struct FontComputer {}

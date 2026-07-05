@@ -109,12 +109,31 @@ fn cascaded_properties_from_dom(placeholder &dom.CSSCascadedProperties_) ?&Casca
 
 // --- Document style-update hook ---
 
+// The persistent css.StyleComputer for `document`, created on first use and cached on the document's
+// dom.StyleComputer placeholder via its handle (Ladybird's Document owns its StyleComputer, so the
+// ancestor filter / viewport / caches persist across style updates). Obtaining it also installs the
+// update-style hook, so `css_style_computer_for(doc)` is all a css-aware caller needs to make plain
+// doc.update_style() run the CSS style pass.
+pub fn css_style_computer_for(document &dom.Document) &StyleComputer {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	dom_style_computer := mutable_document.style_computer
+	if dom_style_computer != unsafe { nil } && dom_style_computer.css_handle != unsafe { nil } {
+		return unsafe { &StyleComputer(dom_style_computer.css_handle) }
+	}
+	style_computer := StyleComputer.new(document)
+	mutable_document.style_computer = &dom.StyleComputer{
+		css_handle: voidptr(style_computer)
+	}
+	install_document_style_hook(document)
+	return style_computer
+}
+
 // The DOM->CSS callback DOM::Document.update_style() invokes: run the CSS style pass (recompute_style_for_subtree)
 // over the document's element tree. `target` is the &dom.Document passed at install time.
 fn document_style_update_callback(target voidptr) {
 	document := unsafe { &dom.Document(target) }
 	root_element := document.document_element() or { return }
-	mut style_computer := StyleComputer.new(document)
+	mut style_computer := css_style_computer_for(document)
 	recompute_style_for_subtree(mut style_computer, root_element.as_node())
 }
 
