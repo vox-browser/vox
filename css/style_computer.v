@@ -147,28 +147,6 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 	}
 }
 
-// https://drafts.csswg.org/css-cascade — StyleComputer::cascade_declarations (StyleComputer.cpp:476).
-// Cascade the `matching_rules` (in order) plus, for the author origin on a non-pseudo element, the
-// element's inline style, into `cascaded_properties` at the given origin/importance.
-pub fn cascade_declarations(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, matching_rules []MatchingRule, cascade_origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
-	for matching_rule in matching_rules {
-		rule := matching_rule.rule or { continue }
-		declaration := rule.style() or { continue }
-		cascade_one_declaration(mut cascaded_properties, abstract_element, declaration, cascade_origin,
-			important, layer_name, logical_alias_mapping_context, properties_to_cascade)
-	}
-
-	// Inline style participates in the author origin (and not for pseudo-elements).
-	mut has_pseudo_element := false
-	if _ := abstract_element.pseudo_element() {
-		has_pseudo_element = true
-	}
-	if cascade_origin == .author && !has_pseudo_element {
-		style_text := abstract_element.element().get_attribute('style') or { return }
-		if style_text.len > 0 {
-			inline_declaration := parse_css_property_declaration_block_with_parser(style_text)
-			cascade_one_declaration(mut cascaded_properties, abstract_element, inline_declaration,
-				cascade_origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
-		}
-	}
-}
+// NOTE: the outer `cascade_declarations` (StyleComputer.cpp:476, the matching-rules + inline-style
+// driver) is the method `(s &StyleComputer) cascade_declarations` in computed_interpolation.v — it
+// delegates each declaration to cascade_one_declaration above.

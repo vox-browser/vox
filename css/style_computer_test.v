@@ -44,8 +44,9 @@ fn test_cascade_declarations_inline_style() {
 	el.set_attribute_value('style', 'color: red; padding: 10px')
 	abstract_element := dom.AbstractElement.new(el, none)
 
+	s := StyleComputer.new(doc)
 	mut cascaded := CascadedProperties.new()
-	cascade_declarations(mut cascaded, abstract_element, []MatchingRule{}, CascadeOrigin.author,
+	s.cascade_declarations(mut cascaded, abstract_element, []MatchingRule{}, CascadeOrigin.author,
 		Important.no, none, none, []PropertyID{})
 
 	// The direct `color` declaration is cascaded.

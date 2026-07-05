@@ -8043,51 +8043,28 @@ fn style_computer_css_wide_keyword_from_declaration_text(value string) ?Keyword 
 
 pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, rules []MatchingRule, origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) {
 	_ = s
-	_ = logical_alias_mapping_context
+	// StyleComputer::cascade_declarations (StyleComputer.cpp:476): cascade each matching rule's
+	// declaration, then — for the author origin on a non-pseudo element — the element's inline style.
+	// Each declaration is handled by cascade_one_declaration (the inner cascade_style_declaration lambda),
+	// which filters by importance / pseudo-element support / properties_to_cascade, expands shorthands,
+	// maps logical aliases to physical properties, and reverts or sets each longhand.
 	for match_rule in rules {
 		rule := match_rule.rule or { continue }
 		declaration := rule.style() or { continue }
-
-		for property in declaration.properties {
-			property_id := property_id_from_string(property.name) or { continue }
-			if properties_to_cascade.len != 0 && property_id !in properties_to_cascade {
-				continue
-			}
-			property_importance := if property.important { Important.yes } else { Important.no }
-			if important != property_importance {
-				continue
-			}
-
-			mut property_value := property.style_value or {
-				parse_css_value(ParsingParams{
-					document: abstract_element.document()
-				}, property.value, property_id) or { continue }
-			}
-
-			if keyword := style_computer_css_wide_keyword_from_declaration_text(property.value) {
-				if keyword == .revert {
-					cascaded_properties.revert_property(property_id, important, origin)
-					continue
-				}
-				if keyword == .revert_layer {
-					cascaded_properties.revert_layer_property(property_id, important, layer_name)
-					continue
-				}
-			}
-
-			StyleComputer.for_each_property_expanding_shorthands(property_id, property_value, fn [mut cascaded_properties, important, origin, layer_name, declaration] (longhand_id PropertyID, longhand_value &dom.StyleValue) {
-				// Upstream only suppresses a previously-seen longhand when the later declaration is a
-				// PendingSubstitutionStyleValue. DOM-side StyleValue does not expose that typed state here yet,
-				// so concrete later declarations keep overriding earlier ones.
-				cascaded_properties.set_property(longhand_id, longhand_value, important, origin,
-					layer_name, voidptr(declaration))
-			})
-		}
+		cascade_one_declaration(mut cascaded_properties, abstract_element, declaration, origin,
+			important, layer_name, logical_alias_mapping_context, properties_to_cascade)
 	}
 
 	if origin == .author && abstract_element.pseudo_element() == none {
-		// The DOM-side inline style object is still an opaque CSSStyleProperties_
-		// placeholder in this port, so inline declarations cannot be read here yet.
+		// Inline style is the element's `style` attribute parsed as a declaration block. (Upstream reads
+		// element().inline_style(); the port's DOM inline-style object is an opaque placeholder, so parse
+		// the attribute text instead.)
+		style_text := abstract_element.element().get_attribute('style') or { return }
+		if style_text.len > 0 {
+			inline_declaration := parse_css_property_declaration_block_with_parser(style_text)
+			cascade_one_declaration(mut cascaded_properties, abstract_element, inline_declaration,
+				origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
+		}
 	}
 }
 
