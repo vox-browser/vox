@@ -101,3 +101,26 @@ fn test_text_node_layout() {
 	text_layout := text.as_node().layout_node() or { panic('text has no layout node') }
 	assert text_layout.is_text_node()
 }
+
+// A block whose content is inline (text) gets a single line box's height (line-height ~= 1.2 * font-size).
+fn test_inline_content_height() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut para := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic('${err}') }
+	text := doc.create_text_node('Hello world')
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(para.as_node()) or { panic('${err}') }
+	mut para_node := para.as_node()
+	para_node.append_child(text.as_node()) or { panic('${err}') }
+
+	result := run_document_layout(doc, 800.0) or { panic('no layout result') }
+	para_box := result.root.first_child() or { panic('no p box') }
+	para_nws := para_box.as_node_with_style() or { panic('p not nws') }
+	para_uv := result.used_values_for(para_nws) or { panic('no p used values') }
+	// Default font-size is 16px -> line-height 16 * 1.2 = 19.2 (a non-zero height from text content).
+	// CSSPixels is fixed-point, so allow for its rounding.
+	height := para_uv.content_height().to_double()
+	assert height > 19.15 && height < 19.25
+}

@@ -167,53 +167,80 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 	compute_block_used_width(computed, mut used_values, containing_block_width)
 	content_width := used_values.content_width().to_double()
 
-	// Lay out block children top-to-bottom. Adjacent siblings' vertical margins collapse (CSS 2.1 §8.3.1):
-	// the previous child's bottom margin is carried and collapsed with the next child's top margin.
-	// FIXME: parent-child margin collapsing (first/last child margins collapsing through the parent) is not
-	// modelled — the first child's top margin and the last child's bottom margin apply as-is.
-	mut cursor_y := 0.0
-	mut carried_bottom_margin := 0.0
-	mut has_previous_child := false
 	box_as_node := unsafe { &Node(box) }
-	for child_node in box_as_node.children() {
-		child := child_node.as_node_with_style() or { continue }
-		layout_block_flow(mut state, child, content_width)
 
-		mut child_used_values := state.get_mutable(child)
-		child_margin_top := child_used_values.margin_top.to_double()
-		if has_previous_child {
-			// Collapse the previous child's bottom margin with this child's top margin (§8.3.1).
-			cursor_y += collapse_margins([carried_bottom_margin, child_margin_top])
-		} else {
-			cursor_y += child_margin_top
-		}
-
-		// cursor_y is now at the child's border-box top; position its content area inside that.
-		content_x := child_used_values.margin_left.to_double() + child_used_values.border_left.to_double() +
-			child_used_values.padding_left.to_double()
-		content_y := cursor_y + child_used_values.border_top.to_double() +
-			child_used_values.padding_top.to_double()
-		child_used_values.set_content_offset(css.CSSPixelPoint.from_values(content_x, content_y))
-		child_used_values.set_containing_block_used_values(used_values)
-
-		// Advance past the child's border box (not its margins); carry its bottom margin for the next collapse.
-		cursor_y += child_used_values.border_box_height().to_double()
-		carried_bottom_margin = child_used_values.margin_bottom.to_double()
-		has_previous_child = true
-	}
-	// The last child's (uncollapsed) bottom margin contributes to the parent's content height.
-	if has_previous_child {
-		cursor_y += carried_bottom_margin
-	}
-
-	// Height (CSS 2.1 §10.6): auto height is the accumulated children; a definite (absolute) height is used.
-	mut height := if property_is_auto(computed, .height) {
-		cursor_y
+	// Establish the content height from the box's children. FIXME: mixed block+inline content (which needs
+	// anonymous block boxes) is not handled — a box with any inline (text) child is laid out as an inline
+	// formatting context, otherwise as a block formatting context.
+	mut content_height_from_children := 0.0
+	if box_has_inline_content(box_as_node) {
+		// Inline formatting context (first slice): lay the inline content out as a single line box of the
+		// computed line-height. FIXME: no text measurement, line breaking/wrapping, multiple lines,
+		// baselines, or per-fragment positioning yet.
+		content_height_from_children = computed_line_height_px(computed)
 	} else {
-		// FIXME: percentage heights need a definite containing-block height; basis 0 here.
-		computed.length_percentage_to_px(.height, 0.0) or { cursor_y }
+		// Block formatting context: stack block children top-to-bottom, collapsing adjacent siblings'
+		// vertical margins (CSS 2.1 §8.3.1) — carry the previous child's bottom margin and collapse it with
+		// the next child's top margin. FIXME: parent-child margin collapsing not modelled.
+		mut cursor_y := 0.0
+		mut carried_bottom_margin := 0.0
+		mut has_previous_child := false
+		for child_node in box_as_node.children() {
+			child := child_node.as_node_with_style() or { continue }
+			layout_block_flow(mut state, child, content_width)
+
+			mut child_used_values := state.get_mutable(child)
+			child_margin_top := child_used_values.margin_top.to_double()
+			if has_previous_child {
+				cursor_y += collapse_margins([carried_bottom_margin, child_margin_top])
+			} else {
+				cursor_y += child_margin_top
+			}
+
+			// cursor_y is now at the child's border-box top; position its content area inside that.
+			content_x := child_used_values.margin_left.to_double() +
+				child_used_values.border_left.to_double() + child_used_values.padding_left.to_double()
+			content_y := cursor_y + child_used_values.border_top.to_double() +
+				child_used_values.padding_top.to_double()
+			child_used_values.set_content_offset(css.CSSPixelPoint.from_values(content_x, content_y))
+			child_used_values.set_containing_block_used_values(used_values)
+
+			// Advance past the child's border box (not margins); carry its bottom margin for the next collapse.
+			cursor_y += child_used_values.border_box_height().to_double()
+			carried_bottom_margin = child_used_values.margin_bottom.to_double()
+			has_previous_child = true
+		}
+		if has_previous_child {
+			cursor_y += carried_bottom_margin
+		}
+		content_height_from_children = cursor_y
+	}
+
+	// Height (CSS 2.1 §10.6): auto height is the content height from children; a definite (absolute) height
+	// is used as-is. FIXME: percentage heights need a definite containing-block height; basis 0 here.
+	mut height := if property_is_auto(computed, .height) {
+		content_height_from_children
+	} else {
+		computed.length_percentage_to_px(.height, 0.0) or { content_height_from_children }
 	}
 	// §10.7: clamp to [min-height, max-height].
 	height = clamp_to_min_max(computed, .min_height, .max_height, height, 0.0)
 	used_values.set_content_height(css_px(height))
+}
+
+// Whether `box_node` has inline-level (text) content that establishes an inline formatting context.
+// FIXME: also detect inline-level element boxes, not just text nodes.
+fn box_has_inline_content(box_node &Node) bool {
+	for child in box_node.children() {
+		if child.is_text_node() {
+			return true
+		}
+	}
+	return false
+}
+
+// The computed line-height in px. FIXME: read the line-height property (normal / <number> / <length>);
+// currently approximates `normal` as 1.2 * font-size.
+fn computed_line_height_px(computed &css.ComputedProperties) f64 {
+	return computed.resolved_font_size_px() * 1.2
 }
