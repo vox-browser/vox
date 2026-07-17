@@ -82,7 +82,8 @@ fn (n &NamedNodeMap) attribute_index_by_name(qualified_name string) ?int {
 fn (n &NamedNodeMap) attribute_index_by_namespace(namespace_ ?string, local_name string) ?int {
 	normalized_namespace := normalize_attribute_namespace(namespace_)
 	for index, attribute in n.attrs {
-		if attribute.namespace_uri_ == normalized_namespace && attribute.local_name_ == local_name {
+		if option_string_equal(attribute.namespace_uri_, normalized_namespace)
+			&& attribute.local_name_ == local_name {
 			return index
 		}
 	}
@@ -802,6 +803,20 @@ pub fn is_valid_custom_element_name(name string) bool {
 fn namespace_matches(namespace_ ?string, value string) bool {
 	ns := namespace_ or { return false }
 	return ns == value
+}
+
+// Compare two optional strings for equality without using `?string == ?string`, which triggers a V
+// codegen bug (the auto-generated `builtin___option_string__eq` is sometimes emitted as a call but never
+// defined, breaking the C build). Both none is equal; a value vs none is not.
+fn option_string_equal(a ?string, b ?string) bool {
+	if a_value := a {
+		b_value := b or { return false }
+		return a_value == b_value
+	}
+	if _ := b {
+		return false
+	}
+	return true
 }
 
 // https://dom.spec.whatwg.org/#validate-and-extract
@@ -3826,7 +3841,7 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 
 	if local_name == 'slot' {
 		// 1. If value is oldValue, then return.
-		if value == old_value {
+		if option_string_equal(value, old_value) {
 			return
 		}
 

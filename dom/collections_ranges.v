@@ -724,7 +724,7 @@ pub fn (mut n NamedNodeMap) set_attribute(attribute &Attr_) !&Attr_ {
 	}
 	// 3. Let oldAttr be the result of getting an attribute given attr's namespace, attr's local name, and element.
 	for index, old_attribute in n.attrs {
-		if old_attribute.namespace_uri_ == attribute.namespace_uri_
+		if option_string_equal(old_attribute.namespace_uri_, attribute.namespace_uri_)
 			&& old_attribute.local_name_ == attribute.local_name_ {
 			// 4. If oldAttr is attr, return attr.
 			if old_attribute == attribute {
@@ -1825,12 +1825,13 @@ pub fn (mut p ParentNode) get_elements_by_tag_name_ns(namespace_ ?string, local_
 	// 4. Otherwise, if localName is "*" (U+002A), return a HTMLCollection rooted at root, whose filter matches descendant elements whose namespace is namespace.
 	if local_name == '*' {
 		return HTMLCollection.create(&p, .descendants, fn [normalized_namespace] (element &Element) bool {
-			return element.namespace_uri() == normalized_namespace
+			return option_string_equal(element.namespace_uri(), normalized_namespace)
 		}, never_sort_elements)
 	}
 	// 5. Otherwise, return a HTMLCollection rooted at root, whose filter matches descendant elements whose namespace is namespace and local name is localName.
 	return HTMLCollection.create(&p, .descendants, fn [normalized_namespace, local_name] (element &Element) bool {
-		return element.namespace_uri() == normalized_namespace && element.local_name() == local_name
+		return option_string_equal(element.namespace_uri(), normalized_namespace)
+			&& element.local_name() == local_name
 	}, never_sort_elements)
 }
 

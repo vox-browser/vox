@@ -2,6 +2,20 @@ module css
 
 import dom
 
+// Compare two optional strings for equality without using `?string == ?string`, which triggers a V
+// codegen bug (the auto-generated `builtin___option_string__eq` is sometimes emitted as a call but never
+// defined, breaking the C build). Both none is equal; a value vs none is not.
+fn option_string_equal(a ?string, b ?string) bool {
+	if a_value := a {
+		b_value := b or { return false }
+		return a_value == b_value
+	}
+	if _ := b {
+		return false
+	}
+	return true
+}
+
 // --- CustomPropertyData ---
 
 const custom_property_data_max_ancestor_count = 32
@@ -173,7 +187,7 @@ pub fn (mut c CascadedProperties) revert_layer_property(property_id PropertyID, 
 	mut filtered := []CascadedPropertiesEntry{}
 	for entry in entries {
 		if entry.property.property_id == property_id && entry.property.important == important
-			&& entry.layer_name == layer_name {
+			&& option_string_equal(entry.layer_name, layer_name) {
 			continue
 		}
 		filtered << entry
@@ -237,7 +251,7 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 	mut entries := c.properties_[property_id] or { []CascadedPropertiesEntry{} }
 	for index := entries.len - 1; index >= 0; index-- {
 		mut entry := entries[index]
-		if entry.origin == origin && entry.layer_name == layer_name {
+		if entry.origin == origin && option_string_equal(entry.layer_name, layer_name) {
 			if entry.property.important == .yes && important == .no {
 				return
 			}
