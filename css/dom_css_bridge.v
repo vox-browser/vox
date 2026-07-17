@@ -107,6 +107,42 @@ fn cascaded_properties_from_dom(placeholder &dom.CSSCascadedProperties_) ?&Casca
 
 // --- StyleScope ---
 
+// --- Author stylesheets ---
+
+// A minimal css-side holder for a document's author stylesheets, cached on the document via an opaque
+// handle. Deliberately NOT css.StyleSheetList: using that type's full method surface (add_a_css_style_sheet
+// -> media evaluation, style invalidation, attribute code) drags in many `?string ==` comparisons that
+// trip a V codegen bug. This holder only needs to store + iterate the parsed sheets for rule matching.
+@[heap]
+struct DocumentAuthorStyleSheets {
+mut:
+	sheets []&CSSStyleSheet
+}
+
+// The document's author-stylesheet holder, created on first use and cached on the document via its handle.
+fn css_author_style_sheets_for(document &dom.Document) &DocumentAuthorStyleSheets {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	if mutable_document.author_style_sheets_handle != unsafe { nil } {
+		return unsafe { &DocumentAuthorStyleSheets(mutable_document.author_style_sheets_handle) }
+	}
+	holder := &DocumentAuthorStyleSheets{}
+	mutable_document.author_style_sheets_handle = voidptr(holder)
+	return holder
+}
+
+// Parse `css_text` as an author stylesheet and attach it to `document`, so the real StyleComputer matches
+// its rules (author cascade origin). The css-aware equivalent of the minimal cascade taking explicit rules
+// — the html parser can't build css.CSSStyleSheet objects (it doesn't import css), so author sheets are
+// attached here by css-aware callers.
+pub fn add_document_author_style_sheet(document &dom.Document, css_text string) {
+	holder := css_author_style_sheets_for(document)
+	sheet := parse_css_stylesheet_with_parser(css_text, none)
+	// The holder is @[heap] (stable address) reached through a cached handle; append through the pointer.
+	unsafe {
+		holder.sheets << sheet
+	}
+}
+
 // --- Document style-update hook ---
 
 // The persistent css.StyleComputer for `document`, created on first use and cached on the document's

@@ -369,3 +369,32 @@ fn test_ua_default_stylesheet_applies_display() {
 	// span has no UA rule; inline is the initial value.
 	assert computed_value_for(span, display) or { panic('no span display') } == 'inline'
 }
+
+// The real StyleComputer matches an author stylesheet attached to the document (author cascade origin):
+// a `.card { color: navy }` rule applies to a matching element and inherits to its child, distinct from
+// an unmatched element's initial color.
+fn test_real_pipeline_matches_author_stylesheet() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(doc, '.card { color: navy }')
+
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut card := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	card.set_attribute_value('class', 'card')
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic('${err}') }
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('append html failed: ${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(card.as_node()) or { panic('append card failed: ${err}') }
+	mut card_node := card.as_node()
+	card_node.append_child(child.as_node()) or { panic('append child failed: ${err}') }
+
+	color := property_id_from_string('color') or { panic('color id') }
+	html_color := computed_value_for(html_el, color) or { panic('no html color') }
+	card_color := computed_value_for(card, color) or { panic('no card color') }
+	child_color := computed_value_for(child, color) or { panic('no child color') }
+
+	// .card matched the author rule (navy), distinct from html's initial color; child inherits card's navy.
+	assert card_color != html_color
+	assert child_color == card_color
+}

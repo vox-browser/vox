@@ -430,8 +430,15 @@ pub fn (scope &StyleScope) stylesheets_for_cascade_origin(cascade_origin Cascade
 			}
 		}
 		.author {
-			style_scope_for_each_active_css_style_sheet_boundary(scope, fn [mut sheets] (sheet &CSSStyleSheet) {
-				sheets << sheet
+			// V closures capture by value, so a `fn [mut sheets] { sheets << sheet }` append is lost.
+			// Collect through a captured pointer to the local array instead.
+			sheets_ptr := &sheets
+			style_scope_for_each_active_css_style_sheet_boundary(scope, fn [sheets_ptr] (sheet &CSSStyleSheet) {
+				unsafe {
+					mut collected := *sheets_ptr
+					collected << sheet
+					*sheets_ptr = collected
+				}
 			})
 		}
 		else {}
@@ -926,12 +933,15 @@ fn style_scope_user_style_source_boundary(document &dom.Document) ?string {
 }
 
 fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callback fn (&CSSStyleSheet)) {
-	_ = scope
-	_ = callback
-	// Boundary for C++ StyleScope::for_each_active_css_style_sheet(), which
-	// calls DOM::ShadowRoot::for_each_active_css_style_sheet() or
-	// DOM::Document::for_each_active_css_style_sheet(). DOM currently exposes
-	// DOM-local CSSStyleSheet placeholders, not css.CSSStyleSheet objects.
+	// C++ StyleScope::for_each_active_css_style_sheet() calls Document/ShadowRoot::for_each_active_css_style_sheet().
+	// The DOM stores dom-local CSSStyleSheet placeholders, so the real css.CSSStyleSheet objects live in the
+	// author-stylesheet holder bridged onto the document (css_author_style_sheets_for). Iterate those.
+	// FIXME: shadow-root scopes and disabled/alternate flags aren't handled yet.
+	document := scope.document() or { return }
+	holder := css_author_style_sheets_for(document)
+	for sheet in holder.sheets {
+		callback(sheet)
+	}
 }
 
 fn style_scope_pseudo_element_from_dom(pseudo_element dom.PseudoElement) PseudoElement {

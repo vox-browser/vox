@@ -2518,6 +2518,9 @@ pub mut:
 	font_computer                                  &FontComputer   = unsafe { nil }
 	style_sheets_                                  &StyleSheetList = unsafe { nil }
 	style_update_hook_                             ?DocumentStyleUpdateHook
+	// dom<->css bridge: opaque handle to the css-side holder of this document's author stylesheets, which
+	// the real StyleComputer's author cascade origin reads. See css/dom_css_bridge.v.
+	author_style_sheets_handle                     voidptr = unsafe { nil }
 	needs_full_style_update                        bool
 	needs_full_layout_tree_update                  bool
 	is_running_update_layout                       bool
