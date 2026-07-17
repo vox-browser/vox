@@ -520,11 +520,7 @@ pub mut:
 	stub LayoutStub
 }
 
-@[heap]
-pub struct LayoutState {
-pub mut:
-	stub LayoutStub
-}
+// The real Layout::LayoutState is defined in layout/layout_state.v.
 
 @[heap]
 pub struct LayoutStateUsedValues {
@@ -736,11 +732,7 @@ pub mut:
 	stub LayoutStub
 }
 
-@[heap]
-pub struct SizeConstraint {
-pub mut:
-	stub LayoutStub
-}
+// The real Layout::SizeConstraint enum is defined in layout/layout_state.v.
 
 @[heap]
 pub struct SpaceDistributionPhase {
@@ -862,11 +854,7 @@ pub mut:
 	stub LayoutStub
 }
 
-@[heap]
-pub struct UsedValues {
-pub mut:
-	stub LayoutStub
-}
+// The real Layout::LayoutState::UsedValues is defined in layout/layout_state.v.
 
 @[heap]
 pub struct VideoBox {
