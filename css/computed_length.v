@@ -45,6 +45,49 @@ pub fn computed_length_px(element &dom.Element, property_id PropertyID, author_r
 	return none // FIXME: viewport units need the viewport size
 }
 
+// Resolve a box-model length/percentage property (margin/padding/border-width/width/height/inset...) from
+// THIS computed style to px, for the real layout engine (which holds a css.ComputedProperties, not a DOM
+// element). `percentage_basis_px` is the reference for `%` (the containing block's inline size for
+// horizontal box-model properties, block size for vertical). Returns none for `auto`, other keywords, and
+// viewport/rem units (the layout algorithm handles auto; FIXME: rem/viewport need root/viewport metrics).
+pub fn (c &ComputedProperties) length_percentage_to_px(property_id PropertyID, percentage_basis_px f64) ?f64 {
+	value := c.property(property_id, .yes) or { return none }
+	typed := parse_css_value_logic(property_id, value.css_text) or { return none }
+	if typed.is_percentage() {
+		return percentage_basis_px * typed.as_percentage().percentage().value() / 100.0
+	}
+	if !typed.is_length() {
+		return none
+	}
+	length := typed.as_length().length()
+	if length.is_absolute() {
+		return length.absolute_length_to_px().to_double()
+	}
+	unit := length.unit_name()
+	raw := length.raw_value()
+	font_px := c.resolved_font_size_px()
+	if unit == 'em' {
+		return raw * font_px
+	}
+	if unit == 'ex' || unit == 'ch' {
+		return raw * font_px * 0.5 // approximation
+	}
+	return none
+}
+
+// This computed style's font-size in px (already absolute in a computed style). Falls back to 16px.
+pub fn (c &ComputedProperties) resolved_font_size_px() f64 {
+	value := c.property(.font_size, .yes) or { return 16.0 }
+	typed := parse_css_value_logic(.font_size, value.css_text) or { return 16.0 }
+	if typed.is_length() {
+		length := typed.as_length().length()
+		if length.is_absolute() {
+			return length.absolute_length_to_px().to_double()
+		}
+	}
+	return 16.0
+}
+
 // The percentage value of `property_id`'s cascaded value (e.g. 50.0 for `50%`), or none when the
 // value isn't a percentage. Layout resolves this against the relevant containing-block basis (a
 // percentage width against the containing block's width, etc.).
