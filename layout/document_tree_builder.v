@@ -16,6 +16,36 @@ pub fn build_layout_tree(document &dom.Document) ?&Node {
 	return build_layout_box_for_element(document, root_element, style_computer)
 }
 
+// The result of laying out a document: the root layout box and the LayoutState holding every box's geometry.
+pub struct DocumentLayoutResult {
+pub:
+	root  &Node        = unsafe { nil }
+	state &LayoutState = unsafe { nil }
+}
+
+// The UsedValues (geometry) computed for `box`, if any.
+pub fn (result &DocumentLayoutResult) used_values_for(box &NodeWithStyle) ?&UsedValues {
+	return result.state.try_get(box)
+}
+
+// Build `document`'s layout tree and lay it out in normal block flow within a viewport of `viewport_width`
+// px — the real-engine equivalent of Document::update_layout for block content, superseding the from-scratch
+// layout_document. Returns none for a document with no root element.
+//
+// First BlockFormattingContext.run / Viewport-layout slice: the root element box is laid out with the
+// viewport width as its containing block; a proper Viewport/ICB box, scrollbars, and non-block content
+// (inline/flex/grid/table) are deferred.
+pub fn run_document_layout(document &dom.Document, viewport_width f64) ?DocumentLayoutResult {
+	root := build_layout_tree(document) or { return none }
+	root_node_with_style := root.as_node_with_style() or { return none }
+	mut state := LayoutState.new()
+	layout_block_flow(mut state, root_node_with_style, viewport_width)
+	return DocumentLayoutResult{
+		root:  root
+		state: state
+	}
+}
+
 fn build_layout_box_for_element(document &dom.Document, element &dom.Element, style_computer &css.StyleComputer) ?&Node {
 	abstract_element := dom.AbstractElement.new(element, none)
 	computed := style_computer.compute_style(abstract_element)
