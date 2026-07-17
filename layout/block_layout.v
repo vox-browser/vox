@@ -83,25 +83,44 @@ fn compute_block_used_width(computed &css.ComputedProperties, mut used_values Us
 	margin_left_auto := property_is_auto(computed, .margin_left)
 	margin_right_auto := property_is_auto(computed, .margin_right)
 
+	// §10.3.3 tentative content width.
+	mut width := 0.0
 	if width_is_auto {
-		// auto width fills the containing block; auto margins become 0.
+		// auto width fills the containing block; auto margins are treated as 0.
 		margin_left := if margin_left_auto { 0.0 } else { used_values.margin_left.to_double() }
 		margin_right := if margin_right_auto { 0.0 } else { used_values.margin_right.to_double() }
-		mut width := containing_block_width - margin_left - margin_right - edges
+		width = containing_block_width - margin_left - margin_right - edges
 		if width < 0.0 {
 			width = 0.0
 		}
-		used_values.margin_left = css_px(margin_left)
-		used_values.margin_right = css_px(margin_right)
-		used_values.set_content_width(css_px(width))
-		return
+		if margin_left_auto {
+			used_values.margin_left = css_px(0.0)
+		}
+		if margin_right_auto {
+			used_values.margin_right = css_px(0.0)
+		}
+	} else {
+		width = computed.length_percentage_to_px(.width, containing_block_width) or { 0.0 }
 	}
 
-	// Definite width.
-	width := computed.length_percentage_to_px(.width, containing_block_width) or { 0.0 }
-	used_values.set_content_width(css_px(width))
+	// §10.4: clamp to [min-width, max-width].
+	clamped := clamp_to_min_max(computed, .min_width, .max_width, width, containing_block_width)
+	used_values.set_content_width(css_px(clamped))
 
-	// Resolve auto margins: they absorb the remaining space (centering when both are auto).
+	// Resolve auto margins against the used (now definite) width — for an explicit width, or an auto width
+	// that clamping shrank below the fill.
+	if !width_is_auto || clamped != width {
+		resolve_auto_margins(computed, mut used_values, containing_block_width, clamped)
+	}
+}
+
+// Resolve auto left/right margins to absorb the remaining inline space (centering when both are auto),
+// given a definite content `width` (CSS 2.1 §10.3.3).
+fn resolve_auto_margins(computed &css.ComputedProperties, mut used_values UsedValues, containing_block_width f64, width f64) {
+	edges := used_values.border_left.to_double() + used_values.padding_left.to_double() +
+		used_values.padding_right.to_double() + used_values.border_right.to_double()
+	margin_left_auto := property_is_auto(computed, .margin_left)
+	margin_right_auto := property_is_auto(computed, .margin_right)
 	fixed_margin_left := if margin_left_auto { 0.0 } else { used_values.margin_left.to_double() }
 	fixed_margin_right := if margin_right_auto { 0.0 } else { used_values.margin_right.to_double() }
 	remaining := containing_block_width - width - edges - fixed_margin_left - fixed_margin_right
@@ -116,6 +135,22 @@ fn compute_block_used_width(computed &css.ComputedProperties, mut used_values Us
 		used_values.margin_right = css_px(remaining)
 	}
 	// FIXME: over-constrained (no auto) — CSS 2.1 ignores margin-right in LTR; not adjusted here.
+}
+
+// Clamp `value` to [min, max] resolved from `min_property`/`max_property` (CSS 2.1 §10.4/§10.7). A `none`
+// max (or a keyword/auto min/max) does not constrain; min defaults to 0.
+fn clamp_to_min_max(computed &css.ComputedProperties, min_property css.PropertyID, max_property css.PropertyID, value f64, percentage_basis f64) f64 {
+	mut result := value
+	if max := computed.length_percentage_to_px(max_property, percentage_basis) {
+		if result > max {
+			result = max
+		}
+	}
+	min := computed.length_percentage_to_px(min_property, percentage_basis) or { 0.0 }
+	if result < min {
+		result = min
+	}
+	return result
 }
 
 // Lay out `box` and its block-level descendants in normal flow (a first slice of
@@ -153,11 +188,13 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 	}
 
 	// Height (CSS 2.1 §10.6): auto height is the accumulated children; a definite (absolute) height is used.
-	if property_is_auto(computed, .height) {
-		used_values.set_content_height(css_px(cursor_y))
+	mut height := if property_is_auto(computed, .height) {
+		cursor_y
 	} else {
 		// FIXME: percentage heights need a definite containing-block height; basis 0 here.
-		height := computed.length_percentage_to_px(.height, 0.0) or { cursor_y }
-		used_values.set_content_height(css_px(height))
+		computed.length_percentage_to_px(.height, 0.0) or { cursor_y }
 	}
+	// §10.7: clamp to [min-height, max-height].
+	height = clamp_to_min_max(computed, .min_height, .max_height, height, 0.0)
+	used_values.set_content_height(css_px(height))
 }

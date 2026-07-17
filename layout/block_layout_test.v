@@ -94,3 +94,44 @@ fn test_block_flow_vertical_layout() {
 	assert div1_uv.offset.y().to_double() == 0.0
 	assert div2_uv.offset.y().to_double() == 30.0
 }
+
+// max-width clamps an auto (filling) width; min-width raises a too-small width.
+fn test_width_min_max_clamp() {
+	doc := dom.Document.create(dom.url_about_blank())
+
+	max_computed := computed_style_for(doc, 'div', 'max-width: 100px')
+	mut max_uv := &UsedValues{}
+	resolve_box_model_edges(max_computed, mut max_uv, 400.0)
+	compute_block_used_width(max_computed, mut max_uv, 400.0)
+	assert max_uv.content_width().to_double() == 100.0 // would fill 400, clamped to 100
+
+	min_computed := computed_style_for(doc, 'div', 'width: 50px; min-width: 120px')
+	mut min_uv := &UsedValues{}
+	resolve_box_model_edges(min_computed, mut min_uv, 400.0)
+	compute_block_used_width(min_computed, mut min_uv, 400.0)
+	assert min_uv.content_width().to_double() == 120.0 // 50 raised to min 120
+}
+
+// min-height raises an empty box's auto height; max-height caps a tall box.
+fn test_height_min_max_clamp() {
+	doc := dom.Document.create(dom.url_about_blank())
+
+	min_computed := computed_style_for(doc, 'div', 'min-height: 100px')
+	mut min_box := NodeWithStyle.new(doc, none, min_computed)
+	mut state1 := LayoutState.new()
+	layout_block_flow(mut state1, min_box, 800.0)
+	min_uv := state1.try_get(min_box) or { panic('no min-height used values') }
+	assert min_uv.content_height().to_double() == 100.0 // auto 0 raised to min 100
+
+	parent_computed := computed_style_for(doc, 'div', 'max-height: 60px')
+	child_computed := computed_style_for(doc, 'div', 'height: 100px')
+	mut parent := NodeWithStyle.new(doc, none, parent_computed)
+	mut child := NodeWithStyle.new(doc, none, child_computed)
+	parent.append_child(unsafe { &Node(child) })
+	mut state2 := LayoutState.new()
+	layout_block_flow(mut state2, parent, 800.0)
+	parent_uv := state2.try_get(parent) or { panic('no parent used values') }
+	assert parent_uv.content_height().to_double() == 60.0 // child 100 capped to max 60
+	child_uv := state2.try_get(child) or { panic('no child used values') }
+	assert child_uv.content_height().to_double() == 100.0 // child itself not clamped
+}
