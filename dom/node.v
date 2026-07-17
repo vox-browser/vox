@@ -1231,34 +1231,27 @@ pub fn (d CSSDisplay_) is_flow_inside() bool {
 	return d.is_flow_inside_
 }
 
+// The following read the fields populated by the layout module (layout/dom_layout_bridge.v) when it
+// attaches the real layout tree onto the DOM; before attachment they return the empty/none defaults.
+
 pub fn (ln &LayoutNode) display() CSSDisplay_ {
-	_ = ln
-	// Stub for Layout::Node::display() until layout style data is ported.
-	return CSSDisplay_{}
+	return ln.display_
 }
 
 pub fn (ln &LayoutNode) parent() ?&LayoutNode {
-	_ = ln
-	// Stub for Layout::Node::parent() until the layout tree is ported.
-	return none
+	return ln.parent_
 }
 
 pub fn (ln &LayoutNode) is_anonymous() bool {
-	_ = ln
-	// Stub for Layout::Node::is_anonymous() until anonymous layout nodes are ported.
-	return false
+	return ln.is_anonymous_
 }
 
 pub fn (ln &LayoutNode) dom_node() ?&Node {
-	_ = ln
-	// Stub for Layout::Node::dom_node() until layout nodes retain DOM back-pointers.
-	return none
+	return ln.dom_node_
 }
 
 pub fn (ln &LayoutNode) is_text_node() bool {
-	_ = ln
-	// Stub for Layout::TextNode type checks until text layout nodes are ported.
-	return false
+	return ln.is_text_node_
 }
 
 fn element_allows_accessible_name_from_content_stub(element &Element) bool {

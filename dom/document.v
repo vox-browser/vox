@@ -785,7 +785,17 @@ pub mut:
 pub struct LayoutViewport {}
 
 @[heap]
-pub struct LayoutNode {}
+pub struct LayoutNode {
+pub mut:
+	dom_node_     ?&Node
+	parent_       ?&LayoutNode
+	is_anonymous_ bool
+	is_text_node_ bool
+	display_      CSSDisplay_
+	// dom<->layout bridge: opaque handle to the real layout.Node this placeholder mirrors (dom can't
+	// name the layout type). The layout module attaches these via attach_layout_nodes. See layout/dom_layout_bridge.v.
+	layout_handle voidptr = unsafe { nil }
+}
 
 @[heap]
 pub struct SVGSVGBox {}
