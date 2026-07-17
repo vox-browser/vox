@@ -35,12 +35,14 @@ pub fn (result &DocumentLayoutResult) used_values_for(box &NodeWithStyle) ?&Used
 // First BlockFormattingContext.run / Viewport-layout slice: the root element box is laid out with the
 // viewport width as its containing block; a proper Viewport/ICB box, scrollbars, and non-block content
 // (inline/flex/grid/table) are deferred.
-pub fn run_document_layout(document &dom.Document, viewport_width f64) ?DocumentLayoutResult {
+pub fn run_document_layout(document &dom.Document, viewport_width f64, viewport_height f64) ?DocumentLayoutResult {
 	root := build_layout_tree(document) or { return none }
 	root_node_with_style := root.as_node_with_style() or { return none }
 	mut state := LayoutState.new()
-	// FIXME: thread the viewport height so root-level percentage heights resolve; none = indefinite for now.
-	layout_block_flow(mut state, root_node_with_style, viewport_width, none)
+	// The initial containing block is the viewport: a definite width AND height, so root-level percentage
+	// heights (e.g. `html { height: 100% }`) resolve against the viewport. FIXME: a distinct
+	// Layout::Viewport ICB box isn't created yet — the root element box is laid out directly in the viewport.
+	layout_block_flow(mut state, root_node_with_style, viewport_width, viewport_height)
 	return DocumentLayoutResult{
 		root:  root
 		state: state

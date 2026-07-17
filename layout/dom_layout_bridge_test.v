@@ -13,7 +13,7 @@ fn test_dom_layout_bridge() {
 	mut html_node := html_el.as_node()
 	html_node.append_child(div.as_node()) or { panic('${err}') }
 
-	result := run_document_layout(doc, 800.0) or { panic('no layout result') }
+	result := run_document_layout(doc, 800.0, 600.0) or { panic('no layout result') }
 	attach_layout_nodes(result.root)
 
 	// <html> now has a layout node pointing back at its DOM node, with a real (non-none, non-anonymous) display.

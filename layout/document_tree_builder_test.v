@@ -55,7 +55,7 @@ fn test_run_document_layout() {
 	html_node.append_child(div1.as_node()) or { panic('${err}') }
 	html_node.append_child(div2.as_node()) or { panic('${err}') }
 
-	result := run_document_layout(doc, 800.0) or { panic('layout produced no result') }
+	result := run_document_layout(doc, 800.0, 600.0) or { panic('layout produced no result') }
 
 	root_nws := result.root.as_node_with_style() or { panic('root not nws') }
 	root_uv := result.used_values_for(root_nws) or { panic('no root used values') }
@@ -96,7 +96,7 @@ fn test_text_node_layout() {
 	assert text_dom.is_text()
 
 	// The bridge marks it as a text node on the DOM side too.
-	result := run_document_layout(doc, 800.0) or { panic('no layout result') }
+	result := run_document_layout(doc, 800.0, 600.0) or { panic('no layout result') }
 	attach_layout_nodes(result.root)
 	text_layout := text.as_node().layout_node() or { panic('text has no layout node') }
 	assert text_layout.is_text_node()
@@ -115,7 +115,7 @@ fn test_inline_content_height() {
 	mut para_node := para.as_node()
 	para_node.append_child(text.as_node()) or { panic('${err}') }
 
-	result := run_document_layout(doc, 800.0) or { panic('no layout result') }
+	result := run_document_layout(doc, 800.0, 600.0) or { panic('no layout result') }
 	para_box := result.root.first_child() or { panic('no p box') }
 	para_nws := para_box.as_node_with_style() or { panic('p not nws') }
 	para_uv := result.used_values_for(para_nws) or { panic('no p used values') }
@@ -123,4 +123,20 @@ fn test_inline_content_height() {
 	// CSSPixels is fixed-point, so allow for its rounding.
 	height := para_uv.content_height().to_double()
 	assert height > 19.15 && height < 19.25
+}
+
+// The initial containing block is the viewport, so a root-level percentage height resolves against the
+// viewport height (CSS 2.1 §10.5): `html { height: 50% }` in a 600px-tall viewport is 300px.
+fn test_root_percentage_height_resolves_against_viewport() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	html_el.set_attribute_value('style', 'height: 50%')
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('${err}') }
+
+	result := run_document_layout(doc, 800.0, 600.0) or { panic('no layout result') }
+	root_nws := result.root.as_node_with_style() or { panic('root not nws') }
+	root_uv := result.used_values_for(root_nws) or { panic('no root used values') }
+	// 50% of the 600px viewport height.
+	assert root_uv.content_height().to_double() == 300.0
 }

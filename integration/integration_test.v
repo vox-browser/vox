@@ -1289,7 +1289,7 @@ fn test_real_style_computer_over_parsed_document() {
 // parse -> style -> layout pipeline end to end on the real StyleComputer + real layout engine.
 fn test_real_layout_over_parsed_document() {
 	doc := html.parse_document('<div style="height: 30px"></div><div style="height: 40px"></div>')
-	result := layout.run_document_layout(doc, 800.0) or { panic('layout produced no result') }
+	result := layout.run_document_layout(doc, 800.0, 600.0) or { panic('layout produced no result') }
 
 	// <html> fills the viewport width.
 	root_nws := result.root.as_node_with_style() or { panic('root not a NodeWithStyle') }
