@@ -1283,3 +1283,40 @@ fn test_real_style_computer_over_parsed_document() {
 	assert p_color == body_color
 	assert span_color != body_color
 }
+
+// Full-stack REAL layout: parse HTML, then lay it out through the real layout engine
+// (run_document_layout = build_layout_tree + block flow), producing real box geometry — the whole
+// parse -> style -> layout pipeline end to end on the real StyleComputer + real layout engine.
+fn test_real_layout_over_parsed_document() {
+	doc := html.parse_document('<div style="height: 30px"></div><div style="height: 40px"></div>')
+	result := layout.run_document_layout(doc, 800.0) or { panic('layout produced no result') }
+
+	// <html> fills the viewport width.
+	root_nws := result.root.as_node_with_style() or { panic('root not a NodeWithStyle') }
+	root_uv := result.used_values_for(root_nws) or { panic('no root used values') }
+	assert root_uv.content_width().to_double() == 800.0
+
+	// <head> is display:none, so <html>'s only box child is <body>.
+	assert result.root.children().len == 1
+	body_box := result.root.children()[0]
+	body_el := (body_box.dom_node() or { panic('body box has no dom node') }).as_element() or {
+		panic('body box dom node not element')
+	}
+	assert body_el.local_name() == 'body'
+	// body's UA margin (8px each side) shrinks its content width from 800 to 784.
+	body_nws := body_box.as_node_with_style() or { panic('body not nws') }
+	body_uv := result.used_values_for(body_nws) or { panic('no body used values') }
+	assert body_uv.content_width().to_double() == 784.0
+
+	// The two divs stack inside body with their definite heights.
+	assert body_box.children().len == 2
+	div1_uv := result.used_values_for(body_box.children()[0].as_node_with_style() or { panic('d1') }) or {
+		panic('no div1 used values')
+	}
+	div2_uv := result.used_values_for(body_box.children()[1].as_node_with_style() or { panic('d2') }) or {
+		panic('no div2 used values')
+	}
+	assert div1_uv.content_height().to_double() == 30.0
+	assert div2_uv.content_height().to_double() == 40.0
+	assert div2_uv.offset.y().to_double() == 30.0
+}
