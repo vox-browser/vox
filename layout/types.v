@@ -264,11 +264,7 @@ pub mut:
 	stub LayoutStub
 }
 
-@[heap]
-pub struct BlockContainer {
-pub mut:
-	stub LayoutStub
-}
+// The real Layout::BlockContainer is defined in layout/node.v.
 
 @[heap]
 pub struct BlockFormattingContext {
@@ -288,11 +284,7 @@ pub mut:
 	stub LayoutStub
 }
 
-@[heap]
-pub struct Box {
-pub mut:
-	stub LayoutStub
-}
+// The real Layout::Box is defined in layout/node.v.
 
 @[heap]
 pub struct BreakNode {
@@ -598,11 +590,7 @@ pub mut:
 
 // The real Layout::NodeWithStyle is defined in layout/node.v.
 
-@[heap]
-pub struct NodeWithStyleAndBoxModelMetrics {
-pub mut:
-	stub LayoutStub
-}
+// The real Layout::NodeWithStyleAndBoxModelMetrics is defined in layout/node.v.
 
 @[heap]
 pub struct OccupationGrid {

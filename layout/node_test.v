@@ -76,3 +76,38 @@ fn test_node_with_style() {
 		panic('a styleless Node should not cast to NodeWithStyle')
 	}
 }
+
+// Box / BlockContainer embed the Node->NodeWithStyle chain; the type-discriminant flags let a tree &Node
+// be identified and down-cast to the right subclass.
+fn test_box_hierarchy() {
+	doc := dom.Document.create(dom.url_about_blank())
+	style := css.ComputedProperties.new()
+
+	mut root := BlockContainer.new(doc, none, style)
+	mut inner_box := Box.new(doc, none, style)
+
+	// A BlockContainer is a Box is a NodeWithStyle is a Node.
+	root_as_node := unsafe { &Node(root) }
+	assert root_as_node.is_box()
+	assert root_as_node.is_block_container()
+	assert root_as_node.has_style()
+
+	// A plain Box is a box but not a block container.
+	inner_as_node := unsafe { &Node(inner_box) }
+	assert inner_as_node.is_box()
+	assert !inner_as_node.is_block_container()
+
+	// Tree + down-casts: append the box under the block container, then recover the subclasses.
+	root.append_child(inner_as_node)
+	assert root.child_count() == 1
+	first := root.first_child() or { panic('no first child') }
+	recovered_box := first.as_box() or { panic('child is not a Box') }
+	assert voidptr(recovered_box.computed_values()) == voidptr(style)
+	if _ := first.as_block_container() {
+		panic('a plain Box should not cast to BlockContainer')
+	}
+
+	mut recovered_bc := root_as_node.as_block_container() or { panic('root is not a BlockContainer') }
+	recovered_bc.add_contained_abspos_child(inner_as_node)
+	assert recovered_bc.contained_abspos_children().len == 1
+}

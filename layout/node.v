@@ -28,6 +28,11 @@ pub mut:
 	is_body_                     bool
 	needs_layout_update_         bool
 	initial_quote_nesting_level_ u32
+	// Concrete-type discriminants (C++ uses virtual fast_is<T>(); V has no RTTI). Each subclass's
+	// constructor sets its flags; a flag is true for the type AND its subclasses (is_box_ is set for
+	// Box and BlockContainer, etc.).
+	is_box_             bool
+	is_block_container_ bool
 }
 
 // Node(DOM::Document&, DOM::Node*) — a layout node for `dom_node` (null for anonymous boxes).
@@ -205,4 +210,104 @@ pub fn (n &Node) as_node_with_style() ?&NodeWithStyle {
 		return none
 	}
 	return unsafe { &NodeWithStyle(n) }
+}
+
+// --- NodeWithStyleAndBoxModelMetrics (Layout/Node.h) ---
+//
+// A styled node that participates in the box model. C++ also stores box-model metrics here, but current
+// Ladybird keeps the used margin/padding/border values in LayoutState::UsedValues, so this type is thin.
+@[heap]
+pub struct NodeWithStyleAndBoxModelMetrics {
+	NodeWithStyle
+pub mut:
+	continuation_of_node_ ?&NodeWithStyleAndBoxModelMetrics
+}
+
+pub fn (n &NodeWithStyleAndBoxModelMetrics) continuation_of_node() ?&NodeWithStyleAndBoxModelMetrics {
+	return n.continuation_of_node_
+}
+
+// --- Box (Layout/Box.h) : NodeWithStyleAndBoxModelMetrics ---
+//
+// A box in the layout tree. The used geometry (content size, offsets) lives in LayoutState::UsedValues;
+// the persistent Box holds intrinsic-size caches (added later), out-of-flow abspos children, and the
+// natural (intrinsic) size for replaced elements.
+@[heap]
+pub struct Box {
+	NodeWithStyleAndBoxModelMetrics
+pub mut:
+	contained_abspos_children_ []&Node
+}
+
+pub fn Box.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &Box {
+	return &Box{
+		NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
+			NodeWithStyle: NodeWithStyle{
+				Node:             Node{
+					document_:  document
+					dom_node_:  dom_node
+					has_style_: true
+					is_box_:    true
+				}
+				computed_values_: computed_values
+			}
+		}
+	}
+}
+
+pub fn (n &Box) contained_abspos_children() []&Node {
+	return n.contained_abspos_children_
+}
+
+pub fn (mut n Box) add_contained_abspos_child(child &Node) {
+	n.contained_abspos_children_ << child
+}
+
+pub fn (n &Node) is_box() bool {
+	return n.is_box_
+}
+
+pub fn (n &Node) as_box() ?&Box {
+	if !n.is_box_ {
+		return none
+	}
+	return unsafe { &Box(n) }
+}
+
+// --- BlockContainer (Layout/BlockContainer.h) : Box ---
+//
+// A box that contains either only block-level boxes or only inline-level boxes (a block container).
+@[heap]
+pub struct BlockContainer {
+	Box
+}
+
+pub fn BlockContainer.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &BlockContainer {
+	return &BlockContainer{
+		Box: Box{
+			NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
+				NodeWithStyle: NodeWithStyle{
+					Node:             Node{
+						document_:           document
+						dom_node_:           dom_node
+						has_style_:          true
+						is_box_:             true
+						is_block_container_: true
+					}
+					computed_values_: computed_values
+				}
+			}
+		}
+	}
+}
+
+pub fn (n &Node) is_block_container() bool {
+	return n.is_block_container_
+}
+
+pub fn (n &Node) as_block_container() ?&BlockContainer {
+	if !n.is_block_container_ {
+		return none
+	}
+	return unsafe { &BlockContainer(n) }
 }
