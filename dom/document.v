@@ -1153,6 +1153,9 @@ pub mut:
 @[heap]
 pub struct Event {
 pub mut:
+	// Which concrete event interface this is, so the base Event can be identified as a MouseEvent /
+	// KeyboardEvent / PointerEvent etc. (V has no RTTI; the subclasses set this at construction).
+	interface_                  EventInterface = .event
 	type_                       string
 	target_                     ?&EventTarget
 	related_target_             ?&EventTarget

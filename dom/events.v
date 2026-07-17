@@ -1322,33 +1322,32 @@ fn event_is_before_unload_event(event &Event) bool {
 }
 
 fn event_is_mouse_event(event &Event) bool {
-	_ = event
-	// Stub for UIEvents::MouseEvent until that event subclass is ported.
-	return false
+	// is<UIEvents::MouseEvent> is true for MouseEvent and its subclass PointerEvent.
+	return event.interface_ == .mouse_event || event.interface_ == .pointer_event
 }
 
 fn event_is_keyboard_event(event &Event) bool {
-	_ = event
-	// Stub for UIEvents::KeyboardEvent until that event subclass is ported.
-	return false
+	return event.interface_ == .keyboard_event
 }
 
 fn keyboard_event_key_code_is_escape(event &Event) bool {
-	_ = event
-	// Stub for UIEvents::KeyboardEvent::key_code() == UIEvents::KeyCode::Key_Escape.
-	return false
+	if event.interface_ != .keyboard_event {
+		return false
+	}
+	keyboard_event := unsafe { &KeyboardEvent(event) }
+	return keyboard_event.key_code_ == key_code_escape
 }
 
 fn event_is_pointer_event(event &Event) bool {
-	_ = event
-	// Stub for UIEvents::PointerEvent until that event subclass is ported.
-	return false
+	return event.interface_ == .pointer_event
 }
 
 fn pointer_event_pointer_type(event &Event) string {
-	_ = event
-	// Stub for UIEvents::PointerEvent::pointer_type().
-	return ''
+	if event.interface_ != .pointer_event {
+		return ''
+	}
+	pointer_event := unsafe { &PointerEvent(event) }
+	return pointer_event.pointer_type_
 }
 
 fn should_inline_script_attribute_be_blocked_by_content_security_policy(element &Element, value string) bool {
