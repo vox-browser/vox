@@ -2331,7 +2331,15 @@ pub fn (c &ComputedProperties) clip() Clip {
 }
 
 pub fn (c &ComputedProperties) display() Display {
-	return c.display_before_box_type_transformation_
+	// ComputedProperties::display() (ComputedProperties.cpp:1296): return the Display property's value.
+	// The port stores it as an opaque dom.StyleValue, so re-type it and extract the Display; fall back to
+	// inline (as upstream does when the value isn't a DisplayStyleValue).
+	value := c.property(.display, .yes) or { return Display.from_short(.inline_) }
+	typed := parse_css_value_logic(.display, value.css_text) or { return Display.from_short(.inline_) }
+	if typed is DisplayStyleValue {
+		return typed.display()
+	}
+	return Display.from_short(.inline_)
 }
 
 pub fn (c &ComputedProperties) float_() Float {

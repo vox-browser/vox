@@ -1217,21 +1217,18 @@ pub fn (mut d Document) style_invalidator() &StyleInvalidator {
 }
 
 pub fn (d CSSDisplay_) is_contents() bool {
-	_ = d
-	// Stub for CSS::Display::is_contents() until display-outside/inside values are ported.
-	return false
+	// Mirrored from CSS::Display::is_contents() by the dom<->css bridge (computed_properties_to_dom).
+	return d.is_contents_
 }
 
 pub fn (d CSSDisplay_) is_inline_outside() bool {
-	_ = d
-	// Stub for CSS::Display::is_inline_outside() until display-outside values are ported.
-	return false
+	// Mirrored from CSS::Display::is_inline_outside() by the dom<->css bridge (computed_properties_to_dom).
+	return d.is_inline_outside_
 }
 
 pub fn (d CSSDisplay_) is_flow_inside() bool {
-	_ = d
-	// Stub for CSS::Display::is_flow_inside() until display-inside values are ported.
-	return false
+	// Mirrored from CSS::Display::is_flow_inside() by the dom<->css bridge (computed_properties_to_dom).
+	return d.is_flow_inside_
 }
 
 pub fn (ln &LayoutNode) display() CSSDisplay_ {

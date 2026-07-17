@@ -373,8 +373,11 @@ pub fn (c &CSSComputedProperties_) has_attempted_match_against_pseudo_class(pseu
 
 pub struct CSSDisplay_ {
 pub mut:
-	is_none_      bool
-	is_list_item_ bool
+	is_none_           bool
+	is_list_item_      bool
+	is_contents_       bool
+	is_inline_outside_ bool
+	is_flow_inside_    bool
 }
 
 pub fn (d CSSDisplay_) is_none() bool {

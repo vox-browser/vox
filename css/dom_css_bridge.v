@@ -24,8 +24,11 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 	display := computed.display()
 	return &dom.CSSComputedProperties_{
 		display_:            dom.CSSDisplay_{
-			is_none_:      display.is_none()
-			is_list_item_: display.is_list_item()
+			is_none_:           display.is_none()
+			is_list_item_:      display.is_list_item()
+			is_contents_:       display.is_contents()
+			is_inline_outside_: display.is_inline_outside()
+			is_flow_inside_:    display.is_flow_inside()
 		}
 		overflow_x_:         overflow_to_dom(computed.overflow_x())
 		overflow_y_:         overflow_to_dom(computed.overflow_y())

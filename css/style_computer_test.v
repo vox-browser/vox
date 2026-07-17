@@ -398,3 +398,23 @@ fn test_real_pipeline_matches_author_stylesheet() {
 	assert card_color != html_color
 	assert child_color == card_color
 }
+
+// The dom-side CSSDisplay_ predicates (is_contents/is_inline_outside/is_flow_inside) are now mirrored
+// from the real CSS::Display via the bridge, instead of always returning false.
+fn test_display_predicates_mirrored_to_dom() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut contents_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	contents_el.set_attribute_value('style', 'display: contents')
+	s := StyleComputer.new(doc)
+	contents_computed := s.compute_style(dom.AbstractElement.new(contents_el, none))
+	contents_display := computed_properties_to_dom(contents_computed).display()
+	assert contents_display.is_contents()
+
+	mut inline_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	inline_el.set_attribute_value('style', 'display: inline')
+	inline_computed := s.compute_style(dom.AbstractElement.new(inline_el, none))
+	inline_display := computed_properties_to_dom(inline_computed).display()
+	assert inline_display.is_inline_outside()
+	assert inline_display.is_flow_inside()
+	assert !inline_display.is_contents()
+}
