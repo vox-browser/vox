@@ -16,6 +16,10 @@ pub enum EventInterface {
 	mouse_event
 	keyboard_event
 	pointer_event
+	// HTML events that also extend DOM::Event and are identified by the DOM's event dispatch (see
+	// dom/html_events.v).
+	before_unload_event
+	error_event
 }
 
 // UIEvents/KeyCode.h: Key_Escape = 0x1B.

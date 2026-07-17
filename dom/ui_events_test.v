@@ -36,3 +36,24 @@ fn test_ui_events_predicates() {
 	assert !event_is_keyboard_event(plain)
 	assert !event_is_pointer_event(plain)
 }
+
+// BeforeUnloadEvent / ErrorEvent (HTML events extending DOM::Event) are also identified via the tag.
+fn test_html_events_predicates() {
+	mut before_unload := BeforeUnloadEvent.create('beforeunload', EventInit{ cancelable: true })
+	before_unload_event := unsafe { &Event(before_unload) }
+	assert event_is_before_unload_event(before_unload_event)
+	assert !event_is_error_event(before_unload_event)
+	before_unload.set_return_value('are you sure?')
+	assert before_unload.return_value() == 'are you sure?'
+
+	error := ErrorEvent.create('error', ErrorEventInit{ message: 'boom', filename: 'a.js', lineno: 12 })
+	error_event := unsafe { &Event(error) }
+	assert event_is_error_event(error_event)
+	assert !event_is_before_unload_event(error_event)
+	assert error.message() == 'boom'
+	assert error.lineno() == 12
+
+	plain := Event.new('custom')
+	assert !event_is_before_unload_event(plain)
+	assert !event_is_error_event(plain)
+}

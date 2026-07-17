@@ -1310,15 +1310,11 @@ pub fn (et &EventTarget) process_event_handler_for_event(name string, event &Eve
 }
 
 fn event_is_error_event(event &Event) bool {
-	_ = event
-	// Stub for HTML::ErrorEvent until that event subclass is ported.
-	return false
+	return event.interface_ == .error_event
 }
 
 fn event_is_before_unload_event(event &Event) bool {
-	_ = event
-	// Stub for HTML::BeforeUnloadEvent until that event subclass is ported.
-	return false
+	return event.interface_ == .before_unload_event
 }
 
 fn event_is_mouse_event(event &Event) bool {
