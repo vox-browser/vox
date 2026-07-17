@@ -167,24 +167,43 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 	compute_block_used_width(computed, mut used_values, containing_block_width)
 	content_width := used_values.content_width().to_double()
 
-	// Lay out block children top-to-bottom, stacking their margin boxes.
+	// Lay out block children top-to-bottom. Adjacent siblings' vertical margins collapse (CSS 2.1 §8.3.1):
+	// the previous child's bottom margin is carried and collapsed with the next child's top margin.
+	// FIXME: parent-child margin collapsing (first/last child margins collapsing through the parent) is not
+	// modelled — the first child's top margin and the last child's bottom margin apply as-is.
 	mut cursor_y := 0.0
+	mut carried_bottom_margin := 0.0
+	mut has_previous_child := false
 	box_as_node := unsafe { &Node(box) }
 	for child_node in box_as_node.children() {
 		child := child_node.as_node_with_style() or { continue }
 		layout_block_flow(mut state, child, content_width)
 
 		mut child_used_values := state.get_mutable(child)
-		// The child's content-area top-left within this box's content area: indented by the child's own
-		// left/top edges, and offset vertically by the running cursor.
+		child_margin_top := child_used_values.margin_top.to_double()
+		if has_previous_child {
+			// Collapse the previous child's bottom margin with this child's top margin (§8.3.1).
+			cursor_y += collapse_margins([carried_bottom_margin, child_margin_top])
+		} else {
+			cursor_y += child_margin_top
+		}
+
+		// cursor_y is now at the child's border-box top; position its content area inside that.
 		content_x := child_used_values.margin_left.to_double() + child_used_values.border_left.to_double() +
 			child_used_values.padding_left.to_double()
-		content_y := cursor_y + child_used_values.margin_top.to_double() +
-			child_used_values.border_top.to_double() + child_used_values.padding_top.to_double()
+		content_y := cursor_y + child_used_values.border_top.to_double() +
+			child_used_values.padding_top.to_double()
 		child_used_values.set_content_offset(css.CSSPixelPoint.from_values(content_x, content_y))
 		child_used_values.set_containing_block_used_values(used_values)
 
-		cursor_y += child_used_values.margin_box_height().to_double()
+		// Advance past the child's border box (not its margins); carry its bottom margin for the next collapse.
+		cursor_y += child_used_values.border_box_height().to_double()
+		carried_bottom_margin = child_used_values.margin_bottom.to_double()
+		has_previous_child = true
+	}
+	// The last child's (uncollapsed) bottom margin contributes to the parent's content height.
+	if has_previous_child {
+		cursor_y += carried_bottom_margin
 	}
 
 	// Height (CSS 2.1 §10.6): auto height is the accumulated children; a definite (absolute) height is used.

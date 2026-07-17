@@ -135,3 +135,31 @@ fn test_height_min_max_clamp() {
 	child_uv := state2.try_get(child) or { panic('no child used values') }
 	assert child_uv.content_height().to_double() == 100.0 // child itself not clamped
 }
+
+// Adjacent siblings' vertical margins collapse (CSS 2.1 §8.3.1): the gap is the larger margin, not the sum.
+fn test_adjacent_margin_collapse() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut div1 := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	div1.set_attribute_value('style', 'height: 10px; margin-bottom: 20px')
+	mut div2 := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	div2.set_attribute_value('style', 'height: 10px; margin-top: 30px')
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(div1.as_node()) or { panic('${err}') }
+	html_node.append_child(div2.as_node()) or { panic('${err}') }
+
+	root := build_layout_tree(doc) or { panic('no layout tree') }
+	root_nws := root.as_node_with_style() or { panic('root not nws') }
+	mut state := LayoutState.new()
+	layout_block_flow(mut state, root_nws, 800.0)
+
+	div1_uv := state.try_get(root.children()[0].as_node_with_style() or { panic('d1') }) or { panic('uv1') }
+	div2_uv := state.try_get(root.children()[1].as_node_with_style() or { panic('d2') }) or { panic('uv2') }
+
+	assert div1_uv.offset.y().to_double() == 0.0
+	// div1 bottom = 10; collapsed margin = max(20, 30) = 30; div2 at 10 + 30 = 40 (NOT 10+20+30=60).
+	assert div2_uv.offset.y().to_double() == 40.0
+}
