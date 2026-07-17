@@ -1,6 +1,7 @@
 module layout
 
 import dom
+import css
 
 // Translation of Ladybird's Layout::Node (Layout/Node.h) — the base of the layout tree. In C++ Node is
 // a JS::Cell + TreeNode<Node>; here the tree is modelled with a parent pointer + children array (as this
@@ -159,4 +160,49 @@ pub fn (n &Node) generated_for_pseudo_element() ?dom.PseudoElement {
 
 pub fn (n &Node) initial_quote_nesting_level() u32 {
 	return n.initial_quote_nesting_level_
+}
+
+// --- NodeWithStyle (Layout/Node.h) ---
+//
+// A layout node that has a computed style. C++ stores a resolved CSS::ComputedValues; this port holds a
+// reference to the css.ComputedProperties (the resolved property map the port already produces via the
+// StyleComputer), which exposes the layout-facing accessors (display(), overflow_x(), ...).
+@[heap]
+pub struct NodeWithStyle {
+	Node
+pub mut:
+	computed_values_ &css.ComputedProperties = unsafe { nil }
+	layout_index_    u32
+}
+
+pub fn NodeWithStyle.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &NodeWithStyle {
+	return &NodeWithStyle{
+		Node:             Node{
+			document_:  document
+			dom_node_:  dom_node
+			has_style_: true
+		}
+		computed_values_: computed_values
+	}
+}
+
+pub fn (n &NodeWithStyle) computed_values() &css.ComputedProperties {
+	return n.computed_values_
+}
+
+pub fn (mut n NodeWithStyle) set_computed_values(computed_values &css.ComputedProperties) {
+	n.computed_values_ = computed_values
+}
+
+pub fn (n &NodeWithStyle) layout_index() u32 {
+	return n.layout_index_
+}
+
+// Cast a &Node to &NodeWithStyle. Layout::Node is abstract in C++ (every concrete layout node is a
+// NodeWithStyle or below), so a styled node embeds Node at offset 0 and this reinterpret is valid.
+pub fn (n &Node) as_node_with_style() ?&NodeWithStyle {
+	if !n.has_style_ {
+		return none
+	}
+	return unsafe { &NodeWithStyle(n) }
 }

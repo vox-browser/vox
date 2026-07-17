@@ -596,11 +596,7 @@ pub mut:
 
 // The real Layout::Node (base of the layout tree) is defined in layout/node.v.
 
-@[heap]
-pub struct NodeWithStyle {
-pub mut:
-	stub LayoutStub
-}
+// The real Layout::NodeWithStyle is defined in layout/node.v.
 
 @[heap]
 pub struct NodeWithStyleAndBoxModelMetrics {
