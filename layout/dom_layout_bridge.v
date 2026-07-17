@@ -18,7 +18,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode) 
 		dom_node_:     box.dom_node()
 		parent_:       parent_placeholder
 		is_anonymous_: box.is_anonymous()
-		is_text_node_: false // FIXME: text (Layout::TextNode) layout nodes aren't ported yet.
+		is_text_node_: box.is_text_node()
 		display_:      layout_node_display(box)
 		layout_handle: voidptr(box)
 	}

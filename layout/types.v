@@ -800,11 +800,7 @@ pub mut:
 	stub LayoutStub
 }
 
-@[heap]
-pub struct TextNode {
-pub mut:
-	stub LayoutStub
-}
+// The real Layout::TextNode is defined in layout/node.v.
 
 @[heap]
 pub struct TextNodeChunkIterator {

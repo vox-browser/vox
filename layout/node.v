@@ -33,6 +33,7 @@ pub mut:
 	// Box and BlockContainer, etc.).
 	is_box_             bool
 	is_block_container_ bool
+	is_text_node_       bool
 }
 
 // Node(DOM::Document&, DOM::Node*) — a layout node for `dom_node` (null for anonymous boxes).
@@ -310,4 +311,62 @@ pub fn (n &Node) as_block_container() ?&BlockContainer {
 		return none
 	}
 	return unsafe { &BlockContainer(n) }
+}
+
+// --- TextNode (Layout/TextNode.h) : Node ---
+//
+// A layout node for a DOM text node. Unlike element boxes it has no independent style (it uses its
+// parent's), so it embeds Node directly rather than NodeWithStyle. It holds the whitespace-processed text.
+@[heap]
+pub struct TextNode {
+	Node
+pub mut:
+	text_for_rendering_ string
+}
+
+pub fn TextNode.new(document &dom.Document, dom_text_node &dom.Node, text_for_rendering string) &TextNode {
+	return &TextNode{
+		Node:                Node{
+			document_:     document
+			dom_node_:     dom_text_node
+			is_text_node_: true
+		}
+		text_for_rendering_: text_for_rendering
+	}
+}
+
+// Layout::TextNode::text_for_rendering().
+pub fn (n &TextNode) text_for_rendering() string {
+	return n.text_for_rendering_
+}
+
+pub fn (n &Node) is_text_node() bool {
+	return n.is_text_node_
+}
+
+pub fn (n &Node) as_text_node() ?&TextNode {
+	if !n.is_text_node_ {
+		return none
+	}
+	return unsafe { &TextNode(n) }
+}
+
+// Collapse runs of ASCII whitespace to single spaces (the white-space: normal case of
+// TextNode::compute_text_for_rendering). FIXME: the full algorithm also honours white-space pre/nowrap/...,
+// collapses leading/trailing whitespace across element boundaries, and preserves segment breaks.
+pub fn collapse_whitespace(text string) string {
+	mut result := []u8{}
+	mut in_whitespace := false
+	for c in text {
+		if c == ` ` || c == `\t` || c == `\n` || c == `\r` || c == `\f` {
+			if !in_whitespace {
+				result << ` `
+				in_whitespace = true
+			}
+		} else {
+			result << c
+			in_whitespace = false
+		}
+	}
+	return result.bytestr()
 }

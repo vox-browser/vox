@@ -67,3 +67,37 @@ fn test_run_document_layout() {
 	assert div2_uv.content_height().to_double() == 40.0
 	assert div2_uv.offset.y().to_double() == 30.0
 }
+
+// A DOM text node becomes a Layout::TextNode box carrying its whitespace-collapsed text.
+fn test_text_node_layout() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut para := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic('${err}') }
+	text := doc.create_text_node('  Hello    world  ')
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(para.as_node()) or { panic('${err}') }
+	mut para_node := para.as_node()
+	para_node.append_child(text.as_node()) or { panic('${err}') }
+
+	root := build_layout_tree(doc) or { panic('no layout tree') }
+	para_box := root.first_child() or { panic('no p box') }
+	assert para_box.is_block_container()
+
+	text_box := para_box.first_child() or { panic('no text box') }
+	assert text_box.is_text_node()
+	assert !text_box.is_box()
+	text_node := text_box.as_text_node() or { panic('text box is not a TextNode') }
+	// Runs of whitespace collapse to single spaces.
+	assert text_node.text_for_rendering() == ' Hello world '
+	text_dom := text_box.dom_node() or { panic('text box has no dom node') }
+	assert text_dom.is_text()
+
+	// The bridge marks it as a text node on the DOM side too.
+	result := run_document_layout(doc, 800.0) or { panic('no layout result') }
+	attach_layout_nodes(result.root)
+	text_layout := text.as_node().layout_node() or { panic('text has no layout node') }
+	assert text_layout.is_text_node()
+}

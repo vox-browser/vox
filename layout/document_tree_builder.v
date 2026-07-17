@@ -59,9 +59,19 @@ fn build_layout_box_for_element(document &dom.Document, element &dom.Element, st
 	mut box_node := unsafe { &Node(BlockContainer.new(document, element.as_node(), computed)) }
 
 	for child_node in element.as_node().children_as_vector() {
-		child_element := child_node.as_element() or { continue }
-		if child_box := build_layout_box_for_element(document, child_element, style_computer) {
-			box_node.append_child(child_box)
+		if child_element := child_node.as_element() {
+			if child_box := build_layout_box_for_element(document, child_element, style_computer) {
+				box_node.append_child(child_box)
+			}
+		} else if child_node.is_text() {
+			// A DOM text node becomes a Layout::TextNode, unless it collapses to only whitespace.
+			if character_data := child_node.as_character_data() {
+				text := collapse_whitespace(character_data.data())
+				if text.trim_space() != '' {
+					mut text_box := unsafe { &Node(TextNode.new(document, child_node, text)) }
+					box_node.append_child(text_box)
+				}
+			}
 		}
 	}
 
