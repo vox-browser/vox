@@ -39,7 +39,8 @@ pub fn run_document_layout(document &dom.Document, viewport_width f64) ?Document
 	root := build_layout_tree(document) or { return none }
 	root_node_with_style := root.as_node_with_style() or { return none }
 	mut state := LayoutState.new()
-	layout_block_flow(mut state, root_node_with_style, viewport_width)
+	// FIXME: thread the viewport height so root-level percentage heights resolve; none = indefinite for now.
+	layout_block_flow(mut state, root_node_with_style, viewport_width, none)
 	return DocumentLayoutResult{
 		root:  root
 		state: state

@@ -160,12 +160,16 @@ fn clamp_to_min_max(computed &css.ComputedProperties, min_property css.PropertyI
 //
 // DEFERRED: inline/flex/grid/table/replaced/float/abspos content, margin collapsing, min/max sizing,
 // percentage heights (need a definite CB height), and writing modes.
-pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_block_width f64) {
+pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_block_width f64, containing_block_height ?f64) {
 	computed := box.computed_values()
 	mut used_values := state.get_mutable(box)
 	resolve_box_model_edges(computed, mut used_values, containing_block_width)
 	compute_block_used_width(computed, mut used_values, containing_block_width)
 	content_width := used_values.content_width().to_double()
+
+	// This box's definite content height, if any (an explicit length, or a percentage resolved against the
+	// containing block's definite height). Children resolve their own percentage heights against it.
+	definite_content_height := resolve_definite_content_height(computed, containing_block_height)
 
 	box_as_node := unsafe { &Node(box) }
 
@@ -187,7 +191,7 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 		mut has_previous_child := false
 		for child_node in box_as_node.children() {
 			child := child_node.as_node_with_style() or { continue }
-			layout_block_flow(mut state, child, content_width)
+			layout_block_flow(mut state, child, content_width, definite_content_height)
 
 			mut child_used_values := state.get_mutable(child)
 			child_margin_top := child_used_values.margin_top.to_double()
@@ -216,16 +220,34 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 		content_height_from_children = cursor_y
 	}
 
-	// Height (CSS 2.1 §10.6): auto height is the content height from children; a definite (absolute) height
-	// is used as-is. FIXME: percentage heights need a definite containing-block height; basis 0 here.
-	mut height := if property_is_auto(computed, .height) {
-		content_height_from_children
-	} else {
-		computed.length_percentage_to_px(.height, 0.0) or { content_height_from_children }
-	}
-	// §10.7: clamp to [min-height, max-height].
-	height = clamp_to_min_max(computed, .min_height, .max_height, height, 0.0)
+	// Height (CSS 2.1 §10.6): use the definite height if the box has one, else the content height from
+	// its children (auto).
+	mut height := definite_content_height or { content_height_from_children }
+	// §10.7: clamp to [min-height, max-height] (a percentage min/max against the containing block height).
+	height = clamp_to_min_max(computed, .min_height, .max_height, height, containing_block_height or {
+		0.0
+	})
 	used_values.set_content_height(css_px(height))
+}
+
+// This box's definite content height, or none if it's auto (or a percentage against an indefinite
+// containing-block height). CSS 2.1 §10.5: a percentage height resolves against the containing block's
+// height only when that height is itself definite; otherwise the height is treated as auto.
+fn resolve_definite_content_height(computed &css.ComputedProperties, containing_block_height ?f64) ?f64 {
+	if property_is_auto(computed, .height) {
+		return none
+	}
+	if property_is_percentage(computed, .height) {
+		basis := containing_block_height or { return none }
+		return computed.length_percentage_to_px(.height, basis)
+	}
+	return computed.length_percentage_to_px(.height, 0.0)
+}
+
+// Whether `property_id`'s computed value is a percentage.
+fn property_is_percentage(computed &css.ComputedProperties, property_id css.PropertyID) bool {
+	value := computed.property(property_id, .yes) or { return false }
+	return value.css_text.trim_space().ends_with('%')
 }
 
 // Whether `box_node` has inline-level (text) content that establishes an inline formatting context.

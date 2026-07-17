@@ -75,7 +75,7 @@ fn test_block_flow_vertical_layout() {
 	root_nws := root.as_node_with_style() or { panic('root not a NodeWithStyle') }
 
 	mut state := LayoutState.new()
-	layout_block_flow(mut state, root_nws, 800.0)
+	layout_block_flow(mut state, root_nws, 800.0, none)
 
 	// html: auto width fills 800; auto height = 30 + 40 = 70.
 	html_uv := state.try_get(root_nws) or { panic('no html used values') }
@@ -119,7 +119,7 @@ fn test_height_min_max_clamp() {
 	min_computed := computed_style_for(doc, 'div', 'min-height: 100px')
 	mut min_box := NodeWithStyle.new(doc, none, min_computed)
 	mut state1 := LayoutState.new()
-	layout_block_flow(mut state1, min_box, 800.0)
+	layout_block_flow(mut state1, min_box, 800.0, none)
 	min_uv := state1.try_get(min_box) or { panic('no min-height used values') }
 	assert min_uv.content_height().to_double() == 100.0 // auto 0 raised to min 100
 
@@ -129,7 +129,7 @@ fn test_height_min_max_clamp() {
 	mut child := NodeWithStyle.new(doc, none, child_computed)
 	parent.append_child(unsafe { &Node(child) })
 	mut state2 := LayoutState.new()
-	layout_block_flow(mut state2, parent, 800.0)
+	layout_block_flow(mut state2, parent, 800.0, none)
 	parent_uv := state2.try_get(parent) or { panic('no parent used values') }
 	assert parent_uv.content_height().to_double() == 60.0 // child 100 capped to max 60
 	child_uv := state2.try_get(child) or { panic('no child used values') }
@@ -154,7 +154,7 @@ fn test_adjacent_margin_collapse() {
 	root := build_layout_tree(doc) or { panic('no layout tree') }
 	root_nws := root.as_node_with_style() or { panic('root not nws') }
 	mut state := LayoutState.new()
-	layout_block_flow(mut state, root_nws, 800.0)
+	layout_block_flow(mut state, root_nws, 800.0, none)
 
 	div1_uv := state.try_get(root.children()[0].as_node_with_style() or { panic('d1') }) or { panic('uv1') }
 	div2_uv := state.try_get(root.children()[1].as_node_with_style() or { panic('d2') }) or { panic('uv2') }
@@ -162,4 +162,37 @@ fn test_adjacent_margin_collapse() {
 	assert div1_uv.offset.y().to_double() == 0.0
 	// div1 bottom = 10; collapsed margin = max(20, 30) = 30; div2 at 10 + 30 = 40 (NOT 10+20+30=60).
 	assert div2_uv.offset.y().to_double() == 40.0
+}
+
+// A percentage height resolves against the containing block's definite height (CSS 2.1 §10.5).
+fn test_percentage_height() {
+	doc := dom.Document.create(dom.url_about_blank())
+	parent_computed := computed_style_for(doc, 'div', 'height: 200px')
+	child_computed := computed_style_for(doc, 'div', 'height: 50%')
+	mut parent := NodeWithStyle.new(doc, none, parent_computed)
+	mut child := NodeWithStyle.new(doc, none, child_computed)
+	parent.append_child(unsafe { &Node(child) })
+	mut state := LayoutState.new()
+	layout_block_flow(mut state, parent, 800.0, none)
+
+	parent_uv := state.try_get(parent) or { panic('no parent used values') }
+	assert parent_uv.content_height().to_double() == 200.0
+	child_uv := state.try_get(child) or { panic('no child used values') }
+	assert child_uv.content_height().to_double() == 100.0 // 50% of the parent's 200px
+}
+
+// A percentage height against an indefinite (auto) containing-block height is treated as auto.
+fn test_percentage_height_indefinite_containing_block() {
+	doc := dom.Document.create(dom.url_about_blank())
+	parent_computed := computed_style_for(doc, 'div', '') // auto height
+	child_computed := computed_style_for(doc, 'div', 'height: 50%')
+	mut parent := NodeWithStyle.new(doc, none, parent_computed)
+	mut child := NodeWithStyle.new(doc, none, child_computed)
+	parent.append_child(unsafe { &Node(child) })
+	mut state := LayoutState.new()
+	layout_block_flow(mut state, parent, 800.0, none)
+
+	child_uv := state.try_get(child) or { panic('no child used values') }
+	// Indefinite CB height -> % height is auto -> the empty child's content height is 0.
+	assert child_uv.content_height().to_double() == 0.0
 }
