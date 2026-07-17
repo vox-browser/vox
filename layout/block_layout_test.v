@@ -72,18 +72,20 @@ fn test_block_flow_vertical_layout() {
 	html_node.append_child(div2.as_node()) or { panic('${err}') }
 
 	root := build_layout_tree(doc) or { panic('no layout tree') }
-	root_nws := root.as_node_with_style() or { panic('root not a NodeWithStyle') }
+	viewport := root.as_viewport() or { panic('root not a Viewport') }
 
 	mut state := LayoutState.new()
-	layout_block_flow(mut state, root_nws, 800.0, none)
+	layout_viewport(mut state, viewport, 800.0, 600.0)
 
 	// html: auto width fills 800; auto height = 30 + 40 = 70.
-	html_uv := state.try_get(root_nws) or { panic('no html used values') }
+	html_box := root.first_child() or { panic('no html box') }
+	html_nws := html_box.as_node_with_style() or { panic('html not nws') }
+	html_uv := state.try_get(html_nws) or { panic('no html used values') }
 	assert html_uv.content_width().to_double() == 800.0
 	assert html_uv.content_height().to_double() == 70.0
 
-	div1_nws := root.children()[0].as_node_with_style() or { panic('div1 not nws') }
-	div2_nws := root.children()[1].as_node_with_style() or { panic('div2 not nws') }
+	div1_nws := html_box.children()[0].as_node_with_style() or { panic('div1 not nws') }
+	div2_nws := html_box.children()[1].as_node_with_style() or { panic('div2 not nws') }
 	div1_uv := state.try_get(div1_nws) or { panic('no div1 used values') }
 	div2_uv := state.try_get(div2_nws) or { panic('no div2 used values') }
 
@@ -152,12 +154,13 @@ fn test_adjacent_margin_collapse() {
 	html_node.append_child(div2.as_node()) or { panic('${err}') }
 
 	root := build_layout_tree(doc) or { panic('no layout tree') }
-	root_nws := root.as_node_with_style() or { panic('root not nws') }
+	viewport := root.as_viewport() or { panic('root not a Viewport') }
 	mut state := LayoutState.new()
-	layout_block_flow(mut state, root_nws, 800.0, none)
+	layout_viewport(mut state, viewport, 800.0, 600.0)
 
-	div1_uv := state.try_get(root.children()[0].as_node_with_style() or { panic('d1') }) or { panic('uv1') }
-	div2_uv := state.try_get(root.children()[1].as_node_with_style() or { panic('d2') }) or { panic('uv2') }
+	html_box := root.first_child() or { panic('no html box') }
+	div1_uv := state.try_get(html_box.children()[0].as_node_with_style() or { panic('d1') }) or { panic('uv1') }
+	div2_uv := state.try_get(html_box.children()[1].as_node_with_style() or { panic('d2') }) or { panic('uv2') }
 
 	assert div1_uv.offset.y().to_double() == 0.0
 	// div1 bottom = 10; collapsed margin = max(20, 30) = 30; div2 at 10 + 30 = 40 (NOT 10+20+30=60).

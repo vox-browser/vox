@@ -858,8 +858,4 @@ pub mut:
 	stub LayoutStub
 }
 
-@[heap]
-pub struct Viewport {
-pub mut:
-	stub LayoutStub
-}
+// Viewport is now a real type (Layout/Viewport.h) — see node.v (embeds BlockContainer).

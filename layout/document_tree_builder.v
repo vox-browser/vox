@@ -13,7 +13,16 @@ import css
 pub fn build_layout_tree(document &dom.Document) ?&Node {
 	root_element := document.document_element() or { return none }
 	style_computer := css.css_style_computer_for(document)
-	return build_layout_box_for_element(document, root_element, style_computer)
+	// The layout tree's root is the Viewport (whose DOM node is the Document itself); the root element's box
+	// is its child. This is faithful to TreeBuilder recursing from the Document node, where
+	// `is<DOM::Document>` allocates a Layout::Viewport with the document style.
+	document_style := style_computer.create_document_style()
+	mut viewport := unsafe { &Node(Viewport.new(document, document_style)) }
+	root_element_box := build_layout_box_for_element(document, root_element, style_computer) or {
+		return none
+	}
+	viewport.append_child(root_element_box)
+	return viewport
 }
 
 // The result of laying out a document: the root layout box and the LayoutState holding every box's geometry.
@@ -28,21 +37,19 @@ pub fn (result &DocumentLayoutResult) used_values_for(box &NodeWithStyle) ?&Used
 	return result.state.try_get(box)
 }
 
-// Build `document`'s layout tree and lay it out in normal block flow within a viewport of `viewport_width`
-// px — the real-engine equivalent of Document::update_layout for block content, superseding the from-scratch
-// layout_document. Returns none for a document with no root element.
+// Build `document`'s layout tree and lay it out in normal block flow within a viewport of
+// `viewport_width` × `viewport_height` px — the real-engine equivalent of Document::update_layout for block
+// content, superseding the from-scratch layout_document. Returns none for a document with no root element.
 //
-// First BlockFormattingContext.run / Viewport-layout slice: the root element box is laid out with the
-// viewport width as its containing block; a proper Viewport/ICB box, scrollbars, and non-block content
-// (inline/flex/grid/table) are deferred.
+// The layout root is the Viewport (the initial containing block): its content box is pinned to the viewport
+// rectangle (definite in both axes), so the root element fills the viewport width and root-level percentage
+// heights resolve against the viewport height. Scrollbars and non-block content (inline/flex/grid/table) are
+// deferred.
 pub fn run_document_layout(document &dom.Document, viewport_width f64, viewport_height f64) ?DocumentLayoutResult {
 	root := build_layout_tree(document) or { return none }
-	root_node_with_style := root.as_node_with_style() or { return none }
+	viewport := root.as_viewport() or { return none }
 	mut state := LayoutState.new()
-	// The initial containing block is the viewport: a definite width AND height, so root-level percentage
-	// heights (e.g. `html { height: 100% }`) resolve against the viewport. FIXME: a distinct
-	// Layout::Viewport ICB box isn't created yet — the root element box is laid out directly in the viewport.
-	layout_block_flow(mut state, root_node_with_style, viewport_width, viewport_height)
+	layout_viewport(mut state, viewport, viewport_width, viewport_height)
 	return DocumentLayoutResult{
 		root:  root
 		state: state

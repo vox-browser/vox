@@ -34,6 +34,7 @@ pub mut:
 	is_box_             bool
 	is_block_container_ bool
 	is_text_node_       bool
+	is_viewport_        bool
 }
 
 // Node(DOM::Document&, DOM::Node*) — a layout node for `dom_node` (null for anonymous boxes).
@@ -311,6 +312,51 @@ pub fn (n &Node) as_block_container() ?&BlockContainer {
 		return none
 	}
 	return unsafe { &BlockContainer(n) }
+}
+
+// --- Viewport (Layout/Viewport.h) : BlockContainer ---
+//
+// The layout tree's root: a block container whose DOM node is the Document itself and whose content box is
+// the viewport (initial containing block). C++ Viewport also builds find-in-page text_blocks and creates a
+// ViewportPaintable — both deferred (text-block extraction and painting aren't ported yet).
+@[heap]
+pub struct Viewport {
+	BlockContainer
+}
+
+// Viewport(DOM::Document&, ComputedProperties) — its DOM node is the document, per Viewport.cpp.
+pub fn Viewport.new(document &dom.Document, computed_values &css.ComputedProperties) &Viewport {
+	document_node := unsafe { &dom.Node(document) }
+	return &Viewport{
+		BlockContainer: BlockContainer{
+			Box: Box{
+				NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
+					NodeWithStyle: NodeWithStyle{
+						Node:             Node{
+							document_:           document
+							dom_node_:           document_node
+							has_style_:          true
+							is_box_:             true
+							is_block_container_: true
+							is_viewport_:        true
+						}
+						computed_values_: computed_values
+					}
+				}
+			}
+		}
+	}
+}
+
+pub fn (n &Node) is_viewport() bool {
+	return n.is_viewport_
+}
+
+pub fn (n &Node) as_viewport() ?&Viewport {
+	if !n.is_viewport_ {
+		return none
+	}
+	return unsafe { &Viewport(n) }
 }
 
 // --- TextNode (Layout/TextNode.h) : Node ---

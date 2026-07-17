@@ -23,10 +23,10 @@ fn test_dom_layout_bridge() {
 	assert !html_layout.is_anonymous()
 	assert !html_layout.is_text_node()
 	assert !html_layout.display().is_none()
-	// html has no layout parent (it's the root box).
-	if _ := html_layout.parent() {
-		panic('root layout node should have no parent')
-	}
+	// html's layout parent is the Viewport (the layout root), whose DOM node is the Document.
+	html_layout_parent := html_layout.parent() or { panic('html layout node should have the viewport as parent') }
+	viewport_dom := html_layout_parent.dom_node() or { panic('viewport layout node has no dom node') }
+	assert viewport_dom.is_document()
 
 	// The div's layout node parent is the html layout node.
 	div_layout := div.as_node().layout_node() or { panic('div has no layout node') }

@@ -1291,14 +1291,21 @@ fn test_real_layout_over_parsed_document() {
 	doc := html.parse_document('<div style="height: 30px"></div><div style="height: 40px"></div>')
 	result := layout.run_document_layout(doc, 800.0, 600.0) or { panic('layout produced no result') }
 
+	// The layout root is the Viewport (pinned to the viewport rectangle); <html> is its single box child.
+	viewport_nws := result.root.as_node_with_style() or { panic('viewport not a NodeWithStyle') }
+	viewport_uv := result.used_values_for(viewport_nws) or { panic('no viewport used values') }
+	assert viewport_uv.content_width().to_double() == 800.0
+	assert result.root.children().len == 1
+	html_box := result.root.children()[0]
+
 	// <html> fills the viewport width.
-	root_nws := result.root.as_node_with_style() or { panic('root not a NodeWithStyle') }
-	root_uv := result.used_values_for(root_nws) or { panic('no root used values') }
-	assert root_uv.content_width().to_double() == 800.0
+	html_nws := html_box.as_node_with_style() or { panic('html not a NodeWithStyle') }
+	html_uv := result.used_values_for(html_nws) or { panic('no html used values') }
+	assert html_uv.content_width().to_double() == 800.0
 
 	// <head> is display:none, so <html>'s only box child is <body>.
-	assert result.root.children().len == 1
-	body_box := result.root.children()[0]
+	assert html_box.children().len == 1
+	body_box := html_box.children()[0]
 	body_el := (body_box.dom_node() or { panic('body box has no dom node') }).as_element() or {
 		panic('body box dom node not element')
 	}
