@@ -54,3 +54,43 @@ fn test_block_width_percentage() {
 	compute_block_used_width(computed, mut uv, 400.0)
 	assert uv.content_width().to_double() == 200.0
 }
+
+// End-to-end block flow: build a layout tree from the DOM and lay it out — children stack vertically and
+// the container's auto height is the sum of their heights.
+fn test_block_flow_vertical_layout() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut div1 := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	div1.set_attribute_value('style', 'height: 30px')
+	mut div2 := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	div2.set_attribute_value('style', 'height: 40px')
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(div1.as_node()) or { panic('${err}') }
+	html_node.append_child(div2.as_node()) or { panic('${err}') }
+
+	root := build_layout_tree(doc) or { panic('no layout tree') }
+	root_nws := root.as_node_with_style() or { panic('root not a NodeWithStyle') }
+
+	mut state := LayoutState.new()
+	layout_block_flow(mut state, root_nws, 800.0)
+
+	// html: auto width fills 800; auto height = 30 + 40 = 70.
+	html_uv := state.try_get(root_nws) or { panic('no html used values') }
+	assert html_uv.content_width().to_double() == 800.0
+	assert html_uv.content_height().to_double() == 70.0
+
+	div1_nws := root.children()[0].as_node_with_style() or { panic('div1 not nws') }
+	div2_nws := root.children()[1].as_node_with_style() or { panic('div2 not nws') }
+	div1_uv := state.try_get(div1_nws) or { panic('no div1 used values') }
+	div2_uv := state.try_get(div2_nws) or { panic('no div2 used values') }
+
+	// Divs fill the width, keep their definite heights, and stack: div1 at y=0, div2 at y=30.
+	assert div1_uv.content_width().to_double() == 800.0
+	assert div1_uv.content_height().to_double() == 30.0
+	assert div2_uv.content_height().to_double() == 40.0
+	assert div1_uv.offset.y().to_double() == 0.0
+	assert div2_uv.offset.y().to_double() == 30.0
+}

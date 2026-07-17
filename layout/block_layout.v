@@ -117,3 +117,47 @@ fn compute_block_used_width(computed &css.ComputedProperties, mut used_values Us
 	}
 	// FIXME: over-constrained (no auto) — CSS 2.1 ignores margin-right in LTR; not adjusted here.
 }
+
+// Lay out `box` and its block-level descendants in normal flow (a first slice of
+// BlockFormattingContext::run + FormattingContext block layout), writing geometry into `state`:
+// resolve the box's width, lay out each block child top-to-bottom, then compute the box's height.
+// `containing_block_width` is the content width of the box's containing block.
+//
+// DEFERRED: inline/flex/grid/table/replaced/float/abspos content, margin collapsing, min/max sizing,
+// percentage heights (need a definite CB height), and writing modes.
+pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_block_width f64) {
+	computed := box.computed_values()
+	mut used_values := state.get_mutable(box)
+	resolve_box_model_edges(computed, mut used_values, containing_block_width)
+	compute_block_used_width(computed, mut used_values, containing_block_width)
+	content_width := used_values.content_width().to_double()
+
+	// Lay out block children top-to-bottom, stacking their margin boxes.
+	mut cursor_y := 0.0
+	box_as_node := unsafe { &Node(box) }
+	for child_node in box_as_node.children() {
+		child := child_node.as_node_with_style() or { continue }
+		layout_block_flow(mut state, child, content_width)
+
+		mut child_used_values := state.get_mutable(child)
+		// The child's content-area top-left within this box's content area: indented by the child's own
+		// left/top edges, and offset vertically by the running cursor.
+		content_x := child_used_values.margin_left.to_double() + child_used_values.border_left.to_double() +
+			child_used_values.padding_left.to_double()
+		content_y := cursor_y + child_used_values.margin_top.to_double() +
+			child_used_values.border_top.to_double() + child_used_values.padding_top.to_double()
+		child_used_values.set_content_offset(css.CSSPixelPoint.from_values(content_x, content_y))
+		child_used_values.set_containing_block_used_values(used_values)
+
+		cursor_y += child_used_values.margin_box_height().to_double()
+	}
+
+	// Height (CSS 2.1 §10.6): auto height is the accumulated children; a definite (absolute) height is used.
+	if property_is_auto(computed, .height) {
+		used_values.set_content_height(css_px(cursor_y))
+	} else {
+		// FIXME: percentage heights need a definite containing-block height; basis 0 here.
+		height := computed.length_percentage_to_px(.height, 0.0) or { cursor_y }
+		used_values.set_content_height(css_px(height))
+	}
+}
