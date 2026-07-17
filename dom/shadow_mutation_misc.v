@@ -3194,18 +3194,103 @@ fn resolve_session_history_processing_signal(signal_to_continue_session_history_
 	_ = signal_to_continue_session_history_processing
 }
 
+// HTML::run_bom_sniff (Parser/HTMLEncodingDetection.cpp): detect an encoding from a byte-order mark.
+// Faithful to upstream, which only checks when at least 3 bytes are available.
+fn run_bom_sniff(input ByteBuffer) ?string {
+	if input.len >= 3 {
+		if input[0] == 0xEF && input[1] == 0xBB && input[2] == 0xBF {
+			return 'UTF-8'
+		}
+		if input[0] == 0xFE && input[1] == 0xFF {
+			return 'UTF-16BE'
+		}
+		if input[0] == 0xFF && input[1] == 0xFE {
+			return 'UTF-16LE'
+		}
+	}
+	return none
+}
+
+// Whether `data` is well-formed UTF-8, per the Unicode UTF-8 well-formed byte sequence table (Table 3-7)
+// — the same validity check AK::Utf8View::validate() / TextCodec's UTF8Decoder applies.
+fn is_valid_utf8(data []u8) bool {
+	mut i := 0
+	for i < data.len {
+		b0 := data[i]
+		if b0 <= 0x7F {
+			i++
+			continue
+		}
+		mut trailing := 0
+		mut first_lower := u8(0x80)
+		mut first_upper := u8(0xBF)
+		if b0 >= 0xC2 && b0 <= 0xDF {
+			trailing = 1
+		} else if b0 == 0xE0 {
+			trailing = 2
+			first_lower = 0xA0
+		} else if b0 >= 0xE1 && b0 <= 0xEC {
+			trailing = 2
+		} else if b0 == 0xED {
+			trailing = 2
+			first_upper = 0x9F
+		} else if b0 >= 0xEE && b0 <= 0xEF {
+			trailing = 2
+		} else if b0 == 0xF0 {
+			trailing = 3
+			first_lower = 0x90
+		} else if b0 >= 0xF1 && b0 <= 0xF3 {
+			trailing = 3
+		} else if b0 == 0xF4 {
+			trailing = 3
+			first_upper = 0x8F
+		} else {
+			// 0x80-0xC1 and 0xF5-0xFF are never valid lead bytes.
+			return false
+		}
+		if i + trailing >= data.len {
+			return false
+		}
+		if data[i + 1] < first_lower || data[i + 1] > first_upper {
+			return false
+		}
+		for j := 2; j <= trailing; j++ {
+			if data[i + j] < 0x80 || data[i + j] > 0xBF {
+				return false
+			}
+		}
+		i += trailing + 1
+	}
+	return true
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
+// HTML::run_encoding_sniffing_algorithm (Parser/HTMLEncodingDetection.cpp).
 fn run_encoding_sniffing_algorithm(document &Document, data ByteBuffer, mime MimeType) string {
 	_ = document
-	_ = data
 	_ = mime
-	// Stub for HTML::run_encoding_sniffing_algorithm until the HTML parser/text codec ports exist.
+	// 1. If the result of BOM sniffing is an encoding, return it.
+	if bom := run_bom_sniff(data) {
+		return bom
+	}
+	// 2-4. FIXME (boundary): user override, waiting for more bytes, and the transport-layer (MIME) encoding
+	//      are not modeled here (MimeType is a placeholder).
+	// 5. FIXME (boundary): prescan the byte stream for a `<meta charset>` — needs the HTML tokenizer.
+	// 8. Otherwise, if the bytes are not valid UTF-8, assume windows-1252.
+	if !is_valid_utf8(data) {
+		return 'windows-1252'
+	}
+	// 9. Otherwise, default to UTF-8.
 	return 'UTF-8'
 }
 
+// TextCodec::Decoder::validate(): whether the bytes are valid in the decoder's encoding. Only the UTF-8
+// decoder overrides this to actually validate; other encodings' decoders can't fail, so accept them.
 fn text_decoder_validate(data ByteBuffer, content_encoding ?string) bool {
-	_ = data
-	_ = content_encoding
-	// Stub for TextCodec::Decoder::validate().
+	encoding := content_encoding or { 'utf-8' }
+	if encoding.to_lower() == 'utf-8' {
+		return is_valid_utf8(data)
+	}
 	return true
 }
 
