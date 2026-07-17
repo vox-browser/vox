@@ -153,13 +153,14 @@ fn clamp_to_min_max(computed &css.ComputedProperties, min_property css.PropertyI
 	return result
 }
 
-// Lay out `box` and its block-level descendants in normal flow (a first slice of
-// BlockFormattingContext::run + FormattingContext block layout), writing geometry into `state`:
-// resolve the box's width, lay out each block child top-to-bottom, then compute the box's height.
-// `containing_block_width` is the content width of the box's containing block.
+// Lay out `box` as a block formatting context root (BlockFormattingContext::run for a normal block
+// container), writing geometry into `state`: resolve the box's width, lay out its block-level descendants in
+// normal flow (its BFC), then compute the box's height. `containing_block_width` is the content width of the
+// box's containing block. As a BFC root, the box's own margins do not collapse with its children (CSS 2.1
+// §8.3.1); child stacking and margin collapsing happen inside the context (layout_block_level_box). Used as
+// a standalone entry point (e.g. by tests); the document path goes through layout_viewport.
 //
-// DEFERRED: inline/flex/grid/table/replaced/float/abspos content, margin collapsing, min/max sizing,
-// percentage heights (need a definite CB height), and writing modes.
+// DEFERRED: inline/flex/grid/table/replaced/float/abspos content, and writing modes.
 pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_block_width f64, containing_block_height ?f64) {
 	computed := box.computed_values()
 	mut used_values := state.get_mutable(box)
@@ -183,9 +184,12 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 		// baselines, or per-fragment positioning yet.
 		content_height_from_children = computed_line_height_px(computed)
 	} else {
-		// Block formatting context: stack block children top-to-bottom.
-		content_height_from_children = stack_block_children(mut state, used_values, box_as_node,
-			content_width, definite_content_height)
+		// Block formatting context: lay out the block children, collapsing adjacent-sibling and parent-child
+		// vertical margins (CSS 2.1 §8.3.1). `box` is treated as the BFC root, whose own margins (per §8.3.1)
+		// do not collapse with its children — that is handled per-child inside the context.
+		mut block_formatting_context := BlockFormattingContext{}
+		content_height_from_children = block_formatting_context.layout_block_level_children(mut state,
+			box, content_width, definite_content_height)
 	}
 
 	// Height (CSS 2.1 §10.6): use the definite height if the box has one, else the content height from
@@ -235,60 +239,20 @@ fn computed_line_height_px(computed &css.ComputedProperties) f64 {
 	return computed.resolved_font_size_px() * 1.2
 }
 
-// Stack `parent`'s block-level children top-to-bottom inside its content box, collapsing adjacent siblings'
-// vertical margins (CSS 2.1 §8.3.1): carry the previous child's bottom margin and collapse it with the next
-// child's top margin. Each child's used geometry is written to `state`. Returns the accumulated content
-// height. `content_width` is the children's containing-block width; `cb_height_for_children` is the parent's
-// definite content height, used to resolve the children's percentage heights. FIXME: parent-child margin
-// collapsing not modelled.
-fn stack_block_children(mut state LayoutState, parent_used_values &UsedValues, parent_node &Node, content_width f64, cb_height_for_children ?f64) f64 {
-	mut cursor_y := 0.0
-	mut carried_bottom_margin := 0.0
-	mut has_previous_child := false
-	for child_node in parent_node.children() {
-		child := child_node.as_node_with_style() or { continue }
-		layout_block_flow(mut state, child, content_width, cb_height_for_children)
-
-		mut child_used_values := state.get_mutable(child)
-		child_margin_top := child_used_values.margin_top.to_double()
-		if has_previous_child {
-			cursor_y += collapse_margins([carried_bottom_margin, child_margin_top])
-		} else {
-			cursor_y += child_margin_top
-		}
-
-		// cursor_y is now at the child's border-box top; position its content area inside that.
-		content_x := child_used_values.margin_left.to_double() +
-			child_used_values.border_left.to_double() + child_used_values.padding_left.to_double()
-		content_y := cursor_y + child_used_values.border_top.to_double() +
-			child_used_values.padding_top.to_double()
-		child_used_values.set_content_offset(css.CSSPixelPoint.from_values(content_x, content_y))
-		child_used_values.set_containing_block_used_values(parent_used_values)
-
-		// Advance past the child's border box (not margins); carry its bottom margin for the next collapse.
-		cursor_y += child_used_values.border_box_height().to_double()
-		carried_bottom_margin = child_used_values.margin_bottom.to_double()
-		has_previous_child = true
-	}
-	if has_previous_child {
-		cursor_y += carried_bottom_margin
-	}
-	return cursor_y
-}
-
 // Lay out the Viewport — the layout tree's root and the initial containing block. Its content box is pinned
 // to the viewport rectangle (definite width AND height); then its child (the root element box) is laid out
-// within. Faithful to Document::update_layout's root-formatting-context setup (Document.cpp): the viewport
-// state's content size is set to the viewport rect, so the ICB (document element) fills the viewport width
-// and root-level percentage heights resolve against the definite viewport height. Unlike a normal block, the
-// viewport's own dimensions are NOT computed from its style — they are the viewport rect.
+// within a fresh block formatting context. Faithful to Document::update_layout's root-formatting-context
+// setup (Document.cpp) + BlockFormattingContext::layout_viewport: the viewport state's content size is set
+// to the viewport rect, so the ICB (document element) fills the viewport width and root-level percentage
+// heights resolve against the definite viewport height. Unlike a normal block, the viewport's own dimensions
+// are NOT computed from its style — they are the viewport rect.
 pub fn layout_viewport(mut state LayoutState, viewport &Viewport, viewport_width f64, viewport_height f64) {
 	viewport_node_with_style := unsafe { &NodeWithStyle(viewport) }
 	mut viewport_used_values := state.get_mutable(viewport_node_with_style)
 	viewport_used_values.set_content_width(css_px(viewport_width))
 	viewport_used_values.set_content_height(css_px(viewport_height))
 
-	viewport_as_node := unsafe { &Node(viewport) }
-	stack_block_children(mut state, viewport_used_values, viewport_as_node, viewport_width,
-		viewport_height)
+	mut block_formatting_context := BlockFormattingContext{}
+	block_formatting_context.layout_block_level_children(mut state, viewport_node_with_style,
+		viewport_width, viewport_height)
 }

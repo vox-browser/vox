@@ -265,18 +265,8 @@ pub mut:
 }
 
 // The real Layout::BlockContainer is defined in layout/node.v.
-
-@[heap]
-pub struct BlockFormattingContext {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct BlockMarginState {
-pub mut:
-	stub LayoutStub
-}
+// The real BlockFormattingContext + BlockMarginState (margin-collapsing core) are in
+// layout/block_formatting_context.v.
 
 @[heap]
 pub struct BorderConflictFinder {

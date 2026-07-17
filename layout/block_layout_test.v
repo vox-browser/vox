@@ -167,6 +167,37 @@ fn test_adjacent_margin_collapse() {
 	assert div2_uv.offset.y().to_double() == 40.0
 }
 
+// A block container's top margin collapses with its first in-flow child's top margin (CSS 2.1 §8.3.1): the
+// collapsed margin moves out to the parent and the child sits flush against the parent's content top.
+fn test_parent_child_margin_collapse() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	// The child has a top margin but no border/padding separates it from <html>, so their top margins adjoin.
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	child.set_attribute_value('style', 'margin-top: 40px; height: 50px')
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(child.as_node()) or { panic('${err}') }
+
+	root := build_layout_tree(doc) or { panic('no layout tree') }
+	viewport := root.as_viewport() or { panic('root not a Viewport') }
+	mut state := LayoutState.new()
+	layout_viewport(mut state, viewport, 800.0, 600.0)
+
+	html_box := root.first_child() or { panic('no html box') }
+	html_uv := state.try_get(html_box.as_node_with_style() or { panic('html') }) or { panic('html uv') }
+	child_uv := state.try_get(html_box.children()[0].as_node_with_style() or { panic('c') }) or { panic('child uv') }
+
+	// The child's 40px top margin collapses through <html> (which has no top margin/border/padding): <html> is
+	// pushed down to y=40, and the child sits flush at <html>'s content top (its own margin absorbed).
+	assert html_uv.offset.y().to_double() == 40.0
+	assert child_uv.offset.y().to_double() == 0.0
+	// The child's absolute (cumulative) top is still 40 — the margin collapsed, it did not stack twice.
+	assert child_uv.cumulative_offset().y().to_double() == 40.0
+}
+
 // A percentage height resolves against the containing block's definite height (CSS 2.1 §10.5).
 fn test_percentage_height() {
 	doc := dom.Document.create(dom.url_about_blank())
