@@ -140,6 +140,56 @@ fn test_inline_content_height() {
 	assert height > 19.15 && height < 19.25
 }
 
+// Mixed inline + block content in one container: a text node beside a block element. The text is wrapped in
+// an anonymous block box (CSS 2.1 §9.2.1.1) so the container's children are all block-level, and the block
+// sibling is not dropped.
+fn test_anonymous_block_wrapping_for_mixed_content() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut div := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	text := doc.create_text_node('hello')
+	mut para := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic('${err}') }
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(div.as_node()) or { panic('${err}') }
+	mut div_node := div.as_node()
+	div_node.append_child(text.as_node()) or { panic('${err}') }
+	div_node.append_child(para.as_node()) or { panic('${err}') }
+
+	// Build + lay out once, then navigate that single tree (build_layout_tree runs again internally, so a
+	// tree built separately would hold different node pointers than the laid-out one).
+	result := run_document_layout(doc, 800.0, 600.0) or { panic('no layout result') }
+	html_box := result.root.first_child() or { panic('no html box') }
+	div_box := html_box.first_child() or { panic('no div box') }
+
+	// The div has mixed content, so it is block-level with two block children: an anonymous wrapper (holding
+	// the text) followed by the <p> box.
+	assert !div_box.children_are_inline()
+	assert div_box.child_count() == 2
+
+	wrapper := div_box.first_child() or { panic('no wrapper') }
+	assert wrapper.is_anonymous()
+	assert wrapper.children_are_inline()
+	assert wrapper.child_count() == 1
+	wrapper_child := wrapper.first_child() or { panic('no wrapper child') }
+	assert wrapper_child.is_text_node()
+
+	para_box := div_box.children()[1]
+	assert !para_box.is_anonymous()
+	para_el := (para_box.dom_node() or { panic('p box has no dom node') }).as_element() or {
+		panic('p box dom node not element')
+	}
+	assert para_el.local_name() == 'p'
+
+	// The block sibling is laid out (not dropped): it sits below the anonymous text line box (~19.2px).
+	para_uv := result.used_values_for(para_box.as_node_with_style() or { panic('p not nws') }) or {
+		panic('no p used values')
+	}
+	assert para_uv.offset.y().to_double() > 19.0
+}
+
 // The initial containing block is the viewport, so a root-level percentage height resolves against the
 // viewport height (CSS 2.1 §10.5): `html { height: 50% }` in a 600px-tall viewport is 300px.
 fn test_root_percentage_height_resolves_against_viewport() {

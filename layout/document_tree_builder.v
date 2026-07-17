@@ -68,22 +68,97 @@ fn build_layout_box_for_element(document &dom.Document, element &dom.Element, st
 	// FIXME: choose the box type from the computed display; for now every element is a BlockContainer.
 	mut box_node := unsafe { &Node(BlockContainer.new(document, element.as_node(), computed)) }
 
+	// Collect this element's child layout boxes: element children become (block-level) boxes; DOM text
+	// children become (inline-level) Layout::TextNodes, unless they collapse to only whitespace.
+	mut children := []&Node{}
 	for child_node in element.as_node().children_as_vector() {
 		if child_element := child_node.as_element() {
 			if child_box := build_layout_box_for_element(document, child_element, style_computer) {
-				box_node.append_child(child_box)
+				children << child_box
 			}
 		} else if child_node.is_text() {
-			// A DOM text node becomes a Layout::TextNode, unless it collapses to only whitespace.
 			if character_data := child_node.as_character_data() {
 				text := collapse_whitespace(character_data.data())
 				if text.trim_space() != '' {
-					mut text_box := unsafe { &Node(TextNode.new(document, child_node, text)) }
-					box_node.append_child(text_box)
+					children << unsafe { &Node(TextNode.new(document, child_node, text)) }
 				}
 			}
 		}
 	}
 
+	attach_children_maintaining_inline_invariant(mut box_node, children, document, computed)
 	return box_node
+}
+
+// Whether a layout node is inline-level for the purpose of the block/inline invariant. Text nodes are
+// inline-level; element boxes are currently always block-level BlockContainers (box-type-from-display is
+// deferred, so inline-outside element boxes aren't produced yet).
+fn child_is_inline_level(node &Node) bool {
+	return node.is_text_node()
+}
+
+// Attach `children` to `parent` while maintaining the CSS invariant that a block container's in-flow
+// children are either all block-level or all inline-level (Layout::TreeBuilder's insertion_parent_for_*
+// functions). When the children are mixed, each maximal run of inline-level children is wrapped in an
+// anonymous block box (NodeWithStyle::create_anonymous_wrapper), so the parent's direct children become all
+// block-level. FIXME: out-of-flow children and inline-outside element boxes aren't distinguished yet.
+fn attach_children_maintaining_inline_invariant(mut parent Node, children []&Node, document &dom.Document, parent_computed &css.ComputedProperties) {
+	if children.len == 0 {
+		return
+	}
+
+	mut any_block := false
+	mut any_inline := false
+	for child in children {
+		if child_is_inline_level(child) {
+			any_inline = true
+		} else {
+			any_block = true
+		}
+	}
+
+	// All inline-level (an inline formatting context) or all block-level: attach directly.
+	if !any_block || !any_inline {
+		parent.set_children_are_inline(any_inline && !any_block)
+		for child in children {
+			parent.append_child(child)
+		}
+		return
+	}
+
+	// Mixed: block-level children stay direct; each run of inline-level children goes into an anonymous
+	// block wrapper (reusing the parent's trailing anonymous inline wrapper when possible).
+	parent.set_children_are_inline(false)
+	for child in children {
+		if child_is_inline_level(child) {
+			mut wrapper := last_anonymous_inline_wrapper_or_new(mut parent, document, parent_computed)
+			wrapper.append_child(child)
+		} else {
+			parent.append_child(child)
+		}
+	}
+}
+
+// Return `parent`'s last child if it is an anonymous wrapper holding inline content, otherwise create such a
+// wrapper, append it, and return it (Layout::TreeBuilder's last_child_creating_anonymous_wrapper_if_needed).
+fn last_anonymous_inline_wrapper_or_new(mut parent Node, document &dom.Document, parent_computed &css.ComputedProperties) &Node {
+	if last := parent.last_child() {
+		if last.is_anonymous() && last.children_are_inline() {
+			return last
+		}
+	}
+	wrapper := create_anonymous_block_wrapper(document, parent_computed)
+	parent.append_child(wrapper)
+	return wrapper
+}
+
+// NodeWithStyle::create_anonymous_wrapper — an anonymous block box that carries the parent's style (so its
+// inline content resolves font/line-height correctly) and whose children are inline-level. FIXME: C++ clones
+// only the parent's inherited values and resets the non-inherited ones to their initial values; the port
+// reuses the parent's computed style wholesale.
+fn create_anonymous_block_wrapper(document &dom.Document, parent_computed &css.ComputedProperties) &Node {
+	mut wrapper := BlockContainer.new(document, none, parent_computed)
+	wrapper.anonymous_ = true
+	wrapper.children_are_inline_ = true
+	return unsafe { &Node(wrapper) }
 }
