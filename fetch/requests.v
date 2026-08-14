@@ -4,12 +4,13 @@
 
 // Translation of Libraries/LibWeb/Fetch/Infrastructure/HTTP/Requests.{h,cpp} — the Fetch
 // `request` record (https://fetch.spec.whatwg.org/#concept-request): its enumerations, fields,
-// and the url()/current_url() accessors. Untranslated Fetch/HTML dependencies (the header list,
-// the Body object, the client environment settings object, policy containers, pending responses)
-// are held opaquely and noted at each field; the well-defined data model is otherwise faithful.
+// and the url()/current_url() accessors. The header list is a real http.HeaderList; the remaining
+// untranslated Fetch/HTML dependencies (the Body object, the client environment settings object,
+// policy containers, pending responses) are held opaquely and noted at each field.
 module fetch
 
 import dom
+import http
 
 // https://fetch.spec.whatwg.org/#concept-request-credentials-mode
 pub enum CredentialsMode {
@@ -182,8 +183,8 @@ pub mut:
 	method string = 'GET'
 	// https://fetch.spec.whatwg.org/#local-urls-only-flag
 	local_urls_only bool
-	// The header list is a HTTP::HeaderList (not translated) — held opaquely.
-	header_list voidptr = unsafe { nil }
+	// https://fetch.spec.whatwg.org/#concept-request-header-list
+	header_list &http.HeaderList = http.HeaderList.create()
 	// https://fetch.spec.whatwg.org/#unsafe-request-flag
 	unsafe_request bool
 	// https://fetch.spec.whatwg.org/#concept-request-body
@@ -255,4 +256,16 @@ pub fn (request &Request) url() dom.URL {
 pub fn (request &Request) current_url() dom.URL {
 	// VERIFY(!m_url_list.is_empty()).
 	return request.url_list.last()
+}
+
+// https://fetch.spec.whatwg.org/#request-destination-script-like
+pub fn destination_is_script_like(destination Destination) bool {
+	// "audioworklet", "paintworklet", "script", "serviceworker", "sharedworker", or "worker".
+	return destination in [Destination.audio_worklet, .paint_worklet, .script, .service_worker,
+		.shared_worker, .worker]
+}
+
+pub fn (request &Request) destination_is_script_like() bool {
+	destination := request.destination or { return false }
+	return destination_is_script_like(destination)
 }

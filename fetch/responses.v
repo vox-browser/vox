@@ -4,13 +4,12 @@
 
 // Translation of Libraries/LibWeb/Fetch/Infrastructure/HTTP/Responses.{h,cpp} — the Fetch
 // `response` record (https://fetch.spec.whatwg.org/#concept-response): its enumerations, fields,
-// the network-error creators, the network-error predicates, and url(). As with Request, the
-// LibHTTP header list and the Fetch Body object are untranslated and held opaquely; the header
-// list is represented as "empty" for this port (network errors carry no headers), which is what
-// is_network_error inspects.
+// the network-error creators, the network-error predicates, and url(). The header list is a real
+// http.HeaderList; the Fetch Body object stays opaque (body carries only the byte-buffer case).
 module fetch
 
 import dom
+import http
 
 // https://fetch.spec.whatwg.org/#concept-response-cache-state
 pub enum CacheState {
@@ -57,8 +56,8 @@ pub mut:
 	status u16 = 200
 	// https://fetch.spec.whatwg.org/#concept-response-status-message
 	status_message string
-	// The header list is a HTTP::HeaderList (not translated); a nil handle means "empty" here.
-	header_list voidptr = unsafe { nil }
+	// https://fetch.spec.whatwg.org/#concept-response-header-list
+	header_list &http.HeaderList = http.HeaderList.create()
 	// https://fetch.spec.whatwg.org/#concept-response-body (a Body, or null). The Body object is
 	// opaque; none means the null body that is_network_error checks for.
 	body ?[]u8
@@ -131,8 +130,8 @@ pub fn (response &Response) is_network_error() bool {
 	if response.status_message.len != 0 {
 		return false
 	}
-	// The header list is empty (opaque; always empty in this port).
-	if response.header_list != unsafe { nil } {
+	// The header list is empty.
+	if !response.header_list.is_empty() {
 		return false
 	}
 	if response.body != none {
