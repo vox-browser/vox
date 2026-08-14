@@ -2,6 +2,7 @@ module main
 
 import css
 import dom
+import domurl
 import html
 import infra
 import layout
@@ -14,6 +15,7 @@ import webvtt
 fn main() {
 	_ = css.StyleInvalidationReason.dom_mutation
 	_ = dom.NodeType.invalid
+	_ = domurl.url_encode
 	_ = html.event_load
 	_ = infra.ascii_whitespace
 	_ = layout.translated_layout_function_count
