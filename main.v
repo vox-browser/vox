@@ -9,6 +9,7 @@ import infra
 import layout
 import mimesniff
 import namespace_
+import http
 import selection
 import sri
 import webvtt
@@ -19,6 +20,7 @@ fn main() {
 	_ = domurl.url_encode
 	_ = fetch.is_ok_status
 	_ = html.event_load
+	_ = http.HeaderList.create
 	_ = infra.ascii_whitespace
 	_ = layout.translated_layout_function_count
 	_ = layout.AvailableSize.make_indefinite()
