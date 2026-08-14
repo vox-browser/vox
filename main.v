@@ -8,6 +8,7 @@ import layout
 import mimesniff
 import namespace_
 import selection
+import webvtt
 
 fn main() {
 	_ = css.StyleInvalidationReason.dom_mutation
@@ -19,4 +20,5 @@ fn main() {
 	_ = mimesniff.javascript_mime_type_essence_strings
 	_ = namespace_.html
 	_ = selection.selection_create
+	_ = webvtt.ScrollSetting.empty
 }
