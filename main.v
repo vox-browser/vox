@@ -8,6 +8,7 @@ import layout
 import mimesniff
 import namespace_
 import selection
+import sri
 import webvtt
 
 fn main() {
@@ -20,5 +21,6 @@ fn main() {
 	_ = mimesniff.javascript_mime_type_essence_strings
 	_ = namespace_.html
 	_ = selection.selection_create
+	_ = sri.do_bytes_match_metadata_list
 	_ = webvtt.ScrollSetting.empty
 }
