@@ -201,10 +201,19 @@ pub fn (mut c CascadedProperties) revert_layer_property(property_id PropertyID, 
 }
 
 pub fn (mut c CascadedProperties) resolve_unresolved_properties(abstract_element &dom.AbstractElement) {
-	_ = abstract_element
-	// DOM::StyleValue is currently an opaque DOM-side placeholder in this V port, so entries cannot be inspected for
-	// UnresolvedStyleValue here. The translated resolver below is used by CSS-side callers that still have typed values.
-	// FIXME: Replace this boundary once dom.StyleValue carries or exposes the CSS StyleValue variant.
+	for property_id, mut entries in c.properties_ {
+		for index, mut entry in entries {
+			parsed_value := parse_css_value_logic(property_id, entry.property.value.css_text) or {
+				continue
+			}
+			if parsed_value is UnresolvedStyleValue {
+				entry.property.value = resolve_unresolved_style_value_for_property(*abstract_element,
+					property_id, parsed_value)
+				entries[index] = entry
+			}
+		}
+		c.properties_[property_id] = entries
+	}
 }
 
 // https://drafts.csswg.org/css-values-5/#property-replacement
@@ -216,7 +225,19 @@ fn resolve_unresolved_style_value_for_property(abstract_element dom.AbstractElem
 
 fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom.AbstractElement, property_id PropertyID, unresolved UnresolvedStyleValue, mut guarded_contexts GuardedSubstitutionContexts) &dom.StyleValue {
 	// AD-HOC: Report that we might rely on custom properties.
-	// FIXME: DOM::Element exposes these flags internally, but the setter methods are not translated for attr()/var()/if()/inherit().
+	mut element := unsafe { &dom.Element(abstract_element.element()) }
+	if unresolved.includes_attr_function() {
+		element.set_style_uses_attr_css_function()
+	}
+	if unresolved.includes_if_function() {
+		element.set_style_uses_if_css_function()
+	}
+	if unresolved.includes_inherit_function() {
+		element.set_style_uses_inherit_css_function()
+	}
+	if unresolved.includes_var_function() {
+		element.set_style_uses_var_css_function()
+	}
 
 	// To replace substitution functions in a property prop:
 
@@ -352,14 +373,30 @@ fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value St
 
 fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 	return match property_id {
-		.overflow { [PropertyID.overflow_x, PropertyID.overflow_y] }
-		.gap { [PropertyID.row_gap, PropertyID.column_gap] }
-		.place_items { [PropertyID.align_items, PropertyID.justify_items] }
-		.place_content { [PropertyID.align_content, PropertyID.justify_content] }
-		.place_self { [PropertyID.align_self, PropertyID.justify_self] }
-		.flex_flow { [PropertyID.flex_direction, PropertyID.flex_wrap] }
-		.columns { [PropertyID.column_width, PropertyID.column_count] }
-		.text_wrap { [PropertyID.text_wrap_mode, PropertyID.text_wrap_style] }
+		.overflow {
+			[PropertyID.overflow_x, PropertyID.overflow_y]
+		}
+		.gap {
+			[PropertyID.row_gap, PropertyID.column_gap]
+		}
+		.place_items {
+			[PropertyID.align_items, PropertyID.justify_items]
+		}
+		.place_content {
+			[PropertyID.align_content, PropertyID.justify_content]
+		}
+		.place_self {
+			[PropertyID.align_self, PropertyID.justify_self]
+		}
+		.flex_flow {
+			[PropertyID.flex_direction, PropertyID.flex_wrap]
+		}
+		.columns {
+			[PropertyID.column_width, PropertyID.column_count]
+		}
+		.text_wrap {
+			[PropertyID.text_wrap_mode, PropertyID.text_wrap_style]
+		}
 		.margin {
 			[PropertyID.margin_top, PropertyID.margin_right, PropertyID.margin_bottom,
 				PropertyID.margin_left]
@@ -368,34 +405,54 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 			[PropertyID.padding_top, PropertyID.padding_right, PropertyID.padding_bottom,
 				PropertyID.padding_left]
 		}
-		.inset { [PropertyID.top, PropertyID.right, PropertyID.bottom, PropertyID.left] }
-		.margin_block { [PropertyID.margin_block_start, PropertyID.margin_block_end] }
-		.margin_inline { [PropertyID.margin_inline_start, PropertyID.margin_inline_end] }
-		.padding_block { [PropertyID.padding_block_start, PropertyID.padding_block_end] }
-		.padding_inline { [PropertyID.padding_inline_start, PropertyID.padding_inline_end] }
-		.inset_block { [PropertyID.inset_block_start, PropertyID.inset_block_end] }
-		.inset_inline { [PropertyID.inset_inline_start, PropertyID.inset_inline_end] }
+		.inset {
+			[PropertyID.top, PropertyID.right, PropertyID.bottom, PropertyID.left]
+		}
+		.margin_block {
+			[PropertyID.margin_block_start, PropertyID.margin_block_end]
+		}
+		.margin_inline {
+			[PropertyID.margin_inline_start, PropertyID.margin_inline_end]
+		}
+		.padding_block {
+			[PropertyID.padding_block_start, PropertyID.padding_block_end]
+		}
+		.padding_inline {
+			[PropertyID.padding_inline_start, PropertyID.padding_inline_end]
+		}
+		.inset_block {
+			[PropertyID.inset_block_start, PropertyID.inset_block_end]
+		}
+		.inset_inline {
+			[PropertyID.inset_inline_start, PropertyID.inset_inline_end]
+		}
 		.border_color {
-			[PropertyID.border_top_color, PropertyID.border_right_color, PropertyID.border_bottom_color,
-				PropertyID.border_left_color]
+			[PropertyID.border_top_color, PropertyID.border_right_color,
+				PropertyID.border_bottom_color, PropertyID.border_left_color]
 		}
 		.border_style {
-			[PropertyID.border_top_style, PropertyID.border_right_style, PropertyID.border_bottom_style,
-				PropertyID.border_left_style]
+			[PropertyID.border_top_style, PropertyID.border_right_style,
+				PropertyID.border_bottom_style, PropertyID.border_left_style]
 		}
 		.border_width {
-			[PropertyID.border_top_width, PropertyID.border_right_width, PropertyID.border_bottom_width,
-				PropertyID.border_left_width]
+			[PropertyID.border_top_width, PropertyID.border_right_width,
+				PropertyID.border_bottom_width, PropertyID.border_left_width]
 		}
-		.border_block_color { [PropertyID.border_block_start_color, PropertyID.border_block_end_color] }
+		.border_block_color {
+			[PropertyID.border_block_start_color, PropertyID.border_block_end_color]
+		}
 		.border_inline_color {
 			[PropertyID.border_inline_start_color, PropertyID.border_inline_end_color]
 		}
-		.border_block_style { [PropertyID.border_block_start_style, PropertyID.border_block_end_style] }
+		.border_block_style {
+			[PropertyID.border_block_start_style, PropertyID.border_block_end_style]
+		}
 		.border_inline_style {
 			[PropertyID.border_inline_start_style, PropertyID.border_inline_end_style]
 		}
-		.border_block_width { [PropertyID.border_block_start_width, PropertyID.border_block_end_width] }
+		.border_block_width {
+			[PropertyID.border_block_start_width, PropertyID.border_block_end_width]
+		}
 		.border_inline_width {
 			[PropertyID.border_inline_start_width, PropertyID.border_inline_end_width]
 		}
@@ -403,7 +460,8 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 			[PropertyID.border_top_width, PropertyID.border_top_style, PropertyID.border_top_color]
 		}
 		.border_right {
-			[PropertyID.border_right_width, PropertyID.border_right_style, PropertyID.border_right_color]
+			[PropertyID.border_right_width, PropertyID.border_right_style,
+				PropertyID.border_right_color]
 		}
 		.border_bottom {
 			[PropertyID.border_bottom_width, PropertyID.border_bottom_style,
@@ -428,9 +486,15 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 			[PropertyID.border_inline_end_width, PropertyID.border_inline_end_style,
 				PropertyID.border_inline_end_color]
 		}
-		.border { border_shorthand_longhands }
-		.border_block { border_block_shorthand_longhands }
-		.border_inline { border_inline_shorthand_longhands }
+		.border {
+			border_shorthand_longhands
+		}
+		.border_block {
+			border_block_shorthand_longhands
+		}
+		.border_inline {
+			border_inline_shorthand_longhands
+		}
 		.outline {
 			[PropertyID.outline_color, PropertyID.outline_style, PropertyID.outline_width]
 		}
@@ -447,7 +511,9 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 				PropertyID.font_variant_ligatures, PropertyID.font_variant_numeric,
 				PropertyID.font_variant_position]
 		}
-		.flex { [PropertyID.flex_grow, PropertyID.flex_shrink, PropertyID.flex_basis] }
+		.flex {
+			[PropertyID.flex_grow, PropertyID.flex_shrink, PropertyID.flex_basis]
+		}
 		.corner_shape {
 			[PropertyID.corner_top_left_shape, PropertyID.corner_top_right_shape,
 				PropertyID.corner_bottom_right_shape, PropertyID.corner_bottom_left_shape]
@@ -476,8 +542,12 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 		.corner_inline_end_shape {
 			[PropertyID.corner_start_end_shape, PropertyID.corner_end_end_shape]
 		}
-		.grid_row { [PropertyID.grid_row_start, PropertyID.grid_row_end] }
-		.grid_column { [PropertyID.grid_column_start, PropertyID.grid_column_end] }
+		.grid_row {
+			[PropertyID.grid_row_start, PropertyID.grid_row_end]
+		}
+		.grid_column {
+			[PropertyID.grid_column_start, PropertyID.grid_column_end]
+		}
 		.grid_area {
 			[PropertyID.grid_row_start, PropertyID.grid_column_start, PropertyID.grid_row_end,
 				PropertyID.grid_column_end]
@@ -495,7 +565,9 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 		.overflow_clip_margin_inline {
 			[PropertyID.overflow_clip_margin_inline_start, PropertyID.overflow_clip_margin_inline_end]
 		}
-		.all { all_shorthand_longhands() }
+		.all {
+			all_shorthand_longhands()
+		}
 		.border_radius {
 			[PropertyID.border_top_left_radius, PropertyID.border_top_right_radius,
 				PropertyID.border_bottom_right_radius, PropertyID.border_bottom_left_radius]
@@ -505,45 +577,58 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 				PropertyID.transition_timing_function, PropertyID.transition_delay,
 				PropertyID.transition_behavior]
 		}
-		.animation { animation_shorthand_longhands }
-		.scroll_timeline { [PropertyID.scroll_timeline_name, PropertyID.scroll_timeline_axis] }
+		.animation {
+			animation_shorthand_longhands
+		}
+		.scroll_timeline {
+			[PropertyID.scroll_timeline_name, PropertyID.scroll_timeline_axis]
+		}
 		.view_timeline {
-			[PropertyID.view_timeline_name, PropertyID.view_timeline_axis, PropertyID.view_timeline_inset]
+			[PropertyID.view_timeline_name, PropertyID.view_timeline_axis,
+				PropertyID.view_timeline_inset]
 		}
 		.border_image {
-			[PropertyID.border_image_source, PropertyID.border_image_slice, PropertyID.border_image_width,
-				PropertyID.border_image_outset, PropertyID.border_image_repeat]
+			[PropertyID.border_image_source, PropertyID.border_image_slice,
+				PropertyID.border_image_width, PropertyID.border_image_outset,
+				PropertyID.border_image_repeat]
 		}
 		.background_position {
 			[PropertyID.background_position_x, PropertyID.background_position_y]
 		}
 		.grid_template {
-			[PropertyID.grid_template_areas, PropertyID.grid_template_rows, PropertyID.grid_template_columns]
+			[PropertyID.grid_template_areas, PropertyID.grid_template_rows,
+				PropertyID.grid_template_columns]
 		}
 		.grid {
 			[PropertyID.grid_auto_flow, PropertyID.grid_auto_rows, PropertyID.grid_auto_columns,
-				PropertyID.grid_template_areas, PropertyID.grid_template_rows, PropertyID.grid_template_columns]
+				PropertyID.grid_template_areas, PropertyID.grid_template_rows,
+				PropertyID.grid_template_columns]
 		}
 		.background {
-			[PropertyID.background_color, PropertyID.background_image, PropertyID.background_position_x,
-				PropertyID.background_position_y, PropertyID.background_size, PropertyID.background_repeat,
-				PropertyID.background_attachment, PropertyID.background_origin, PropertyID.background_clip]
+			[PropertyID.background_color, PropertyID.background_image,
+				PropertyID.background_position_x, PropertyID.background_position_y,
+				PropertyID.background_size, PropertyID.background_repeat,
+				PropertyID.background_attachment, PropertyID.background_origin,
+				PropertyID.background_clip]
 		}
 		.mask {
-			[PropertyID.mask_image, PropertyID.mask_position, PropertyID.mask_size, PropertyID.mask_repeat,
-				PropertyID.mask_origin, PropertyID.mask_clip, PropertyID.mask_composite, PropertyID.mask_mode]
+			[PropertyID.mask_image, PropertyID.mask_position, PropertyID.mask_size,
+				PropertyID.mask_repeat, PropertyID.mask_origin, PropertyID.mask_clip,
+				PropertyID.mask_composite, PropertyID.mask_mode]
 		}
 		.font {
-			[PropertyID.font_family, PropertyID.font_size, PropertyID.font_width, PropertyID.font_style,
-				PropertyID.font_variant_alternates, PropertyID.font_variant_caps,
-				PropertyID.font_variant_east_asian, PropertyID.font_variant_emoji,
-				PropertyID.font_variant_ligatures, PropertyID.font_variant_numeric,
-				PropertyID.font_variant_position, PropertyID.font_weight, PropertyID.line_height,
-				PropertyID.font_feature_settings, PropertyID.font_kerning,
-				PropertyID.font_language_override, PropertyID.font_optical_sizing,
-				PropertyID.font_variation_settings]
+			[PropertyID.font_family, PropertyID.font_size, PropertyID.font_width,
+				PropertyID.font_style, PropertyID.font_variant_alternates,
+				PropertyID.font_variant_caps, PropertyID.font_variant_east_asian,
+				PropertyID.font_variant_emoji, PropertyID.font_variant_ligatures,
+				PropertyID.font_variant_numeric, PropertyID.font_variant_position,
+				PropertyID.font_weight, PropertyID.line_height, PropertyID.font_feature_settings,
+				PropertyID.font_kerning, PropertyID.font_language_override,
+				PropertyID.font_optical_sizing, PropertyID.font_variation_settings]
 		}
-		else { []PropertyID{} }
+		else {
+			[]PropertyID{}
+		}
 	}
 }
 

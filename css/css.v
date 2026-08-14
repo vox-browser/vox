@@ -1,4 +1,4 @@
-// Stub module for CSS-related functions called by Document
+// Core CSS types and document-facing CSS integration.
 module css
 
 import math
@@ -24,7 +24,7 @@ pub fn invalidate_style(doc &dom.Document, reason StyleInvalidationReason) {
 	document_node.invalidate_style(mapped_reason)
 }
 
-// --- CSS Parsing stubs ---
+// --- CSS parsing context ---
 
 pub struct ParsingParams {
 pub:
@@ -437,7 +437,42 @@ pub mut:
 }
 
 pub fn color_resolution_context_for_layout_node(node &dom.LayoutNode) ColorResolutionContext {
-	return ColorResolutionContext{}
+	computed := computed_properties_for_layout_node(node) or { return ColorResolutionContext{} }
+	dom_node := node.dom_node() or { return ColorResolutionContext{} }
+	document := dom_node.document()
+	return color_resolution_context_for_computed_properties(computed, document)
+}
+
+pub fn ColorResolutionContext.for_element(element &dom.AbstractElement) ColorResolutionContext {
+	dom_computed := element.computed_properties() or { return ColorResolutionContext{} }
+	computed := computed_properties_from_dom(dom_computed) or { return ColorResolutionContext{} }
+	return color_resolution_context_for_computed_properties(computed, element.document())
+}
+
+fn color_resolution_context_for_computed_properties(computed &ComputedProperties, document &dom.Document) ColorResolutionContext {
+	// The page preference hook is not exposed by the DOM port yet. `auto` lets
+	// the document/element color-scheme lists select their first supported
+	// scheme, falling back to the CSS initial light scheme.
+	scheme := computed.color_scheme(.auto_, document.supported_color_schemes())
+	initial_color := SystemColor.canvas_text(scheme)
+	initial_accent := SystemColor.accent_color(scheme)
+	base_context := ColorResolutionContext{
+		color_scheme:  scheme
+		current_color: initial_color
+		accent_color:  initial_accent
+	}
+	resolved_color := computed.color_or_fallback(.color, base_context,
+		ComputedColor.rgba(initial_color.r, initial_color.g, initial_color.b, initial_color.a))
+	resolved_accent := computed.color_or_fallback(.accent_color, base_context,
+		ComputedColor.rgba(initial_accent.r, initial_accent.g, initial_accent.b,
+			initial_accent.a))
+	return ColorResolutionContext{
+		color_scheme: scheme
+		current_color: Color.rgba(resolved_color.red(), resolved_color.green(),
+			resolved_color.blue(), resolved_color.alpha())
+		accent_color: Color.rgba(resolved_accent.red(), resolved_accent.green(),
+			resolved_accent.blue(), resolved_accent.alpha())
+	}
 }
 
 // --- ContentVisibility ---
@@ -467,14 +502,13 @@ pub fn (r RequiredInvalidationAfterStyleChange) is_none() bool {
 // --- StyleComputer user agent source ---
 
 pub fn user_agent_style_sheet_source(url string) ?string {
-	// The main CSS user-agent stylesheet is embedded verbatim from Ladybird's CSS/Default.css
-	// (css/ua_default.css). This is what gives the real StyleComputer its UA cascade origin, so unstyled
-	// elements get their defaults (div { display: block }, head { display: none }, li { display: list-item }...).
-	// FIXME: QuirksMode.css / MathML/Default.css / SVG/Default.css are not embedded yet.
-	if url == 'CSS/Default.css' {
-		return user_agent_stylesheet_source
+	return match url {
+		'CSS/Default.css' { user_agent_stylesheet_source }
+		'CSS/QuirksMode.css' { user_agent_quirks_mode_stylesheet_source }
+		'MathML/Default.css' { user_agent_mathml_stylesheet_source }
+		'SVG/Default.css' { user_agent_svg_stylesheet_source }
+		else { none }
 	}
-	return none
 }
 
 // --- Serialization ---
@@ -1496,7 +1530,13 @@ pub mut:
 }
 
 pub fn CSSPixels.new(value int) CSSPixels {
-	return CSSPixels.from_raw(value * css_pixels_fixed_point_denominator)
+	if value > css_pixels_max_integer_value {
+		return CSSPixels.max()
+	}
+	if value < css_pixels_min_integer_value {
+		return CSSPixels.min()
+	}
+	return CSSPixels.from_raw(int(i64(value) * i64(css_pixels_fixed_point_denominator)))
 }
 
 pub fn CSSPixels.from_raw(value int) CSSPixels {
@@ -1506,11 +1546,31 @@ pub fn CSSPixels.from_raw(value int) CSSPixels {
 }
 
 pub fn CSSPixels.nearest_value_for(value f64) CSSPixels {
-	mut raw_value := 0
-	if !math.is_nan(value) {
-		raw_value = int(math.round(value * f64(css_pixels_fixed_point_denominator)))
+	if math.is_nan(value) {
+		return CSSPixels{}
 	}
-	return CSSPixels.from_raw(raw_value)
+	return CSSPixels.from_raw(css_pixels_clamp_f64_to_raw(math.round_to_even(value *
+		f64(css_pixels_fixed_point_denominator))))
+
+}
+
+pub fn CSSPixels.floored_value_for(value f64) CSSPixels {
+	if math.is_nan(value) {
+		return CSSPixels{}
+	}
+	return CSSPixels.from_raw(css_pixels_clamp_f64_to_raw(math.floor(value * f64(css_pixels_fixed_point_denominator))))
+}
+
+pub fn CSSPixels.min() CSSPixels {
+	return CSSPixels.from_raw(css_pixels_raw_min)
+}
+
+pub fn CSSPixels.max() CSSPixels {
+	return CSSPixels.from_raw(css_pixels_raw_max)
+}
+
+pub fn CSSPixels.smallest_positive_value() CSSPixels {
+	return CSSPixels.from_raw(1)
 }
 
 pub fn (p CSSPixels) to_double() f64 {
@@ -1522,11 +1582,11 @@ pub fn (p CSSPixels) raw_value() int {
 }
 
 pub fn (p CSSPixels) plus(other CSSPixels) CSSPixels {
-	return CSSPixels.from_raw(p.raw_value_ + other.raw_value_)
+	return CSSPixels.from_raw(css_pixels_clamp_i64_to_raw(i64(p.raw_value_) + i64(other.raw_value_)))
 }
 
 pub fn (p CSSPixels) minus(other CSSPixels) CSSPixels {
-	return CSSPixels.from_raw(p.raw_value_ - other.raw_value_)
+	return CSSPixels.from_raw(css_pixels_clamp_i64_to_raw(i64(p.raw_value_) - i64(other.raw_value_)))
 }
 
 pub fn (p CSSPixels) times_float(value f64) CSSPixels {
@@ -1538,11 +1598,16 @@ pub fn (p CSSPixels) divided_by_float(value f64) CSSPixels {
 }
 
 pub fn (p CSSPixels) might_be_saturated() bool {
-	return false
+	return p.raw_value_ == css_pixels_raw_min || p.raw_value_ == css_pixels_raw_max
 }
 
 const css_pixels_fractional_bits = 6
 const css_pixels_fixed_point_denominator = 1 << css_pixels_fractional_bits
+const css_pixels_radix_mask = css_pixels_fixed_point_denominator - 1
+const css_pixels_raw_min = int(-2147483647 - 1)
+const css_pixels_raw_max = int(2147483647)
+const css_pixels_max_integer_value = css_pixels_raw_max >> css_pixels_fractional_bits
+const css_pixels_min_integer_value = int(-33_554_432)
 
 pub struct CSSPixelRect {
 pub mut:
@@ -1608,32 +1673,30 @@ pub fn (s CSSPixelSize) is_empty() bool {
 
 pub struct CSSPixelFraction {
 pub mut:
-	value_ f64
+	numerator_   CSSPixels
+	denominator_ CSSPixels
 }
 
 pub fn CSSPixelFraction.new(numerator CSSPixels, denominator CSSPixels) CSSPixelFraction {
 	if denominator.raw_value() == 0 {
-		return CSSPixelFraction{
-			value_: math.inf(1)
-		}
+		panic('CSSPixelFraction denominator must not be zero')
 	}
 	return CSSPixelFraction{
-		value_: numerator.to_double() / denominator.to_double()
+		numerator_:   numerator
+		denominator_: denominator
 	}
 }
 
 pub fn CSSPixelFraction.from_double(value f64) CSSPixelFraction {
-	return CSSPixelFraction{
-		value_: value
-	}
+	return CSSPixelFraction.new(CSSPixels.nearest_value_for(value), CSSPixels.new(1))
 }
 
 pub fn (f CSSPixelFraction) to_double() f64 {
-	return f.value_
+	return f.numerator_.to_double() / f.denominator_.to_double()
 }
 
 pub fn (f CSSPixelFraction) might_be_saturated() bool {
-	return math.is_inf(f.value_, 0) || math.is_nan(f.value_) || f.value_ == 0
+	return f.to_css_pixels().might_be_saturated()
 }
 
 // --- Length ---
@@ -1685,13 +1748,11 @@ pub fn LengthResolutionContext.default() LengthResolutionContext {
 }
 
 pub fn LengthResolutionContext.for_document(document &dom.Document) LengthResolutionContext {
-	_ = document
-	return LengthResolutionContext.default()
+	return length_resolution_context_from_document(document)
 }
 
 pub fn LengthResolutionContext.for_layout_node(node &dom.LayoutNode) LengthResolutionContext {
-	_ = node
-	return LengthResolutionContext.default()
+	return length_resolution_context_from_layout_node(node) or { LengthResolutionContext.default() }
 }
 
 pub struct Length {

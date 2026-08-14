@@ -10,24 +10,57 @@ import dom
 
 // Attach populated LayoutNode placeholders onto the DOM for the laid-out tree rooted at `root_box`.
 pub fn attach_layout_nodes(root_box &Node) {
-	attach_layout_node_recursive(root_box, none)
+	attach_layout_node_recursive(root_box, none, none)
 }
 
-fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode) {
-	placeholder := &dom.LayoutNode{
-		dom_node_:     box.dom_node()
-		parent_:       parent_placeholder
-		is_anonymous_: box.is_anonymous()
-		is_text_node_: box.is_text_node()
-		display_:      layout_node_display(box)
-		layout_handle: voidptr(box)
+pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) {
+	attach_layout_node_recursive(root_box, none, state)
+}
+
+fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState) {
+	mut placeholder := &dom.LayoutNode{
+		dom_node_:                 box.dom_node()
+		parent_:                   parent_placeholder
+		is_anonymous_:             box.is_anonymous()
+		is_text_node_:             box.is_text_node()
+		display_:                  layout_node_display(box)
+		pseudo_element_generator_: box.pseudo_element_generator()
+		generated_for_:            box.generated_for_pseudo_element()
+		layout_handle:             voidptr(box)
+	}
+	if layout_state := state {
+		if node_with_style := box.as_node_with_style() {
+			if used := layout_state.try_get(node_with_style) {
+				offset := used.cumulative_offset()
+				placeholder.has_geometry_ = true
+				placeholder.border_box_ = dom.Rect{
+					x:      offset.x().to_double() - used.border_box_left().to_double()
+					y:      offset.y().to_double() - used.border_box_top().to_double()
+					width:  used.border_box_width().to_double()
+					height: used.border_box_height().to_double()
+				}
+				placeholder.content_width_ = used.content_width().to_double()
+				placeholder.content_height_ = used.content_height().to_double()
+				placeholder.border_left_ = used.border_left.to_double()
+				placeholder.border_top_ = used.border_top.to_double()
+				placeholder.padding_left_ = used.padding_left.to_double()
+				placeholder.padding_right_ = used.padding_right.to_double()
+				placeholder.padding_top_ = used.padding_top.to_double()
+				placeholder.padding_bottom_ = used.padding_bottom.to_double()
+			}
+		}
+	}
+	if parent := parent_placeholder {
+		unsafe {
+			parent.children_ << placeholder
+		}
 	}
 	if dom_node := box.dom_node() {
 		mut mutable_dom_node := unsafe { &dom.Node(dom_node) }
 		mutable_dom_node.set_layout_node(placeholder)
 	}
 	for child in box.children() {
-		attach_layout_node_recursive(child, placeholder)
+		attach_layout_node_recursive(child, placeholder, state)
 	}
 }
 

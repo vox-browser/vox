@@ -32,6 +32,25 @@ pub:
 	state &LayoutState = unsafe { nil }
 }
 
+fn document_layout_update_callback(target voidptr, document &dom.Document, viewport_width f64, viewport_height f64) voidptr {
+	_ = target
+	result := run_document_layout(document, viewport_width, viewport_height) or {
+		return unsafe { nil }
+	}
+	result_ptr := &DocumentLayoutResult{
+		root:  result.root
+		state: result.state
+	}
+	return voidptr(result_ptr)
+}
+
+pub fn install_document_layout_hook(document &dom.Document) {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_layout_update_hook(dom.DocumentLayoutUpdateHook{
+		callback: document_layout_update_callback
+	})
+}
+
 // The UsedValues (geometry) computed for `box`, if any.
 pub fn (result &DocumentLayoutResult) used_values_for(box &NodeWithStyle) ?&UsedValues {
 	return result.state.try_get(box)
@@ -46,10 +65,12 @@ pub fn (result &DocumentLayoutResult) used_values_for(box &NodeWithStyle) ?&Used
 // heights resolve against the viewport height. Scrollbars and non-block content (inline/flex/grid/table) are
 // deferred.
 pub fn run_document_layout(document &dom.Document, viewport_width f64, viewport_height f64) ?DocumentLayoutResult {
+	install_document_layout_hook(document)
 	root := build_layout_tree(document) or { return none }
 	viewport := root.as_viewport() or { return none }
 	mut state := LayoutState.new()
 	layout_viewport(mut state, viewport, viewport_width, viewport_height)
+	attach_layout_nodes_with_state(root, state)
 	return DocumentLayoutResult{
 		root:  root
 		state: state
@@ -131,7 +152,8 @@ fn attach_children_maintaining_inline_invariant(mut parent Node, children []&Nod
 	parent.set_children_are_inline(false)
 	for child in children {
 		if child_is_inline_level(child) {
-			mut wrapper := last_anonymous_inline_wrapper_or_new(mut parent, document, parent_computed)
+			mut wrapper := last_anonymous_inline_wrapper_or_new(mut parent, document,
+				parent_computed)
 			wrapper.append_child(child)
 		} else {
 			parent.append_child(child)

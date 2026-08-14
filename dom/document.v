@@ -13,6 +13,7 @@ module dom
 import rand
 import strings
 import time as vtime
+import net.urllib
 
 // --- Stub types for untranslated dependencies ---
 
@@ -36,7 +37,7 @@ pub fn (c Color) alpha() u8 {
 	return c.a
 }
 
-// URL stub
+// Compact URL representation used by the DOM layer.
 pub struct URL {
 pub mut:
 	value string
@@ -55,10 +56,14 @@ pub fn (u URL) serialize() string {
 }
 
 pub fn dom_url_parse(url string, base_url URL, encoding string) ?URL {
-	_ = base_url
 	_ = encoding
-	// Stub for DOMURL::parse(url, base_url, encoding) until the URL module is ported.
-	return URL{url}
+	reference := urllib.parse(url) or { return none }
+	if reference.is_abs() {
+		return URL{reference.str()}
+	}
+	base := urllib.parse(base_url.value) or { return none }
+	resolved := base.resolve_reference(reference) or { return none }
+	return URL{resolved.str()}
 }
 
 pub fn (a URL) == (b URL) bool {
@@ -66,8 +71,6 @@ pub fn (a URL) == (b URL) bool {
 }
 
 pub fn (u URL) fragment() ?string {
-	// Stub: In a full implementation, this would parse and return the URL's fragment.
-	// For now, return the part after '#' if present.
 	idx := u.value.index_u8(`#`)
 	if idx < 0 {
 		return none
@@ -75,8 +78,209 @@ pub fn (u URL) fragment() ?string {
 	return u.value[idx + 1..]
 }
 
-pub fn (u URL) set_fragment(f ?string) {
-	_ = f
+pub fn (mut u URL) set_fragment(fragment ?string) {
+	index := u.value.index_u8(`#`)
+	base := if index >= 0 { u.value[..index] } else { u.value }
+	if value := fragment {
+		u.value = '${base}#${value}'
+	} else {
+		u.value = base
+	}
+}
+
+// --- WHATWG-URL component accessors (the "minimal URL record") ---
+//
+// The port stores URLs as their serialized string; these accessors reparse on demand via
+// net.urllib. net.urllib is not a byte-exact WHATWG URL parser, but it is sufficient for the
+// reflected component getters consumed by Location / WorkerLocation / HTMLHyperlinkElementUtils.
+fn (u URL) parsed() ?urllib.URL {
+	return urllib.parse(u.value) or { return none }
+}
+
+// A URL has an opaque path when it is non-hierarchical (e.g. "mailto:x", "about:blank").
+// net.urllib records this in its `opaque` field.
+pub fn (u URL) has_an_opaque_path() bool {
+	parsed := u.parsed() or { return false }
+	return parsed.opaque != ''
+}
+
+// WHATWG: a URL cannot have a username/password/port when its host is null or empty, or its
+// scheme is "file". Approximated here from the parsed host and scheme.
+pub fn (u URL) cannot_have_a_username_or_password_or_port() bool {
+	if u.host() == none {
+		return true
+	}
+	return u.scheme() == 'file'
+}
+
+// URL's scheme, without the trailing ":".
+pub fn (u URL) scheme() string {
+	parsed := u.parsed() or { return '' }
+	return parsed.scheme
+}
+
+pub fn (u URL) username() string {
+	parsed := u.parsed() or { return '' }
+	if userinfo := parsed.user {
+		return userinfo.username
+	}
+	return ''
+}
+
+pub fn (u URL) password() string {
+	parsed := u.parsed() or { return '' }
+	if userinfo := parsed.user {
+		return userinfo.password
+	}
+	return ''
+}
+
+// URL's host, serialized (host without the port). Empty string when there is no host.
+pub fn (u URL) serialized_host() string {
+	parsed := u.parsed() or { return '' }
+	return parsed.hostname()
+}
+
+// URL's host, or none when the URL has no host.
+pub fn (u URL) host() ?string {
+	serialized := u.serialized_host()
+	return if serialized == '' { none } else { serialized }
+}
+
+// URL's port, or none when the URL has no explicit port.
+pub fn (u URL) port() ?u16 {
+	parsed := u.parsed() or { return none }
+	port_string := parsed.port()
+	if port_string == '' {
+		return none
+	}
+	return port_string.u16()
+}
+
+// URL path serialized.
+pub fn (u URL) serialize_path() string {
+	parsed := u.parsed() or { return '' }
+	return parsed.path
+}
+
+// URL's query, without the leading "?", or none when there is no query.
+pub fn (u URL) query() ?string {
+	parsed := u.parsed() or { return none }
+	return if parsed.raw_query == '' { none } else { parsed.raw_query }
+}
+
+// --- WHATWG-URL component setters ---
+//
+// C++ mutates URLs with URL::Parser::basic_parse(..., state_override). net.urllib has no
+// state-override parser, so these approximate it by mutating the parsed net.urllib.URL and
+// reserializing. They return a new URL (the caller writes it back). If the value does not parse,
+// the URL is returned unchanged.
+
+// scheme start state override: replaces the scheme (a trailing ":" is stripped).
+pub fn (u URL) with_protocol(protocol string) URL {
+	mut parsed := urllib.parse(u.value) or { return u }
+	mut scheme := protocol
+	if scheme.ends_with(':') {
+		scheme = scheme#[..-1]
+	}
+	parsed.scheme = scheme
+	return URL{
+		value: parsed.str()
+	}
+}
+
+pub fn (u URL) with_username(username string) URL {
+	mut parsed := urllib.parse(u.value) or { return u }
+	password := u.password()
+	password_set := if info := parsed.user { info.password_set } else { false }
+	parsed.user = urllib.Userinfo{
+		username:     username
+		password:     password
+		password_set: password_set
+	}
+	return URL{
+		value: parsed.str()
+	}
+}
+
+pub fn (u URL) with_password(password string) URL {
+	mut parsed := urllib.parse(u.value) or { return u }
+	parsed.user = urllib.Userinfo{
+		username:     u.username()
+		password:     password
+		password_set: true
+	}
+	return URL{
+		value: parsed.str()
+	}
+}
+
+// host state override: the value may include a port ("host[:port]").
+pub fn (u URL) with_host(host string) URL {
+	mut parsed := urllib.parse(u.value) or { return u }
+	parsed.host = host
+	return URL{
+		value: parsed.str()
+	}
+}
+
+// hostname state override: replaces only the host, preserving any existing port.
+pub fn (u URL) with_hostname(hostname string) URL {
+	mut parsed := urllib.parse(u.value) or { return u }
+	port_string := parsed.port()
+	parsed.host = if port_string == '' { hostname } else { '${hostname}:${port_string}' }
+	return URL{
+		value: parsed.str()
+	}
+}
+
+// port state override: an empty value clears the port.
+pub fn (u URL) with_port(port string) URL {
+	mut parsed := urllib.parse(u.value) or { return u }
+	hostname := parsed.hostname()
+	parsed.host = if port == '' { hostname } else { '${hostname}:${port}' }
+	return URL{
+		value: parsed.str()
+	}
+}
+
+pub fn (u URL) with_pathname(pathname string) URL {
+	mut parsed := urllib.parse(u.value) or { return u }
+	parsed.path = pathname
+	parsed.raw_path = ''
+	return URL{
+		value: parsed.str()
+	}
+}
+
+// query state override: the value is the query without a leading "?".
+pub fn (u URL) with_query(query ?string) URL {
+	mut parsed := urllib.parse(u.value) or { return u }
+	if q := query {
+		parsed.raw_query = q
+	} else {
+		parsed.raw_query = ''
+		parsed.force_query = false
+	}
+	return URL{
+		value: parsed.str()
+	}
+}
+
+// Serialization of the URL's origin (tuple origins only; opaque otherwise).
+pub fn (u URL) origin() Origin {
+	parsed := u.parsed() or { return origin_create_opaque() }
+	if parsed.host == '' {
+		return origin_create_opaque()
+	}
+	mut serialized := '${parsed.scheme}://${parsed.hostname()}'
+	port_string := parsed.port()
+	if port_string != '' {
+		serialized += ':${port_string}'
+	}
+	return Origin{
+		value: serialized
+	}
 }
 
 // Origin stub
@@ -87,6 +291,10 @@ pub mut:
 
 pub fn origin_create_opaque() Origin {
 	return Origin{'opaque'}
+}
+
+pub fn (o Origin) serialize() string {
+	return o.value
 }
 
 pub fn (a Origin) is_same_origin(b Origin) bool {
@@ -369,6 +577,11 @@ pub struct HTMLOptGroupElement {
 @[heap]
 pub struct HTMLOptionElement {
 	HTMLElement
+pub mut:
+	selected_                  bool
+	dirty_                     bool
+	selectedness_update_index_ u64
+	selectedness_initialized_  bool
 }
 
 @[heap]
@@ -787,11 +1000,24 @@ pub struct LayoutViewport {}
 @[heap]
 pub struct LayoutNode {
 pub mut:
-	dom_node_     ?&Node
-	parent_       ?&LayoutNode
-	is_anonymous_ bool
-	is_text_node_ bool
-	display_      CSSDisplay_
+	dom_node_                 ?&Node
+	parent_                   ?&LayoutNode
+	children_                 []&LayoutNode
+	is_anonymous_             bool
+	is_text_node_             bool
+	display_                  CSSDisplay_
+	pseudo_element_generator_ ?&Element
+	generated_for_            ?PseudoElement
+	has_geometry_             bool
+	border_box_               Rect
+	content_width_            f64
+	content_height_           f64
+	border_left_              f64
+	border_top_               f64
+	padding_left_             f64
+	padding_right_            f64
+	padding_top_              f64
+	padding_bottom_           f64
 	// dom<->layout bridge: opaque handle to the real layout.Node this placeholder mirrors (dom can't
 	// name the layout type). The layout module attaches these via attach_layout_nodes. See layout/dom_layout_bridge.v.
 	layout_handle voidptr = unsafe { nil }
@@ -813,7 +1039,9 @@ pub struct StyleComputer {
 pub mut:
 	// dom<->css bridge: opaque handle to the persistent css.StyleComputer for this document (Ladybird's
 	// Document owns its StyleComputer). Set/read by the css module via unsafe cast. See css/dom_css_bridge.v.
-	css_handle voidptr = unsafe { nil }
+	css_handle                                 voidptr = unsafe { nil }
+	invalidation_property_used_in_has_callback StyleComputerInvalidationPropertyUsedInHasCallback = unsafe { nil }
+	invalidation_plan_callback                 StyleComputerInvalidationPlanCallback              = unsafe { nil }
 }
 
 @[heap]
@@ -887,6 +1115,58 @@ pub:
 	callback DocumentStyleUpdateCallback = unsafe { nil }
 }
 
+pub type StyleComputerInvalidationPropertyUsedInHasCallback = fn (voidptr, InvalidationProperty, &StyleScope) bool
+
+pub type StyleComputerInvalidationPlanCallback = fn (voidptr, []InvalidationProperty, &StyleScope) InvalidationPlan
+
+pub type StyleScopeMayHaveHasSelectorsCallback = fn (voidptr) bool
+
+pub type StyleScopeScheduleHasInvalidationCallback = fn (voidptr, &Node)
+
+pub type DocumentThemeColorParseCallback = fn (voidptr, string) ?string
+
+pub type DocumentThemeColorMediaMatchesCallback = fn (voidptr, string) bool
+
+pub struct DocumentThemeColorHook {
+pub:
+	target        voidptr                                = unsafe { nil }
+	parse_color   DocumentThemeColorParseCallback        = unsafe { nil }
+	media_matches DocumentThemeColorMediaMatchesCallback = unsafe { nil }
+}
+
+pub type DocumentLayoutUpdateCallback = fn (voidptr, &Document, f64, f64) voidptr
+
+pub struct DocumentLayoutUpdateHook {
+pub:
+	target   voidptr                      = unsafe { nil }
+	callback DocumentLayoutUpdateCallback = unsafe { nil }
+}
+
+// The DOM module cannot import css, so selector parsing and matching are supplied by the css module
+// through a per-document callback bridge. Keeping this on Document also gives the css side a natural
+// place to retain its parsed-selector cache.
+pub type DocumentSelectorQueryValidateCallback = fn (voidptr, string) bool
+
+pub type DocumentSelectorQueryMatchCallback = fn (voidptr, string, &Element, &ParentNode) bool
+
+pub struct DocumentSelectorQueryHook {
+pub:
+	target   voidptr = unsafe { nil }
+	validate DocumentSelectorQueryValidateCallback = unsafe { nil }
+	matches  DocumentSelectorQueryMatchCallback    = unsafe { nil }
+}
+
+pub type DocumentHTMLFragmentParseCallback = fn (voidptr, &Element, string, AllowDeclarativeShadowRoots) []&Node
+
+pub type DocumentHTMLDocumentParseCallback = fn (voidptr, &Document, string)
+
+pub struct DocumentHTMLFragmentParsingHook {
+pub:
+	target         voidptr = unsafe { nil }
+	parse_fragment DocumentHTMLFragmentParseCallback = unsafe { nil }
+	parse_document DocumentHTMLDocumentParseCallback = unsafe { nil }
+}
+
 pub struct BackgroundLayerData {}
 
 pub struct CSSSelector {
@@ -903,7 +1183,9 @@ pub struct StyleScope {
 pub mut:
 	// dom<->css bridge: opaque handle to the persistent css.StyleScope for this document/shadow root.
 	// Lazily created and cached by the CSS module. See css/dom_css_bridge.v.
-	css_handle voidptr = unsafe { nil }
+	css_handle                         voidptr = unsafe { nil }
+	may_have_has_selectors_callback    StyleScopeMayHaveHasSelectorsCallback     = unsafe { nil }
+	schedule_has_invalidation_callback StyleScopeScheduleHasInvalidationCallback = unsafe { nil }
 }
 
 pub struct StyleValue {
@@ -1031,10 +1313,15 @@ pub struct PaintConfig {}
 @[heap]
 pub struct Selection {
 pub mut:
-	anchor_node_   &Node = unsafe { nil }
-	focus_node_    &Node = unsafe { nil }
-	anchor_offset_ int
-	focus_offset_  int
+	document_  &Document          = unsafe { nil }
+	range_     &Range             = unsafe { nil }
+	direction_ SelectionDirection = .directionless
+}
+
+pub enum SelectionDirection {
+	forwards
+	backwards
+	directionless
 }
 
 // Intersection/Resize Observer stubs
@@ -1248,7 +1535,11 @@ pub mut:
 }
 
 @[heap]
-pub struct StyleInvalidator {}
+pub struct StyleInvalidator {
+pub mut:
+	pending_invalidations           map[UniqueNodeID][]PendingDescendantInvalidation
+	active_descendant_invalidations []PendingDescendantInvalidation
+}
 
 @[heap]
 pub struct InputEventsTarget {}
@@ -1313,11 +1604,19 @@ pub struct DOMRectReadOnly {}
 pub struct Segmenter {
 pub mut:
 	segmented_text string
+	granularity    SegmenterGranularity = .grapheme
+}
+
+pub enum SegmenterGranularity {
+	grapheme
+	line
+	word
 }
 
 pub fn (s &Segmenter) clone() &Segmenter {
 	return &Segmenter{
 		segmented_text: s.segmented_text
+		granularity:    s.granularity
 	}
 }
 
@@ -1736,110 +2035,6 @@ pub fn (fae &FormAssociatedElement) element_id_changed() {}
 
 pub fn (fae &FormAssociatedElement) element_with_id_was_added_or_removed() {}
 
-// Selection methods
-pub fn (s &Selection) cursor_position() ?&Position {
-	if s.focus_node_ == unsafe { nil } {
-		return none
-	}
-	return Position.create(s.focus_node_, s.focus_offset_)
-}
-
-pub fn (s &Selection) is_collapsed() bool {
-	return s.anchor_node_ == s.focus_node_ && s.anchor_offset_ == s.focus_offset_
-}
-
-pub fn (s &Selection) anchor_node() ?&Node {
-	if s.anchor_node_ == unsafe { nil } {
-		return none
-	}
-	return s.anchor_node_
-}
-
-pub fn (s &Selection) focus_node() ?&Node {
-	if s.focus_node_ == unsafe { nil } {
-		return none
-	}
-	return s.focus_node_
-}
-
-pub fn (s &Selection) anchor_offset() int {
-	return s.anchor_offset_
-}
-
-pub fn (s &Selection) focus_offset() int {
-	return s.focus_offset_
-}
-
-pub fn (mut s Selection) collapse(node &Node, offset int) ! {
-	if offset < 0 || offset > node.length() {
-		return error('IndexSizeError: Selection offset is out of range')
-	}
-	s.anchor_node_ = node
-	s.focus_node_ = node
-	s.anchor_offset_ = offset
-	s.focus_offset_ = offset
-}
-
-pub fn (mut s Selection) set_base_and_extent(anchor_node &Node, anchor_offset int, focus_node &Node, focus_offset int) ! {
-	if anchor_offset < 0 || anchor_offset > anchor_node.length() {
-		return error('IndexSizeError: Selection anchor offset is out of range')
-	}
-	if focus_offset < 0 || focus_offset > focus_node.length() {
-		return error('IndexSizeError: Selection focus offset is out of range')
-	}
-	s.anchor_node_ = anchor_node
-	s.anchor_offset_ = anchor_offset
-	s.focus_node_ = focus_node
-	s.focus_offset_ = focus_offset
-}
-
-pub fn (mut s Selection) move_offset_by(delta int, collapse_to_focus bool) {
-	if s.focus_node_ == unsafe { nil } {
-		return
-	}
-	max_offset := s.focus_node_.length()
-	mut new_offset := s.focus_offset_ + delta
-	if new_offset < 0 {
-		new_offset = 0
-	}
-	if new_offset > max_offset {
-		new_offset = max_offset
-	}
-	s.focus_offset_ = new_offset
-	if collapse_to_focus {
-		s.anchor_node_ = s.focus_node_
-		s.anchor_offset_ = s.focus_offset_
-	}
-}
-
-pub fn (mut s Selection) move_offset_to_next_character(collapse_to_focus bool) {
-	s.move_offset_by(1, collapse_to_focus)
-}
-
-pub fn (mut s Selection) move_offset_to_previous_character(collapse_to_focus bool) {
-	s.move_offset_by(-1, collapse_to_focus)
-}
-
-pub fn (mut s Selection) move_offset_to_next_word(collapse_to_focus bool) {
-	s.move_offset_to_next_character(collapse_to_focus)
-}
-
-pub fn (mut s Selection) move_offset_to_previous_word(collapse_to_focus bool) {
-	s.move_offset_to_previous_character(collapse_to_focus)
-}
-
-pub fn (mut s Selection) move_offset_to_next_line(collapse_to_focus bool) {
-	s.move_offset_to_next_character(collapse_to_focus)
-}
-
-pub fn (mut s Selection) move_offset_to_previous_line(collapse_to_focus bool) {
-	s.move_offset_to_previous_character(collapse_to_focus)
-}
-
-pub fn (s &Selection) scroll_focus_into_view() {
-	_ = s
-}
-
 // Timer methods
 pub fn (t &Timer) start() {}
 
@@ -2027,6 +2222,7 @@ pub const max_int = 2147483647
 
 pub enum TraversalDecision {
 	@continue
+	skip_children_and_continue
 	@break
 }
 
@@ -2499,8 +2695,9 @@ pub mut:
 	source                     string
 
 	// Version tracking
-	dom_tree_version       u64
-	character_data_version u64
+	dom_tree_version                         u64
+	character_data_version                   u64
+	option_selectedness_update_index_counter u64
 
 	// Readiness
 	readiness                 DocumentReadyState = .complete
@@ -2527,10 +2724,10 @@ pub mut:
 	page_            &Page            = unsafe { nil }
 
 	// Style
-	style_computer                                 &StyleComputer  = unsafe { nil }
-	font_computer                                  &FontComputer   = unsafe { nil }
-	style_sheets_                                  &StyleSheetList = unsafe { nil }
-	style_update_hook_                             ?DocumentStyleUpdateHook
+	style_computer     &StyleComputer  = unsafe { nil }
+	font_computer      &FontComputer   = unsafe { nil }
+	style_sheets_      &StyleSheetList = unsafe { nil }
+	style_update_hook_ ?DocumentStyleUpdateHook
 	// dom<->css bridge: opaque handle to the css-side holder of this document's author stylesheets, which
 	// the real StyleComputer's author cascade origin reads. See css/dom_css_bridge.v.
 	author_style_sheets_handle                     voidptr = unsafe { nil }
@@ -2541,6 +2738,8 @@ pub mut:
 	needs_accumulated_visual_contexts_update       bool
 	needs_invalidation_of_elements_affected_by_has bool
 	should_invalidate_styles_on_attribute_changes  bool = true
+	layout_update_hook_                            ?DocumentLayoutUpdateHook
+	layout_engine_handle_                          voidptr = unsafe { nil }
 
 	// Layout
 	layout_root &LayoutViewport    = unsafe { nil }
@@ -2564,6 +2763,7 @@ pub mut:
 	active_link_color_      ?Color
 	visited_link_color_     ?Color
 	supported_color_schemes ?[]string
+	theme_color_            ?string
 
 	// Focus
 	last_focus_trigger FocusTrigger = .other
@@ -2746,7 +2946,10 @@ pub mut:
 	element_shared_css_random_base_value_cache map[string]f64
 
 	// Selector query cache
-	selector_query_cache map[string]?SelectorList
+	selector_query_cache        map[string]?SelectorList
+	selector_query_hook_        ?DocumentSelectorQueryHook
+	html_fragment_parsing_hook_ ?DocumentHTMLFragmentParsingHook
+	theme_color_hook_           ?DocumentThemeColorHook
 
 	// SVG roots needing relayout
 	svg_roots_needing_relayout []&SVGSVGBox
@@ -3003,7 +3206,7 @@ pub fn (mut d Document) finalize() {
 // https://html.spec.whatwg.org/multipage/dom.html#the-document-object
 pub fn (mut d Document) initialize() {
 	// Set up prototype, create selection, list of available images, etc.
-	d.selection_ = &Selection{}
+	d.selection_ = Selection.create(d)
 	d.editing_host_manager_ = EditingHostManager.create(mut d)
 	d.list_of_available_images = &ListOfAvailableImages{}
 	d.page_.client_page_did_create_new_document(d)
@@ -3018,6 +3221,13 @@ pub fn (d &Document) dom_tree_version() u64 {
 
 pub fn (mut d Document) bump_dom_tree_version() {
 	d.dom_tree_version++
+}
+
+// Process-local ordering is only compared between option elements belonging to the same
+// document, so the translated HTML option algorithms keep the counter with their document.
+pub fn (mut d Document) next_option_selectedness_update_index() u64 {
+	d.option_selectedness_update_index_counter++
+	return d.option_selectedness_update_index_counter
 }
 
 pub fn (d &Document) character_data_version() u64 {
@@ -3690,17 +3900,96 @@ pub fn (d &Document) supported_color_schemes() ?[]string {
 // https://html.spec.whatwg.org/multipage/semantics.html#meta-color-scheme
 pub fn (mut d Document) obtain_supported_color_schemes() {
 	d.supported_color_schemes = none
-	// Scan <meta name="color-scheme"> elements and parse their content attribute.
-	// Stub: in full implementation would iterate subtree for HTMLMetaElement,
-	// check name/content attributes, and parse CSS color-scheme value.
+	mut found := [][]string{}
+	found_ptr := &found
+	document_node := unsafe { &Node(&d) }
+	document_node.for_each_in_subtree(fn [found_ptr] (node &Node) TraversalDecision {
+		element := node.as_element() or { return .@continue }
+		if !is_html_element_with_local_name(element, 'meta')
+			|| to_ascii_lowercase(element.get_attribute_value('name')) != 'color-scheme' {
+			return .@continue
+		}
+		content := element.get_attribute('content') or { return .@continue }
+		schemes := parse_meta_color_scheme(content) or { return .@continue }
+		unsafe {
+			*found_ptr = [schemes]
+		}
+		return .@break
+	})
+	if found.len > 0 {
+		d.supported_color_schemes = found[0]
+	}
+}
+
+fn parse_meta_color_scheme(content string) ?[]string {
+	mut tokens := content.fields().map(to_ascii_lowercase(it))
+	if tokens.len == 1 && tokens[0] == 'normal' {
+		return []string{}
+	}
+	if tokens.len == 0 {
+		return none
+	}
+	if tokens[0] == 'only' {
+		tokens.delete(0)
+	} else if tokens.len > 0 && tokens[tokens.len - 1] == 'only' {
+		tokens.delete(tokens.len - 1)
+	}
+	if tokens.len == 0 {
+		return none
+	}
+	css_wide_keywords := ['initial', 'inherit', 'unset', 'revert', 'revert-layer', 'default']
+	for token in tokens {
+		if token == 'normal' || token == 'only' || token in css_wide_keywords {
+			return none
+		}
+		for ch in token.bytes() {
+			if !(ch.is_alnum() || ch in [`-`, `_`] || ch >= 0x80) {
+				return none
+			}
+		}
+	}
+	return tokens
 }
 
 // https://html.spec.whatwg.org/multipage/semantics.html#meta-theme-color
 pub fn (mut d Document) obtain_theme_color() {
-	// Scan <meta name="theme-color"> elements and parse their content attribute.
-	// Stub: in full implementation would iterate subtree for HTMLMetaElement,
-	// check name/content/media attributes, parse CSS color value,
-	// and call page().client().page_did_change_theme_color(color).
+	d.theme_color_ = none
+	hook := d.theme_color_hook_ or { return }
+	if hook.parse_color == unsafe { nil } {
+		return
+	}
+	mut found := []string{}
+	found_ptr := &found
+	document_node := unsafe { &Node(&d) }
+	document_node.for_each_in_subtree(fn [hook, found_ptr] (node &Node) TraversalDecision {
+		element := node.as_element() or { return .@continue }
+		if !is_html_element_with_local_name(element, 'meta')
+			|| to_ascii_lowercase(element.get_attribute_value('name')) != 'theme-color' {
+			return .@continue
+		}
+		content := element.get_attribute('content') or { return .@continue }
+		if media := element.get_attribute('media') {
+			if hook.media_matches == unsafe { nil } || !hook.media_matches(hook.target, media) {
+				return .@continue
+			}
+		}
+		color := hook.parse_color(hook.target, content.trim_space()) or { return .@continue }
+		unsafe {
+			*found_ptr = [color]
+		}
+		return .@break
+	})
+	if found.len > 0 {
+		d.theme_color_ = found[0]
+	}
+}
+
+pub fn (d &Document) theme_color() ?string {
+	return d.theme_color_
+}
+
+pub fn (mut d Document) set_theme_color_hook(hook DocumentThemeColorHook) {
+	d.theme_color_hook_ = hook
 }
 
 // --- Style ---
@@ -3709,17 +3998,44 @@ pub fn (mut d Document) set_style_update_hook(hook DocumentStyleUpdateHook) {
 	d.style_update_hook_ = hook
 }
 
+pub fn (mut d Document) set_selector_query_hook(hook DocumentSelectorQueryHook) {
+	d.selector_query_hook_ = hook
+	// DOM's old cache contains placeholder parses produced without the CSS parser. Do not let those
+	// survive installation of the real parser/matcher.
+	d.selector_query_cache.clear()
+}
+
+pub fn (d &Document) selector_query_hook() ?DocumentSelectorQueryHook {
+	return d.selector_query_hook_
+}
+
+pub fn (mut d Document) set_html_fragment_parsing_hook(hook DocumentHTMLFragmentParsingHook) {
+	d.html_fragment_parsing_hook_ = hook
+}
+
+pub fn (d &Document) html_fragment_parsing_hook() ?DocumentHTMLFragmentParsingHook {
+	return d.html_fragment_parsing_hook_
+}
+
 pub fn (mut d Document) update_style() {
 	// In the C++ implementation, this runs style computation recursively through
 	// the DOM tree, updating computed styles for all elements that need it.
 	// It also handles style invalidation, recomputing inherited styles, and
 	// tracking whether the stacking context tree needs to be rebuilt.
-	if !d.needs_full_style_update && !d.needs_animated_style_update {
+	mut document_node := unsafe { &Node(&d) }
+	has_pending_invalidations := d.style_invalidator_ != unsafe { nil }
+		&& d.style_invalidator_.has_pending_invalidations()
+	if !has_pending_invalidations && !d.needs_full_style_update && !d.needs_animated_style_update
+		&& !document_node.needs_style_update() && !document_node.child_needs_style_update() {
 		return
 	}
+	if d.style_invalidator_ != unsafe { nil } {
+		mut invalidator := unsafe { &StyleInvalidator(d.style_invalidator_) }
+		invalidator.invalidate(mut document_node)
+	}
 	// Run the CSS style pass over the tree through the registered hook (the css module can't be called
-	// directly from dom). FIXME: the invalidation bookkeeping, media-rule evaluation, animated-style
-	// update, and stacking-context tracking around it are still stubbed.
+	// directly from dom). FIXME: media-rule evaluation, animated-style updates, and stacking-context
+	// tracking around it still depend on their owning subsystems.
 	if hook := d.style_update_hook_ {
 		if hook.callback != unsafe { nil } {
 			hook.callback(hook.target)
@@ -3769,19 +4085,28 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 	d.update_style()
 	d.update_animated_style_if_needed()
 
-	// 2. Build/update layout tree if needed
-	if d.needs_full_layout_tree_update {
-		// Stub: would call build_layout_tree() or update_layout_tree()
-		d.needs_full_layout_tree_update = false
+	// 2-3. Build/update the layout tree and run layout through the registered layout-module bridge.
+	if hook := d.layout_update_hook_ {
+		if hook.callback != unsafe { nil } {
+			viewport := d.viewport_rect()
+			d.layout_engine_handle_ = hook.callback(hook.target, &d, viewport.width,
+				viewport.height)
+		}
 	}
-
-	// 3. Perform actual layout computation
-	// Stub: would run layout algorithms on layout_root
+	d.needs_full_layout_tree_update = false
 
 	// 4. Update paint/hit-testing properties
 	d.update_paint_and_hit_testing_properties_if_needed()
 
 	d.is_running_update_layout = false
+}
+
+pub fn (mut d Document) set_layout_update_hook(hook DocumentLayoutUpdateHook) {
+	d.layout_update_hook_ = hook
+}
+
+pub fn (d &Document) layout_engine_handle() voidptr {
+	return d.layout_engine_handle_
 }
 
 pub fn (d &Document) layout_is_up_to_date() bool {
@@ -4104,11 +4429,26 @@ pub fn (d &Document) focused_area() ?&Node {
 }
 
 pub fn (mut d Document) set_focused_area(node ?&Node) {
+	new_focused := node or { unsafe { nil } }
+	if voidptr(d.focused_area) == voidptr(new_focused) {
+		return
+	}
 	old_focused := d.focused_area
-	d.focused_area = node or { unsafe { nil } }
-	// Stub: in full implementation would fire blur on old focused element
-	// and focus on new focused element, with appropriate events
-	_ = old_focused
+
+	// The C++ selector cache narrows this to rules containing :focus/:focus-within/:focus-visible.
+	// Until that cache is bridged, conservatively invalidating the affected roots preserves behavior.
+	if voidptr(old_focused) != unsafe { nil } {
+		d.invalidate_style_for_elements_affected_by_pseudo_class_change(.focus, old_focused.root())
+	}
+	if voidptr(new_focused) != unsafe { nil } && (voidptr(old_focused) == unsafe { nil }
+		|| !old_focused.root().is_same_node(new_focused.root())) {
+		d.invalidate_style_for_elements_affected_by_pseudo_class_change(.focus, new_focused.root())
+	}
+
+	d.focused_area = new_focused
+	d.reset_cursor_blink_cycle()
+	d.set_needs_repaint()
+	d.update_active_element()
 }
 
 pub fn (d &Document) last_focus_trigger_() FocusTrigger {
@@ -4128,7 +4468,7 @@ pub fn (d &Document) active_element() ?&Element {
 
 pub fn (mut d Document) set_active_element(element ?&Element) {
 	new_active_element := element or { unsafe { nil } }
-	if d.active_element_ == new_active_element {
+	if voidptr(d.active_element_) == voidptr(new_active_element) {
 		return
 	}
 	d.active_element_ = new_active_element
@@ -5435,7 +5775,7 @@ pub fn (d &Document) get_highlighted_node() ?&Node {
 
 pub fn (mut d Document) set_hovered_node(node ?&Node) {
 	new_node := node or { unsafe { nil } }
-	if d.hovered_node == new_node {
+	if voidptr(d.hovered_node) == voidptr(new_node) {
 		return
 	}
 	old_hovered_node := d.hovered_node
@@ -5445,7 +5785,7 @@ pub fn (mut d Document) set_hovered_node(node ?&Node) {
 	css_invalidate_style(d, .hover_changed)
 
 	// Fire pointer/mouse out/leave events on old hovered node
-	if old_hovered_node != unsafe { nil } && old_hovered_node != d.hovered_node {
+	if old_hovered_node != unsafe { nil } && voidptr(old_hovered_node) != voidptr(d.hovered_node) {
 		old_hovered_node.dispatch_event_simple('pointerout', true)
 		old_hovered_node.dispatch_event_simple('mouseout', true)
 	}
@@ -5464,7 +5804,7 @@ pub fn (mut d Document) set_hovered_node(node ?&Node) {
 	}
 
 	// Fire pointer/mouse over/enter events on new hovered node
-	if d.hovered_node != unsafe { nil } && d.hovered_node != old_hovered_node {
+	if d.hovered_node != unsafe { nil } && voidptr(d.hovered_node) != voidptr(old_hovered_node) {
 		d.hovered_node.dispatch_event_simple('pointerover', true)
 		d.hovered_node.dispatch_event_simple('mouseover', true)
 	}
@@ -6216,21 +6556,53 @@ pub fn (mut d Document) unregister_shadow_root(shadow_root &ShadowRoot) {
 
 // https://drafts.csswg.org/css-position-4/#add-an-element-to-the-top-layer
 pub fn (mut d Document) add_an_element_to_the_top_layer(element &Element) {
+	// Re-adding an element with a pending removal moves it to the top and cancels the removal.
+	if element_pointer_in_list(d.top_layer_elements, element) {
+		d.top_layer_elements = d.top_layer_elements.filter(voidptr(it) != voidptr(element))
+		d.top_layer_pending_removals =
+			d.top_layer_pending_removals.filter(voidptr(it) != voidptr(element))
+	}
 	d.top_layer_elements << element
+	mut mutable_element := unsafe { &Element(element) }
+	mutable_element.set_in_top_layer(true)
+	mutable_element.set_rendered_in_top_layer(true)
+	mutable_element.set_needs_style_update(true)
 	d.invalidate_layout_tree(.document_add_an_element_to_the_top_layer)
 }
 
 // https://drafts.csswg.org/css-position-4/#request-an-element-to-be-removed-from-the-top-layer
 pub fn (mut d Document) request_an_element_to_be_remove_from_the_top_layer(element &Element) {
+	if !element_pointer_in_list(d.top_layer_elements, element)
+		|| element_pointer_in_list(d.top_layer_pending_removals, element) {
+		return
+	}
+	mut mutable_element := unsafe { &Element(element) }
+	mutable_element.set_rendered_in_top_layer(false)
+	mutable_element.set_in_top_layer(false)
+	mutable_element.set_needs_style_update(true)
 	d.top_layer_pending_removals << element
 	d.invalidate_layout_tree(.document_request_an_element_to_be_removed_from_the_top_layer)
 }
 
 // https://drafts.csswg.org/css-position-4/#remove-an-element-from-the-top-layer-immediately
 pub fn (mut d Document) remove_an_element_from_the_top_layer_immediately(element &Element) {
-	d.top_layer_elements = d.top_layer_elements.filter(it != element)
-	d.top_layer_pending_removals = d.top_layer_pending_removals.filter(it != element)
+	d.top_layer_elements = d.top_layer_elements.filter(voidptr(it) != voidptr(element))
+	d.top_layer_pending_removals =
+		d.top_layer_pending_removals.filter(voidptr(it) != voidptr(element))
+	mut mutable_element := unsafe { &Element(element) }
+	mutable_element.set_in_top_layer(false)
+	mutable_element.set_rendered_in_top_layer(false)
+	mutable_element.set_needs_style_update(true)
 	d.invalidate_layout_tree(.document_immediately_remove_element_from_the_top_layer)
+}
+
+fn element_pointer_in_list(elements []&Element, target &Element) bool {
+	for element in elements {
+		if voidptr(element) == voidptr(target) {
+			return true
+		}
+	}
+	return false
 }
 
 // https://drafts.csswg.org/css-position-4/#process-top-layer-removals
@@ -6239,7 +6611,7 @@ pub fn (mut d Document) process_top_layer_removals() {
 		return
 	}
 	for element in d.top_layer_pending_removals {
-		d.top_layer_elements = d.top_layer_elements.filter(it != element)
+		d.top_layer_elements = d.top_layer_elements.filter(voidptr(it) != voidptr(element))
 	}
 	d.top_layer_pending_removals.clear()
 	d.invalidate_layout_tree(.document_pending_top_layer_removals_processed)
@@ -6309,6 +6681,12 @@ pub fn (d &Document) find_matching_text(query string, case_sensitivity CaseSensi
 pub fn (mut d Document) parse_html_from_a_string(markup string) {
 	// 1. Set document's type to "html".
 	d.type_ = .html
+	if hook := d.html_fragment_parsing_hook_ {
+		if hook.parse_document != unsafe { nil } {
+			hook.parse_document(hook.target, &d, markup)
+			return
+		}
+	}
 	// 2-4. Create an HTML parser, feed it the markup, and run it.
 	parser := html_parser_create_for_scripting_stub(d)
 	parser.feed(markup)
@@ -6381,21 +6759,27 @@ pub fn (d &Document) cached_display_list() ?&DisplayList {
 
 pub fn (mut d Document) grapheme_segmenter() &Segmenter {
 	if d.grapheme_segmenter_ == unsafe { nil } {
-		d.grapheme_segmenter_ = &Segmenter{}
+		d.grapheme_segmenter_ = &Segmenter{
+			granularity: .grapheme
+		}
 	}
 	return d.grapheme_segmenter_
 }
 
 pub fn (mut d Document) line_segmenter() &Segmenter {
 	if d.line_segmenter_ == unsafe { nil } {
-		d.line_segmenter_ = &Segmenter{}
+		d.line_segmenter_ = &Segmenter{
+			granularity: .line
+		}
 	}
 	return d.line_segmenter_
 }
 
 pub fn (mut d Document) word_segmenter() &Segmenter {
 	if d.word_segmenter_ == unsafe { nil } {
-		d.word_segmenter_ = &Segmenter{}
+		d.word_segmenter_ = &Segmenter{
+			granularity: .word
+		}
 	}
 	return d.word_segmenter_
 }
@@ -7960,16 +8344,13 @@ pub fn (mut d Document) fullscreen_element_within_doc(mut element Element) {
 	//    1. Run hide all popovers until given hideUntil, false, and true.
 	// (Stub: would call hide_all_popovers_until)
 
-	// 3. Set element's fullscreen flag to true.
+	// Popover hiding depends on HTMLElement's popover state machine; there is no visible popover in
+	// this DOM representation unless one has explicitly been added to the document's popover lists.
+
+	// Set the element's fullscreen flag, then move it to the top of the top layer.
 	element.set_fullscreen_flag(true)
-
-	// 4-7. Handle iframe fullscreen flag, add to top layer, etc.
-	// Stub: would add element to top layer
-
-	// 8. Append (fullscreenchange, element) to document's list of pending fullscreen events.
-	d.pending_fullscreen_events << PendingFullscreenEvent{
-		element: element
-	}
+	d.remove_an_element_from_the_top_layer_immediately(element)
+	d.add_an_element_to_the_top_layer(element)
 }
 
 // https://fullscreen.spec.whatwg.org/#collect-documents-to-unfullscreen
@@ -8125,14 +8506,16 @@ pub fn (mut d Document) ensure_cookie_version_index(new_url URL) {
 // C++: void Document::invalidate_style_for_elements_affected_by_pseudo_class_change(...)
 pub fn (mut d Document) invalidate_style_for_elements_affected_by_pseudo_class_change(pseudo_class PseudoClass, common_ancestor &Node) {
 	_ = pseudo_class
-	_ = common_ancestor
-	// Stub: In the full implementation, this would:
-	// 1. Get the pseudo class rule cache from the style scope
-	// 2. For each element under common_ancestor, check if it's affected by the pseudo class
-	// 3. Temporarily swap the element slot (old/new value) and check if different rules match
-	// 4. If different rules match, set_needs_style_update(true) on the element
-	// This is a performance optimization to avoid full style recalculation when only
-	// :hover, :focus, :active etc. change.
+	// The rule-cache algorithm in C++ is an optimization: it marks only elements whose matching rule
+	// set changes. Marking every element in the affected subtree is conservative but semantically
+	// equivalent and keeps pseudo-class changes correct before CSS rule-cache metadata is bridged.
+	common_ancestor.for_each_in_inclusive_subtree(fn (node &Node) TraversalDecision {
+		if element := node.as_element() {
+			mut mutable_element := unsafe { &Element(element) }
+			mutable_element.set_needs_style_update(true)
+		}
+		return .@continue
+	})
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#currently-focused-area-of-a-top-level-traversable
@@ -8154,7 +8537,7 @@ struct IndicatedPart {
 // --- Stub methods on supporting types needed by new methods ---
 
 pub fn (si &StyleInvalidator) has_pending_invalidations() bool {
-	return false
+	return si.pending_invalidations.len != 0
 }
 
 // Element.needs_style_update and entire_subtree_needs_style_update are in element.v
@@ -8221,6 +8604,74 @@ fn hex_digit_value(ch u8) ?u8 {
 // --- is_a_registrable_domain_suffix_of_or_is_equal_to (free function) ---
 
 pub fn is_a_registrable_domain_suffix_of_or_is_equal_to(host_suffix_string string, original_host string) bool {
-	// Stub
-	return host_suffix_string == original_host
+	host_suffix := normalize_domain_host(host_suffix_string) or { return false }
+	original := normalize_domain_host(original_host) or { return false }
+	if host_suffix == original {
+		return true
+	}
+	if host_is_ip_address(host_suffix) || host_is_ip_address(original) {
+		return false
+	}
+	if !original.ends_with('.${host_suffix}') {
+		return false
+	}
+	public_suffix := approximate_public_suffix(host_suffix)
+	if host_suffix == public_suffix {
+		return false
+	}
+	original_public_suffix := approximate_public_suffix(original)
+	if original_public_suffix.ends_with('.${host_suffix}') {
+		return false
+	}
+	return true
+}
+
+fn normalize_domain_host(input string) ?string {
+	value := input.trim_space().trim_right('.').to_lower()
+	if value.len == 0 || value.contains(':') || value.contains('/') || value.contains('@') {
+		return none
+	}
+	labels := value.split('.')
+	for label in labels {
+		if label.len == 0 || label.len > 63 || label[0] == `-` || label[label.len - 1] == `-` {
+			return none
+		}
+		for ch in label.bytes() {
+			if !(ch.is_alnum() || ch == `-`) {
+				return none
+			}
+		}
+	}
+	return value
+}
+
+fn host_is_ip_address(host string) bool {
+	parts := host.split('.')
+	if parts.len != 4 {
+		return false
+	}
+	for part in parts {
+		if part.len == 0 || part.len > 3 || !part.bytes().all(it.is_digit()) {
+			return false
+		}
+		value := part.int()
+		if value < 0 || value > 255 {
+			return false
+		}
+	}
+	return true
+}
+
+fn approximate_public_suffix(host string) string {
+	labels := host.split('.')
+	if labels.len < 2 {
+		return host
+	}
+	last_two := labels[labels.len - 2..].join('.')
+	common_two_label_suffixes := ['ac.uk', 'co.uk', 'gov.uk', 'org.uk', 'com.au', 'net.au', 'org.au',
+		'co.jp', 'ne.jp', 'co.nz', 'com.br', 'com.cn', 'com.mx', 'co.in', 'co.za']
+	if last_two in common_two_label_suffixes {
+		return last_two
+	}
+	return labels[labels.len - 1]
 }

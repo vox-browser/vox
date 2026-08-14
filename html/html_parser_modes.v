@@ -155,8 +155,7 @@ fn (mut p HTMLParser) handle_in_head(mut token HTMLToken) {
 		p.insertion_mode = .text
 		return
 	}
-	if token.is_start_tag()
-		&& ((token.tag_name == 'noscript' && p.scripting_enabled)
+	if token.is_start_tag() && ((token.tag_name == 'noscript' && p.scripting_enabled)
 		|| token.tag_name in ['noframes', 'style']) {
 		p.parse_generic_raw_text_element(token)
 		return
@@ -303,8 +302,7 @@ fn (mut p HTMLParser) handle_in_head_noscript(mut token HTMLToken) {
 		p.insertion_mode = .in_head
 		return
 	}
-	if token.is_parser_whitespace() || token.is_comment()
-		|| (token.is_start_tag()
+	if token.is_parser_whitespace() || token.is_comment() || (token.is_start_tag()
 		&& token.tag_name in ['basefont', 'bgsound', 'link', 'meta', 'noframes', 'style']) {
 		p.handle_in_head(mut token)
 		return
@@ -346,6 +344,11 @@ fn (mut p HTMLParser) handle_after_head(mut token HTMLToken) {
 		p.insert_html_element(token)
 		p.frameset_ok = false
 		p.insertion_mode = .in_body
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'frameset' {
+		p.insert_html_element(token)
+		p.insertion_mode = .in_frameset
 		return
 	}
 	if token.is_start_tag() && token.tag_name in head_element_start_tags {
@@ -428,6 +431,26 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 				body.set_attribute_value(attribute.local_name, attribute.value)
 			}
 		}
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'frameset' {
+		if p.stack_of_open_elements.elements.len == 1
+			|| p.stack_of_open_elements.elements[1].local_name() != 'body' {
+			return
+		}
+		if !p.frameset_ok {
+			return
+		}
+		mut body_node := p.stack_of_open_elements.elements[1].as_node()
+		body_node.remove(true)
+		for p.stack_of_open_elements.elements.len > 1 {
+			if p.stack_of_open_elements.last().local_name() == 'html' {
+				break
+			}
+			p.stack_of_open_elements.pop()
+		}
+		p.insert_html_element(token)
+		p.insertion_mode = .in_frameset
 		return
 	}
 	if token.is_end_of_file() {
@@ -564,10 +587,36 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		p.list_of_active_formatting_elements.add(element, token)
 		return
 	}
+	if token.is_start_tag() && token.tag_name == 'nobr' {
+		p.reconstruct_the_active_formatting_elements()
+		if p.stack_of_open_elements.has_in_scope('nobr') {
+			p.run_the_adoption_agency_algorithm(token)
+			p.reconstruct_the_active_formatting_elements()
+		}
+		element := p.insert_html_element(token)
+		p.list_of_active_formatting_elements.add(element, token)
+		return
+	}
 	if token.is_end_tag() && token.tag_name in formatting_end_tags {
 		if p.run_the_adoption_agency_algorithm(token) == .run_any_other_end_tag_steps {
 			p.in_body_any_other_end_tag(mut token)
 		}
+		return
+	}
+	if token.is_start_tag() && token.tag_name in ['applet', 'marquee', 'object'] {
+		p.reconstruct_the_active_formatting_elements()
+		p.insert_html_element(token)
+		p.list_of_active_formatting_elements.add_marker()
+		p.frameset_ok = false
+		return
+	}
+	if token.is_end_tag() && token.tag_name in ['applet', 'marquee', 'object'] {
+		if !p.stack_of_open_elements.has_in_scope(token.tag_name) {
+			return
+		}
+		p.generate_implied_end_tags('')
+		p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped(token.tag_name)
+		p.list_of_active_formatting_elements.clear_up_to_the_last_marker()
 		return
 	}
 	if token.is_end_tag() && token.tag_name in block_end_tags {
@@ -708,6 +757,20 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		p.insert_html_element(token)
 		return
 	}
+	if token.is_start_tag() && token.tag_name in ['rb', 'rtc'] {
+		if p.stack_of_open_elements.has_in_scope('ruby') {
+			p.generate_implied_end_tags('')
+		}
+		p.insert_html_element(token)
+		return
+	}
+	if token.is_start_tag() && token.tag_name in ['rp', 'rt'] {
+		if p.stack_of_open_elements.has_in_scope('ruby') {
+			p.generate_implied_end_tags('rtc')
+		}
+		p.insert_html_element(token)
+		return
+	}
 	if token.is_start_tag() && token.tag_name == 'table' {
 		if !p.document.in_quirks_mode() && p.stack_of_open_elements.has_in_button_scope('p') {
 			p.close_a_p_element()
@@ -739,6 +802,16 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		}
 		return
 	}
+	if token.is_end_tag() && token.tag_name == 'br' {
+		mut br_token := HTMLToken.make_start_tag('br')
+		p.process_using_the_rules_for(p.insertion_mode, mut br_token)
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'image' {
+		token.set_tag_name('img')
+		p.process_using_the_rules_for(p.insertion_mode, mut token)
+		return
+	}
 	// Void elements: area, br, embed, img, keygen, wbr.
 	if token.is_start_tag() && token.tag_name in ['area', 'br', 'embed', 'img', 'keygen', 'wbr'] {
 		p.reconstruct_the_active_formatting_elements()
@@ -749,16 +822,40 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		return
 	}
 	if token.is_start_tag() && token.tag_name == 'input' {
+		mut is_fragment_select := false
+		if p.parsing_fragment {
+			if context := p.context_element {
+				is_fragment_select = context.local_name() == 'select'
+			}
+		}
+		if is_fragment_select {
+			return
+		}
+		if p.stack_of_open_elements.has_in_scope('select') {
+			p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('select')
+		}
 		p.reconstruct_the_active_formatting_elements()
 		p.insert_html_element(token)
 		p.stack_of_open_elements.pop()
 		token.acknowledge_self_closing_flag_if_set()
-		// FIXME: frameset-ok flag is only kept for type=hidden.
+		type_attribute := token.attribute('type')
+		if type_attribute == none || ascii_lowercase_string(type_attribute or { '' }) != 'hidden' {
+			p.frameset_ok = false
+		}
+		return
+	}
+	if token.is_start_tag() && token.tag_name in ['param', 'source', 'track'] {
+		p.insert_html_element(token)
+		p.stack_of_open_elements.pop()
+		token.acknowledge_self_closing_flag_if_set()
 		return
 	}
 	if token.is_start_tag() && token.tag_name == 'hr' {
 		if p.stack_of_open_elements.has_in_button_scope('p') {
 			p.close_a_p_element()
+		}
+		if p.stack_of_open_elements.has_in_scope('select') {
+			p.generate_implied_end_tags('')
 		}
 		p.insert_html_element(token)
 		p.stack_of_open_elements.pop()
@@ -771,7 +868,6 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		&& token.tag_name in ['caption', 'col', 'colgroup', 'frame', 'head', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr'] {
 		return
 	}
-	// FIXME: select/option/foreign and several other start tags are not handled specially.
 	if token.is_start_tag() {
 		p.reconstruct_the_active_formatting_elements()
 		p.insert_html_element(token)
@@ -882,4 +978,107 @@ fn (mut p HTMLParser) handle_after_after_body(mut token HTMLToken) {
 	// Anything else.
 	p.insertion_mode = .in_body
 	p.process_using_the_rules_for(.in_body, mut token)
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inframeset
+fn (mut p HTMLParser) handle_in_frameset(mut token HTMLToken) {
+	if token.is_character() && token.is_parser_whitespace() {
+		p.insert_character(token.code_point)
+		return
+	}
+	if token.is_comment() {
+		p.insert_comment(token)
+		return
+	}
+	if token.is_doctype() {
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'html' {
+		p.process_using_the_rules_for(.in_body, mut token)
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'frameset' {
+		p.insert_html_element(token)
+		return
+	}
+	if token.is_end_tag() && token.tag_name == 'frameset' {
+		current_node := p.current_node() or { return }
+		if current_node.is_document_element() {
+			return
+		}
+		p.stack_of_open_elements.pop()
+		new_current_node := p.current_node() or { return }
+		if !p.parsing_fragment && new_current_node.local_name() != 'frameset' {
+			p.insertion_mode = .after_frameset
+		}
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'frame' {
+		p.insert_html_element(token)
+		p.stack_of_open_elements.pop()
+		token.acknowledge_self_closing_flag_if_set()
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'noframes' {
+		p.process_using_the_rules_for(.in_head, mut token)
+		return
+	}
+	if token.is_end_of_file() {
+		p.stop_parsing = true
+		return
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-afterframeset
+fn (mut p HTMLParser) handle_after_frameset(mut token HTMLToken) {
+	if token.is_character() && token.is_parser_whitespace() {
+		p.insert_character(token.code_point)
+		return
+	}
+	if token.is_comment() {
+		p.insert_comment(token)
+		return
+	}
+	if token.is_doctype() {
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'html' {
+		p.process_using_the_rules_for(.in_body, mut token)
+		return
+	}
+	if token.is_end_tag() && token.tag_name == 'html' {
+		p.insertion_mode = .after_after_frameset
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'noframes' {
+		p.process_using_the_rules_for(.in_head, mut token)
+		return
+	}
+	if token.is_end_of_file() {
+		p.stop_parsing = true
+		return
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#the-after-after-frameset-insertion-mode
+fn (mut p HTMLParser) handle_after_after_frameset(mut token HTMLToken) {
+	if token.is_comment() {
+		mut document_node := p.document_as_node()
+		comment := p.document.create_comment(token.comment())
+		document_node.append_child(comment.as_node()) or {}
+		return
+	}
+	if token.is_doctype() || token.is_parser_whitespace()
+		|| (token.is_start_tag() && token.tag_name == 'html') {
+		p.process_using_the_rules_for(.in_body, mut token)
+		return
+	}
+	if token.is_end_of_file() {
+		p.stop_parsing = true
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'noframes' {
+		p.process_using_the_rules_for(.in_head, mut token)
+		return
+	}
 }

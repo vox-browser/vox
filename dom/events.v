@@ -190,7 +190,7 @@ pub fn Event.new_with_init(event_name string, event_init EventInit) &Event {
 	}
 }
 
-fn current_event_timestamp() DOMHighResTimeStamp {
+pub fn current_event_timestamp() DOMHighResTimeStamp {
 	// C++ uses current_high_resolution_time(relevant global object). This DOM-only port does not
 	// yet thread the relevant global through Event construction, so use V's monotonic clock rather
 	// than epoch time.

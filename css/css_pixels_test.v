@@ -1,16 +1,7 @@
 module css
 
-// Translation of Tests/LibWeb/TestCSSPixels.cpp (the subset that maps to the ported
-// CSSPixels API). The V port models CSSPixels as a simplified fixed-point value
-// (`raw_value_ int`, 6 fractional bits) and does NOT yet implement: saturating
-// arithmetic (`might_be_saturated()` is a stub returning false), `to_float()`/`to_int()`,
-// CSSPixels*CSSPixels / CSSPixels/CSSPixels operators (only `times_float`/`divided_by_float`),
-// or the free `ceil()`/`floor()`/`round()` functions. Those C++ cases are intentionally
-// omitted here; see the report accompanying this translation.
-//
-// NOTE: this file type-checks with `v -check test css/`, but cannot currently be executed
-// because the css module does not survive V's C codegen (a pre-existing, module-wide V
-// compiler bug unrelated to these tests).
+// Translation of Tests/LibWeb/TestCSSPixels.cpp. V does not overload arithmetic
+// operators, so the corresponding named methods are used below.
 
 fn test_css_pixels_addition1() {
 	a := CSSPixels.new(10)
@@ -29,14 +20,18 @@ fn test_css_pixels_subtraction1() {
 fn test_css_pixels_division1() {
 	a := CSSPixels.new(10)
 	b := CSSPixels.new(5)
-	c := a.divided_by_float(b.to_double())
+	c := a.divided_by(b).to_css_pixels()
 	assert c == CSSPixels.new(2)
+	large := CSSPixels.from_raw(0x3fff_ffff)
+	quarter := CSSPixels.nearest_value_for(0.25)
+	assert !large.might_be_saturated()
+	assert large.divided_by(quarter).to_css_pixels().might_be_saturated()
 }
 
 fn test_css_pixels_multiplication1() {
 	a := CSSPixels.new(3)
 	b := CSSPixels.new(4)
-	c := a.times_float(b.to_double())
+	c := a.times(b)
 	assert c == CSSPixels.new(12)
 }
 
@@ -49,6 +44,8 @@ fn test_css_pixels_addition2() {
 fn test_css_pixels_to_double() {
 	a := CSSPixels.new(10)
 	assert a.to_double() == 10.0
+	assert a.to_float() == f32(10)
+	assert a.to_int() == 10
 }
 
 fn test_css_pixels_comparison1() {
@@ -62,11 +59,25 @@ fn test_css_pixels_comparison2() {
 fn test_css_pixels_multiplication_large_values() {
 	a := CSSPixels.new(1200)
 	b := CSSPixels.new(647)
-	c := a.times_float(b.to_double())
+	c := a.times(b)
 	assert c == CSSPixels.new(776400)
 }
 
 fn test_css_pixels_nearest_value_for() {
 	assert CSSPixels.nearest_value_for(2.0) == CSSPixels.new(2)
 	assert CSSPixels.nearest_value_for(0.0) == CSSPixels.new(0)
+}
+
+fn test_css_pixels_saturating_arithmetic() {
+	assert CSSPixels.max().plus(CSSPixels.new(1)) == CSSPixels.max()
+	assert CSSPixels.min().minus(CSSPixels.new(1)) == CSSPixels.min()
+}
+
+fn test_css_pixels_floor_ceil_round() {
+	assert css_pixels_ceil(CSSPixels.nearest_value_for(0.5)) == CSSPixels.new(1)
+	assert css_pixels_ceil(CSSPixels.nearest_value_for(-1.7)) == CSSPixels.new(-1)
+	assert css_pixels_floor(CSSPixels.nearest_value_for(1.7)) == CSSPixels.new(1)
+	assert css_pixels_floor(CSSPixels.nearest_value_for(-1.3)) == CSSPixels.new(-2)
+	assert css_pixels_round(CSSPixels.nearest_value_for(1.5)) == CSSPixels.new(2)
+	assert css_pixels_round(CSSPixels.nearest_value_for(-1.5)) == CSSPixels.new(-2)
 }

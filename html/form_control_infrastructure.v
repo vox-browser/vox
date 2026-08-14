@@ -1,0 +1,122 @@
+// Copyright (c) 2023, Kenneth Myhra <kennethmyhra@serenityos.org>
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of the serialization algorithms in
+// Libraries/LibWeb/HTML/FormControlInfrastructure.cpp.
+module html
+
+import rand
+
+pub struct FormDataFile {
+pub:
+	name      string
+	mime_type string
+	bytes     []u8
+}
+
+pub type FormDataEntryValue = FormDataFile | string
+
+pub struct FormDataEntry {
+pub:
+	name  string
+	value FormDataEntryValue
+}
+
+pub struct SerializedFormData {
+pub:
+	boundary        string
+	serialized_data []u8
+}
+
+pub fn create_form_data_string_entry(name string, value string) FormDataEntry {
+	return FormDataEntry{name, FormDataEntryValue(value)}
+}
+
+pub fn create_form_data_file_entry(name string, file FormDataFile, filename ?string) FormDataEntry {
+	entry_file := if replacement_name := filename {
+		FormDataFile{
+			name:      replacement_name
+			mime_type: file.mime_type
+			bytes:     file.bytes
+		}
+	} else {
+		file
+	}
+	return FormDataEntry{name, FormDataEntryValue(entry_file)}
+}
+
+pub fn normalize_line_breaks(value string) string {
+	mut output := []u8{}
+	mut position := 0
+	for position < value.len {
+		start := position
+		for position < value.len && value[position] != `\r` && value[position] != `\n` {
+			position++
+		}
+		output << value[start..position].bytes()
+		if position >= value.len {
+			break
+		}
+		if (value[position] == `\r` && (position + 1 >= value.len || value[position + 1] != `\n`))
+			|| value[position] == `\n` {
+			output << '\r\n'.bytes()
+			position++
+		} else {
+			position += 2
+		}
+	}
+	return output.bytestr()
+}
+
+fn escape_form_data_header_value(value string) string {
+	mut output := []u8{}
+	for character in value.bytes() {
+		match character {
+			`\r` { output << '%0D'.bytes() }
+			`\n` { output << '%0A'.bytes() }
+			`"` { output << '%22'.bytes() }
+			else { output << character }
+		}
+	}
+	return output.bytestr()
+}
+
+fn append_form_data_string(mut output []u8, value string) {
+	output << value.bytes()
+}
+
+// https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#multipart/form-data-encoding-algorithm
+pub fn serialize_to_multipart_form_data(entry_list []FormDataEntry) SerializedFormData {
+	boundary := '---------------------------${rand.u64()}'
+	mut output := []u8{}
+	for entry in entry_list {
+		append_form_data_string(mut output, '--${boundary}\r\n')
+		normalized_name := normalize_line_breaks(entry.name)
+		escaped_name := escape_form_data_header_value(normalized_name)
+		match entry.value {
+			FormDataFile {
+				escaped_filename := escape_form_data_header_value(entry.value.name)
+				append_form_data_string(mut output,
+					'Content-Disposition: form-data; name="${escaped_name}"; filename="${escaped_filename}"\r\n')
+				if entry.value.mime_type != '' {
+					append_form_data_string(mut output,
+						'Content-Type: ${entry.value.mime_type}\r\n\r\n')
+				} else {
+					append_form_data_string(mut output,
+						'Content-Type: application/octet-stream\r\n\r\n')
+				}
+				output << entry.value.bytes
+				append_form_data_string(mut output, '\r\n')
+			}
+			string {
+				normalized_value := normalize_line_breaks(entry.value)
+				append_form_data_string(mut output,
+					'Content-Disposition: form-data; name="${escaped_name}"\r\n\r\n')
+				append_form_data_string(mut output, '${normalized_value}\r\n')
+			}
+		}
+	}
+	append_form_data_string(mut output, '--${boundary}--\r\n')
+	return SerializedFormData{boundary, output}
+}

@@ -20,6 +20,18 @@ pub enum EventInterface {
 	// dom/html_events.v).
 	before_unload_event
 	error_event
+	close_event
+	submit_event
+	toggle_event
+	command_event
+	pop_state_event
+	hash_change_event
+	page_transition_event
+	storage_event
+	promise_rejection_event
+	// TrackEvent lives in the html module (it references html-module track types) but still needs a
+	// distinct interface id here so a base &Event can be identified as a TrackEvent.
+	track_event
 }
 
 // UIEvents/KeyCode.h: Key_Escape = 0x1B.
@@ -93,8 +105,8 @@ pub mut:
 
 pub fn MouseEvent.create(event_name string, init MouseEventInit) &MouseEvent {
 	return &MouseEvent{
-		UIEvent: UIEvent{
-			Event: Event{
+		UIEvent:     UIEvent{
+			Event:   Event{
 				interface_:   .mouse_event
 				type_:        event_name
 				bubbles_:     init.bubbles
@@ -203,8 +215,8 @@ pub mut:
 
 pub fn KeyboardEvent.create(event_name string, init KeyboardEventInit) &KeyboardEvent {
 	return &KeyboardEvent{
-		UIEvent: UIEvent{
-			Event: Event{
+		UIEvent:       UIEvent{
+			Event:   Event{
 				interface_:   .keyboard_event
 				type_:        event_name
 				bubbles_:     init.bubbles
@@ -290,9 +302,9 @@ pub mut:
 
 pub fn PointerEvent.create(event_name string, init PointerEventInit) &PointerEvent {
 	return &PointerEvent{
-		MouseEvent: MouseEvent{
-			UIEvent: UIEvent{
-				Event: Event{
+		MouseEvent:           MouseEvent{
+			UIEvent:     UIEvent{
+				Event:   Event{
 					interface_:   .pointer_event
 					type_:        event_name
 					bubbles_:     init.bubbles

@@ -3,14 +3,60 @@ module css
 import dom
 
 // Selector-matching entry points that the DOM needs (querySelector / matches / closest).
-// These live in the css module, not dom, because they need the CSS selector parser and
-// SelectorEngine, and dom cannot import css (that would be a module cycle: css imports dom).
-// This mirrors upstream, where SelectorEngine is part of CSS. The dom-side
-// Element.query_selector methods remain stubs; use these functions instead.
-//
-// FIXME: `:scope` and relative selectors are matched without a scoping root here, so they
-// behave as if unscoped. The common selectors (type / #id / .class / attribute / combinators
-// / pseudo-classes) work.
+// These live in css because they need the selector parser and SelectorEngine. The callback bridge
+// below lets the standard DOM APIs use them without creating a dom <-> css import cycle.
+
+@[heap]
+struct DocumentSelectorQueryState {
+mut:
+	parsed  map[string]SelectorList
+	invalid map[string]bool
+}
+
+fn (mut state DocumentSelectorQueryState) parse(selector_text string) ?SelectorList {
+	if selector_text in state.invalid {
+		return none
+	}
+	if parsed := state.parsed[selector_text] {
+		return parsed
+	}
+	parsed := parse_query_selector_list(selector_text) or {
+		state.invalid[selector_text] = true
+		return none
+	}
+	state.parsed[selector_text] = parsed
+	return parsed
+}
+
+fn dom_selector_query_validate(target voidptr, selector_text string) bool {
+	mut state := unsafe { &DocumentSelectorQueryState(target) }
+	return state.parse(selector_text) != none
+}
+
+fn dom_selector_query_matches(target voidptr, selector_text string, element &dom.Element, scoping_root &dom.ParentNode) bool {
+	mut state := unsafe { &DocumentSelectorQueryState(target) }
+	selectors := state.parse(selector_text) or { return false }
+	for selector in selectors.selectors {
+		mut context := MatchContext{}
+		if matches(selector, element, none, mut context, none, scoping_root, .normal, none) {
+			return true
+		}
+	}
+	return false
+}
+
+pub fn install_document_selector_query_hook(document &dom.Document) {
+	state := &DocumentSelectorQueryState{
+		parsed:  map[string]SelectorList{}
+		invalid: map[string]bool{}
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_selector_query_hook(dom.DocumentSelectorQueryHook{
+		target:   voidptr(state)
+		validate: dom_selector_query_validate
+		matches:  dom_selector_query_matches
+	})
+}
 
 fn parse_query_selector_list(selector_text string) ?SelectorList {
 	return parse_selector_with_parser(selector_text, map[string]bool{})
@@ -27,6 +73,7 @@ fn element_matches_any(element &dom.Element, selectors SelectorList) bool {
 
 // https://dom.spec.whatwg.org/#dom-element-matches
 pub fn element_matches_selector(element &dom.Element, selector_text string) bool {
+	install_document_selector_query_hook(element.document())
 	selectors := parse_query_selector_list(selector_text) or { return false }
 	return element_matches_any(element, selectors)
 }
@@ -59,6 +106,7 @@ fn query_selector_all_in(node &dom.Node, selectors SelectorList, mut results []&
 // https://dom.spec.whatwg.org/#dom-parentnode-queryselector
 // Returns the first descendant element of `root` (in tree order) that matches the selector.
 pub fn query_selector(root &dom.Node, selector_text string) ?&dom.Element {
+	install_document_selector_query_hook(root.document())
 	selectors := parse_query_selector_list(selector_text) or { return none }
 	return query_selector_first_in(root, selectors)
 }
@@ -66,6 +114,7 @@ pub fn query_selector(root &dom.Node, selector_text string) ?&dom.Element {
 // https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall
 pub fn query_selector_all(root &dom.Node, selector_text string) []&dom.Element {
 	mut results := []&dom.Element{}
+	install_document_selector_query_hook(root.document())
 	selectors := parse_query_selector_list(selector_text) or { return results }
 	query_selector_all_in(root, selectors, mut results)
 	return results
@@ -74,6 +123,7 @@ pub fn query_selector_all(root &dom.Node, selector_text string) []&dom.Element {
 // https://dom.spec.whatwg.org/#dom-element-closest
 // Returns `element` or its nearest inclusive ancestor element that matches the selector.
 pub fn closest_matching_selector(element &dom.Element, selector_text string) ?&dom.Element {
+	install_document_selector_query_hook(element.document())
 	selectors := parse_query_selector_list(selector_text) or { return none }
 	mut current := ?&dom.Element(element)
 	for {

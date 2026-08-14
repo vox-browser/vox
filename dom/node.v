@@ -115,6 +115,7 @@ pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUp
 pub enum StyleInvalidationReason {
 	base_url_changed
 	css_font_loaded
+	element_attribute_change
 	element_set_active
 	element_set_shadow_root
 	html_iframe_element_geometry_change
@@ -131,6 +132,7 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 	return match reason {
 		.base_url_changed { 'BaseURLChanged' }
 		.css_font_loaded { 'CSSFontLoaded' }
+		.element_attribute_change { 'ElementAttributeChange' }
 		.element_set_active { 'ElementSetActive' }
 		.element_set_shadow_root { 'ElementSetShadowRoot' }
 		.html_iframe_element_geometry_change { 'HTMLIFrameElementGeometryChange' }
@@ -146,7 +148,7 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 
 pub struct StyleInvalidationOptions {
 pub mut:
-	invalidate_self bool = true
+	invalidate_self bool
 }
 
 pub enum FragmentSerializationMode {
@@ -170,8 +172,8 @@ pub enum RequireWellFormed {
 }
 
 pub enum InvalidateDisplayList {
-	no
 	yes
+	no
 }
 
 pub enum MutationType {
@@ -225,9 +227,21 @@ pub fn (p &PaintableBox) has_stacking_context() bool {
 	return p.stacking_context
 }
 
+pub enum InvalidationPropertyType {
+	invalidate_self
+	invalidate_whole_subtree
+	class
+	id
+	tag_name
+	attribute
+	pseudo_class
+}
+
 pub struct InvalidationProperty {
 pub mut:
-	name string
+	type_             InvalidationPropertyType
+	name              string
+	pseudo_class_name string
 }
 
 @[heap]
@@ -739,6 +753,13 @@ pub fn (n &Node) as_element() ?&Element {
 	return unsafe { &Element(n) }
 }
 
+pub fn (n &Node) as_document() ?&Document {
+	if !n.is_document() {
+		return none
+	}
+	return unsafe { &Document(n) }
+}
+
 pub fn (e &Element) as_node() &Node {
 	return unsafe { &Node(e) }
 }
@@ -1204,8 +1225,9 @@ fn shadow_style_scope_for_node(node &Node) ?&StyleScope {
 }
 
 pub fn (d &Document) style_computer() &StyleComputer {
-	_ = d
-	// Stub for Document::style_computer() until the CSS style computer is ported.
+	if d.style_computer != unsafe { nil } {
+		return d.style_computer
+	}
 	return &StyleComputer{}
 }
 
@@ -2386,10 +2408,20 @@ pub fn (n &Node) editing_host() ?&Node {
 
 pub fn (mut n Node) set_layout_node(layout_node &LayoutNode) {
 	n.layout_node_ = layout_node
+	if element := n.as_element() {
+		unsafe {
+			element.layout_node_with_style_ = layout_node_with_style(layout_node)
+		}
+	}
 }
 
 pub fn (mut n Node) detach_layout_node() {
 	n.layout_node_ = unsafe { nil }
+	if element := n.as_element() {
+		unsafe {
+			element.layout_node_with_style_ = none
+		}
+	}
 }
 
 pub fn (n &Node) get_parent(event &Event) ?&EventTarget {
@@ -2498,8 +2530,7 @@ pub fn (mut n Node) set_needs_style_update(value bool) {
 }
 
 pub fn (mut n Node) set_needs_style_update_internal(value bool) {
-	_ = value
-	n.needs_style_update_ = true
+	n.needs_style_update_ = value
 }
 
 pub fn (n &Node) child_needs_style_update() bool {
@@ -2985,8 +3016,13 @@ pub fn (mut n Node) unsafely_set_html(context_element &Element, html string) ! {
 		fragment_node.append_child(child)!
 	}
 
-	// 4. Replace all with fragment within contextElement.
-	n.replace_all(fragment.as_node())
+	// 4. Replace all within contextElement (or within a template element's template contents).
+	mut target := n
+	if context_element.is_html_element() && context_element.local_name() == 'template' {
+		template_element := unsafe { &HTMLTemplateElement(context_element) }
+		target = template_element.content().as_node()
+	}
+	target.replace_all(fragment.as_node())
 }
 
 // https://dom.spec.whatwg.org/#dom-node-issamenode
@@ -3019,8 +3055,8 @@ pub fn (n &Node) is_equal_node(other_node ?&Node) bool {
 		}
 	} else if element := n.as_element() {
 		other_element := other.as_element() or { return false }
-		if element.namespace_uri() != other_element.namespace_uri()
-			|| element.prefix() != other_element.prefix()
+		if !option_string_equal(element.namespace_uri(), other_element.namespace_uri())
+			|| !option_string_equal(element.prefix(), other_element.prefix())
 			|| element.local_name() != other_element.local_name()
 			|| element.attribute_list_size() != other_element.attribute_list_size() {
 			return false
@@ -3041,7 +3077,7 @@ pub fn (n &Node) is_equal_node(other_node ?&Node) bool {
 		}
 	} else if attr := n.as_attr() {
 		other_attr := other.as_attr() or { return false }
-		if attr.namespace_uri() != other_attr.namespace_uri()
+		if !option_string_equal(attr.namespace_uri(), other_attr.namespace_uri())
 			|| attr.local_name() != other_attr.local_name() || attr.value() != other_attr.value() {
 			return false
 		}
@@ -3140,7 +3176,7 @@ pub fn (n &Node) locate_a_namespace(prefix ?string) ?string {
 			}
 		}
 		if ns := element.namespace_uri() {
-			if element.prefix() == prefix {
+			if option_string_equal(element.prefix(), prefix) {
 				return ns
 			}
 		}
@@ -3245,7 +3281,7 @@ pub fn (n &Node) is_default_namespace(namespace_ ?string) bool {
 	// 2. Let defaultNamespace be the result of running locate a namespace for this using null.
 	default_namespace := n.locate_a_namespace(none)
 	// 3. Return true if defaultNamespace is the same as namespace; otherwise false.
-	return default_namespace == actual_namespace
+	return option_string_equal(default_namespace, actual_namespace)
 }
 
 pub fn (n &Node) is_inert() bool {
@@ -3975,8 +4011,12 @@ pub fn (n &Node) for_each_child(callback fn (&Node) TraversalDecision) Traversal
 
 pub fn (n &Node) for_each_in_subtree(callback fn (&Node) TraversalDecision) TraversalDecision {
 	for child in n.children {
-		if callback(child) == .@break {
+		decision := callback(child)
+		if decision == .@break {
 			return .@break
+		}
+		if decision == .skip_children_and_continue {
+			continue
 		}
 		if child.for_each_in_subtree(callback) == .@break {
 			return .@break
@@ -3986,16 +4026,24 @@ pub fn (n &Node) for_each_in_subtree(callback fn (&Node) TraversalDecision) Trav
 }
 
 pub fn (n &Node) for_each_in_inclusive_subtree(callback fn (&Node) TraversalDecision) TraversalDecision {
-	if callback(n) == .@break {
+	decision := callback(n)
+	if decision == .@break {
 		return .@break
+	}
+	if decision == .skip_children_and_continue {
+		return .@continue
 	}
 	return n.for_each_in_subtree(callback)
 }
 
 // https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-descendant
 pub fn (n &Node) for_each_shadow_including_inclusive_descendant(callback fn (&Node) TraversalDecision) TraversalDecision {
-	if callback(n) == .@break {
+	decision := callback(n)
+	if decision == .@break {
 		return .@break
+	}
+	if decision == .skip_children_and_continue {
+		return .@continue
 	}
 	return n.for_each_shadow_including_descendant(callback)
 }
@@ -4245,31 +4293,62 @@ pub fn (ss &StyleScope) str() string {
 }
 
 pub fn (ss &StyleScope) may_have_has_selectors() bool {
+	if ss.may_have_has_selectors_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
+		return ss.may_have_has_selectors_callback(ss.css_handle)
+	}
 	return false
 }
 
 pub fn (mut ss StyleScope) schedule_ancestors_style_invalidation_due_to_presence_of_has(node &Node) {
-	_ = node
+	if ss.schedule_has_invalidation_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
+		ss.schedule_has_invalidation_callback(ss.css_handle, node)
+	}
 }
 
 pub fn (sc &StyleComputer) invalidation_property_used_in_has_selector(property InvalidationProperty, style_scope &StyleScope) bool {
-	_ = property
-	_ = style_scope
+	if sc.invalidation_property_used_in_has_callback != unsafe { nil }
+		&& sc.css_handle != unsafe { nil } {
+		return sc.invalidation_property_used_in_has_callback(sc.css_handle, property, style_scope)
+	}
 	return false
 }
 
 pub fn (sc &StyleComputer) invalidation_plan_for_properties(properties []InvalidationProperty, style_scope &StyleScope) &InvalidationPlan {
-	_ = properties
-	_ = style_scope
+	if sc.invalidation_plan_callback != unsafe { nil } && sc.css_handle != unsafe { nil } {
+		plan := sc.invalidation_plan_callback(sc.css_handle, properties, style_scope)
+		return &plan
+	}
 	return &InvalidationPlan{}
 }
 
-pub struct InvalidationPlan {}
+pub struct InvalidationPlan {
+pub mut:
+	invalidate_self          bool
+	invalidate_whole_subtree bool
+	descendant_rules         []DescendantInvalidationRule
+	sibling_rules            []SiblingInvalidationRule
+}
 
 pub fn (mut si StyleInvalidator) enqueue_invalidation_plan(node &Node, reason StyleInvalidationReason, plan InvalidationPlan) bool {
-	_ = node
-	_ = reason
-	_ = plan
+	if invalidation_plan_is_empty(plan) {
+		return false
+	}
+	if plan.invalidate_whole_subtree {
+		mut mutable_node := unsafe { &Node(node) }
+		mutable_node.invalidate_style(reason)
+		return true
+	}
+	if plan.invalidate_self {
+		mut mutable_node := unsafe { &Node(node) }
+		mutable_node.set_needs_style_update(true)
+	}
+	si.add_pending_invalidation(node, reason, plan)
+	if element := node.as_element() {
+		for sibling_rule in plan.sibling_rules {
+			mut mutable_element := unsafe { &Element(element) }
+			si.apply_sibling_invalidation(mut mutable_element, reason, sibling_rule)
+		}
+	}
 	return false
 }
 

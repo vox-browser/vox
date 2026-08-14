@@ -1115,8 +1115,27 @@ pub fn (properties &CSSStyleProperties) get_property(property_id PropertyID) ?St
 
 pub fn (properties &CSSStyleProperties) custom_property(custom_property_name string) ?StyleProperty {
 	if properties.is_computed() {
-		// Boundary: computed custom property lookup requires DOM::Element custom_property_data().
-		return none
+		owner := properties.owner_node or { return none }
+		value := owner.get_custom_property(custom_property_name) or {
+			initial_value := owner.document().custom_property_initial_value(custom_property_name) or {
+				return none
+			}
+			return StyleProperty{
+				property_id: .color
+				value:       &dom.StyleValue{
+					css_text: initial_value
+				}
+			}
+		}
+		if value.guaranteed_invalid {
+			return none
+		}
+		return StyleProperty{
+			property_id: .color
+			value:       &dom.StyleValue{
+				css_text: value.css_text
+			}
+		}
 	}
 
 	if value := properties.custom_properties[custom_property_name] {
@@ -1316,6 +1335,22 @@ pub fn (properties &CSSStyleProperties) get_property_internal(property PropertyN
 	if property.is_custom_property() {
 		return properties.custom_property(property.name())
 	}
+	if properties.is_computed() {
+		owner := properties.owner_node or { return none }
+		property_id := property.id() or { return none }
+		dom_computed := owner.computed_properties() or { return none }
+		computed := computed_properties_from_dom(dom_computed) or { return none }
+		value := computed.property(property_id, .yes) or { return none }
+		return StyleProperty{
+			property_id: property_id
+			value:       value
+			important:   if computed.is_property_important(property_id) {
+				Important.yes
+			} else {
+				Important.no
+			}
+		}
+	}
 	property_name := string_from_property_id(property.id() or { PropertyID.color })
 	for existing in properties.properties {
 		if existing.name == property_name {
@@ -1345,6 +1380,10 @@ pub fn (properties &CSSStyleProperties) has_property(property PropertyNameAndID)
 pub fn (properties &CSSStyleProperties) property_value(property_name string) string {
 	property := css_style_property_name_and_id_from_name(property_name) or { return '' }
 	if property.is_custom_property() {
+		if properties.is_computed() {
+			custom := properties.custom_property(property.name()) or { return '' }
+			return dom_style_value_to_css_text(custom.value)
+		}
 		if value := properties.custom_properties[property.name()] {
 			return custom_property_value_without_priority(value)
 		}
@@ -1563,10 +1602,27 @@ pub fn (property_map &StylePropertyMapReadOnly) size() u32 {
 }
 
 pub fn (mut property_map StylePropertyMapReadOnly) get_style_value(property PropertyNameAndID) ?&dom.StyleValue {
-	if _ := property_map.element {
-		_ = property
-		// Boundary: computed property extraction from DOM::Element requires computed style values to expose CSS::StyleValue.
-		return none
+	if element := property_map.element {
+		if property.is_custom_property() {
+			value := element.get_custom_property(property.name()) or {
+				initial_value := element.document().custom_property_initial_value(property.name()) or {
+					return none
+				}
+				return &dom.StyleValue{
+					css_text: initial_value
+				}
+			}
+			if value.guaranteed_invalid {
+				return none
+			}
+			return &dom.StyleValue{
+				css_text: value.css_text
+			}
+		}
+		property_id := property.id() or { return none }
+		dom_computed := element.computed_properties() or { return none }
+		computed := computed_properties_from_dom(dom_computed) or { return none }
+		return computed.property(property_id, .yes)
 	}
 	if declaration := property_map.declaration {
 		return declaration.get_property_style_value(property)

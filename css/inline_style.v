@@ -30,11 +30,18 @@ pub fn (s InlineStyleDeclaration) get_property_value(property_name string) strin
 	return parse_css_property_declaration_block_with_parser(s.style_attribute()).get_property_value(property_name)
 }
 
+pub fn (s InlineStyleDeclaration) get_property_priority(property_name string) string {
+	return parse_css_property_declaration_block_with_parser(s.style_attribute()).get_property_priority(property_name)
+}
+
 // Set (or replace) `property_name` in the inline style and write it back to the `style` attribute.
-// FIXME: the `!important` priority isn't exposed here.
 pub fn (s InlineStyleDeclaration) set_property(property_name string, value string) {
+	s.set_property_with_priority(property_name, value, '')
+}
+
+pub fn (s InlineStyleDeclaration) set_property_with_priority(property_name string, value string, priority string) {
 	mut block := parse_css_property_declaration_block_with_parser(s.style_attribute())
-	block.set_property(property_name, value, '') or { return }
+	block.set_property(property_name, value, priority) or { return }
 	s.write(block.css_text())
 }
 
@@ -50,7 +57,16 @@ pub fn (s InlineStyleDeclaration) css_text() string {
 	return parse_css_property_declaration_block_with_parser(s.style_attribute()).css_text()
 }
 
+pub fn (s InlineStyleDeclaration) set_css_text(text string) {
+	block := parse_css_property_declaration_block_with_parser(text)
+	s.write(block.css_text())
+}
+
 // The number of declarations in the inline style.
 pub fn (s InlineStyleDeclaration) length() int {
 	return parse_css_property_declaration_block_with_parser(s.style_attribute()).length()
+}
+
+pub fn (s InlineStyleDeclaration) item(index usize) string {
+	return parse_css_property_declaration_block_with_parser(s.style_attribute()).item(index)
 }

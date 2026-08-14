@@ -40,6 +40,17 @@ fn format_px(value f64) string {
 // value here, since resolving them needs the layout tree.
 pub fn computed_style_value(element &dom.Element, property_name string, author_rules []&CSSRule) string {
 	id := property_id_from_string(property_name) or { return '' }
+	// Prefer the full StyleComputer result when style has already been installed
+	// on the element. The compact cascade below remains the standalone fallback
+	// used by the lightweight layout API and its explicit author-rule argument.
+	abstract_element := dom.AbstractElement.new(element, none)
+	if dom_computed := abstract_element.computed_properties() {
+		if computed := computed_properties_from_dom(dom_computed) {
+			if value := computed.property(id, .yes) {
+				return value.css_text
+			}
+		}
+	}
 	if property_name == 'font-size' {
 		return format_px(computed_font_size_px(element, author_rules))
 	}

@@ -1806,7 +1806,7 @@ pub fn (mut sheet CSSStyleSheet) invalidate_owners(reason dom.StyleInvalidationR
 	for owner in sheet.owning_documents_or_shadow_roots {
 		mut mutable_owner := unsafe { &dom.Node(owner) }
 		mutable_owner.invalidate_style(reason)
-		// Boundary: StyleScope::invalidate_rule_cache() requires DOM style-scope objects.
+		invalidate_css_style_scope_for_node(owner)
 	}
 }
 
@@ -2135,8 +2135,8 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 		return
 	}
 
-	// Boundary: StyleScope invalidation and selector invalidation sets require DOM style-scope objects.
 	mut mutable_root := unsafe { &dom.Node(list.document_or_shadow_root) }
+	invalidate_css_style_scope_for_node(list.document_or_shadow_root)
 	mutable_root.invalidate_style(dom.StyleInvalidationReason.style_change)
 }
 
@@ -2164,7 +2164,7 @@ fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {
 
 	mut mutable_root := unsafe { &dom.Node(list.document_or_shadow_root) }
 	mutable_root.invalidate_style(dom.StyleInvalidationReason.style_change)
-	// Boundary: StyleScope::invalidate_rule_cache() requires DOM style-scope objects.
+	invalidate_css_style_scope_for_node(list.document_or_shadow_root)
 }
 
 pub enum RuleContext {

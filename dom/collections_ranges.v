@@ -1622,7 +1622,18 @@ fn contains_named_namespace(selectors SelectorList) bool {
 }
 
 fn parse_selector(document &Document, selector_text string) ?SelectorList {
-	_ = document
+	if hook := document.selector_query_hook() {
+		if hook.validate == unsafe { nil } || !hook.validate(hook.target, selector_text) {
+			return none
+		}
+		// The css side owns the parsed representation. DOM only needs an opaque key which it passes
+		// back to the matcher; retaining the complete source also preserves selector groups.
+		return SelectorList{
+			selectors: [CSSSelector{
+				text: selector_text
+			}]
+		}
+	}
 	mut selectors := []CSSSelector{}
 	for raw_selector in selector_text.split(',') {
 		selector := raw_selector.trim_space()
@@ -1636,17 +1647,19 @@ fn parse_selector(document &Document, selector_text string) ?SelectorList {
 	if selectors.len == 0 {
 		return none
 	}
-	// Stub for CSS::Parser::parse_selector(CSS::Parser::ParsingParams { document }, selector_text).
+	// A DOM-only consumer may not have installed the CSS bridge. Preserve syntax validation for
+	// selector lists, but matching below intentionally fails until a selector engine is registered.
 	return SelectorList{
 		selectors: selectors
 	}
 }
 
 fn selector_engine_matches(selector CSSSelector, element &Element, scoping_root &ParentNode) bool {
-	_ = selector
-	_ = element
-	_ = scoping_root
-	// Stub for CSS::SelectorEngine::matches(selector, element, nullptr, context, {}, scoping_root).
+	if hook := element.document().selector_query_hook() {
+		if hook.matches != unsafe { nil } {
+			return hook.matches(hook.target, selector.text, element, scoping_root)
+		}
+	}
 	return false
 }
 

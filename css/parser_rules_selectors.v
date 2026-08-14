@@ -1892,11 +1892,13 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 	for declaration in declarations {
 		value := parser_component_values_to_string(declaration.value).trim_space()
 		if is_a_custom_property_name_string(declaration.name) {
-			style.custom_properties[declaration.name] = if original := declaration.original_value_text {
+			value_text := if original := declaration.original_value_text {
 				original
 			} else {
 				value
 			}
+			style.custom_properties[declaration.name] = custom_property_value_with_priority(value_text,
+				declaration.important)
 		} else {
 			style.properties << CSSStyleProperty{
 				name:      declaration.name
@@ -2924,7 +2926,8 @@ pub mut:
 pub fn (mut contexts GuardedSubstitutionContexts) guard(mut context SubstitutionContext) {
 	for mut existing_context in contexts.contexts {
 		if existing_context.dependency_type == context.dependency_type
-			&& existing_context.first == context.first && existing_context.second == context.second {
+			&& existing_context.first == context.first
+			&& option_string_equal(existing_context.second, context.second) {
 			existing_context.is_cyclic = true
 			context.is_cyclic = true
 			return
@@ -2936,7 +2939,8 @@ pub fn (mut contexts GuardedSubstitutionContexts) guard(mut context Substitution
 pub fn (mut contexts GuardedSubstitutionContexts) unguard(context SubstitutionContext) {
 	for index, existing_context in contexts.contexts {
 		if existing_context.dependency_type == context.dependency_type
-			&& existing_context.first == context.first && existing_context.second == context.second {
+			&& existing_context.first == context.first
+			&& option_string_equal(existing_context.second, context.second) {
 			contexts.contexts.delete(index)
 			return
 		}
@@ -2946,7 +2950,8 @@ pub fn (mut contexts GuardedSubstitutionContexts) unguard(context SubstitutionCo
 fn (contexts GuardedSubstitutionContexts) is_marked_cyclic(context SubstitutionContext) bool {
 	for existing_context in contexts.contexts {
 		if existing_context.dependency_type == context.dependency_type
-			&& existing_context.first == context.first && existing_context.second == context.second {
+			&& existing_context.first == context.first
+			&& option_string_equal(existing_context.second, context.second) {
 			return existing_context.is_cyclic
 		}
 	}
@@ -3580,14 +3585,11 @@ fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 }
 
 fn custom_property_tokens_from_element_for_substitution(abstract_element dom.AbstractElement, custom_property_name string) ?[]ComponentValue {
-	_ = custom_property_name
-	if _ := abstract_element.get_custom_property(custom_property_name) {
-		// Boundary: DOM::AbstractElement currently exposes custom properties as
-		// opaque CSSStyleValue_ placeholders, so their tokenized CSS::StyleValue
-		// representation cannot be recovered here yet.
-		return none
+	value := abstract_element.get_custom_property(custom_property_name) or { return none }
+	if value.guaranteed_invalid {
+		return arbitrary_substitution_guaranteed_invalid_value()
 	}
-	return none
+	return parse_component_values_for_value_logic(value.css_text)
 }
 
 fn computed_custom_property_tokens_for_substitution(abstract_element dom.AbstractElement, custom_property_name string) ?[]ComponentValue {

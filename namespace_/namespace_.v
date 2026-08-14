@@ -1,4 +1,4 @@
-// Stub module for namespace constants
+// Translation of Libraries/LibWeb/Namespace.{h,cpp}.
 module namespace_
 
 pub const html = 'http://www.w3.org/1999/xhtml'

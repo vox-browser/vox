@@ -308,3 +308,279 @@ fn test_node_name_variants() {
 	frag := new_document_fragment(doc)
 	assert frag.as_node().node_name() == '#document-fragment'
 }
+
+fn test_url_resolution_and_fragment_mutation() {
+	base := URL{'https://example.com/a/b/index.html?old=1#before'}
+	resolved := dom_url_parse('../image.png?size=2#preview', base, 'UTF-8') or {
+		panic('relative URL did not parse')
+	}
+	assert resolved.serialize() == 'https://example.com/a/image.png?size=2#preview'
+	assert resolved.fragment() or { '' } == 'preview'
+
+	mut changed := resolved
+	changed.set_fragment('final')
+	assert changed.serialize() == 'https://example.com/a/image.png?size=2#final'
+	changed.set_fragment(none)
+	assert changed.serialize() == 'https://example.com/a/image.png?size=2'
+	assert dom_url_parse('http://[', base, 'UTF-8') == none
+}
+
+fn test_meta_color_scheme_discovery() {
+	mut doc := Document.create(url_about_blank())
+	mut html := doc.create_element_ns(html_ns, 'html') or { panic('${err}') }
+	mut head := doc.create_element_ns(html_ns, 'head') or { panic('${err}') }
+	mut invalid_meta := doc.create_element_ns(html_ns, 'meta') or { panic('${err}') }
+	invalid_meta.set_attribute_value('name', 'COLOR-SCHEME')
+	invalid_meta.set_attribute_value('content', 'normal dark')
+	mut valid_meta := doc.create_element_ns(html_ns, 'meta') or { panic('${err}') }
+	valid_meta.set_attribute_value('name', 'color-scheme')
+	valid_meta.set_attribute_value('content', 'only DARK light')
+
+	mut doc_node := unsafe { &Node(doc) }
+	append(mut doc_node, html.as_node())
+	mut html_node := html.as_node()
+	append(mut html_node, head.as_node())
+	mut head_node := head.as_node()
+	append(mut head_node, invalid_meta.as_node())
+	append(mut head_node, valid_meta.as_node())
+
+	doc.obtain_supported_color_schemes()
+	schemes := doc.supported_color_schemes() or { panic('no supported color schemes') }
+	assert schemes == ['dark', 'light']
+}
+
+fn test_focus_updates_active_element_and_invalidates_style() {
+	mut doc := Document.create(url_about_blank())
+	mut html := doc.create_element_ns(html_ns, 'html') or { panic('${err}') }
+	mut body := doc.create_element_ns(html_ns, 'body') or { panic('${err}') }
+	input := doc.create_element_ns(html_ns, 'input') or { panic('${err}') }
+	mut doc_node := unsafe { &Node(doc) }
+	append(mut doc_node, html.as_node())
+	mut html_node := html.as_node()
+	append(mut html_node, body.as_node())
+	mut body_node := body.as_node()
+	append(mut body_node, input.as_node())
+
+	doc.set_focused_area(input.as_node())
+	assert (doc.focused_area() or { panic('no focused area') }).is_same_node(input.as_node())
+	assert (doc.active_element() or { panic('no active element') }) == input
+	assert input.needs_style_update()
+
+	doc.set_focused_area(none)
+	assert doc.focused_area() == none
+}
+
+fn test_hovered_node_identity_handles_null_transitions() {
+	mut doc := Document.create(url_about_blank())
+	first := mk(doc, 'div')
+	second := mk(doc, 'div')
+
+	doc.set_hovered_node(first.as_node())
+	assert (doc.get_hovered_node() or { panic('no hovered node') }).is_same_node(first.as_node())
+	doc.set_hovered_node(second.as_node())
+	assert (doc.get_hovered_node() or { panic('no hovered node') }).is_same_node(second.as_node())
+	doc.set_hovered_node(none)
+	assert doc.get_hovered_node() == none
+}
+
+fn test_attribute_changes_invalidate_descendant_style() {
+	doc := Document.create(url_about_blank())
+	mut parent := mk(doc, 'div')
+	child := mk(doc, 'span')
+	mut parent_node := parent.as_node()
+	append(mut parent_node, child.as_node())
+	parent_node.set_entire_subtree_needs_style_update(false)
+
+	parent.set_attribute_value('class', 'theme')
+	assert parent_node.entire_subtree_needs_style_update()
+}
+
+fn test_style_invalidator_applies_descendant_and_sibling_plans() {
+	doc := Document.create(url_about_blank())
+	mut root := mk(doc, 'root')
+	mut first := mk(doc, 'first')
+	mut matching_descendant := mk(doc, 'span')
+	matching_descendant.set_attribute_value('class', 'affected')
+	mut following := mk(doc, 'following')
+
+	mut root_node := root.as_node()
+	append(mut root_node, first.as_node())
+	mut first_node := first.as_node()
+	append(mut first_node, matching_descendant.as_node())
+	append(mut root_node, doc.create_text_node('separator').as_node())
+	append(mut root_node, following.as_node())
+	root_node.set_needs_style_update(false)
+	first_node.set_needs_style_update(false)
+	mut descendant_node := matching_descendant.as_node()
+	descendant_node.set_needs_style_update(false)
+	mut following_node := following.as_node()
+	following_node.set_needs_style_update(false)
+
+	descendant_payload := InvalidationPlan{
+		invalidate_self: true
+	}
+	sibling_payload := InvalidationPlan{
+		invalidate_self: true
+	}
+	plan := InvalidationPlan{
+		descendant_rules: [
+			DescendantInvalidationRule{
+				match_set: StyleInvalidationSet{
+					properties: [
+						InvalidationProperty{
+							type_: .class
+							name:  'affected'
+						},
+					]
+				}
+				payload:   descendant_payload
+			},
+		]
+		sibling_rules:    [
+			SiblingInvalidationRule{
+				match_any: true
+				reach:     .subsequent
+				payload:   sibling_payload
+			},
+		]
+	}
+
+	mut invalidator := StyleInvalidator{}
+	assert !invalidator.enqueue_invalidation_plan(first.as_node(), .element_attribute_change, plan)
+	invalidator.invalidate(mut root_node)
+	assert matching_descendant.needs_style_update()
+	assert following.needs_style_update()
+	assert invalidator.pending_invalidations.len == 0
+	assert invalidator.active_descendant_invalidations.len == 0
+}
+
+fn test_style_invalidator_whole_subtree_plan_short_circuits() {
+	doc := Document.create(url_about_blank())
+	mut root := mk(doc, 'div')
+	mut root_node := root.as_node()
+	root_node.set_entire_subtree_needs_style_update(false)
+	mut invalidator := StyleInvalidator{}
+	assert invalidator.enqueue_invalidation_plan(root.as_node(), .element_attribute_change, InvalidationPlan{
+		invalidate_whole_subtree: true
+	})
+	assert root_node.entire_subtree_needs_style_update()
+}
+
+fn test_hidden_state_uses_layout_visibility_and_aria_ancestors() {
+	doc := Document.create(url_about_blank())
+	mut parent := mk(doc, 'div')
+	mut child := mk(doc, 'span')
+	mut parent_node := parent.as_node()
+	append(mut parent_node, child.as_node())
+
+	// Elements without a layout node are not rendered.
+	assert child.is_hidden()
+	mut child_node := child.as_node()
+	child_node.set_layout_node(&LayoutNode{})
+	child.set_computed_properties(none, &CSSComputedProperties_{})
+	assert !child.is_hidden()
+
+	child.set_computed_properties(none, &CSSComputedProperties_{
+		visibility_: .collapse
+	})
+	assert child.is_hidden()
+	child.set_computed_properties(none, &CSSComputedProperties_{})
+	parent.set_attribute_value('aria-hidden', 'true')
+	assert child.is_hidden()
+	assert child.has_hidden_ancestor()
+}
+
+fn test_element_state_pseudo_classes() {
+	doc := Document.create(URL{'https://example.com/path#current'})
+	mut checkbox := doc.create_element_ns(html_ns, 'input') or { panic('${err}') }
+	checkbox.set_attribute_value('type', 'checkbox')
+	assert checkbox.matches_unchecked_pseudo_class()
+	checkbox.set_attribute_value('checked', '')
+	assert checkbox.matches_checked_pseudo_class()
+	assert !checkbox.matches_unchecked_pseudo_class()
+	assert !mk(doc, 'div').matches_unchecked_pseudo_class()
+
+	mut option := doc.create_element_ns(html_ns, 'option') or { panic('${err}') }
+	assert option.matches_unchecked_pseudo_class()
+	option.set_attribute_value('selected', '')
+	assert option.matches_checked_pseudo_class()
+
+	mut input := doc.create_element_ns(html_ns, 'input') or { panic('${err}') }
+	input.set_attribute_value('placeholder', 'Name')
+	assert input.matches_placeholder_shown_pseudo_class()
+	input.set_attribute_value('value', 'Alice')
+	assert !input.matches_placeholder_shown_pseudo_class()
+
+	mut local := doc.create_element_ns(html_ns, 'a') or { panic('${err}') }
+	local.set_attribute_value('href', '/path')
+	assert local.matches_local_link_pseudo_class()
+	local.set_attribute_value('href', '/path#other')
+	assert !local.matches_local_link_pseudo_class()
+}
+
+fn test_registrable_domain_suffix_validation() {
+	assert is_a_registrable_domain_suffix_of_or_is_equal_to('www.example.com', 'www.example.com')
+	assert is_a_registrable_domain_suffix_of_or_is_equal_to('example.com', 'www.example.com')
+	assert !is_a_registrable_domain_suffix_of_or_is_equal_to('com', 'www.example.com')
+	assert !is_a_registrable_domain_suffix_of_or_is_equal_to('co.uk', 'www.example.co.uk')
+	assert is_a_registrable_domain_suffix_of_or_is_equal_to('example.co.uk', 'www.example.co.uk')
+	assert !is_a_registrable_domain_suffix_of_or_is_equal_to('ample.com', 'example.com')
+	assert !is_a_registrable_domain_suffix_of_or_is_equal_to('127.0.0.1', 'sub.127.0.0.1')
+	assert is_a_registrable_domain_suffix_of_or_is_equal_to('127.0.0.1', '127.0.0.1')
+}
+
+fn test_xml_serialization_namespaces_and_node_types() {
+	doc := Document.create(url_about_blank())
+	mut root := doc.create_element_ns('urn:test', 'p:root') or { panic('${err}') }
+	root.set_attribute_ns_for_bindings(xlink_ns, 'xlink:href', 'a&b') or { panic('${err}') }
+	mut root_node := root.as_node()
+	append(mut root_node, doc.create_text_node('x < y & z').as_node())
+	append(mut root_node, doc.create_comment('ok').as_node())
+	processing_instruction := doc.create_processing_instruction('work', 'data') or {
+		panic('${err}')
+	}
+	append(mut root_node, processing_instruction.as_node())
+	cdata := doc.create_cdata_section('<raw>') or { panic('${err}') }
+	append(mut root_node, cdata.as_node())
+
+	assert root.outer_html() or { panic('${err}') } == '<p:root xmlns:p="urn:test" xmlns:xlink="${xlink_ns}" xlink:href="a&amp;b">x &lt; y &amp; z<!--ok--><?work data?><![CDATA[<raw>]]></p:root>'
+}
+
+fn test_xml_serialization_rejects_malformed_comment() {
+	doc := Document.create(url_about_blank())
+	mut root := mk(doc, 'root')
+	mut root_node := root.as_node()
+	append(mut root_node, doc.create_comment('bad--comment').as_node())
+	if _ := root.outer_html() {
+		assert false, 'malformed XML comment unexpectedly serialized'
+	} else {
+		assert err.str().contains('well-formed XML')
+	}
+}
+
+fn test_top_layer_and_fullscreen_state_machine() {
+	mut doc := Document.create(url_about_blank())
+	mut first := mk(doc, 'div')
+	mut second := mk(doc, 'div')
+
+	doc.fullscreen_element_within_doc(mut first)
+	assert first.in_top_layer()
+	assert first.rendered_in_top_layer()
+	assert (doc.fullscreen_element() or { panic('no fullscreen element') }) == first
+
+	doc.fullscreen_element_within_doc(mut second)
+	assert (doc.fullscreen_element() or { panic('no fullscreen element') }) == second
+	doc.request_an_element_to_be_remove_from_the_top_layer(second)
+	assert !second.in_top_layer()
+	assert !second.rendered_in_top_layer()
+
+	// Re-adding cancels the pending removal and moves the element to the top.
+	doc.add_an_element_to_the_top_layer(second)
+	assert second.in_top_layer()
+	doc.process_top_layer_removals()
+	assert second.in_top_layer()
+
+	doc.remove_an_element_from_the_top_layer_immediately(second)
+	assert !second.in_top_layer()
+	assert (doc.fullscreen_element() or { panic('first should remain fullscreen') }) == first
+}

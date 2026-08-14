@@ -29,13 +29,31 @@ fn length_resolution_context_from_document(document &dom.Document) LengthResolut
 }
 
 fn length_resolution_context_from_layout_node(layout_node &dom.LayoutNode) ?LengthResolutionContext {
-	// Translates the document/viewport half of
-	// Length::ResolutionContext::for_layout_node(). The V LayoutNode stub does
-	// not expose computed_values(), first_available_font(), navigable(), or the
-	// root layout node yet. When a DOM back-pointer exists, use its document
-	// viewport and keep font metrics at the explicit default-font boundary.
 	dom_node := layout_node.dom_node() or { return none }
-	return length_resolution_context_from_document(dom_node.document())
+	mut context := length_resolution_context_from_document(dom_node.document())
+	if computed := computed_properties_for_layout_node(layout_node) {
+		context.font_metrics = computed_interpolation_font_metrics_for_size(computed.font_size())
+		context.font_metrics.line_height = computed.line_height()
+	}
+	if root := dom_node.document().document_element() {
+		root_abstract := dom.AbstractElement.new(root, none)
+		if root_dom_computed := root_abstract.computed_properties() {
+			if root_computed := computed_properties_from_dom(root_dom_computed) {
+				context.root_font_metrics =
+					computed_interpolation_font_metrics_for_size(root_computed.font_size())
+				context.root_font_metrics.line_height = root_computed.line_height()
+			}
+		}
+	}
+	return context
+}
+
+fn computed_properties_for_layout_node(layout_node &dom.LayoutNode) ?&ComputedProperties {
+	dom_node := layout_node.dom_node() or { return none }
+	element := dom_node.as_element() or { dom_node.parent_element() or { return none } }
+	abstract_element := dom.AbstractElement.new(element, none)
+	dom_computed := abstract_element.computed_properties() or { return none }
+	return computed_properties_from_dom(dom_computed)
 }
 
 fn document_from_layout_node(layout_node &dom.LayoutNode) ?&dom.Document {
@@ -43,12 +61,26 @@ fn document_from_layout_node(layout_node &dom.LayoutNode) ?&dom.Document {
 	return dom_node.document()
 }
 
-// Translates Length::ResolutionContext::for_element(). The C++ version reads
-// computed fonts from DOM/Layout; the V DOM style/layout objects do not expose
-// those metrics yet, so this uses the element document viewport with default
-// font metrics.
 pub fn LengthResolutionContext.for_element(element &dom.AbstractElement) LengthResolutionContext {
-	return length_resolution_context_from_document(element.document())
+	mut context := length_resolution_context_from_document(element.document())
+	if dom_computed := element.computed_properties() {
+		if computed := computed_properties_from_dom(dom_computed) {
+			context.font_metrics =
+				computed_interpolation_font_metrics_for_size(computed.font_size())
+			context.font_metrics.line_height = computed.line_height()
+		}
+	}
+	if root := element.document().document_element() {
+		root_abstract := dom.AbstractElement.new(root, none)
+		if root_dom_computed := root_abstract.computed_properties() {
+			if root_computed := computed_properties_from_dom(root_dom_computed) {
+				context.root_font_metrics =
+					computed_interpolation_font_metrics_for_size(root_computed.font_size())
+				context.root_font_metrics.line_height = root_computed.line_height()
+			}
+		}
+	}
+	return context
 }
 
 // Translates Length::ResolutionContext::for_window(). The current Window stub
@@ -59,11 +91,9 @@ pub fn LengthResolutionContext.for_window(window &dom.Window) LengthResolutionCo
 	return length_resolution_context_from_document(document)
 }
 
-// Translates Length::to_px_slow_case(Layout::Node const&). Layout::Node does not
-// currently expose computed_values(), first_available_font(), navigable(), or
-// root layout nodes in the V port; those font/layout metrics remain an explicit
-// boundary, but the C++ branch behavior and document viewport lookup are kept
-// when the stub can expose a DOM node.
+// Translates Length::to_px_slow_case(Layout::Node const&). Font pixel metrics
+// that require the platform font engine use the translated metric estimates,
+// while font size, line height, root metrics, and viewport come from the node.
 pub fn (length Length) to_px_slow_case_for_layout_node(layout_node &dom.LayoutNode) CSSPixels {
 	if length.is_absolute() {
 		return length.absolute_length_to_px()
@@ -72,7 +102,9 @@ pub fn (length Length) to_px_slow_case_for_layout_node(layout_node &dom.LayoutNo
 	if document.get_browsing_context() == none {
 		return CSSPixels{}
 	}
-	context := length_resolution_context_from_document(document)
+	context := length_resolution_context_from_layout_node(layout_node) or {
+		length_resolution_context_from_document(document)
+	}
 	if length.is_font_relative() {
 		return length.font_relative_length_to_px(context.font_metrics, context.root_font_metrics)
 	}

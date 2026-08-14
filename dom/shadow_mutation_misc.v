@@ -1163,41 +1163,39 @@ pub enum SiblingInvalidationReach {
 	subsequent
 }
 
+pub struct PendingDescendantInvalidation {
+pub mut:
+	reason StyleInvalidationReason
+	rule   DescendantInvalidationRule
+}
+
 fn element_matches_invalidation_rule(element &Element, match_set StyleInvalidationSet, match_any bool) bool {
 	return match_any || element_includes_properties_from_invalidation_set(element, match_set)
 }
 
 fn element_includes_properties_from_invalidation_set(element &Element, match_set StyleInvalidationSet) bool {
-	_ = element
-	_ = match_set
-	// Stub for Element::includes_properties_from_invalidation_set() until selector invalidation metadata is ported.
-	return false
+	return element.includes_properties_from_invalidation_set(match_set)
 }
 
 fn invalidation_plan_is_empty(plan InvalidationPlan) bool {
-	_ = plan
-	// Stub for CSS::InvalidationPlan::is_empty().
-	return true
+	return !plan.invalidate_self && !plan.invalidate_whole_subtree && plan.descendant_rules.len == 0
+		&& plan.sibling_rules.len == 0
 }
 
 fn invalidation_plan_invalidates_whole_subtree(plan InvalidationPlan) bool {
-	_ = plan
-	return false
+	return plan.invalidate_whole_subtree
 }
 
 fn invalidation_plan_invalidates_self(plan InvalidationPlan) bool {
-	_ = plan
-	return false
+	return plan.invalidate_self
 }
 
 fn invalidation_plan_descendant_rules(plan InvalidationPlan) []DescendantInvalidationRule {
-	_ = plan
-	return []DescendantInvalidationRule{}
+	return plan.descendant_rules
 }
 
 fn invalidation_plan_sibling_rules(plan InvalidationPlan) []SiblingInvalidationRule {
-	_ = plan
-	return []SiblingInvalidationRule{}
+	return plan.sibling_rules
 }
 
 pub fn (mut invalidator StyleInvalidator) visit_edges(mut visitor CellVisitor) {
@@ -1207,14 +1205,23 @@ pub fn (mut invalidator StyleInvalidator) visit_edges(mut visitor CellVisitor) {
 
 pub fn (mut invalidator StyleInvalidator) invalidate(mut node Node) {
 	invalidator.perform_pending_style_invalidations(mut node, false)
+	invalidator.pending_invalidations.clear()
+	invalidator.active_descendant_invalidations.clear()
 }
 
 fn (mut invalidator StyleInvalidator) add_pending_invalidation(node &Node, reason StyleInvalidationReason, plan InvalidationPlan) {
-	_ = invalidator
-	_ = node
-	_ = reason
-	_ = plan
-	// Stub for StyleInvalidator::m_pending_invalidations until StyleInvalidator stores pending rule state.
+	if plan.descendant_rules.len == 0 {
+		return
+	}
+	key := node.unique_id()
+	mut pending := invalidator.pending_invalidations[key]
+	for descendant_rule in plan.descendant_rules {
+		pending << PendingDescendantInvalidation{
+			reason: reason
+			rule:   descendant_rule
+		}
+	}
+	invalidator.pending_invalidations[key] = pending
 }
 
 fn (mut invalidator StyleInvalidator) apply_invalidation_plan(mut element Element, reason StyleInvalidationReason, plan InvalidationPlan, invalidate_entire_subtree bool) bool {
@@ -1238,8 +1245,9 @@ fn (mut invalidator StyleInvalidator) apply_invalidation_plan(mut element Elemen
 	}
 
 	for descendant_rule in invalidation_plan_descendant_rules(plan) {
-		if payload := descendant_rule.payload {
-			invalidator.add_pending_invalidation(node, reason, payload)
+		invalidator.active_descendant_invalidations << PendingDescendantInvalidation{
+			reason: reason
+			rule:   descendant_rule
 		}
 	}
 
@@ -1280,6 +1288,39 @@ fn (mut invalidator StyleInvalidator) perform_pending_style_invalidations(mut no
 		}
 	}
 
+	previous_active_size := invalidator.active_descendant_invalidations.len
+	if !invalidate_subtree {
+		if pending := invalidator.pending_invalidations[node.unique_id()] {
+			invalidator.active_descendant_invalidations << pending
+		}
+
+		if element := node.as_element() {
+			mut invalidation_index := 0
+			for invalidation_index < invalidator.active_descendant_invalidations.len {
+				pending := invalidator.active_descendant_invalidations[invalidation_index]
+				invalidation_index++
+				if !element_matches_invalidation_rule(element, pending.rule.match_set,
+					pending.rule.match_any) {
+					continue
+				}
+				if payload := pending.rule.payload {
+					mut mutable_element := unsafe { &Element(element) }
+					invalidate_subtree = invalidator.apply_invalidation_plan(mut mutable_element,
+						pending.reason, payload, invalidate_subtree)
+					if invalidate_subtree {
+						break
+					}
+				}
+			}
+			if invalidate_subtree {
+				node.set_needs_style_update_internal(true)
+				if node.has_child_nodes() {
+					node.set_child_needs_style_update(true)
+				}
+			}
+		}
+	}
+
 	for child in node.children {
 		mut child_node := unsafe { &Node(child) }
 		invalidator.perform_pending_style_invalidations(mut child_node, invalidate_subtree)
@@ -1296,6 +1337,7 @@ fn (mut invalidator StyleInvalidator) perform_pending_style_invalidations(mut no
 	}
 
 	node.set_entire_subtree_needs_style_update(false)
+	invalidator.active_descendant_invalidations.trim(previous_active_size)
 }
 
 pub enum StyleElementAnyFailed {
@@ -4034,7 +4076,13 @@ pub struct PseudoElementTreeNode_ {
 	PseudoElement_
 }
 
-pub struct CSSStyleValue_ {}
+pub struct CSSStyleValue_ {
+pub mut:
+	// DOM-to-CSS bridge for custom-property token streams. The css module owns parsing and
+	// substitution; DOM retains the serialized value without importing css.
+	css_text           string
+	guaranteed_invalid bool
+}
 
 pub struct CSSAnimation_ {}
 

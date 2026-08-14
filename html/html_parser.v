@@ -2,18 +2,50 @@ module html
 
 import dom
 
+// Public identifier prefixes which select quirks mode. Kept in the same order as
+// HTMLParser.cpp's s_quirks_public_ids.
+const quirks_public_id_prefixes = ['+//Silmaril//dtd html Pro v0r11 19970101//',
+	'-//AS//DTD HTML 3.0 asWedit + extensions//',
+	'-//AdvaSoft Ltd//DTD HTML 3.0 asWedit + extensions//', '-//IETF//DTD HTML 2.0 Level 1//',
+	'-//IETF//DTD HTML 2.0 Level 2//', '-//IETF//DTD HTML 2.0 Strict Level 1//',
+	'-//IETF//DTD HTML 2.0 Strict Level 2//', '-//IETF//DTD HTML 2.0 Strict//',
+	'-//IETF//DTD HTML 2.0//', '-//IETF//DTD HTML 2.1E//', '-//IETF//DTD HTML 3.0//',
+	'-//IETF//DTD HTML 3.2 Final//', '-//IETF//DTD HTML 3.2//', '-//IETF//DTD HTML 3//',
+	'-//IETF//DTD HTML Level 0//', '-//IETF//DTD HTML Level 1//',
+	'-//IETF//DTD HTML Level 2//', '-//IETF//DTD HTML Level 3//',
+	'-//IETF//DTD HTML Strict Level 0//', '-//IETF//DTD HTML Strict Level 1//',
+	'-//IETF//DTD HTML Strict Level 2//', '-//IETF//DTD HTML Strict Level 3//',
+	'-//IETF//DTD HTML Strict//', '-//IETF//DTD HTML//',
+	'-//Metrius//DTD Metrius Presentational//',
+	'-//Microsoft//DTD Internet Explorer 2.0 HTML Strict//',
+	'-//Microsoft//DTD Internet Explorer 2.0 HTML//',
+	'-//Microsoft//DTD Internet Explorer 2.0 Tables//',
+	'-//Microsoft//DTD Internet Explorer 3.0 HTML Strict//',
+	'-//Microsoft//DTD Internet Explorer 3.0 HTML//',
+	'-//Microsoft//DTD Internet Explorer 3.0 Tables//', '-//Netscape Comm. Corp.//DTD HTML//',
+	'-//Netscape Comm. Corp.//DTD Strict HTML//', '-//O\'Reilly and Associates//DTD HTML 2.0//',
+	'-//O\'Reilly and Associates//DTD HTML Extended 1.0//',
+	'-//O\'Reilly and Associates//DTD HTML Extended Relaxed 1.0//',
+	'-//SQ//DTD HTML 2.0 HoTMetaL + extensions//',
+	'-//SoftQuad Software//DTD HoTMetaL PRO 6.0::19990601::extensions to HTML 4.0//',
+	'-//SoftQuad//DTD HoTMetaL PRO 4.0::19971010::extensions to HTML 4.0//',
+	'-//Spyglass//DTD HTML 2.0 Extended//', '-//Sun Microsystems Corp.//DTD HotJava HTML//',
+	'-//Sun Microsystems Corp.//DTD HotJava Strict HTML//',
+	'-//W3C//DTD HTML 3 1995-03-24//', '-//W3C//DTD HTML 3.2 Draft//',
+	'-//W3C//DTD HTML 3.2 Final//', '-//W3C//DTD HTML 3.2//',
+	'-//W3C//DTD HTML 3.2S Draft//', '-//W3C//DTD HTML 4.0 Frameset//',
+	'-//W3C//DTD HTML 4.0 Transitional//', '-//W3C//DTD HTML Experimental 19960712//',
+	'-//W3C//DTD HTML Experimental 970421//', '-//W3C//DTD W3 HTML//',
+	'-//W3O//DTD W3 HTML 3.0//', '-//WebTechs//DTD Mozilla HTML 2.0//',
+	'-//WebTechs//DTD Mozilla HTML//']
+
 // Translation of the core of Libraries/LibWeb/HTML/Parser/HTMLParser.cpp — the tree-construction
 // stage that turns tokens into a DOM tree.
 //
-// SCOPE: This is a faithful port of the "happy path" — the insertion modes needed to parse ordinary
-// documents (initial → before html → before head → in head → after head → in body, plus text,
-// after body, after after body) and the shared tree-building primitives (create an element for a
-// token, insert an HTML element, insert a character / comment, reconstruct the active formatting
-// elements, and the full adoption agency algorithm). The following are stubbed (FIXME) because they
-// pull in whole subsystems the V port does not have yet: foster parenting, <template> contents and
-// declarative shadow roots, foreign (SVG/MathML) content, scripting/JS execution, custom elements,
-// form association, and the table/frameset/caption/column/cell/template insertion modes (those modes
-// currently fall back to the "in body" rules).
+// This covers the tree-construction insertion modes, foster parenting, template contents, foreign
+// (SVG/MathML) content, active formatting elements, and the adoption agency algorithm. Script
+// execution, declarative shadow roots, parser-created custom-element reactions, and form association
+// still depend on HTML subsystems that have not reached this translation yet.
 
 pub enum InsertionMode {
 	initial
@@ -143,9 +175,9 @@ fn (mut p HTMLParser) process_using_the_rules_for(mode InsertionMode, mut token 
 		.in_caption { p.handle_in_caption(mut token) }
 		.in_column_group { p.handle_in_column_group(mut token) }
 		.in_template { p.handle_in_template(mut token) }
-		// FIXME: frameset modes are not ported yet; fall back to the "in body" rules so ordinary
-		// content still parses.
-		else { p.handle_in_body(mut token) }
+		.in_frameset { p.handle_in_frameset(mut token) }
+		.after_frameset { p.handle_after_frameset(mut token) }
+		.after_after_frameset { p.handle_after_after_frameset(mut token) }
 	}
 }
 
@@ -166,15 +198,24 @@ fn (p &HTMLParser) adjusted_current_node() ?&dom.Element {
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#appropriate-place-for-inserting-a-node
-fn (mut p HTMLParser) find_appropriate_place_for_inserting_node() AdjustedInsertionLocation {
-	target := p.current_node() or { return AdjustedInsertionLocation{} }
+fn (mut p HTMLParser) find_appropriate_place_for_inserting_node_with_override(override_target ?&dom.Element) AdjustedInsertionLocation {
+	target := override_target or { p.current_node() or { return AdjustedInsertionLocation{} } }
 	mut location := AdjustedInsertionLocation{
 		parent:                target.as_node()
 		insert_before_sibling: none
 	}
-	// FIXME: the foster-parenting last-template branch is not handled.
 	if p.foster_parenting && target.local_name() in ['table', 'tbody', 'tfoot', 'thead', 'tr'] {
+		last_template := p.stack_of_open_elements.last_element_with_tag_name('template')
 		last_table := p.stack_of_open_elements.last_element_with_tag_name('table')
+		if template := last_template.element {
+			if last_table.element == none || last_template.index > last_table.index {
+				template_element := unsafe { &dom.HTMLTemplateElement(template) }
+				return AdjustedInsertionLocation{
+					parent:                template_element.content().as_node()
+					insert_before_sibling: none
+				}
+			}
+		}
 		if lt := last_table.element {
 			if parent := lt.as_node().parent_node() {
 				// If last table has a parent node, insert immediately before last table.
@@ -210,6 +251,10 @@ fn (mut p HTMLParser) find_appropriate_place_for_inserting_node() AdjustedInsert
 		}
 	}
 	return location
+}
+
+fn (mut p HTMLParser) find_appropriate_place_for_inserting_node() AdjustedInsertionLocation {
+	return p.find_appropriate_place_for_inserting_node_with_override(none)
 }
 
 // ===== table-context stack helpers =====
@@ -318,7 +363,11 @@ fn (mut p HTMLParser) reset_the_insertion_mode_appropriately() {
 				return
 			}
 			if ln == 'html' {
-				p.insertion_mode = if p.head_element == none { InsertionMode.before_head } else { InsertionMode.after_head }
+				p.insertion_mode = if p.head_element == none {
+					InsertionMode.before_head
+				} else {
+					InsertionMode.after_head
+				}
 				return
 			}
 		}
@@ -416,6 +465,7 @@ fn (mut p HTMLParser) flush_character_insertions() {
 		p.character_insertion_builder = []
 		return
 	}
+
 	data := runes_to_string(p.character_insertion_builder)
 	if node.data() == '' {
 		node.set_data(data)
@@ -529,7 +579,8 @@ fn (mut p HTMLParser) parse_generic_raw_text_element(token &HTMLToken) {
 	p.insertion_mode = .text
 }
 
-fn (mut p HTMLParser) which_quirks_mode(token &HTMLToken) dom.QuirksMode {
+fn (p &HTMLParser) which_quirks_mode(token &HTMLToken) dom.QuirksMode {
+	_ = p
 	if token.doctype.force_quirks {
 		return .yes
 	}
@@ -537,7 +588,34 @@ fn (mut p HTMLParser) which_quirks_mode(token &HTMLToken) dom.QuirksMode {
 	if token.doctype.name != 'html' {
 		return .yes
 	}
-	// FIXME: the public/system identifier quirks tables are not ported.
+	public_identifier := ascii_lowercase_string(token.doctype.public_identifier)
+	system_identifier := ascii_lowercase_string(token.doctype.system_identifier)
+	if public_identifier in ['-//w3o//dtd w3 html strict 3.0//en//',
+		'-/w3c/dtd html 4.0 transitional/en', 'html'] {
+		return .yes
+	}
+	if system_identifier == 'http://www.ibm.com/data/dtd/v11/ibmxhtml1-transitional.dtd' {
+		return .yes
+	}
+	for public_id in quirks_public_id_prefixes {
+		if public_identifier.starts_with(ascii_lowercase_string(public_id)) {
+			return .yes
+		}
+	}
+	if token.doctype.missing_system_identifier
+		&& (public_identifier.starts_with('-//w3c//dtd html 4.01 frameset//')
+		|| public_identifier.starts_with('-//w3c//dtd html 4.01 transitional//')) {
+		return .yes
+	}
+	if public_identifier.starts_with('-//w3c//dtd xhtml 1.0 frameset//')
+		|| public_identifier.starts_with('-//w3c//dtd xhtml 1.0 transitional//') {
+		return .limited
+	}
+	if !token.doctype.missing_system_identifier
+		&& (public_identifier.starts_with('-//w3c//dtd html 4.01 frameset//')
+		|| public_identifier.starts_with('-//w3c//dtd html 4.01 transitional//')) {
+		return .limited
+	}
 	return .no
 }
 
@@ -666,9 +744,10 @@ fn (mut p HTMLParser) run_the_adoption_agency_algorithm(token &HTMLToken) Adopti
 		}
 
 		// 14. Insert lastNode at the appropriate place with commonAncestor as override target.
-		//     (No foster parenting in the minimal parser, so this is inside commonAncestor.)
-		mut common_ancestor_node := common_ancestor.as_node()
-		common_ancestor_node.append_child(last_node.as_node()) or {}
+		adjusted_location := p.find_appropriate_place_for_inserting_node_with_override(common_ancestor)
+		mut adjusted_parent := adjusted_location.parent or { return .do_nothing }
+		adjusted_parent.insert_before(last_node.as_node(), adjusted_location.insert_before_sibling,
+			false)
 
 		// 15. Create a new element for formattingElement's token, with furthestBlock as intended parent.
 		formatting_element_index := p.list_of_active_formatting_elements.find_index(formatting_element) or {

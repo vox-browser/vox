@@ -490,7 +490,10 @@ pub enum WebAnimationPlayState {
 
 pub struct ResolvedKeyFrame {
 pub mut:
-	properties map[PropertyID]&dom.StyleValue
+	properties             map[PropertyID]&dom.StyleValue
+	use_initial_properties map[PropertyID]bool
+	composite              ?CompositeOperation
+	easing                 ?EasingFunction
 }
 
 @[heap]
@@ -512,6 +515,12 @@ pub mut:
 	composite                    CompositeOperation
 	key_frame_set                ?&KeyFrameSet
 	normalized_specified_timing  bool
+	// CSS-side sampling state. Upstream obtains these through AnimationEffect's
+	// associated Animation and timeline; keeping them on the translated effect
+	// preserves that behavior without making dom import css.
+	output_progress              ?f64
+	default_easing               EasingFunction = EasingFunction.ease()
+	is_css_transition            bool
 }
 
 pub fn KeyframeEffect.create() &KeyframeEffect {
@@ -562,6 +571,18 @@ pub fn (mut effect KeyframeEffect) set_key_frame_set(key_frame_set &KeyFrameSet)
 	effect.key_frame_set = key_frame_set
 }
 
+pub fn (mut effect KeyframeEffect) set_output_progress(progress ?f64) {
+	effect.output_progress = progress
+}
+
+pub fn (mut effect KeyframeEffect) set_default_easing(easing EasingFunction) {
+	effect.default_easing = easing
+}
+
+pub fn (mut effect KeyframeEffect) mark_as_css_transition() {
+	effect.is_css_transition = true
+}
+
 fn abstract_elements_equal(a dom.AbstractElement, b dom.AbstractElement) bool {
 	if a.element_ != b.element_ {
 		return false
@@ -583,6 +604,9 @@ pub mut:
 	effect_                        &KeyframeEffect = unsafe { nil }
 	play_state_                    WebAnimationPlayState
 	last_css_animation_play_state_ ?AnimationPlayState
+	start_time_                    f64
+	last_sample_time_              ?f64
+	paused_progress_               ?f64
 }
 
 pub fn CSSAnimation.create() &CSSAnimation {
@@ -638,11 +662,31 @@ pub fn (animation &CSSAnimation) play_state() WebAnimationPlayState {
 }
 
 pub fn (mut animation CSSAnimation) play() ! {
+	if animation.play_state_ == .paused {
+		if paused_at := animation.last_sample_time_ {
+			// Move the animation's origin forward by the time spent paused. The
+			// next sample supplies the new timeline time and completes this
+			// adjustment in sample_at().
+			animation.start_time_ = paused_at - animation.start_time_
+		}
+	}
 	animation.play_state_ = .running
 }
 
 pub fn (mut animation CSSAnimation) pause() ! {
 	animation.play_state_ = .paused
+	if animation.effect_ != unsafe { nil } {
+		animation.paused_progress_ = animation.effect_.output_progress
+	}
+}
+
+pub fn (mut animation CSSAnimation) cancel() {
+	animation.play_state_ = .idle
+	if animation.effect_ != unsafe { nil } {
+		animation.effect_.set_output_progress(none)
+	}
+	animation.last_sample_time_ = none
+	animation.paused_progress_ = none
 }
 
 pub fn (animation &CSSAnimation) last_css_animation_play_state() ?AnimationPlayState {
@@ -738,6 +782,7 @@ pub fn (mut animation CSSAnimation) apply_css_properties(animation_properties Co
 	// NB: animation-timing-function is applied per-keyframe, not as the effect-level timing function.
 	//     The effect-level timing function remains linear.
 	animation.default_easing_ = animation_properties.timing_function
+	effect.set_default_easing(animation_properties.timing_function)
 	effect.set_fill_mode(animation_properties.fill_mode)
 	effect.set_playback_direction(animation_properties.direction)
 	effect.set_composite(match animation_properties.composition {
@@ -759,6 +804,148 @@ pub fn (mut animation CSSAnimation) apply_css_properties(animation_properties Co
 	}
 
 	animation.set_last_css_animation_play_state(animation_properties.play_state)
+}
+
+// Return the directed iteration progress at `timeline_time`, including delay,
+// fill-mode, iteration-count, direction, and play-state handling.
+pub fn (mut animation CSSAnimation) sample_at(timeline_time f64) ?f64 {
+	if animation.effect_ == unsafe { nil } {
+		return none
+	}
+	mut effect := animation.effect_
+	if animation.play_state_ == .idle || animation.timeline_ == none {
+		effect.set_output_progress(none)
+		return none
+	}
+	if animation.play_state_ == .paused {
+		if progress := animation.paused_progress_ {
+			effect.set_output_progress(progress)
+			return progress
+		}
+	}
+	if animation.play_state_ == .running && animation.paused_progress_ != none {
+		// play() temporarily stores the old origin as (pause time - origin).
+		animation.start_time_ = timeline_time - animation.start_time_
+		animation.paused_progress_ = none
+	}
+	animation.last_sample_time_ = timeline_time
+	duration := effect.specified_iteration_duration
+	active_time := timeline_time - animation.start_time_ - effect.specified_start_delay
+	active_duration := if math.is_inf(effect.iteration_count, 0) {
+		math.inf(1)
+	} else {
+		math.max(0.0, duration) * math.max(0.0, effect.iteration_count)
+	}
+
+	mut simple_progress := 0.0
+	mut iteration_index := i64(0)
+	if active_time < 0 {
+		if effect.fill_mode !in [.backwards, .both] {
+			effect.set_output_progress(none)
+			return none
+		}
+	} else if active_time >= active_duration && !math.is_inf(active_duration, 0) {
+		if effect.fill_mode !in [.forwards, .both] {
+			effect.set_output_progress(none)
+			return none
+		}
+		if effect.iteration_count > 0 {
+			completed_iterations := math.floor(effect.iteration_count)
+			fractional_iteration := effect.iteration_count - completed_iterations
+			if fractional_iteration > 0 {
+				simple_progress = fractional_iteration
+				iteration_index = i64(completed_iterations)
+			} else {
+				simple_progress = 1.0
+				iteration_index = i64(math.max(0.0, completed_iterations - 1.0))
+			}
+		}
+	} else if duration <= 0 {
+		simple_progress = 1.0
+	} else {
+		iteration_position := active_time / duration
+		iteration_index = i64(math.floor(iteration_position))
+		simple_progress = iteration_position - math.floor(iteration_position)
+		if simple_progress == 0 && active_time > 0 {
+			simple_progress = 1.0
+			iteration_index--
+		}
+	}
+	is_reverse_iteration := match effect.playback_direction {
+		.reverse { true }
+		.alternate { iteration_index % 2 != 0 }
+		.alternate_reverse { iteration_index % 2 == 0 }
+		.normal { false }
+	}
+	if is_reverse_iteration {
+		simple_progress = 1.0 - simple_progress
+	}
+
+	effect.set_output_progress(simple_progress)
+	if animation.play_state_ == .paused {
+		animation.paused_progress_ = simple_progress
+	}
+	return simple_progress
+}
+
+pub struct CSSAnimationStorageEntry {
+pub mut:
+	abstract_element dom.AbstractElement
+	name             string
+	animation        &CSSAnimation = unsafe { nil }
+}
+
+@[heap]
+pub struct CSSAnimationStorage {
+pub mut:
+	entries []CSSAnimationStorageEntry
+}
+
+pub fn (storage &CSSAnimationStorage) animation(abstract_element dom.AbstractElement, name string) ?&CSSAnimation {
+	for entry in storage.entries {
+		if entry.name == name && abstract_elements_equal(entry.abstract_element, abstract_element) {
+			return entry.animation
+		}
+	}
+	return none
+}
+
+pub fn (storage &CSSAnimationStorage) animations_for(abstract_element dom.AbstractElement) []&CSSAnimation {
+	mut result := []&CSSAnimation{}
+	for entry in storage.entries {
+		if abstract_elements_equal(entry.abstract_element, abstract_element) {
+			result << entry.animation
+		}
+	}
+	return result
+}
+
+pub fn (mut storage CSSAnimationStorage) set(abstract_element dom.AbstractElement, name string, animation &CSSAnimation) {
+	for mut entry in storage.entries {
+		if entry.name == name && abstract_elements_equal(entry.abstract_element, abstract_element) {
+			entry.animation = animation
+			return
+		}
+	}
+	storage.entries << CSSAnimationStorageEntry{
+		abstract_element: abstract_element
+		name:             name
+		animation:        animation
+	}
+}
+
+pub fn (mut storage CSSAnimationStorage) remove_animations_not_named(abstract_element dom.AbstractElement, defined_names map[string]bool) {
+	mut kept := []CSSAnimationStorageEntry{}
+	for entry in storage.entries {
+		if !abstract_elements_equal(entry.abstract_element, abstract_element)
+			|| entry.name in defined_names {
+			kept << entry
+		} else {
+			mut animation := entry.animation
+			animation.cancel()
+		}
+	}
+	storage.entries = kept
 }
 
 pub fn (mut animation CSSAnimation) set_timeline_for_bindings(timeline ?&AnimationTimeline) {
@@ -821,6 +1008,7 @@ pub struct CSSTransitionStorage {
 pub mut:
 	registered_transition_attributes []CSSTransitionStorageEntry
 	associated_transitions           []CSSTransitionStorageEntry
+	transition_generation            int
 }
 
 pub struct TransitionTimingAttributes {
@@ -922,6 +1110,16 @@ pub fn (storage &CSSTransitionStorage) property_transition(abstract_element dom.
 	return none
 }
 
+pub fn (storage &CSSTransitionStorage) transitions_for(abstract_element dom.AbstractElement) []&CSSTransition {
+	mut result := []&CSSTransition{}
+	for entry in storage.associated_transitions {
+		if abstract_elements_equal(entry.abstract_element, abstract_element) {
+			result << entry.transition
+		}
+	}
+	return result
+}
+
 pub fn (mut storage CSSTransitionStorage) set_transition(abstract_element dom.AbstractElement, property_id PropertyID, transition &CSSTransition) {
 	for entry in storage.associated_transitions {
 		if abstract_elements_equal(entry.abstract_element, abstract_element)
@@ -970,11 +1168,11 @@ fn combined_transition_duration(transition_attributes TransitionTimingAttributes
 }
 
 fn collect_transition_into_computed_properties(abstract_element dom.AbstractElement, transition &CSSTransition, mut computed_properties ComputedProperties) {
-	_ = abstract_element
-	_ = transition
-	_ = computed_properties
-	// Boundary: StyleComputer::collect_animation_into() requires Animation sampling and effect stacks that are not
-	// translated into this V port yet. Keep the transition-starting flow intact without synthesizing an incorrect value.
+	start := transition.transition_start_value()
+	end := transition.transition_end_value()
+	value := interpolate_property(abstract_element.element(), transition.transition_property_,
+		start, end, 0.0, .yes) or { start }
+	computed_properties.set_animated_property(transition.transition_property_, value, .yes, .no)
 }
 
 pub fn transition_timing_attributes_for_property(abstract_element dom.AbstractElement, property_id PropertyID) TransitionTimingAttributes {
@@ -1049,6 +1247,9 @@ pub fn CSSTransition.new_with_timing_attributes(abstract_element dom.AbstractEle
 	// timing requires rerunning the procedure to normalize specified timing.
 	transition.keyframe_effect_.normalize_specified_timing()
 	transition.keyframe_effect_.set_timing_function(transition_attributes.timing_function)
+	transition.keyframe_effect_.mark_as_css_transition()
+	transition.keyframe_effect_.set_default_easing(transition_attributes.timing_function)
+	transition.keyframe_effect_.set_output_progress(0.0)
 
 	mut key_frame_set := &KeyFrameSet{}
 	mut initial_keyframe := ResolvedKeyFrame{}
@@ -1344,6 +1545,27 @@ pub fn (mut transition CSSTransition) play() ! {
 
 pub fn (mut transition CSSTransition) cancel() {
 	transition.play_state_ = .idle
+	transition.keyframe_effect_.set_output_progress(none)
+}
+
+pub fn (mut transition CSSTransition) sample_at(timeline_time f64) ?f64 {
+	if transition.play_state_ == .idle || transition.keyframe_effect_ == unsafe { nil } {
+		return none
+	}
+	mut progress := 0.0
+	if transition.end_time_ <= transition.start_time_ {
+		progress = 1.0
+	} else if timeline_time <= transition.start_time_ {
+		progress = 0.0
+	} else if timeline_time >= transition.end_time_ {
+		progress = 1.0
+		transition.play_state_ = .finished
+	} else {
+		progress = (timeline_time - transition.start_time_) /
+			(transition.end_time_ - transition.start_time_)
+	}
+	transition.keyframe_effect_.set_output_progress(progress)
+	return progress
 }
 
 pub fn (transition &CSSTransition) is_finished() bool {

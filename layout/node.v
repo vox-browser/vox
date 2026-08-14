@@ -165,6 +165,10 @@ pub fn (n &Node) generated_for_pseudo_element() ?dom.PseudoElement {
 	return n.generated_for_
 }
 
+pub fn (n &Node) pseudo_element_generator() ?&dom.Element {
+	return n.pseudo_element_generator_
+}
+
 pub fn (n &Node) initial_quote_nesting_level() u32 {
 	return n.initial_quote_nesting_level_
 }

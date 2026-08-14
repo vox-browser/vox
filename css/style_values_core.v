@@ -2224,8 +2224,8 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.display {
 			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
 				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
-				'table-footer-group', 'table-row', 'table-cell', 'table-column-group',
-				'table-column', 'table-caption', 'ruby-base', 'ruby-text', 'ruby-base-container',
+				'table-footer-group', 'table-row', 'table-cell', 'table-column-group', 'table-column',
+				'table-caption', 'ruby-base', 'ruby-text', 'ruby-base-container',
 				'ruby-text-container', 'contents', 'none', 'inline-block', 'inline-table',
 				'inline-flex', 'inline-grid']
 		}
@@ -2299,8 +2299,8 @@ fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .widows,
 		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
 		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
-		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas, .filter,
-		.backdrop_filter, .cursor, .font_size, .fill, .stroke, .font_variant_ligatures,
+		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas,
+		.filter, .backdrop_filter, .cursor, .font_size, .fill, .stroke, .font_variant_ligatures,
 		.font_variant_numeric, .font_variant_east_asian, .clip_path, .shape_outside, .content,
 		.font_variant_alternates {
 			false
@@ -3637,6 +3637,7 @@ pub enum Keyword {
 	paint
 	scroll_state
 	separate
+	margin_box
 	border_box
 	padding_box
 	content_box
@@ -4108,6 +4109,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.paint { 'paint' }
 		.scroll_state { 'scroll-state' }
 		.separate { 'separate' }
+		.margin_box { 'margin-box' }
 		.border_box { 'border-box' }
 		.padding_box { 'padding-box' }
 		.content_box { 'content-box' }
@@ -4568,6 +4570,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'paint' { Keyword.paint }
 		'scroll-state' { Keyword.scroll_state }
 		'separate' { Keyword.separate }
+		'margin-box' { Keyword.margin_box }
 		'border-box' { Keyword.border_box }
 		'padding-box' { Keyword.padding_box }
 		'content-box' { Keyword.content_box }
@@ -5320,8 +5323,14 @@ pub fn (style_value StyleValue) to_color(color_resolution_context ColorResolutio
 }
 
 pub fn (style_value StyleValue) to_keyword() Keyword {
-	if style_value.is_keyword() {
-		return style_value.as_keyword().keyword()
+	if style_value is KeywordStyleValue {
+		return style_value.keyword()
+	}
+	// A handful of generated keyword sets are represented by StubStyleValue
+	// until they gain dedicated enum cases. They must still be safe to query as
+	// keyword-like values during the cascade.
+	if style_value is StubStyleValue && style_value.type_ == .keyword {
+		return keyword_from_string(style_value.serialization) or { Keyword.invalid }
 	}
 	return .invalid
 }
@@ -6228,12 +6237,23 @@ pub fn (style_value StringStyleValue) serialize(mode SerializationMode) string {
 
 pub struct UnresolvedStyleValue {
 pub mut:
-	tokens []ComponentValue
+	tokens                          []ComponentValue
+	substitution_functions_presence SubstitutionFunctionsPresence
 }
 
 pub fn UnresolvedStyleValue.create(tokens []ComponentValue) UnresolvedStyleValue {
+	mut presence := SubstitutionFunctionsPresence{}
+	for token in tokens {
+		if token.is_function() {
+			token.function().contains_arbitrary_substitution_function(mut presence)
+		}
+		if token.is_block() {
+			token.block().contains_arbitrary_substitution_function(mut presence)
+		}
+	}
 	return UnresolvedStyleValue{
-		tokens: tokens
+		tokens:                          tokens
+		substitution_functions_presence: presence
 	}
 }
 

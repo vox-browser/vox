@@ -23,22 +23,23 @@ import dom
 fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProperties_ {
 	display := computed.display()
 	return &dom.CSSComputedProperties_{
-		display_:            dom.CSSDisplay_{
+		display_:                        dom.CSSDisplay_{
 			is_none_:           display.is_none()
 			is_list_item_:      display.is_list_item()
 			is_contents_:       display.is_contents()
 			is_inline_outside_: display.is_inline_outside()
 			is_flow_inside_:    display.is_flow_inside()
 		}
-		overflow_x_:         overflow_to_dom(computed.overflow_x())
-		overflow_y_:         overflow_to_dom(computed.overflow_y())
-		content_visibility_: content_visibility_to_dom(computed.content_visibility())
-		opacity_:            computed.opacity()
-		visibility_:         visibility_to_dom(computed.visibility())
-		font_weight_:        computed.font_weight()
-		math_depth_:         computed.math_depth()
-		math_style_:         math_style_to_dom(computed.math_style())
-		css_handle:          voidptr(computed)
+		overflow_x_:                     overflow_to_dom(computed.overflow_x())
+		overflow_y_:                     overflow_to_dom(computed.overflow_y())
+		content_visibility_:             content_visibility_to_dom(computed.content_visibility())
+		opacity_:                        computed.opacity()
+		visibility_:                     visibility_to_dom(computed.visibility())
+		font_weight_:                    computed.font_weight()
+		math_depth_:                     computed.math_depth()
+		math_style_:                     math_style_to_dom(computed.math_style())
+		attempted_pseudo_class_matches_: computed.attempted_pseudo_class_matches()
+		css_handle:                      voidptr(computed)
 	}
 }
 
@@ -133,6 +134,124 @@ fn css_author_style_sheets_for(document &dom.Document) &DocumentAuthorStyleSheet
 	return holder
 }
 
+fn invalidation_property_from_dom(property dom.InvalidationProperty) InvalidationProperty {
+	return match property.type_ {
+		.invalidate_self { InvalidationProperty.invalidate_self() }
+		.invalidate_whole_subtree { InvalidationProperty.invalidate_whole_subtree() }
+		.class { InvalidationProperty.class(property.name) }
+		.id { InvalidationProperty.id(property.name) }
+		.tag_name { InvalidationProperty.tag_name(property.name) }
+		.attribute { InvalidationProperty.attribute(property.name) }
+		.pseudo_class { InvalidationProperty.pseudo_class(pseudo_class_from_name(property.pseudo_class_name)) }
+	}
+}
+
+fn invalidation_property_to_dom(property InvalidationProperty) dom.InvalidationProperty {
+	return dom.InvalidationProperty{
+		type_:             match property.type_ {
+			.invalidate_self { dom.InvalidationPropertyType.invalidate_self }
+			.invalidate_whole_subtree { dom.InvalidationPropertyType.invalidate_whole_subtree }
+			.class { dom.InvalidationPropertyType.class }
+			.id { dom.InvalidationPropertyType.id }
+			.tag_name { dom.InvalidationPropertyType.tag_name }
+			.attribute { dom.InvalidationPropertyType.attribute }
+			.pseudo_class { dom.InvalidationPropertyType.pseudo_class }
+		}
+		name:              property.name()
+		pseudo_class_name: if property.type_ == .pseudo_class {
+			pseudo_class_name(property.pseudo_class)
+		} else {
+			''
+		}
+	}
+}
+
+fn invalidation_set_to_dom(set InvalidationSet) dom.StyleInvalidationSet {
+	return dom.StyleInvalidationSet{
+		properties: set.properties().map(invalidation_property_to_dom(it))
+	}
+}
+
+fn invalidation_plan_to_dom(plan &InvalidationPlan) dom.InvalidationPlan {
+	mut descendant_rules := []dom.DescendantInvalidationRule{}
+	for rule in plan.descendant_rules {
+		if rule.payload == unsafe { nil } {
+			continue
+		}
+		descendant_rules << dom.DescendantInvalidationRule{
+			match_set: invalidation_set_to_dom(rule.match_set)
+			match_any: rule.match_any
+			payload:   invalidation_plan_to_dom(rule.payload)
+		}
+	}
+	mut sibling_rules := []dom.SiblingInvalidationRule{}
+	for rule in plan.sibling_rules {
+		if rule.payload == unsafe { nil } {
+			continue
+		}
+		sibling_rules << dom.SiblingInvalidationRule{
+			match_set: invalidation_set_to_dom(rule.match_set)
+			match_any: rule.match_any
+			reach:     match rule.reach {
+				.adjacent { dom.SiblingInvalidationReach.adjacent }
+				.subsequent { dom.SiblingInvalidationReach.subsequent }
+			}
+			payload:   invalidation_plan_to_dom(rule.payload)
+		}
+	}
+	return dom.InvalidationPlan{
+		invalidate_self:          plan.invalidate_self
+		invalidate_whole_subtree: plan.invalidate_whole_subtree
+		descendant_rules:         descendant_rules
+		sibling_rules:            sibling_rules
+	}
+}
+
+fn style_computer_invalidation_property_used_in_has_callback(target voidptr, property dom.InvalidationProperty, dom_scope &dom.StyleScope) bool {
+	if dom_scope.css_handle == unsafe { nil } {
+		return false
+	}
+	style_computer := unsafe { &StyleComputer(target) }
+	scope := unsafe { &StyleScope(dom_scope.css_handle) }
+	return style_computer.invalidation_property_used_in_has_selector(invalidation_property_from_dom(property),
+		scope)
+}
+
+fn style_computer_invalidation_plan_callback(target voidptr, properties []dom.InvalidationProperty, dom_scope &dom.StyleScope) dom.InvalidationPlan {
+	if dom_scope.css_handle == unsafe { nil } {
+		return dom.InvalidationPlan{}
+	}
+	style_computer := unsafe { &StyleComputer(target) }
+	scope := unsafe { &StyleScope(dom_scope.css_handle) }
+	css_properties := properties.map(invalidation_property_from_dom(it))
+	return invalidation_plan_to_dom(style_computer.invalidation_plan_for_properties(css_properties,
+		scope))
+}
+
+fn style_scope_may_have_has_selectors_callback(target voidptr) bool {
+	scope := unsafe { &StyleScope(target) }
+	return scope.may_have_has_selectors()
+}
+
+fn style_scope_schedule_has_invalidation_callback(target voidptr, node &dom.Node) {
+	mut scope := unsafe { &StyleScope(target) }
+	scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(node)
+}
+
+fn document_theme_color_parse_callback(target voidptr, value string) ?string {
+	_ = target
+	color := parse_color_string(value) or { return none }
+	return color.serialize_a_srgb_value()
+}
+
+fn document_theme_color_media_matches_callback(target voidptr, value string) bool {
+	document := unsafe { &dom.Document(target) }
+	query := parse_media_query(ParsingParams{
+		document: document
+	}, value) or { return false }
+	return query.evaluate(document)
+}
+
 // Parse `css_text` as an author stylesheet and attach it to `document`, so the real StyleComputer matches
 // its rules (author cascade origin). The css-aware equivalent of the minimal cascade taking explicit rules
 // — the html parser can't build css.CSSStyleSheet objects (it doesn't import css), so author sheets are
@@ -144,6 +263,23 @@ pub fn add_document_author_style_sheet(document &dom.Document, css_text string) 
 	unsafe {
 		holder.sheets << sheet
 	}
+	mut scope := css_style_scope_for_document(document)
+	scope.invalidate_rule_cache()
+}
+
+// Parse and attach an author sheet to a shadow-root style scope. Keeping the
+// concrete CSSStyleSheet on css.StyleScope avoids a dom -> css import cycle.
+pub fn add_shadow_root_author_style_sheet(shadow_root &dom.ShadowRoot, css_text string) {
+	mut scope := css_style_scope_for_shadow_root(shadow_root)
+	scope.author_style_sheets << parse_css_stylesheet_with_parser(css_text, none)
+	scope.invalidate_rule_cache()
+}
+
+// Set the page-level user stylesheet used by the user cascade origin.
+pub fn set_document_user_style_sheet(document &dom.Document, css_text string) {
+	mut scope := css_style_scope_for_document(document)
+	scope.user_style_source = css_text
+	scope.invalidate_rule_cache()
 }
 
 // --- Document style-update hook ---
@@ -154,6 +290,7 @@ pub fn add_document_author_style_sheet(document &dom.Document, css_text string) 
 // update-style hook, so `css_style_computer_for(doc)` is all a css-aware caller needs to make plain
 // doc.update_style() run the CSS style pass.
 pub fn css_style_computer_for(document &dom.Document) &StyleComputer {
+	install_document_selector_query_hook(document)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	dom_style_computer := mutable_document.style_computer
 	if dom_style_computer != unsafe { nil } && dom_style_computer.css_handle != unsafe { nil } {
@@ -161,8 +298,15 @@ pub fn css_style_computer_for(document &dom.Document) &StyleComputer {
 	}
 	style_computer := StyleComputer.new(document)
 	mutable_document.style_computer = &dom.StyleComputer{
-		css_handle: voidptr(style_computer)
+		css_handle:                                 voidptr(style_computer)
+		invalidation_property_used_in_has_callback: style_computer_invalidation_property_used_in_has_callback
+		invalidation_plan_callback:                 style_computer_invalidation_plan_callback
 	}
+	mutable_document.set_theme_color_hook(dom.DocumentThemeColorHook{
+		target:        voidptr(document)
+		parse_color:   document_theme_color_parse_callback
+		media_matches: document_theme_color_media_matches_callback
+	})
 	install_document_style_hook(document)
 	return style_computer
 }
@@ -187,17 +331,49 @@ pub fn install_document_style_hook(document &dom.Document) {
 	})
 }
 
+// Return the CSS scope stored behind a DOM scope. DOM cannot import CSS, so it
+// owns only the address-stable handle and callbacks; the translated StyleScope
+// itself remains owned by this module.
+fn css_style_scope_from_dom(mut dom_scope dom.StyleScope, node &dom.Node) &StyleScope {
+	if dom_scope.css_handle != unsafe { nil } {
+		return unsafe { &StyleScope(dom_scope.css_handle) }
+	}
+	scope := StyleScope.new(node)
+	dom_scope.css_handle = voidptr(scope)
+	dom_scope.may_have_has_selectors_callback = style_scope_may_have_has_selectors_callback
+	dom_scope.schedule_has_invalidation_callback = style_scope_schedule_has_invalidation_callback
+	return scope
+}
+
 // The persistent css.StyleScope for `abstract_element`'s document/shadow root: created on first use and
 // cached on the DOM-side dom.StyleScope placeholder via its handle, so repeated style computations share
 // one scope (and its rule cache), as in Ladybird where the scope is owned by the Document/ShadowRoot.
 fn css_style_scope_for(abstract_element dom.AbstractElement) &StyleScope {
 	mut dom_scope := abstract_element.style_scope()
-	if dom_scope.css_handle != unsafe { nil } {
-		return unsafe { &StyleScope(dom_scope.css_handle) }
+	return css_style_scope_from_dom(mut dom_scope, abstract_element.element().as_node())
+}
+
+fn css_style_scope_for_document(document &dom.Document) &StyleScope {
+	mut dom_scope := document.style_scope()
+	return css_style_scope_from_dom(mut dom_scope, unsafe { &dom.Node(document) })
+}
+
+fn css_style_scope_for_shadow_root(shadow_root &dom.ShadowRoot) &StyleScope {
+	if shadow_root.uses_document_style_sheets() {
+		return css_style_scope_for_document(shadow_root.document())
 	}
-	mut element := abstract_element.element()
-	node := element.as_node()
-	scope := StyleScope.new(node)
-	dom_scope.css_handle = voidptr(scope)
-	return scope
+	mut dom_scope := shadow_root.style_scope()
+	return css_style_scope_from_dom(mut dom_scope, unsafe { &dom.Node(shadow_root) })
+}
+
+fn css_style_scope_for_node(node &dom.Node) &StyleScope {
+	if shadow_root := node.as_shadow_root() {
+		return css_style_scope_for_shadow_root(shadow_root)
+	}
+	return css_style_scope_for_document(node.document())
+}
+
+fn invalidate_css_style_scope_for_node(node &dom.Node) {
+	mut scope := css_style_scope_for_node(node)
+	scope.invalidate_rule_cache()
 }

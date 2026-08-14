@@ -2,6 +2,31 @@ module html
 
 import dom
 
+fn quirks_mode_for_doctype(public_identifier string, system_identifier string, missing_system bool) dom.QuirksMode {
+	document := dom.Document.create(dom.url_about_blank())
+	parser := HTMLParser.create(document, '')
+	mut token := HTMLToken.new(.doctype)
+	token.doctype.name = 'html'
+	token.doctype.missing_name = false
+	token.doctype.public_identifier = public_identifier
+	token.doctype.missing_public_identifier = false
+	token.doctype.system_identifier = system_identifier
+	token.doctype.missing_system_identifier = missing_system
+	return parser.which_quirks_mode(token)
+}
+
+fn test_doctype_quirks_mode_classification() {
+	assert quirks_mode_for_doctype('HTML', '', true) == .yes
+	assert quirks_mode_for_doctype('-//W3C//DTD HTML 3.2 Final//EN', '', true) == .yes
+	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01 Transitional//EN', '', true) == .yes
+	assert quirks_mode_for_doctype('-//W3C//DTD XHTML 1.0 Transitional//EN', '', true) == .limited
+	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01 Frameset//EN', 'example.dtd',
+		false) == .limited
+	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01//EN', '', true) == .no
+	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01//EN',
+		'HTTP://WWW.IBM.COM/data/dtd/v11/ibmxhtml1-transitional.dtd', false) == .yes
+}
+
 // Runtime tests for the tree-construction parser: parse HTML source into a DOM tree and check the
 // resulting structure with a compact serializer (element(children...), "text", <!--comment-->).
 
@@ -58,7 +83,8 @@ fn nth_child(node &dom.Node, index int) &dom.Node {
 }
 
 fn test_basic_document() {
-	doc := parse('<!DOCTYPE html><html><head><title>Hi</title></head><body><p>Hello</p></body></html>')
+	doc :=
+		parse('<!DOCTYPE html><html><head><title>Hi</title></head><body><p>Hello</p></body></html>')
 	// The document has a doctype then the html element.
 	mut doc_node := unsafe { &dom.Node(doc) }
 	kids := doc_node.children_as_vector()
@@ -120,6 +146,34 @@ fn test_comment_in_body() {
 	assert tree_repr(body) == 'body(<!--comment-->,p("x"))'
 }
 
+fn test_frameset_document() {
+	doc :=
+		parse('<html><head></head><frameset><frame src="a"><frameset><frame src="b"></frameset></frameset></html>')
+	assert tree_repr(html_element(doc)) == 'html(head,frameset(frame,frameset(frame)))'
+}
+
+fn test_frameset_ignores_non_frameset_content() {
+	doc := parse('<frameset><div>ignored</div><frame></frameset>tail')
+	assert tree_repr(html_element(doc)) == 'html(head,frameset(frame))'
+}
+
+fn test_in_body_legacy_and_void_element_rules() {
+	doc := parse('<body><p>a</br>b<image src="x"><param>c<source>d<track>e</p></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(p("a",br,"b",img,param,"c",source,"d",track,"e"))'
+}
+
+fn test_ruby_implied_end_tags() {
+	doc := parse('<body><ruby><rt>first<rt>second</ruby></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(ruby(rt("first"),rt("second")))'
+}
+
+fn test_hidden_input_preserves_frameset_ok() {
+	doc := parse('<html><head></head><input type="hidden"><frameset><frame></frameset></html>')
+	assert tree_repr(html_element(doc)) == 'html(head,frameset(frame))'
+}
+
 fn test_nested_lists() {
 	doc := parse('<body><ul><li>a<li>b</ul></body>')
 	body := nth_child(html_element(doc), 1)
@@ -149,7 +203,8 @@ fn test_table_cells_auto_close() {
 }
 
 fn test_table_thead_and_tbody() {
-	doc := parse('<table><thead><tr><th>H</th></tr></thead><tbody><tr><td>D</td></tr></tbody></table>')
+	doc :=
+		parse('<table><thead><tr><th>H</th></tr></thead><tbody><tr><td>D</td></tr></tbody></table>')
 	body := nth_child(html_element(doc), 1)
 	assert tree_repr(body) == 'body(table(thead(tr(th("H"))),tbody(tr(td("D")))))'
 }
@@ -287,7 +342,8 @@ fn test_content_after_template() {
 }
 
 fn context_element(tag string) &dom.Element {
-	doc := dom.Document.create(dom.url_about_blank())
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_document_type(.html)
 	return doc.create_element_ns(ns_html, tag) or { panic('context ${tag}: ${err}') }
 }
 
@@ -336,9 +392,18 @@ fn test_parse_document_end_to_end() {
 	assert doc_node.children_as_vector()[0].node_name() == 'html' // the doctype
 }
 
+fn test_standard_document_parse_entry_point_uses_html_parser() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	install_document_fragment_parsing_hook(doc)
+	doc.parse_html_from_a_string('<!DOCTYPE html><title>DOM parser</title><main>x</main>')
+	html_el := doc.document_element() or { panic('no document element') }
+	assert tree_repr(html_el.as_node()) == 'html(head(title("DOM parser")),body(main("x")))'
+}
+
 fn test_set_inner_html_replaces_children() {
 	// div.innerHTML = ... : the div's existing children are replaced by the parsed fragment.
-	doc := dom.Document.create(dom.url_about_blank())
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_document_type(.html)
 	mut div := doc.create_element_ns(ns_html, 'div') or { panic('div') }
 	mut div_node := div.as_node()
 	div_node.append_child(doc.create_text_node('old').as_node()) or {}
@@ -346,4 +411,25 @@ fn test_set_inner_html_replaces_children() {
 
 	set_inner_html(div, '<span>a</span><span>b</span>')
 	assert children_repr(div_node) == 'span("a"),span("b")'
+
+	// The same translated parser is installed behind the standard DOM API.
+	div.set_inner_html('<em>through DOM</em>') or { panic('${err}') }
+	assert children_repr(div_node) == 'em("through DOM")'
+	assert (div.inner_html() or { panic('${err}') }) == '<em>through DOM</em>'
+	assert (div.outer_html() or { panic('${err}') }) == '<div><em>through DOM</em></div>'
+}
+
+fn test_html_fragment_serialization_node_kinds_and_raw_text() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_document_type(.html)
+	mut div := doc.create_element_ns(ns_html, 'div') or { panic('div') }
+	div.set_attribute_value('title', 'a&"b')
+	mut div_node := div.as_node()
+	div_node.append_child(doc.create_comment('marker').as_node()) or {}
+	mut script := doc.create_element_ns(ns_html, 'script') or { panic('script') }
+	mut script_node := script.as_node()
+	script_node.append_child(doc.create_text_node('if (a < b && c > d) {}').as_node()) or {}
+	div_node.append_child(script.as_node()) or {}
+
+	assert (div.outer_html() or { panic('${err}') }) == '<div title="a&amp;&quot;b"><!--marker--><script>if (a < b && c > d) {}</script></div>'
 }

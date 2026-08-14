@@ -2,11 +2,34 @@ module html
 
 import dom
 
+fn dom_html_fragment_parse_callback(target voidptr, context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots) []&dom.Node {
+	_ = target
+	_ = allow_declarative_shadow_roots
+	return parse_html_fragment(context_element, markup)
+}
+
+fn dom_html_document_parse_callback(target voidptr, document &dom.Document, markup string) {
+	_ = target
+	mut parser := HTMLParser.create(document, markup)
+	parser.run()
+}
+
+// Install the HTML tree builder behind DOM::Element.innerHTML/setHTMLUnsafe/insertAdjacentHTML.
+// The callback avoids a module cycle: html imports dom, while dom only retains this function pointer.
+pub fn install_document_fragment_parsing_hook(document &dom.Document) {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_html_fragment_parsing_hook(dom.DocumentHTMLFragmentParsingHook{
+		parse_fragment: dom_html_fragment_parse_callback
+		parse_document: dom_html_document_parse_callback
+	})
+}
+
 // https://html.spec.whatwg.org/multipage/parsing.html#html-fragment-parsing-algorithm
 // The engine behind Element.innerHTML / Element.setHTMLUnsafe / the fragment parsing steps.
 // Parses `markup` as if it were the contents of `context_element`, returning the parsed nodes (in
 // tree order) which the caller inserts into the real tree.
 pub fn parse_html_fragment(context_element &dom.Element, markup string) []&dom.Node {
+	install_document_fragment_parsing_hook(context_element.document())
 	// 1. Let document be a Document node whose type is "html".
 	mut temp_document := dom.Document.create_for_fragment_parsing()
 	temp_document.set_document_type(.html)
@@ -89,19 +112,7 @@ pub fn parse_html_fragment(context_element &dom.Element, markup string) []&dom.N
 // result. (The dom module cannot call this — it would be an import cycle — so callers use this html
 // free function, mirroring how css owns querySelector.)
 pub fn set_inner_html(element &dom.Element, markup string) {
-	nodes := parse_html_fragment(element, markup)
-
-	mut container := element.as_node()
-	if element_in_namespace(element, ns_html) && element.local_name() == 'template' {
-		template_element := unsafe { &dom.HTMLTemplateElement(element) }
-		container = template_element.content().as_node()
-	}
-
-	for {
-		child := container.first_child() or { break }
-		container.remove_child(child) or { break }
-	}
-	for node in nodes {
-		container.append_child(node) or {}
-	}
+	install_document_fragment_parsing_hook(element.document())
+	mut mutable_element := unsafe { &dom.Element(element) }
+	mutable_element.set_inner_html(markup) or {}
 }

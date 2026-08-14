@@ -811,16 +811,7 @@ pub fn (style_value UnresolvedStyleValue) tokenize() []ComponentValue {
 }
 
 pub fn (style_value UnresolvedStyleValue) substitution_functions_presence() SubstitutionFunctionsPresence {
-	mut presence := SubstitutionFunctionsPresence{}
-	for component_value in style_value.tokens {
-		if component_value.is_function() {
-			component_value.function().contains_arbitrary_substitution_function(mut presence)
-		}
-		if component_value.is_block() {
-			component_value.block().contains_arbitrary_substitution_function(mut presence)
-		}
-	}
-	return presence
+	return style_value.substitution_functions_presence
 }
 
 pub fn (style_value UnresolvedStyleValue) contains_arbitrary_substitution_function() bool {

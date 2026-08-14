@@ -83,3 +83,21 @@ fn test_element_matches_and_closest() {
 	assert id_of(closest_matching_selector(link, 'a')) == 'link'
 	assert closest_matching_selector(link, 'table') == none
 }
+
+fn test_standard_dom_selector_entry_points_use_css_engine() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := build_tree(doc)
+	install_document_selector_query_hook(doc)
+
+	mut parent := unsafe { &dom.ParentNode(root) }
+	first := parent.query_selector('ul > li.active') or { panic('DOM querySelector did not match') }
+	assert id_of(first) == 'b'
+
+	all := parent.query_selector_all('.item') or { panic('${err}') }
+	assert all.length() == 3
+
+	link := query_selector(root, '#link') or { panic('no link') }
+	assert link.matches('li.active > a[href]') or { false }
+	closest := link.closest('.container') or { panic('DOM closest did not match') }
+	assert id_of(closest) == 'root'
+}

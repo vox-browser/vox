@@ -57,7 +57,9 @@ fn test_cascade_declarations_inline_style() {
 	}
 	// The `padding` shorthand is expanded to its longhands (padding-top = 10px).
 	padding_top_id := property_id_from_string('padding-top') or { panic('no padding-top id') }
-	padding_top := cascaded.property(padding_top_id) or { panic('padding-top not cascaded (shorthand not expanded)') }
+	padding_top := cascaded.property(padding_top_id) or {
+		panic('padding-top not cascaded (shorthand not expanded)')
+	}
 	assert padding_top.css_text == '10px'
 }
 
@@ -105,7 +107,9 @@ fn test_compute_logical_alias_mapping_context() {
 fn test_dom_css_bridge_round_trip() {
 	mut computed := ComputedProperties.new()
 	placeholder := computed_properties_to_dom(computed)
-	round_tripped := computed_properties_from_dom(placeholder) or { panic('computed handle missing') }
+	round_tripped := computed_properties_from_dom(placeholder) or {
+		panic('computed handle missing')
+	}
 	assert voidptr(round_tripped) == voidptr(computed)
 
 	mut cascaded := CascadedProperties.new()
@@ -137,9 +141,13 @@ fn test_compute_style_end_to_end() {
 // across the dom<->css bridge.
 fn test_compute_style_inherits_from_parent_via_bridge() {
 	doc := dom.Document.create(dom.url_about_blank())
-	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
 	parent.set_attribute_value('style', 'color: red')
-	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
 	mut parent_node := parent.as_node()
 	child_node := child.as_node()
 	parent_node.append_child(child_node) or { panic('append failed: ${err}') }
@@ -156,13 +164,19 @@ fn test_compute_style_inherits_from_parent_via_bridge() {
 	child_computed := s.compute_style(child_ae)
 
 	// Baseline: a parentless element with no color falls back to the initial color.
-	mut orphan := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut orphan := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
 	orphan_ae := dom.AbstractElement.new(orphan, none)
 	orphan_computed := s.compute_style(orphan_ae)
 
-	parent_color := parent_computed.property(.color, .no) or { panic('parent has no computed color') }
+	parent_color := parent_computed.property(.color, .no) or {
+		panic('parent has no computed color')
+	}
 	child_color := child_computed.property(.color, .no) or { panic('child did not inherit color') }
-	orphan_color := orphan_computed.property(.color, .no) or { panic('orphan has no computed color') }
+	orphan_color := orphan_computed.property(.color, .no) or {
+		panic('orphan has no computed color')
+	}
 	// The child inherited the parent's color...
 	assert child_color.css_text == parent_color.css_text
 	// ...which is a real inherited value, not the initial color the orphan falls back to.
@@ -194,9 +208,13 @@ fn test_computed_properties_to_dom_mirrors_fields() {
 // DOM::Element::recompute_style, driving the whole pipeline onto the DOM tree.
 fn test_recompute_style_stores_and_inherits() {
 	doc := dom.Document.create(dom.url_about_blank())
-	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
 	parent.set_attribute_value('style', 'color: red')
-	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
 	mut parent_node := parent.as_node()
 	child_node := child.as_node()
 	parent_node.append_child(child_node) or { panic('append failed: ${err}') }
@@ -212,11 +230,17 @@ fn test_recompute_style_stores_and_inherits() {
 	// Both elements now carry a stored (bridged) computed style.
 	stored_parent := parent_ae.computed_properties() or { panic('parent style not stored') }
 	stored_child := child_ae.computed_properties() or { panic('child style not stored') }
-	parent_computed := computed_properties_from_dom(stored_parent) or { panic('parent handle missing') }
-	child_computed := computed_properties_from_dom(stored_child) or { panic('child handle missing') }
+	parent_computed := computed_properties_from_dom(stored_parent) or {
+		panic('parent handle missing')
+	}
+	child_computed := computed_properties_from_dom(stored_child) or {
+		panic('child handle missing')
+	}
 
 	// The child inherited the parent's computed color from the stored parent style.
-	parent_color := parent_computed.property(.color, .no) or { panic('parent has no computed color') }
+	parent_color := parent_computed.property(.color, .no) or {
+		panic('parent has no computed color')
+	}
 	child_color := child_computed.property(.color, .no) or { panic('child did not inherit color') }
 	assert child_color.css_text == parent_color.css_text
 	// The stored parent style also mirrors layout fields (default display is not none for a div's initial).
@@ -242,12 +266,12 @@ fn test_recompute_style_for_subtree_inherits_down_levels() {
 	// Every element got a stored computed style, and green flowed all the way to the leaf.
 	root_ae := dom.AbstractElement.new(root, none)
 	leaf_ae := dom.AbstractElement.new(leaf, none)
-	root_computed := computed_properties_from_dom(root_ae.computed_properties() or { panic('root not styled') }) or {
-		panic('root handle missing')
-	}
-	leaf_computed := computed_properties_from_dom(leaf_ae.computed_properties() or { panic('leaf not styled') }) or {
-		panic('leaf handle missing')
-	}
+	root_computed := computed_properties_from_dom(root_ae.computed_properties() or {
+		panic('root not styled')
+	}) or { panic('root handle missing') }
+	leaf_computed := computed_properties_from_dom(leaf_ae.computed_properties() or {
+		panic('leaf not styled')
+	}) or { panic('leaf handle missing') }
 	root_color := root_computed.property(.color, .no) or { panic('root has no color') }
 	leaf_color := leaf_computed.property(.color, .no) or { panic('leaf did not inherit color') }
 	assert leaf_color.css_text == root_color.css_text
@@ -259,7 +283,9 @@ fn test_document_update_style_runs_css_pass_via_hook() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
 	root.set_attribute_value('style', 'color: blue')
-	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
 	mut root_node := root.as_node()
 	root_node.append_child(child.as_node()) or { panic('append child failed: ${err}') }
 	mut doc_node := unsafe { &dom.Node(doc) }
@@ -271,12 +297,12 @@ fn test_document_update_style_runs_css_pass_via_hook() {
 
 	root_ae := dom.AbstractElement.new(root, none)
 	child_ae := dom.AbstractElement.new(child, none)
-	root_computed := computed_properties_from_dom(root_ae.computed_properties() or { panic('root not styled by update_style') }) or {
-		panic('root handle missing')
-	}
-	child_computed := computed_properties_from_dom(child_ae.computed_properties() or { panic('child not styled by update_style') }) or {
-		panic('child handle missing')
-	}
+	root_computed := computed_properties_from_dom(root_ae.computed_properties() or {
+		panic('root not styled by update_style')
+	}) or { panic('root handle missing') }
+	child_computed := computed_properties_from_dom(child_ae.computed_properties() or {
+		panic('child not styled by update_style')
+	}) or { panic('child handle missing') }
 	root_color := root_computed.property(.color, .no) or { panic('root has no color') }
 	child_color := child_computed.property(.color, .no) or { panic('child did not inherit color') }
 	assert child_color.css_text == root_color.css_text
@@ -288,7 +314,9 @@ fn test_css_style_computer_for_caches_and_autowires() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
 	root.set_attribute_value('style', 'color: teal')
-	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
 	mut root_node := root.as_node()
 	root_node.append_child(child.as_node()) or { panic('append child failed: ${err}') }
 	mut doc_node := unsafe { &dom.Node(doc) }
@@ -312,11 +340,90 @@ fn test_css_style_computer_for_caches_and_autowires() {
 	}
 }
 
+fn test_attribute_mutation_uses_css_invalidation_plan_for_descendant() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut target := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	target.set_attribute_value('class', 'target')
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html.as_node()) or { panic('append html failed: ${err}') }
+	mut html_node := html.as_node()
+	html_node.append_child(parent.as_node()) or { panic('append parent failed: ${err}') }
+	mut parent_node := parent.as_node()
+	parent_node.append_child(target.as_node()) or { panic('append target failed: ${err}') }
+
+	add_document_author_style_sheet(doc, '.target { color: blue; } .theme .target { color: red; }')
+	css_style_computer_for(doc)
+	doc.needs_full_style_update = true
+	doc.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'blue'
+
+	parent.set_attribute_value('class', 'theme')
+	assert doc.element_needs_style_update(target)
+	doc.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'red'
+}
+
+fn test_computed_style_records_attempted_pseudo_class_matches() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut item := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	item.set_attribute_value('class', 'item')
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(root.as_node()) or { panic('append root failed: ${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(item.as_node()) or { panic('append item failed: ${err}') }
+	add_document_author_style_sheet(doc, '.item:hover { color: red; }')
+	css_style_computer_for(doc)
+	doc.needs_full_style_update = true
+	doc.update_style()
+	assert item.affected_by_pseudo_class(.hover)
+}
+
+fn test_meta_theme_color_uses_css_color_and_media_parsers() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut invalid := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'meta') or {
+		panic('${err}')
+	}
+	invalid.set_attribute_value('name', 'theme-color')
+	invalid.set_attribute_value('content', 'not-a-color')
+	mut media_mismatch := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'meta') or {
+		panic('${err}')
+	}
+	media_mismatch.set_attribute_value('name', 'theme-color')
+	media_mismatch.set_attribute_value('content', 'red')
+	media_mismatch.set_attribute_value('media', '(max-width: 1px)')
+	mut valid := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'meta') or {
+		panic('${err}')
+	}
+	valid.set_attribute_value('name', 'THEME-COLOR')
+	valid.set_attribute_value('content', ' #0f0 ')
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html.as_node()) or { panic('append html failed: ${err}') }
+	mut html_node := html.as_node()
+	html_node.append_child(invalid.as_node()) or { panic('append invalid failed: ${err}') }
+	html_node.append_child(media_mismatch.as_node()) or { panic('append media failed: ${err}') }
+	html_node.append_child(valid.as_node()) or { panic('append valid failed: ${err}') }
+	css_style_computer_for(doc)
+	doc.obtain_theme_color()
+	assert doc.theme_color() or { '' } == 'rgb(0, 255, 0)'
+}
+
 // computed_value_for is the real-StyleComputer cascade query (drop-in for the minimal cascaded_value_for):
 // a full style pass over the document resolves inline styles + inheritance, read back per element.
 fn test_computed_value_for_inline_and_inheritance() {
 	mut doc := dom.Document.create(dom.url_about_blank())
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	mut body := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'body') or { panic('${err}') }
 	body.set_attribute_value('style', 'color: navy')
 	mut para := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic('${err}') }
@@ -345,7 +452,9 @@ fn test_computed_value_for_inline_and_inheritance() {
 // (head { display: none }, li { display: list-item }, div { display: block }), not just inline/inheritance.
 fn test_ua_default_stylesheet_applies_display() {
 	mut doc := dom.Document.create(dom.url_about_blank())
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	mut head := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'head') or { panic('${err}') }
 	mut body := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'body') or { panic('${err}') }
 	mut div := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
@@ -377,7 +486,9 @@ fn test_real_pipeline_matches_author_stylesheet() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	add_document_author_style_sheet(doc, '.card { color: navy }')
 
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	mut card := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
 	card.set_attribute_value('class', 'card')
 	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic('${err}') }
@@ -403,14 +514,18 @@ fn test_real_pipeline_matches_author_stylesheet() {
 // from the real CSS::Display via the bridge, instead of always returning false.
 fn test_display_predicates_mirrored_to_dom() {
 	doc := dom.Document.create(dom.url_about_blank())
-	mut contents_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut contents_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
 	contents_el.set_attribute_value('style', 'display: contents')
 	s := StyleComputer.new(doc)
 	contents_computed := s.compute_style(dom.AbstractElement.new(contents_el, none))
 	contents_display := computed_properties_to_dom(contents_computed).display()
 	assert contents_display.is_contents()
 
-	mut inline_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut inline_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
 	inline_el.set_attribute_value('style', 'display: inline')
 	inline_computed := s.compute_style(dom.AbstractElement.new(inline_el, none))
 	inline_display := computed_properties_to_dom(inline_computed).display()

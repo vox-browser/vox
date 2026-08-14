@@ -2155,8 +2155,7 @@ pub fn (style_value RectStyleValue) rect() EdgeRect {
 }
 
 pub fn (style_value RectStyleValue) serialize(mode SerializationMode) string {
-	_ = mode
-	return 'rect(${style_value.rect_.top_edge}, ${style_value.rect_.right_edge}, ${style_value.rect_.bottom_edge}, ${style_value.rect_.left_edge})'
+	return 'rect(${style_value.rect_.top_edge.serialize(mode)}, ${style_value.rect_.right_edge.serialize(mode)}, ${style_value.rect_.bottom_edge.serialize(mode)}, ${style_value.rect_.left_edge.serialize(mode)})'
 }
 
 pub fn (style_value RectStyleValue) to_string() string {
@@ -2677,9 +2676,9 @@ fn (style_value ShorthandStyleValue) serialize_mask(mode SerializationMode) ?str
 	mut layers := []string{}
 	for index := 0; index < layer_count; index++ {
 		layers << serialize_mask_layer(mode, shorthand_layer_value(image, index), shorthand_layer_value(position,
-			index), shorthand_layer_value(size, index), shorthand_layer_value(repeat, index),
-			shorthand_layer_value(origin, index), shorthand_layer_value(clip, index), shorthand_layer_value(composite,
-			index), shorthand_layer_value(mask_mode, index))
+			index), shorthand_layer_value(size, index), shorthand_layer_value(repeat, index), shorthand_layer_value(origin,
+			index), shorthand_layer_value(clip, index), shorthand_layer_value(composite, index), shorthand_layer_value(mask_mode,
+			index))
 	}
 	return layers.join(', ')
 }

@@ -123,7 +123,7 @@ pub fn (mut n NamedNodeMap) remove_attribute_node(attr &Attr_) {
 	}
 }
 
-// Attr_ is named with underscore to avoid conflict with document.v's empty Attr stub
+// Attr_ is the lightweight Element-owned attribute record; Attr is the node-backed DOM object.
 @[heap]
 pub struct Attr_ {
 pub mut:
@@ -143,6 +143,18 @@ pub fn (a &Attr_) value() string {
 	return a.value_
 }
 
+pub fn (a &Attr_) local_name() string {
+	return a.local_name_
+}
+
+pub fn (a &Attr_) prefix() ?string {
+	return a.prefix__
+}
+
+pub fn (a &Attr_) namespace_uri() ?string {
+	return a.namespace_uri_
+}
+
 pub fn (a &Attr_) owner_element() ?&Element {
 	return a.owner_element_
 }
@@ -152,8 +164,21 @@ pub fn (mut a Attr_) set_owner_element(element ?&Element) {
 }
 
 pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, new_value ?string) {
+	mut element_node := unsafe { &Node(element) }
+	element_node.queue_mutation_record(.attributes, a.local_name_, a.namespace_uri_, old_value,
+		[]&Node{}, []&Node{}, unsafe { nil }, unsafe { nil })
+
 	mut mutable_element := unsafe { &Element(element) }
-	mutable_element.attribute_changed(a.local_name_, old_value, new_value, a.namespace_uri_)
+	if element.is_custom() {
+		mutable_element.enqueue_a_custom_element_callback_reaction('attributeChangedCallback', [
+			a.local_name_,
+			old_value or { '' },
+			new_value or { '' },
+			a.namespace_uri_ or { '' },
+		])
+	}
+	mutable_element.run_attribute_change_steps(a.local_name_, old_value, new_value,
+		a.namespace_uri_)
 }
 
 pub struct DOMTokenList_ {
@@ -309,15 +334,16 @@ fn create_element_inline_style(element &Element) &CSSStyleProperties_ {
 @[heap]
 pub struct CSSComputedProperties_ {
 pub mut:
-	display_            CSSDisplay_           = CSSDisplay_{}
-	overflow_x_         CSSOverflow_          = .visible
-	overflow_y_         CSSOverflow_          = .visible
-	content_visibility_ CSSContentVisibility_ = .visible
-	opacity_            f32                   = 1.0
-	visibility_         CSSVisibility_        = .visible
-	font_weight_        f64                   = 400
-	math_depth_         int
-	math_style_         CSSMathStyle_ = .normal
+	display_                        CSSDisplay_           = CSSDisplay_{}
+	overflow_x_                     CSSOverflow_          = .visible
+	overflow_y_                     CSSOverflow_          = .visible
+	content_visibility_             CSSContentVisibility_ = .visible
+	opacity_                        f32                   = 1.0
+	visibility_                     CSSVisibility_        = .visible
+	font_weight_                    f64                   = 400
+	math_depth_                     int
+	math_style_                     CSSMathStyle_ = .normal
+	attempted_pseudo_class_matches_ map[string]bool
 	// dom<->css bridge: opaque handle to the real css.ComputedProperties this placeholder mirrors.
 	// The CSS module (which owns the type) sets/reads it via unsafe cast; dom cannot name the type
 	// because it cannot import css. See css/dom_css_bridge.v.
@@ -365,10 +391,17 @@ pub fn (c &CSSComputedProperties_) view_transition_name() ?string {
 }
 
 pub fn (c &CSSComputedProperties_) has_attempted_match_against_pseudo_class(pseudo_class PseudoClass) bool {
-	_ = c
-	_ = pseudo_class
-	// Stub for CSS::ComputedProperties selector matching bookkeeping.
-	return false
+	name := match pseudo_class {
+		.hover { 'hover' }
+		.active { 'active' }
+		.focus { 'focus' }
+		.focus_within { 'focus-within' }
+		.focus_visible { 'focus-visible' }
+		.target { 'target' }
+		.visited { 'visited' }
+		.link { 'link' }
+	}
+	return c.attempted_pseudo_class_matches_[name] or { false }
 }
 
 pub struct CSSDisplay_ {
@@ -500,57 +533,119 @@ pub fn (mut p PseudoElement_) set_custom_property_data(data ?&CSSCustomPropertyD
 }
 
 @[heap]
-pub struct LayoutNodeWithStyle_ {}
+pub struct LayoutNodeWithStyle_ {
+pub mut:
+	layout_node_        ?&LayoutNode
+	applied_properties_ ?&CSSComputedProperties_
+}
 
 pub fn (n &LayoutNodeWithStyle_) apply_style(props &CSSComputedProperties_) {
-	_ = props
+	unsafe {
+		n.applied_properties_ = props
+	}
 }
 
 pub fn (n &LayoutNodeWithStyle_) is_scroll_container() bool {
-	return false
+	dom_node := n.dom_node() or { return false }
+	element := dom_node.as_element() or { return false }
+	computed := element.el_computed_properties() or { return false }
+	return computed.overflow_x() in [.hidden, .scroll, .auto_]
+		|| computed.overflow_y() in [.hidden, .scroll, .auto_]
 }
 
 pub fn (n &LayoutNodeWithStyle_) previous_in_pre_order() ?&LayoutNodeWithStyle_ {
-	_ = n
-	// Stub for Layout::Node::previous_in_pre_order() until the layout tree is ported.
-	return none
+	layout_node := n.layout_node_ or { return none }
+	if previous := n.previous_sibling() {
+		mut current := previous.layout_node_ or { return previous }
+		for current.children_.len > 0 {
+			current = current.children_[current.children_.len - 1]
+		}
+		return layout_node_with_style(current)
+	}
+	parent := layout_node.parent_ or { return none }
+	return layout_node_with_style(parent)
 }
 
 pub fn (n &LayoutNodeWithStyle_) previous_sibling() ?&LayoutNodeWithStyle_ {
-	_ = n
-	// Stub for Layout::Node::previous_sibling() until the layout tree is ported.
+	layout_node := n.layout_node_ or { return none }
+	parent := layout_node.parent_ or { return none }
+	for index, sibling in parent.children_ {
+		if voidptr(sibling) == voidptr(layout_node) {
+			if index == 0 {
+				return none
+			}
+			return layout_node_with_style(parent.children_[index - 1])
+		}
+	}
 	return none
 }
 
 pub fn (n &LayoutNodeWithStyle_) dom_node() ?&Node {
-	_ = n
-	// Stub for Layout::Node::dom_node() until layout nodes retain DOM back-pointers.
-	return none
+	layout_node := n.layout_node_ or { return none }
+	return layout_node.dom_node_
 }
 
 pub fn (n &LayoutNodeWithStyle_) is_generated_for_pseudo_element() bool {
-	_ = n
-	// Stub for generated pseudo-element layout metadata.
-	return false
+	layout_node := n.layout_node_ or { return false }
+	return layout_node.generated_for_ != none
 }
 
 pub fn (n &LayoutNodeWithStyle_) pseudo_element_generator() ?&Element {
-	_ = n
-	// Stub for Layout::NodeWithStyle::pseudo_element_generator().
-	return none
+	layout_node := n.layout_node_ or { return none }
+	return layout_node.pseudo_element_generator_
 }
 
 pub fn (n &LayoutNodeWithStyle_) generated_for_pseudo_element() ?PseudoElement {
-	_ = n
-	// Stub for Layout::NodeWithStyle::generated_for_pseudo_element().
-	return none
+	layout_node := n.layout_node_ or { return none }
+	return layout_node.generated_for_
 }
 
 pub fn (n &LayoutNodeWithStyle_) is_before(other &LayoutNodeWithStyle_) bool {
-	_ = n
-	_ = other
-	// Stub for Layout::Node::is_before().
+	this_node := n.layout_node_ or { return false }
+	other_node := other.layout_node_ or { return false }
+	if voidptr(this_node) == voidptr(other_node) {
+		return false
+	}
+	this_path := layout_node_ancestor_path(this_node)
+	other_path := layout_node_ancestor_path(other_node)
+	mut common_length := 0
+	for common_length < this_path.len && common_length < other_path.len
+		&& voidptr(this_path[common_length]) == voidptr(other_path[common_length]) {
+		common_length++
+	}
+	if common_length == this_path.len {
+		return true
+	}
+	if common_length == other_path.len || common_length == 0 {
+		return false
+	}
+	parent := this_path[common_length - 1]
+	for child in parent.children_ {
+		if voidptr(child) == voidptr(this_path[common_length]) {
+			return true
+		}
+		if voidptr(child) == voidptr(other_path[common_length]) {
+			return false
+		}
+	}
 	return false
+}
+
+fn layout_node_with_style(node &LayoutNode) &LayoutNodeWithStyle_ {
+	return &LayoutNodeWithStyle_{
+		layout_node_: node
+	}
+}
+
+fn layout_node_ancestor_path(node &LayoutNode) []&LayoutNode {
+	mut result := []&LayoutNode{}
+	mut current := ?&LayoutNode(node)
+	for current != none {
+		item := current or { break }
+		result.prepend(item)
+		current = item.parent_
+	}
+	return result
 }
 
 pub struct ImmutableBitmap_ {
@@ -921,9 +1016,10 @@ pub mut:
 	shadow_root_         ?&ShadowRoot
 	part_list_           ?&DOMTokenList
 
-	cascaded_properties_  ?&CSSCascadedProperties_
-	computed_properties_  ?&CSSComputedProperties_
-	custom_property_data_ ?&CSSCustomPropertyData_
+	cascaded_properties_    ?&CSSCascadedProperties_
+	computed_properties_    ?&CSSComputedProperties_
+	layout_node_with_style_ ?&LayoutNodeWithStyle_
+	custom_property_data_   ?&CSSCustomPropertyData_
 
 	pseudo_element_data map[int]&PseudoElement_
 
@@ -1318,6 +1414,12 @@ pub fn (e &Element) attribute_list_size() int {
 	return attrs.length()
 }
 
+// Immutable access to the attribute list for read-only iteration (e.g. serialization).
+// Returns none when the element has no attributes.
+pub fn (e &Element) attribute_list() ?&NamedNodeMap {
+	return e.attributes_
+}
+
 pub fn (e &Element) get_attribute_node(name string) ?&Attr_ {
 	attrs := e.attributes_ or { return none }
 	return attrs.get_attribute(name)
@@ -1574,22 +1676,40 @@ pub fn (e &Element) closest(selectors string) ?&Element {
 
 // https://drafts.csswg.org/cssom-view/#dom-element-clienttop
 pub fn (e &Element) client_top() int {
-	return 0
+	mut document := unsafe { &Document(e.document()) }
+	document.update_layout(.element_client_height)
+	layout := e.as_node().layout_node() or { return 0 }
+	return if layout.has_geometry_ { int(layout.border_top_) } else { 0 }
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-clientleft
 pub fn (e &Element) client_left() int {
-	return 0
+	mut document := unsafe { &Document(e.document()) }
+	document.update_layout(.element_client_width)
+	layout := e.as_node().layout_node() or { return 0 }
+	return if layout.has_geometry_ { int(layout.border_left_) } else { 0 }
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-clientwidth
 pub fn (e &Element) client_width() int {
-	return 0
+	mut document := unsafe { &Document(e.document()) }
+	document.update_layout(.element_client_width)
+	layout := e.as_node().layout_node() or { return 0 }
+	if !layout.has_geometry_ {
+		return 0
+	}
+	return int(layout.content_width_ + layout.padding_left_ + layout.padding_right_)
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-clientheight
 pub fn (e &Element) client_height() int {
-	return 0
+	mut document := unsafe { &Document(e.document()) }
+	document.update_layout(.element_client_height)
+	layout := e.as_node().layout_node() or { return 0 }
+	if !layout.has_geometry_ {
+		return 0
+	}
+	return int(layout.content_height_ + layout.padding_top_ + layout.padding_bottom_)
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-currentcsszoom
@@ -1600,11 +1720,11 @@ pub fn (e &Element) current_css_zoom() f64 {
 // --- Layout node ---
 
 pub fn (e &Element) el_layout_node() ?&LayoutNodeWithStyle_ {
-	return none
+	return e.layout_node_with_style_
 }
 
 pub fn (e &Element) el_unsafe_layout_node() ?&LayoutNodeWithStyle_ {
-	return none
+	return e.layout_node_with_style_
 }
 
 pub fn (e &Element) create_layout_node(style &CSSComputedProperties_) ?&LayoutNodeWithStyle_ {
@@ -1800,7 +1920,7 @@ pub fn (e &Element) custom_property_data(pseudo_element ?int) ?&CSSCustomPropert
 
 pub fn (mut e Element) run_attribute_change_steps(local_name string, old_value ?string, value ?string, namespace_ ?string) {
 	e.attribute_changed(local_name, old_value, value, namespace_)
-	if old_value != value {
+	if !option_string_equal(old_value, value) {
 		e.invalidate_style_after_attribute_change(local_name, old_value, value)
 	}
 }
@@ -1808,11 +1928,7 @@ pub fn (mut e Element) run_attribute_change_steps(local_name string, old_value ?
 // --- recompute_style ---
 
 pub fn (mut e Element) recompute_style() RequiredInvalidationAfterStyleChange {
-	e.style_uses_attr_css_function = false
-	e.style_uses_var_css_function = false
-	e.style_uses_tree_counting_function = false
-	e.style_uses_if_css_function = false
-	e.style_uses_inherit_css_function = false
+	e.reset_style_dependency_flags()
 	e.affected_by_has_pseudo_class_in_subject_position = false
 	e.affected_by_has_pseudo_class_in_non_subject_position = false
 	e.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator = false
@@ -1829,6 +1945,46 @@ pub fn (mut e Element) recompute_style() RequiredInvalidationAfterStyleChange {
 		invalidation = required_invalidation_full()
 	}
 	return invalidation
+}
+
+pub fn (mut e Element) reset_style_dependency_flags() {
+	e.style_uses_attr_css_function = false
+	e.style_uses_var_css_function = false
+	e.style_uses_tree_counting_function = false
+	e.style_uses_if_css_function = false
+	e.style_uses_inherit_css_function = false
+}
+
+pub fn (mut e Element) set_style_uses_attr_css_function() {
+	e.style_uses_attr_css_function = true
+}
+
+pub fn (mut e Element) set_style_uses_var_css_function() {
+	e.style_uses_var_css_function = true
+}
+
+pub fn (mut e Element) set_style_uses_if_css_function() {
+	e.style_uses_if_css_function = true
+}
+
+pub fn (mut e Element) set_style_uses_inherit_css_function() {
+	e.style_uses_inherit_css_function = true
+}
+
+pub fn (e &Element) style_uses_attr_css_function() bool {
+	return e.style_uses_attr_css_function
+}
+
+pub fn (e &Element) style_uses_var_css_function() bool {
+	return e.style_uses_var_css_function
+}
+
+pub fn (e &Element) style_uses_if_css_function() bool {
+	return e.style_uses_if_css_function
+}
+
+pub fn (e &Element) style_uses_inherit_css_function() bool {
+	return e.style_uses_inherit_css_function
 }
 
 // --- recompute_inherited_style ---
@@ -1986,8 +2142,14 @@ pub fn (mut e Element) insert_adjacent_html(position string, text string) ! {
 }
 
 fn html_parser_parse_html_fragment(context_element &Element, markup string, allow_declarative_shadow_roots AllowDeclarativeShadowRoots) ![]&Node {
-	_ = allow_declarative_shadow_roots
-	// Stub for HTML::HTMLParser::parse_html_fragment until the HTML parser is ported.
+	if hook := context_element.document().html_fragment_parsing_hook() {
+		if hook.parse_fragment != unsafe { nil } {
+			return hook.parse_fragment(hook.target, context_element, markup,
+				allow_declarative_shadow_roots)
+		}
+	}
+	// DOM can be used without importing the html module. In that configuration there is no HTML
+	// tree builder to call, so preserve the markup as text rather than silently dropping it.
 	if markup.len == 0 {
 		return []&Node{}
 	}
@@ -2033,56 +2195,152 @@ fn parse_fragment_fallback(context_element &Element, html string) !&DocumentFrag
 }
 
 fn html_escape_text(value string) string {
-	return value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+	return value.replace('&', '&amp;').replace('\u00a0', '&nbsp;').replace('<', '&lt;').replace('>',
+		'&gt;')
 }
 
 fn html_escape_attribute(value string) string {
 	return html_escape_text(value).replace('"', '&quot;')
 }
 
-fn serialize_element_start_tag(mut builder strings.Builder, element &Element) {
+fn html_serialized_tag_name(element &Element) string {
+	namespace_ := element.namespace_uri() or { '' }
+	if namespace_ in [namespace_html_uri, namespace_svg_uri, 'http://www.w3.org/1998/Math/MathML'] {
+		return element.local_name()
+	}
+	return element.qualified_name_str()
+}
+
+fn html_serialized_attribute_name(attribute &Attr_) string {
+	namespace_ := attribute.namespace_uri_ or { return attribute.local_name_ }
+	return match namespace_ {
+		namespace_xml_uri {
+			'xml:${attribute.local_name_}'
+		}
+		namespace_xmlns_uri {
+			if attribute.local_name_ == 'xmlns' {
+				'xmlns'
+			} else {
+				'xmlns:${attribute.local_name_}'
+			}
+		}
+		namespace_xlink_uri {
+			'xlink:${attribute.local_name_}'
+		}
+		else {
+			attribute.name_
+		}
+	}
+}
+
+fn serialize_element_start_tag(mut builder strings.Builder, element &Element) string {
+	tag_name := html_serialized_tag_name(element)
 	builder.write_string('<')
-	builder.write_string(element.qualified_name_str())
+	builder.write_string(tag_name)
+	if is_value := element.is_value {
+		if !element.has_attribute('is') {
+			builder.write_string(' is="')
+			builder.write_string(html_escape_attribute(is_value))
+			builder.write_string('"')
+		}
+	}
 	if attrs := element.attributes_ {
 		for attr in attrs.attrs {
 			builder.write_string(' ')
-			builder.write_string(attr.name())
+			builder.write_string(html_serialized_attribute_name(attr))
 			builder.write_string('="')
 			builder.write_string(html_escape_attribute(attr.value()))
 			builder.write_string('"')
 		}
 	}
 	builder.write_string('>')
+	return tag_name
 }
 
-fn serialize_node_fallback(node &Node, mode FragmentSerializationMode) string {
-	if character_data := node.character_data() {
-		return html_escape_text(character_data.data())
+fn serialize_html_node(node &Node, serializable_shadow_roots SerializableShadowRoots, shadow_roots []&ShadowRoot, mode FragmentSerializationMode) string {
+	if node.is_comment() {
+		comment := node.character_data() or { return '' }
+		return '<!--${comment.data()}-->'
 	}
-	if attr := node.as_attr() {
-		return html_escape_attribute(attr.value())
+	if processing_instruction := node.as_processing_instruction() {
+		return '<?${processing_instruction.target()} ${processing_instruction.data()}>'
 	}
 	if document_type := node.as_document_type() {
 		return '<!DOCTYPE ${document_type.name()}>'
 	}
+	if attr := node.as_attr() {
+		return html_escape_attribute(attr.value())
+	}
+	if node.is_text() || node.is_cdata_section() {
+		character_data := node.character_data() or { return '' }
+		if parent := node.parent() {
+			if parent_element := parent.as_element() {
+				name := parent_element.local_name()
+				if name in ['style', 'script', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext']
+					|| (name == 'noscript' && !node.is_scripting_disabled()) {
+					return character_data.data()
+				}
+			}
+		}
+		return html_escape_text(character_data.data())
+	}
 	if element := node.as_element() {
 		mut builder := strings.new_builder(0)
 		if mode == .outer {
-			serialize_element_start_tag(mut builder, element)
+			tag_name := serialize_element_start_tag(mut builder, element)
+			if element.serializes_as_void() {
+				return builder.str()
+			}
+			builder.write_string(serialize_html_node(node, serializable_shadow_roots, shadow_roots,
+				.inner))
+			builder.write_string('</${tag_name}>')
+			return builder.str()
 		}
-		for child in node.children {
-			builder.write_string(serialize_node_fallback(child, .outer))
+
+		mut actual_node := node
+		if element.is_html_element() && element.local_name() == 'template' {
+			template_element := unsafe { &HTMLTemplateElement(element) }
+			actual_node = template_element.content().as_node()
 		}
-		if mode == .outer && !element.serializes_as_void() {
-			builder.write_string('</')
-			builder.write_string(element.qualified_name_str())
-			builder.write_string('>')
+
+		if shadow_root := element.shadow_root() {
+			mut explicitly_included := false
+			for candidate in shadow_roots {
+				if candidate == shadow_root {
+					explicitly_included = true
+					break
+				}
+			}
+			if (serializable_shadow_roots == .yes && shadow_root.serializable())
+				|| explicitly_included {
+				mode_name := if shadow_root.mode() == .open { 'open' } else { 'closed' }
+				builder.write_string('<template shadowrootmode="${mode_name}"')
+				if shadow_root.delegates_focus() {
+					builder.write_string(' shadowrootdelegatesfocus=""')
+				}
+				if shadow_root.serializable() {
+					builder.write_string(' shadowrootserializable=""')
+				}
+				if shadow_root.clonable() {
+					builder.write_string(' shadowrootclonable=""')
+				}
+				builder.write_string('>')
+				builder.write_string(serialize_html_node(shadow_root_as_node(shadow_root),
+					serializable_shadow_roots, shadow_roots, .inner))
+				builder.write_string('</template>')
+			}
+		}
+
+		for child in actual_node.children {
+			builder.write_string(serialize_html_node(child, serializable_shadow_roots,
+				shadow_roots, .outer))
 		}
 		return builder.str()
 	}
 	mut builder := strings.new_builder(0)
 	for child in node.children {
-		builder.write_string(serialize_node_fallback(child, .outer))
+		builder.write_string(serialize_html_node(child, serializable_shadow_roots, shadow_roots,
+			.outer))
 	}
 	return builder.str()
 }
@@ -2090,14 +2348,195 @@ fn serialize_node_fallback(node &Node, mode FragmentSerializationMode) string {
 fn html_parser_serialize_html_fragment(node &Node, serializable_shadow_roots SerializableShadowRoots, shadow_roots []&ShadowRoot, fragment_serialization_mode FragmentSerializationMode) string {
 	_ = serializable_shadow_roots
 	_ = shadow_roots
-	// Stub for HTML::HTMLParser::serialize_html_fragment until the HTML serializer is ported.
-	return serialize_node_fallback(node, fragment_serialization_mode)
+	return serialize_html_node(node, serializable_shadow_roots, shadow_roots,
+		fragment_serialization_mode)
 }
 
 fn html_serialize_node_to_xml_string(node &Node, require_well_formed RequireWellFormed) !string {
-	_ = require_well_formed
-	// Stub for HTML::serialize_node_to_xml_string until the XML serializer is ported.
-	return serialize_node_fallback(node, .outer)
+	mut state := XMLSerializationState{}
+	return serialize_xml_node(node, require_well_formed, map[string]string{}, mut state)
+}
+
+struct XMLSerializationState {
+mut:
+	next_generated_prefix int = 1
+}
+
+fn xml_escape_text(value string) string {
+	return value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+}
+
+fn xml_escape_attribute(value string) string {
+	return value.replace('&', '&amp;').replace('"', '&quot;').replace('\t', '&#9;').replace('\n',
+		'&#10;').replace('\r', '&#13;').replace('<', '&lt;')
+}
+
+fn xml_data_is_well_formed(value string) bool {
+	for ch in value.runes() {
+		if ch == 0 || ch in [rune(0xfffe), rune(0xffff)] {
+			return false
+		}
+	}
+	return true
+}
+
+fn xml_qualified_name(prefix ?string, local_name string) string {
+	if actual_prefix := prefix {
+		if actual_prefix.len > 0 {
+			return '${actual_prefix}:${local_name}'
+		}
+	}
+	return local_name
+}
+
+fn serialize_xml_node(node &Node, require_well_formed RequireWellFormed, inherited_namespaces map[string]string, mut state XMLSerializationState) !string {
+	if node.is_document() || node.is_document_fragment() || node.is_shadow_root() {
+		mut builder := strings.new_builder(0)
+		for child in node.children {
+			builder.write_string(serialize_xml_node(child, require_well_formed,
+				inherited_namespaces, mut state)!)
+		}
+		return builder.str()
+	}
+	if element := node.as_element() {
+		return serialize_xml_element(element, require_well_formed, inherited_namespaces, mut state)
+	}
+	if character_data := node.as_character_data() {
+		data := character_data.data()
+		if require_well_formed == .yes && !xml_data_is_well_formed(data) {
+			return error('InvalidStateError: Character data is not well-formed XML')
+		}
+		if node.is_comment() {
+			if require_well_formed == .yes && (data.contains('--') || data.ends_with('-')) {
+				return error('InvalidStateError: Comment is not well-formed XML')
+			}
+			return '<!--${data}-->'
+		}
+		if node.is_cdata_section() {
+			if require_well_formed == .yes && data.contains(']]>') {
+				return error('InvalidStateError: CDATA section is not well-formed XML')
+			}
+			return '<![CDATA[${data}]]>'
+		}
+		if processing_instruction := node.as_processing_instruction() {
+			if require_well_formed == .yes
+				&& (to_ascii_lowercase(processing_instruction.target_) == 'xml'
+				|| data.contains('?>')) {
+				return error('InvalidStateError: Processing instruction is not well-formed XML')
+			}
+			return if data.len > 0 {
+				'<?${processing_instruction.target_} ${data}?>'
+			} else {
+				'<?${processing_instruction.target_}?>'
+			}
+		}
+		return xml_escape_text(data)
+	}
+	if document_type := node.as_document_type() {
+		mut result := '<!DOCTYPE ${document_type.name()}'
+		if document_type.public_id().len > 0 {
+			result += ' PUBLIC "${xml_escape_attribute(document_type.public_id())}"'
+			if document_type.system_id().len > 0 {
+				result += ' "${xml_escape_attribute(document_type.system_id())}"'
+			}
+		} else if document_type.system_id().len > 0 {
+			result += ' SYSTEM "${xml_escape_attribute(document_type.system_id())}"'
+		}
+		return result + '>'
+	}
+	return ''
+}
+
+fn serialize_xml_element(element &Element, require_well_formed RequireWellFormed, inherited_namespaces map[string]string, mut state XMLSerializationState) !string {
+	mut namespaces := inherited_namespaces.clone()
+	mut attributes := if attrs := element.attributes_ { attrs.attrs.clone() } else { []&Attr_{} }
+	mut declared_here := map[string]bool{}
+	for attribute in attributes {
+		if option_string_equal(attribute.namespace_uri_, namespace_xmlns_uri) {
+			prefix := if attribute.prefix__ or { '' } == 'xmlns' {
+				attribute.local_name_
+			} else {
+				''
+			}
+			namespaces[prefix] = attribute.value_
+			declared_here[prefix] = true
+		}
+	}
+
+	mut generated_declarations := []string{}
+	element_namespace := element.namespace_uri() or { '' }
+	element_prefix := element.prefix()
+	element_prefix_key := element_prefix or { '' }
+	if element_namespace.len > 0 && namespaces[element_prefix_key] != element_namespace {
+		declaration_name := if element_prefix_key.len > 0 {
+			'xmlns:${element_prefix_key}'
+		} else {
+			'xmlns'
+		}
+		generated_declarations << '${declaration_name}="${xml_escape_attribute(element_namespace)}"'
+		namespaces[element_prefix_key] = element_namespace
+		declared_here[element_prefix_key] = true
+	} else if element_namespace.len == 0 && (namespaces[''] or { '' }).len > 0 {
+		generated_declarations << 'xmlns=""'
+		namespaces[''] = ''
+		declared_here[''] = true
+	}
+
+	mut serialized_attributes := []string{}
+	for attribute in attributes {
+		attribute_namespace := attribute.namespace_uri_ or { '' }
+		mut attribute_prefix := attribute.prefix__
+		if attribute_namespace == namespace_xmlns_uri {
+			serialized_attributes << '${attribute.name_}="${xml_escape_attribute(attribute.value_)}"'
+			continue
+		}
+		if attribute_namespace == namespace_xml_uri {
+			attribute_prefix = 'xml'
+			namespaces['xml'] = namespace_xml_uri
+		} else if attribute_namespace == namespace_xlink_uri {
+			attribute_prefix = 'xlink'
+			if namespaces['xlink'] != namespace_xlink_uri && !declared_here['xlink'] {
+				generated_declarations << 'xmlns:xlink="${namespace_xlink_uri}"'
+				namespaces['xlink'] = namespace_xlink_uri
+				declared_here['xlink'] = true
+			}
+		} else if attribute_namespace.len > 0 {
+			mut prefix_key := attribute_prefix or { '' }
+			if prefix_key.len == 0 {
+				for {
+					prefix_key = 'ns${state.next_generated_prefix}'
+					state.next_generated_prefix++
+					if prefix_key !in namespaces {
+						break
+					}
+				}
+				attribute_prefix = prefix_key
+			}
+			if namespaces[prefix_key] != attribute_namespace && !declared_here[prefix_key] {
+				generated_declarations << 'xmlns:${prefix_key}="${xml_escape_attribute(attribute_namespace)}"'
+				namespaces[prefix_key] = attribute_namespace
+				declared_here[prefix_key] = true
+			}
+		}
+		attribute_name := xml_qualified_name(attribute_prefix, attribute.local_name_)
+		serialized_attributes << '${attribute_name}="${xml_escape_attribute(attribute.value_)}"'
+	}
+
+	qualified_name := xml_qualified_name(element_prefix, element.local_name())
+	mut builder := strings.new_builder(0)
+	builder.write_string('<${qualified_name}')
+	for declaration in generated_declarations {
+		builder.write_string(' ${declaration}')
+	}
+	for attribute in serialized_attributes {
+		builder.write_string(' ${attribute}')
+	}
+	builder.write_string('>')
+	for child in element.as_node().children {
+		builder.write_string(serialize_xml_node(child, require_well_formed, namespaces, mut state)!)
+	}
+	builder.write_string('</${qualified_name}>')
+	return builder.str()
 }
 
 // --- Focus / Active ---
@@ -2219,7 +2658,20 @@ pub fn (e &Element) get_bounding_client_rect() Rect {
 }
 
 pub fn (e &Element) get_client_rects() []CSSPixelRect_ {
-	return []
+	mut document := unsafe { &Document(e.document()) }
+	document.update_layout(.element_get_client_rects)
+	layout := e.as_node().layout_node() or { return [] }
+	if !layout.has_geometry_ {
+		return []
+	}
+	return [
+		CSSPixelRect_{
+			x_:      layout.border_box_.x
+			y_:      layout.border_box_.y
+			width_:  layout.border_box_.width
+			height_: layout.border_box_.height
+		},
+	]
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect
@@ -2559,6 +3011,11 @@ pub fn (mut e Element) scroll_width() int {
 			return int(r.width())
 		}
 	}
+	if layout := e.as_node().layout_node() {
+		if layout.has_geometry_ {
+			return int(layout.content_width_ + layout.padding_left_ + layout.padding_right_)
+		}
+	}
 	return 0
 }
 
@@ -2571,6 +3028,11 @@ pub fn (mut e Element) scroll_height() int {
 	if pb := e.paintable_box() {
 		if r := pb.scrollable_overflow_rect() {
 			return int(r.height())
+		}
+	}
+	if layout := e.as_node().layout_node() {
+		if layout.has_geometry_ {
+			return int(layout.content_height_ + layout.padding_top_ + layout.padding_bottom_)
 		}
 	}
 	return 0
@@ -2692,6 +3154,18 @@ pub fn (e &Element) is_fullscreen_element() bool {
 
 pub fn (e &Element) in_top_layer() bool {
 	return e.in_top_layer
+}
+
+pub fn (mut e Element) set_in_top_layer(value bool) {
+	e.in_top_layer = value
+}
+
+pub fn (e &Element) rendered_in_top_layer() bool {
+	return e.rendered_in_top_layer
+}
+
+pub fn (mut e Element) set_rendered_in_top_layer(value bool) {
+	e.rendered_in_top_layer = value
 }
 
 fn (mut e Element) exit_fullscreen_on_element_removal() {
@@ -3095,7 +3569,7 @@ pub fn (mut e Element) set_prefix(value ?string) {
 
 // https://dom.spec.whatwg.org/#locate-a-namespace-prefix
 pub fn (e &Element) locate_a_namespace_prefix(namespace_ ?string) ?string {
-	if e.namespace_uri() == namespace_ {
+	if option_string_equal(e.namespace_uri(), namespace_) {
 		if p := e.prefix() {
 			return p
 		}
@@ -3426,14 +3900,37 @@ pub fn (e &Element) matches_disabled_pseudo_class() bool {
 }
 
 pub fn (e &Element) matches_checked_pseudo_class() bool {
-	return false
+	if !e.is_html_element() {
+		return false
+	}
+	if e.local_name() == 'input' {
+		type_ := to_ascii_lowercase(e.get_attribute_value('type'))
+		return type_ in ['checkbox', 'radio'] && e.has_attribute('checked')
+	}
+	return e.local_name() == 'option' && e.has_attribute('selected')
 }
 
 pub fn (e &Element) matches_unchecked_pseudo_class() bool {
-	return !e.matches_checked_pseudo_class()
+	if !e.is_html_element() {
+		return false
+	}
+	if e.local_name() == 'input' {
+		type_ := to_ascii_lowercase(e.get_attribute_value('type'))
+		return type_ in ['checkbox', 'radio'] && !e.has_attribute('checked')
+	}
+	return e.local_name() == 'option' && !e.has_attribute('selected')
 }
 
 pub fn (e &Element) matches_placeholder_shown_pseudo_class() bool {
+	if !e.is_html_element() || !e.has_attribute('placeholder') {
+		return false
+	}
+	if e.local_name() == 'input' {
+		return e.get_attribute_value('value').len == 0
+	}
+	if e.local_name() == 'textarea' {
+		return (e.as_node().text_content() or { '' }).len == 0
+	}
 	return false
 }
 
@@ -3444,7 +3941,20 @@ pub fn (e &Element) matches_link_pseudo_class() bool {
 }
 
 pub fn (e &Element) matches_local_link_pseudo_class() bool {
-	return false
+	if !e.matches_link_pseudo_class() {
+		return false
+	}
+	href := e.get_attribute('href') or { return false }
+	target_url := e.document().encoding_parse_url(href) or { return false }
+	document_url := e.document().url
+	if target_url.fragment() != none {
+		return target_url == document_url
+	}
+	mut target_without_fragment := target_url
+	mut document_without_fragment := document_url
+	target_without_fragment.set_fragment(none)
+	document_without_fragment.set_fragment(none)
+	return target_without_fragment == document_without_fragment
 }
 
 pub fn (e &Element) affected_by_pseudo_class(pseudo_class PseudoClass) bool {
@@ -3464,16 +3974,32 @@ pub fn (e &Element) affected_by_pseudo_class(pseudo_class PseudoClass) bool {
 
 pub fn (e &Element) includes_properties_from_invalidation_set(set StyleInvalidationSet) bool {
 	for property in set.properties {
-		name := property.name
-		if name.len == 0 {
-			continue
+		matches := match property.type_ {
+			.id { e.id() or { '' } == property.name }
+			.class { e.has_class(property.name) }
+			.tag_name { e.local_name() == property.name }
+			.attribute { e.has_attribute(property.name) }
+			.pseudo_class { e.matches_invalidation_pseudo_class(property.pseudo_class_name) }
+			.invalidate_self, .invalidate_whole_subtree { true }
 		}
-		if e.id() or { '' } == name || e.local_name() == name || e.has_class(name)
-			|| e.has_attribute(name) {
+		if matches {
 			return true
 		}
 	}
 	return false
+}
+
+fn (e &Element) matches_invalidation_pseudo_class(name string) bool {
+	return match name {
+		'enabled' { e.matches_enabled_pseudo_class() }
+		'disabled' { e.matches_disabled_pseudo_class() }
+		'defined' { e.is_defined() }
+		'placeholder-shown' { e.matches_placeholder_shown_pseudo_class() }
+		'checked' { e.matches_checked_pseudo_class() }
+		'link', 'any-link' { e.matches_link_pseudo_class() }
+		'local-link' { e.matches_local_link_pseudo_class() }
+		else { false }
+	}
 }
 
 // --- Invalidation flags ---
@@ -3936,31 +4462,110 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 }
 
 fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string, old_value ?string, new_value ?string) {
-	_ = attribute_name
-	_ = old_value
-	_ = new_value
-	e.set_needs_style_update(true)
+	mut node := unsafe { &Node(&e) }
+	style_computer := e.document().style_computer()
+	if style_computer.invalidation_plan_callback == unsafe { nil } {
+		// A DOM-only consumer has no CSS rule cache to produce an invalidation plan. Conservatively
+		// invalidate the subtree so selector and inheritance changes remain correct.
+		node.invalidate_style(.element_attribute_change)
+		return
+	}
+
+	mut changed_properties := []InvalidationProperty{}
+	mut options := StyleInvalidationOptions{
+		invalidate_self: attribute_name == 'style' || e.style_uses_attr_css_function
+	}
+	if attribute_name == 'class' {
+		old_classes := old_value or { '' }.fields()
+		new_classes := new_value or { '' }.fields()
+		for old_class in old_classes {
+			if old_class !in new_classes {
+				changed_properties << InvalidationProperty{
+					type_: .class
+					name:  old_class
+				}
+			}
+		}
+		for new_class in new_classes {
+			if new_class !in old_classes {
+				changed_properties << InvalidationProperty{
+					type_: .class
+					name:  new_class
+				}
+			}
+		}
+	} else if attribute_name == 'id' {
+		if old_id := old_value {
+			changed_properties << InvalidationProperty{
+				type_: .id
+				name:  old_id
+			}
+		}
+		if new_id := new_value {
+			changed_properties << InvalidationProperty{
+				type_: .id
+				name:  new_id
+			}
+		}
+	} else {
+		pseudo_classes := match attribute_name {
+			'disabled' { ['disabled', 'enabled'] }
+			'placeholder' { ['placeholder-shown'] }
+			'value' { ['checked'] }
+			'required' { ['required', 'optional'] }
+			else { []string{} }
+		}
+		for pseudo_class_name in pseudo_classes {
+			changed_properties << InvalidationProperty{
+				type_:             .pseudo_class
+				pseudo_class_name: pseudo_class_name
+			}
+		}
+	}
+	changed_properties << InvalidationProperty{
+		type_: .attribute
+		name:  attribute_name
+	}
+	// Presentational-hint detection belongs to the concrete HTML element subclasses. Recomputing the
+	// changed element is conservative until those subclass hooks are represented in this module.
+	options.invalidate_self = true
+	node.invalidate_style_with_properties(.element_attribute_change, changed_properties, options)
 }
 
 // --- Hidden / Accessibility ---
 
 pub fn (e &Element) is_hidden() bool {
-	if e.has_attribute('hidden') {
+	if e.as_node().unsafe_layout_node() == none {
 		return true
 	}
-	val := e.get_attribute('aria-hidden') or { return false }
-	return val == 'true'
+	if computed := e.el_computed_properties() {
+		if computed.visibility() in [.hidden, .collapse] || computed.content_visibility() == .hidden {
+			return true
+		}
+	}
+	mut self_or_ancestor := ?&Node(e.as_node())
+	for self_or_ancestor != none {
+		current := self_or_ancestor or { break }
+		if element := current.as_element() {
+			if element.get_attribute('aria-hidden') or { '' } == 'true' {
+				return true
+			}
+		}
+		self_or_ancestor = current.parent_or_shadow_host()
+	}
+	return false
 }
 
 pub fn (e &Element) has_hidden_ancestor() bool {
-	for ancestor := e.as_node().parent_or_shadow_host(); ancestor != none; {
-		current := ancestor or { break }
+	mut self_or_ancestor := ?&Node(e.as_node())
+	for self_or_ancestor != none {
+		current := self_or_ancestor or { break }
 		if element := current.as_element() {
 			if element.is_hidden() {
 				return true
 			}
 		}
-		ancestor = current.parent_or_shadow_host()
+		self_or_ancestor = current.parent_or_shadow_host()
 	}
 	return false
 }

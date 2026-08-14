@@ -28,21 +28,11 @@ pub fn computed_length_px(element &dom.Element, property_id PropertyID, author_r
 		return none
 	}
 	length := value.as_length().length()
-	if length.is_absolute() {
-		return length.absolute_length_to_px().to_double()
+	context := calc_resolution_context(element, none, author_rules).length_resolution_context
+	if length.is_absolute() || length.is_font_relative() || length.is_viewport_relative() {
+		return length.to_px(context).to_double()
 	}
-	raw := length.raw_value()
-	unit := length.unit_name()
-	if unit == 'em' {
-		return raw * computed_font_size_px(element, author_rules)
-	}
-	if unit == 'rem' {
-		return raw * root_font_size_px(element, author_rules)
-	}
-	if unit == 'ex' || unit == 'ch' {
-		return raw * computed_font_size_px(element, author_rules) * 0.5 // approximation
-	}
-	return none // FIXME: viewport units need the viewport size
+	return none
 }
 
 // Resolve a box-model length/percentage property (margin/padding/border-width/width/height/inset...) from
@@ -108,6 +98,7 @@ fn calc_resolution_context(element &dom.Element, percentage_basis_px ?f64, autho
 	mut root_font_metrics := LengthFontMetrics.default()
 	root_font_metrics.font_size = CSSPixels.nearest_value_for(root_font_size_px(element, author_rules))
 	mut length_context := LengthResolutionContext.default()
+	length_context.viewport_rect = css_pixel_rect_from_dom_rect(element.document().viewport_rect())
 	length_context.font_metrics = font_metrics
 	length_context.root_font_metrics = root_font_metrics
 	mut context := CalculationResolutionContext{

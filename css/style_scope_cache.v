@@ -61,7 +61,7 @@ pub fn RuleCache.new() &RuleCache {
 		rules_by_tag_name:            map[string][]MatchingRule{}
 		rules_by_attribute_name:      map[string][]MatchingRule{}
 		rules_by_pseudo_element:      map[PseudoElement][]MatchingRule{}
-		rules_by_animation_keyframes: map[string]bool{}
+		rules_by_animation_keyframes: map[string]&KeyFrameSet{}
 	}
 }
 
@@ -349,10 +349,8 @@ pub fn (mut scope StyleScope) build_rule_cache() {
 	scope.selector_insights = &SelectorInsights{}
 	scope.style_invalidation_data = StyleInvalidationData.new()
 
-	if document := scope.document() {
-		if user_style_source := style_scope_user_style_source_boundary(document) {
-			scope.user_style_sheet = parse_css_stylesheet_with_parser(user_style_source, none)
-		}
+	if user_style_source := scope.user_style_source {
+		scope.user_style_sheet = parse_css_stylesheet_with_parser(user_style_source, none)
 	}
 
 	scope.build_qualified_layer_names_cache()
@@ -556,13 +554,7 @@ fn style_scope_keyframe_property_value(property CSSStyleProperty, property_id Pr
 }
 
 fn style_scope_keyframe_property_is_animatable(property_id PropertyID) bool {
-	return match property_id {
-		.border_bottom_width, .border_left_width, .border_right_width, .border_top_width,
-		.color, .font_width, .line_height, .opacity, .outline_width {
-			true
-		}
-		else { false }
-	}
+	return animation_type_from_longhand_property(property_id) != .none_
 }
 
 fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
@@ -581,28 +573,51 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 		key := int(keyframe_key.value() * animation_key_frame_key_scale_factor)
 		keyframe_style := keyframe_rule.style() or { continue }
 		mut resolved_keyframe := ResolvedKeyFrame{
-			properties: map[PropertyID]&dom.StyleValue{}
+			properties:             map[PropertyID]&dom.StyleValue{}
+			use_initial_properties: map[PropertyID]bool{}
 		}
 
 		for property in keyframe_style.properties {
 			property_id := property_id_from_string(property.name) or { continue }
 
-			if property_id == .animation_timeline {
-				// Boundary: the current V PropertyID set does not contain
-				// animation-timing-function or animation-composition yet, so the
-				// C++ easing/composite special cases cannot be represented here.
+			if property_id == .animation_timing_function {
+				property_value := style_scope_keyframe_property_value(property, property_id) or {
+					continue
+				}
+				typed := parse_css_value_logic(property_id, property_value.css_text) or { continue }
+				first := if typed is StyleValueList && typed.size() > 0 {
+					typed.value_at(0, false)
+				} else {
+					typed
+				}
+				resolved_keyframe.easing = EasingFunction.from_css_style_value(first)
+				continue
+			}
+			if property_id == .animation_composition {
+				property_value := style_scope_keyframe_property_value(property, property_id) or {
+					continue
+				}
+				resolved_keyframe.composite = match property_value.css_text.trim_space() {
+					'add' { CompositeOperation.add }
+					'accumulate' { CompositeOperation.accumulate }
+					else { CompositeOperation.replace }
+				}
 				continue
 			}
 			if !style_scope_keyframe_property_is_animatable(property_id) {
 				continue
 			}
 
-			property_value := style_scope_keyframe_property_value(property, property_id) or { continue }
+			property_value := style_scope_keyframe_property_value(property, property_id) or {
+				continue
+			}
 			// Unresolved properties will be resolved in collect_animation_into()
-			StyleComputer.for_each_property_expanding_shorthands(property_id, property_value, fn [mut animated_properties, mut resolved_keyframe] (shorthand_id PropertyID, shorthand_value &dom.StyleValue) {
-				animated_properties[shorthand_id] = true
-				resolved_keyframe.properties[shorthand_id] = unsafe { shorthand_value }
-			})
+			// V closures capture value types by value. Collect the expansion first so the
+			// mutations below update this keyframe rather than closure-local map copies.
+			for longhand in expand_property_longhands(property_id, property_value) {
+				animated_properties[longhand.id] = true
+				resolved_keyframe.properties[longhand.id] = unsafe { longhand.value }
+			}
 		}
 
 		if key !in keyframe_set.keyframes_by_key {
@@ -615,12 +630,32 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 }
 
 fn style_scope_generate_initial_and_final_keyframes(mut keyframe_set KeyFrameSet, animated_properties map[PropertyID]bool) {
-	_ = keyframe_set
-	_ = animated_properties
-	// Boundary: Animations::KeyframeEffect::generate_initial_and_final_frames()
-	// needs the animated element's computed style in the full engine. This cache
-	// builder only has the @keyframes rule, so it preserves user-specified frames
-	// and leaves synthesized 0%/100% values to the animation application path.
+	final_key := 100 * animation_key_frame_key_scale_factor
+	if 0 !in keyframe_set.keyframes_by_key {
+		keyframe_set.keyframes_by_key[0] = ResolvedKeyFrame{
+			properties:             map[PropertyID]&dom.StyleValue{}
+			use_initial_properties: map[PropertyID]bool{}
+		}
+	}
+	if final_key !in keyframe_set.keyframes_by_key {
+		keyframe_set.keyframes_by_key[final_key] = ResolvedKeyFrame{
+			properties:             map[PropertyID]&dom.StyleValue{}
+			use_initial_properties: map[PropertyID]bool{}
+		}
+	}
+
+	mut initial := keyframe_set.keyframes_by_key[0] or { ResolvedKeyFrame{} }
+	mut final := keyframe_set.keyframes_by_key[final_key] or { ResolvedKeyFrame{} }
+	for property_id, _ in animated_properties {
+		if property_id !in initial.properties {
+			initial.use_initial_properties[property_id] = true
+		}
+		if property_id !in final.properties {
+			final.use_initial_properties[property_id] = true
+		}
+	}
+	keyframe_set.keyframes_by_key[0] = initial
+	keyframe_set.keyframes_by_key[final_key] = final
 }
 
 fn style_scope_add_keyframes_rule_to_cache(mut rule_cache RuleCache, rule &CSSRule) {
@@ -628,12 +663,7 @@ fn style_scope_add_keyframes_rule_to_cache(mut rule_cache RuleCache, rule &CSSRu
 		return
 	}
 	keyframe_set := style_scope_resolve_keyframe_set_from_rule(rule)
-	_ = keyframe_set
-	// Boundary: RuleCache::rules_by_animation_keyframes is still map[string]bool
-	// in the shared V type, while C++ stores KeyFrameSet. Mark the rule as
-	// present here; callers can switch this to the resolved set once the shared
-	// RuleCache field is widened.
-	rule_cache.rules_by_animation_keyframes[rule.keyframes_name()] = true
+	rule_cache.rules_by_animation_keyframes[rule.keyframes_name()] = keyframe_set
 }
 
 fn (mut scope StyleScope) rule_caches_for_origin_mut(cascade_origin CascadeOrigin) ?&RuleCaches {
@@ -925,21 +955,25 @@ fn style_scope_set_needs_invalidation_of_elements_affected_by_has(document &dom.
 	mutable_document.needs_invalidation_of_elements_affected_by_has = true
 }
 
-fn style_scope_user_style_source_boundary(document &dom.Document) ?string {
-	_ = document
-	// Boundary for C++ document().page().user_style(). The V Page/UserStyle
-	// plumbing is not connected to css.StyleScope yet.
-	return none
-}
-
 fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callback fn (&CSSStyleSheet)) {
-	// C++ StyleScope::for_each_active_css_style_sheet() calls Document/ShadowRoot::for_each_active_css_style_sheet().
-	// The DOM stores dom-local CSSStyleSheet placeholders, so the real css.CSSStyleSheet objects live in the
-	// author-stylesheet holder bridged onto the document (css_author_style_sheets_for). Iterate those.
-	// FIXME: shadow-root scopes and disabled/alternate flags aren't handled yet.
+	// Concrete CSSStyleSheet objects remain CSS-owned to avoid a dom -> css
+	// dependency. Shadow scopes store theirs directly; document scopes use the
+	// document's opaque author-sheet holder.
+	if node := scope.node {
+		if node.as_shadow_root() != none {
+			for sheet in scope.author_style_sheets {
+				if !sheet.base.disabled {
+					callback(sheet)
+				}
+			}
+			return
+		}
+	}
 	document := scope.document() or { return }
-	holder := css_author_style_sheets_for(document)
-	for sheet in holder.sheets {
+	for sheet in css_author_style_sheets_for(document).sheets {
+		if sheet.base.disabled {
+			continue
+		}
 		callback(sheet)
 	}
 }
@@ -1098,7 +1132,7 @@ fn style_scope_merge_attempted_pseudo_class_matches(mut attempted PseudoClassBit
 }
 
 fn style_scope_add_slotted_rules_for_available_scopes(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, qualified_layer_name ?string, scope &StyleScope, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []MatchingRule) {
-	_ = qualified_layer_name
+	_ = scope
 	// Walk up the slot chain for nested slots. An element can be assigned to a
 	// slot which is itself assigned to another slot in a parent shadow root. The
 	// ::slotted() pseudo-element matches elements assigned "after flattening", so
@@ -1107,19 +1141,25 @@ fn style_scope_add_slotted_rules_for_available_scopes(style_computer &StyleCompu
 	for {
 		current_slot := slot or { break }
 		slot_shadow_root := style_scope_slot_node(current_slot).root().as_shadow_root()
-		if style_scope_shadow_root_matches_current_scope(scope, slot_shadow_root) {
-			if rule_cache := scope.rule_cache_for_cascade_origin(cascade_origin,
-				qualified_layer_name)
-			{
-				style_scope_add_rules_to_run(style_computer, abstract_element,
-					rule_cache.slotted_rules, shadow_root, element_shadow_root, mut rules_to_run)
-			}
+		if rule_cache := style_computer.rule_cache_for_cascade_origin(cascade_origin,
+			qualified_layer_name, slot_shadow_root) {
+			style_scope_add_rules_to_run(style_computer, abstract_element,
+				rule_cache.slotted_rules, shadow_root, element_shadow_root, mut rules_to_run)
 		}
 		slot = style_scope_slot_node(current_slot).assigned_slot_internal()
 	}
 }
 
+fn style_scope_add_part_rules_from_scope(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, qualified_layer_name ?string, part_scope_shadow_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []MatchingRule) {
+	if rule_cache := style_computer.rule_cache_for_cascade_origin(cascade_origin,
+		qualified_layer_name, part_scope_shadow_root) {
+		style_scope_add_rules_to_run(style_computer, abstract_element, rule_cache.part_rules,
+			shadow_root, element_shadow_root, mut rules_to_run)
+	}
+}
+
 fn style_scope_add_part_rules_for_available_scopes(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, qualified_layer_name ?string, scope &StyleScope, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []MatchingRule) {
+	_ = scope
 	// ::part() can apply to anything in a shadow tree, that is either an element
 	// with a `part` attribute or a pseudo-element. Rules from any ancestor style
 	// scope can apply, including from the element's own shadow root (for
@@ -1131,33 +1171,15 @@ fn style_scope_add_part_rules_for_available_scopes(style_computer &StyleComputer
 		&& abstract_element.element().parts.len == 0 {
 		return
 	}
-	if rule_cache := scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name) {
-		style_scope_add_rules_to_run(style_computer, abstract_element, rule_cache.part_rules,
-			shadow_root, element_shadow_root, mut rules_to_run)
-	}
+	style_scope_add_part_rules_from_scope(style_computer, abstract_element, cascade_origin,
+		qualified_layer_name, shadow_root, shadow_root, element_shadow_root, mut rules_to_run)
 	for part_shadow_root in style_scope_flat_tree_ancestor_shadow_roots(abstract_element.element().as_node()) {
-		if style_scope_shadow_root_matches_current_scope(scope, part_shadow_root) {
-			if rule_cache := scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name) {
-				style_scope_add_rules_to_run(style_computer, abstract_element, rule_cache.part_rules,
-					shadow_root, element_shadow_root, mut rules_to_run)
-			}
-		}
+		style_scope_add_part_rules_from_scope(style_computer, abstract_element, cascade_origin,
+			qualified_layer_name, part_shadow_root, shadow_root, element_shadow_root, mut
+			rules_to_run)
 	}
-	// Boundary: C++ then also checks ancestor shadow-root style scopes and the
-	// document style scope through StyleComputer::rule_cache_for_cascade_origin().
-	// The V DOM currently exposes DOM-local StyleScope placeholders rather than
-	// css.StyleScope, so this in-scope helper can only add caches reachable from
-	// the StyleScope passed by the caller.
-}
-
-fn style_scope_shadow_root_matches_current_scope(scope &StyleScope, shadow_root ?&dom.ShadowRoot) bool {
-	// Local fallback for obtaining shadow_root->style_scope(). If this StyleScope
-	// was constructed with the same shadow root node, the current scope is
-	// usable; otherwise DOM's StyleScope placeholder is not the css one.
-	root := shadow_root or { return false }
-	node := scope.node or { return false }
-	scope_root := node.as_shadow_root() or { return false }
-	return scope_root == root
+	style_scope_add_part_rules_from_scope(style_computer, abstract_element, cascade_origin,
+		qualified_layer_name, none, shadow_root, element_shadow_root, mut rules_to_run)
 }
 
 fn style_scope_flat_tree_ancestor_shadow_roots(node &dom.Node) []&dom.ShadowRoot {
@@ -1289,15 +1311,9 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 }
 
 pub fn style_computer_collect_matching_rules_without_scope_boundary(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []MatchingRule {
-	_ = style_computer
-	_ = abstract_element
-	_ = cascade_origin
-	_ = attempted_pseudo_class_matches
-	_ = qualified_layer_name
-	// Boundary for C++ StyleComputer::rule_cache_for_cascade_origin() fetching
-	// document().style_scope() or shadow_root->style_scope(). DOM currently has
-	// a DOM-local StyleScope placeholder, not css.StyleScope.
-	return []MatchingRule{}
+	scope := css_style_scope_for(abstract_element)
+	return style_computer_collect_matching_rules_in_scope(style_computer, abstract_element,
+		cascade_origin, mut attempted_pseudo_class_matches, qualified_layer_name, scope)
 }
 
 fn matching_rule_less_than(left MatchingRule, right MatchingRule) bool {
@@ -1363,7 +1379,8 @@ pub fn style_computer_build_matching_rule_set_impl(style_computer &StyleComputer
 		}
 		unsafe {
 			*did_match_any_pseudo_element_rules = author_rules_has_any_rules
-				|| matching_rule_set.user_rules.len != 0 || matching_rule_set.user_agent_rules.len != 0
+				|| matching_rule_set.user_rules.len != 0
+				|| matching_rule_set.user_agent_rules.len != 0
 		}
 	}
 
@@ -1419,11 +1436,13 @@ pub fn style_computer_invalidation_property_used_in_has_selector_impl(property I
 }
 
 pub fn style_computer_rule_cache_for_cascade_origin_without_scope_boundary(style_computer &StyleComputer, cascade_origin CascadeOrigin, qualified_layer_name ?string, shadow_root ?&dom.ShadowRoot) ?&RuleCache {
-	_ = style_computer
-	_ = cascade_origin
-	_ = qualified_layer_name
-	_ = shadow_root
-	// Boundary for C++ StyleComputer::rule_cache_for_cascade_origin(). The missing
-	// dependency is the css.StyleScope reachable from DOM::Document/ShadowRoot.
-	return none
+	if root := shadow_root {
+		scope := css_style_scope_for_shadow_root(root)
+		return scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name)
+	}
+	if style_computer.document_ == unsafe { nil } {
+		return none
+	}
+	scope := css_style_scope_for_document(style_computer.document_)
+	return scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name)
 }
