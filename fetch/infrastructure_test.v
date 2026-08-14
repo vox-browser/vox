@@ -39,11 +39,19 @@ fn test_bad_port() {
 	assert is_bad_port(10080) == true
 	assert is_bad_port(80) == false
 	assert is_bad_port(8080) == false
-	// block-bad-port only blocks HTTP(S) URLs on bad ports.
-	assert block_bad_port(dom.URL{ value: 'http://example.com:22/' }) == .blocked
-	assert block_bad_port(dom.URL{ value: 'http://example.com:8080/' }) == .allowed
+	// block-bad-port reads the request's current URL; only HTTP(S) on a bad port is blocked.
+	assert block_bad_port(request_for('http://example.com:22/')) == .blocked
+	assert block_bad_port(request_for('http://example.com:8080/')) == .allowed
 	// Non-HTTP schemes are not blocked even on a bad port.
-	assert block_bad_port(dom.URL{ value: 'ftp://example.com:22/' }) == .allowed
+	assert block_bad_port(request_for('ftp://example.com:22/')) == .allowed
+}
+
+fn request_for(url string) &Request {
+	mut request := Request.create()
+	request.url_list << dom.URL{
+		value: url
+	}
+	return request
 }
 
 fn test_process_data_url_plain() {

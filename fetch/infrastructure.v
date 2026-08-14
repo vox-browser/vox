@@ -6,8 +6,8 @@
 // - URL scheme predicates and process_data_url (URL.cpp)
 // - HTTP status classification (HTTP/Statuses.cpp)
 // - bad-port blocking (PortBlocking.cpp)
-// These depend only on dom.URL, the mimesniff MimeType record, and base64. Functions that in C++
-// take a fetch Request are adapted to take the dom.URL directly (Request is not translated).
+// These depend only on dom.URL, the mimesniff MimeType record, base64, and the Request record
+// (requests.v). block_bad_port takes a Request and reads its current URL, per the spec.
 module fetch
 
 import dom
@@ -80,8 +80,9 @@ pub fn is_bad_port(port u16) bool {
 }
 
 // https://fetch.spec.whatwg.org/#block-bad-port
-// C++ takes a fetch Request; adapted to take the request's current URL directly.
-pub fn block_bad_port(url dom.URL) RequestOrResponseBlocking {
+pub fn block_bad_port(request &Request) RequestOrResponseBlocking {
+	// 1. Let url be request's current URL.
+	url := request.current_url()
 	// 2. If url's scheme is HTTP(S) and url's port is a bad port, return blocked.
 	if is_http_or_https_scheme(url.scheme()) {
 		if port := url.port() {
