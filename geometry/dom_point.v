@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of the self-contained core of Libraries/LibWeb/Geometry/DOMPointReadOnly.cpp and
-// DOMPoint.cpp — a 4-D point (x, y, z, w) with a read-only base and a mutable subclass. The
-// matrixTransform() method needs DOMMatrix (not yet translated) and the (de)serialization steps need
-// HTML StructuredSerialize (the JS runtime); both are out of scope. V has no default arguments, so the
+// DOMPoint.cpp — a 4-D point (x, y, z, w) with a read-only base and a mutable subclass. matrixTransform()
+// is implemented (via DOMMatrixReadOnly.transform_point); the (de)serialization steps need HTML
+// StructuredSerialize (the JS runtime) and are out of scope. V has no default arguments, so the
 // IDL coordinate defaults (x=0, y=0, z=0, w=1) live on the DOMPointInit dictionary used by fromPoint,
 // and the constructors take explicit coordinates (as the port's other geometry records do).
 // https://drafts.fxtf.org/geometry/#dompointreadonly
@@ -65,6 +65,14 @@ pub fn (point &DOMPointReadOnly) z() f64 {
 
 pub fn (point &DOMPointReadOnly) w() f64 {
 	return point.w_
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dompointreadonly-matrixtransform — create a matrix from the
+// dictionary and return this point transformed by it. This point is not modified. (Inherited by
+// DOMPoint via embedding.)
+pub fn (point &DOMPointReadOnly) matrix_transform(mut matrix DOMMatrixInit) !&DOMPoint {
+	matrix_object := DOMMatrixReadOnly.create_from_dom_matrix_init(mut matrix)!
+	return matrix_object.transform_point(point)
 }
 
 // https://drafts.fxtf.org/geometry/#dompoint — DOMPoint : DOMPointReadOnly, adding writable coordinates.

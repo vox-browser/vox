@@ -6,10 +6,14 @@
 // — the DOMMatrix2DInit/DOMMatrixInit dictionaries, their validate-and-fixup algorithms, the 2D/3D and
 // number-sequence constructors, the m11..m44 / a..f accessors, is2D and isIdentity.
 //
-// OUT OF SCOPE (a follow-up turn): the transformation methods (translate/scale/rotate/skew/multiply/
-// flipX/flipY/inverse/transformPoint) and toFloat32Array/toString all need 4x4 matrix math (Gfx's
-// DoubleMatrix4x4); the DOMString constructor variant needs CSS transform-list parsing; the mutable
-// DOMMatrix subclass and the (de)serialization steps (HTML StructuredSerialize) are also deferred.
+// transformPoint is also implemented here (it only needs a matrix-times-vector product, not the full
+// 4x4 machinery), which in turn backs DOMPointReadOnly.matrix_transform in dom_point.v.
+//
+// OUT OF SCOPE (a follow-up turn): the transformation methods that return a new matrix (translate/
+// scale/rotate/skew/multiply/flipX/flipY/inverse) and toFloat32Array/toString need full 4x4 matrix
+// math (Gfx's DoubleMatrix4x4) and the mutable DOMMatrix subclass; the DOMString constructor variant
+// needs CSS transform-list parsing; the (de)serialization steps (HTML StructuredSerialize) are also
+// deferred.
 //
 // The 4x4 elements are stored directly in the spec's column-major m<column><row> naming; since no
 // matrix arithmetic happens here, the storage layout is just the 16 named components.
@@ -278,6 +282,29 @@ pub fn (matrix &DOMMatrixReadOnly) is_identity() bool {
 		return false
 	}
 	return matrix.m11_ == 1.0 && matrix.m22_ == 1.0 && matrix.m33_ == 1.0 && matrix.m44_ == 1.0
+}
+
+// --- transform a point (https://drafts.fxtf.org/geometry/#transform-a-point-with-a-matrix) ---
+
+// Multiply the matrix by the column vector (x, y, z, w) and return the resulting DOMPoint. With the
+// spec's column-major storage this is result[row] = sum over columns of m<column><row> * vector.
+fn (matrix &DOMMatrixReadOnly) transform_coordinates(x f64, y f64, z f64, w f64) &DOMPoint {
+	return DOMPoint.construct(matrix.m11_ * x + matrix.m21_ * y + matrix.m31_ * z + matrix.m41_ * w,
+		matrix.m12_ * x + matrix.m22_ * y + matrix.m32_ * z + matrix.m42_ * w,
+		matrix.m13_ * x + matrix.m23_ * y + matrix.m33_ * z + matrix.m43_ * w,
+		matrix.m14_ * x + matrix.m24_ * y + matrix.m34_ * z + matrix.m44_ * w)
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-transformpoint — transform an existing point.
+// The passed point is not modified.
+pub fn (matrix &DOMMatrixReadOnly) transform_point(point &DOMPointReadOnly) &DOMPoint {
+	return matrix.transform_coordinates(point.x(), point.y(), point.z(), point.w())
+}
+
+// The transformPoint(DOMPointInit) overload: create a point from the dictionary, then transform it.
+// Reading the init's members directly is equivalent (DOMPoint.from_point just copies them).
+pub fn (matrix &DOMMatrixReadOnly) transform_point_from_init(point DOMPointInit) &DOMPoint {
+	return matrix.transform_coordinates(point.x, point.y, point.z, point.w)
 }
 
 // --- validate and fixup (https://drafts.fxtf.org/geometry/#validate-and-fixup-2d) ---

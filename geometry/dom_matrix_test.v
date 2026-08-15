@@ -108,6 +108,45 @@ fn test_create_from_init_is2d_true_with_3d_member_errors() {
 	}
 }
 
+fn test_transform_point_identity() {
+	matrix := DOMMatrixReadOnly.create()
+	point := DOMPointReadOnly.construct(3.0, 4.0, 5.0, 1.0)
+	result := matrix.transform_point(point)
+	assert result.x() == 3.0 && result.y() == 4.0 && result.z() == 5.0 && result.w() == 1.0
+}
+
+fn test_transform_point_translation() {
+	// A 3D translation (tx=10, ty=20, tz=30) via a 16-element sequence.
+	matrix := DOMMatrixReadOnly.construct([1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+		10.0, 20.0, 30.0, 1.0]) or { panic('${err}') }
+	point := DOMPointReadOnly.construct(1.0, 2.0, 3.0, 1.0)
+	result := matrix.transform_point(point)
+	assert result.x() == 11.0 && result.y() == 22.0 && result.z() == 33.0 && result.w() == 1.0
+}
+
+fn test_transform_point_scale_and_translate_2d() {
+	// a=2, d=3 (scale), e=5, f=7 (translate).
+	mut init := DOMMatrix2DInit{
+		a: 2.0
+		d: 3.0
+		e: 5.0
+		f: 7.0
+	}
+	matrix := DOMMatrixReadOnly.create_from_dom_matrix_2d_init(mut init) or { panic('${err}') }
+	result := matrix.transform_point_from_init(DOMPointInit{ x: 1.0, y: 1.0 })
+	assert result.x() == 7.0 // 2*1 + 5
+	assert result.y() == 10.0 // 3*1 + 7
+	assert result.z() == 0.0
+	assert result.w() == 1.0
+}
+
+fn test_transform_point_from_init_uses_defaults() {
+	// An empty DOMPointInit is (0, 0, 0, 1); the identity leaves it unchanged.
+	matrix := DOMMatrixReadOnly.create()
+	result := matrix.transform_point_from_init(DOMPointInit{})
+	assert result.x() == 0.0 && result.y() == 0.0 && result.z() == 0.0 && result.w() == 1.0
+}
+
 fn test_from_matrix_matches_create_from_init() {
 	mut init := DOMMatrixInit{
 		DOMMatrix2DInit: DOMMatrix2DInit{

@@ -66,3 +66,27 @@ fn test_dompoint_from_point() {
 	assert point.z() == 2.5
 	assert point.w() == 1.0
 }
+
+fn test_matrix_transform_translation() {
+	// matrixTransform builds a matrix from the init and applies it. A 2D translation (e=5, f=7).
+	point := DOMPointReadOnly.construct(1.0, 2.0, 0.0, 1.0)
+	mut matrix := DOMMatrixInit{
+		DOMMatrix2DInit: DOMMatrix2DInit{
+			e: 5.0
+			f: 7.0
+		}
+	}
+	result := point.matrix_transform(mut matrix) or { panic('${err}') }
+	assert result.x() == 6.0 // 1 + 5
+	assert result.y() == 9.0 // 2 + 7
+	// The original point is not modified.
+	assert point.x() == 1.0 && point.y() == 2.0
+}
+
+fn test_matrix_transform_inherited_by_dompoint() {
+	// DOMPoint inherits matrixTransform from DOMPointReadOnly via embedding.
+	point := DOMPoint.construct(2.0, 3.0, 0.0, 1.0)
+	mut identity := DOMMatrixInit{}
+	result := point.matrix_transform(mut identity) or { panic('${err}') }
+	assert result.x() == 2.0 && result.y() == 3.0
+}
