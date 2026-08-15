@@ -1,5 +1,6 @@
 module main
 
+import color
 import css
 import dom
 import domurl
@@ -23,6 +24,7 @@ import url
 import webvtt
 
 fn main() {
+	_ = color.from_named_css_color_string
 	_ = css.StyleInvalidationReason.dom_mutation
 	_ = dom.NodeType.invalid
 	_ = domurl.url_encode
