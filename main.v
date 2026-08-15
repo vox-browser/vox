@@ -13,6 +13,7 @@ import layout
 import mimesniff
 import namespace_
 import http
+import referrerpolicy
 import selection
 import sri
 import webvtt
@@ -29,6 +30,7 @@ fn main() {
 	_ = geometry.DOMPoint.construct
 	_ = html.event_load
 	_ = http.HeaderList.create
+	_ = referrerpolicy.from_string
 	_ = infra.ascii_whitespace
 	_ = layout.translated_layout_function_count
 	_ = layout.AvailableSize.make_indefinite()
