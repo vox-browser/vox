@@ -3,6 +3,7 @@ module main
 import css
 import dom
 import domurl
+import encoding
 import fetch
 import fileapi
 import html
@@ -19,6 +20,7 @@ fn main() {
 	_ = css.StyleInvalidationReason.dom_mutation
 	_ = dom.NodeType.invalid
 	_ = domurl.url_encode
+	_ = encoding.TextEncoder.create
 	_ = fetch.is_ok_status
 	_ = fileapi.Blob.create
 	_ = fileapi.File.construct
