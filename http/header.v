@@ -55,3 +55,35 @@ pub fn is_header_value(header_value string) bool {
 pub fn normalize_header_value(potential_value string) string {
 	return potential_value.trim('\n\r\t ')
 }
+
+// The forbidden request header names (compared ASCII case-insensitively; stored lowercased).
+const forbidden_request_header_names = ['accept-charset', 'accept-encoding',
+	'access-control-request-headers', 'access-control-request-method', 'connection', 'content-length',
+	'cookie', 'cookie2', 'date', 'dnt', 'expect', 'host', 'keep-alive', 'origin', 'referer',
+	'set-cookie', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'via']
+
+// The method-override header names, whose value can name a forbidden method.
+const method_override_header_names = ['x-http-method', 'x-http-method-override', 'x-method-override']
+
+// https://fetch.spec.whatwg.org/#forbidden-request-header
+pub fn is_forbidden_request_header(header Header) bool {
+	lowercased_name := ascii_lowercase(header.name)
+	// 1. A byte-case-insensitive match for one of the forbidden request header names.
+	if lowercased_name in forbidden_request_header_names {
+		return true
+	}
+	// 2. A name that, byte-lowercased, starts with `proxy-` or `sec-`.
+	if lowercased_name.starts_with('proxy-') || lowercased_name.starts_with('sec-') {
+		return true
+	}
+	// 3. A method-override header whose value, when got/decoded/split, names a forbidden method.
+	if lowercased_name in method_override_header_names {
+		for method in get_decode_and_split_header_value(header.value) {
+			if is_forbidden_method(method) {
+				return true
+			}
+		}
+	}
+	// 4. Otherwise it is not forbidden.
+	return false
+}

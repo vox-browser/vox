@@ -44,3 +44,38 @@ fn test_normalize_header_value() {
 	// Internal whitespace is preserved.
 	assert normalize_header_value('  a b  ') == 'a b'
 }
+
+fn test_forbidden_request_header_by_name() {
+	// Matched case-insensitively against the forbidden request header names.
+	assert is_forbidden_request_header(Header{ name: 'Host', value: 'example.com' })
+	assert is_forbidden_request_header(Header{ name: 'HOST', value: 'x' })
+	assert is_forbidden_request_header(Header{ name: 'accept-encoding', value: 'gzip' })
+	assert is_forbidden_request_header(Header{ name: 'Content-Length', value: '5' })
+	assert is_forbidden_request_header(Header{ name: 'Cookie', value: 'a=b' })
+}
+
+fn test_forbidden_request_header_by_prefix() {
+	assert is_forbidden_request_header(Header{ name: 'Proxy-Authorization', value: 'x' })
+	assert is_forbidden_request_header(Header{ name: 'Sec-Fetch-Mode', value: 'cors' })
+	assert is_forbidden_request_header(Header{ name: 'proxy-anything', value: 'x' })
+	assert is_forbidden_request_header(Header{ name: 'SEC-anything', value: 'x' })
+}
+
+fn test_not_forbidden_request_header() {
+	assert !is_forbidden_request_header(Header{ name: 'Content-Type', value: 'text/html' })
+	assert !is_forbidden_request_header(Header{ name: 'X-Custom', value: 'x' })
+	// "Accept" is not forbidden even though "Accept-Charset"/"Accept-Encoding" are.
+	assert !is_forbidden_request_header(Header{ name: 'Accept', value: '*/*' })
+}
+
+fn test_forbidden_request_header_method_override() {
+	// A method-override header naming a forbidden method is forbidden.
+	assert is_forbidden_request_header(Header{ name: 'X-HTTP-Method-Override', value: 'CONNECT' })
+	assert is_forbidden_request_header(Header{ name: 'x-http-method', value: 'track' })
+	assert is_forbidden_request_header(Header{ name: 'X-Method-Override', value: 'TRACE' })
+	// A non-forbidden method is fine.
+	assert !is_forbidden_request_header(Header{ name: 'X-HTTP-Method-Override', value: 'GET' })
+	// One forbidden method among several comma-separated values still forbids it.
+	assert is_forbidden_request_header(Header{ name: 'X-HTTP-Method-Override', value: 'GET, CONNECT' })
+	assert !is_forbidden_request_header(Header{ name: 'X-HTTP-Method-Override', value: 'GET, POST' })
+}
