@@ -2791,26 +2791,56 @@ fn (style_value ShorthandStyleValue) should_serialize_coordinating_longhand(entr
 	return false
 }
 
-// The border-family shorthands (border, border-<edge>, border-block/inline[-start/end])
-// have a uniform structure: `values_` is M widths, then M styles, then M colors (M
-// edges). When every edge in each group is equal, they serialize to the short
-// `<width> <style> <color>` form (omitting initials) which re-parses; the default
-// longhand join does not. Returns none when the collapse doesn't apply.
+// Whether a border-family sub-value is at its property's initial value. Translated longhands
+// compare against their initial serialization; a nested shorthand (border-image) is initial
+// only when every one of its own longhands is.
+fn border_family_longhand_is_initial(id PropertyID, value StyleValue, mode SerializationMode) bool {
+	if computed_interpolation_is_longhand_property(id) {
+		return value.serialize(mode) == computed_interpolation_property_initial_value(id).css_text
+	}
+	if value is ShorthandStyleValue {
+		for i, sub_value in value.values_ {
+			if !border_family_longhand_is_initial(value.sub_properties_[i], sub_value, mode) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+// The border-family shorthands (border, border-<edge>, border-block/inline[-start/end]) have a
+// uniform structure: the width/style/color longhands lay out as M widths, then M styles, then M
+// colors (M edges). When every edge in each group is equal, they serialize to the short
+// `<width> <style> <color>` form (omitting initials) which re-parses; the default longhand join
+// does not. The full `border` shorthand additionally carries a trailing `border-image` longhand
+// (a nested shorthand); upstream only lets `border` serialize when that longhand is at its
+// initial value, in which case it is omitted. Returns none when the positional collapse doesn't
+// apply, and '' when a non-collapsible longhand (border-image) is non-initial — matching
+// upstream's empty serialization for that case.
 fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationMode) ?string {
 	if style_value.shorthand_ !in [PropertyID.border, .border_top, .border_right, .border_bottom,
 		.border_left, .border_block, .border_inline, .border_block_start, .border_block_end,
 		.border_inline_start, .border_inline_end] {
 		return none
 	}
-	values := style_value.values_
-	if values.len == 0 || values.len % 3 != 0 {
+	sub := style_value.sub_properties_
+	// Split the width/style/color longhands (which collapse positionally) from any nested
+	// shorthand longhand (border-image on the `border` shorthand), which must be initial.
+	mut ser := []string{}
+	mut core_sub := []PropertyID{}
+	for i, value in style_value.values_ {
+		if computed_interpolation_is_longhand_property(sub[i]) {
+			ser << value.serialize(mode)
+			core_sub << sub[i]
+		} else if !border_family_longhand_is_initial(sub[i], value, mode) {
+			return ''
+		}
+	}
+	if ser.len == 0 || ser.len % 3 != 0 {
 		return none
 	}
-	m := values.len / 3
-	mut ser := []string{cap: values.len}
-	for value in values {
-		ser << value.serialize(mode)
-	}
+	m := ser.len / 3
 	// Every edge within each of the 3 groups (width/style/color) must be identical.
 	for group in 0 .. 3 {
 		for edge in 1 .. m {
@@ -2819,15 +2849,14 @@ fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationM
 			}
 		}
 	}
-	sub := style_value.sub_properties_
 	mut parts := []string{}
-	if ser[0] != computed_interpolation_property_initial_value(sub[0]).css_text {
+	if ser[0] != computed_interpolation_property_initial_value(core_sub[0]).css_text {
 		parts << ser[0]
 	}
-	if ser[m] != computed_interpolation_property_initial_value(sub[m]).css_text {
+	if ser[m] != computed_interpolation_property_initial_value(core_sub[m]).css_text {
 		parts << ser[m]
 	}
-	if ser[2 * m] != computed_interpolation_property_initial_value(sub[2 * m]).css_text {
+	if ser[2 * m] != computed_interpolation_property_initial_value(core_sub[2 * m]).css_text {
 		parts << ser[2 * m]
 	}
 	if parts.len == 0 {
