@@ -22,6 +22,7 @@ fn main() {
 	_ = fetch.is_ok_status
 	_ = fileapi.Blob.create
 	_ = fileapi.File.construct
+	_ = fileapi.FileList.create
 	_ = html.event_load
 	_ = http.HeaderList.create
 	_ = infra.ascii_whitespace
