@@ -8,6 +8,7 @@
 // header list, the mimesniff MimeType record, and the request/response records.
 module fetch
 
+import encoding
 import http
 import mimesniff
 
@@ -53,6 +54,22 @@ pub fn extract_mime_type(headers &http.HeaderList) ?mimesniff.MimeType {
 	}
 	// 7-8. Return mimeType (none if never set).
 	return mime_type
+}
+
+// https://html.spec.whatwg.org/multipage/urls-and-fetching.html#legacy-extract-an-encoding
+// (Fetch/Infrastructure/HTTP/MIME.cpp legacy_extract_an_encoding) — the encoding named by the MIME
+// type's charset parameter, resolved through the Encoding label table, or fallbackEncoding when the
+// MIME type is failure, has no charset parameter, or names an unrecognized encoding.
+pub fn legacy_extract_an_encoding(mime_type ?mimesniff.MimeType, fallback_encoding string) string {
+	// 1. If mimeType is failure, return fallbackEncoding.
+	mt := mime_type or { return fallback_encoding }
+	// 2. If mimeType["charset"] does not exist, return fallbackEncoding.
+	parameters := mt.parameters()
+	charset := parameters['charset'] or { return fallback_encoding }
+	// 3-4. Get an encoding from the charset; failure returns fallbackEncoding.
+	tentative_encoding := encoding.get_an_encoding(charset) or { return fallback_encoding }
+	// 5. Return tentativeEncoding.
+	return tentative_encoding
 }
 
 // https://fetch.spec.whatwg.org/#determine-nosniff
