@@ -180,3 +180,64 @@ pub fn parse_ipv6_address(input string) ?[]u16 {
 	// 9. Return the address.
 	return address
 }
+
+// https://url.spec.whatwg.org/#find-the-ipv6-address-compressed-piece-index — the start of the longest
+// run (of length > 1) of zero pieces, or none.
+fn find_the_ipv6_address_compressed_piece_index(address []u16) ?int {
+	mut longest_index := ?int(none)
+	mut longest_size := 1
+	mut found_index := ?int(none)
+	mut found_size := 0
+	for piece_index in 0 .. 8 {
+		if address[piece_index] != 0 {
+			if found_size > longest_size {
+				longest_index = found_index
+				longest_size = found_size
+			}
+			found_index = none
+			found_size = 0
+		} else {
+			if found_index == none {
+				found_index = piece_index
+			}
+			found_size++
+		}
+	}
+	if found_size > longest_size {
+		return found_index
+	}
+	return longest_index
+}
+
+// https://url.spec.whatwg.org/#concept-ipv6-serializer — the canonical text form (longest zero run
+// compressed to "::", pieces as shortest lowercase hex). An embedded IPv4 tail is serialized as hex
+// pieces, not a dotted quad, matching the spec.
+pub fn serialize_ipv6_address(address []u16) string {
+	compress := find_the_ipv6_address_compressed_piece_index(address)
+	mut ignore0 := false
+	mut output := ''
+	for piece_index in 0 .. 8 {
+		// 1. Skip the zeros inside the compressed run.
+		if ignore0 && address[piece_index] == 0 {
+			continue
+		}
+		// 2. The compressed run has ended.
+		if ignore0 {
+			ignore0 = false
+		}
+		// 3. Open the compression here.
+		if compressed := compress {
+			if compressed == piece_index {
+				output += if piece_index == 0 { '::' } else { ':' }
+				ignore0 = true
+				continue
+			}
+		}
+		// 4-5. The piece as shortest lowercase hex, then a ':' unless it is the last.
+		output += '${address[piece_index]:x}'
+		if piece_index != 7 {
+			output += ':'
+		}
+	}
+	return output
+}

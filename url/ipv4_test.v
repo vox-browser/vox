@@ -56,3 +56,20 @@ fn test_parse_ipv4_address_failures() {
 	assert parse_ipv4_address('a.b.c.d') == none // non-numeric parts
 	assert parse_ipv4_address('') == none
 }
+
+fn test_serialize_ipv4_address() {
+	assert serialize_ipv4_address(0) == '0.0.0.0'
+	assert serialize_ipv4_address(u32(2130706433)) == '127.0.0.1'
+	assert serialize_ipv4_address(u32(3232235521)) == '192.168.0.1'
+	assert serialize_ipv4_address(u32(4294967295)) == '255.255.255.255'
+	assert serialize_ipv4_address(u32(0x01020304)) == '1.2.3.4'
+}
+
+fn test_ipv4_round_trips() {
+	// The shorthand forms all serialize to the canonical dotted quad.
+	for canonical in ['0.0.0.0', '192.168.0.1', '255.255.255.255', '8.8.4.4'] {
+		assert serialize_ipv4_address(parse_ipv4_address(canonical)?) == canonical
+	}
+	assert serialize_ipv4_address(parse_ipv4_address('192.168.1')?) == '192.168.0.1'
+	assert serialize_ipv4_address(parse_ipv4_address('0xC0.0xA8.0.1')?) == '192.168.0.1'
+}

@@ -99,3 +99,15 @@ pub fn parse_ipv4_address(input string) ?u32 {
 	}
 	return ipv4
 }
+
+// https://url.spec.whatwg.org/#concept-ipv4-serializer — the dotted-quad form of a 32-bit address.
+pub fn serialize_ipv4_address(address u32) string {
+	mut n := address
+	mut output := []u8{len: 4}
+	// The four bytes, most significant last: output[3-i] = n % 256, then n /= 256.
+	for i in 0 .. 4 {
+		output[3 - i] = u8(n % 256)
+		n /= 256
+	}
+	return '${output[0]}.${output[1]}.${output[2]}.${output[3]}'
+}
