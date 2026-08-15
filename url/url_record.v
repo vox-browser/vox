@@ -23,6 +23,47 @@ pub mut:
 	has_an_opaque_path bool
 }
 
+// https://url.spec.whatwg.org/#special-scheme — the schemes with special parsing rules.
+const special_schemes = ['ftp', 'file', 'http', 'https', 'ws', 'wss']
+
+pub fn is_special_scheme(scheme string) bool {
+	return scheme in special_schemes
+}
+
+// https://url.spec.whatwg.org/#default-port — the default port for a special scheme, or none.
+pub fn default_port_for_scheme(scheme string) ?u16 {
+	return match scheme {
+		'ftp' { u16(21) }
+		'http' { u16(80) }
+		'https' { u16(443) }
+		'ws' { u16(80) }
+		'wss' { u16(443) }
+		else { none }
+	}
+}
+
+// https://url.spec.whatwg.org/#is-special
+pub fn (record &URL) is_special() bool {
+	return is_special_scheme(record.scheme)
+}
+
+// The port, or the scheme's default port, or 0.
+pub fn (record &URL) port_or_default() u16 {
+	if port := record.port {
+		return port
+	}
+	return default_port_for_scheme(record.scheme) or { 0 }
+}
+
+// https://url.spec.whatwg.org/#cannot-have-a-username-password-port — true when the host is null or the
+// empty host, or the scheme is "file".
+pub fn (record &URL) cannot_have_a_username_or_password_or_port() bool {
+	if host := record.host {
+		return host.is_empty_host() || record.scheme == 'file'
+	}
+	return true
+}
+
 // https://url.spec.whatwg.org/#include-credentials — a non-empty username or password.
 pub fn (record &URL) includes_credentials() bool {
 	return record.username != '' || record.password != ''
