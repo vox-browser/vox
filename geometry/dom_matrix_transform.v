@@ -3,19 +3,27 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // The mutable DOMMatrix subclass and the matrix-returning transforms of DOMMatrixReadOnly.cpp /
-// DOMMatrix.cpp that only need a 4x4 matrix product: multiply/preMultiply, translate and flipX/flipY.
-// Each read-only transform copies the matrix and post-multiplies a transform matrix onto the copy; the
-// *_self methods mutate in place and return the matrix (for chaining).
+// DOMMatrix.cpp that build a transform matrix and post-multiply it: multiply/preMultiply, translate,
+// flipX/flipY, scale/scale3d/scaleNonUniform, and skewX/skewY. Each read-only transform copies the
+// matrix and post-multiplies a transform matrix onto the copy; the *_self methods mutate in place and
+// return the matrix (for chaining).
 //
-// STILL DEFERRED (a follow-up turn): scale/scale3d/rotate*/skew*/invert (scale carries subtle is2D and
-// transform-origin handling, rotate/skew need trig, invert needs a 4x4 inverse), toFloat32Array/
-// toString, the DOMString (CSS transform-list) constructor, and the (de)serialization steps.
+// STILL DEFERRED (a follow-up turn): the rotate family (rotate/rotateAxisAngle/rotateFromVector — the
+// general Rodrigues rotation matrix) and invert (a 4x4 inverse), toFloat32Array/toString, the DOMString
+// (CSS transform-list) constructor, and the (de)serialization steps.
 //
 // The stored components are the spec's column-major m<column><row>; to_rows() exposes the matrix as the
 // standard rows[row][col] (rows[r][c] = m<c+1><r+1>) so a point transforms as rows * vector and matrices
 // compose with the ordinary row-by-column product.
 // https://drafts.fxtf.org/geometry/#dommatrix
 module geometry
+
+import math
+
+// Degrees to radians (transform angles are given in degrees).
+fn to_radians(degrees f64) f64 {
+	return degrees * math.pi / 180.0
+}
 
 // The matrix as standard rows[row][col], where rows[r][c] = m<c+1><r+1>.
 fn (matrix &DOMMatrixReadOnly) to_rows() [4][4]f64 {
@@ -300,4 +308,104 @@ pub fn (matrix &DOMMatrixReadOnly) flip_y() &DOMMatrix {
 	mut result := DOMMatrix.create_from_dom_matrix_read_only(matrix)
 	result.apply_rows(mat4_multiply(result.to_rows(), diagonal_rows(1.0, -1.0, 1.0, 1.0)))
 	return result
+}
+
+// --- Scale ---
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrix-scaleself — post-multiply a (possibly non-uniform)
+// scale about an optional origin. scaleX defaults to 1, scaleY to scaleX, scaleZ to 1, origins to 0.
+pub fn (mut matrix DOMMatrix) scale_self(scale_x ?f64, scale_y ?f64, scale_z ?f64, origin_x ?f64, origin_y ?f64, origin_z ?f64) &DOMMatrix {
+	sx := scale_x or { 1.0 }
+	sy := scale_y or { sx }
+	sz := scale_z or { 1.0 }
+	ox := origin_x or { 0.0 }
+	oy := origin_y or { 0.0 }
+	oz := origin_z or { 0.0 }
+	// 1. Translate to the origin.
+	matrix.translate_self(ox, oy, oz)
+	// 3. Post-multiply the scale.
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), diagonal_rows(sx, sy, sz, 1.0)))
+	// 4-5. Translate back by the negated origin.
+	matrix.translate_self(-ox, -oy, -oz)
+	// 6. A z-scale other than 1 makes the matrix 3D.
+	if sz != 1.0 {
+		matrix.is_2d_ = false
+	}
+	return matrix
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrix-scale3dself — post-multiply a uniform 3D scale.
+pub fn (mut matrix DOMMatrix) scale3d_self(scale ?f64, origin_x ?f64, origin_y ?f64, origin_z ?f64) &DOMMatrix {
+	s := scale or { 1.0 }
+	ox := origin_x or { 0.0 }
+	oy := origin_y or { 0.0 }
+	oz := origin_z or { 0.0 }
+	// 1. Translate to the origin.
+	matrix.translate_self(ox, oy, oz)
+	// 2. Post-multiply the uniform scale.
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), diagonal_rows(s, s, s, 1.0)))
+	// 3. Translate back by the negated origin.
+	matrix.translate_self(-ox, -oy, -oz)
+	// 4. A scale other than 1 makes the matrix 3D.
+	if s != 1.0 {
+		matrix.is_2d_ = false
+	}
+	return matrix
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-scale
+pub fn (matrix &DOMMatrixReadOnly) scale(scale_x ?f64, scale_y ?f64, scale_z ?f64, origin_x ?f64, origin_y ?f64, origin_z ?f64) &DOMMatrix {
+	mut result := DOMMatrix.create_from_dom_matrix_read_only(matrix)
+	return result.scale_self(scale_x, scale_y, scale_z, origin_x, origin_y, origin_z)
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-scalenonuniform — scaleX/scaleY both default
+// to 1 (unlike scale, where scaleY follows scaleX).
+pub fn (matrix &DOMMatrixReadOnly) scale_non_uniform(scale_x ?f64, scale_y ?f64) &DOMMatrix {
+	mut result := DOMMatrix.create_from_dom_matrix_read_only(matrix)
+	return result.scale_self(scale_x or { 1.0 }, scale_y or { 1.0 }, 1.0, 0.0, 0.0, 0.0)
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-scale3d
+pub fn (matrix &DOMMatrixReadOnly) scale3d(scale ?f64, origin_x ?f64, origin_y ?f64, origin_z ?f64) &DOMMatrix {
+	mut result := DOMMatrix.create_from_dom_matrix_read_only(matrix)
+	return result.scale3d_self(scale, origin_x, origin_y, origin_z)
+}
+
+// --- Skew (2D shears; angles in degrees) ---
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrix-skewxself — post-multiply a skewX shear.
+pub fn (mut matrix DOMMatrix) skew_x_self(sx f64) &DOMMatrix {
+	skew := [
+		[1.0, math.tan(to_radians(sx)), 0.0, 0.0]!,
+		[0.0, 1.0, 0.0, 0.0]!,
+		[0.0, 0.0, 1.0, 0.0]!,
+		[0.0, 0.0, 0.0, 1.0]!,
+	]!
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), skew))
+	return matrix
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrix-skewyself — post-multiply a skewY shear.
+pub fn (mut matrix DOMMatrix) skew_y_self(sy f64) &DOMMatrix {
+	skew := [
+		[1.0, 0.0, 0.0, 0.0]!,
+		[math.tan(to_radians(sy)), 1.0, 0.0, 0.0]!,
+		[0.0, 0.0, 1.0, 0.0]!,
+		[0.0, 0.0, 0.0, 1.0]!,
+	]!
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), skew))
+	return matrix
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-skewx
+pub fn (matrix &DOMMatrixReadOnly) skew_x(sx f64) &DOMMatrix {
+	mut result := DOMMatrix.create_from_dom_matrix_read_only(matrix)
+	return result.skew_x_self(sx)
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-skewy
+pub fn (matrix &DOMMatrixReadOnly) skew_y(sy f64) &DOMMatrix {
+	mut result := DOMMatrix.create_from_dom_matrix_read_only(matrix)
+	return result.skew_y_self(sy)
 }

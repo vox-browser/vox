@@ -9,10 +9,10 @@
 // transformPoint is also implemented here (it only needs a matrix-times-vector product, not the full
 // 4x4 machinery), which in turn backs DOMPointReadOnly.matrix_transform in dom_point.v.
 //
-// The mutable DOMMatrix subclass and the transforms that only need a 4x4 product (multiply/translate/
-// flipX/flipY) live in dom_matrix_transform.v. STILL OUT OF SCOPE (a follow-up turn): scale/rotate/
-// skew/inverse, toFloat32Array/toString, the DOMString (CSS transform-list) constructor, and the
-// (de)serialization steps (HTML StructuredSerialize).
+// The mutable DOMMatrix subclass and the post-multiply transforms (multiply/translate/flip/scale/skew)
+// live in dom_matrix_transform.v. STILL OUT OF SCOPE (a follow-up turn): the rotate family and inverse,
+// toFloat32Array/toString, the DOMString (CSS transform-list) constructor, and the (de)serialization
+// steps (HTML StructuredSerialize).
 //
 // The 4x4 elements are stored directly in the spec's column-major m<column><row> naming; since no
 // matrix arithmetic happens here, the storage layout is just the 16 named components.
