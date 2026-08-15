@@ -6,6 +6,7 @@ import domurl
 import encoding
 import fetch
 import fileapi
+import geometry
 import html
 import infra
 import layout
@@ -25,6 +26,7 @@ fn main() {
 	_ = fileapi.Blob.create
 	_ = fileapi.File.construct
 	_ = fileapi.FileList.create
+	_ = geometry.DOMPoint.construct
 	_ = html.event_load
 	_ = http.HeaderList.create
 	_ = infra.ascii_whitespace
