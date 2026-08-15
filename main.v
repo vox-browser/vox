@@ -6,6 +6,7 @@ import domurl
 import encoding
 import fetch
 import fileapi
+import geolocation
 import geometry
 import highresolutiontime
 import html
@@ -29,6 +30,7 @@ fn main() {
 	_ = fileapi.Blob.create
 	_ = fileapi.File.construct
 	_ = fileapi.FileList.create
+	_ = geolocation.GeolocationCoordinates.create
 	_ = geometry.DOMPoint.construct
 	_ = highresolutiontime.coarsen_time
 	_ = html.event_load
