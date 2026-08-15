@@ -4,12 +4,11 @@
 
 // The mutable DOMMatrix subclass and the matrix-returning transforms of DOMMatrixReadOnly.cpp /
 // DOMMatrix.cpp that build a transform matrix and post-multiply it: multiply/preMultiply, translate,
-// flipX/flipY, scale/scale3d/scaleNonUniform, and skewX/skewY. Each read-only transform copies the
-// matrix and post-multiplies a transform matrix onto the copy; the *_self methods mutate in place and
-// return the matrix (for chaining).
+// flipX/flipY, scale/scale3d/scaleNonUniform, skewX/skewY, and the rotate family (rotate/
+// rotateAxisAngle/rotateFromVector). Each read-only transform copies the matrix and post-multiplies a
+// transform matrix onto the copy; the *_self methods mutate in place and return the matrix (for chaining).
 //
-// STILL DEFERRED (a follow-up turn): the rotate family (rotate/rotateAxisAngle/rotateFromVector — the
-// general Rodrigues rotation matrix) and invert (a 4x4 inverse), toFloat32Array/toString, the DOMString
+// STILL DEFERRED (a follow-up turn): invert (a 4x4 inverse), toFloat32Array/toString, the DOMString
 // (CSS transform-list) constructor, and the (de)serialization steps.
 //
 // The stored components are the spec's column-major m<column><row>; to_rows() exposes the matrix as the
@@ -408,4 +407,96 @@ pub fn (matrix &DOMMatrixReadOnly) skew_x(sx f64) &DOMMatrix {
 pub fn (matrix &DOMMatrixReadOnly) skew_y(sy f64) &DOMMatrix {
 	mut result := DOMMatrix.create_from_dom_matrix_read_only(matrix)
 	return result.skew_y_self(sy)
+}
+
+// --- Rotate (angles in degrees except rotateFromVector, which is intrinsically radians) ---
+
+// f64 machine epsilon (DBL_EPSILON), used to clamp near-zero cos/sin to exactly zero.
+const rotation_epsilon = 2.220446049250313e-16
+
+// The rotation matrix about the unit axis (x, y, z) by `angle` radians (Rodrigues' rotation formula,
+// matching Gfx::rotation_matrix, including clamping tiny cos/sin to 0 so e.g. a 90-degree turn is exact).
+fn rotation_rows(x f64, y f64, z f64, angle f64) [4][4]f64 {
+	mut c := math.cos(angle)
+	mut s := math.sin(angle)
+	if math.abs(c) < rotation_epsilon {
+		c = 0.0
+	}
+	if math.abs(s) < rotation_epsilon {
+		s = 0.0
+	}
+	t := 1.0 - c
+	return [
+		[t * x * x + c, t * x * y - z * s, t * x * z + y * s, 0.0]!,
+		[t * x * y + z * s, t * y * y + c, t * y * z - x * s, 0.0]!,
+		[t * x * z - y * s, t * y * z + x * s, t * z * z + c, 0.0]!,
+		[0.0, 0.0, 0.0, 1.0]!,
+	]!
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrix-rotateself — post-multiply Z, then Y, then X rotations.
+pub fn (mut matrix DOMMatrix) rotate_self(rot_x ?f64, rot_y ?f64, rot_z ?f64) &DOMMatrix {
+	// rotX has an IDL default of 0; steps 2-3 default the others to 0 as well.
+	mut rx := rot_x or { 0.0 }
+	mut ry := rot_y or { 0.0 }
+	mut rz := rot_z or { 0.0 }
+	// 1. rotate(angle): when rotY and rotZ are both missing, the first argument is the Z rotation.
+	if rot_y == none && rot_z == none {
+		rz = rx
+		rx = 0.0
+		ry = 0.0
+	}
+	// 4. An X or Y rotation makes the matrix 3D.
+	if rx != 0.0 || ry != 0.0 {
+		matrix.is_2d_ = false
+	}
+	// 5-7. Post-multiply the Z, then Y, then X rotations.
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), rotation_rows(0.0, 0.0, 1.0, to_radians(rz))))
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), rotation_rows(0.0, 1.0, 0.0, to_radians(ry))))
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), rotation_rows(1.0, 0.0, 0.0, to_radians(rx))))
+	return matrix
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrix-rotateaxisangleself — rotate about an arbitrary axis.
+pub fn (mut matrix DOMMatrix) rotate_axis_angle_self(x ?f64, y ?f64, z ?f64, angle ?f64) &DOMMatrix {
+	ax := x or { 0.0 }
+	ay := y or { 0.0 }
+	az := z or { 0.0 }
+	// 1. Post-multiply a rotation about the normalized axis by `angle` degrees.
+	length := math.sqrt(ax * ax + ay * ay + az * az)
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), rotation_rows(ax / length, ay / length,
+		az / length, to_radians(angle or { 0.0 }))))
+	// 2. An x or y axis component makes the matrix 3D.
+	if ax != 0.0 || ay != 0.0 {
+		matrix.is_2d_ = false
+	}
+	return matrix
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrix-rotatefromvectorself — rotate about Z by the angle
+// between (1, 0) and (x, y). The angle is intrinsically in radians (atan2), so it is not converted.
+pub fn (mut matrix DOMMatrix) rotate_from_vector_self(x ?f64, y ?f64) &DOMMatrix {
+	vx := x or { 0.0 }
+	vy := y or { 0.0 }
+	angle := if vx == 0.0 && vy == 0.0 { 0.0 } else { math.atan2(vy, vx) }
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), rotation_rows(0.0, 0.0, 1.0, angle)))
+	return matrix
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-rotate
+pub fn (matrix &DOMMatrixReadOnly) rotate(rot_x ?f64, rot_y ?f64, rot_z ?f64) &DOMMatrix {
+	mut result := DOMMatrix.create_from_dom_matrix_read_only(matrix)
+	return result.rotate_self(rot_x, rot_y, rot_z)
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-rotateaxisangle
+pub fn (matrix &DOMMatrixReadOnly) rotate_axis_angle(x ?f64, y ?f64, z ?f64, angle ?f64) &DOMMatrix {
+	mut result := DOMMatrix.create_from_dom_matrix_read_only(matrix)
+	return result.rotate_axis_angle_self(x, y, z, angle)
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-rotatefromvector
+pub fn (matrix &DOMMatrixReadOnly) rotate_from_vector(x ?f64, y ?f64) &DOMMatrix {
+	mut result := DOMMatrix.create_from_dom_matrix_read_only(matrix)
+	return result.rotate_from_vector_self(x, y)
 }
