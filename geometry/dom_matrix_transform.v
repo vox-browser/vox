@@ -8,8 +8,8 @@
 // rotateAxisAngle/rotateFromVector). Each read-only transform copies the matrix and post-multiplies a
 // transform matrix onto the copy; the *_self methods mutate in place and return the matrix (for chaining).
 //
-// STILL DEFERRED (a follow-up turn): invert (a 4x4 inverse), toFloat32Array/toString, the DOMString
-// (CSS transform-list) constructor, and the (de)serialization steps.
+// invert lives in dom_matrix_invert.v. STILL DEFERRED (a follow-up turn): toFloat32Array/toString, the
+// DOMString (CSS transform-list) constructor, and the (de)serialization steps.
 //
 // The stored components are the spec's column-major m<column><row>; to_rows() exposes the matrix as the
 // standard rows[row][col] (rows[r][c] = m<c+1><r+1>) so a point transforms as rows * vector and matrices
