@@ -4,6 +4,7 @@ import css
 import dom
 import domurl
 import fetch
+import fileapi
 import html
 import infra
 import layout
@@ -19,6 +20,7 @@ fn main() {
 	_ = dom.NodeType.invalid
 	_ = domurl.url_encode
 	_ = fetch.is_ok_status
+	_ = fileapi.Blob.create
 	_ = html.event_load
 	_ = http.HeaderList.create
 	_ = infra.ascii_whitespace
