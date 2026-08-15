@@ -7,6 +7,7 @@ import encoding
 import fetch
 import fileapi
 import geometry
+import highresolutiontime
 import html
 import infra
 import layout
@@ -28,6 +29,7 @@ fn main() {
 	_ = fileapi.File.construct
 	_ = fileapi.FileList.create
 	_ = geometry.DOMPoint.construct
+	_ = highresolutiontime.coarsen_time
 	_ = html.event_load
 	_ = http.HeaderList.create
 	_ = referrerpolicy.from_string
