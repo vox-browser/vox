@@ -19,6 +19,7 @@ import referrerpolicy
 import selection
 import sri
 import storageapi
+import url
 import webvtt
 
 fn main() {
@@ -44,5 +45,6 @@ fn main() {
 	_ = selection.selection_create
 	_ = sri.do_bytes_match_metadata_list
 	_ = storageapi.registered_endpoints
+	_ = url.percent_encode
 	_ = webvtt.ScrollSetting.empty
 }
