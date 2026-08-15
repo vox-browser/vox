@@ -10,8 +10,9 @@
 // 4x4 machinery), which in turn backs DOMPointReadOnly.matrix_transform in dom_point.v.
 //
 // The mutable DOMMatrix subclass and the post-multiply transforms (multiply/translate/flip/scale/skew/
-// rotate) live in dom_matrix_transform.v; the inverse is in dom_matrix_invert.v. STILL OUT OF SCOPE (a
-// follow-up turn): toFloat32Array/toString, the DOMString (CSS transform-list) constructor, and the
+// rotate) live in dom_matrix_transform.v; the inverse is in dom_matrix_invert.v. STILL OUT OF SCOPE:
+// toString (needs a faithful ECMAScript ToString(Number) — V's default float formatting diverges for
+// integers and large/small values), the DOMString (CSS transform-list) constructor, and the
 // (de)serialization steps (HTML StructuredSerialize).
 //
 // The 4x4 elements are stored directly in the spec's column-major m<column><row> naming; since no
@@ -281,6 +282,24 @@ pub fn (matrix &DOMMatrixReadOnly) is_identity() bool {
 		return false
 	}
 	return matrix.m11_ == 1.0 && matrix.m22_ == 1.0 && matrix.m33_ == 1.0 && matrix.m44_ == 1.0
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-tofloat32array — the 16 elements m11..m44 in
+// column-major order. The JS Float32Array/ArrayBuffer wrapping is binding-layer; the raw f32 sequence
+// is returned here.
+pub fn (matrix &DOMMatrixReadOnly) to_float32_array() []f32 {
+	return [f32(matrix.m11_), f32(matrix.m12_), f32(matrix.m13_), f32(matrix.m14_), f32(matrix.m21_),
+		f32(matrix.m22_), f32(matrix.m23_), f32(matrix.m24_), f32(matrix.m31_), f32(matrix.m32_),
+		f32(matrix.m33_), f32(matrix.m34_), f32(matrix.m41_), f32(matrix.m42_), f32(matrix.m43_),
+		f32(matrix.m44_)]
+}
+
+// https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-tofloat64array — the 16 elements m11..m44 in
+// column-major order as a raw f64 sequence.
+pub fn (matrix &DOMMatrixReadOnly) to_float64_array() []f64 {
+	return [matrix.m11_, matrix.m12_, matrix.m13_, matrix.m14_, matrix.m21_, matrix.m22_, matrix.m23_,
+		matrix.m24_, matrix.m31_, matrix.m32_, matrix.m33_, matrix.m34_, matrix.m41_, matrix.m42_,
+		matrix.m43_, matrix.m44_]
 }
 
 // --- transform a point (https://drafts.fxtf.org/geometry/#transform-a-point-with-a-matrix) ---
