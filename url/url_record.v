@@ -83,6 +83,55 @@ pub fn (record &URL) serialize_path() string {
 	return output
 }
 
+// The number of path segments.
+pub fn (record &URL) path_segment_count() int {
+	return record.paths.len
+}
+
+// LibURL URL::path_segment_at_index — the percent-decoded path segment at index.
+pub fn (record &URL) path_segment_at_index(index int) string {
+	return percent_decode(record.paths[index]).bytestr()
+}
+
+// LibURL URL::basename — the percent-decoded last path segment, or the empty string.
+pub fn (record &URL) basename() string {
+	if record.paths.len == 0 {
+		return ''
+	}
+	return percent_decode(record.paths[record.paths.len - 1]).bytestr()
+}
+
+// LibURL URL::equals — two URLs are equal when their serializations (with the given fragment handling)
+// are identical.
+pub fn (record &URL) equals(other &URL, exclude_fragment bool) bool {
+	return record.serialize(exclude_fragment) == other.serialize(exclude_fragment)
+}
+
+// LibURL URL::serialize_for_display — like serialize but omitting credentials and always keeping the
+// fragment; used for user-facing display.
+pub fn (record &URL) serialize_for_display() string {
+	mut output := record.scheme + ':'
+	mut has_host := false
+	if host := record.host {
+		has_host = true
+		output += '//' + host.serialize()
+		if port := record.port {
+			output += ':${port}'
+		}
+	}
+	if !record.has_an_opaque_path && !has_host && record.paths.len > 1 && record.paths[0] == '' {
+		output += '/.'
+	}
+	output += record.serialize_path()
+	if query := record.query {
+		output += '?' + query
+	}
+	if fragment := record.fragment {
+		output += '#' + fragment
+	}
+	return output
+}
+
 // https://url.spec.whatwg.org/#concept-url-serializer
 pub fn (record &URL) serialize(exclude_fragment bool) string {
 	// 1. The scheme, followed by ":".
