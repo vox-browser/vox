@@ -65,6 +65,46 @@ const forbidden_request_header_names = ['accept-charset', 'accept-encoding',
 // The method-override header names, whose value can name a forbidden method.
 const method_override_header_names = ['x-http-method', 'x-http-method-override', 'x-method-override']
 
+// https://www.rfc-editor.org/rfc/rfc9110.html#name-recipient-requirements — split a value on commas,
+// trim HTTP whitespace, drop empty parts, and require each remaining part to be a valid header name;
+// failure (none) if any non-empty part is not a header name.
+fn extract_token_headers(value string) ?[]string {
+	mut result := []string{}
+	for part in value.split(',') {
+		trimmed := part.trim('\n\r\t ')
+		if trimmed.len == 0 {
+			continue
+		}
+		if !is_header_name(trimmed) {
+			return none
+		}
+		result << trimmed
+	}
+	return result
+}
+
+// https://fetch.spec.whatwg.org/#extract-header-values — parse a header's value per the ABNF for its
+// name; failure is none. The token-list headers may parse to an empty list, the 1#field-name headers
+// require at least one token, and any other header yields a single value (the raw value).
+pub fn (header Header) extract_header_values() ?[]string {
+	lowercased_name := ascii_lowercase(header.name)
+	// #field-name / #method headers: zero or more tokens.
+	if lowercased_name in ['access-control-expose-headers', 'access-control-allow-headers',
+		'access-control-allow-methods'] {
+		return extract_token_headers(header.value)
+	}
+	// 1#field-name headers: one or more tokens (an empty list is a failure).
+	if lowercased_name in ['access-control-request-headers', 'accept-ranges'] {
+		headers := extract_token_headers(header.value) or { return none }
+		if headers.len == 0 {
+			return none
+		}
+		return headers
+	}
+	// Any other header: a single value, the raw value.
+	return [header.value]
+}
+
 // https://fetch.spec.whatwg.org/#forbidden-request-header
 pub fn is_forbidden_request_header(header Header) bool {
 	lowercased_name := ascii_lowercase(header.name)
