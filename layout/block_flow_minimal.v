@@ -50,8 +50,12 @@ pub mut:
 	width  f64
 	height f64
 pub:
-	text  string
-	color css.Color
+	text      string
+	color     css.Color
+	font_size f64 = 16.0
+	bold      bool
+	italic    bool
+	mono      bool
 	// The computed `text-decoration-line` covering this word (`none`, or a space-separated set of
 	// `underline`/`overline`/`line-through`); drawn in the fragment's color.
 	decoration string = 'none'
@@ -84,6 +88,10 @@ fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 			height:     it.height
 			text:       it.text
 			color:      it.color
+			font_size:  it.font_size
+			bold:       it.bold
+			italic:     it.italic
+			mono:       it.mono
 			decoration: it.decoration
 		})
 	}
@@ -130,6 +138,11 @@ pub mut:
 	shadow ?BoxShadow
 	// A `linear-gradient` background image, painted over the background color, or none.
 	background_gradient ?LinearGradient
+	// Root backgrounds cover the viewport canvas. A transparent HTML root may receive these values
+	// from the body background according to CSS canvas-background propagation.
+	canvas_background_color css.Color
+	canvas_width            f64
+	canvas_height           f64
 	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
 	// cumulative opacity (this box's times its ancestors').
 	opacity f64 = 1.0
@@ -513,16 +526,20 @@ fn (b &BlockBox) collect_paint_order(mut order []BlockBox, inherited_opacity f64
 // (`fill_rect`, e.g. a background) or drawn text (`draw_text`). `color` is the serialized paint color.
 pub struct PaintCommand {
 pub:
-	kind    string // 'fill_rect' | 'draw_text'
-	x       f64
-	y       f64
-	width   f64
-	height  f64
-	color   string
-	text    string // for 'draw_text'
-	opacity f64 = 1.0 // the box's cumulative opacity (this box × its ancestors')
-	radius  f64 // corner radius for a rounded 'fill_rect' (0 = square)
-	blur    f64 // Gaussian blur radius for a 'fill_rect' (0 = hard edges), used by box-shadow
+	kind      string // 'fill_rect' | 'draw_text'
+	x         f64
+	y         f64
+	width     f64
+	height    f64
+	color     string
+	text      string // for 'draw_text'
+	font_size f64 = 16.0 // for 'draw_text'
+	bold      bool
+	italic    bool
+	mono      bool
+	opacity   f64 = 1.0 // the box's cumulative opacity (this box × its ancestors')
+	radius    f64 // corner radius for a rounded 'fill_rect' (0 = square)
+	blur      f64 // Gaussian blur radius for a 'fill_rect' (0 = hard edges), used by box-shadow
 	// The gradient for a 'fill_gradient' command (a linear-gradient background).
 	gradient ?LinearGradient
 }
@@ -547,6 +564,17 @@ pub:
 // outlines/images/gradients aren't emitted.
 pub fn (b &BlockBox) paint_commands() []PaintCommand {
 	mut commands := []PaintCommand{}
+	if b.canvas_background_color.a > 0 && b.canvas_width > 0 && b.canvas_height > 0 {
+		commands << PaintCommand{
+			kind:    'fill_rect'
+			x:       0
+			y:       0
+			width:   b.canvas_width
+			height:  b.canvas_height
+			color:   b.canvas_background_color.serialize()
+			opacity: 1.0
+		}
+	}
 	for box in b.paint_order() {
 		// A `visibility: hidden` box takes up space but paints nothing (its visible descendants are
 		// separate paint-order entries and still paint).
@@ -702,14 +730,18 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 		for line in box.lines {
 			for fragment in line.fragments {
 				commands << PaintCommand{
-					kind:    'draw_text'
-					x:       fragment.x
-					y:       fragment.y
-					width:   fragment.width
-					height:  fragment.height
-					color:   fragment.color.serialize()
-					text:    fragment.text
-					opacity: opacity
+					kind:      'draw_text'
+					x:         fragment.x
+					y:         fragment.y
+					width:     fragment.width
+					height:    fragment.height
+					color:     fragment.color.serialize()
+					text:      fragment.text
+					font_size: fragment.font_size
+					bold:      fragment.bold
+					italic:    fragment.italic
+					mono:      fragment.mono
+					opacity:   opacity
 				}
 				commands << decoration_commands(fragment, opacity)
 			}
@@ -2133,6 +2165,10 @@ struct InlineWord {
 	space_after f64       // the space following this word (~0.5em of its font)
 	height      f64       // this word's line-height contribution (or an atomic box's margin-box height)
 	color       css.Color // this word's computed text color
+	font_size   f64
+	bold        bool
+	italic      bool
+	mono        bool
 	decoration  string = 'none' // this word's computed text-decoration-line
 	// For an atomic inline (an `inline-block`), the laid-out box (at margin-box origin (0,0)); the item
 	// occupies `width`×`height` on the line and is painted as its own box rather than as text.
@@ -2151,7 +2187,8 @@ fn collect_inline_segments(element &dom.Element, preserve_newlines bool, contain
 
 fn append_inline_words(element &dom.Element, preserve_newlines bool, containing_width f64, author_rules []&css.CSSRule, mut segments [][]InlineWord) {
 	display_id := css.property_id_from_string('display') or { return }
-	glyph_width := 0.5 * css.computed_font_size_px(element, author_rules)
+	font_size := css.computed_font_size_px(element, author_rules)
+	glyph_width := 0.5 * font_size
 	line_height := css.computed_line_height_px(element, author_rules)
 	color := css.computed_color(element, css.property_id_from_string('color') or { return },
 		author_rules) or { css.Color{0, 0, 0, 255} }
@@ -2168,6 +2205,19 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, containing_
 	// advance; word-spacing widens the inter-word gap.
 	letter_spacing := resolve_spacing(element, 'letter-spacing', author_rules)
 	word_spacing := resolve_spacing(element, 'word-spacing', author_rules)
+	font_weight := css.cascaded_value_with_ua(element, css.property_id_from_string('font-weight') or {
+		return
+	}, author_rules)
+	font_style := css.cascaded_value_with_ua(element, css.property_id_from_string('font-style') or {
+		return
+	}, author_rules)
+	font_family := css.cascaded_value_with_ua(element, css.property_id_from_string('font-family') or {
+		return
+	}, author_rules).to_lower()
+	weight_number := font_weight.int()
+	bold := font_weight in ['bold', 'bolder'] || weight_number >= 600
+	italic := font_style == 'italic' || font_style.starts_with('oblique')
+	mono := font_family.contains('monospace')
 	for child in element.as_node().children_as_vector() {
 		if child.is_text() {
 			data := unsafe { &dom.Text(child) }.data()
@@ -2185,6 +2235,10 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, containing_
 						space_after: glyph_width + word_spacing
 						height:      line_height
 						color:       color
+						font_size:   font_size
+						bold:        bold
+						italic:      italic
+						mono:        mono
 						decoration:  decoration
 					}
 				}
@@ -2214,6 +2268,10 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, containing_
 					space_after: glyph_width
 					height:      box.margin_box_height()
 					color:       color
+					font_size:   font_size
+					bold:        bold
+					italic:      italic
+					mono:        mono
 					box:         box
 				}
 			} else {
@@ -2372,6 +2430,10 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 						height:     segment[k].height
 						text:       segment[k].text
 						color:      segment[k].color
+						font_size:  segment[k].font_size
+						bold:       segment[k].bold
+						italic:     segment[k].italic
+						mono:       segment[k].mono
 						decoration: segment[k].decoration
 					}
 				}

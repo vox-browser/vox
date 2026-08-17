@@ -33,7 +33,6 @@ import x.json2
 const initial_width = 1024
 const initial_height = 768
 const toolbar_height = 88.0
-const page_margin = 28.0
 const status_bar_height = 24.0
 
 const demo_markup = '<!doctype html>
@@ -90,6 +89,7 @@ mut:
 	address_active        bool
 	address_select        bool
 	viewport_width        int
+	viewport_height       int
 	scroll_y              f64
 	content_height        f64
 	paint_commands        []layout.PaintCommand
@@ -584,7 +584,7 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	}
 	navigation := apply_javascript_state(app.document, result, mut app.js_messages)
 	app.js_runtime.evaluate('__ladybirdClearLogs()') or {}
-	app.relayout(app.viewport_width)
+	app.relayout(app.viewport_width, app.viewport_height + int(toolbar_height + status_bar_height))
 	if destination := navigation {
 		if destination != '' {
 			app.navigate(resolve_document_reference(destination, app.address), true)
@@ -593,16 +593,28 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	return javascript_default_prevented(result)
 }
 
-fn (mut app BrowserApp) relayout(window_width int) {
+fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	if app.document == unsafe { nil } {
 		return
 	}
-	available_width := if window_width > 360 { window_width - int(page_margin * 2.0) } else { 320 }
-	app.root_box = layout.layout_document(app.document, f64(available_width))
+	viewport_width := if window_width > 0 { window_width } else { initial_width }
+	viewport_height := if window_height > int(toolbar_height + status_bar_height) {
+		window_height - int(toolbar_height + status_bar_height)
+	} else {
+		1
+	}
+	app.root_box = layout.layout_document_in_viewport(app.document, f64(viewport_width),
+		f64(viewport_height))
 	app.paint_commands = app.root_box.paint_commands()
 	root_rect := app.root_box.border_box()
-	app.content_height = root_rect.y + root_rect.height + page_margin * 2.0
-	app.viewport_width = window_width
+	document_height := root_rect.y + root_rect.height
+	app.content_height = if document_height > f64(viewport_height) {
+		document_height
+	} else {
+		f64(viewport_height)
+	}
+	app.viewport_width = viewport_width
+	app.viewport_height = viewport_height
 	app.status = '${app.load_status} · ${app.paint_commands.len} paints · ${int(root_rect.width)}×${int(root_rect.height)} CSS px'
 }
 
@@ -634,7 +646,11 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		}
 		app.history_index = app.history.len - 1
 	}
-	app.relayout(if app.viewport_width > 0 { app.viewport_width } else { initial_width })
+	app.relayout(if app.viewport_width > 0 { app.viewport_width } else { initial_width }, if app.viewport_height > 0 {
+		app.viewport_height + int(toolbar_height + status_bar_height)
+	} else {
+		initial_height
+	})
 	title := document_title(app.document)
 	gg.set_window_title(if title != '' { '${title} — Ladybird V' } else { 'Ladybird V' })
 	if destination := javascript_navigation {
@@ -766,10 +782,13 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 			}
 		}
 		'draw_text' {
-			font_size := int(clamp(command.height * 0.78, 10.0, 42.0))
+			font_size := int(clamp(command.font_size, 1.0, 256.0) + 0.5)
 			app.ctx.draw_text(int(x), int(y), command.text,
-				color: paint_color(command.color, command.opacity)
-				size:  font_size
+				color:  paint_color(command.color, command.opacity)
+				size:   font_size
+				bold:   command.bold
+				italic: command.italic
+				mono:   command.mono
 			)
 		}
 		else {}
@@ -808,15 +827,17 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 fn (mut app BrowserApp) draw() {
 	app.poll_navigation()
 	window := gg.window_size()
-	if window.width > 0 && window.width != app.viewport_width {
-		app.relayout(window.width)
+	content_viewport_height := window.height - int(toolbar_height + status_bar_height)
+	if window.width > 0
+		&& (window.width != app.viewport_width || content_viewport_height != app.viewport_height) {
+		app.relayout(window.width, window.height)
 		app.scroll_y = clamp(app.scroll_y, 0.0, app.maximum_scroll(window.height))
 	}
 	app.ctx.begin()
-	app.ctx.draw_rect_filled(0, 0, f32(window.width), f32(window.height), gg.rgb(232, 237, 243))
-	page_y := f32(toolbar_height + page_margin)
+	app.ctx.draw_rect_filled(0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
+	page_y := f32(toolbar_height)
 	for command in app.paint_commands {
-		app.draw_command(command, f32(page_margin), page_y, window.height)
+		app.draw_command(command, 0, page_y, window.height)
 	}
 
 	// Draw chrome last so scrolled page content cannot paint over it.
@@ -866,8 +887,8 @@ fn (app &BrowserApp) element_at_window_point(mouse_x f32, mouse_y f32) ?&dom.Ele
 		|| mouse_y >= f32(gg.window_size().height) - f32(status_bar_height) {
 		return none
 	}
-	document_x := f64(mouse_x - f32(page_margin))
-	document_y := f64(mouse_y - f32(toolbar_height + page_margin)) + app.scroll_y
+	document_x := f64(mouse_x)
+	document_y := f64(mouse_y - f32(toolbar_height)) + app.scroll_y
 	root := unsafe { &dom.Node(app.document) }
 	return app.root_box.element_at_point(document_x, document_y, root)
 }
@@ -941,7 +962,7 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 			app.scroll_by(-f64(event.scroll_y) * 42.0, event.window_height)
 		}
 		.resized {
-			app.relayout(event.window_width)
+			app.relayout(event.window_width, event.window_height)
 			app.scroll_y = clamp(app.scroll_y, 0.0, app.maximum_scroll(event.window_height))
 		}
 		.mouse_move {

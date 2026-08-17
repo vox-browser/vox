@@ -2175,7 +2175,11 @@ pub fn (d &Document) paintable_box() ?&ViewportPaintable {
 }
 
 pub fn (d &Document) viewport_rect() Rect {
-	return Rect{0, 0, 800, 600}
+	return d.viewport_rect_
+}
+
+pub fn (mut d Document) set_viewport_rect(rect Rect) {
+	d.viewport_rect_ = rect
 }
 
 pub fn (d &Document) navigable() ?&Navigable {
@@ -2858,6 +2862,8 @@ pub mut:
 	// Layout
 	layout_root &LayoutViewport    = unsafe { nil }
 	paintable_  &ViewportPaintable = unsafe { nil }
+	// Standalone documents use 800x600 until a browser host supplies its content viewport.
+	viewport_rect_ Rect = Rect{0, 0, 800, 600}
 
 	// Window
 	window &Window = unsafe { nil }

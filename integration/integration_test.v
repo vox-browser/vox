@@ -4,6 +4,7 @@ import html
 import css
 import layout
 import dom
+import math
 
 // Full-stack integration: parse an HTML string with the html parser, then query the resulting DOM
 // tree with the css selector engine. Exercises html + dom + css composing end to end.
@@ -286,6 +287,59 @@ fn test_layout_document_entry_point() {
 	assert body_box.children[1].height > 0.0 // text gives the paragraph a line box
 	// root height spans its content (body + body's margins), so it's at least the body content.
 	assert root_box.height >= 40.0
+}
+
+// Regression for example.com and the native browser host: vw/vh use the actual content viewport,
+// the body's background propagates to the whole canvas, and CSS font attributes reach painting.
+fn test_example_domain_layout_matches_browser_viewport() {
+	markup := '<!doctype html><html lang="en"><head><title>Example Domain</title><style>body{background:#eee;width:60vw;margin:15vh auto;font-family:system-ui,sans-serif}h1{font-size:1.5em}div{opacity:0.8}a:link,a:visited{color:#348}</style></head><body><div><h1>Example Domain</h1><p>This domain is for use in documentation examples without needing permission. Avoid use in operations.</p><p><a href="https://iana.org/domains/example">Learn more</a></p></div></body></html>'
+	doc := html.parse_document(markup)
+	root_node := unsafe { &dom.Node(doc) }
+	body := css.query_selector(root_node, 'body') or { panic('no body') }
+	heading := css.query_selector(root_node, 'h1') or { panic('no heading') }
+	paragraph := css.query_selector(root_node, 'p') or { panic('no paragraph') }
+
+	root_box := layout.layout_document_in_viewport(doc, 1024, 656)
+	assert doc.viewport_rect() == dom.Rect{0, 0, 1024, 656}
+	body_box := root_box.find_box(i64(body.as_node().unique_id())) or { panic('no body box') }
+	assert math.abs(body_box.width - 614.4) < 0.01 // 60vw of the real 1024px content viewport
+	assert math.abs(body_box.x - 204.8) < 0.01 // margin-inline:auto centers it
+	assert math.abs(body_box.margin.top - 98.4) < 0.01 // 15vh of the real 656px viewport
+
+	commands := root_box.paint_commands()
+	assert commands[0].kind == 'fill_rect'
+	assert commands[0].x == 0 && commands[0].y == 0
+	assert commands[0].width == 1024 && commands[0].height == 656
+	assert commands[0].color == 'rgb(238 238 238)'
+	assert commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(238 238 238)').len == 1
+	heading_words := commands.filter(it.kind == 'draw_text' && it.text in ['Example', 'Domain'])
+	assert heading_words.len == 2
+	assert heading_words.all(it.font_size == 24)
+	assert heading_words.all(it.bold)
+
+	heading_box := root_box.find_box(i64(heading.as_node().unique_id())) or {
+		panic('no heading box')
+	}
+	heading_fragment := heading_box.lines[0].fragments[0]
+	assert heading_fragment.font_size == 24
+	assert heading_fragment.bold
+	paragraph_box := root_box.find_box(i64(paragraph.as_node().unique_id())) or {
+		panic('no paragraph box')
+	}
+	assert paragraph_box.lines[0].fragments[0].font_size == 16
+}
+
+// A top-level positioned box uses the explicit viewport height as its initial containing block,
+// rather than the much shorter content height of this document.
+fn test_top_level_absolute_position_uses_browser_viewport_height() {
+	doc :=
+		html.parse_document('<html><head><style>body{margin:0}.badge{position:absolute;left:0;bottom:10px;width:30px;height:20px}</style></head><body><div class="badge"></div></body></html>')
+	root_node := unsafe { &dom.Node(doc) }
+	badge := css.query_selector(root_node, '.badge') or { panic('no badge') }
+
+	root_box := layout.layout_document_in_viewport(doc, 800, 500)
+	badge_box := root_box.find_box(i64(badge.as_node().unique_id())) or { panic('no badge box') }
+	assert badge_box.y == 470 // 500px viewport - 10px bottom - 20px height
 }
 
 // Full-stack box-sizing: the near-universal `* { box-sizing: border-box }` reset from an author
