@@ -227,7 +227,7 @@ pub fn StorageShelf.create(type_ StorageType, key StorageKey, host ?&StorageHost
 }
 
 pub fn (shelf &StorageShelf) default_bucket() &StorageBucket {
-	return shelf.buckets['default']
+	return shelf.buckets['default'] or { panic('storage shelf is missing its default bucket') }
 }
 
 @[heap]
@@ -242,7 +242,7 @@ pub fn (mut shed StorageShed) obtain_a_storage_shelf(environment StorageEnvironm
 	if serialized !in shed.shelves {
 		shed.shelves[serialized] = StorageShelf.create(type_, key, host)
 	}
-	return shed.shelves[serialized]
+	return shed.shelves[serialized] or { none }
 }
 
 pub fn (mut shed StorageShed) obtain_a_storage_bottle_map(environment StorageEnvironment, endpoint StorageEndpointType, host ?&StorageHost) ?&StorageBottle {
