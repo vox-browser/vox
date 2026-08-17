@@ -3,9 +3,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of the self-contained core of Libraries/LibWeb/FileAPI/FileList.cpp — an ordered
-// collection of File objects with a length and indexed item access. The item_value and
-// (de)serialization steps are binding- and StructuredSerialize-facing (the JS runtime) and are out
-// of scope.
+// collection of File objects with a length and indexed item access. The legacy indexed-property
+// binding is runtime-owned; typed structured serialization is represented below.
 // https://w3c.github.io/FileAPI/#filelist-section
 module fileapi
 
@@ -37,4 +36,24 @@ pub fn (list &FileList) item(index int) ?&File {
 		return none
 	}
 	return list.files[index]
+}
+
+pub fn (list &FileList) files() []&File {
+	return list.files.clone()
+}
+
+pub fn (list &FileList) serialization_steps() []SerializedFile {
+	mut serialized := []SerializedFile{cap: list.files.len}
+	for file in list.files {
+		serialized << file.serialization_steps()
+	}
+	return serialized
+}
+
+pub fn FileList.deserialization_steps(serialized []SerializedFile) &FileList {
+	mut list := FileList.create()
+	for file in serialized {
+		list.add_file(File.deserialization_steps(file))
+	}
+	return list
 }

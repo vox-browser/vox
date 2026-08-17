@@ -241,7 +241,7 @@ fn parse_calc_arguments(values []ComponentValue) ?[]CalcNode {
 // One entry in the flat operand/operator sequence collected from the token stream.
 struct CalcTerm {
 	is_operator bool
-	operator    u8 // '+' '-' '*' '/' when is_operator
+	operator    u8       // '+' '-' '*' '/' when is_operator
 	node        CalcNode // the operand when !is_operator
 }
 

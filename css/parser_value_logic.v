@@ -12536,6 +12536,13 @@ fn value_logic_round_to_u8(value f64) u8 {
 
 fn dom_style_value_from_value_logic(value StyleValue) &dom.StyleValue {
 	return &dom.StyleValue{
-		css_text: value.serialize(.normal)
+		// Pending-substitution values are deliberately not author-serializable,
+		// but the DOM-side opaque value must retain the original shorthand text
+		// so the longhand can resolve var()/env()/attr() during the cascade.
+		css_text: if value is PendingSubstitutionStyleValue {
+			value.original_shorthand_value_ref().serialize(.normal)
+		} else {
+			value.serialize(.normal)
+		}
 	}
 }

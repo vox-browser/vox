@@ -87,3 +87,13 @@ fn test_file_slice_returns_a_blob() {
 	sliced := f.slice_blob(6, none, none)
 	assert sliced.raw_bytes().bytestr() == 'World'
 }
+
+fn test_file_structured_serialization_round_trip() {
+	file := File.create('data'.bytes(), 'note.txt', 'text/plain', i64(42))
+	restored := File.deserialization_steps(file.serialization_steps())
+	assert restored.name() == 'note.txt'
+	assert restored.type_() == 'text/plain'
+	assert restored.last_modified() == 42
+	assert restored.raw_bytes().bytestr() == 'data'
+	assert voidptr(restored) != voidptr(file)
+}

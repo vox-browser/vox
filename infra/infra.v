@@ -5,6 +5,7 @@
 module infra
 
 import x.json2
+import encoding
 
 pub const ascii_whitespace = '\t\n\x0c\r '
 pub const ascii_whitespace_code_points = [u32(`\t`), u32(`\n`), u32(`\x0c`), u32(`\r`), u32(` `)]!
@@ -164,7 +165,11 @@ pub fn parse_json_string_to_javascript_value(input string) !json2.Any {
 
 // https://infra.spec.whatwg.org/#parse-json-bytes-to-a-javascript-value
 pub fn parse_json_bytes_to_javascript_value(bytes []u8) !json2.Any {
-	return parse_json_string_to_javascript_value(bytes.bytestr())
+	// Infra uses UTF-8 decode, which replaces malformed sequences rather than
+	// treating the byte buffer as an already-valid host string.
+	decoder := encoding.TextDecoder.create()
+	decoded := decoder.decode(bytes, encoding.TextDecodeOptions{})!
+	return parse_json_string_to_javascript_value(decoded)
 }
 
 // https://infra.spec.whatwg.org/#serialize-a-javascript-value-to-a-json-string

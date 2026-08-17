@@ -73,7 +73,7 @@ fn test_percent_decode_leaves_malformed_sequences() {
 }
 
 fn test_encode_then_decode_round_trips() {
-	original := "Hello, World! $&+=/:@ café 😀"
+	original := 'Hello, World! $&+=/:@ café 😀'
 	encoded := percent_encode(original, .component, false)
 	assert percent_decode(encoded).bytestr() == original
 }

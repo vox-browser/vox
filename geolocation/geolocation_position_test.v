@@ -71,3 +71,104 @@ fn test_position_error_messages() {
 	timeout := GeolocationPositionError.create(.timeout)
 	assert timeout.message() == 'Timeout'
 }
+
+@[heap]
+struct GeolocationRecorder {
+mut:
+	positions []&GeolocationPosition
+	errors    []GeolocationPositionErrorCode
+}
+
+fn test_geolocation_document_security_and_task_boundaries() {
+	mut recorder := &GeolocationRecorder{}
+	mut inactive := Geolocation.create(GeolocationHost{ fully_active: false })
+	inactive.get_current_position(fn [mut recorder] (position &GeolocationPosition) {
+		recorder.positions << position
+	}, fn [mut recorder] (position_error &GeolocationPositionError) {
+		recorder.errors << position_error.code()
+	}, PositionOptions{})
+	assert recorder.errors.len == 0
+	inactive.drain_tasks()
+	assert recorder.errors == [.position_unavailable]
+
+	mut insecure := Geolocation.create(GeolocationHost{ secure_context: false })
+	watch_id := insecure.watch_position(fn [mut recorder] (position &GeolocationPosition) {
+		recorder.positions << position
+	}, fn [mut recorder] (position_error &GeolocationPositionError) {
+		recorder.errors << position_error.code()
+	}, PositionOptions{})
+	assert watch_id == 1
+	assert !insecure.has_watch(watch_id)
+	insecure.drain_tasks()
+	assert recorder.errors.last() == .permission_denied
+}
+
+fn test_geolocation_visibility_emulation_cache_and_watch() {
+	mut recorder := &GeolocationRecorder{}
+	mut geo := Geolocation.create(GeolocationHost{
+		visible:       false
+		now_ms:        1_000
+		emulated_data: CoordinatesData{
+			latitude:  12.5
+			longitude: 44.0
+			accuracy:  2.0
+		}
+	})
+	watch_id := geo.watch_position(fn [mut recorder] (position &GeolocationPosition) {
+		recorder.positions << position
+	}, none, PositionOptions{ enable_high_accuracy: true })
+	assert geo.has_watch(watch_id)
+	geo.drain_tasks()
+	assert recorder.positions.len == 0
+	geo.set_visible(true)
+	geo.drain_tasks()
+	assert recorder.positions.len == 1
+	assert recorder.positions[0].coords().latitude() == 12.5
+	assert recorder.positions[0].is_high_accuracy()
+	geo.clear_watch(watch_id)
+	assert !geo.has_watch(watch_id)
+
+	geo.host.emulated_data = none
+	geo.host.now_ms = 1_050
+	geo.cached_position = recorder.positions[0]
+	geo.get_current_position(fn [mut recorder] (position &GeolocationPosition) {
+		recorder.positions << position
+	}, none, PositionOptions{
+		enable_high_accuracy: true
+		maximum_age:          100
+	})
+	geo.drain_tasks()
+	assert recorder.positions.len == 2
+	assert recorder.positions[1] == recorder.positions[0]
+}
+
+fn test_geolocation_json_records() {
+	coordinates := GeolocationCoordinates.create(CoordinatesData{
+		latitude: 1
+		accuracy: 2
+	})
+	assert coordinates.to_json().latitude == 1
+	position := GeolocationPosition.create(coordinates, 99, false)
+	json := position.to_json()
+	assert json.timestamp == 99
+	assert json.coords.accuracy == 2
+}
+
+fn test_hidden_position_request_expires_without_callback() {
+	mut recorder := &GeolocationRecorder{}
+	mut geo := Geolocation.create(GeolocationHost{
+		visible: false
+		now_ms:  100
+	})
+	geo.get_current_position(fn [mut recorder] (position &GeolocationPosition) {
+		recorder.positions << position
+	}, fn [mut recorder] (position_error &GeolocationPositionError) {
+		recorder.errors << position_error.code()
+	}, PositionOptions{})
+	geo.host.now_ms = 5_100
+	geo.expire_visibility_waits()
+	geo.set_visible(true)
+	geo.drain_tasks()
+	assert recorder.positions.len == 0
+	assert recorder.errors.len == 0
+}

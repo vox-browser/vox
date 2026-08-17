@@ -1,0 +1,83 @@
+// Copyright (c) 2026, Ladybird contributors
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of Compression/DecompressionStream.{h,cpp,idl}.
+module compression
+
+import compress.deflate
+
+fn decode_raw_bytes(bytes []u8) ![]u8 {
+	result := deflate.decompress_raw_with_consumed(bytes)!
+	if result.consumed != bytes.len {
+		return error('trailing bytes after the raw DEFLATE stream')
+	}
+	return result.decoded
+}
+
+fn decode_bytes(format CompressionFormat, bytes []u8) ![]u8 {
+	return match format {
+		.deflate { deflate.decompress_zlib(bytes)! }
+		.deflate_raw { decode_raw_bytes(bytes)! }
+		.gzip { deflate.decompress_gzip(bytes)! }
+	}
+}
+
+@[heap]
+pub struct DecompressionStream {
+mut:
+	format_    CompressionFormat
+	transform_ &ByteTransformStream = unsafe { nil }
+	input_     []u8
+	finished_  bool
+}
+
+// https://compression.spec.whatwg.org/#dom-decompressionstream-decompressionstream
+pub fn DecompressionStream.construct_impl(format CompressionFormat) !&DecompressionStream {
+	mut stream := &DecompressionStream{
+		format_: format
+	}
+	stream.transform_ = ByteTransformStream.create(.decompressor, voidptr(stream))
+	return stream
+}
+
+pub fn DecompressionStream.construct_from_string(format string) !&DecompressionStream {
+	return DecompressionStream.construct_impl(parse_compression_format(format)!)
+}
+
+pub fn (stream &DecompressionStream) format() CompressionFormat {
+	return stream.format_
+}
+
+pub fn (stream &DecompressionStream) readable() &ReadableByteStream {
+	return stream.transform_.readable()
+}
+
+pub fn (stream &DecompressionStream) writable() &WritableByteStream {
+	return stream.transform_.writable()
+}
+
+// https://compression.spec.whatwg.org/#decompress-and-enqueue-a-chunk
+fn (mut stream DecompressionStream) decompress_and_enqueue_chunk(chunk []u8) ! {
+	if stream.finished_ {
+		return error('TypeError: Decompression stream has already finished')
+	}
+	stream.input_ << chunk
+}
+
+// https://compression.spec.whatwg.org/#decompress-flush-and-enqueue
+fn (mut stream DecompressionStream) decompress_flush_and_enqueue() ! {
+	if stream.finished_ {
+		return error('TypeError: Decompression stream has already finished')
+	}
+	stream.finished_ = true
+	buffer := decode_bytes(stream.format_, stream.input_) or {
+		reason := 'TypeError: Unable to decompress flush: ${err}'
+		mut readable := stream.transform_.readable_
+		readable.error(reason)
+		return error(reason)
+	}
+	mut readable := stream.transform_.readable_
+	readable.enqueue(buffer)
+	readable.close()
+}

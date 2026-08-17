@@ -28,7 +28,8 @@ fn test_construct_6_element_sequence_is_2d() {
 }
 
 fn test_construct_16_element_sequence_is_3d() {
-	values := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0]
+	values := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0,
+		16.0]
 	matrix := DOMMatrixReadOnly.construct(values) or { panic('${err}') }
 	assert !matrix.is_2d()
 	assert matrix.m11() == 1.0 && matrix.m12() == 2.0 && matrix.m13() == 3.0 && matrix.m14() == 4.0
@@ -117,8 +118,8 @@ fn test_transform_point_identity() {
 
 fn test_transform_point_translation() {
 	// A 3D translation (tx=10, ty=20, tz=30) via a 16-element sequence.
-	matrix := DOMMatrixReadOnly.construct([1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-		10.0, 20.0, 30.0, 1.0]) or { panic('${err}') }
+	matrix := DOMMatrixReadOnly.construct([1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+		0.0, 10.0, 20.0, 30.0, 1.0]) or { panic('${err}') }
 	point := DOMPointReadOnly.construct(1.0, 2.0, 3.0, 1.0)
 	result := matrix.transform_point(point)
 	assert result.x() == 11.0 && result.y() == 22.0 && result.z() == 33.0 && result.w() == 1.0

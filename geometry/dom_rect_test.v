@@ -55,6 +55,14 @@ fn test_edges_nan_inputs() {
 	assert rect.y() == 20.0
 }
 
+fn test_edges_preserve_first_argument_negative_zero_on_ties() {
+	rect := DOMRectReadOnly.construct(-0.0, -0.0, 0.0, 0.0)
+	assert math.signbit(rect.left())
+	assert math.signbit(rect.right())
+	assert math.signbit(rect.top())
+	assert math.signbit(rect.bottom())
+}
+
 fn test_from_rect() {
 	default_rect := DOMRectReadOnly.from_rect(DOMRectInit{})
 	assert default_rect.x() == 0.0

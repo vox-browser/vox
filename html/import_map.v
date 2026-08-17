@@ -52,8 +52,8 @@ pub:
 
 pub struct ResolvedModuleRecord {
 pub:
-	serialized_base_url                       ?string
-	specifier                                 string
+	serialized_base_url                           ?string
+	specifier                                     string
 	specifier_is_null_or_url_like_that_is_special bool
 }
 
@@ -118,7 +118,9 @@ fn parse_absolute_url(input string) ?dom.URL {
 	if !parsed.is_abs() {
 		return none
 	}
-	return dom.URL{value: parsed.str()}
+	return dom.URL{
+		value: parsed.str()
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#resolving-a-url-like-module-specifier
@@ -149,8 +151,9 @@ pub fn normalize_specifier_key(specifier_key string, base_url dom.URL) ?string {
 pub fn sort_and_normalise_module_specifier_map(original_map map[string]json2.Any, base_url dom.URL, warn ImportMapWarningHandler) ModuleSpecifierMap {
 	mut normalized := ModuleSpecifierMap{}
 	for specifier_key, value in original_map {
-		normalized_specifier_key := normalize_specifier_key_with_warnings(specifier_key,
-			base_url, warn) or { continue }
+		normalized_specifier_key := normalize_specifier_key_with_warnings(specifier_key, base_url, warn) or {
+			continue
+		}
 		if value !is string {
 			warn('Addresses need to be strings')
 			normalized.set(normalized_specifier_key, none)
@@ -163,7 +166,7 @@ pub fn sort_and_normalise_module_specifier_map(original_map map[string]json2.Any
 			continue
 		}
 		if specifier_key.ends_with('/') && !address_url.serialize().ends_with('/') {
-			warn("An invalid address was given for the specifier key (${specifier_key}); since specifierKey ends with a slash, the address needs to as well")
+			warn('An invalid address was given for the specifier key (${specifier_key}); since specifierKey ends with a slash, the address needs to as well')
 			normalized.set(normalized_specifier_key, none)
 			continue
 		}
@@ -186,9 +189,8 @@ pub fn sort_and_normalise_scopes(original_map map[string]json2.Any, base_url dom
 			continue
 		}
 		normalized << ImportMapScope{
-			prefix: scope_prefix_url.serialize()
-			imports: sort_and_normalise_module_specifier_map(specifier_object, base_url,
-				warn)
+			prefix:  scope_prefix_url.serialize()
+			imports: sort_and_normalise_module_specifier_map(specifier_object, base_url, warn)
 		}
 	}
 	sort_import_map_scopes(mut normalized)
@@ -226,8 +228,7 @@ pub fn parse_import_map_string_with_warnings(input string, base_url dom.URL, war
 			return error("The 'imports' top-level value of an importmap needs to be a JSON object.")
 		}
 		imports_object := imports as map[string]json2.Any
-		import_map.imports = sort_and_normalise_module_specifier_map(imports_object, base_url,
-			warn)
+		import_map.imports = sort_and_normalise_module_specifier_map(imports_object, base_url, warn)
 	}
 	if scopes := parsed_object['scopes'] {
 		if scopes !is map[string]json2.Any {
@@ -267,13 +268,16 @@ pub fn resolve_imports_match(normalized_specifier string, as_url ?dom.URL, speci
 			resolution_result := entry.url or {
 				return error("Import resolution of '${entry.specifier}' was blocked by a null entry.")
 			}
+
 			return ImportsMatchResult{true, resolution_result}
 		}
-		if entry.specifier.ends_with('/') && normalized_specifier.starts_with(entry.specifier)
-			&& (as_url == none || url_is_special(as_url or { dom.URL{} })) {
+		if entry.specifier.ends_with('/') && normalized_specifier.starts_with(entry.specifier) && (as_url == none || url_is_special(as_url or {
+			dom.URL{}
+		})) {
 			resolution_result := entry.url or {
 				return error("Import resolution of '${entry.specifier}' was blocked by a null entry.")
 			}
+
 			after_prefix := normalized_specifier[entry.specifier.len..]
 			url := dom.dom_url_parse(after_prefix, resolution_result, 'utf-8') or {
 				return error("Could not resolve '${normalized_specifier}' as the after prefix portion could not be URL-parsed.")
@@ -313,7 +317,9 @@ pub fn resolve_module_specifier(import_map &ImportMap, base_url dom.URL, specifi
 }
 
 fn merge_module_specifier_maps(new_map &ModuleSpecifierMap, old_map &ModuleSpecifierMap, warn ImportMapWarningHandler) ModuleSpecifierMap {
-	mut merged := ModuleSpecifierMap{entries: old_map.entries.clone()}
+	mut merged := ModuleSpecifierMap{
+		entries: old_map.entries.clone()
+	}
 	for entry in new_map.entries {
 		if old_map.contains(entry.specifier) {
 			warn("An import map rule for specifier '${entry.specifier}' was ignored as one was already present in the existing import map")
@@ -334,7 +340,9 @@ fn record_matches_scope(record ResolvedModuleRecord, scope_prefix string) bool {
 // https://html.spec.whatwg.org/multipage/webappapis.html#merge-existing-and-new-import-maps
 pub fn merge_existing_and_new_import_maps(mut old_import_map ImportMap, new_import_map &ImportMap, resolved_module_set []ResolvedModuleRecord, warn ImportMapWarningHandler) {
 	for new_scope in new_import_map.scopes {
-		mut scope_imports := ModuleSpecifierMap{entries: new_scope.imports.entries.clone()}
+		mut scope_imports := ModuleSpecifierMap{
+			entries: new_scope.imports.entries.clone()
+		}
 		for record in resolved_module_set {
 			if !record_matches_scope(record, new_scope.prefix) {
 				continue
@@ -343,7 +351,7 @@ pub fn merge_existing_and_new_import_maps(mut old_import_map ImportMap, new_impo
 				specifier_key := scope_imports.entries[index].specifier
 				if specifier_key == record.specifier
 					|| (specifier_key.ends_with('/') && record.specifier.starts_with(specifier_key)
-						&& record.specifier_is_null_or_url_like_that_is_special) {
+					&& record.specifier_is_null_or_url_like_that_is_special) {
 					warn("An import map rule for specifier '${specifier_key}' was ignored as one was already present in the existing import map")
 					scope_imports.entries.delete(index)
 				}
@@ -370,7 +378,9 @@ pub fn merge_existing_and_new_import_maps(mut old_import_map ImportMap, new_impo
 		}
 		old_import_map.integrity << entry
 	}
-	mut new_imports := ModuleSpecifierMap{entries: new_import_map.imports.entries.clone()}
+	mut new_imports := ModuleSpecifierMap{
+		entries: new_import_map.imports.entries.clone()
+	}
 	for record in resolved_module_set {
 		for index := new_imports.entries.len - 1; index >= 0; index-- {
 			if new_imports.entries[index].specifier.starts_with(record.specifier) {
@@ -379,6 +389,6 @@ pub fn merge_existing_and_new_import_maps(mut old_import_map ImportMap, new_impo
 			}
 		}
 	}
-	old_import_map.imports = merge_module_specifier_maps(&new_imports, &old_import_map.imports,
-		warn)
+	old_import_map.imports =
+		merge_module_specifier_maps(&new_imports, &old_import_map.imports, warn)
 }

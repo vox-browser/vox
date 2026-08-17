@@ -4,8 +4,8 @@
 
 // Translation of the self-contained core of Libraries/LibWeb/Geometry/DOMPointReadOnly.cpp and
 // DOMPoint.cpp — a 4-D point (x, y, z, w) with a read-only base and a mutable subclass. matrixTransform()
-// is implemented (via DOMMatrixReadOnly.transform_point); the (de)serialization steps need HTML
-// StructuredSerialize (the JS runtime) and are out of scope. V has no default arguments, so the
+// is implemented (via DOMMatrixReadOnly.transform_point); typed structured-clone records are in
+// serialization.v. V has no default arguments, so the
 // IDL coordinate defaults (x=0, y=0, z=0, w=1) live on the DOMPointInit dictionary used by fromPoint,
 // and the constructors take explicit coordinates (as the port's other geometry records do).
 // https://drafts.fxtf.org/geometry/#dompointreadonly

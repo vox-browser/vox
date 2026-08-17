@@ -633,6 +633,103 @@ pub fn (c &HTMLCollection) named_item_value(name string) ?&Element {
 	return c.named_item(name)
 }
 
+// --- HTMLAllCollection ---
+
+pub fn HTMLAllCollection.create(root &ParentNode, scope HTMLAllCollectionScope, filter fn (&Element) bool) &HTMLAllCollection {
+	return &HTMLAllCollection{
+		root:   root
+		scope:  scope
+		filter: filter
+	}
+}
+
+fn is_all_named_element(element &Element) bool {
+	return element.namespace_uri() or { '' } == namespace_html_uri
+		&& element.local_name() in ['a', 'button', 'embed', 'form', 'frame', 'frameset', 'iframe', 'img', 'input', 'map', 'meta', 'object', 'select', 'textarea']
+}
+
+pub fn (collection &HTMLAllCollection) collect_matching_elements() []&Element {
+	if collection.root == unsafe { nil } {
+		return []
+	}
+	scope := if collection.scope == .descendants {
+		CollectionScope.descendants
+	} else {
+		CollectionScope.children
+	}
+	return collect_elements_for_scope(collection.root.as_node(), scope, collection.filter)
+}
+
+pub fn (collection &HTMLAllCollection) length() int {
+	return collection.collect_matching_elements().len
+}
+
+pub fn (collection &HTMLAllCollection) indexed_item(index int) ?&Element {
+	elements := collection.collect_matching_elements()
+	if index < 0 || index >= elements.len {
+		return none
+	}
+	return elements[index]
+}
+
+pub fn (collection &HTMLAllCollection) named_item(name string) ?HTMLAllCollectionResult {
+	if name == '' || collection.root == unsafe { nil } {
+		return none
+	}
+	matching := HTMLCollection.create(collection.root, .descendants, fn [name] (element &Element) bool {
+		if id := element.id() {
+			if id == name {
+				return true
+			}
+		}
+		return is_all_named_element(element) && element.get_attribute_value('name') == name
+	}, never_sort_elements)
+	if matching.length() == 0 {
+		return none
+	}
+	if matching.length() == 1 {
+		return HTMLAllCollectionResult{
+			element: matching.item(0) or { return none }
+		}
+	}
+	return HTMLAllCollectionResult{
+		collection: matching
+	}
+}
+
+pub fn (collection &HTMLAllCollection) item(name_or_index ?string) ?HTMLAllCollectionResult {
+	value := name_or_index or { return none }
+	if value != '' && value.bytes().all(it >= `0` && it <= `9`) {
+		index := value.int()
+		if element := collection.indexed_item(index) {
+			return HTMLAllCollectionResult{
+				element: element
+			}
+		}
+		return none
+	}
+	return collection.named_item(value)
+}
+
+pub fn (collection &HTMLAllCollection) supported_property_names() []string {
+	mut result := []string{}
+	for element in collection.collect_matching_elements() {
+		if id := element.id() {
+			if id != '' {
+				append_to_ordered_set(mut result, id)
+			}
+		}
+		if is_all_named_element(element) {
+			if name := element.get_attribute('name') {
+				if name != '' {
+					append_to_ordered_set(mut result, name)
+				}
+			}
+		}
+	}
+	return result
+}
+
 // --- NamedNodeMap ---
 
 pub fn NamedNodeMap.create(mut element Element) &NamedNodeMap {

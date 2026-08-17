@@ -20,8 +20,7 @@ fn test_doctype_quirks_mode_classification() {
 	assert quirks_mode_for_doctype('-//W3C//DTD HTML 3.2 Final//EN', '', true) == .yes
 	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01 Transitional//EN', '', true) == .yes
 	assert quirks_mode_for_doctype('-//W3C//DTD XHTML 1.0 Transitional//EN', '', true) == .limited
-	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01 Frameset//EN', 'example.dtd',
-		false) == .limited
+	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01 Frameset//EN', 'example.dtd', false) == .limited
 	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01//EN', '', true) == .no
 	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01//EN',
 		'HTTP://WWW.IBM.COM/data/dtd/v11/ibmxhtml1-transitional.dtd', false) == .yes

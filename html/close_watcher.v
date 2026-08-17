@@ -6,23 +6,28 @@
 module html
 
 pub type CloseWatcherEnabledState = fn () bool
+
 pub type CloseWatcherCancelAction = fn (bool) bool
+
 pub type CloseWatcherCloseAction = fn ()
+
 pub type CloseWatcherDocumentIsFullyActive = fn () bool
+
 pub type CloseWatcherHasHistoryActionActivation = fn () bool
+
 pub type CloseWatcherConsumeHistoryActionActivation = fn ()
 
 @[heap]
 pub struct CloseWatcher {
 mut:
-	manager                          &CloseWatcherManager @[required]
-	is_running_cancel_action         bool
-	is_active                        bool = true
-	get_enabled_state_callback       CloseWatcherEnabledState                  @[required]
-	cancel_action                    CloseWatcherCancelAction                  @[required]
-	close_action                     CloseWatcherCloseAction                   @[required]
-	document_is_fully_active         CloseWatcherDocumentIsFullyActive         @[required]
-	has_history_action_activation    CloseWatcherHasHistoryActionActivation    @[required]
+	manager                           &CloseWatcherManager @[required]
+	is_running_cancel_action          bool
+	is_active                         bool = true
+	get_enabled_state_callback        CloseWatcherEnabledState                   @[required]
+	cancel_action                     CloseWatcherCancelAction                   @[required]
+	close_action                      CloseWatcherCloseAction                    @[required]
+	document_is_fully_active          CloseWatcherDocumentIsFullyActive          @[required]
+	has_history_action_activation     CloseWatcherHasHistoryActionActivation     @[required]
 	consume_history_action_activation CloseWatcherConsumeHistoryActionActivation @[required]
 }
 
@@ -78,8 +83,7 @@ pub fn (mut watcher CloseWatcher) request_close(require_history_action_activatio
 
 // https://html.spec.whatwg.org/multipage/interaction.html#close-watcher-close
 pub fn (mut watcher CloseWatcher) close() {
-	if !watcher.is_active || !watcher.get_enabled_state()
-		|| !watcher.document_is_fully_active() {
+	if !watcher.is_active || !watcher.get_enabled_state() || !watcher.document_is_fully_active() {
 		return
 	}
 	watcher.destroy()
@@ -97,7 +101,7 @@ pub fn (mut watcher CloseWatcher) destroy() {
 pub struct CloseWatcherManager {
 mut:
 	groups                             [][]&CloseWatcher
-	allowed_number_of_groups           u32 = 1
+	allowed_number_of_groups           u32  = 1
 	next_user_interaction_allows_group bool = true
 }
 

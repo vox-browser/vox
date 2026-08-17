@@ -381,6 +381,7 @@ fn test_computed_property_accessors_return_typed_values() {
 		'flex-basis: content',
 		'opacity: .4',
 		'filter: blur(2px)',
+		'backdrop-filter: brightness(50%)',
 		'text-underline-position: under right',
 		'font-feature-settings: "liga" 0, "kern"',
 		'font-variation-settings: "wght" 625',
@@ -407,6 +408,15 @@ fn test_computed_property_accessors_return_typed_values() {
 	assert computed.flex_basis().is_content
 	assert computed.opacity() == f32(0.4)
 	assert computed.filter().has_filters()
+	filters := computed.filter().filters()
+	assert filters.len == 1
+	assert filters[0] is FilterOperationBlur
+	assert (filters[0] as FilterOperationBlur).radius.serialize(.normal) == '2px'
+	backdrop_filters := computed.backdrop_filter().filters()
+	assert backdrop_filters.len == 1
+	assert backdrop_filters[0] is FilterOperationColor
+	assert (backdrop_filters[0] as FilterOperationColor).operation == .brightness
+	assert (backdrop_filters[0] as FilterOperationColor).amount.serialize(.normal) == '50%'
 	underline := computed.text_underline_position()
 	assert underline.horizontal == .under
 	assert underline.vertical == .right
@@ -692,13 +702,9 @@ fn test_css_animation_sampling_holds_paused_progress_and_applies_direction_at_bo
 
 fn test_layout_node_resolution_context_uses_installed_element_and_root_styles() {
 	doc := dom.Document.create(dom.url_about_blank())
-	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
-		panic('${err}')
-	}
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
 	root.set_attribute_value('style', 'font-size: 10px')
-	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
-		panic('${err}')
-	}
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
 	child.set_attribute_value('style',
 		'font-size: 20px; line-height: 30px; color: rgb(1, 2, 3); accent-color: rgb(4, 5, 6); color-scheme: dark')
 	mut document_node := unsafe { &dom.Node(doc) }
@@ -733,7 +739,8 @@ fn test_unresolved_css_functions_record_dom_style_dependencies() {
 	}
 	abstract_element := dom.AbstractElement.new(element, none)
 	for function_name in ['attr', 'if', 'inherit', 'var'] {
-		unresolved := UnresolvedStyleValue.create(parse_component_values_for_value_logic('${function_name}(--x)'))
+		unresolved :=
+			UnresolvedStyleValue.create(parse_component_values_for_value_logic('${function_name}(--x)'))
 		resolve_unresolved_style_value_for_property(abstract_element, .width, unresolved)
 	}
 	assert element.style_uses_attr_css_function()
@@ -768,13 +775,15 @@ fn test_css_transitions_are_retained_and_sampled() {
 	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic('${err}')
 	}
-	element.set_attribute_value('style', 'opacity: 0; transition-property: opacity; transition-duration: 1000ms; transition-timing-function: linear')
+	element.set_attribute_value('style',
+		'opacity: 0; transition-property: opacity; transition-duration: 1000ms; transition-timing-function: linear')
 	mut computer := StyleComputer.new(doc)
 	mut abstract_element := dom.AbstractElement.new(element, none)
 	initial := computer.compute_style(abstract_element)
 	abstract_element.set_computed_properties(computed_properties_to_dom(initial))
 
-	element.set_attribute_value('style', 'opacity: 1; transition-property: opacity; transition-duration: 1000ms; transition-timing-function: linear')
+	element.set_attribute_value('style',
+		'opacity: 1; transition-property: opacity; transition-duration: 1000ms; transition-timing-function: linear')
 	started := computer.compute_style(abstract_element)
 	assert (started.property(.opacity, .yes) or { panic('starting opacity missing') }).css_text == '0'
 	abstract_element.set_computed_properties(computed_properties_to_dom(started))
@@ -790,7 +799,9 @@ fn test_shadow_root_author_stylesheet_uses_its_own_css_scope() {
 	shadow_root := host.attach_shadow(dom.ShadowRootInit{
 		mode: .open
 	}) or { panic('${err}') }
-	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic('${err}') }
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
 	child.set_attribute_value('class', 'inside')
 	mut shadow_node := unsafe { &dom.Node(shadow_root) }
 	shadow_node.append_child(child.as_node()) or { panic('${err}') }
@@ -818,10 +829,9 @@ fn test_subtree_style_recompute_installs_pseudos_and_walks_shadow_tree() {
 	recompute_style_for_subtree(mut computer, host.as_node())
 	before := dom.AbstractElement.new(host, dom.PseudoElement.before)
 	assert before.computed_properties() != none
-	child_style := computed_properties_from_dom(dom.AbstractElement.new(child,
-		none).computed_properties() or { panic('shadow child was not styled') }) or {
-		panic('shadow child CSS handle missing')
-	}
+	child_style := computed_properties_from_dom(dom.AbstractElement.new(child, none).computed_properties() or {
+		panic('shadow child was not styled')
+	}) or { panic('shadow child CSS handle missing') }
 	assert (child_style.property(.color, .no) or { panic('shadow child color missing') }).css_text == 'red'
 }
 
@@ -853,14 +863,12 @@ fn interpolate_test_property(element &dom.Element, property_id PropertyID, from_
 
 fn test_custom_property_interpolation_matches_css_animation_rules() {
 	doc := dom.Document.create(dom.url_about_blank())
-	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
-		panic('${err}')
-	}
+	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
 	assert interpolate_test_property(element, .scale, 'none', '2 4', 0.5) == '1.5 2.5'
 	assert interpolate_test_property(element, .translate, 'none', '20px 40px', 0.5) == '10px 20px'
 	assert interpolate_test_property(element, .rotate, 'none', '90deg', 0.5) == '45deg'
 	assert interpolate_test_property(element, .font_style, 'normal', 'oblique 20deg', 0.5) == 'oblique 10deg'
-	assert interpolate_test_property(element, .font_variation_settings, '"wght" 100',
-		'"wght" 900', 0.5) == '"wght" 500'
+	assert interpolate_test_property(element, .font_variation_settings, '"wght" 100', '"wght" 900',
+		0.5) == '"wght" 500'
 	assert interpolate_test_property(element, .filter, 'none', 'blur(10px)', 0.5) == 'blur(5px)'
 }

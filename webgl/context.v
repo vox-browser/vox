@@ -1,0 +1,581 @@
+// Copyright (c) 2026, Ladybird contributors
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of WebGLRenderingContext, WebGLRenderingContextBase,
+// WebGLRenderingContextImpl and the WebGL1 overload implementation.
+module webgl
+
+@[heap]
+pub struct WebGLRenderingContext {
+pub:
+	version    WebGLVersion
+	attributes WebGLContextAttributes
+pub mut:
+	native &OpenGLContext
+mut:
+	next_handle                         GLuint = 1
+	error_                              GLenum
+	context_lost_                       bool
+	enabled_extensions                  map[string]&WebGLExtension
+	enabled_compressed_texture_formats_ []GLenum
+	buffers                             map[GLuint]&WebGLBuffer
+	framebuffers                        map[GLuint]&WebGLFramebuffer
+	renderbuffers                       map[GLuint]&WebGLRenderbuffer
+	textures                            map[GLuint]&WebGLTexture
+	shaders                             map[GLuint]&WebGLShader
+	programs                            map[GLuint]&WebGLProgram
+	queries                             map[GLuint]&WebGLQuery
+	samplers                            map[GLuint]&WebGLSampler
+	syncs                               map[GLuint]&WebGLSync
+	transform_feedbacks                 map[GLuint]&WebGLTransformFeedback
+	vertex_arrays                       map[GLuint]&WebGLVertexArrayObject
+	vertex_arrays_oes                   map[GLuint]&WebGLVertexArrayObjectOES
+	bound_buffers                       map[GLenum]GLuint
+	bound_framebuffer                   GLuint
+	bound_renderbuffer                  GLuint
+	bound_textures                      map[GLenum]GLuint
+	current_program                     ?&WebGLProgram
+	current_queries                     map[GLenum]&WebGLQuery
+	bound_samplers                      map[GLuint]GLuint
+	current_transform_feedback          ?&WebGLTransformFeedback
+	current_vertex_array                ?&WebGLVertexArrayObject
+	current_vertex_array_oes            ?&WebGLVertexArrayObjectOES
+	enabled_capabilities                map[GLenum]bool
+	enabled_vertex_attributes           map[GLuint]bool
+	clear_color_                        [4]f32
+	clear_depth_                        f64 = 1.0
+	clear_stencil_                      int
+	color_mask_                         [4]bool = [true, true, true, true]!
+	depth_mask_                         bool    = true
+	viewport_                           [4]int
+	scissor_                            [4]int
+	unpack_flip_y_                      bool
+	unpack_premultiply_alpha_           bool
+	unpack_colorspace_conversion_       GLenum = browser_default_webgl
+}
+
+pub fn WebGLRenderingContext.new(version WebGLVersion, attributes WebGLContextAttributes, supported_native_extensions []string) &WebGLRenderingContext {
+	native := OpenGLContext.new(version, DrawingBufferOptions{
+		depth:     attributes.depth
+		stencil:   attributes.stencil
+		antialias: attributes.antialias
+	}, supported_native_extensions)
+	return &WebGLRenderingContext{
+		version:    version
+		attributes: attributes
+		native:     native
+	}
+}
+
+pub fn (context &WebGLRenderingContext) identity() u64 {
+	return u64(voidptr(context))
+}
+
+fn (mut context WebGLRenderingContext) allocate_handle() GLuint {
+	handle := context.next_handle
+	context.next_handle++
+	return handle
+}
+
+fn (mut context WebGLRenderingContext) set_error(error_value GLenum) {
+	if context.error_ == no_error { context.error_ = error_value }
+}
+
+pub fn (mut context WebGLRenderingContext) get_error() GLenum {
+	if context.context_lost_ { return context_lost_webgl }
+	error_value := context.error_
+	context.error_ = no_error
+	return error_value
+}
+
+pub fn (context &WebGLRenderingContext) get_context_attributes() ?WebGLContextAttributes {
+	if context.context_lost_ { return none }
+	return context.attributes
+}
+
+pub fn (context &WebGLRenderingContext) is_context_lost() bool {
+	return context.context_lost_
+}
+
+pub fn (mut context WebGLRenderingContext) lose_context(status_message string) WebGLContextEvent {
+	context.context_lost_ = true
+	return WebGLContextEvent.new('webglcontextlost', WebGLContextEventInit{
+		status_message: status_message
+	})
+}
+
+pub fn (mut context WebGLRenderingContext) set_size(width int, height int) {
+	final_width := if width < 1 { 1 } else { width }
+	final_height := if height < 1 { 1 } else { height }
+	context.native.set_size(final_width, final_height)
+	context.viewport_ = [0, 0, final_width, final_height]!
+	context.scissor_ = [0, 0, final_width, final_height]!
+}
+
+pub fn (context &WebGLRenderingContext) drawing_buffer_width() int {
+	width, _ := context.native.size()
+	return width
+}
+
+pub fn (context &WebGLRenderingContext) drawing_buffer_height() int {
+	_, height := context.native.size()
+	return height
+}
+
+pub fn (context &WebGLRenderingContext) needs_to_present() bool {
+	return context.native.needs_to_present()
+}
+
+pub fn (mut context WebGLRenderingContext) present() bool {
+	return context.native.present()
+}
+
+pub fn (mut context WebGLRenderingContext) reset_to_default_state() {
+	context.error_ = no_error
+	context.bound_buffers.clear()
+	context.bound_framebuffer = 0
+	context.bound_renderbuffer = 0
+	context.bound_textures.clear()
+	context.current_program = none
+	context.enabled_capabilities.clear()
+	context.enabled_vertex_attributes.clear()
+	context.clear_color_ = [f32(0), 0, 0, 0]!
+	context.clear_depth_ = 1
+	context.clear_stencil_ = 0
+	context.color_mask_ = [true, true, true, true]!
+	context.depth_mask_ = true
+	context.unpack_flip_y_ = false
+	context.unpack_premultiply_alpha_ = false
+	context.unpack_colorspace_conversion_ = browser_default_webgl
+}
+
+pub fn (mut context WebGLRenderingContext) create_buffer() &WebGLBuffer {
+	handle := context.allocate_handle()
+	buffer := &WebGLBuffer{
+		object: new_object(context.identity(), handle)
+	}
+	unsafe {
+		context.buffers[handle] = buffer
+	}
+	return buffer
+}
+
+pub fn (mut context WebGLRenderingContext) create_framebuffer() &WebGLFramebuffer {
+	handle := context.allocate_handle()
+	framebuffer_object := &WebGLFramebuffer{
+		object: new_object(context.identity(), handle)
+	}
+	unsafe {
+		context.framebuffers[handle] = framebuffer_object
+	}
+	return framebuffer_object
+}
+
+pub fn (mut context WebGLRenderingContext) create_renderbuffer() &WebGLRenderbuffer {
+	handle := context.allocate_handle()
+	renderbuffer_object := &WebGLRenderbuffer{
+		object: new_object(context.identity(), handle)
+	}
+	unsafe {
+		context.renderbuffers[handle] = renderbuffer_object
+	}
+	return renderbuffer_object
+}
+
+pub fn (mut context WebGLRenderingContext) create_texture() &WebGLTexture {
+	handle := context.allocate_handle()
+	texture := &WebGLTexture{
+		object: new_object(context.identity(), handle)
+	}
+	unsafe {
+		context.textures[handle] = texture
+	}
+	return texture
+}
+
+pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLShader {
+	if type_ !in [vertex_shader, fragment_shader] {
+		context.set_error(invalid_enum)
+		return none
+	}
+	handle := context.allocate_handle()
+	shader := &WebGLShader{
+		object: new_object(context.identity(), handle)
+		type_:  type_
+	}
+	unsafe {
+		context.shaders[handle] = shader
+	}
+	return shader
+}
+
+pub fn (mut context WebGLRenderingContext) create_program() &WebGLProgram {
+	handle := context.allocate_handle()
+	program := &WebGLProgram{
+		object: new_object(context.identity(), handle)
+	}
+	unsafe {
+		context.programs[handle] = program
+	}
+	return program
+}
+
+pub fn (context &WebGLRenderingContext) owns(object &WebGLObject) bool {
+	return object.context_id == context.identity() && !object.invalidated_
+}
+
+pub fn (mut context WebGLRenderingContext) bind_buffer(target GLenum, buffer ?&WebGLBuffer) {
+	if target !in [array_buffer, element_array_buffer, copy_read_buffer, copy_write_buffer,
+		pixel_pack_buffer, pixel_unpack_buffer, transform_feedback_buffer, uniform_buffer] {
+		context.set_error(invalid_enum)
+		return
+	}
+	if value := buffer {
+		mut mutable_value := unsafe { &WebGLBuffer(value) }
+		if !context.owns(&value.object) || !mutable_value.is_compatible_with(target) {
+			context.set_error(invalid_operation)
+			return
+		}
+		context.bound_buffers[target] = value.object.handle_
+	} else {
+		context.bound_buffers.delete(target)
+	}
+	context.native.dispatch('bind_buffer', target, context.bound_buffers[target])
+}
+
+pub fn (mut context WebGLRenderingContext) buffer_data(target GLenum, data []u8, usage GLenum) {
+	handle := context.bound_buffers[target] or {
+		context.set_error(invalid_operation)
+		return
+	}
+	buffer := context.buffers[handle] or {
+		context.set_error(invalid_operation)
+		return
+	}
+	mut mutable_buffer := unsafe { &WebGLBuffer(buffer) }
+	mutable_buffer.data_ = data.clone()
+	mutable_buffer.usage_ = usage
+	context.native.dispatch('buffer_data', target, data.len, usage)
+}
+
+pub fn (mut context WebGLRenderingContext) buffer_data_size(target GLenum, size i64, usage GLenum) {
+	if size < 0 {
+		context.set_error(invalid_value)
+		return
+	}
+	context.buffer_data(target, []u8{len: int(size)}, usage)
+}
+
+pub fn (mut context WebGLRenderingContext) buffer_sub_data(target GLenum, offset i64, data []u8) {
+	if offset < 0 {
+		context.set_error(invalid_value)
+		return
+	}
+	handle := context.bound_buffers[target] or {
+		context.set_error(invalid_operation)
+		return
+	}
+	buffer := context.buffers[handle] or {
+		context.set_error(invalid_operation)
+		return
+	}
+	mut mutable_buffer := unsafe { &WebGLBuffer(buffer) }
+	if offset + data.len > mutable_buffer.data_.len {
+		context.set_error(invalid_value)
+		return
+	}
+	for index, byte in data {
+		mutable_buffer.data_[int(offset) + index] = byte
+	}
+	context.native.dispatch('buffer_sub_data', target, offset, data.len)
+}
+
+pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
+	if value := buffer {
+		mut mutable_value := unsafe { &WebGLBuffer(value) }
+		if !context.owns(&value.object) { return }
+		handle := value.object.handle_
+		mutable_value.object.invalidate()
+		context.buffers.delete(handle)
+		for target, bound in context.bound_buffers {
+			if bound == handle { context.bound_buffers.delete(target) }
+		}
+		context.native.dispatch('delete_buffer', handle)
+	}
+}
+
+pub fn (context &WebGLRenderingContext) is_buffer(buffer ?&WebGLBuffer) bool {
+	value := buffer or { return false }
+	return context.owns(&value.object) && value.object.handle_ in context.buffers
+}
+
+pub fn (mut context WebGLRenderingContext) shader_source(mut shader WebGLShader, source string) {
+	if !context.owns(&shader.object) {
+		context.set_error(invalid_operation)
+		return
+	}
+	shader.source_ = source
+	shader.compiled_ = false
+}
+
+pub fn (mut context WebGLRenderingContext) compile_shader(mut shader WebGLShader) {
+	if !context.owns(&shader.object) {
+		context.set_error(invalid_operation)
+		return
+	}
+	shader.compiled_ = shader.source_.trim_space() != ''
+	shader.info_log_ = if shader.compiled_ { '' } else { 'Shader source is empty' }
+	context.native.dispatch('compile_shader', shader.object.handle_)
+}
+
+pub fn (context &WebGLRenderingContext) get_shader_source(shader &WebGLShader) ?string {
+	if !context.owns(&shader.object) { return none }
+	return shader.source_
+}
+
+pub fn (context &WebGLRenderingContext) get_shader_info_log(shader &WebGLShader) ?string {
+	if !context.owns(&shader.object) { return none }
+	return shader.info_log_
+}
+
+pub fn (mut context WebGLRenderingContext) attach_shader(mut program WebGLProgram, shader &WebGLShader) {
+	if !context.owns(&program.object) || !context.owns(&shader.object) {
+		context.set_error(invalid_operation)
+		return
+	}
+	if shader.type_ == vertex_shader {
+		if program.attached_vertex_shader != none {
+			context.set_error(invalid_operation)
+			return
+		}
+		program.attached_vertex_shader = shader
+	} else {
+		if program.attached_fragment_shader != none {
+			context.set_error(invalid_operation)
+			return
+		}
+		program.attached_fragment_shader = shader
+	}
+}
+
+pub fn (mut context WebGLRenderingContext) detach_shader(mut program WebGLProgram, shader &WebGLShader) {
+	if !context.owns(&program.object) || !context.owns(&shader.object) {
+		context.set_error(invalid_operation)
+		return
+	}
+	if shader.type_ == vertex_shader {
+		attached := program.attached_vertex_shader or {
+			context.set_error(invalid_operation)
+			return
+		}
+
+		if attached != shader {
+			context.set_error(invalid_operation)
+			return
+		}
+		program.attached_vertex_shader = none
+	} else {
+		attached := program.attached_fragment_shader or {
+			context.set_error(invalid_operation)
+			return
+		}
+
+		if attached != shader {
+			context.set_error(invalid_operation)
+			return
+		}
+		program.attached_fragment_shader = none
+	}
+}
+
+pub fn (mut context WebGLRenderingContext) link_program(mut program WebGLProgram) {
+	if !context.owns(&program.object) {
+		context.set_error(invalid_operation)
+		return
+	}
+	vertex := program.attached_vertex_shader or {
+		program.linked_ = false
+		program.info_log_ = 'Missing vertex shader'
+		return
+	}
+
+	fragment := program.attached_fragment_shader or {
+		program.linked_ = false
+		program.info_log_ = 'Missing fragment shader'
+		return
+	}
+
+	program.linked_ = vertex.compiled_ && fragment.compiled_
+	program.info_log_ = if program.linked_ { '' } else { 'Attached shader did not compile' }
+	context.native.dispatch('link_program', program.object.handle_)
+}
+
+pub fn (mut context WebGLRenderingContext) use_program(program ?&WebGLProgram) {
+	if value := program {
+		if !context.owns(&value.object) || !value.linked_ {
+			context.set_error(invalid_operation)
+			return
+		}
+	}
+	context.current_program = program
+	context.native.dispatch('use_program', if value := program { value.object.handle_ } else { 0 })
+}
+
+pub fn (mut context WebGLRenderingContext) validate_program(mut program WebGLProgram) {
+	if !context.owns(&program.object) {
+		context.set_error(invalid_operation)
+		return
+	}
+	program.validated_ = program.linked_
+}
+
+pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebGLProgram, name string) ?&WebGLUniformLocation {
+	if !context.owns(&program.object) || !program.linked_ {
+		context.set_error(invalid_operation)
+		return none
+	}
+	if name.contains('[') && !name.ends_with('[0]') { return none }
+	if existing := program.uniform_locations[name] { return existing }
+	location := &WebGLUniformLocation{
+		handle_:           GLuint(program.uniform_locations.len)
+		parent_program_id: program.object.handle_
+	}
+	unsafe {
+		program.uniform_locations[name] = location
+	}
+	return location
+}
+
+pub fn (mut context WebGLRenderingContext) set_uniform(location ?&WebGLUniformLocation, values []f32) {
+	value := location or { return }
+	value.handle(context.current_program) or {
+		context.set_error(invalid_operation)
+		return
+	}
+	mut args := [i64(value.handle_)]
+	for item in values {
+		args << i64(item)
+	}
+	context.native.dispatch('uniform', ...args)
+}
+
+pub fn (mut context WebGLRenderingContext) pixel_storei(pname GLenum, parameter int) {
+	match pname {
+		unpack_flip_y_webgl {
+			context.unpack_flip_y_ = parameter != 0
+		}
+		unpack_premultiply_alpha_webgl {
+			context.unpack_premultiply_alpha_ = parameter != 0
+		}
+		unpack_colorspace_conversion_webgl {
+			if GLenum(parameter) !in [browser_default_webgl, GLenum(0)] {
+				context.set_error(invalid_value)
+				return
+			}
+			context.unpack_colorspace_conversion_ = GLenum(parameter)
+		}
+		else {
+			context.native.dispatch('pixel_storei', pname, parameter)
+		}
+	}
+}
+
+pub fn (mut context WebGLRenderingContext) enable(capability GLenum) {
+	context.enabled_capabilities[capability] = true
+	context.native.dispatch('enable', capability)
+}
+
+pub fn (mut context WebGLRenderingContext) disable(capability GLenum) {
+	context.enabled_capabilities.delete(capability)
+	context.native.dispatch('disable', capability)
+}
+
+pub fn (context &WebGLRenderingContext) is_enabled(capability GLenum) bool {
+	return capability in context.enabled_capabilities
+}
+
+pub fn (mut context WebGLRenderingContext) enable_vertex_attrib_array(index GLuint) {
+	context.enabled_vertex_attributes[index] = true
+	context.native.dispatch('enable_vertex_attrib_array', index)
+}
+
+pub fn (mut context WebGLRenderingContext) disable_vertex_attrib_array(index GLuint) {
+	context.enabled_vertex_attributes.delete(index)
+	context.native.dispatch('disable_vertex_attrib_array', index)
+}
+
+pub fn (mut context WebGLRenderingContext) clear_color(red f32, green f32, blue f32, alpha f32) {
+	context.clear_color_ = [red, green, blue, alpha]!
+	context.native.dispatch('clear_color', i64(red), i64(green), i64(blue), i64(alpha))
+}
+
+pub fn (mut context WebGLRenderingContext) clear_depth(depth f64) {
+	context.clear_depth_ = if depth < 0 {
+		0
+	} else if depth > 1 {
+		1
+	} else {
+		depth
+	}
+	context.native.dispatch('clear_depth', i64(context.clear_depth_))
+}
+
+pub fn (mut context WebGLRenderingContext) clear_stencil(stencil int) {
+	context.clear_stencil_ = stencil
+	context.native.dispatch('clear_stencil', stencil)
+}
+
+pub fn (mut context WebGLRenderingContext) color_mask(red bool, green bool, blue bool, alpha bool) {
+	context.color_mask_ = [red, green, blue, alpha]!
+}
+
+pub fn (mut context WebGLRenderingContext) depth_mask(flag bool) {
+	context.depth_mask_ = flag
+}
+
+pub fn (mut context WebGLRenderingContext) clear(mask GLenum) {
+	context.native.dispatch('clear', mask)
+}
+
+pub fn (mut context WebGLRenderingContext) viewport(x int, y int, width int, height int) {
+	if width < 0 || height < 0 {
+		context.set_error(invalid_value)
+		return
+	}
+	context.viewport_ = [x, y, width, height]!
+	context.native.dispatch('viewport', x, y, width, height)
+}
+
+pub fn (mut context WebGLRenderingContext) scissor(x int, y int, width int, height int) {
+	if width < 0 || height < 0 {
+		context.set_error(invalid_value)
+		return
+	}
+	context.scissor_ = [x, y, width, height]!
+	context.native.dispatch('scissor', x, y, width, height)
+}
+
+pub fn (mut context WebGLRenderingContext) draw_arrays(mode GLenum, first int, count int) {
+	if first < 0 || count < 0 {
+		context.set_error(invalid_value)
+		return
+	}
+	context.native.dispatch('draw_arrays', mode, first, count)
+}
+
+pub fn (mut context WebGLRenderingContext) draw_elements(mode GLenum, count int, type_ GLenum, offset i64) {
+	if count < 0 || offset < 0 {
+		context.set_error(invalid_value)
+		return
+	}
+	if element_array_buffer !in context.bound_buffers {
+		context.set_error(invalid_operation)
+		return
+	}
+	context.native.dispatch('draw_elements', mode, count, type_, offset)
+}
+
+// Native passthrough state commands retain ordering at the platform boundary.
+pub fn (mut context WebGLRenderingContext) command(name string, args ...i64) {
+	context.native.dispatch(name, ...args)
+}

@@ -1,0 +1,404 @@
+// Copyright (c) 2026, Ladybird contributors
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of Clipboard/Clipboard.{h,cpp,idl}.
+module clipboard
+
+import dom
+import fileapi
+import html
+import mimesniff
+
+pub struct ClipboardUnsanitizedFormats {
+pub:
+	unsanitized ?[]string
+}
+
+@[heap]
+pub struct ClipboardReadPromise {
+mut:
+	state_  ClipboardPromiseState
+	items_  []&ClipboardItem
+	reason_ string
+}
+
+pub fn ClipboardReadPromise.pending() &ClipboardReadPromise {
+	return &ClipboardReadPromise{}
+}
+
+pub fn (promise &ClipboardReadPromise) state() ClipboardPromiseState {
+	return promise.state_
+}
+
+pub fn (promise &ClipboardReadPromise) items() []&ClipboardItem {
+	return promise.items_.clone()
+}
+
+pub fn (promise &ClipboardReadPromise) reason() string {
+	return promise.reason_
+}
+
+fn (mut promise ClipboardReadPromise) resolve(items []&ClipboardItem) {
+	if promise.state_ == .pending {
+		promise.state_ = .fulfilled
+		promise.items_ = items.clone()
+	}
+}
+
+fn (mut promise ClipboardReadPromise) reject(reason string) {
+	if promise.state_ == .pending {
+		promise.state_ = .rejected
+		promise.reason_ = reason
+	}
+}
+
+@[heap]
+pub struct ClipboardTextPromise {
+mut:
+	state_  ClipboardPromiseState
+	text_   string
+	reason_ string
+}
+
+pub fn ClipboardTextPromise.pending() &ClipboardTextPromise {
+	return &ClipboardTextPromise{}
+}
+
+pub fn (promise &ClipboardTextPromise) state() ClipboardPromiseState {
+	return promise.state_
+}
+
+pub fn (promise &ClipboardTextPromise) text() string {
+	return promise.text_
+}
+
+pub fn (promise &ClipboardTextPromise) reason() string {
+	return promise.reason_
+}
+
+fn (mut promise ClipboardTextPromise) resolve(text string) {
+	if promise.state_ == .pending {
+		promise.state_ = .fulfilled
+		promise.text_ = text
+	}
+}
+
+fn (mut promise ClipboardTextPromise) reject(reason string) {
+	if promise.state_ == .pending {
+		promise.state_ = .rejected
+		promise.reason_ = reason
+	}
+}
+
+@[heap]
+pub struct ClipboardVoidPromise {
+mut:
+	state_  ClipboardPromiseState
+	reason_ string
+}
+
+pub fn ClipboardVoidPromise.pending() &ClipboardVoidPromise {
+	return &ClipboardVoidPromise{}
+}
+
+pub fn (promise &ClipboardVoidPromise) state() ClipboardPromiseState {
+	return promise.state_
+}
+
+pub fn (promise &ClipboardVoidPromise) reason() string {
+	return promise.reason_
+}
+
+fn (mut promise ClipboardVoidPromise) resolve() {
+	if promise.state_ == .pending {
+		promise.state_ = .fulfilled
+	}
+}
+
+fn (mut promise ClipboardVoidPromise) reject(reason string) {
+	if promise.state_ == .pending {
+		promise.state_ = .rejected
+		promise.reason_ = reason
+	}
+}
+
+// https://w3c.github.io/clipboard-apis/#os-specific-well-known-format
+pub fn os_specific_well_known_format(mime_type_string string) string {
+	mime_type := mimesniff.MimeType.parse(mime_type_string) or { return '' }
+	essence := mime_type.essence()
+	return if essence == 'text/plain' || essence == 'text/html' || essence == 'image/png' {
+		essence
+	} else {
+		''
+	}
+}
+
+pub fn check_clipboard_read_permission(has_transient_activation bool) bool {
+	return has_transient_activation
+}
+
+pub fn check_clipboard_write_permission(has_transient_activation bool) bool {
+	return has_transient_activation
+}
+
+@[heap]
+pub struct Clipboard {
+	dom.EventTarget
+mut:
+	backend_                 &SystemClipboardBackend = unsafe { nil }
+	event_loop_              &html.EventLoop         = unsafe { nil }
+	document_                ?&dom.Document
+	has_transient_activation bool
+	active_write_operations  []&ClipboardWriteOperation
+}
+
+// create wires the renderer-side API to its explicit system clipboard
+// boundary. Activation is deliberately mutable because Window's transient
+// activation is consumed/updated independently of this object.
+pub fn Clipboard.create(backend &SystemClipboardBackend, event_loop &html.EventLoop, document ?&dom.Document) &Clipboard {
+	return &Clipboard{
+		backend_:    backend
+		event_loop_: event_loop
+		document_:   document
+	}
+}
+
+pub fn Clipboard.construct_impl() !&Clipboard {
+	return Clipboard.create(SystemClipboardBackend.create(), html.main_thread_event_loop(), none)
+}
+
+pub fn (board &Clipboard) event_target() &dom.EventTarget {
+	return unsafe { &dom.EventTarget(board) }
+}
+
+pub fn (mut board Clipboard) set_has_transient_activation(value bool) {
+	board.has_transient_activation = value
+}
+
+pub fn (board &Clipboard) backend() &SystemClipboardBackend {
+	return board.backend_
+}
+
+// https://w3c.github.io/clipboard-apis/#dom-clipboard-read
+pub fn (board &Clipboard) read(formats ClipboardUnsanitizedFormats) &ClipboardReadPromise {
+	mut promise := ClipboardReadPromise.pending()
+	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, mut promise, formats] () {
+		if !check_clipboard_read_permission(board.has_transient_activation) {
+			promise.reject('NotAllowedError: Clipboard reading is only allowed through user activation')
+			return
+		}
+		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, mut promise, formats] () {
+			mut items := []&ClipboardItem{}
+			for system_item in board.backend_.items() {
+				mut item := ClipboardItem.create_empty()
+				for system_representation in system_item.system_clipboard_representations {
+					mime_type := os_specific_well_known_format(system_representation.mime_type)
+					if mime_type.len == 0 {
+						continue
+					}
+					// The sanitization hook remains a specification FIXME upstream. Still
+					// inspect the request so this translation retains that control point.
+					mut is_unsanitized := mime_type == 'image/png'
+					if requested := formats.unsanitized {
+						is_unsanitized = is_unsanitized || mime_type in requested
+					}
+					_ = is_unsanitized
+					item.append_representation(ClipboardItemRepresentation{
+						mime_type: mime_type
+						data:      ClipboardItemDataPromise.resolved_string(system_representation.data.bytestr())
+					})
+				}
+				if item.representations().len > 0 {
+					items << item
+				}
+			}
+			promise.resolve(items)
+		})
+	})
+	return promise
+}
+
+// https://w3c.github.io/clipboard-apis/#dom-clipboard-readtext
+pub fn (board &Clipboard) read_text() &ClipboardTextPromise {
+	mut promise := ClipboardTextPromise.pending()
+	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, mut promise] () {
+		if !check_clipboard_read_permission(board.has_transient_activation) {
+			promise.reject('NotAllowedError: Clipboard reading is only allowed through user activation')
+			return
+		}
+		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, mut promise] () {
+			for item in board.backend_.items() {
+				for representation in item.system_clipboard_representations {
+					if os_specific_well_known_format(representation.mime_type) == 'text/plain' {
+						promise.resolve(representation.data.bytestr())
+						return
+					}
+				}
+			}
+			promise.reject('NotFoundError: Did not find a text item in the system clipboard')
+		})
+	})
+	return promise
+}
+
+// https://w3c.github.io/clipboard-apis/#dom-clipboard-write
+pub fn (board &Clipboard) write(data []&ClipboardItem) &ClipboardVoidPromise {
+	mut promise := ClipboardVoidPromise.pending()
+	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, data, mut promise] () {
+		if !check_clipboard_write_permission(board.has_transient_activation) {
+			promise.reject('NotAllowedError: Clipboard writing is only allowed through user activation')
+			return
+		}
+		mut operation := &ClipboardWriteOperation{
+			clipboard: board
+			data:      data.clone()
+			promise:   promise
+		}
+		mut mutable_clipboard := unsafe { &Clipboard(board) }
+		mutable_clipboard.active_write_operations << operation
+		operation.schedule()
+	})
+	return promise
+}
+
+// https://w3c.github.io/clipboard-apis/#dom-clipboard-writetext
+pub fn (board &Clipboard) write_text(data string) &ClipboardVoidPromise {
+	mut promise := ClipboardVoidPromise.pending()
+	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, data, mut promise] () {
+		if !check_clipboard_write_permission(board.has_transient_activation) {
+			promise.reject('NotAllowedError: Clipboard writing is only allowed through user activation')
+			return
+		}
+		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, data, mut promise] () {
+			mut backend := board.backend_
+			backend.replace_items([
+				SystemClipboardItem{
+					system_clipboard_representations: [
+						SystemClipboardRepresentation{
+							data:      data.bytes()
+							mime_type: os_specific_well_known_format('text/plain;charset=utf-8')
+						},
+					]
+				},
+			], ['unspecified'])
+			promise.resolve()
+		})
+	})
+	return promise
+}
+
+@[heap]
+struct ClipboardWriteOperation {
+	clipboard &Clipboard = unsafe { nil }
+	data      []&ClipboardItem
+	promise   &ClipboardVoidPromise = unsafe { nil }
+mut:
+	scheduled bool
+	completed bool
+}
+
+fn (mut operation ClipboardWriteOperation) schedule() {
+	if operation.completed || operation.scheduled {
+		return
+	}
+	operation.scheduled = true
+	html.queue_a_task(.clipboard, operation.clipboard.event_loop_, operation.clipboard.document_, fn [mut operation] () {
+		operation.scheduled = false
+		operation.process()
+	})
+}
+
+fn (mut operation ClipboardWriteOperation) process() {
+	if operation.completed {
+		return
+	}
+	mut has_pending_data := false
+	for item in operation.data {
+		for representation in item.representations() {
+			match representation.data.state() {
+				.rejected {
+					operation.fail('NotAllowedError: Writing to the clipboard failed: ${representation.data.reason()}')
+					return
+				}
+				.pending {
+					has_pending_data = true
+					representation.data.react(fn [mut operation] (_ ClipboardItemData) {
+						operation.schedule()
+					}, fn [mut operation] (_ string) {
+						operation.schedule()
+					})
+				}
+				.fulfilled {}
+			}
+		}
+	}
+	if has_pending_data {
+		return
+	}
+
+	mut system_items := []SystemClipboardItem{cap: operation.data.len}
+	mut presentation_styles := []string{cap: operation.data.len}
+	for item in operation.data {
+		mut system_representations := []SystemClipboardRepresentation{}
+		for representation in item.representations() {
+			value := representation.data.result() or {
+				operation.fail('NotAllowedError: Clipboard representation has no data')
+				return
+			}
+			blob := match value.kind {
+				.string_ {
+					fileapi.Blob.create(value.text.bytes(), representation.mime_type)
+				}
+				.blob {
+					value.blob or {
+						operation.fail('NotAllowedError: Clipboard Blob value is missing')
+						return
+					}
+				}
+			}
+			if !ClipboardItem.supports(blob.type_()) {
+				operation.fail('NotAllowedError: Clipboard item type ${blob.type_()} is not allowed')
+				return
+			}
+			format := os_specific_well_known_format(blob.type_())
+			if format.len == 0 {
+				operation.fail('NotAllowedError: Clipboard item type ${blob.type_()} has no native format')
+				return
+			}
+			system_representations << SystemClipboardRepresentation{
+				data:      blob.raw_bytes().clone()
+				mime_type: format
+			}
+		}
+		system_items << SystemClipboardItem{
+			system_clipboard_representations: system_representations
+		}
+		presentation_styles << presentation_style_string(item.presentation_style())
+	}
+	mut backend := operation.clipboard.backend_
+	backend.replace_items(system_items, presentation_styles)
+	mut promise := operation.promise
+	promise.resolve()
+	operation.complete()
+}
+
+fn (mut operation ClipboardWriteOperation) fail(reason string) {
+	mut promise := operation.promise
+	promise.reject(reason)
+	operation.complete()
+}
+
+fn (mut operation ClipboardWriteOperation) complete() {
+	if operation.completed {
+		return
+	}
+	operation.completed = true
+	mut board := unsafe { &Clipboard(operation.clipboard) }
+	for index, candidate in board.active_write_operations {
+		if candidate == &operation {
+			board.active_write_operations.delete(index)
+			break
+		}
+	}
+}

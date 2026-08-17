@@ -126,7 +126,7 @@ pub fn parse_ipv6_address(input string) ?[]u16 {
 					} else {
 						ipv4_piece = number
 					}
-					if (ipv4_piece or { u32(0) }) > 255 {
+					if ipv4_piece or { u32(0) } > 255 {
 						return none
 					}
 					pointer++

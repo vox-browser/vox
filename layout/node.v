@@ -7,8 +7,8 @@ import css
 // a JS::Cell + TreeNode<Node>; here the tree is modelled with a parent pointer + children array (as this
 // port's DOM::Node is), rather than C++ TreeNode's intrusive first-child/next-sibling linked list.
 //
-// This replaces the `{ stub LayoutStub }` shell. NodeWithStyle / Box / BlockContainer etc. remain shells
-// for now and will build on this base in later slices.
+// NodeWithStyle, Box, BlockContainer, Viewport, and TextNode below preserve the
+// layout-tree identity and state used by the stateful formatting-context API.
 @[heap]
 pub struct Node {
 pub mut:

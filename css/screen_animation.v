@@ -518,9 +518,9 @@ pub mut:
 	// CSS-side sampling state. Upstream obtains these through AnimationEffect's
 	// associated Animation and timeline; keeping them on the translated effect
 	// preserves that behavior without making dom import css.
-	output_progress              ?f64
-	default_easing               EasingFunction = EasingFunction.ease()
-	is_css_transition            bool
+	output_progress   ?f64
+	default_easing    EasingFunction = EasingFunction.ease()
+	is_css_transition bool
 }
 
 pub fn KeyframeEffect.create() &KeyframeEffect {
@@ -1561,8 +1561,7 @@ pub fn (mut transition CSSTransition) sample_at(timeline_time f64) ?f64 {
 		progress = 1.0
 		transition.play_state_ = .finished
 	} else {
-		progress = (timeline_time - transition.start_time_) /
-			(transition.end_time_ - transition.start_time_)
+		progress = (timeline_time - transition.start_time_) / (transition.end_time_ - transition.start_time_)
 	}
 	transition.keyframe_effect_.set_output_progress(progress)
 	return progress

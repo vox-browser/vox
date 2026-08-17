@@ -61,3 +61,26 @@ fn test_selection_selects_and_deletes_contents() {
 	selection.delete_from_document() or { panic(err) }
 	assert text.data() == 'ho'
 }
+
+fn test_selection_nullable_collapse_and_foreign_extend_ordering() {
+	document, text := selection_test_document_with_text('hello')
+	mut selection := Selection.create(document)
+	selection.collapse(text.as_node(), 2) or { panic(err) }
+	selection.collapse(none, 999) or { panic(err) }
+	assert selection.is_empty()
+
+	foreign_document, foreign_text := selection_test_document_with_text('x')
+	_ = foreign_document
+	// Upstream checks document membership before the empty-selection and offset
+	// errors, so a foreign node is an observable no-op.
+	selection.extend(foreign_text.as_node(), 99) or { panic(err) }
+	assert selection.is_empty()
+}
+
+fn test_selection_modify_unimplemented_granularity_is_noop() {
+	document, text := selection_test_document_with_text('one\ntwo')
+	mut selection := Selection.create(document)
+	selection.collapse(text.as_node(), 1) or { panic(err) }
+	selection.modify('move', 'forward', 'line') or { panic(err) }
+	assert selection.focus_offset() == 1
+}

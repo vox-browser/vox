@@ -8,8 +8,8 @@
 // rotateAxisAngle/rotateFromVector). Each read-only transform copies the matrix and post-multiplies a
 // transform matrix onto the copy; the *_self methods mutate in place and return the matrix (for chaining).
 //
-// invert lives in dom_matrix_invert.v. STILL DEFERRED (a follow-up turn): toFloat32Array/toString, the
-// DOMString (CSS transform-list) constructor, and the (de)serialization steps.
+// Inversion lives in dom_matrix_invert.v; string parsing/stringification and
+// typed structured-clone records live in their focused companion files.
 //
 // The stored components are the spec's column-major m<column><row>; to_rows() exposes the matrix as the
 // standard rows[row][col] (rows[r][c] = m<c+1><r+1>) so a point transforms as rows * vector and matrices
@@ -272,8 +272,8 @@ pub fn (mut matrix DOMMatrix) pre_multiply_self(mut other DOMMatrixInit) !&DOMMa
 // https://drafts.fxtf.org/geometry/#dom-dommatrix-translateself — post-multiply a translation.
 pub fn (mut matrix DOMMatrix) translate_self(tx ?f64, ty ?f64, tz ?f64) &DOMMatrix {
 	z := tz or { 0.0 }
-	matrix.apply_rows(mat4_multiply(matrix.to_rows(), translation_rows(tx or { 0.0 }, ty or { 0.0 },
-		z)))
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), translation_rows(tx or { 0.0 },
+		ty or { 0.0 }, z)))
 	// If tz is specified and non-zero, the matrix is no longer 2D.
 	if tz != none && z != 0.0 {
 		matrix.is_2d_ = false
@@ -362,7 +362,9 @@ pub fn (matrix &DOMMatrixReadOnly) scale(scale_x ?f64, scale_y ?f64, scale_z ?f6
 // to 1 (unlike scale, where scaleY follows scaleX).
 pub fn (matrix &DOMMatrixReadOnly) scale_non_uniform(scale_x ?f64, scale_y ?f64) &DOMMatrix {
 	mut result := DOMMatrix.create_from_dom_matrix_read_only(matrix)
-	return result.scale_self(scale_x or { 1.0 }, scale_y or { 1.0 }, 1.0, 0.0, 0.0, 0.0)
+	sx := scale_x or { 1.0 }
+	sy := scale_y or { 1.0 }
+	return result.scale_self(sx, sy, 1.0, 0.0, 0.0, 0.0)
 }
 
 // https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-scale3d

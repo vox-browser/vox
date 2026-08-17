@@ -79,6 +79,7 @@ pub mut:
 	monotonic_response_time i64
 	// https://fetch.spec.whatwg.org/#concept-network-error (the network error message).
 	network_error_message ?string
+	internal_response     ?&Response
 }
 
 // https://fetch.spec.whatwg.org/#concept-response-clone (allocation only).
@@ -141,4 +142,121 @@ pub fn (response &Response) is_network_error() bool {
 		return false
 	}
 	return true
+}
+
+pub struct LocationURLResult {
+pub:
+	url ?dom.URL
+}
+
+pub fn (response &Response) location_url(request_fragment ?string) !LocationURLResult {
+	if !is_redirect_status(response.status) {
+		return LocationURLResult{}
+	}
+	values := response.header_list.get_decode_and_split('Location') or {
+		return LocationURLResult{}
+	}
+	if values.len != 1 {
+		return LocationURLResult{}
+	}
+	base := response.url() or { dom.URL{} }
+	mut location := dom.dom_url_parse(values[0], base, 'UTF-8') or {
+		return error("Invalid 'Location' header URL")
+	}
+	if location.fragment() == none {
+		location.set_fragment(request_fragment)
+	}
+	return LocationURLResult{
+		url: location
+	}
+}
+
+pub fn (response &Response) clone() &Response {
+	if internal := response.internal_response {
+		return filtered_response(internal.clone(), response.response_type)
+	}
+	mut headers := http.HeaderList.create()
+	for header in response.header_list.headers() {
+		headers.append(header)
+	}
+	return &Response{
+		response_type:                 response.response_type
+		aborted:                       response.aborted
+		url_list:                      response.url_list.clone()
+		status:                        response.status
+		status_message:                response.status_message
+		header_list:                   headers
+		body:                          if bytes := response.body { bytes.clone() } else { none }
+		cache_state:                   response.cache_state
+		cors_exposed_header_name_list: response.cors_exposed_header_name_list.clone()
+		range_requested:               response.range_requested
+		request_includes_credentials:  response.request_includes_credentials
+		timing_allow_passed:           response.timing_allow_passed
+		body_info:                     response.body_info
+		redirect_taint:                response.redirect_taint
+		method:                        response.method
+		monotonic_response_time:       response.monotonic_response_time
+		network_error_message:         response.network_error_message
+	}
+}
+
+pub fn (response &Response) unsafe_response() &Response {
+	return response.internal_response or { response }
+}
+
+pub fn (response &Response) is_cors_same_origin() bool {
+	return response.response_type in [.basic, .cors, .default]
+}
+
+pub fn (response &Response) is_cors_cross_origin() bool {
+	return response.response_type in [.opaque, .opaque_redirect]
+}
+
+pub fn filtered_response(internal &Response, response_type ResponseType) &Response {
+	mut headers := http.HeaderList.create()
+	match response_type {
+		.basic {
+			for header in internal.header_list.headers() {
+				if !is_forbidden_response_header_name(header.name) { headers.append(header) }
+			}
+		}
+		.cors {
+			for header in internal.header_list.headers() {
+				if is_cors_safelisted_response_header_name(header.name,
+					internal.cors_exposed_header_name_list)
+				{
+					headers.append(header)
+				}
+			}
+		}
+		else {}
+	}
+	if response_type == .opaque {
+		return &Response{
+			response_type:     .opaque
+			status:            0
+			header_list:       headers
+			internal_response: internal
+		}
+	}
+	if response_type == .opaque_redirect {
+		return &Response{
+			response_type:     .opaque_redirect
+			status:            0
+			url_list:          internal.url_list.clone()
+			header_list:       headers
+			internal_response: internal
+		}
+	}
+	return &Response{
+		response_type:     response_type
+		aborted:           internal.aborted
+		url_list:          internal.url_list.clone()
+		status:            internal.status
+		status_message:    internal.status_message
+		header_list:       headers
+		body:              if bytes := internal.body { bytes.clone() } else { none }
+		body_info:         internal.body_info
+		internal_response: internal
+	}
 }

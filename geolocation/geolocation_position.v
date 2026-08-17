@@ -4,8 +4,7 @@
 
 // Translation of the self-contained data records of Libraries/LibWeb/Geolocation — GeolocationCoordinates
 // (and its backing CoordinatesData), GeolocationPosition, and GeolocationPositionError. These are read-only
-// value/record types; the geolocation acquisition algorithm and the Geolocation interface (watchPosition/
-// getCurrentPosition) are DOM/permission/timer-coupled and out of scope.
+// value/record types used by the acquisition algorithm in geolocation.v.
 // https://w3c.github.io/geolocation/
 module geolocation
 
@@ -66,6 +65,10 @@ pub fn (coordinates &GeolocationCoordinates) speed() ?f64 {
 	return coordinates.data.speed
 }
 
+pub fn (coordinates &GeolocationCoordinates) to_json() CoordinatesData {
+	return coordinates.data
+}
+
 // https://w3c.github.io/geolocation/#dom-geolocationposition
 @[heap]
 pub struct GeolocationPosition {
@@ -93,6 +96,19 @@ pub fn (position &GeolocationPosition) timestamp() EpochTimeStamp {
 // https://w3c.github.io/geolocation/#dfn-ishighaccuracy
 pub fn (position &GeolocationPosition) is_high_accuracy() bool {
 	return position.is_high_accuracy_
+}
+
+pub struct GeolocationPositionJSON {
+pub:
+	coords    CoordinatesData
+	timestamp EpochTimeStamp
+}
+
+pub fn (position &GeolocationPosition) to_json() GeolocationPositionJSON {
+	return GeolocationPositionJSON{
+		coords:    position.coords_.to_json()
+		timestamp: position.timestamp_
+	}
 }
 
 // https://w3c.github.io/geolocation/#dom-geolocationpositionerror

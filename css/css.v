@@ -461,16 +461,15 @@ fn color_resolution_context_for_computed_properties(computed &ComputedProperties
 		current_color: initial_color
 		accent_color:  initial_accent
 	}
-	resolved_color := computed.color_or_fallback(.color, base_context,
-		ComputedColor.rgba(initial_color.r, initial_color.g, initial_color.b, initial_color.a))
-	resolved_accent := computed.color_or_fallback(.accent_color, base_context,
-		ComputedColor.rgba(initial_accent.r, initial_accent.g, initial_accent.b,
-			initial_accent.a))
+	resolved_color := computed.color_or_fallback(.color, base_context, ComputedColor.rgba(initial_color.r,
+		initial_color.g, initial_color.b, initial_color.a))
+	resolved_accent := computed.color_or_fallback(.accent_color, base_context, ComputedColor.rgba(initial_accent.r,
+		initial_accent.g, initial_accent.b, initial_accent.a))
 	return ColorResolutionContext{
-		color_scheme: scheme
+		color_scheme:  scheme
 		current_color: Color.rgba(resolved_color.red(), resolved_color.green(),
 			resolved_color.blue(), resolved_color.alpha())
-		accent_color: Color.rgba(resolved_accent.red(), resolved_accent.green(),
+		accent_color:  Color.rgba(resolved_accent.red(), resolved_accent.green(),
 			resolved_accent.blue(), resolved_accent.alpha())
 	}
 }
@@ -1549,9 +1548,7 @@ pub fn CSSPixels.nearest_value_for(value f64) CSSPixels {
 	if math.is_nan(value) {
 		return CSSPixels{}
 	}
-	return CSSPixels.from_raw(css_pixels_clamp_f64_to_raw(math.round_to_even(value *
-		f64(css_pixels_fixed_point_denominator))))
-
+	return CSSPixels.from_raw(css_pixels_clamp_f64_to_raw(math.round_to_even(value * f64(css_pixels_fixed_point_denominator))))
 }
 
 pub fn CSSPixels.floored_value_for(value f64) CSSPixels {

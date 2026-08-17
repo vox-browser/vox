@@ -55,6 +55,89 @@ fn property_is_logical_alias(property_id PropertyID) bool {
 	]
 }
 
+enum LogicalPropertyGroup {
+	border_color
+	border_radius
+	border_style
+	border_width
+	corner_shape
+	inset
+	margin
+	max_size
+	min_size
+	overflow
+	overflow_clip_margin
+	padding
+	size
+}
+
+// Generated from LogicalPropertyGroups.json and Properties.json's
+// `logical-alias-for` entries. Physical and logical declarations in the same
+// group can map to the same used property, so CSSOM mutation has to preserve
+// their relative order.
+fn logical_property_group_for_property(property_id PropertyID) ?LogicalPropertyGroup {
+	return match property_id {
+		.border_top_color, .border_right_color, .border_bottom_color, .border_left_color,
+		.border_block_start_color, .border_block_end_color, .border_inline_start_color,
+		.border_inline_end_color {
+			LogicalPropertyGroup.border_color
+		}
+		.border_top_left_radius, .border_top_right_radius, .border_bottom_right_radius,
+		.border_bottom_left_radius, .border_start_start_radius, .border_start_end_radius,
+		.border_end_start_radius, .border_end_end_radius {
+			LogicalPropertyGroup.border_radius
+		}
+		.border_top_style, .border_right_style, .border_bottom_style, .border_left_style,
+		.border_block_start_style, .border_block_end_style, .border_inline_start_style,
+		.border_inline_end_style {
+			LogicalPropertyGroup.border_style
+		}
+		.border_top_width, .border_right_width, .border_bottom_width, .border_left_width,
+		.border_block_start_width, .border_block_end_width, .border_inline_start_width,
+		.border_inline_end_width {
+			LogicalPropertyGroup.border_width
+		}
+		.corner_top_left_shape, .corner_top_right_shape, .corner_bottom_right_shape,
+		.corner_bottom_left_shape, .corner_start_start_shape, .corner_start_end_shape,
+		.corner_end_start_shape, .corner_end_end_shape {
+			LogicalPropertyGroup.corner_shape
+		}
+		.top, .right, .bottom, .left, .inset_block_start, .inset_block_end, .inset_inline_start,
+		.inset_inline_end {
+			LogicalPropertyGroup.inset
+		}
+		.margin_top, .margin_right, .margin_bottom, .margin_left, .margin_block_start,
+		.margin_block_end, .margin_inline_start, .margin_inline_end {
+			LogicalPropertyGroup.margin
+		}
+		.max_width, .max_height, .max_block_size, .max_inline_size {
+			LogicalPropertyGroup.max_size
+		}
+		.min_width, .min_height, .min_block_size, .min_inline_size {
+			LogicalPropertyGroup.min_size
+		}
+		.overflow_x, .overflow_y, .overflow_block, .overflow_inline {
+			LogicalPropertyGroup.overflow
+		}
+		.overflow_clip_margin_top, .overflow_clip_margin_right, .overflow_clip_margin_bottom,
+		.overflow_clip_margin_left, .overflow_clip_margin_block_start,
+		.overflow_clip_margin_block_end, .overflow_clip_margin_inline_start,
+		.overflow_clip_margin_inline_end {
+			LogicalPropertyGroup.overflow_clip_margin
+		}
+		.padding_top, .padding_right, .padding_bottom, .padding_left, .padding_block_start,
+		.padding_block_end, .padding_inline_start, .padding_inline_end {
+			LogicalPropertyGroup.padding
+		}
+		.width, .height, .block_size, .inline_size {
+			LogicalPropertyGroup.size
+		}
+		else {
+			none
+		}
+	}
+}
+
 enum LogicalEdge {
 	block_start
 	block_end
@@ -585,9 +668,9 @@ fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, prope
 // importance / supported by the pseudo-element / in `properties_to_cascade` when non-empty), expand
 // shorthands and, per longhand, map a logical alias to its physical property and either revert it or
 // set it in the cascade.
-// FIXME: the inline `is_unresolved`/`is_guaranteed_invalid` resolution (StyleComputer.cpp:505-525) and
-// the pending-substitution "seen" optimization are omitted — the port defers var()/env() resolution to
-// CascadedProperties.resolve_unresolved_properties, so those cases don't arise at cascade time here.
+// Unresolved var()/env() values are resolved before shorthand expansion by
+// resolve_cascade_declaration_value(); CascadedProperties performs the final custom-property pass.
+// The upstream pending-substitution "seen" set is an optimization and does not change results.
 fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, declaration &CSSStyleProperties, cascade_origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
 	pseudo_element := abstract_element.pseudo_element()
 	for property in declaration_style_properties(declaration) {

@@ -61,9 +61,13 @@ fn test_computed_line() {
 	// Auto line with snap-to-lines false returns 100.
 	c.set_line(line_and_position_auto())
 	assert c.computed_line() == 100.0
-	// Auto line with snap-to-lines true is the stubbed -1.
+	// A detached cue has no containing track and returns -1.
 	c.set_snap_to_lines(true)
 	assert c.computed_line() == -1.0
+	// When integrated with a media track list, showing tracks before this one
+	// determine the negative snap-to-lines position.
+	c.set_showing_tracks_before(2)
+	assert c.computed_line() == -3.0
 }
 
 fn test_computed_position() {
@@ -93,6 +97,26 @@ fn test_computed_position_alignment() {
 	assert c.computed_position_alignment() == .line_right
 	c.set_align(.center)
 	assert c.computed_position_alignment() == .center
+	c.set_align(.start)
+	c.set_text('English')
+	assert c.computed_position_alignment() == .line_left
+	c.set_text('עברית')
+	assert c.computed_position_alignment() == .line_right
+	c.set_align(.end)
+	assert c.computed_position_alignment() == .line_left
+}
+
+fn test_computed_position_alignment_ignores_weak_bidi_characters() {
+	mut c := cue()
+	c.set_align(.start)
+	// Arabic-Indic digits are weak AN characters. They do not establish an
+	// RTL base direction, so the following Latin letter is the first strong
+	// character.
+	c.set_text('١٢ English')
+	assert c.computed_position_alignment() == .line_left
+	// Whitespace and punctuation are neutral; the Hebrew letter decides RTL.
+	c.set_text('... עברית')
+	assert c.computed_position_alignment() == .line_right
 }
 
 fn test_region_and_text_setters() {
@@ -102,4 +126,22 @@ fn test_region_and_text_setters() {
 	assert c.region() != none
 	c.set_text('updated')
 	assert c.text() == 'updated'
+}
+
+fn test_remaining_cue_setters_round_trip() {
+	mut c := cue()
+	c.set_snap_to_lines(false)
+	c.set_line(line_and_position_number(12))
+	c.set_line_align(.end)
+	c.set_position(line_and_position_number(34))
+	c.set_position_align(.line_left)
+	c.set_size(56)
+	c.set_align(.right)
+	assert !c.snap_to_lines()
+	assert c.line().value == 12
+	assert c.line_align() == .end
+	assert c.position().value == 34
+	assert c.position_align() == .line_left
+	assert c.size() == 56
+	assert c.align() == .right
 }

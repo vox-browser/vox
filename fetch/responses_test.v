@@ -1,6 +1,7 @@
 module fetch
 
 import dom
+import http
 
 fn test_response_defaults() {
 	response := Response.create()
@@ -55,4 +56,34 @@ fn test_response_url() {
 	}
 	// A response's URL is the last URL in its URL list.
 	assert response.url()?.value == 'https://a/2'
+}
+
+fn test_response_location_url_clone_and_cors_classification() {
+	mut response := Response.create()
+	response.status = 302
+	response.url_list = [dom.URL{'https://example.test/base'}]
+	response.header_list.append(http.Header{ name: 'Location', value: '/next' })
+	assert response.location_url('frag')!.url?.serialize() == 'https://example.test/next#frag'
+	clone := response.clone()
+	assert clone != response
+	assert clone.header_list.get('Location')? == '/next'
+	assert response.is_cors_same_origin()
+	assert !response.is_cors_cross_origin()
+}
+
+fn test_filtered_responses_hide_headers_and_unsafe_response() {
+	mut internal := Response.create()
+	internal.header_list.append(http.Header{ name: 'Content-Type', value: 'text/plain' })
+	internal.header_list.append(http.Header{ name: 'Set-Cookie', value: 'a=1' })
+	internal.header_list.append(http.Header{ name: 'X-Visible', value: 'yes' })
+	internal.cors_exposed_header_name_list = ['x-visible']
+	basic := filtered_response(internal, .basic)
+	assert basic.header_list.contains('Content-Type')
+	assert !basic.header_list.contains('Set-Cookie')
+	cors_response := filtered_response(internal, .cors)
+	assert cors_response.header_list.contains('X-Visible')
+	opaque := filtered_response(internal, .opaque)
+	assert opaque.status == 0 && opaque.body == none
+	assert opaque.unsafe_response() == internal
+	assert opaque.is_cors_cross_origin()
 }

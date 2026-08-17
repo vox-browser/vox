@@ -94,9 +94,11 @@ pub fn computed_percentage(element &dom.Element, property_id PropertyID, author_
 // (for rem), and an optional percentage basis in px (the containing measure for `%` inside the calc).
 fn calc_resolution_context(element &dom.Element, percentage_basis_px ?f64, author_rules []&CSSRule) CalculationResolutionContext {
 	mut font_metrics := LengthFontMetrics.default()
-	font_metrics.font_size = CSSPixels.nearest_value_for(computed_font_size_px(element, author_rules))
+	font_metrics.font_size = CSSPixels.nearest_value_for(computed_font_size_px(element,
+		author_rules))
 	mut root_font_metrics := LengthFontMetrics.default()
-	root_font_metrics.font_size = CSSPixels.nearest_value_for(root_font_size_px(element, author_rules))
+	root_font_metrics.font_size = CSSPixels.nearest_value_for(root_font_size_px(element,
+		author_rules))
 	mut length_context := LengthResolutionContext.default()
 	length_context.viewport_rect = css_pixel_rect_from_dom_rect(element.document().viewport_rect())
 	length_context.font_metrics = font_metrics

@@ -51,3 +51,17 @@ fn test_estimated_monotonic_time_of_unix_epoch_is_finite() {
 	assert !math.is_nan(value)
 	assert !math.is_inf(value, 0)
 }
+
+fn test_relative_high_resolution_time_uses_settings_origin_and_coarsening() {
+	context := TimeOriginContext{
+		time_origin:                      100
+		cross_origin_isolated_capability: false
+	}
+	assert near(relative_high_resolution_coarsen_time(125.5, context), 25.5)
+	assert near(relative_high_resolution_time(125.59, context), 25.5)
+}
+
+fn test_epoch_timestamp_is_unsigned_milliseconds() {
+	timestamp := EpochTimeStamp(1_700_000_000_000)
+	assert timestamp == u64(1_700_000_000_000)
+}

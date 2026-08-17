@@ -392,6 +392,13 @@ pub struct HTMLTitleElement {
 @[heap]
 pub struct HTMLElement {
 	Element
+pub mut:
+	popover_visibility_state_ PopoverVisibilityState
+}
+
+pub enum PopoverVisibilityState {
+	hidden
+	showing
 }
 
 @[heap]
@@ -412,6 +419,9 @@ pub struct HTMLScriptElement {
 @[heap]
 pub struct HTMLDialogElement {
 	HTMLElement
+pub mut:
+	return_value_ string
+	is_modal_     bool
 }
 
 @[heap]
@@ -487,6 +497,8 @@ pub struct HTMLFontElement {
 @[heap]
 pub struct HTMLFormElement {
 	HTMLElement
+pub mut:
+	associated_elements_ []&Element
 }
 
 @[heap]
@@ -622,6 +634,8 @@ pub struct HTMLQuoteElement {
 @[heap]
 pub struct HTMLSelectedContentElement {
 	HTMLElement
+pub mut:
+	disabled_ bool
 }
 
 @[heap]
@@ -1238,7 +1252,12 @@ pub mut:
 pub struct CloseWatcherManager {}
 
 @[heap]
-pub struct BrowsingContext {}
+pub struct BrowsingContext {
+pub mut:
+	window_proxy_    ?&WindowProxy
+	active_document_ ?&Document
+	group_handle     voidptr
+}
 
 @[heap]
 pub struct HTMLParser {}
@@ -1289,7 +1308,10 @@ pub struct Storage {}
 pub struct SourceSnapshotParams {}
 
 @[heap]
-pub struct Navigable {}
+pub struct Navigable {
+pub mut:
+	navigation_observer_handles []voidptr
+}
 
 @[heap]
 pub struct NavigableContainer {}
@@ -1350,8 +1372,26 @@ pub mut:
 	cache_initialized       bool
 }
 
+pub enum HTMLAllCollectionScope {
+	children
+	descendants
+}
+
+pub struct HTMLAllCollectionResult {
+pub:
+	element    ?&Element
+	collection ?&HTMLCollection
+}
+
+// Translation of HTML/HTMLAllCollection.{h,cpp}. It lives in dom because the
+// translated Document owns and exposes this platform collection.
 @[heap]
-pub struct HTMLAllCollection {}
+pub struct HTMLAllCollection {
+pub mut:
+	root   &ParentNode            = unsafe { nil }
+	scope  HTMLAllCollectionScope = .descendants
+	filter fn (&Element) bool     = always_accept_element
+}
 
 @[heap]
 pub struct NodeList {
@@ -1578,8 +1618,72 @@ pub mut:
 	cached_first_element_by_id map[string]&Element
 }
 
+pub enum PromiseState {
+	pending
+	fulfilled
+	rejected
+}
+
+// A small observable promise record used by translated Web APIs until the
+// LibJS promise job machinery is available. Resolution is intentionally
+// idempotent, matching JavaScript promise settlement.
 @[heap]
-pub struct Promise {}
+pub struct Promise {
+pub mut:
+	state_   PromiseState
+	result_  JSValue
+	handled_ bool
+}
+
+pub fn Promise.create() &Promise {
+	return &Promise{}
+}
+
+pub fn Promise.resolved(value JSValue) &Promise {
+	return &Promise{
+		state_:  .fulfilled
+		result_: value
+	}
+}
+
+pub fn Promise.rejected(reason JSValue) &Promise {
+	return &Promise{
+		state_:  .rejected
+		result_: reason
+	}
+}
+
+pub fn (promise &Promise) state() PromiseState {
+	return promise.state_
+}
+
+pub fn (promise &Promise) result() JSValue {
+	return promise.result_
+}
+
+pub fn (mut promise Promise) resolve(value JSValue) {
+	if promise.state_ != .pending {
+		return
+	}
+	promise.state_ = .fulfilled
+	promise.result_ = value
+}
+
+pub fn (mut promise Promise) reject(reason JSValue) {
+	if promise.state_ != .pending {
+		return
+	}
+	promise.state_ = .rejected
+	promise.result_ = reason
+}
+
+pub fn (mut promise Promise) mark_handled() {
+	promise.handled_ = true
+}
+
+pub fn (promise &Promise) is_handled() bool {
+	return promise.handled_
+}
 
 @[heap]
 pub struct AccessibilityTreeNode {
@@ -1661,7 +1765,17 @@ pub fn (he &HTMLElement) set_attribute(name string, value string) {
 
 // BrowsingContext methods
 pub fn (bc &BrowsingContext) window_proxy() &WindowProxy {
-	return &WindowProxy{}
+	if proxy := bc.window_proxy_ {
+		return proxy
+	}
+	mut mutable_context := unsafe { &BrowsingContext(bc) }
+	proxy := &WindowProxy{}
+	mutable_context.window_proxy_ = proxy
+	return proxy
+}
+
+pub fn (bc &BrowsingContext) active_document() ?&Document {
+	return bc.active_document_
 }
 
 // WindowProxy methods
@@ -2986,6 +3100,8 @@ pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, 
 	// Stub: in full implementation would set up browsing context, window, etc.
 	_ = navigation_params
 	mut doc := &Document{}
+	doc.data.kind = .node
+	doc.unique_id_ = allocate_unique_id(unsafe { &Node(doc) })
 	doc.node_type = .document_node
 	doc.document_ = doc
 	doc.type_ = type_
@@ -2998,6 +3114,8 @@ pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, 
 // create corresponds to Document::create
 pub fn Document.create(url URL) &Document {
 	mut doc := &Document{}
+	doc.data.kind = .node
+	doc.unique_id_ = allocate_unique_id(unsafe { &Node(doc) })
 	doc.node_type = .document_node
 	doc.document_ = doc
 	doc.url = url
@@ -3008,6 +3126,8 @@ pub fn Document.create(url URL) &Document {
 // create_for_fragment_parsing corresponds to Document::create_for_fragment_parsing
 pub fn Document.create_for_fragment_parsing() &Document {
 	mut doc := &Document{}
+	doc.data.kind = .node
+	doc.unique_id_ = allocate_unique_id(unsafe { &Node(doc) })
 	doc.node_type = .document_node
 	doc.document_ = doc
 	doc.url = url_about_blank()
@@ -5324,7 +5444,8 @@ pub fn (mut d Document) scripts() &HTMLCollection {
 // https://html.spec.whatwg.org/multipage/dom.html#dom-document-all
 pub fn (mut d Document) all() &HTMLAllCollection {
 	if d.all_ == unsafe { nil } {
-		d.all_ = &HTMLAllCollection{}
+		d.all_ = HTMLAllCollection.create(unsafe { &ParentNode(&d) }, .descendants,
+			always_accept_element)
 	}
 	return d.all_
 }
@@ -6845,19 +6966,19 @@ pub fn (mut d Document) set_onvisibilitychange(value ?&CallbackType) {
 }
 
 pub fn (d &Document) onfullscreenchange() ?&CallbackType {
-	return d.onfullscreenchange_handler
+	return unsafe { &EventTarget(d) }.event_handler_attribute('fullscreenchange')
 }
 
 pub fn (mut d Document) set_onfullscreenchange(value ?&CallbackType) {
-	d.onfullscreenchange_handler = value or { unsafe { nil } }
+	unsafe { &EventTarget(&d) }.set_event_handler_attribute('fullscreenchange', value)
 }
 
 pub fn (d &Document) onfullscreenerror() ?&CallbackType {
-	return d.onfullscreenerror_handler
+	return unsafe { &EventTarget(d) }.event_handler_attribute('fullscreenerror')
 }
 
 pub fn (mut d Document) set_onfullscreenerror(value ?&CallbackType) {
-	d.onfullscreenerror_handler = value or { unsafe { nil } }
+	unsafe { &EventTarget(&d) }.set_event_handler_attribute('fullscreenerror', value)
 }
 
 // --- View transitions ---
@@ -6963,7 +7084,21 @@ pub fn (d &Document) fullscreen_element() ?&Element {
 
 // https://fullscreen.spec.whatwg.org/#dom-document-fullscreenelement
 pub fn (d &Document) fullscreen_element_for_bindings() ?&Element {
-	return d.fullscreen_element()
+	fullscreen_element := d.fullscreen_element() or { return none }
+
+	// Retarget the fullscreen element against the document. A fullscreen element
+	// inside a shadow tree is therefore exposed as the appropriate shadow host.
+	candidate_target := retarget(unsafe { &EventTarget(fullscreen_element.as_node()) }, unsafe {
+		&EventTarget(d)
+	}) or { return none }
+	candidate_node := event_target_as_node(candidate_target) or { return none }
+	candidate := candidate_node.as_element() or { return none }
+
+	// Only expose a retargeted candidate in this document's tree.
+	if candidate.as_node().root() == unsafe { &Node(d) }.root() {
+		return candidate
+	}
+	return none
 }
 
 // https://fullscreen.spec.whatwg.org/#dom-document-fullscreen
@@ -6996,9 +7131,10 @@ pub fn (mut d Document) fully_exit_fullscreen() {
 
 // https://fullscreen.spec.whatwg.org/#exit-fullscreen
 pub fn (mut d Document) exit_fullscreen() &Promise {
-	promise := &Promise{}
+	mut promise := Promise.create()
 	// 2. If doc is not fully active or doc's fullscreen element is null, reject.
 	if !d.is_fully_active() || d.fullscreen_element() == none {
+		promise.reject(js_string('TypeError: Document not fully active or no fullscreen element.'))
 		return promise
 	}
 	// Unfullscreen the fullscreen element
@@ -7006,6 +7142,8 @@ pub fn (mut d Document) exit_fullscreen() &Promise {
 		d.append_pending_fullscreen_change(.change, el)
 		d.unfullscreen_element(mut el)
 	}
+	d.run_fullscreen_steps()
+	promise.resolve(js_undefined())
 	return promise
 }
 

@@ -10,7 +10,8 @@ fn test_to_float64_array_identity() {
 
 fn test_to_float64_array_column_major_order() {
 	// A 16-element sequence is stored as m11..m44 and comes back in the same column-major order.
-	values := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0]
+	values := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0,
+		16.0]
 	matrix := DOMMatrixReadOnly.construct(values) or { panic('${err}') }
 	assert matrix.to_float64_array() == values
 }

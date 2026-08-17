@@ -276,8 +276,9 @@ fn (mut t HTMLTokenizer) next_code_point(stop StopAtInsertionPoint) ?rune {
 		return none
 	}
 	// https://infra.spec.whatwg.org/#normalize-newlines
-	if t.peek_code_point(0, stop) or { rune(0) } == `\r`
-		&& t.peek_code_point(1, stop) or { rune(0) } == `\n` {
+	if t.peek_code_point(0, stop) or { rune(0) } == `\r` && t.peek_code_point(1, stop) or {
+		rune(0)
+	} == `\n` {
 		t.skip(2)
 		return `\n`
 	} else if t.peek_code_point(0, stop) or { rune(0) } == `\r` {
@@ -1147,14 +1148,16 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 					if c := current {
 						if is_html_whitespace(c) || c == `/` || c == `>` {
 							li := t.current_token.attributes.len - 1
-							t.current_token.attributes[li].name_end_position = t.nth_last_position(1)
+							t.current_token.attributes[li].name_end_position =
+								t.nth_last_position(1)
 							t.current_token.attributes[li].local_name = t.consume_current_builder()
 							t.state = .after_attribute_name
 							reconsume = true
 							continue
 						} else if c == `=` {
 							li := t.current_token.attributes.len - 1
-							t.current_token.attributes[li].name_end_position = t.nth_last_position(1)
+							t.current_token.attributes[li].name_end_position =
+								t.nth_last_position(1)
 							t.current_token.attributes[li].local_name = t.consume_current_builder()
 							t.state = .before_attribute_value
 							continue
@@ -1187,7 +1190,8 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 							continue
 						} else if c == `=` {
 							li := t.current_token.attributes.len - 1
-							t.current_token.attributes[li].name_end_position = t.nth_last_position(1)
+							t.current_token.attributes[li].name_end_position =
+								t.nth_last_position(1)
 							t.state = .before_attribute_value
 							continue
 						} else if c == `>` {
@@ -1196,7 +1200,8 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 							t.current_token.add_attribute(Attribute{})
 							if t.source_positions.len > 0 {
 								li := t.current_token.attributes.len - 1
-								t.current_token.attributes[li].name_start_position = t.nth_last_position(1)
+								t.current_token.attributes[li].name_start_position =
+									t.nth_last_position(1)
 							}
 							t.state = .attribute_name
 							reconsume = true
@@ -1276,7 +1281,8 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 						if is_html_whitespace(c) {
 							li := t.current_token.attributes.len - 1
 							t.current_token.attributes[li].value = t.consume_current_builder()
-							t.current_token.attributes[li].value_end_position = t.nth_last_position(1)
+							t.current_token.attributes[li].value_end_position =
+								t.nth_last_position(1)
 							t.state = .before_attribute_name
 							continue
 						} else if c == `&` {
@@ -1286,7 +1292,8 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 						} else if c == `>` {
 							li := t.current_token.attributes.len - 1
 							t.current_token.attributes[li].value = t.consume_current_builder()
-							t.current_token.attributes[li].value_end_position = t.nth_last_position(1)
+							t.current_token.attributes[li].value_end_position =
+								t.nth_last_position(1)
 							return t.switch_to_and_emit_current_token(.data)
 						} else if c == 0 {
 							t.current_builder << rune(0xfffd)
@@ -1551,7 +1558,8 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 					overconsumed := t.matcher.overconsumed_code_points()
 					if overconsumed > 0 {
 						t.restore_to(t.current_offset - overconsumed)
-						t.temporary_buffer = t.temporary_buffer[..t.temporary_buffer.len - overconsumed].clone()
+						t.temporary_buffer =
+							t.temporary_buffer[..t.temporary_buffer.len - overconsumed].clone()
 					}
 
 					if mapped := t.matcher.code_points() {
@@ -1654,12 +1662,13 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 				.hexadecimal_character_reference {
 					if c := current {
 						if is_ascii_digit(c) {
-							t.character_reference_code = t.character_reference_code * 16 + u32(c - 0x30)
+							t.character_reference_code = t.character_reference_code * 16 + u32(c -
+								0x30)
 							continue
 						} else if is_ascii_hex_digit(c) {
 							hex_min := if is_ascii_upper_alpha(c) { rune(0x37) } else { rune(0x57) }
-							t.character_reference_code = t.character_reference_code * 16 +
-								u32(c - hex_min)
+							t.character_reference_code = t.character_reference_code * 16 + u32(c -
+								hex_min)
 							continue
 						} else if c == `;` {
 							t.state = .numeric_character_reference_end
@@ -1677,7 +1686,8 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 				.decimal_character_reference {
 					if c := current {
 						if is_ascii_digit(c) {
-							t.character_reference_code = t.character_reference_code * 10 + u32(c - 0x30)
+							t.character_reference_code = t.character_reference_code * 10 + u32(c -
+								0x30)
 							continue
 						} else if c == `;` {
 							t.state = .numeric_character_reference_end

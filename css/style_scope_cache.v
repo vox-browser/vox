@@ -1142,7 +1142,8 @@ fn style_scope_add_slotted_rules_for_available_scopes(style_computer &StyleCompu
 		current_slot := slot or { break }
 		slot_shadow_root := style_scope_slot_node(current_slot).root().as_shadow_root()
 		if rule_cache := style_computer.rule_cache_for_cascade_origin(cascade_origin,
-			qualified_layer_name, slot_shadow_root) {
+			qualified_layer_name, slot_shadow_root)
+		{
 			style_scope_add_rules_to_run(style_computer, abstract_element,
 				rule_cache.slotted_rules, shadow_root, element_shadow_root, mut rules_to_run)
 		}
@@ -1152,7 +1153,8 @@ fn style_scope_add_slotted_rules_for_available_scopes(style_computer &StyleCompu
 
 fn style_scope_add_part_rules_from_scope(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, qualified_layer_name ?string, part_scope_shadow_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []MatchingRule) {
 	if rule_cache := style_computer.rule_cache_for_cascade_origin(cascade_origin,
-		qualified_layer_name, part_scope_shadow_root) {
+		qualified_layer_name, part_scope_shadow_root)
+	{
 		style_scope_add_rules_to_run(style_computer, abstract_element, rule_cache.part_rules,
 			shadow_root, element_shadow_root, mut rules_to_run)
 	}

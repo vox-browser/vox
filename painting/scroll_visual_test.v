@@ -1,0 +1,105 @@
+module painting
+
+fn test_scroll_state_hierarchy_snapshot_and_clear() {
+	mut state := ScrollState{}
+	root := state.create_scroll_frame('root', 0)
+	sticky := state.create_sticky_frame('sticky', root)
+	child := state.create_scroll_frame('child', sticky)
+	state.frames[root].own_offset = Point{-10, -20}
+	state.frames[sticky].own_offset = Point{2, 3}
+	state.frames[child].own_offset = Point{-5, 0}
+	assert state.cumulative_offset(child) == Point{-13, -17}
+	assert state.nearest_scrolling_ancestor(child) == root
+	assert state.scrolling_frame_indices() == [root, child]
+	assert state.sticky_frame_indices() == [sticky]
+	snapshot := state.snapshot(2)
+	assert snapshot.device_offset_for_index(root) == Point{-20, -40}
+	assert snapshot.device_offset_for_index(99) == Point{}
+	state.clear()
+	assert state.frames.len == 1
+}
+
+fn test_scrollbar_thumb_geometry_and_pointer_mapping() {
+	metrics := new_chrome_metrics(1) or { panic(err) }
+	data := compute_scrollbar_data(ScrollbarGeometryInput{
+		direction:           .vertical
+		padding_rect:        Rect{0, 0, 100, 200}
+		scrollable_overflow: Rect{0, 0, 100, 800}
+		scroll_offset:       Point{0, 300}
+		metrics:             metrics
+		with_gutter:         true
+	}) or { panic('expected scrollbar') }
+	assert data.gutter_rect == Rect{88, 0, 12, 200}
+	assert data.thumb_rect.width == 8
+	assert data.thumb_rect.height == 49
+	assert data.thumb_rect.y > 70 && data.thumb_rect.y < 80
+	ratio, grab := scrollbar_offset_for_pointer(80, 0, 200, 50, none)
+	assert grab == 25
+	assert ratio > 0.36 && ratio < 0.37
+}
+
+fn test_resize_handle_and_backing_store_state_machines() {
+	mut handle := ResizeHandle{}
+	assert handle.handle_pointer_event('pointerdown', 1, Point{1, 1}) == .none
+	assert handle.handle_pointer_event('pointerdown', 0, Point{2, 3}) == .capture_input
+	assert handle.is_resizing
+	assert handle.handle_pointer_event('pointermove', 9, Point{4, 6}) == .capture_input
+	assert handle.last_point == Point{4, 6}
+	assert handle.handle_pointer_event('pointerup', 0, Point{5, 7}) == .none
+	assert !handle.is_resizing
+	assert resize_cursor(PhysicalResizeAxes{true, true}, false) == .se_resize
+	assert resize_cursor(PhysicalResizeAxes{true, true}, true) == .sw_resize
+	assert resize_cursor(PhysicalResizeAxes{}, false) == .ew_resize
+	mut manager := BackingStoreManager{}
+	assert manager.resize_if_needed(IntSize{800, 600}, true, true, false)
+	assert manager.allocated_size == IntSize{1056, 856}
+	assert !manager.resize_if_needed(IntSize{700, 500}, true, true, false)
+	assert manager.resize_if_needed(IntSize{700, 500}, false, true, false)
+	assert manager.allocated_size == IntSize{700, 500}
+	assert manager.front_bitmap_id == 3
+	assert manager.back_bitmap_id == 4
+}
+
+fn test_visual_context_tree_ancestry_transform_clip_and_empty_propagation() {
+	mut tree := new_accumulated_visual_context_tree()
+	transform := tree.append(TransformVisualData{
+		origin: Point{10, 10}
+		matrix: Affine{
+			a: 2
+			d: 2
+		}
+	}, 0)
+	clip := tree.append(ClipVisualData{ rect: IntRect{0, 0, 100, 100} }, transform)
+	effect := tree.append(EffectsVisualData{ opacity: 0.5 }, clip)
+	sibling := tree.append(ScrollVisualData{ scroll_frame_index: 1 }, transform)
+	assert tree.find_common_ancestor(effect, sibling) == transform
+	assert tree.is_effect(effect)
+	point := tree.transform_point_for_hit_test(effect, Point{30, 30}, ScrollStateSnapshot{}) or {
+		panic('expected hit')
+	}
+	assert point == Point{20, 20}
+	assert tree.transform_point_for_hit_test(effect, Point{500, 500}, ScrollStateSnapshot{}) == none
+	assert tree.inverse_transform_point(effect, Point{30, 30}) == Point{20, 20}
+	assert tree.transform_rect_to_viewport(effect, Rect{10, 10, 5, 5}, ScrollStateSnapshot{}) == Rect{10, 10, 10, 10}
+	empty := tree.append(ClipVisualData{ rect: IntRect{} }, 0)
+	child := tree.append(EffectsVisualData{}, empty)
+	assert tree.nodes[empty].has_empty_effective_clip
+	assert tree.nodes[child].has_empty_effective_clip
+	double_wound_square := [Point{0, 0}, Point{10, 0}, Point{10, 10},
+		Point{0, 10}, Point{0, 0}, Point{10, 0}, Point{10, 10},
+		Point{0, 10}]
+	nonzero_clip := ClipPathVisualData{
+		bounding_rect: IntRect{0, 0, 10, 10}
+		polygon:       double_wound_square
+	}
+	even_odd_clip := ClipPathVisualData{
+		...nonzero_clip
+		fill_rule: .even_odd
+	}
+	assert nonzero_clip.contains(Point{5, 5})
+	assert !even_odd_clip.contains(Point{5, 5})
+	assert !EffectsVisualData{}.needs_layer()
+	assert EffectsVisualData{
+		opacity: 0.5
+	}.needs_layer()
+}

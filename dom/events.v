@@ -37,6 +37,7 @@ pub enum JSValueKind {
 	object
 }
 
+@[heap]
 pub struct JSValue {
 pub mut:
 	kind         JSValueKind = .undefined
@@ -44,6 +45,10 @@ pub mut:
 	number_data  f64
 	string_data  string
 	object_data  voidptr
+	// HTML's structured-clone implementation uses object_data for its
+	// lightweight object model. Other object_data values (event callbacks,
+	// host objects, and so on) remain deliberately non-serializable.
+	is_structured_object_ bool
 }
 
 pub fn js_undefined() JSValue {
@@ -63,6 +68,13 @@ pub fn js_bool(value bool) JSValue {
 	}
 }
 
+pub fn js_number(value f64) JSValue {
+	return JSValue{
+		kind:        .number
+		number_data: value
+	}
+}
+
 pub fn js_string(value string) JSValue {
 	return JSValue{
 		kind:        .string
@@ -77,6 +89,14 @@ pub fn js_object(value voidptr) JSValue {
 	}
 }
 
+pub fn js_structured_object(value voidptr) JSValue {
+	return JSValue{
+		kind:                  .object
+		object_data:           value
+		is_structured_object_: true
+	}
+}
+
 pub fn (value JSValue) is_undefined() bool {
 	return value.kind == .undefined
 }
@@ -87,6 +107,22 @@ pub fn (value JSValue) is_nullish() bool {
 
 pub fn (value JSValue) is_boolean() bool {
 	return value.kind == .boolean
+}
+
+pub fn (value JSValue) is_number() bool {
+	return value.kind == .number
+}
+
+pub fn (value JSValue) is_string() bool {
+	return value.kind == .string
+}
+
+pub fn (value JSValue) is_object() bool {
+	return value.kind == .object
+}
+
+pub fn (value JSValue) is_structured_object() bool {
+	return value.kind == .object && value.is_structured_object_
 }
 
 pub fn (value JSValue) as_bool() bool {
@@ -773,6 +809,7 @@ pub mut:
 
 pub enum EventTargetKind {
 	generic
+	node
 	window
 }
 
@@ -2009,21 +2046,10 @@ pub fn retarget(target ?&EventTarget, against &EventTarget) ?&EventTarget {
 }
 
 fn event_target_as_node(target &EventTarget) ?&Node {
-	if target.data.kind == .window {
+	if target.data.kind != .node {
 		return none
 	}
-	node := unsafe { &Node(target) }
-	if node.node_type != .element_node && node.node_type != .attribute_node
-		&& node.node_type != .text_node && node.node_type != .cdata_section_node
-		&& node.node_type != .processing_instruction_node && node.node_type != .comment_node
-		&& node.node_type != .document_node && node.node_type != .document_type_node
-		&& node.node_type != .document_fragment_node {
-		return none
-	}
-	if node.document() == unsafe { nil } && !node.is_document() {
-		return none
-	}
-	return node
+	return unsafe { &Node(target) }
 }
 
 fn event_target_as_window(target &EventTarget) ?&Window {

@@ -99,7 +99,11 @@ fn test_serialize_hostless_path_guard() {
 }
 
 fn test_includes_credentials() {
-	assert URL{ username: 'u' }.includes_credentials()
-	assert URL{ password: 'p' }.includes_credentials()
+	assert URL{
+		username: 'u'
+	}.includes_credentials()
+	assert URL{
+		password: 'p'
+	}.includes_credentials()
 	assert !URL{}.includes_credentials()
 }

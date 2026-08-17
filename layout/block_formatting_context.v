@@ -138,8 +138,8 @@ fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state Layout
 	block_container_node := unsafe { &Node(block_container) }
 	for child_node in block_container_node.children() {
 		child := child_node.as_node_with_style() or { continue }
-		child_bottom := bfc.layout_block_level_box(mut state, child, block_container, content_width,
-			cb_height_for_children)
+		child_bottom := bfc.layout_block_level_box(mut state, child, block_container,
+			content_width, cb_height_for_children)
 		if child_bottom > bottom_of_lowest_margin_box {
 			bottom_of_lowest_margin_box = child_bottom
 		}
@@ -198,8 +198,8 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			bfc.margin_state.register_block_container_y_position_update(box_state, y)
 			registered = true
 		}
-		content_height_from_children = bfc.layout_block_level_children(mut state, box, content_width,
-			definite_content_height)
+		content_height_from_children = bfc.layout_block_level_children(mut state, box,
+			content_width, definite_content_height)
 		if registered {
 			bfc.margin_state.unregister_block_container_y_position_update()
 		}
@@ -210,6 +210,9 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		0.0
 	})
 	box_state.set_content_height(css_px(height))
+	if definite_content_height != none {
+		box_state.set_has_definite_height(true)
+	}
 
 	// Finish the box's participation in the margin state (CSS 2.1 §8.3.1): unless its margins collapse
 	// through, its bottom border edge becomes the new baseline for the next sibling and the running state is

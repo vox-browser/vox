@@ -178,7 +178,8 @@ fn (mut p HTMLParser) handle_in_table_body(mut token HTMLToken) {
 		p.insertion_mode = .in_table
 		return
 	}
-	if (token.is_start_tag() && token.tag_name in ['caption', 'col', 'colgroup', 'tbody', 'tfoot', 'thead'])
+	if (token.is_start_tag()
+		&& token.tag_name in ['caption', 'col', 'colgroup', 'tbody', 'tfoot', 'thead'])
 		|| (token.is_end_tag() && token.tag_name == 'table') {
 		if !p.stack_of_open_elements.has_in_table_scope('tbody')
 			&& !p.stack_of_open_elements.has_in_table_scope('thead')
@@ -216,7 +217,8 @@ fn (mut p HTMLParser) handle_in_row(mut token HTMLToken) {
 		p.insertion_mode = .in_table_body
 		return
 	}
-	if (token.is_start_tag() && token.tag_name in ['caption', 'col', 'colgroup', 'tbody', 'tfoot', 'thead', 'tr'])
+	if (token.is_start_tag()
+		&& token.tag_name in ['caption', 'col', 'colgroup', 'tbody', 'tfoot', 'thead', 'tr'])
 		|| (token.is_end_tag() && token.tag_name == 'table') {
 		if !p.stack_of_open_elements.has_in_table_scope('tr') {
 			return
@@ -295,7 +297,8 @@ fn (mut p HTMLParser) handle_in_caption(mut token HTMLToken) {
 		p.insertion_mode = .in_table
 		return
 	}
-	if (token.is_start_tag() && token.tag_name in ['caption', 'col', 'colgroup', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr'])
+	if (token.is_start_tag()
+		&& token.tag_name in ['caption', 'col', 'colgroup', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr'])
 		|| (token.is_end_tag() && token.tag_name == 'table') {
 		if !p.stack_of_open_elements.has_in_table_scope('caption') {
 			return

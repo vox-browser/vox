@@ -408,3 +408,144 @@ pub fn rules_for_identifying_an_unknown_mime_type(resource_header []u8, sniff_sc
 	// 10. Return "application/octet-stream".
 	return MimeType.create('application', 'octet-stream')
 }
+
+pub enum SniffingContext {
+	none
+	browsing
+	image
+	audio_or_video
+	font
+	text_or_binary
+}
+
+pub struct SniffingConfiguration {
+pub:
+	sniffing_context SniffingContext
+	scheme           string
+	supplied_type    ?MimeType
+	no_sniff         bool
+}
+
+// https://mimesniff.spec.whatwg.org/#resource
+pub struct Resource {
+mut:
+	supplied_mime_type        ?MimeType
+	check_for_apache_bug_flag bool
+	no_sniff                  bool
+	computed_mime_type_       MimeType
+	resource_header_          []u8
+}
+
+pub fn Resource.create(data []u8, configuration SniffingConfiguration) Resource {
+	mut resource := Resource{
+		no_sniff:            configuration.no_sniff
+		computed_mime_type_: MimeType.create('application', 'octet-stream')
+		resource_header_:    data[..if data.len < 1445 { data.len } else { 1445 }].clone()
+	}
+	resource.detect_supplied_type(configuration.scheme, configuration.supplied_type)
+	resource.run_context(configuration.sniffing_context)
+	return resource
+}
+
+pub fn Resource.sniff(data []u8, configuration SniffingConfiguration) MimeType {
+	return Resource.create(data, configuration).computed_mime_type()
+}
+
+pub fn (resource &Resource) computed_mime_type() MimeType {
+	return resource.computed_mime_type_
+}
+
+pub fn (resource &Resource) resource_header() []u8 {
+	return resource.resource_header_.clone()
+}
+
+fn (mut resource Resource) detect_supplied_type(scheme string, supplied ?MimeType) {
+	if mime := supplied {
+		if scheme == 'http' || scheme == 'https' {
+			serialized := mime.serialized()
+			resource.check_for_apache_bug_flag = serialized in ['text/plain',
+				'text/plain;charset=ISO-8859-1', 'text/plain;charset=iso-8859-1',
+				'text/plain;charset=UTF-8']
+		}
+	}
+	resource.supplied_mime_type = supplied
+}
+
+fn (mut resource Resource) mime_type_sniffing_algorithm() {
+	if supplied := resource.supplied_mime_type {
+		if supplied.is_xml() || supplied.is_html() {
+			resource.computed_mime_type_ = supplied
+			return
+		}
+	}
+	if supplied := resource.supplied_mime_type {
+		if supplied.essence() in ['unknown/unknown', 'application/unknown', '*/*'] {
+			resource.computed_mime_type_ = rules_for_identifying_an_unknown_mime_type(resource.resource_header_,
+				!resource.no_sniff)
+			return
+		}
+	} else {
+		resource.computed_mime_type_ = rules_for_identifying_an_unknown_mime_type(resource.resource_header_,
+			!resource.no_sniff)
+		return
+	}
+	if resource.no_sniff {
+		resource.computed_mime_type_ = resource.supplied_mime_type or { return }
+		return
+	}
+	if resource.check_for_apache_bug_flag {
+		resource.distinguish_text_or_binary()
+		return
+	}
+	resource.computed_mime_type_ = resource.supplied_mime_type or { return }
+}
+
+fn (mut resource Resource) distinguish_text_or_binary() {
+	header := resource.resource_header_
+	if (header.len >= 2 && ((header[0] == 0xfe && header[1] == 0xff)
+		|| (header[0] == 0xff && header[1] == 0xfe)))
+		|| (header.len >= 3 && header[..3] == [u8(0xef), 0xbb, 0xbf])
+		|| !header.any(is_binary_data_byte(it)) {
+		resource.computed_mime_type_ = MimeType.create('text', 'plain')
+		return
+	}
+	resource.computed_mime_type_ = MimeType.create('application', 'octet-stream')
+}
+
+fn (mut resource Resource) context_match(context SniffingContext) {
+	if supplied := resource.supplied_mime_type {
+		if supplied.is_xml() {
+			resource.computed_mime_type_ = supplied
+			return
+		}
+	}
+	matched := match context {
+		.image { match_an_image_type_pattern(resource.resource_header_) }
+		.audio_or_video { match_an_audio_or_video_type_pattern(resource.resource_header_) }
+		.font { match_a_font_type_pattern(resource.resource_header_) }
+		else { none }
+	}
+	if mime := matched {
+		resource.computed_mime_type_ = mime
+	} else if supplied := resource.supplied_mime_type {
+		resource.computed_mime_type_ = supplied
+	}
+}
+
+fn (mut resource Resource) run_context(context SniffingContext) {
+	if context == .none || context == .browsing {
+		resource.mime_type_sniffing_algorithm()
+		return
+	}
+	if resource.no_sniff {
+		if supplied := resource.supplied_mime_type {
+			resource.computed_mime_type_ = supplied
+			return
+		}
+	}
+	if context == .text_or_binary {
+		resource.distinguish_text_or_binary()
+		return
+	}
+	resource.context_match(context)
+}

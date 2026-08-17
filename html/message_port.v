@@ -1,0 +1,377 @@
+// Copyright (c) 2021, Andreas Kling <andreas@ladybird.org>
+// Copyright (c) 2023, Andrew Kaster <akaster@serenityos.org>
+// Copyright (c) 2025, Aliaksandr Kalenik <kalenik.aliaksandr@gmail.com>
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of MessagePort.{h,cpp}, MessageChannel.{h,cpp}, and
+// StructuredSerializeOptions.h. The LibIPC transport is represented by the
+// same spec-visible queued-message behavior in-process.
+@[has_globals]
+module html
+
+import dom
+
+pub struct MessagePortTransfer {
+pub:
+	value &MessagePort = unsafe { nil }
+}
+
+pub struct ImageBitmapTransfer {
+pub:
+	value &ImageBitmap = unsafe { nil }
+}
+
+pub type StructuredTransfer = ImageBitmapTransfer | MessagePortTransfer
+
+pub struct StructuredSerializeOptions {
+pub:
+	transfer []StructuredTransfer
+}
+
+pub struct SerializedTransferItem {
+pub:
+	type_ TransferType
+mut:
+	port_remote   ?&MessagePort
+	port_messages []SerializedTransferRecord
+	data          []u8
+}
+
+pub struct SerializedTransferRecord {
+pub:
+	serialized SerializationRecord
+	transfers  []SerializedTransferItem
+}
+
+pub struct DeserializedTransferRecord {
+pub:
+	deserialized       dom.JSValue
+	transferred_ports  []&MessagePort
+	transferred_images []&ImageBitmap
+}
+
+fn structured_transfer_identity(item StructuredTransfer) u64 {
+	return match item {
+		ImageBitmapTransfer { u64(voidptr((item as ImageBitmapTransfer).value)) }
+		MessagePortTransfer { u64(voidptr((item as MessagePortTransfer).value)) }
+	}
+}
+
+pub fn structured_serialize_with_transfer(message dom.JSValue, transfer []StructuredTransfer) !SerializedTransferRecord {
+	mut seen := map[u64]bool{}
+	for item in transfer {
+		identity := structured_transfer_identity(item)
+		if identity == 0 || seen[identity] {
+			return error('DataCloneError: duplicate or null transferable')
+		}
+		seen[identity] = true
+		match item {
+			ImageBitmapTransfer {
+				if (item as ImageBitmapTransfer).value.is_detached() {
+					return error('DataCloneError: ImageBitmap is detached')
+				}
+			}
+			MessagePortTransfer {
+				if (item as MessagePortTransfer).value.is_detached() {
+					return error('DataCloneError: MessagePort is detached')
+				}
+			}
+		}
+	}
+
+	// Serialization must complete before any transfer steps mutate their source.
+	serialized := structured_serialize(message)!
+	mut transfers := []SerializedTransferItem{cap: transfer.len}
+	for item in transfer {
+		match item {
+			ImageBitmapTransfer {
+				mut bitmap := (item as ImageBitmapTransfer).value
+				transfers << SerializedTransferItem{
+					type_: .image_bitmap
+					data:  bitmap.transfer_steps()
+				}
+			}
+			MessagePortTransfer {
+				mut port := (item as MessagePortTransfer).value
+				transfers << port.transfer_steps()!
+			}
+		}
+	}
+	return SerializedTransferRecord{
+		serialized: serialized
+		transfers:  transfers
+	}
+}
+
+pub fn structured_deserialize_with_transfer(record SerializedTransferRecord) !DeserializedTransferRecord {
+	data := structured_deserialize(record.serialized)!
+	mut ports := []&MessagePort{}
+	mut images := []&ImageBitmap{}
+	for item in record.transfers {
+		match item.type_ {
+			.message_port {
+				mut port := MessagePort.create()
+				port.transfer_receiving_steps(item)!
+				ports << port
+			}
+			.image_bitmap {
+				images << image_bitmap_transfer_receiving_steps(item.data)!
+			}
+			else {
+				return error('DataCloneError: unsupported transfer type')
+			}
+		}
+	}
+	return DeserializedTransferRecord{
+		deserialized:       data
+		transferred_ports:  ports
+		transferred_images: images
+	}
+}
+
+__global (
+	html_all_message_ports = []&MessagePort{}
+)
+
+@[heap]
+pub struct MessagePort {
+	dom.EventTarget
+mut:
+	remote_port_         ?&MessagePort
+	has_been_shipped_    bool
+	detached_            bool
+	enabled_             bool
+	pending_messages_    []SerializedTransferRecord
+	worker_event_target_ ?&dom.EventTarget
+}
+
+pub fn MessagePort.create() &MessagePort {
+	port := &MessagePort{}
+	html_all_message_ports << port
+	return port
+}
+
+pub fn for_each_message_port(callback fn (&MessagePort)) {
+	for port in html_all_message_ports {
+		callback(port)
+	}
+}
+
+pub fn (port &MessagePort) is_entangled() bool {
+	return port.remote_port_ != none
+}
+
+pub fn (port &MessagePort) is_detached() bool {
+	return port.detached_
+}
+
+pub fn (port &MessagePort) has_been_shipped() bool {
+	return port.has_been_shipped_
+}
+
+pub fn (port &MessagePort) entangled_port() ?&MessagePort {
+	return port.remote_port_
+}
+
+pub fn (mut port MessagePort) set_worker_event_target(target &dom.EventTarget) {
+	port.worker_event_target_ = target
+}
+
+pub fn (mut port MessagePort) disentangle() {
+	if remote := port.remote_port_ {
+		mut mutable_remote := unsafe { &MessagePort(remote) }
+		if other := mutable_remote.remote_port_ {
+			if voidptr(other) == voidptr(port) {
+				mutable_remote.remote_port_ = none
+			}
+		}
+	}
+	port.remote_port_ = none
+	port.worker_event_target_ = none
+}
+
+pub fn (mut port MessagePort) entangle_with(remote_port &MessagePort) {
+	if current := port.remote_port_ {
+		if voidptr(current) == voidptr(remote_port) {
+			return
+		}
+	}
+	port.disentangle()
+	mut mutable_remote := unsafe { &MessagePort(remote_port) }
+	mutable_remote.disentangle()
+	port.remote_port_ = remote_port
+	mutable_remote.remote_port_ = &port
+}
+
+pub fn (mut port MessagePort) transfer_steps() !SerializedTransferItem {
+	if port.detached_ {
+		return error('DataCloneError: MessagePort is detached')
+	}
+	port.has_been_shipped_ = true
+	port.detached_ = true
+	remote := port.remote_port_
+	if other := remote {
+		mut mutable_remote := unsafe { &MessagePort(other) }
+		mutable_remote.has_been_shipped_ = true
+		mutable_remote.remote_port_ = none
+	}
+	port.remote_port_ = none
+	messages := port.pending_messages_.clone()
+	port.pending_messages_.clear()
+	return SerializedTransferItem{
+		type_:         .message_port
+		port_remote:   remote
+		port_messages: messages
+	}
+}
+
+pub fn (mut port MessagePort) transfer_receiving_steps(item SerializedTransferItem) ! {
+	if item.type_ != .message_port {
+		return error('DataCloneError: invalid MessagePort transfer data')
+	}
+	port.has_been_shipped_ = true
+	port.pending_messages_ = item.port_messages.clone()
+	if remote := item.port_remote {
+		port.entangle_with(remote)
+	}
+}
+
+pub fn (port &MessagePort) post_message(message dom.JSValue, options StructuredSerializeOptions) ! {
+	mut mutable_port := unsafe { &MessagePort(port) }
+	mutable_port.message_port_post_message_steps(message, options)!
+}
+
+pub fn (port &MessagePort) post_message_without_transfer(message dom.JSValue) ! {
+	port.post_message(message, StructuredSerializeOptions{})!
+}
+
+fn transfer_contains_port(transfer []StructuredTransfer, needle &MessagePort) bool {
+	for item in transfer {
+		if item is MessagePortTransfer
+			&& voidptr((item as MessagePortTransfer).value) == voidptr(needle) {
+			return true
+		}
+	}
+	return false
+}
+
+fn (mut port MessagePort) message_port_post_message_steps(message dom.JSValue, options StructuredSerializeOptions) ! {
+	if transfer_contains_port(options.transfer, &port) {
+		return error('DataCloneError: cannot transfer a MessagePort to itself')
+	}
+	target := port.remote_port_ or {
+		// The structured serialization still occurs even for a disentangled port.
+		_ = structured_serialize_with_transfer(message, options.transfer)!
+		return
+	}
+
+	doomed := transfer_contains_port(options.transfer, target)
+	record := structured_serialize_with_transfer(message, options.transfer)!
+	if doomed {
+		return
+	}
+	mut mutable_target := unsafe { &MessagePort(target) }
+	mutable_target.pending_messages_ << record
+	if mutable_target.enabled_ {
+		mutable_target.schedule_pending_messages()
+	}
+}
+
+fn (mut port MessagePort) schedule_pending_messages() {
+	for port.enabled_ && port.pending_messages_.len > 0 {
+		record := port.pending_messages_[0]
+		port.pending_messages_.delete(0)
+		port_pointer := &port
+		queue_a_task(.posted_message, main_thread_event_loop(), none, fn [port_pointer, record] () {
+			mut target := port_pointer
+			target.post_message_task_steps(record)
+		})
+	}
+}
+
+fn (mut port MessagePort) post_message_task_steps(record SerializedTransferRecord) {
+	if !port.enabled_ || port.detached_ {
+		return
+	}
+	target := port.worker_event_target_ or { unsafe { &dom.EventTarget(&port) } }
+	deserialized := structured_deserialize_with_transfer(record) or {
+		mut event := MessageEvent.create('messageerror', MessageEventInit{})
+		event.set_is_trusted(true)
+		target.dispatch_event(unsafe { &dom.Event(event) })
+		return
+	}
+	mut event := MessageEvent.create('message', MessageEventInit{
+		data:  deserialized.deserialized
+		ports: deserialized.transferred_ports
+	})
+	event.set_is_trusted(true)
+	target.dispatch_event(unsafe { &dom.Event(event) })
+}
+
+pub fn (mut port MessagePort) enable() {
+	if port.enabled_ || port.detached_ {
+		return
+	}
+	port.enabled_ = true
+	port.schedule_pending_messages()
+}
+
+pub fn (mut port MessagePort) start() {
+	if port.is_entangled() {
+		port.enable()
+	}
+}
+
+pub fn (mut port MessagePort) close() {
+	port.detached_ = true
+	port.pending_messages_.clear()
+	port.disentangle()
+}
+
+pub fn (port &MessagePort) set_onmessageerror(handler ?&dom.CallbackType) {
+	unsafe { &dom.EventTarget(port) }.set_event_handler_attribute('messageerror', handler)
+}
+
+pub fn (port &MessagePort) onmessageerror() ?&dom.CallbackType {
+	return unsafe { &dom.EventTarget(port) }.event_handler_attribute('messageerror')
+}
+
+pub fn (port &MessagePort) set_onmessage(handler ?&dom.CallbackType) {
+	unsafe { &dom.EventTarget(port) }.set_event_handler_attribute('message', handler)
+	mut mutable_port := unsafe { &MessagePort(port) }
+	mutable_port.start()
+}
+
+pub fn (port &MessagePort) onmessage() ?&dom.CallbackType {
+	return unsafe { &dom.EventTarget(port) }.event_handler_attribute('message')
+}
+
+pub fn (_ &MessagePort) primary_interface() TransferType {
+	return .message_port
+}
+
+@[heap]
+pub struct MessageChannel {
+mut:
+	port1_ &MessagePort
+	port2_ &MessagePort
+}
+
+pub fn MessageChannel.construct_impl() !&MessageChannel {
+	mut port1 := MessagePort.create()
+	port2 := MessagePort.create()
+	port1.entangle_with(port2)
+	return &MessageChannel{
+		port1_: port1
+		port2_: port2
+	}
+}
+
+pub fn (channel &MessageChannel) port1() &MessagePort {
+	return channel.port1_
+}
+
+pub fn (channel &MessageChannel) port2() &MessagePort {
+	return channel.port2_
+}

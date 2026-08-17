@@ -73,10 +73,10 @@ pub mut:
 // Return a copy of `line` (and its fragments) shifted by (`dx`, `dy`).
 fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 	return TextLine{
-		x:      line.x + dx
-		y:      line.y + dy
-		width:  line.width
-		height: line.height
+		x:         line.x + dx
+		y:         line.y + dy
+		width:     line.width
+		height:    line.height
 		fragments: line.fragments.map(TextFragment{
 			x:          it.x + dx
 			y:          it.y + dy
@@ -361,15 +361,15 @@ fn rendered_text_items(node &dom.Node, author_rules []&css.CSSRule) []TextItem {
 	if node.is_text() {
 		text := unsafe { &dom.Text(node) }.data()
 		white_space := if parent := node.parent_element() {
-			css.cascaded_value_with_ua(parent, css.property_id_from_string('white-space') or {
-				return []TextItem{}
-			}, author_rules)
+			resolved_white_space_behavior(parent, author_rules)
 		} else {
-			'normal'
+			white_space_behavior_from_longhands('collapse', 'wrap', 'none')
 		}
-		return [TextItem{
-			text: collapse_rendered_whitespace(text, white_space)
-		}]
+		return [
+			TextItem{
+				text: collapse_rendered_whitespace(text, white_space)
+			},
+		]
 	}
 
 	element := node.as_element() or { return []TextItem{} }
@@ -409,14 +409,18 @@ fn rendered_text_items(node &dom.Node, author_rules []&css.CSSRule) []TextItem {
 	// 8. `<p>` is surrounded by 2 required line breaks (a blank line).
 	if local == 'p' {
 		items.prepend(TextItem{ line_breaks: 2 })
-		items << TextItem{ line_breaks: 2 }
+		items << TextItem{
+			line_breaks: 2
+		}
 		return items
 	}
 
 	// 9. A block-level box is surrounded by 1 required line break.
 	if is_block_level_display(display) {
 		items.prepend(TextItem{ line_breaks: 1 })
-		items << TextItem{ line_breaks: 1 }
+		items << TextItem{
+			line_breaks: 1
+		}
 	}
 	return items
 }
@@ -424,11 +428,37 @@ fn rendered_text_items(node &dom.Node, author_rules []&css.CSSRule) []TextItem {
 // Apply the CSS white-space collapsing that `innerText` observes. For collapsible white-space
 // (`normal`/`nowrap`) every run of ASCII whitespace collapses to a single space. `pre`/`pre-wrap`
 // preserve spaces and newlines verbatim; `pre-line` collapses spaces but keeps newlines.
-fn collapse_rendered_whitespace(text string, white_space string) string {
-	if white_space == 'pre' || white_space == 'pre-wrap' {
+fn collapse_rendered_whitespace(text string, white_space WhiteSpaceBehavior) string {
+	if white_space.preserves_spaces() && white_space.preserves_newlines() {
 		return text
 	}
-	preserve_newlines := white_space == 'pre-line'
+	if white_space.collapse == 'discard' {
+		return text.bytes().filter(it !in [` `, `\t`, `\n`, `\r`, u8(12)]).bytestr()
+	}
+	if white_space.preserves_spaces() {
+		// `preserve-spaces` turns tabs and segment breaks into spaces without
+		// collapsing the resulting run. CRLF is one segment break.
+		mut out := []u8{}
+		mut i := 0
+		bytes := text.bytes()
+		for i < bytes.len {
+			if bytes[i] == `\r` {
+				out << ` `
+				i++
+				if i < bytes.len && bytes[i] == `\n` {
+					i++
+				}
+			} else if bytes[i] in [`\n`, `\t`, u8(12)] {
+				out << ` `
+				i++
+			} else {
+				out << bytes[i]
+				i++
+			}
+		}
+		return out.bytestr()
+	}
+	preserve_newlines := white_space.preserves_newlines()
 	mut out := []u8{}
 	mut in_space := false
 	for c in text {
@@ -540,39 +570,39 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 			shadow_width := border_width + 2.0 * shadow.spread
 			shadow_height := border_height + 2.0 * shadow.spread
 			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: shadow_left
-				y: shadow_top
-				width: shadow_width
-				height: shadow_height
-				color: shadow.color.serialize()
+				kind:    'fill_rect'
+				x:       shadow_left
+				y:       shadow_top
+				width:   shadow_width
+				height:  shadow_height
+				color:   shadow.color.serialize()
 				opacity: opacity
-				radius: clamp_radius(box.border_radius, shadow_width, shadow_height)
-				blur: shadow.blur
+				radius:  clamp_radius(box.border_radius, shadow_width, shadow_height)
+				blur:    shadow.blur
 			}
 		}
 		if box.background_color.a > 0 {
 			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: border_left
-				y: border_top
-				width: border_width
-				height: border_height
-				color: box.background_color.serialize()
+				kind:    'fill_rect'
+				x:       border_left
+				y:       border_top
+				width:   border_width
+				height:  border_height
+				color:   box.background_color.serialize()
 				opacity: opacity
-				radius: radius
+				radius:  radius
 			}
 		}
 		// A linear-gradient background image paints over the background color.
 		if grad := box.background_gradient {
 			commands << PaintCommand{
-				kind: 'fill_gradient'
-				x: border_left
-				y: border_top
-				width: border_width
-				height: border_height
-				opacity: opacity
-				radius: radius
+				kind:     'fill_gradient'
+				x:        border_left
+				y:        border_top
+				width:    border_width
+				height:   border_height
+				opacity:  opacity
+				radius:   radius
 				gradient: grad
 			}
 		}
@@ -581,45 +611,45 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 		border := box.border_color.serialize()
 		if box.border.top > 0 {
 			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: border_left
-				y: border_top
-				width: border_width
-				height: box.border.top
-				color: border
+				kind:    'fill_rect'
+				x:       border_left
+				y:       border_top
+				width:   border_width
+				height:  box.border.top
+				color:   border
 				opacity: opacity
 			}
 		}
 		if box.border.bottom > 0 {
 			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: border_left
-				y: border_top + border_height - box.border.bottom
-				width: border_width
-				height: box.border.bottom
-				color: border
+				kind:    'fill_rect'
+				x:       border_left
+				y:       border_top + border_height - box.border.bottom
+				width:   border_width
+				height:  box.border.bottom
+				color:   border
 				opacity: opacity
 			}
 		}
 		if box.border.left > 0 {
 			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: border_left
-				y: border_top
-				width: box.border.left
-				height: border_height
-				color: border
+				kind:    'fill_rect'
+				x:       border_left
+				y:       border_top
+				width:   box.border.left
+				height:  border_height
+				color:   border
 				opacity: opacity
 			}
 		}
 		if box.border.right > 0 {
 			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: border_left + border_width - box.border.right
-				y: border_top
-				width: box.border.right
-				height: border_height
-				color: border
+				kind:    'fill_rect'
+				x:       border_left + border_width - box.border.right
+				y:       border_top
+				width:   box.border.right
+				height:  border_height
+				color:   border
 				opacity: opacity
 			}
 		}
@@ -633,52 +663,52 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 			eh := border_height + 2.0 * box.outline_offset
 			oc := box.outline_color.serialize()
 			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: ex - ow
-				y: ey - ow
-				width: ew + 2.0 * ow
-				height: ow
-				color: oc
+				kind:    'fill_rect'
+				x:       ex - ow
+				y:       ey - ow
+				width:   ew + 2.0 * ow
+				height:  ow
+				color:   oc
 				opacity: opacity
 			} // top
 			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: ex - ow
-				y: ey + eh
-				width: ew + 2.0 * ow
-				height: ow
-				color: oc
+				kind:    'fill_rect'
+				x:       ex - ow
+				y:       ey + eh
+				width:   ew + 2.0 * ow
+				height:  ow
+				color:   oc
 				opacity: opacity
 			} // bottom
 			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: ex - ow
-				y: ey
-				width: ow
-				height: eh
-				color: oc
+				kind:    'fill_rect'
+				x:       ex - ow
+				y:       ey
+				width:   ow
+				height:  eh
+				color:   oc
 				opacity: opacity
 			} // left
 			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: ex + ew
-				y: ey
-				width: ow
-				height: eh
-				color: oc
+				kind:    'fill_rect'
+				x:       ex + ew
+				y:       ey
+				width:   ow
+				height:  eh
+				color:   oc
 				opacity: opacity
 			} // right
 		}
 		for line in box.lines {
 			for fragment in line.fragments {
 				commands << PaintCommand{
-					kind: 'draw_text'
-					x: fragment.x
-					y: fragment.y
-					width: fragment.width
-					height: fragment.height
-					color: fragment.color.serialize()
-					text: fragment.text
+					kind:    'draw_text'
+					x:       fragment.x
+					y:       fragment.y
+					width:   fragment.width
+					height:  fragment.height
+					color:   fragment.color.serialize()
+					text:    fragment.text
 					opacity: opacity
 				}
 				commands << decoration_commands(fragment, opacity)
@@ -701,34 +731,34 @@ fn decoration_commands(fragment TextFragment, opacity f64) []PaintCommand {
 	mut commands := []PaintCommand{}
 	if fragment.decoration.contains('underline') {
 		commands << PaintCommand{
-			kind: 'fill_rect'
-			x: fragment.x
-			y: fragment.y + fragment.height * 0.85
-			width: fragment.width
-			height: thickness
-			color: color
+			kind:    'fill_rect'
+			x:       fragment.x
+			y:       fragment.y + fragment.height * 0.85
+			width:   fragment.width
+			height:  thickness
+			color:   color
 			opacity: opacity
 		}
 	}
 	if fragment.decoration.contains('overline') {
 		commands << PaintCommand{
-			kind: 'fill_rect'
-			x: fragment.x
-			y: fragment.y
-			width: fragment.width
-			height: thickness
-			color: color
+			kind:    'fill_rect'
+			x:       fragment.x
+			y:       fragment.y
+			width:   fragment.width
+			height:  thickness
+			color:   color
 			opacity: opacity
 		}
 	}
 	if fragment.decoration.contains('line-through') {
 		commands << PaintCommand{
-			kind: 'fill_rect'
-			x: fragment.x
-			y: fragment.y + fragment.height * 0.5
-			width: fragment.width
-			height: thickness
-			color: color
+			kind:    'fill_rect'
+			x:       fragment.x
+			y:       fragment.y + fragment.height * 0.5
+			width:   fragment.width
+			height:  thickness
+			color:   color
 			opacity: opacity
 		}
 	}
@@ -757,10 +787,10 @@ fn list_marker_line(element &dom.Element, content_x f64, content_top f64, text_c
 	line_height := css.computed_line_height_px(element, author_rules)
 	marker_x := content_x - marker_width - glyph // hang to the left, one glyph-width gap
 	return TextLine{
-		x:      marker_x
-		y:      content_top
-		width:  marker_width
-		height: line_height
+		x:         marker_x
+		y:         content_top
+		width:     marker_width
+		height:    line_height
 		fragments: [
 			TextFragment{
 				x:      marker_x
@@ -792,13 +822,31 @@ fn list_marker_text(element &dom.Element, author_rules []&css.CSSRule) string {
 	// Counter styles: the 1-based ordinal formatted per the style, followed by `.`.
 	ordinal := list_item_ordinal(element, author_rules)
 	return match kind {
-		'decimal' { '${ordinal}.' }
-		'decimal-leading-zero' { '${if ordinal < 10 { '0' } else { '' }}${ordinal}.' }
-		'lower-alpha', 'lower-latin' { '${alphabetic_marker(ordinal, false)}.' }
-		'upper-alpha', 'upper-latin' { '${alphabetic_marker(ordinal, true)}.' }
-		'lower-roman' { '${roman_marker(ordinal, false)}.' }
-		'upper-roman' { '${roman_marker(ordinal, true)}.' }
-		else { '•' } // unknown -> disc
+		'decimal' {
+			'${ordinal}.'
+		}
+		'decimal-leading-zero' {
+			'${if ordinal < 10 {
+				'0'
+			} else {
+				''
+			}}${ordinal}.'
+		}
+		'lower-alpha', 'lower-latin' {
+			'${alphabetic_marker(ordinal, false)}.'
+		}
+		'upper-alpha', 'upper-latin' {
+			'${alphabetic_marker(ordinal, true)}.'
+		}
+		'lower-roman' {
+			'${roman_marker(ordinal, false)}.'
+		}
+		'upper-roman' {
+			'${roman_marker(ordinal, true)}.'
+		}
+		else {
+			'•'
+		} // unknown -> disc
 	}
 }
 
@@ -874,7 +922,11 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 	mut body := []string{}
 	for command in b.paint_commands() {
 		if command.kind == 'fill_rect' {
-			corner := if command.radius > 0 { ' rx="${fmt_px(command.radius)}" ry="${fmt_px(command.radius)}"' } else { '' }
+			corner := if command.radius > 0 {
+				' rx="${fmt_px(command.radius)}" ry="${fmt_px(command.radius)}"'
+			} else {
+				''
+			}
 			mut filter := ''
 			if command.blur > 0 {
 				id := 'blur${defs.len}'
@@ -897,7 +949,11 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 				} else {
 					defs << '<linearGradient id="${id}" x1="${fmt_px(grad.x1 * 100.0)}%" y1="${fmt_px(grad.y1 * 100.0)}%" x2="${fmt_px(grad.x2 * 100.0)}%" y2="${fmt_px(grad.y2 * 100.0)}%">${stops}</linearGradient>'
 				}
-				corner := if command.radius > 0 { ' rx="${fmt_px(command.radius)}" ry="${fmt_px(command.radius)}"' } else { '' }
+				corner := if command.radius > 0 {
+					' rx="${fmt_px(command.radius)}" ry="${fmt_px(command.radius)}"'
+				} else {
+					''
+				}
 				body << '<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}"${corner} fill="url(#${id})" fill-opacity="${fmt_px(command.opacity)}"/>'
 			}
 		} else if command.kind == 'draw_text' {
@@ -906,7 +962,9 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 			body << '<text x="${fmt_px(command.x)}" y="${fmt_px(baseline)}" font-size="${fmt_px(font_size)}" fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}">${escape_xml(command.text)}</text>'
 		}
 	}
-	mut parts := ['<svg xmlns="http://www.w3.org/2000/svg" width="${fmt_px(width)}" height="${fmt_px(height)}">']
+	mut parts := [
+		'<svg xmlns="http://www.w3.org/2000/svg" width="${fmt_px(width)}" height="${fmt_px(height)}">',
+	]
 	if defs.len > 0 {
 		parts << '<defs>${defs.join('')}</defs>'
 	}
@@ -1459,7 +1517,11 @@ fn justify_offsets(value string, free f64, n int) (f64, f64) {
 			free / 2.0, 0.0
 		}
 		'space-between' {
-			if n > 1 { 0.0, positive_free / f64(n - 1) } else { 0.0, 0.0 }
+			if n > 1 {
+				0.0, positive_free / f64(n - 1)
+			} else {
+				0.0, 0.0
+			}
 		}
 		'space-around' {
 			gap := positive_free / f64(n)
@@ -1559,10 +1621,22 @@ fn float_children(node &dom.Node, author_rules []&css.CSSRule) []&dom.Element {
 fn clearance_bottom(element &dom.Element, left_floats_bottom f64, right_floats_bottom f64, author_rules []&css.CSSRule) f64 {
 	id := css.property_id_from_string('clear') or { return 0.0 }
 	return match css.cascaded_value_with_ua(element, id, author_rules) {
-		'left' { left_floats_bottom }
-		'right' { right_floats_bottom }
-		'both' { if left_floats_bottom > right_floats_bottom { left_floats_bottom } else { right_floats_bottom } }
-		else { 0.0 }
+		'left' {
+			left_floats_bottom
+		}
+		'right' {
+			right_floats_bottom
+		}
+		'both' {
+			if left_floats_bottom > right_floats_bottom {
+				left_floats_bottom
+			} else {
+				right_floats_bottom
+			}
+		}
+		else {
+			0.0
+		}
 	}
 }
 
@@ -1571,8 +1645,8 @@ fn clearance_bottom(element &dom.Element, left_floats_bottom f64, right_floats_b
 fn layout_float(element &dom.Element, content_width f64, author_rules []&css.CSSRule) BlockBox {
 	available_width := if size_is_auto(element, 'width', author_rules) {
 		edges := horizontal_edges(element, content_width, author_rules)
-		fit := shrink_to_fit(intrinsic_content_width(element, author_rules, true),
-			intrinsic_content_width(element, author_rules, false), non_negative(content_width - edges))
+		fit := shrink_to_fit(intrinsic_content_width(element, author_rules, true), intrinsic_content_width(element,
+			author_rules, false), non_negative(content_width - edges))
 		fit + edges
 	} else {
 		content_width
@@ -1653,7 +1727,11 @@ fn line_bounds(y f64, line_height f64, bands []FloatBand, content_x f64, content
 			}
 		}
 	}
-	return left, if right > left { right } else { left }
+	return left, if right > left {
+		right
+	} else {
+		left
+	}
 }
 
 // The nearest float bottom strictly below `y` (so a line that can't fit beside a float can drop to
@@ -1723,11 +1801,9 @@ fn horizontal_edges(element &dom.Element, containing_width f64, author_rules []&
 // widest unbroken segment — words + spaces on one line (max-content). Words are measured with their
 // own element's font.
 fn inline_intrinsic_width(element &dom.Element, author_rules []&css.CSSRule, minimum bool) f64 {
-	white_space := css.cascaded_value_with_ua(element, css.property_id_from_string('white-space') or {
-		return 0.0
-	}, author_rules)
-	segments := collect_inline_segments(element, white_space_preserves_newlines(white_space),
-		0.0, author_rules)
+	white_space := resolved_white_space_behavior(element, author_rules)
+	segments := collect_inline_segments(element, white_space.preserves_newlines(), 0.0,
+		author_rules)
 	mut widest := 0.0
 	for segment in segments {
 		if segment.len == 0 {
@@ -1792,15 +1868,40 @@ fn child_intrinsic_content_width(element &dom.Element, author_rules []&css.CSSRu
 	return intrinsic_content_width(element, author_rules, minimum)
 }
 
-// Whether a `white-space` value wraps at soft line-break opportunities. `nowrap` and `pre` never
-// wrap; `normal`, `pre-wrap`, `pre-line` do.
-fn white_space_wraps(white_space string) bool {
-	return white_space != 'nowrap' && white_space != 'pre'
+struct WhiteSpaceBehavior {
+	collapse string
+	wrap     string
+	trim     string
 }
 
-// Whether a `white-space` value keeps newlines in text as forced line breaks (the `pre*` family).
-fn white_space_preserves_newlines(white_space string) bool {
-	return white_space == 'pre' || white_space == 'pre-wrap' || white_space == 'pre-line'
+fn white_space_behavior_from_longhands(collapse string, wrap string, trim string) WhiteSpaceBehavior {
+	return WhiteSpaceBehavior{
+		collapse: collapse
+		wrap:     wrap
+		trim:     trim
+	}
+}
+
+// CSS correctly expands `white-space` into its longhands. Layout consumes the
+// cascaded longhands so both shorthand and direct-longhand rules have identical
+// observable behavior. (`white-space-trim` itself is not inherited.)
+fn resolved_white_space_behavior(element &dom.Element, author_rules []&css.CSSRule) WhiteSpaceBehavior {
+	collapse := css.cascaded_value_with_ua(element, .white_space_collapse, author_rules)
+	wrap := css.cascaded_value_with_ua(element, .text_wrap_mode, author_rules)
+	trim := css.cascaded_value_with_ua(element, .white_space_trim, author_rules)
+	return white_space_behavior_from_longhands(collapse, wrap, trim)
+}
+
+fn (white_space WhiteSpaceBehavior) wraps() bool {
+	return white_space.wrap != 'nowrap'
+}
+
+fn (white_space WhiteSpaceBehavior) preserves_spaces() bool {
+	return white_space.collapse in ['preserve', 'preserve-spaces', 'break-spaces']
+}
+
+fn (white_space WhiteSpaceBehavior) preserves_newlines() bool {
+	return white_space.collapse in ['preserve', 'preserve-breaks', 'break-spaces']
 }
 
 // A `letter-spacing`/`word-spacing` value resolved to px (may be negative). `normal` (the initial) and
@@ -1971,7 +2072,7 @@ fn parse_linear_gradient(value string) ?LinearGradient {
 			'to top' { x1, y1, x2, y2 = 0.0, 1.0, 0.0, 0.0 }
 			else { x1, y1, x2, y2 = 0.0, 0.0, 0.0, 1.0 } // 'to bottom' and corners (FIXME) -> down
 		}
-		args = args[1..]
+		args = args[1..].clone()
 	}
 	colors := parse_gradient_stops(args)?
 	return LinearGradient{
@@ -2004,7 +2105,7 @@ fn parse_radial_gradient(value string) ?LinearGradient {
 		}
 	}
 	if !first_is_color {
-		args = args[1..]
+		args = args[1..].clone()
 	}
 	colors := parse_gradient_stops(args)?
 	return LinearGradient{
@@ -2028,9 +2129,9 @@ fn parse_background_gradient(element &dom.Element, author_rules []&css.CSSRule) 
 // a nested inline element with its own font-size measures its text at that size.
 struct InlineWord {
 	text        string
-	width       f64 // rune count × 0.5em of the word's font (or an atomic box's margin-box width)
-	space_after f64 // the space following this word (~0.5em of its font)
-	height      f64 // this word's line-height contribution (or an atomic box's margin-box height)
+	width       f64       // rune count × 0.5em of the word's font (or an atomic box's margin-box width)
+	space_after f64       // the space following this word (~0.5em of its font)
+	height      f64       // this word's line-height contribution (or an atomic box's margin-box height)
 	color       css.Color // this word's computed text color
 	decoration  string = 'none' // this word's computed text-decoration-line
 	// For an atomic inline (an `inline-block`), the laid-out box (at margin-box origin (0,0)); the item
@@ -2093,7 +2194,8 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, containing_
 			if display == 'none' {
 				continue
 			}
-			if is_absolutely_positioned(position_value(el, author_rules)) || is_floating(el, author_rules) {
+			if is_absolutely_positioned(position_value(el, author_rules))
+				|| is_floating(el, author_rules) {
 				continue // out of flow — its text is its own content, not the container's
 			}
 			if el.local_name() == 'br' {
@@ -2115,7 +2217,8 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, containing_
 					box:         box
 				}
 			} else {
-				append_inline_words(el, preserve_newlines, containing_width, author_rules, mut segments)
+				append_inline_words(el, preserve_newlines, containing_width, author_rules, mut
+					segments)
 			}
 		}
 	}
@@ -2173,12 +2276,10 @@ fn aligned_line_x(content_x f64, content_width f64, line_width f64, align string
 // content-box local frame; the caller translates them to the content-box top and paints the boxes as
 // children.
 fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, float_bands []FloatBand, author_rules []&css.CSSRule) ([]TextLine, []BlockBox) {
-	white_space := css.cascaded_value_with_ua(element, css.property_id_from_string('white-space') or {
-		return []TextLine{}, []BlockBox{}
-	}, author_rules)
+	white_space := resolved_white_space_behavior(element, author_rules)
 
-	segments := collect_inline_segments(element, white_space_preserves_newlines(white_space),
-		content_width, author_rules)
+	segments := collect_inline_segments(element, white_space.preserves_newlines(), content_width,
+		author_rules)
 	if segments.len == 1 && segments[0].len == 0 {
 		return []TextLine{}, []BlockBox{} // no inline content at all
 	}
@@ -2187,7 +2288,7 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 	align := css.cascaded_value_with_ua(element, css.property_id_from_string('text-align') or {
 		return []TextLine{}, []BlockBox{}
 	}, author_rules)
-	wraps := white_space_wraps(white_space)
+	wraps := white_space.wraps()
 	// `text-indent` (inherited) indents the start of the *first* line box (%: of the content width).
 	text_indent := resolve_text_indent(element, content_width, author_rules)
 
@@ -2197,7 +2298,8 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 	mut first_line := true
 	for segment in segments {
 		if segment.len == 0 {
-			mut left, right := line_bounds(y, block_line_height, float_bands, content_x, content_width)
+			mut left, right := line_bounds(y, block_line_height, float_bands, content_x,
+				content_width)
 			if first_line {
 				left += text_indent
 			}
@@ -2318,8 +2420,8 @@ fn used_content_width(element &dom.Element, containing_width f64, margins_lr f64
 		}
 		'fit-content' {
 			available := non_negative(containing_width - margins_lr - border_padding_lr)
-			return shrink_to_fit(intrinsic_content_width(element, author_rules, true),
-				intrinsic_content_width(element, author_rules, false), available)
+			return shrink_to_fit(intrinsic_content_width(element, author_rules, true), intrinsic_content_width(element,
+				author_rules, false), available)
 		}
 		else {}
 	}
@@ -2497,9 +2599,9 @@ fn layout_absolute(element &dom.Element, cb PositionedContainingBlock, author_ru
 		non_negative(cb.width - left - right)
 	} else {
 		edges := horizontal_edges(element, cb.width, author_rules)
-		available_content := non_negative(cb.width - (left or { 0.0 }) - (right or { 0.0 }) - edges)
-		fit := shrink_to_fit(intrinsic_content_width(element, author_rules, true),
-			intrinsic_content_width(element, author_rules, false), available_content)
+		available_content := non_negative(cb.width - left or { 0.0 } - right or { 0.0 } - edges)
+		fit := shrink_to_fit(intrinsic_content_width(element, author_rules, true), intrinsic_content_width(element,
+			author_rules, false), available_content)
 		fit + edges
 	}
 	mut box := layout_block(element, 0.0, 0.0, available_width, author_rules)
@@ -2679,7 +2781,8 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 	margin_left_auto := margin_is_auto(element, 'margin-left', author_rules)
 	margin_right_auto := margin_is_auto(element, 'margin-right', author_rules)
 	margin_left_fixed := used_length_or_zero(element, 'margin-left', containing_width, author_rules)
-	margin_right_fixed := used_length_or_zero(element, 'margin-right', containing_width, author_rules)
+	margin_right_fixed := used_length_or_zero(element, 'margin-right', containing_width,
+		author_rules)
 
 	// Used content width: `auto` margins count as 0 while the width fills; then clamp by min/max.
 	// A flex item passes a forced width (its shrink-to-fit / main size) that overrides the box model.
@@ -2697,7 +2800,8 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 
 	// Distribute leftover horizontal space to `auto` margins (centering / one-sided absorb).
 	margin_left, margin_right := resolve_horizontal_auto_margins(containing_width, width +
-		border_padding_lr, margin_left_fixed, margin_right_fixed, margin_left_auto, margin_right_auto)
+		border_padding_lr, margin_left_fixed, margin_right_fixed, margin_left_auto,
+		margin_right_auto)
 	margin := BoxEdges{
 		top:    margin_top
 		right:  margin_right
@@ -2827,15 +2931,17 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 			item_boxes << ib
 		}
 		// Main axis (vertical): distribute free space up to the container's explicit height, if any.
-		main_size := align_cross_size(element, total_main, border, padding, border_box, author_rules)
-		leading, gap := justify_offsets(justify_content_value(element, author_rules), main_size - total_main,
-			item_boxes.len)
+		main_size := align_cross_size(element, total_main, border, padding, border_box,
+			author_rules)
+		leading, gap := justify_offsets(justify_content_value(element, author_rules),
+			main_size - total_main, item_boxes.len)
 		mut cursor := 0.0
 		for i, ib in item_boxes {
 			if i > 0 {
 				cursor += gap_main
 			}
-			cross := cross_axis_offset(aligns[i], width, ib.margin_box_width()) // horizontal alignment
+			cross :=
+				cross_axis_offset(aligns[i], width, ib.margin_box_width()) // horizontal alignment
 			local_children << translate_block(ib, cross, cursor + leading + f64(i) * gap)
 			cursor += ib.margin_box_height()
 		}
@@ -2879,7 +2985,11 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 			// Scale the columns to fill the table's content width (equal split if there is no content).
 			mut final_widths := []f64{}
 			for w in col_widths {
-				final_widths << if content_sum > 0 { w * width / content_sum } else { width / f64(n_cols) }
+				final_widths << if content_sum > 0 {
+					w * width / content_sum
+				} else {
+					width / f64(n_cols)
+				}
 			}
 			mut col_x := []f64{}
 			mut acc := 0.0
@@ -2894,8 +3004,8 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 				for c, cell in cells {
 					cell_content_width := non_negative(final_widths[c] - horizontal_edges(cell,
 						width, author_rules))
-					cb := layout_block_impl(cell, content_x + col_x[c], row_y, width, cell_content_width,
-						author_rules)
+					cb := layout_block_impl(cell, content_x + col_x[c], row_y, width,
+						cell_content_width, author_rules)
 					if cb.margin_box_height() > row_height {
 						row_height = cb.margin_box_height()
 					}
@@ -3054,16 +3164,20 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 	mut height_is_auto := true
 	tentative_height := if px := css.computed_length_px(element, height_id, author_rules) {
 		height_is_auto = false
-		if border_box { non_negative(px - border_padding_tb) } else { px }
+		if border_box {
+			non_negative(px - border_padding_tb)
+		} else {
+			px
+		}
 	} else {
 		content_height
 	}
 	// Clamp the height by min-height/max-height. Percentages need a definite containing height we
 	// don't track, so only length constraints apply here (basis none).
-	min_height := resolve_size_constraint(element, 'min-height', none, border_padding_tb, border_box,
-		author_rules) or { 0.0 }
-	max_height := resolve_size_constraint(element, 'max-height', none, border_padding_tb, border_box,
-		author_rules)
+	min_height := resolve_size_constraint(element, 'min-height', none, border_padding_tb,
+		border_box, author_rules) or { 0.0 }
+	max_height := resolve_size_constraint(element, 'max-height', none, border_padding_tb,
+		border_box, author_rules)
 	height := clamp_size(tentative_height, min_height, max_height)
 
 	// This box's collapsed outer margins (propagated to the parent). The top collapses with the first
@@ -3110,8 +3224,9 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 
 	// z-index applies only to positioned boxes; `auto`/non-positioned sort as 0.
 	z_index := if is_positioned(position_value(element, author_rules)) {
-		css.cascaded_value_with_ua(element, css.property_id_from_string('z-index') or { return BlockBox{} },
-			author_rules).int()
+		css.cascaded_value_with_ua(element, css.property_id_from_string('z-index') or {
+			return BlockBox{}
+		}, author_rules).int()
 	} else {
 		0
 	}

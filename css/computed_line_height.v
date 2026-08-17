@@ -11,12 +11,16 @@ const normal_line_height_factor = 1.2
 // number * font-size; a length -> px (em/rem against font-size); a percentage -> % * font-size.
 pub fn computed_line_height_px(element &dom.Element, author_rules []&CSSRule) f64 {
 	font_px := computed_font_size_px(element, author_rules)
-	line_id := property_id_from_string('line-height') or { return font_px * normal_line_height_factor }
+	line_id := property_id_from_string('line-height') or {
+		return font_px * normal_line_height_factor
+	}
 	specified := cascaded_value_with_ua(element, line_id, author_rules)
 	if specified == 'normal' || specified == '' {
 		return font_px * normal_line_height_factor
 	}
-	value := parse_css_value_logic(line_id, specified) or { return font_px * normal_line_height_factor }
+	value := parse_css_value_logic(line_id, specified) or {
+		return font_px * normal_line_height_factor
+	}
 	if value.is_number() {
 		return value.as_number().number() * font_px
 	}

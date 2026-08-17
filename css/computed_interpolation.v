@@ -11,15 +11,13 @@ import dom
 // - LibWeb/CSS/StyleInvalidationData.h/cpp
 // - LibWeb/CSS/InvalidationSet.h/cpp
 //
-// The surrounding V port does not yet expose the full generated CSS property
-// table, selector AST, parser, layout tree, rendering tree, style value
-// subclasses, font APIs, or animation APIs. This file keeps the C++ structure
-// and directly translatable algorithms where possible, and marks those missing
-// integration points as explicit stubs.
+// Generated property metadata, selector/parser types, style values, fonts, and
+// animations are translated in the neighboring CSS files. Layout/rendering
+// objects and DOM-owned opaque handles cross explicit typed adapters below.
 
 pub const computed_properties_normal_line_height_scale = 1.15
 
-// --- Small support stubs for untranslated layout/rendering/font/style-value APIs ---
+// --- Small support records for layout/rendering and DOM integration adapters ---
 
 pub struct ComputedColor {
 pub mut:
@@ -3282,7 +3280,7 @@ pub fn (c &ComputedProperties) backdrop_filter() Filter {
 		return Filter.make_none()
 	}
 	if parsed is FilterValueListStyleValue {
-		return Filter.new(value)
+		return Filter.new(parsed.filter_value_list())
 	}
 	return Filter.make_none()
 }
@@ -3291,7 +3289,7 @@ pub fn (c &ComputedProperties) filter() Filter {
 	value := c.property(.filter, .yes) or { return Filter.make_none() }
 	parsed := parse_css_value_logic(.filter, value.css_text) or { return Filter.make_none() }
 	if parsed is FilterValueListStyleValue {
-		return Filter.new(value)
+		return Filter.new(parsed.filter_value_list())
 	}
 	return Filter.make_none()
 }
@@ -5524,11 +5522,11 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
 		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
 		.animation_timeline, .animation_timing_function, .direction, .math_depth, .math_style,
-		.contain, .container_type, .math_shift,
-		.scroll_behavior, .scroll_timeline_axis, .scroll_timeline_name, .timeline_scope,
-		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-		.transition_timing_function, .unicode_bidi, .view_timeline_axis, .view_timeline_inset,
-		.view_timeline_name, .will_change, .writing_mode, .resize {
+		.contain, .container_type, .math_shift, .scroll_behavior, .scroll_timeline_axis,
+		.scroll_timeline_name, .timeline_scope, .transition_behavior, .transition_delay,
+		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
+		.view_timeline_axis, .view_timeline_inset, .view_timeline_name, .will_change,
+		.writing_mode, .resize {
 			.none_
 		}
 		.accent_color, .aspect_ratio, .background_color, .border_block_end_color,
@@ -5543,25 +5541,24 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.caret_color, .color, .corner_bottom_left_shape, .corner_bottom_right_shape,
 		.corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape,
 		.corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.flood_color, .flood_opacity, .font_weight, .font_width, .flex_grow,
-		.flex_shrink, .column_count, .column_width, .column_height, .column_gap, .row_gap, .height,
-		.inline_size, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
-		.left, .letter_spacing, .line_height, .margin_block_end, .margin_block_start,
-		.margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right,
-		.margin_top, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size,
-		.min_height, .min_inline_size, .min_width, .opacity, .order, .orphans, .widows,
-		.outline_color, .outline_offset, .outline_style, .outline_width,
-		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
-		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
-		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
-		.overflow_clip_margin_right, .overflow_clip_margin_top, .padding_block_end,
-		.padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start,
-		.padding_left, .padding_right, .padding_top, .perspective, .perspective_origin, .right,
-		.scrollbar_color, .shape_margin, .shape_image_threshold, .stop_color, .stop_opacity,
-		.stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .tab_size,
-		.text_decoration_color, .text_decoration_thickness, .text_underline_offset, .text_indent,
-		.top, .transform_origin, .vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry,
-		.webkit_text_fill_color, .word_spacing, .scrollbar_width,
+		.flood_color, .flood_opacity, .font_weight, .font_width, .flex_grow, .flex_shrink,
+		.column_count, .column_width, .column_height, .column_gap, .row_gap, .height, .inline_size,
+		.inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left,
+		.letter_spacing, .line_height, .margin_block_end, .margin_block_start, .margin_bottom,
+		.margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top,
+		.max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height,
+		.min_inline_size, .min_width, .opacity, .order, .orphans, .widows, .outline_color,
+		.outline_offset, .outline_style, .outline_width, .overflow_clip_margin_block_end,
+		.overflow_clip_margin_block_start, .overflow_clip_margin_bottom,
+		.overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start,
+		.overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top,
+		.padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
+		.padding_inline_start, .padding_left, .padding_right, .padding_top, .perspective,
+		.perspective_origin, .right, .scrollbar_color, .shape_margin, .shape_image_threshold,
+		.stop_color, .stop_opacity, .stroke_miterlimit, .stroke_opacity, .stroke_width,
+		.stroke_dashoffset, .tab_size, .text_decoration_color, .text_decoration_thickness,
+		.text_underline_offset, .text_indent, .top, .transform_origin, .vertical_align, .width,
+		.cx, .cy, .x, .y, .r, .rx, .ry, .webkit_text_fill_color, .word_spacing, .scrollbar_width,
 		.z_index, .flex_basis, .clip, .grid_auto_columns, .grid_auto_rows, .counter_increment,
 		.counter_reset, .counter_set, .font_size, .fill, .stroke, .clip_path, .shape_outside {
 			.by_computed_value
@@ -5584,18 +5581,17 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.border_inline_end_style, .border_inline_start_style, .border_left_style,
 		.border_right_style, .border_top_style, .box_sizing, .caption_side, .clear, .clip_rule,
 		.color_interpolation, .color_scheme, .empty_cells, .fill_rule, .float_,
-		.font_feature_settings, .font_kerning,
-		.font_language_override, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
-		.font_variant_position, .flex_direction, .flex_wrap, .align_content, .align_items,
-		.align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span,
-		.image_rendering, .isolation, .list_style_image, .list_style_position, .mask_clip,
-		.mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_repeat, .mask_type,
-		.mix_blend_mode, .object_fit, .overflow_block, .overflow_inline, .overflow_x, .overflow_y,
-		.overflow_wrap, .pointer_events, .position, .position_anchor, .position_area,
-		.position_try_fallbacks, .position_try_order, .position_visibility, .paint_order,
-		.scrollbar_gutter, .shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout,
-		.text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify,
-		.text_overflow, .text_rendering, .text_transform, .text_underline_position,
+		.font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing,
+		.font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_direction,
+		.flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items,
+		.justify_self, .appearance, .column_span, .image_rendering, .isolation, .list_style_image,
+		.list_style_position, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin,
+		.mask_repeat, .mask_type, .mix_blend_mode, .object_fit, .overflow_block, .overflow_inline,
+		.overflow_x, .overflow_y, .overflow_wrap, .pointer_events, .position, .position_anchor,
+		.position_area, .position_try_fallbacks, .position_try_order, .position_visibility,
+		.paint_order, .scrollbar_gutter, .shape_rendering, .stroke_linecap, .stroke_linejoin,
+		.table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style,
+		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_underline_position,
 		.text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .touch_action,
 		.user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break,
 		.dominant_baseline, .quotes, .list_style_type, .font_family, .grid_column_start,
@@ -5634,7 +5630,8 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 			}
 			if property_id in [.box_shadow, .text_shadow] {
 				if result := interpolate_box_shadow(element, calculation_context, from, to, delta,
-					allow_discrete) {
+					allow_discrete)
+				{
 					return result
 				}
 				return interpolate_discrete(from, to, delta, allow_discrete)
@@ -5645,7 +5642,8 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 			}
 			if property_id == .font_variation_settings {
 				if result := interpolate_value(element, calculation_context, from, to, delta,
-					allow_discrete) {
+					allow_discrete)
+				{
 					return result
 				}
 				return interpolate_discrete(from, to, delta, allow_discrete)
@@ -5664,7 +5662,8 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 			}
 			if property_id in [.filter, .backdrop_filter] {
 				if result := interpolate_filter_value_list(element, calculation_context, from, to,
-					delta, allow_discrete) {
+					delta, allow_discrete)
+				{
 					return result
 				}
 				return interpolate_discrete(from, to, delta, allow_discrete)
@@ -5994,10 +5993,10 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				}
 				top := interpolate_style_value_impl(calculation_context, from.top(), to.top(),
 					delta, allow_discrete) or { return none }
-				right := interpolate_style_value_impl(calculation_context, from.right(), to.right(),
-					delta, allow_discrete) or { return none }
-				bottom := interpolate_style_value_impl(calculation_context, from.bottom(), to.bottom(),
-					delta, allow_discrete) or { return none }
+				right := interpolate_style_value_impl(calculation_context, from.right(),
+					to.right(), delta, allow_discrete) or { return none }
+				bottom := interpolate_style_value_impl(calculation_context, from.bottom(),
+					to.bottom(), delta, allow_discrete) or { return none }
 				left := interpolate_style_value_impl(calculation_context, from.left(), to.left(),
 					delta, allow_discrete) or { return none }
 				StyleValue(BorderImageSliceStyleValue.create(top, right, bottom, left, from.fill()))
@@ -6078,8 +6077,8 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 						min: -90
 						max: 90
 					}
-					angle := interpolate_style_value_impl(angle_context, from_angle, to_angle, delta,
-						allow_discrete) or { return none }
+					angle := interpolate_style_value_impl(angle_context, from_angle, to_angle,
+						delta, allow_discrete) or { return none }
 					StyleValue(FontStyleStyleValue.create(from.font_style(), angle))
 				} else {
 					StyleValue(FontStyleStyleValue.create(from.font_style(), none))
@@ -6135,9 +6134,10 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				if from.tag() != to.tag() {
 					return none
 				}
-				value := interpolate_style_value_impl(calculation_context, from.value(), to.value(),
-					delta, allow_discrete) or { return none }
-				StyleValue(OpenTypeTaggedStyleValue.create(.font_variation_settings, from.tag(), value))
+				value := interpolate_style_value_impl(calculation_context, from.value(),
+					to.value(), delta, allow_discrete) or { return none }
+				StyleValue(OpenTypeTaggedStyleValue.create(.font_variation_settings, from.tag(),
+					value))
 			} else {
 				none
 			}
@@ -6182,17 +6182,25 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				}
 				from_x := from_components[0] as StyleValue
 				to_x := to_components[0] as StyleValue
-				from_y := if from_components.len > 1 { from_components[1] as StyleValue } else { from_x }
+				from_y := if from_components.len > 1 {
+					from_components[1] as StyleValue
+				} else {
+					from_x
+				}
 				to_y := if to_components.len > 1 { to_components[1] as StyleValue } else { to_x }
 				x := interpolate_style_value_impl(calculation_context, from_x, to_x, delta,
 					allow_discrete) or { return none }
 				y := interpolate_style_value_impl(calculation_context, from_y, to_y, delta,
 					allow_discrete) or { return none }
 				if from_components.len == 1 && to_components.len == 1 {
-					StyleValue(RadialSizeStyleValue.create([RadialSizeStyleValueComponent(x)]))
+					StyleValue(RadialSizeStyleValue.create([
+						RadialSizeStyleValueComponent(x),
+					]))
 				} else {
-					StyleValue(RadialSizeStyleValue.create([RadialSizeStyleValueComponent(x),
-						RadialSizeStyleValueComponent(y)]))
+					StyleValue(RadialSizeStyleValue.create([
+						RadialSizeStyleValueComponent(x),
+						RadialSizeStyleValueComponent(y),
+					]))
 				}
 			} else {
 				none
@@ -6229,8 +6237,8 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 						to_rect.right_edge, delta, calculation_context)
 					bottom_edge: interpolation_length_or_auto(from_rect.bottom_edge,
 						to_rect.bottom_edge, delta, calculation_context)
-					left_edge:   interpolation_length_or_auto(from_rect.left_edge, to_rect.left_edge,
-						delta, calculation_context)
+					left_edge:   interpolation_length_or_auto(from_rect.left_edge,
+						to_rect.left_edge, delta, calculation_context)
 				}))
 			} else {
 				none
@@ -6286,8 +6294,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 					min: 0
 					max: 1
 				})
-				StyleValue(SuperellipseStyleValue.create(StyleValue(NumberStyleValue.create(
-					superellipse_parameter_from_interpolation_value(interpolated)))))
+				StyleValue(SuperellipseStyleValue.create(StyleValue(NumberStyleValue.create(superellipse_parameter_from_interpolation_value(interpolated)))))
 			} else {
 				none
 			}
@@ -6444,7 +6451,8 @@ fn interpolation_transform_or_identity(property_id PropertyID, value &dom.StyleV
 }
 
 fn interpolate_scale_property(calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	if from.css_text.trim_space().to_lower() == 'none' && to.css_text.trim_space().to_lower() == 'none' {
+	if from.css_text.trim_space().to_lower() == 'none'
+		&& to.css_text.trim_space().to_lower() == 'none' {
 		return unsafe { from }
 	}
 	one := StyleValue(NumberStyleValue.create(1))
@@ -6476,13 +6484,14 @@ fn interpolate_scale_property(calculation_context InterpolationCalculationContex
 		}
 		values << z
 	}
-	result := TransformationStyleValue.create(.scale, if values.len == 3 { .scale3d } else { .scale },
-		values)
+	result := TransformationStyleValue.create(.scale,
+		if values.len == 3 { .scale3d } else { .scale }, values)
 	return dom_style_value_from_value_logic(StyleValue(result))
 }
 
 fn interpolate_translate_property(calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	if from.css_text.trim_space().to_lower() == 'none' && to.css_text.trim_space().to_lower() == 'none' {
+	if from.css_text.trim_space().to_lower() == 'none'
+		&& to.css_text.trim_space().to_lower() == 'none' {
 		return unsafe { from }
 	}
 	zero := StyleValue(LengthStyleValue.create(Length.make_px(0)))
@@ -6514,8 +6523,11 @@ fn interpolate_translate_property(calculation_context InterpolationCalculationCo
 		}
 		values << z
 	}
-	result := TransformationStyleValue.create(.translate, if values.len == 3 { .translate3d } else { .translate },
-		values)
+	result := TransformationStyleValue.create(.translate, if values.len == 3 {
+		.translate3d
+	} else {
+		.translate
+	}, values)
 	return dom_style_value_from_value_logic(StyleValue(result))
 }
 
@@ -6532,8 +6544,16 @@ fn interpolation_rotation_axis_and_angle(transform TransformationStyleValue) (Fl
 		z: 1
 	}
 	match transform.transform_function() {
-		.rotate_x { axis = FloatVector3{ x: 1 } }
-		.rotate_y { axis = FloatVector3{ y: 1 } }
+		.rotate_x {
+			axis = FloatVector3{
+				x: 1
+			}
+		}
+		.rotate_y {
+			axis = FloatVector3{
+				y: 1
+			}
+		}
 		else {}
 	}
 	return axis, Angle.from_style_value(values[0], none).to_radians()
@@ -6563,7 +6583,13 @@ fn interpolation_slerp(from []f64, to []f64, delta f64) []f64 {
 }
 
 fn interpolation_axis_angle_to_quaternion(axis FloatVector3, angle f64) []f64 {
-	normalized := if axis.length() > 1e-5 { axis.normalized() } else { FloatVector3{ z: 1 } }
+	normalized := if axis.length() > 1e-5 {
+		axis.normalized()
+	} else {
+		FloatVector3{
+			z: 1
+		}
+	}
 	sin_half := math.sin(angle / 2)
 	return [normalized.x * sin_half, normalized.y * sin_half, normalized.z * sin_half,
 		math.cos(angle / 2)]
@@ -6572,23 +6598,45 @@ fn interpolation_axis_angle_to_quaternion(axis FloatVector3, angle f64) []f64 {
 fn interpolation_rotation_transform(from TransformationStyleValue, to TransformationStyleValue, delta f64, allow_discrete AllowDiscrete) ?TransformationStyleValue {
 	from_axis, from_angle := interpolation_rotation_axis_and_angle(from)
 	to_axis, to_angle := interpolation_rotation_axis_and_angle(to)
-	from_normalized := if from_axis.length() > 1e-5 { from_axis.normalized() } else { FloatVector3{ z: 1 } }
-	to_normalized := if to_axis.length() > 1e-5 { to_axis.normalized() } else { FloatVector3{ z: 1 } }
+	from_normalized := if from_axis.length() > 1e-5 {
+		from_axis.normalized()
+	} else {
+		FloatVector3{
+			z: 1
+		}
+	}
+	to_normalized := if to_axis.length() > 1e-5 {
+		to_axis.normalized()
+	} else {
+		FloatVector3{
+			z: 1
+		}
+	}
 	difference := FloatVector3{
 		x: from_normalized.x - to_normalized.x
 		y: from_normalized.y - to_normalized.y
 		z: from_normalized.z - to_normalized.z
 	}
 	if difference.length() < 1e-5 || from_angle == 0 || to_angle == 0 {
-		axis := if to_angle != 0 { to_normalized } else if from_angle != 0 { from_normalized } else { FloatVector3{ z: 1 } }
+		axis := if to_angle != 0 {
+			to_normalized
+		} else if from_angle != 0 {
+			from_normalized
+		} else {
+			FloatVector3{
+				z: 1
+			}
+		}
 		angle := interpolate_raw(from_angle, to_angle, delta, none) * 180.0 / math.pi
-		return TransformationStyleValue.create(.rotate, .rotate3d,
-			[StyleValue(NumberStyleValue.create(axis.x)), StyleValue(NumberStyleValue.create(axis.y)),
-				StyleValue(NumberStyleValue.create(axis.z)),
-				StyleValue(AngleStyleValue.create(Angle.make_degrees(angle)))])
+		return TransformationStyleValue.create(.rotate, .rotate3d, [
+			StyleValue(NumberStyleValue.create(axis.x)),
+			StyleValue(NumberStyleValue.create(axis.y)),
+			StyleValue(NumberStyleValue.create(axis.z)),
+			StyleValue(AngleStyleValue.create(Angle.make_degrees(angle))),
+		])
 	}
-	quaternion := interpolation_slerp(interpolation_axis_angle_to_quaternion(from_axis,
-		from_angle), interpolation_axis_angle_to_quaternion(to_axis, to_angle), delta)
+	quaternion := interpolation_slerp(interpolation_axis_angle_to_quaternion(from_axis, from_angle), interpolation_axis_angle_to_quaternion(to_axis,
+		to_angle), delta)
 	sin_half_angle := math.sqrt(math.max(0.0, 1.0 - quaternion[3] * quaternion[3]))
 	mut axis := FloatVector3{
 		x: quaternion[0]
@@ -6602,14 +6650,17 @@ fn interpolation_rotation_transform(from TransformationStyleValue, to Transforma
 	}
 	angle := 2.0 * math.acos(clamp_f64(quaternion[3], -1, 1)) * 180.0 / math.pi
 	_ = allow_discrete
-	return TransformationStyleValue.create(.rotate, .rotate3d,
-		[StyleValue(NumberStyleValue.create(axis.x)), StyleValue(NumberStyleValue.create(axis.y)),
-			StyleValue(NumberStyleValue.create(axis.z)),
-			StyleValue(AngleStyleValue.create(Angle.make_degrees(angle)))])
+	return TransformationStyleValue.create(.rotate, .rotate3d, [
+		StyleValue(NumberStyleValue.create(axis.x)),
+		StyleValue(NumberStyleValue.create(axis.y)),
+		StyleValue(NumberStyleValue.create(axis.z)),
+		StyleValue(AngleStyleValue.create(Angle.make_degrees(angle))),
+	])
 }
 
 fn interpolate_rotate_property(calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	if from.css_text.trim_space().to_lower() == 'none' && to.css_text.trim_space().to_lower() == 'none' {
+	if from.css_text.trim_space().to_lower() == 'none'
+		&& to.css_text.trim_space().to_lower() == 'none' {
 		return unsafe { from }
 	}
 	zero_angle := StyleValue(AngleStyleValue.create(Angle.make_degrees(0)))
@@ -6627,8 +6678,9 @@ fn interpolate_rotate_property(calculation_context InterpolationCalculationConte
 		return dom_style_value_from_value_logic(StyleValue(TransformationStyleValue.create(.rotate,
 			from_transform.transform_function(), [angle])))
 	}
-	result := interpolation_rotation_transform(from_transform, to_transform, delta,
-		allow_discrete) or { return none }
+	result := interpolation_rotation_transform(from_transform, to_transform, delta, allow_discrete) or {
+		return none
+	}
 	return dom_style_value_from_value_logic(StyleValue(result))
 }
 
@@ -6645,7 +6697,11 @@ fn interpolation_filter_list(value StyleValue) ?[]FilterStyleValue {
 fn interpolation_filter_initial_value(value FilterStyleValue) ?FilterStyleValue {
 	zero_length := StyleValue(LengthStyleValue.create(Length.make_px(0)))
 	return match value {
-		FilterOperationBlur { FilterStyleValue(FilterOperationBlur{ radius: zero_length }) }
+		FilterOperationBlur {
+			FilterStyleValue(FilterOperationBlur{
+				radius: zero_length
+			})
+		}
 		FilterOperationDropShadow {
 			FilterStyleValue(FilterOperationDropShadow{
 				offset_x: zero_length
@@ -6662,11 +6718,20 @@ fn interpolation_filter_initial_value(value FilterStyleValue) ?FilterStyleValue 
 		FilterOperationColor {
 			FilterStyleValue(FilterOperationColor{
 				operation: value.operation
-				amount:    StyleValue(NumberStyleValue.create(if value.operation in [.grayscale,
-					.invert, .sepia] { 0 } else { 1 }))
+				amount:    StyleValue(NumberStyleValue.create(if value.operation in [
+					.grayscale,
+					.invert,
+					.sepia,
+				] {
+					0
+				} else {
+					1
+				}))
 			})
 		}
-		URL { none }
+		URL {
+			none
+		}
 	}
 }
 
@@ -6674,9 +6739,11 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 	return match from {
 		FilterOperationBlur {
 			if to is FilterOperationBlur {
-				radius := interpolate_style_value(calculation_context, from.radius, to.radius, delta,
-					allow_discrete) or { return none }
-				FilterStyleValue(FilterOperationBlur{ radius: radius })
+				radius := interpolate_style_value(calculation_context, from.radius, to.radius,
+					delta, allow_discrete) or { return none }
+				FilterStyleValue(FilterOperationBlur{
+					radius: radius
+				})
 			} else {
 				none
 			}
@@ -6685,15 +6752,17 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 			if to is FilterOperationHueRotate {
 				angle := interpolate_style_value(calculation_context, from.angle, to.angle, delta,
 					allow_discrete) or { return none }
-				FilterStyleValue(FilterOperationHueRotate{ angle: angle })
+				FilterStyleValue(FilterOperationHueRotate{
+					angle: angle
+				})
 			} else {
 				none
 			}
 		}
 		FilterOperationColor {
 			if to is FilterOperationColor {
-				amount := interpolate_style_value(calculation_context, from.amount, to.amount, delta,
-					allow_discrete) or { return none }
+				amount := interpolate_style_value(calculation_context, from.amount, to.amount,
+					delta, allow_discrete) or { return none }
 				FilterStyleValue(FilterOperationColor{
 					operation: if delta >= 0.5 { to.operation } else { from.operation }
 					amount:    amount
@@ -6704,10 +6773,10 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 		}
 		FilterOperationDropShadow {
 			if to is FilterOperationDropShadow {
-				x := interpolate_style_value(calculation_context, from.offset_x, to.offset_x, delta,
-					allow_discrete) or { return none }
-				y := interpolate_style_value(calculation_context, from.offset_y, to.offset_y, delta,
-					allow_discrete) or { return none }
+				x := interpolate_style_value(calculation_context, from.offset_x, to.offset_x,
+					delta, allow_discrete) or { return none }
+				y := interpolate_style_value(calculation_context, from.offset_y, to.offset_y,
+					delta, allow_discrete) or { return none }
 				zero := StyleValue(LengthStyleValue.create(Length.make_px(0)))
 				from_radius := from.radius or { zero }
 				to_radius := to.radius or { zero }
@@ -6735,12 +6804,16 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 				none
 			}
 		}
-		URL { none }
+		URL {
+			none
+		}
 	}
 }
 
 fn interpolate_filter_value_list(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	from_value := parse_css_value_logic(calculation_context.property, from.css_text) or { return none }
+	from_value := parse_css_value_logic(calculation_context.property, from.css_text) or {
+		return none
+	}
 	to_value := parse_css_value_logic(calculation_context.property, to.css_text) or { return none }
 	mut from_list := interpolation_filter_list(from_value) or { return none }
 	mut to_list := interpolation_filter_list(to_value) or { return none }
@@ -6759,8 +6832,8 @@ fn interpolate_filter_value_list(element &dom.Element, calculation_context Inter
 	}
 	mut result := []FilterStyleValue{cap: from_list.len}
 	for i in 0 .. from_list.len {
-		result << (interpolate_filter_function(calculation_context, from_list[i], to_list[i], delta,
-			allow_discrete, color_context) or { return none })
+		result << (interpolate_filter_function(calculation_context, from_list[i], to_list[i],
+			delta, allow_discrete, color_context) or { return none })
 	}
 	return dom_style_value_from_value_logic(StyleValue(FilterValueListStyleValue.create(result)))
 }
@@ -8727,7 +8800,7 @@ pub mut:
 	node                                                        ?&dom.Node
 	// CSS-owned sheets for a shadow-root scope. Document sheets keep their
 	// existing document holder for compatibility with the HTML bridge.
-	author_style_sheets                                         []&CSSStyleSheet
+	author_style_sheets []&CSSStyleSheet
 }
 
 pub struct LogicalAliasMappingContext {
@@ -9138,8 +9211,7 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 		}
 		value = with_keyword_values_resolved_boundary(abstract_element.element(), property_id,
 			value)
-		physical_property_id := map_logical_alias_to_physical_property(property_id,
-			mapping_context)
+		physical_property_id := map_logical_alias_to_physical_property(property_id, mapping_context)
 		specified_values[physical_property_id] = value
 	}
 
@@ -9193,10 +9265,8 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 	interval_progress = (start_keyframe.easing or { effect.default_easing }).evaluate_at(interval_progress,
 		false)
 
-	start_values := s.compute_keyframe_values(abstract_element, start_keyframe,
-		computed_properties)
-	end_values := s.compute_keyframe_values(abstract_element, end_keyframe,
-		computed_properties)
+	start_values := s.compute_keyframe_values(abstract_element, start_keyframe, computed_properties)
+	end_values := s.compute_keyframe_values(abstract_element, end_keyframe, computed_properties)
 	s.clear_computation_context_caches()
 	for property_id, initial_start in start_values {
 		mut start := unsafe { initial_start }
@@ -9214,7 +9284,8 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 			end = composited
 		}
 		if interpolated := interpolate_property(abstract_element.element(), property_id, start,
-			end, interval_progress, .yes) {
+			end, interval_progress, .yes)
+		{
 			computed_properties.set_animated_property(property_id, interpolated, if effect.is_css_transition {
 				AnimatedPropertyResultOfTransition.yes
 			} else {
@@ -9294,7 +9365,8 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			requires_computation =
 				computed_interpolation_property_requires_computation_with_inherited_value(property_id)
 			if animated_inherit := StyleComputer.get_animated_inherit_value(property_id,
-				abstract_element) {
+				abstract_element)
+			{
 				properties.set_animated_property(property_id, animated_inherit.value,
 					animated_inherit.is_result_of_transition, .yes)
 			}
@@ -9336,7 +9408,8 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		for existing in s.css_animation_storage_.animations_for(abstract_element) {
 			mut animation := existing
 			if animation.sample_at(s.animation_time_ms_) != none {
-				s.collect_animation_into(abstract_element, voidptr(animation.effect_), mut properties)
+				s.collect_animation_into(abstract_element, voidptr(animation.effect_), mut
+					properties)
 			}
 		}
 	}
@@ -9344,8 +9417,8 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		for existing in s.css_transition_storage_.transitions_for(abstract_element) {
 			mut transition := existing
 			if transition.sample_at(s.animation_time_ms_) != none {
-				s.collect_animation_into(abstract_element,
-					voidptr(transition.keyframe_effect_), mut properties)
+				s.collect_animation_into(abstract_element, voidptr(transition.keyframe_effect_), mut
+					properties)
 			}
 		}
 	}

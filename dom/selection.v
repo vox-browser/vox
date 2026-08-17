@@ -135,7 +135,12 @@ pub fn (mut selection Selection) empty() {
 	selection.remove_all_ranges()
 }
 
-pub fn (mut selection Selection) collapse(node &Node, offset int) ! {
+pub fn (mut selection Selection) collapse(node_ ?&Node, offset int) ! {
+	node := node_ or {
+		selection.remove_all_ranges()
+		return
+	}
+
 	if node.is_document_type() {
 		return error('InvalidNodeTypeError: Selection.collapse() with DocumentType node')
 	}
@@ -143,6 +148,7 @@ pub fn (mut selection Selection) collapse(node &Node, offset int) ! {
 		return error('IndexSizeError: Selection.collapse() offset is out of range')
 	}
 	if selection.document_ == unsafe { nil }
+		|| voidptr(node.document()) != voidptr(selection.document_)
 		|| !unsafe { &Node(selection.document_) }.is_shadow_including_inclusive_ancestor_of(node) {
 		return
 	}
@@ -155,7 +161,7 @@ pub fn (mut selection Selection) collapse_to_none() {
 	selection.remove_all_ranges()
 }
 
-pub fn (mut selection Selection) set_position(node &Node, offset int) ! {
+pub fn (mut selection Selection) set_position(node ?&Node, offset int) ! {
 	selection.collapse(node, offset)!
 }
 
@@ -180,15 +186,16 @@ pub fn (mut selection Selection) collapse_to_end() ! {
 }
 
 pub fn (mut selection Selection) extend(node &Node, offset int) ! {
-	if offset < 0 || offset > node.length() {
-		return error('IndexSizeError: Selection.extend() offset is out of range')
-	}
 	if selection.document_ == unsafe { nil }
+		|| voidptr(node.document()) != voidptr(selection.document_)
 		|| !unsafe { &Node(selection.document_) }.is_shadow_including_inclusive_ancestor_of(node) {
 		return
 	}
 	if selection.range_ == unsafe { nil } {
 		return error('InvalidStateError: Selection.extend() on empty selection')
+	}
+	if offset < 0 || offset > node.length() {
+		return error('IndexSizeError: Selection.extend() offset is out of range')
 	}
 	old_anchor_node := selection.anchor_node() or {
 		return error('InvalidStateError: Selection.extend() has no anchor')
@@ -236,7 +243,9 @@ pub fn (mut selection Selection) set_base_and_extent(anchor_node &Node, anchor_o
 		return
 	}
 	document_node := unsafe { &Node(selection.document_) }
-	if !document_node.is_shadow_including_inclusive_ancestor_of(anchor_node)
+	if voidptr(anchor_node.document()) != voidptr(selection.document_)
+		|| voidptr(focus_node.document()) != voidptr(selection.document_)
+		|| !document_node.is_shadow_including_inclusive_ancestor_of(anchor_node)
 		|| !document_node.is_shadow_including_inclusive_ancestor_of(focus_node) {
 		return
 	}
@@ -309,14 +318,12 @@ pub fn (mut selection Selection) modify(alter ?string, direction ?string, granul
 		match granularity_value {
 			'character' { selection.move_offset_to_next_character(collapse_selection) }
 			'word' { selection.move_offset_to_next_word(collapse_selection) }
-			'line' { selection.move_offset_to_next_line(collapse_selection) }
 			else {}
 		}
 	} else {
 		match granularity_value {
 			'character' { selection.move_offset_to_previous_character(collapse_selection) }
 			'word' { selection.move_offset_to_previous_word(collapse_selection) }
-			'line' { selection.move_offset_to_previous_line(collapse_selection) }
 			else {}
 		}
 	}

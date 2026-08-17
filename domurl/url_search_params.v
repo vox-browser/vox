@@ -6,10 +6,11 @@
 // `application/x-www-form-urlencoded` parser/serializer and the URLSearchParams API. The
 // percent-encode/decode and the urlencoded percent-encode set (normally from LibURL) are
 // translated inline; only UTF-8 is supported (the encoding argument defaults to UTF-8).
-// update() writes back to the owning URL object in C++; DOMURL is not translated in this port,
-// so a standalone URLSearchParams has no URL and update() is a no-op.
+// update() writes back to an owning DOMURL when present.
 // https://url.spec.whatwg.org/#interface-urlsearchparams
 module domurl
+
+import encoding
 
 // https://url.spec.whatwg.org/#concept-urlencoded-tuple
 pub struct QueryParam {
@@ -82,7 +83,8 @@ fn percent_decode(input string) string {
 			i += 3
 		}
 	}
-	return output.bytestr()
+	decoder := encoding.TextDecoder.create()
+	return decoder.decode(output, encoding.TextDecodeOptions{}) or { '\ufffd' }
 }
 
 // https://url.spec.whatwg.org/#concept-urlencoded-serializer
@@ -175,7 +177,7 @@ fn code_unit_less_than(a string, b string) bool {
 pub struct URLSearchParams {
 mut:
 	list []QueryParam
-	// C++ holds m_url (the owning DOMURL) for update(); DOMURL is not translated in this port.
+	url_ ?&DOMURL
 }
 
 pub fn URLSearchParams.create(list []QueryParam) &URLSearchParams {
@@ -223,7 +225,13 @@ pub fn URLSearchParams.from_record(init map[string]string) &URLSearchParams {
 
 // https://url.spec.whatwg.org/#concept-urlsearchparams-update
 fn (mut params URLSearchParams) update() {
-	// 1. If the URL object is null, return. (Always the case in this port.)
+	mut url := params.url_ or { return }
+	serialized := params.to_string()
+	url.set_query_from_params(if serialized == '' { none } else { serialized })
+}
+
+fn (mut params URLSearchParams) bind_url(url &DOMURL) {
+	params.url_ = url
 }
 
 // https://url.spec.whatwg.org/#dom-urlsearchparams-size
@@ -348,4 +356,73 @@ pub fn (params &URLSearchParams) to_string() string {
 // The name-value pairs, in list order (for iteration / entries()).
 pub fn (params &URLSearchParams) params() []QueryParam {
 	return params.list.clone()
+}
+
+pub type URLSearchParamsForEachCallback = fn (value string, name string) !
+
+// The index-based loop intentionally observes appends/deletes performed by the
+// callback, matching the upstream iterator semantics.
+pub fn (params &URLSearchParams) for_each(callback URLSearchParamsForEachCallback) ! {
+	mut index := 0
+	for index < params.list.len {
+		entry := params.list[index]
+		callback(entry.value, entry.name)!
+		index++
+	}
+}
+
+pub enum URLSearchParamsIteratorKind {
+	key
+	value
+	key_value
+}
+
+pub struct URLSearchParamsIteratorValue {
+pub:
+	done  bool
+	key   string
+	value string
+}
+
+@[heap]
+pub struct URLSearchParamsIterator {
+	params &URLSearchParams
+	kind   URLSearchParamsIteratorKind
+pub mut:
+	index int
+}
+
+pub fn URLSearchParamsIterator.create(params &URLSearchParams, kind URLSearchParamsIteratorKind) &URLSearchParamsIterator {
+	return &URLSearchParamsIterator{
+		params: params
+		kind:   kind
+	}
+}
+
+pub fn (mut iterator URLSearchParamsIterator) next() URLSearchParamsIteratorValue {
+	if iterator.index >= iterator.params.list.len {
+		return URLSearchParamsIteratorValue{
+			done: true
+		}
+	}
+	entry := iterator.params.list[iterator.index]
+	iterator.index++
+	return match iterator.kind {
+		.key {
+			URLSearchParamsIteratorValue{
+				key: entry.name
+			}
+		}
+		.value {
+			URLSearchParamsIteratorValue{
+				value: entry.value
+			}
+		}
+		.key_value {
+			URLSearchParamsIteratorValue{
+				key:   entry.name
+				value: entry.value
+			}
+		}
+	}
 }

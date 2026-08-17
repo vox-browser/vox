@@ -2,12 +2,10 @@ module css
 
 import dom
 
-// A minimal, genuinely-working slice of the CSS cascade, built on the property metadata generated
-// in property_metadata.v plus the (working) inline-style declaration parser and property database.
-//
-// The full StyleComputer.compute_style is still a stub in this port (author/UA/user stylesheet rule
-// matching needs stylesheet rule parsing, which is also stubbed). What DOES work end to end is the
-// inline (specified) origin + inheritance + initial-value defaulting, which this exposes.
+// Compact cascade query helpers built on generated property metadata, the typed declaration parser,
+// and the property database. The full author/user/UA cascade and style computation live in
+// style_computer.v, computed_interpolation.v, and style_scope_cache.v; these helpers intentionally
+// expose the smaller rule-list/inline-style calculation used by focused callers and tests.
 
 // https://drafts.csswg.org/css-cascade/#inherited-property — does this longhand inherit by default?
 pub fn is_inherited_property(property_id PropertyID) bool {
@@ -59,7 +57,8 @@ fn declaration_longhand(declaration &CSSStyleProperties, property_name string) ?
 		if !property_is_shorthand(shorthand_id) {
 			continue
 		}
-		expanded := expand_shorthand_value(shorthand_id, declaration.get_property_value(shorthand_name))
+		expanded := expand_shorthand_value(shorthand_id,
+			declaration.get_property_value(shorthand_name))
 		if value := expanded[property_name] {
 			return LonghandDeclaration{
 				value:     value
@@ -91,7 +90,8 @@ fn inline_declared_value(element &dom.Element, property_name string) ?string {
 //   1. an inline declaration on the element, otherwise
 //   2. (if the property inherits) the nearest ancestor's inline declaration for it, otherwise
 //   3. the property's initial value.
-// FIXME: author/UA/user stylesheet rules are not part of this cascade yet (rule parsing is stubbed).
+// This compact helper only accepts inline declarations. Call StyleComputer.compute_style() for the
+// complete origin/layer/specificity cascade over active stylesheets.
 pub fn cascaded_value_for(element &dom.Element, property_id PropertyID) string {
 	name := string_from_property_id(property_id)
 	if value := inline_declared_value(element, name) {

@@ -592,16 +592,14 @@ pub fn (c Clip) to_rect() EdgeRect {
 
 // --- Filter ---
 
-pub struct FilterValue {}
-
 pub struct Filter {
 pub mut:
-	filter_value_list ?&dom.StyleValue
+	filter_value_list []FilterStyleValue
 }
 
-pub fn Filter.new(filter_value_list &dom.StyleValue) Filter {
+pub fn Filter.new(filter_value_list []FilterStyleValue) Filter {
 	return Filter{
-		filter_value_list: unsafe { filter_value_list }
+		filter_value_list: filter_value_list.clone()
 	}
 }
 
@@ -610,18 +608,18 @@ pub fn Filter.make_none() Filter {
 }
 
 pub fn (f Filter) has_filters() bool {
-	return f.filter_value_list != none
+	return f.filter_value_list.len > 0
 }
 
 pub fn (f Filter) is_none() bool {
 	return !f.has_filters()
 }
 
-pub fn (f Filter) filters() []FilterValue {
+pub fn (f Filter) filters() []FilterStyleValue {
 	if !f.has_filters() {
 		panic('VERIFY_NOT_REACHED')
 	}
-	return []FilterValue{}
+	return f.filter_value_list.clone()
 }
 
 // --- EasingFunction ---
@@ -1148,6 +1146,21 @@ pub fn EasingFunction.from_style_value(style_value &dom.StyleValue) EasingFuncti
 	}
 
 	return EasingFunction.ease()
+}
+
+// parse_easing_function is the public CSS/Animations boundary used by the
+// Web Animations translation. It accepts exactly one <easing-function> and
+// rejects trailing tokens and CSS-wide keywords, matching
+// AnimationEffect::parse_easing_string().
+pub fn parse_easing_function(text string) ?EasingFunction {
+	mut parser := Parser.from_css_text(text)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	if easing := parser.parse_easing_value(mut tokens) {
+		if !tokens.has_more_tokens() {
+			return EasingFunction.from_css_style_value(easing)
+		}
+	}
+	return none
 }
 
 pub fn (f EasingFunction) evaluate_at(input_progress f64, before_flag bool) f64 {

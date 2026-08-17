@@ -61,5 +61,45 @@ fn test_cumulative_offset() {
 	// Indefinite content height until set.
 	assert !child_uv.has_definite_height()
 	child_uv.set_content_height(CSSPixels.nearest_value_for(7.0))
+	assert !child_uv.has_definite_height()
+	child_uv.set_has_definite_height(true)
 	assert child_uv.has_definite_height()
+}
+
+fn test_used_values_clamp_sizes_and_propagate_intrinsic_constraints() {
+	doc := dom.Document.create(dom.url_about_blank())
+	style := css.ComputedProperties.new()
+	box := NodeWithStyle.new(doc, none, style)
+	mut state := LayoutState.new()
+	mut values := state.get_mutable(box)
+	values.set_content_width(CSSPixels.nearest_value_for(-5))
+	values.set_content_height(CSSPixels.nearest_value_for(-7))
+	assert values.content_width().to_double() == 0
+	assert values.content_height().to_double() == 0
+	assert values.has_definite_width()
+	assert !values.has_definite_height()
+	inner := values.available_inner_space_or_constraints_from(AvailableSpace.new(AvailableSize.make_min_content(),
+		AvailableSize.make_max_content()))
+	assert inner.width.is_definite()
+	assert inner.height.is_max_content()
+}
+
+fn test_used_values_static_position_uses_margin_box_size() {
+	doc := dom.Document.create(dom.url_about_blank())
+	style := css.ComputedProperties.new()
+	box := NodeWithStyle.new(doc, none, style)
+	mut state := LayoutState.new()
+	mut values := state.get_mutable(box)
+	values.set_content_width(CSSPixels.nearest_value_for(20))
+	values.set_content_height(CSSPixels.nearest_value_for(10))
+	values.margin_left = CSSPixels.nearest_value_for(5)
+	values.margin_right = CSSPixels.nearest_value_for(5)
+	values.set_static_position_rect(StaticPositionRect{
+		rect:                 css.CSSPixelRect.new(10, 20, 100, 80)
+		horizontal_alignment: .center
+		vertical_alignment:   .end
+	})
+	position := values.static_position()
+	assert position.x().to_double() == 45
+	assert position.y().to_double() == 90
 }

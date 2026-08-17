@@ -1,0 +1,157 @@
+// Copyright (c) 2026, Ladybird contributors
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of IDBTransaction.{h,cpp,idl} and
+// Internal/MutationLog.{h,cpp}. The snapshot is the standalone equivalent of
+// upstream's per-store reverse mutation log and preserves atomic abort.
+module indexeddb
+
+pub enum IDBTransactionMode {
+	readonly
+	readwrite
+	versionchange
+}
+
+pub enum IDBTransactionDurability {
+	default_
+	strict
+	relaxed
+}
+
+pub enum TransactionState {
+	active
+	inactive
+	committing
+	finished
+	aborted
+}
+
+@[heap]
+pub struct IDBTransaction {
+pub mut:
+	database         &IDBDatabase
+	mode             IDBTransactionMode
+	durability       IDBTransactionDurability
+	scope_names      []string
+	state            TransactionState = .active
+	error_message    string
+	events           []string
+	requests         []&IDBRequest
+	snapshot         map[string]ObjectStoreData
+	original_version u64
+}
+
+pub fn IDBTransaction.create(database &IDBDatabase, mode IDBTransactionMode, durability IDBTransactionDurability, scope []string) &IDBTransaction {
+	mut snapshot := map[string]ObjectStoreData{}
+	if mode != .readonly {
+		snapshot = database.data.clone_stores()
+	}
+	return &IDBTransaction{
+		database:         database
+		mode:             mode
+		durability:       durability
+		scope_names:      scope.clone()
+		snapshot:         snapshot
+		original_version: database.data.version
+	}
+}
+
+pub fn (transaction &IDBTransaction) object_store_names() []string {
+	mut names := transaction.scope_names.clone()
+	sort_name_list(mut names)
+	return names
+}
+
+pub fn (transaction &IDBTransaction) require_active() ! {
+	if transaction.state != .active {
+		return error('TransactionInactiveError: transaction is not active')
+	}
+}
+
+pub fn (transaction &IDBTransaction) require_writable() ! {
+	transaction.require_active()!
+	if transaction.mode == .readonly {
+		return error('ReadOnlyError: transaction is read-only')
+	}
+}
+
+pub fn (transaction &IDBTransaction) require_versionchange_active() ! {
+	transaction.require_active()!
+	if transaction.mode != .versionchange {
+		return error('InvalidStateError: operation requires a versionchange transaction')
+	}
+}
+
+pub fn (mut transaction IDBTransaction) object_store(name string) !IDBObjectStore {
+	if transaction.state in [.finished, .aborted] {
+		return error('InvalidStateError: transaction has finished')
+	}
+	if name !in transaction.scope_names || name !in transaction.database.data.stores {
+		return error('NotFoundError: object store is not in the transaction scope')
+	}
+	return IDBObjectStore{
+		transaction: &transaction
+		name_:       name
+	}
+}
+
+pub fn (mut transaction IDBTransaction) commit() ! {
+	if transaction.state != .active {
+		return error('InvalidStateError: transaction is not active')
+	}
+	transaction.state = .committing
+	transaction.state = .finished
+	transaction.events << 'complete'
+	transaction.finish_connection_if_needed()
+}
+
+pub fn (mut transaction IDBTransaction) abort(reason string) ! {
+	if transaction.state in [.committing, .finished, .aborted] {
+		return error('InvalidStateError: transaction is ending')
+	}
+	if transaction.mode != .readonly {
+		transaction.database.data.stores = clone_store_map(transaction.snapshot)
+		transaction.database.data.version = transaction.original_version
+	}
+	transaction.error_message = reason
+	transaction.state = .aborted
+	transaction.events << 'abort'
+	for mut request in transaction.requests {
+		if request.ready_state == .pending {
+			request.aborted = true
+			request.fail('AbortError: transaction aborted')
+		}
+	}
+	transaction.finish_connection_if_needed()
+}
+
+fn clone_store_map(source map[string]ObjectStoreData) map[string]ObjectStoreData {
+	mut result := map[string]ObjectStoreData{}
+	for name, store in source {
+		result[name] = store.clone()
+	}
+	return result
+}
+
+fn (mut transaction IDBTransaction) finish_connection_if_needed() {
+	unsafe {
+		mut connection := transaction.database
+		if connection.state == .closing
+			&& !connection.transactions.any(it.state !in [.finished, .aborted]) {
+			connection.finish_close()
+		}
+	}
+}
+
+pub fn (mut transaction IDBTransaction) deactivate() {
+	if transaction.state == .active {
+		transaction.state = .inactive
+	}
+}
+
+pub fn (mut transaction IDBTransaction) activate() {
+	if transaction.state == .inactive {
+		transaction.state = .active
+	}
+}

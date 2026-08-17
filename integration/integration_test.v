@@ -9,7 +9,8 @@ import dom
 // tree with the css selector engine. Exercises html + dom + css composing end to end.
 
 fn test_parse_then_query() {
-	doc := html.parse_document('<body><div id="a"><p class="x">hello</p><p class="y">world</p><a href="u">link</a></div></body>')
+	doc :=
+		html.parse_document('<body><div id="a"><p class="x">hello</p><p class="y">world</p><a href="u">link</a></div></body>')
 	root := unsafe { &dom.Node(doc) }
 
 	// Type selector (case-insensitive for HTML elements).
@@ -47,19 +48,25 @@ fn test_selectors_and_inline_style_over_parsed_document() {
 
 	// Structural pseudo-classes + combinators over parser-built elements.
 	assert css.query_selector_all(root, 'ul#list > li.item').len == 3
-	assert (css.query_selector(root, 'li:first-child') or { panic('first') }).text_content() or { '' } == 'a'
+	assert (css.query_selector(root, 'li:first-child') or { panic('first') }).text_content() or {
+		''
+	} == 'a'
 	assert (css.query_selector(root, 'li:last-child') or { panic('last') }).text_content() or { '' } == 'c'
 	assert (css.query_selector(root, 'li.active') or { panic('active') }).text_content() or { '' } == 'b'
 
 	// Parse the active item's inline style declaration and read specified values.
 	active := css.query_selector(root, '.active') or { panic('active') }
-	block := css.parse_css_property_declaration_block_with_parser(active.get_attribute('style') or { '' })
+	block := css.parse_css_property_declaration_block_with_parser(active.get_attribute('style') or {
+		''
+	})
 	assert block.length() == 2
 	assert block.get_property_value('color') == 'red'
 	assert block.get_property_value('width') == '10px'
 
 	hidden := css.query_selector(root, 'p') or { panic('p') }
-	hidden_block := css.parse_css_property_declaration_block_with_parser(hidden.get_attribute('style') or { '' })
+	hidden_block := css.parse_css_property_declaration_block_with_parser(hidden.get_attribute('style') or {
+		''
+	})
 	assert hidden_block.get_property_value('display') == 'none'
 }
 
@@ -67,7 +74,8 @@ fn test_selectors_and_inline_style_over_parsed_document() {
 // parser-built DOM using the minimal cascade (inline + inheritance + initial). This composes the
 // html parser + dom + css metadata/inline-parsing.
 fn test_cascade_over_parsed_document() {
-	doc := html.parse_document('<body style="color: navy"><div><p>text</p><span style="color: red">red</span></div></body>')
+	doc :=
+		html.parse_document('<body style="color: navy"><div><p>text</p><span style="color: red">red</span></div></body>')
 	root := unsafe { &dom.Node(doc) }
 	body := css.query_selector(root, 'body') or { panic('no body') }
 	p := css.query_selector(root, 'p') or { panic('no p') }
@@ -123,7 +131,8 @@ fn test_ua_cascade_over_parsed_document() {
 // Full-stack computed font-size: parse HTML with font-sizes, then resolve computed px over the
 // parsed DOM (em/% resolve up the inheritance chain).
 fn test_computed_font_size_over_parsed_document() {
-	doc := html.parse_document('<html style="font-size: 20px"><body><section style="font-size: 1.5em"><span style="font-size: 200%">x</span></section></body></html>')
+	doc :=
+		html.parse_document('<html style="font-size: 20px"><body><section style="font-size: 1.5em"><span style="font-size: 200%">x</span></section></body></html>')
 	root := unsafe { &dom.Node(doc) }
 	no_author := []&css.CSSRule{}
 
@@ -144,7 +153,9 @@ fn test_computed_length_feeds_layout() {
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
 	width_id := css.property_id_from_string('width') or { panic('width id') }
-	width_px := css.computed_length_px(div, width_id, []&css.CSSRule{}) or { panic('no computed width') }
+	width_px := css.computed_length_px(div, width_id, []&css.CSSRule{}) or {
+		panic('no computed width')
+	}
 	assert width_px == 160.0 // 10em * 16px
 
 	// Hand the computed px to layout's AvailableSize (css -> layout).
@@ -155,7 +166,8 @@ fn test_computed_length_feeds_layout() {
 
 // Full-stack computed color: parse HTML, resolve inherited color + currentColor over the DOM.
 fn test_computed_color_over_parsed_document() {
-	doc := html.parse_document('<body style="color: rgb(1, 2, 3)"><div><span style="border-top-color: currentColor">x</span></div></body>')
+	doc :=
+		html.parse_document('<body style="color: rgb(1, 2, 3)"><div><span style="border-top-color: currentColor">x</span></div></body>')
 	root := unsafe { &dom.Node(doc) }
 	span := css.query_selector(root, 'span') or { panic('no span') }
 	no := []&css.CSSRule{}
@@ -170,7 +182,8 @@ fn test_computed_color_over_parsed_document() {
 // Full-stack block layout: parse HTML, cascade computed widths/heights, run the minimal block-flow
 // engine over the real DOM. A 300px container with two block children (auto width; 25% width).
 fn test_block_flow_layout_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 300px"><div style="height: 40px"></div><div style="width: 25%; height: 10px"></div></div>')
+	doc :=
+		html.parse_document('<div style="width: 300px"><div style="height: 40px"></div><div style="width: 25%; height: 10px"></div></div>')
 	root := unsafe { &dom.Node(doc) }
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -187,7 +200,8 @@ fn test_block_flow_layout_over_parsed_document() {
 // Full-stack box model: parse HTML, cascade margins/padding, lay out with real box geometry.
 // A 400px container with padding:20 holds a p (margin:10, height:50).
 fn test_block_box_model_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 400px; padding: 20px"><p style="height: 50px; margin: 10px"></p></div>')
+	doc :=
+		html.parse_document('<div style="width: 400px; padding: 20px"><p style="height: 50px; margin: 10px"></p></div>')
 	root := unsafe { &dom.Node(doc) }
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -208,7 +222,8 @@ fn test_block_box_model_over_parsed_document() {
 // collapse to a 25px gap (not 50), and -- since the container has no border/padding -- the first
 // p's top margin and the last p's bottom margin collapse OUT of the container (parent/child).
 fn test_margin_collapse_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 300px"><p style="height: 20px; margin: 25px"></p><p style="height: 20px; margin: 25px"></p></div>')
+	doc :=
+		html.parse_document('<div style="width: 300px"><p style="height: 20px; margin: 25px"></p><p style="height: 20px; margin: 25px"></p></div>')
 	root := unsafe { &dom.Node(doc) }
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -225,7 +240,8 @@ fn test_margin_collapse_over_parsed_document() {
 // Full-stack display filter: laying out from <html>, the display:none <head> generates no box, and
 // inside <body> an inline <span> generates no box while a block <div> does.
 fn test_display_filter_over_parsed_document() {
-	doc := html.parse_document('<html><head><title>t</title><style>x{}</style></head><body style="height: 50px"><span style="height: 999px">inline</span><div style="height: 30px"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><title>t</title><style>x{}</style></head><body style="height: 50px"><span style="height: 999px">inline</span><div style="height: 30px"></div></body></html>')
 	root := unsafe { &dom.Node(doc) }
 	html_el := css.query_selector(root, 'html') or { panic('no html') }
 
@@ -239,7 +255,8 @@ fn test_display_filter_over_parsed_document() {
 // Full-stack inline text: a text-only div gets a one-line height from the cascade's font/line-height.
 // "Some words here" = 15 glyphs * 0.5*20 = 150px < 500px -> 1 line * 24px line-height.
 fn test_inline_text_height_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 500px; font-size: 20px; line-height: 24px">Some words here</div>')
+	doc :=
+		html.parse_document('<div style="width: 500px; font-size: 20px; line-height: 24px">Some words here</div>')
 	root := unsafe { &dom.Node(doc) }
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -251,7 +268,8 @@ fn test_inline_text_height_over_parsed_document() {
 // layout_document is the one-call reflow: parse HTML -> collect <style> author rules -> lay out from
 // the root element within the viewport. Verifies author styles reach the cascade during layout.
 fn test_layout_document_entry_point() {
-	doc := html.parse_document('<html><head><style>.box { height: 40px; width: 120px }</style></head><body><div class="box"></div><p>text here</p></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.box { height: 40px; width: 120px }</style></head><body><div class="box"></div><p>text here</p></body></html>')
 
 	root_box := layout.layout_document(doc, 800)
 	assert root_box.tag_name == 'html'
@@ -273,7 +291,8 @@ fn test_layout_document_entry_point() {
 // Full-stack box-sizing: the near-universal `* { box-sizing: border-box }` reset from an author
 // <style> reaches layout, so .card's specified 200px width includes its padding+border.
 fn test_box_sizing_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>* { box-sizing: border-box } .card { width: 200px; padding: 20px; border: 5px solid }</style></head><body><div class="card"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>* { box-sizing: border-box } .card { width: 200px; padding: 20px; border: 5px solid }</style></head><body><div class="card"></div></body></html>')
 
 	root_box := layout.layout_document(doc, 800)
 	card := root_box.children[0].children[0] // html > body > div.card
@@ -285,7 +304,8 @@ fn test_box_sizing_over_parsed_document() {
 // Full-stack min/max: the classic responsive container -- width:auto capped by max-width -- clamps
 // against a wide viewport, while a short element is raised to a min-height, all via author <style>.
 fn test_min_max_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.wrap { max-width: 600px } .hero { min-height: 300px }</style></head><body><div class="wrap"><div class="hero"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.wrap { max-width: 600px } .hero { min-height: 300px }</style></head><body><div class="wrap"><div class="hero"></div></div></body></html>')
 
 	root_box := layout.layout_document(doc, 1440)
 	wrap := root_box.children[0].children[0] // html > body > div.wrap
@@ -299,7 +319,8 @@ fn test_min_max_over_parsed_document() {
 // Full-stack: the canonical centered responsive container -- max-width + margin:0 auto -- against a
 // wide viewport, all from an author <style>.
 fn test_centered_container_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.container { max-width: 960px; margin: 0 auto }</style></head><body><div class="container"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.container { max-width: 960px; margin: 0 auto }</style></head><body><div class="container"></div></body></html>')
 
 	root_box := layout.layout_document(doc, 1440)
 	body_box := root_box.children[0]
@@ -317,7 +338,8 @@ fn test_centered_container_over_parsed_document() {
 // letting it collapse out (the classic "contain the margin" use of a BFC). Compare the plain-div
 // case where the margin would collapse through.
 fn test_bfc_contains_margin_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 300px; overflow: hidden"><div style="height: 20px; margin-top: 40px"></div></div>')
+	doc :=
+		html.parse_document('<div style="width: 300px; overflow: hidden"><div style="height: 20px; margin-top: 40px"></div></div>')
 	root := unsafe { &dom.Node(doc) }
 	wrapper := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -330,7 +352,8 @@ fn test_bfc_contains_margin_over_parsed_document() {
 
 // Full-stack position: relative -- a nudged element moves but its sibling keeps its flow position.
 fn test_relative_position_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 300px"><div style="height: 20px; position: relative; top: 5px; left: 12px"></div><div style="height: 20px"></div></div>')
+	doc :=
+		html.parse_document('<div style="width: 300px"><div style="height: 20px; position: relative; top: 5px; left: 12px"></div><div style="height: 20px"></div></div>')
 	root := unsafe { &dom.Node(doc) }
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -345,7 +368,8 @@ fn test_relative_position_over_parsed_document() {
 // Full-stack absolute positioning: the classic "badge pinned to a corner of a relative container".
 // The badge is positioned against .rel's padding box and is out of flow.
 fn test_absolute_position_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.rel { position: relative; width: 400px; height: 200px } .badge { position: absolute; top: 5px; right: 8px; width: 30px; height: 30px }</style></head><body><div class="rel"><div class="badge"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.rel { position: relative; width: 400px; height: 200px } .badge { position: absolute; top: 5px; right: 8px; width: 30px; height: 30px }</style></head><body><div class="rel"><div class="badge"></div></div></body></html>')
 
 	root_box := layout.layout_document(doc, 1200)
 	rel := root_box.children[0].children[0] // html > body > div.rel
@@ -391,7 +415,8 @@ fn test_full_pipeline_box_tree_snapshot() {
 // Full-stack word wrapping: "alpha beta gamma" over a 100px line -- "alpha beta" (50+10+40=100)
 // fills the first line, "gamma" wraps to a second -> 2 lines * 25px line-height.
 fn test_word_wrap_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 100px; font-size: 20px; line-height: 25px">alpha beta gamma</div>')
+	doc :=
+		html.parse_document('<div style="width: 100px; font-size: 20px; line-height: 25px">alpha beta gamma</div>')
 	root := unsafe { &dom.Node(doc) }
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -401,7 +426,8 @@ fn test_word_wrap_over_parsed_document() {
 
 // Full-stack <br>: three <br>-separated lines each fit the 500px box, so height is 3 line-heights.
 fn test_br_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 500px; line-height: 20px">line one<br>line two<br>line three</div>')
+	doc :=
+		html.parse_document('<div style="width: 500px; line-height: 20px">line one<br>line two<br>line three</div>')
 	root := unsafe { &dom.Node(doc) }
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -412,7 +438,8 @@ fn test_br_over_parsed_document() {
 // Full-stack text-align: centered text in a 300px box. "hey" = 3 glyphs * 8 (16px font) = 24px,
 // centered -> x = (300 - 24) / 2.
 fn test_text_align_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 300px; text-align: center; line-height: 20px">hey</div>')
+	doc :=
+		html.parse_document('<div style="width: 300px; text-align: center; line-height: 20px">hey</div>')
 	root := unsafe { &dom.Node(doc) }
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -425,7 +452,8 @@ fn test_text_align_over_parsed_document() {
 // Full-stack <pre>: the UA sheet gives <pre> white-space: pre, so its newlines become forced line
 // breaks (and it doesn't wrap) -- three source lines -> three line boxes.
 fn test_pre_over_parsed_document() {
-	doc := html.parse_document('<pre style="line-height: 20px">line one\nline two\nline three</pre>')
+	doc :=
+		html.parse_document('<pre style="line-height: 20px">line one\nline two\nline three</pre>')
 	root := unsafe { &dom.Node(doc) }
 	pre := css.query_selector(root, 'pre') or { panic('no pre') }
 
@@ -447,7 +475,8 @@ fn test_max_content_over_parsed_document() {
 // Full-stack floats: an overflow:hidden container clears its floated children (the clearfix): a
 // float:left and a float:right are placed at the edges and the container grows to contain them.
 fn test_floats_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 400px; overflow: hidden"><div style="float: left; width: 120px; height: 60px"></div><div style="float: right; width: 80px; height: 30px"></div></div>')
+	doc :=
+		html.parse_document('<div style="width: 400px; overflow: hidden"><div style="float: left; width: 120px; height: 60px"></div><div style="float: right; width: 80px; height: 30px"></div></div>')
 	root := unsafe { &dom.Node(doc) }
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -462,7 +491,8 @@ fn test_floats_over_parsed_document() {
 // Full-stack float wrap-around: text in a container flows to the right of a left float, then
 // returns to full width below it (the classic "float an image, text wraps around it").
 fn test_float_wrap_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 200px; overflow: hidden; font-size: 20px; line-height: 20px"><div style="float: left; width: 150px; height: 40px"></div>aaaa bbbb cccc</div>')
+	doc :=
+		html.parse_document('<div style="width: 200px; overflow: hidden; font-size: 20px; line-height: 20px"><div style="float: left; width: 150px; height: 40px"></div>aaaa bbbb cccc</div>')
 	root := unsafe { &dom.Node(doc) }
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -476,7 +506,8 @@ fn test_float_wrap_over_parsed_document() {
 // Full-stack z-index: a modal (z-index:10) paints above a backdrop (z-index:1) in the same
 // positioned container, regardless of source order.
 fn test_paint_order_over_parsed_document() {
-	doc := html.parse_document('<div style="position: relative"><div style="position: absolute; z-index: 10">modal</div><div style="position: absolute; z-index: 1">backdrop</div></div>')
+	doc :=
+		html.parse_document('<div style="position: relative"><div style="position: absolute; z-index: 10">modal</div><div style="position: absolute; z-index: 1">backdrop</div></div>')
 	root := unsafe { &dom.Node(doc) }
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -488,7 +519,8 @@ fn test_paint_order_over_parsed_document() {
 
 // Full-stack inline fragments: each word in a parsed paragraph gets its own positioned box.
 fn test_inline_fragments_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 500px; font-size: 20px; line-height: 24px">one two three</div>')
+	doc :=
+		html.parse_document('<div style="width: 500px; font-size: 20px; line-height: 24px">one two three</div>')
 	root := unsafe { &dom.Node(doc) }
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -506,7 +538,8 @@ fn test_inline_fragments_over_parsed_document() {
 // Full-stack per-inline font: a bigger <span> inside a paragraph is measured at its own size and
 // makes the line taller.
 fn test_per_inline_font_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 500px; font-size: 20px">hi <span style="font-size: 40px">BIG</span></div>')
+	doc :=
+		html.parse_document('<div style="width: 500px; font-size: 20px">hi <span style="font-size: 40px">BIG</span></div>')
 	root := unsafe { &dom.Node(doc) }
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -523,7 +556,8 @@ fn test_per_inline_font_over_parsed_document() {
 
 // Full-stack justify: a wrapped justified paragraph fills each full line; the last line stays left.
 fn test_justify_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 100px; font-size: 20px; line-height: 30px; text-align: justify">aaaa bbbb cccc</div>')
+	doc :=
+		html.parse_document('<div style="width: 100px; font-size: 20px; line-height: 30px; text-align: justify">aaaa bbbb cccc</div>')
 	root := unsafe { &dom.Node(doc) }
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -536,7 +570,8 @@ fn test_justify_over_parsed_document() {
 // Full-stack display list: parse HTML, lay out, and produce paint commands (background fill + text)
 // -- the complete pipeline from HTML source to a paintable display list.
 fn test_display_list_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 200px; height: 100px; background-color: rgb(10, 20, 30); color: rgb(1, 2, 3)">hi</div>')
+	doc :=
+		html.parse_document('<div style="width: 200px; height: 100px; background-color: rgb(10, 20, 30); color: rgb(1, 2, 3)">hi</div>')
 	root := unsafe { &dom.Node(doc) }
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -553,7 +588,8 @@ fn test_display_list_over_parsed_document() {
 // Full-stack borders + per-inline colors in the display list: a bordered div whose two words paint
 // in their own colors.
 fn test_border_and_inline_color_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 200px; border: 4px solid green">text <span style="color: red">red</span></div>')
+	doc :=
+		html.parse_document('<div style="width: 200px; border: 4px solid green">text <span style="color: red">red</span></div>')
 	root := unsafe { &dom.Node(doc) }
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -585,7 +621,8 @@ fn test_calc_over_parsed_document() {
 
 // Full-stack opacity: every paint command for an opacity:0.5 box (background + text) carries 0.5.
 fn test_opacity_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 100px; height: 40px; opacity: 0.5; background-color: rgb(1, 2, 3)">hi</div>')
+	doc :=
+		html.parse_document('<div style="width: 100px; height: 40px; opacity: 0.5; background-color: rgb(1, 2, 3)">hi</div>')
 	root := unsafe { &dom.Node(doc) }
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -598,7 +635,8 @@ fn test_opacity_over_parsed_document() {
 
 // Full-stack transform: a translated box moves while its sibling keeps its flow position.
 fn test_transform_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 300px"><div style="height: 40px; transform: translate(20px, 10px)"></div><div style="height: 25px"></div></div>')
+	doc :=
+		html.parse_document('<div style="width: 300px"><div style="height: 40px; transform: translate(20px, 10px)"></div><div style="height: 25px"></div></div>')
 	root := unsafe { &dom.Node(doc) }
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -611,7 +649,8 @@ fn test_transform_over_parsed_document() {
 
 // Full-stack render: parse HTML, lay it out, and render to SVG -- the whole pipeline, HTML -> image.
 fn test_render_svg_over_parsed_document() {
-	doc := html.parse_document('<div style="width: 120px; height: 60px; background-color: rgb(240, 240, 240)"><div style="width: 50px; height: 20px; background-color: rgb(30, 60, 90); color: white; font-size: 16px; line-height: 20px">hi</div></div>')
+	doc :=
+		html.parse_document('<div style="width: 120px; height: 60px; background-color: rgb(240, 240, 240)"><div style="width: 50px; height: 20px; background-color: rgb(30, 60, 90); color: white; font-size: 16px; line-height: 20px">hi</div></div>')
 	root := unsafe { &dom.Node(doc) }
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
@@ -672,7 +711,8 @@ fn test_inline_style_over_parsed_document() {
 // Full-stack getBoundingClientRect: parse a document, lay it out, and read a queried element's
 // border-box rectangle in document coordinates.
 fn test_bounding_client_rect_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.box { width: 200px; height: 60px; margin-left: 30px }</style></head><body style="margin: 0"><div class="box"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.box { width: 200px; height: 60px; margin-left: 30px }</style></head><body style="margin: 0"><div class="box"></div></body></html>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	target := css.query_selector(root, '.box') or { panic('no .box') }
@@ -685,7 +725,8 @@ fn test_bounding_client_rect_over_parsed_document() {
 
 // Full-stack elementFromPoint: parse + lay out a document, then hit-test a point and get the element.
 fn test_element_from_point_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>body { margin: 0 } .a { height: 50px } .b { height: 40px }</style></head><body><div class="a"></div><div class="b"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>body { margin: 0 } .a { height: 50px } .b { height: 40px }</style></head><body><div class="a"></div><div class="b"></div></body></html>')
 	root_box := layout.layout_document(doc, 400)
 	root := unsafe { &dom.Node(doc) }
 
@@ -699,7 +740,8 @@ fn test_element_from_point_over_parsed_document() {
 // Full-stack offset properties: parse + lay out a positioned container with a child, read offsetTop/
 // Left/Width/Height and offsetParent.
 fn test_offset_properties_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>body { margin: 0 } .box { position: relative; padding: 15px } .item { position: absolute; top: 25px; left: 35px; width: 40px; height: 30px }</style></head><body><div class="box"><div class="item"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>body { margin: 0 } .box { position: relative; padding: 15px } .item { position: absolute; top: 25px; left: 35px; width: 40px; height: 30px }</style></head><body><div class="box"><div class="item"></div></div></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	item := css.query_selector(root, '.item') or { panic('no .item') }
@@ -718,7 +760,8 @@ fn test_offset_properties_over_parsed_document() {
 // collapses, <p> is set off by a blank line, a display:none subtree is omitted, and an inline
 // <span> adds no break.
 fn test_inner_text_over_parsed_document() {
-	doc := html.parse_document('<body><div id="host"><p>Hello   world</p><div style="display:none">secret</div><span>tail</span></div></body>')
+	doc :=
+		html.parse_document('<body><div id="host"><p>Hello   world</p><div style="display:none">secret</div><span>tail</span></div></body>')
 	root := unsafe { &dom.Node(doc) }
 	host := css.query_selector(root, '#host') or { panic('no #host') }
 	rules := layout.collect_document_author_rules(doc)
@@ -747,7 +790,8 @@ fn test_inner_text_set_then_get_roundtrip() {
 // Full-stack text-transform: parse a document with an author stylesheet that uppercases a paragraph,
 // lay it out, and confirm the transform flows through to the rendered inline fragments and the SVG.
 fn test_text_transform_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>p { text-transform: uppercase }</style></head><body><p>hello world</p></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>p { text-transform: uppercase }</style></head><body><p>hello world</p></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	p := css.query_selector(root, 'p') or { panic('no p') }
@@ -772,7 +816,8 @@ fn test_text_transform_over_parsed_document() {
 // Full-stack visibility: an author stylesheet hides a paragraph's text; it still occupies layout
 // space (the following paragraph sits below it) but its text is absent from the SVG output.
 fn test_visibility_hidden_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>body { margin: 0 } p { margin: 0; height: 20px } .gone { visibility: hidden }</style></head><body><p class="gone">SECRET</p><p class="shown">VISIBLE</p></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>body { margin: 0 } p { margin: 0; height: 20px } .gone { visibility: hidden }</style></head><body><p class="gone">SECRET</p><p class="shown">VISIBLE</p></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	gone := css.query_selector(root, '.gone') or { panic('no .gone') }
@@ -793,7 +838,8 @@ fn test_visibility_hidden_over_parsed_document() {
 // Full-stack text-decoration: an author stylesheet underlines a paragraph; the rendered fragment
 // carries the decoration and the SVG output includes both the word and an underline rect.
 fn test_text_decoration_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>p { text-decoration: underline }</style></head><body><p>linked</p></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>p { text-decoration: underline }</style></head><body><p>linked</p></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	p := css.query_selector(root, 'p') or { panic('no p') }
@@ -834,7 +880,8 @@ fn test_list_markers_over_parsed_document() {
 // Full-stack letter-spacing: an author stylesheet adds letter-spacing to a paragraph; the rendered
 // fragment width reflects the widened glyph advances.
 fn test_letter_spacing_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>p { font-size: 20px; letter-spacing: 5px }</style></head><body><p>hi</p></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>p { font-size: 20px; letter-spacing: 5px }</style></head><body><p>hi</p></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	p := css.query_selector(root, 'p') or { panic('no p') }
@@ -865,7 +912,8 @@ fn test_logical_properties_over_parsed_document() {
 // Full-stack text-indent: an author stylesheet indents a paragraph's first line; the rendered first
 // fragment starts at the indent offset.
 fn test_text_indent_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>body { margin: 0 } p { margin: 0; font-size: 20px; text-indent: 40px }</style></head><body><p>hello</p></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>body { margin: 0 } p { margin: 0; font-size: 20px; text-indent: 40px }</style></head><body><p>hello</p></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	p := css.query_selector(root, 'p') or { panic('no p') }
@@ -879,7 +927,8 @@ fn test_text_indent_over_parsed_document() {
 
 // Full-stack border-radius: an author stylesheet rounds a card's background; the SVG rect gets rx/ry.
 fn test_border_radius_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.card { width: 200px; height: 100px; background-color: rgb(10, 20, 30); border-radius: 12px }</style></head><body><div class="card"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.card { width: 200px; height: 100px; background-color: rgb(10, 20, 30); border-radius: 12px }</style></head><body><div class="card"></div></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	card := css.query_selector(root, '.card') or { panic('no .card') }
@@ -895,7 +944,8 @@ fn test_border_radius_over_parsed_document() {
 // Full-stack outline: an author stylesheet outlines a focused input-like box; the four outline rects
 // reach the SVG, drawn outside the border box in the outline color.
 fn test_outline_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.focus { width: 120px; height: 30px; outline: 2px solid rgb(0, 90, 200) }</style></head><body><div class="focus"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.focus { width: 120px; height: 30px; outline: 2px solid rgb(0, 90, 200) }</style></head><body><div class="focus"></div></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	focus := css.query_selector(root, '.focus') or { panic('no .focus') }
@@ -911,7 +961,8 @@ fn test_outline_over_parsed_document() {
 // Full-stack box-shadow: an author stylesheet gives a card a blurred drop shadow; the shadow reaches
 // the SVG as a blur-filtered rect behind the card's background.
 fn test_box_shadow_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.card { width: 200px; height: 80px; background-color: rgb(255, 255, 255); box-shadow: 3px 5px 10px rgb(0, 0, 0) }</style></head><body><div class="card"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.card { width: 200px; height: 80px; background-color: rgb(255, 255, 255); box-shadow: 3px 5px 10px rgb(0, 0, 0) }</style></head><body><div class="card"></div></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	card := css.query_selector(root, '.card') or { panic('no .card') }
@@ -930,7 +981,8 @@ fn test_box_shadow_over_parsed_document() {
 // Full-stack CSS-wide keywords: an author stylesheet uses `inherit` and `initial`; the values resolve
 // through the parsed DOM (inherit -> ancestor's value; initial -> the property's initial).
 fn test_css_wide_keywords_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.parent { color: rgb(20, 40, 60) } .child { color: inherit } .reset { display: initial }</style></head><body><div class="parent"><span class="child">x</span></div><div class="reset"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.parent { color: rgb(20, 40, 60) } .child { color: inherit } .reset { display: initial }</style></head><body><div class="parent"><span class="child">x</span></div><div class="reset"></div></body></html>')
 	root := unsafe { &dom.Node(doc) }
 	rules := layout.collect_document_author_rules(doc)
 	child := css.query_selector(root, '.child') or { panic('no .child') }
@@ -948,7 +1000,8 @@ fn test_css_wide_keywords_over_parsed_document() {
 // Full-stack var(): an author stylesheet defines a custom property and uses it (with fallback) to
 // drive layout width and a computed color over the parsed DOM.
 fn test_var_custom_properties_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.box { --w: 150px; --brand: rgb(30, 60, 90); width: var(--w); height: var(--h, 40px); background-color: var(--brand) }</style></head><body><div class="box"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.box { --w: 150px; --brand: rgb(30, 60, 90); width: var(--w); height: var(--h, 40px); background-color: var(--brand) }</style></head><body><div class="box"></div></body></html>')
 	root := unsafe { &dom.Node(doc) }
 	rules := layout.collect_document_author_rules(doc)
 	box_el := css.query_selector(root, '.box') or { panic('no .box') }
@@ -969,7 +1022,9 @@ fn test_media_query_over_parsed_document() {
 	// Narrow viewport: the media query does not match -> base 100px.
 	narrow_doc := html.parse_document(markup)
 	narrow_root := layout.layout_document(narrow_doc, 500)
-	narrow_col := css.query_selector(unsafe { &dom.Node(narrow_doc) }, '.col') or { panic('no .col') }
+	narrow_col := css.query_selector(unsafe { &dom.Node(narrow_doc) }, '.col') or {
+		panic('no .col')
+	}
 	assert (narrow_root.find_box(i64(narrow_col.as_node().unique_id())) or { panic('box') }).width == 100.0
 
 	// Wide viewport: the media query matches -> 300px.
@@ -982,7 +1037,8 @@ fn test_media_query_over_parsed_document() {
 // Full-stack linear-gradient: an author stylesheet gives a hero a gradient background; it renders to
 // an SVG linearGradient with the stop colors.
 fn test_linear_gradient_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.hero { width: 300px; height: 120px; background: linear-gradient(to bottom, rgb(10, 20, 30), rgb(200, 210, 220)) }</style></head><body><div class="hero"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.hero { width: 300px; height: 120px; background: linear-gradient(to bottom, rgb(10, 20, 30), rgb(200, 210, 220)) }</style></head><body><div class="hero"></div></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	hero := css.query_selector(root, '.hero') or { panic('no .hero') }
@@ -1000,7 +1056,8 @@ fn test_linear_gradient_over_parsed_document() {
 // Full-stack resolved values: getComputedStyle returns the specified `%` width, while the layout-
 // backed resolved_style_value returns the used px after laying out the parsed document.
 fn test_resolved_style_value_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.wrap { width: 400px } .col { width: 25%; padding: 8px }</style></head><body><div class="wrap"><div class="col"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.wrap { width: 400px } .col { width: 25%; padding: 8px }</style></head><body><div class="wrap"><div class="col"></div></div></body></html>')
 	root := unsafe { &dom.Node(doc) }
 	rules := layout.collect_document_author_rules(doc)
 	col := css.query_selector(root, '.col') or { panic('no .col') }
@@ -1017,7 +1074,8 @@ fn test_resolved_style_value_over_parsed_document() {
 // Full-stack flexbox: an author stylesheet lays a nav's items in a row; they sit side by side and
 // the bar's height matches the tallest item.
 fn test_flex_row_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.bar { display: flex; width: 600px } .a { width: 120px; height: 40px } .b { width: 80px; height: 60px }</style></head><body><div class="bar"><div class="a"></div><div class="b"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.bar { display: flex; width: 600px } .a { width: 120px; height: 40px } .b { width: 80px; height: 60px }</style></head><body><div class="bar"><div class="a"></div><div class="b"></div></div></body></html>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	bar := css.query_selector(root, '.bar') or { panic('no .bar') }
@@ -1036,7 +1094,8 @@ fn test_flex_row_over_parsed_document() {
 // Full-stack justify-content: a space-between nav puts the first item at the start and the last at
 // the end of the parsed, laid-out bar.
 fn test_justify_content_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.nav { display: flex; justify-content: space-between; width: 500px } .item { width: 100px; height: 30px }</style></head><body><div class="nav"><div class="item" id="l"></div><div class="item" id="r"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.nav { display: flex; justify-content: space-between; width: 500px } .item { width: 100px; height: 30px }</style></head><body><div class="nav"><div class="item" id="l"></div><div class="item" id="r"></div></div></body></html>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	nav := css.query_selector(root, '.nav') or { panic('no .nav') }
@@ -1054,7 +1113,8 @@ fn test_justify_content_over_parsed_document() {
 // Full-stack align-items: a fixed-height bar centers its items vertically (align-items: center); the
 // shorter item is centered within the bar's cross size.
 fn test_align_items_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.bar { display: flex; align-items: center; width: 500px; height: 80px } .item { width: 100px; height: 40px }</style></head><body><div class="bar"><div class="item" id="i"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.bar { display: flex; align-items: center; width: 500px; height: 80px } .item { width: 100px; height: 40px }</style></head><body><div class="bar"><div class="item" id="i"></div></div></body></html>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	bar := css.query_selector(root, '.bar') or { panic('no .bar') }
@@ -1069,7 +1129,8 @@ fn test_align_items_over_parsed_document() {
 
 // Full-stack flex gap: items in a gap:16px row are separated by 16px between adjacent margin boxes.
 fn test_flex_gap_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.row { display: flex; gap: 16px; width: 500px } .box { width: 90px; height: 30px }</style></head><body><div class="row"><div class="box" id="p"></div><div class="box" id="q"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.row { display: flex; gap: 16px; width: 500px } .box { width: 90px; height: 30px }</style></head><body><div class="row"><div class="box" id="p"></div><div class="box" id="q"></div></div></body></html>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	p := css.query_selector(root, '#p') or { panic('no #p') }
@@ -1083,7 +1144,8 @@ fn test_flex_gap_over_parsed_document() {
 
 // Full-stack flex-grow: a sidebar has a fixed width and the main area grows to fill the rest of the row.
 fn test_flex_grow_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.row { display: flex; width: 600px } .side { width: 200px; height: 40px } .main { flex: 1; height: 40px }</style></head><body><div class="row"><div class="side" id="s"></div><div class="main" id="m"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.row { display: flex; width: 600px } .side { width: 200px; height: 40px } .main { flex: 1; height: 40px }</style></head><body><div class="row"><div class="side" id="s"></div><div class="main" id="m"></div></div></body></html>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	s := css.query_selector(root, '#s') or { panic('no #s') }
@@ -1099,7 +1161,8 @@ fn test_flex_grow_over_parsed_document() {
 // Full-stack align-items: stretch — a card row makes all cards the height of the tallest, even though
 // one card has more content (its natural height is larger).
 fn test_align_items_stretch_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.cards { display: flex; width: 600px; font-size: 20px } .card { width: 200px }</style></head><body><div class="cards"><div class="card" id="short">a</div><div class="card" id="tall">a<br>b<br>c</div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.cards { display: flex; width: 600px; font-size: 20px } .card { width: 200px }</style></head><body><div class="cards"><div class="card" id="short">a</div><div class="card" id="tall">a<br>b<br>c</div></div></body></html>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	short := css.query_selector(root, '#short') or { panic('no #short') }
@@ -1115,7 +1178,8 @@ fn test_align_items_stretch_over_parsed_document() {
 // Full-stack column flex: a vertical menu stacks its items and centers them horizontally; the second
 // item sits below the first plus the row-gap.
 fn test_flex_column_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.menu { display: flex; flex-direction: column; align-items: center; row-gap: 8px; width: 240px } .item { width: 120px; height: 36px }</style></head><body><div class="menu"><div class="item" id="one"></div><div class="item" id="two"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.menu { display: flex; flex-direction: column; align-items: center; row-gap: 8px; width: 240px } .item { width: 120px; height: 36px }</style></head><body><div class="menu"><div class="item" id="one"></div><div class="item" id="two"></div></div></body></html>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	menu := css.query_selector(root, '.menu') or { panic('no .menu') }
@@ -1134,7 +1198,8 @@ fn test_flex_column_over_parsed_document() {
 // Full-stack radial-gradient: an author stylesheet gives an element a radial background; it renders
 // to an SVG radialGradient with the stop colors.
 fn test_radial_gradient_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.orb { width: 120px; height: 120px; background: radial-gradient(circle, rgb(240, 240, 240), rgb(40, 40, 40)) }</style></head><body><div class="orb"></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.orb { width: 120px; height: 120px; background: radial-gradient(circle, rgb(240, 240, 240), rgb(40, 40, 40)) }</style></head><body><div class="orb"></div></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	orb := css.query_selector(root, '.orb') or { panic('no .orb') }
@@ -1151,7 +1216,8 @@ fn test_radial_gradient_over_parsed_document() {
 
 // Full-stack list-style-type: a parsed ordered list with lower-alpha markers renders a./b./c.
 fn test_list_style_type_over_parsed_document() {
-	doc := html.parse_document('<body><ol style="list-style-type: lower-alpha"><li>x</li><li>y</li><li>z</li></ol></body>')
+	doc :=
+		html.parse_document('<body><ol style="list-style-type: lower-alpha"><li>x</li><li>y</li><li>z</li></ol></body>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	lis := css.query_selector_all(root, 'li')
@@ -1168,7 +1234,8 @@ fn test_list_style_type_over_parsed_document() {
 // Full-stack inline-block: a badge with display:inline-block sits inline within a paragraph and is
 // laid out as its own box (with its size), painted alongside the text.
 fn test_inline_block_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>body { margin: 0 } p { margin: 0; font-size: 20px } .badge { display: inline-block; width: 50px; height: 24px; background-color: rgb(200, 0, 0) }</style></head><body><p>x<span class="badge" id="b"></span>y</p></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>body { margin: 0 } p { margin: 0; font-size: 20px } .badge { display: inline-block; width: 50px; height: 24px; background-color: rgb(200, 0, 0) }</style></head><body><p>x<span class="badge" id="b"></span>y</p></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	badge := css.query_selector(root, '#b') or { panic('no #b') }
@@ -1186,7 +1253,8 @@ fn test_inline_block_over_parsed_document() {
 // Full-stack table: a parsed <table> (with the implicit <tbody>) arranges its cells in a grid —
 // columns side by side (wider for wider content), rows stacked, filling the table width.
 fn test_table_over_parsed_document() {
-	doc := html.parse_document('<body><table style="width: 400px"><tr><td id="a">x</td><td id="b">yyyy</td></tr><tr><td id="c">z</td><td id="d">w</td></tr></table></body>')
+	doc :=
+		html.parse_document('<body><table style="width: 400px"><tr><td id="a">x</td><td id="b">yyyy</td></tr><tr><td id="c">z</td><td id="d">w</td></tr></table></body>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	a := css.query_selector(root, '#a') or { panic('no #a') }
@@ -1208,7 +1276,8 @@ fn test_table_over_parsed_document() {
 // Full-stack grid: a parsed card grid (repeat(3, 1fr), gap) places its cards across three equal
 // columns and wraps to the next row.
 fn test_grid_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.grid { display: grid; width: 620px; grid-template-columns: repeat(3, 1fr); gap: 10px } .card { height: 50px }</style></head><body><div class="grid"><div class="card" id="c0"></div><div class="card" id="c1"></div><div class="card" id="c2"></div><div class="card" id="c3"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.grid { display: grid; width: 620px; grid-template-columns: repeat(3, 1fr); gap: 10px } .card { height: 50px }</style></head><body><div class="grid"><div class="card" id="c0"></div><div class="card" id="c1"></div><div class="card" id="c2"></div><div class="card" id="c3"></div></div></body></html>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	grid := css.query_selector(root, '.grid') or { panic('no .grid') }
@@ -1231,7 +1300,8 @@ fn test_grid_over_parsed_document() {
 
 // Full-stack flex-wrap: a wrapping tag row with a gap breaks tags onto a second line with row-gap.
 fn test_flex_wrap_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.tags { display: flex; flex-wrap: wrap; gap: 10px; width: 220px } .tag { width: 100px; height: 24px }</style></head><body><div class="tags"><div class="tag" id="t0"></div><div class="tag" id="t1"></div><div class="tag" id="t2"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.tags { display: flex; flex-wrap: wrap; gap: 10px; width: 220px } .tag { width: 100px; height: 24px }</style></head><body><div class="tags"><div class="tag" id="t0"></div><div class="tag" id="t1"></div><div class="tag" id="t2"></div></div></body></html>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	mut rects := []layout.LayoutRect{}
@@ -1248,7 +1318,8 @@ fn test_flex_wrap_over_parsed_document() {
 
 // Full-stack grid span: a feature card spans two of three columns; the next card takes the third.
 fn test_grid_span_over_parsed_document() {
-	doc := html.parse_document('<html><head><style>.g { display: grid; width: 300px; grid-template-columns: repeat(3, 1fr) } .feature { grid-column: span 2; height: 40px } .card { height: 40px }</style></head><body><div class="g"><div class="feature" id="f"></div><div class="card" id="c"></div></div></body></html>')
+	doc :=
+		html.parse_document('<html><head><style>.g { display: grid; width: 300px; grid-template-columns: repeat(3, 1fr) } .feature { grid-column: span 2; height: 40px } .card { height: 40px }</style></head><body><div class="g"><div class="feature" id="f"></div><div class="card" id="c"></div></div></body></html>')
 	root_box := layout.layout_document(doc, 800)
 	root := unsafe { &dom.Node(doc) }
 	g := css.query_selector(root, '.g') or { panic('no .g') }
@@ -1268,7 +1339,8 @@ fn test_grid_span_over_parsed_document() {
 // pipeline (css_style_computer_for -> update_style -> bridge -> computed_value_for) resolves inline
 // styles + inheritance over the html-parser-built DOM tree.
 fn test_real_style_computer_over_parsed_document() {
-	doc := html.parse_document('<body style="color: navy"><div><p>text</p><span style="color: red">red</span></div></body>')
+	doc :=
+		html.parse_document('<body style="color: navy"><div><p>text</p><span style="color: red">red</span></div></body>')
 	root := unsafe { &dom.Node(doc) }
 	body := css.query_selector(root, 'body') or { panic('no body') }
 	p := css.query_selector(root, 'p') or { panic('no p') }
@@ -1289,7 +1361,9 @@ fn test_real_style_computer_over_parsed_document() {
 // parse -> style -> layout pipeline end to end on the real StyleComputer + real layout engine.
 fn test_real_layout_over_parsed_document() {
 	doc := html.parse_document('<div style="height: 30px"></div><div style="height: 40px"></div>')
-	result := layout.run_document_layout(doc, 800.0, 600.0) or { panic('layout produced no result') }
+	result := layout.run_document_layout(doc, 800.0, 600.0) or {
+		panic('layout produced no result')
+	}
 
 	// The layout root is the Viewport (pinned to the viewport rectangle); <html> is its single box child.
 	viewport_nws := result.root.as_node_with_style() or { panic('viewport not a NodeWithStyle') }

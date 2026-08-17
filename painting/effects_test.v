@@ -1,0 +1,122 @@
+module painting
+
+fn test_all_mix_blend_modes_map_without_fallback() {
+	modes := [BlendMode.normal, .multiply, .screen, .overlay, .darken, .lighten, .color_dodge,
+		.color_burn, .hard_light, .soft_light, .difference, .exclusion, .hue, .saturation, .color,
+		.luminosity]
+	for index, mode in modes {
+		expected := if index == 0 { 0 } else { index + 1 }
+		assert int(mix_blend_mode_to_operator(mode)) == expected
+	}
+}
+
+fn test_resolved_css_filter_scales_and_composes_in_upstream_order() {
+	filter := ResolvedCSSFilter{
+		operations: [
+			ResolvedFilterOperation(BlurFilter{
+				radius: 3
+			}),
+			DropShadowFilter{
+				offset_x: 2
+				offset_y: -1
+				radius:   4
+				color:    Color{
+					r: 9
+				}
+			},
+			ColorFilter{
+				operation: .contrast
+				amount:    1.5
+			},
+			HueRotateFilter{
+				angle_degrees: 90
+			},
+		]
+	}
+	gfx := filter.to_gfx_filter(2) or { panic('expected filter') }
+	assert gfx.operations.len == 4
+	assert gfx.operations[0].kind == 'hue-rotate'
+	assert gfx.operations[1].kind == 'color'
+	assert gfx.operations[2].kind == 'drop-shadow'
+	assert gfx.operations[2].first == 4
+	assert gfx.operations[2].second == -2
+	assert gfx.operations[2].third == 8
+	assert gfx.operations[3].kind == 'blur'
+	assert gfx.operations[3].first == 6
+	assert filter.has_filters()
+	assert !filter.has_svg_filters()
+	assert filter.dump().contains('blur(3')
+	assert ResolvedCSSFilter{}.to_gfx_filter(1) == none
+}
+
+fn test_transition_hints_expand_to_five_sampled_stops() {
+	red := Color{
+		r: 255
+	}
+	blue := Color{
+		b: 255
+	}
+	stops := [ColorStop{ color: red, position: 0 }, ColorStop{
+		color:           blue
+		position:        1
+		transition_hint: 0.5
+	}]
+	expanded := replace_transition_hints(stops)
+	assert expanded.len == 7
+	assert expanded[0].color == red
+	assert expanded[3].position == 0.5
+	assert expanded[3].color.r in [127, 128]
+	assert expanded[3].color.b in [127, 128]
+	assert expanded[6].color == blue
+}
+
+fn test_repeating_gradient_expands_and_clamps_ends() {
+	stops := [ColorStop{
+		color:    Color{
+			r: 255
+		}
+		position: 0.25
+	}, ColorStop{
+		color:    Color{
+			b: 255
+		}
+		position: 0.5
+	}]
+	expanded := expand_repeat_length(stops, 0.25)
+	assert expanded.len >= 5
+	assert expanded[0].position == 0
+	assert expanded[expanded.len - 1].position <= 1
+	for index := 1; index < expanded.len; index++ {
+		assert expanded[index].position >= expanded[index - 1].position
+	}
+}
+
+fn test_box_shadow_layers_are_painted_back_to_front() {
+	converter := new_device_pixel_converter(1) or { panic(err) }
+	layers := [
+		ShadowData{
+			color:           Color{
+				r: 1
+			}
+			offset_x:        1
+			blur_radius:     2
+			spread_distance: 3
+		},
+		ShadowData{
+			color:       Color{
+				b: 2
+			}
+			offset_y:    2
+			blur_radius: 1
+			placement:   .inner
+		},
+	]
+	resolved := resolve_box_shadows(Rect{10, 20, 30, 40}, BorderRadiiData{}, layers, converter)
+	assert resolved.len == 2
+	assert resolved[0].placement == .inner
+	assert resolved[0].color.b == 2
+	assert resolved[0].outer_shadow_rect == IntRect{9, 19, 32, 46}
+	assert resolved[0].inner_shadow_rect == IntRect{10, 22, 30, 40}
+	assert resolved[1].placement == .outer
+	assert resolved[1].shadow_rect == IntRect{8, 17, 36, 46}
+}

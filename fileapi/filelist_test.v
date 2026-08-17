@@ -45,3 +45,14 @@ fn test_item_returns_the_same_file() {
 	assert voidptr(got) == voidptr(f)
 	assert got.size() == u64(7)
 }
+
+fn test_file_list_structured_serialization_round_trip() {
+	mut list := FileList.create()
+	list.add_file(make_file('a.txt'))
+	list.add_file(make_file('b.txt'))
+	restored := FileList.deserialization_steps(list.serialization_steps())
+	assert restored.length() == 2
+	assert restored.item(0)?.name() == 'a.txt'
+	assert restored.item(1)?.name() == 'b.txt'
+	assert voidptr(restored.item(0)?) != voidptr(list.item(0)?)
+}

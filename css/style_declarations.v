@@ -867,49 +867,11 @@ fn css_style_properties_serialized(properties &CSSStyleProperties) string {
 }
 
 fn parse_css_property_declaration_block_for_style_properties(context ParsingParams, block string) &CSSStyleProperties {
-	mut body := block.trim_space()
-	if body.starts_with('{') && body.ends_with('}') {
-		body = body[1..body.len - 1]
-	}
-
-	mut parser := RuleSelectorParser.create(context, body, 'utf-8')
-	mut input := parser.token_stream
-	mut style := CSSStyleProperties.create()
-	for {
-		input.discard_whitespace()
-		if !input.has_next_token() {
-			break
-		}
-		if input.next_token().is(.semicolon) {
-			input.discard_a_token()
-			continue
-		}
-		if declaration := parser.consume_a_declaration(mut input, .no, .no) {
-			property := css_style_property_name_and_id_from_name(declaration.name) or { continue }
-			value := if original := declaration.original_value_text {
-				original
-			} else {
-				parser_component_values_to_string(declaration.value).trim_space()
-			}
-
-			if property.is_custom_property() {
-				style.custom_properties[property.name()] = custom_property_value_with_priority(value,
-					declaration.important)
-				continue
-			}
-
-			property_id := property.id() or { continue }
-			style.properties << CSSStyleProperty{
-				name:        string_from_property_id(property_id)
-				value:       value
-				important:   declaration.important == .yes
-				style_value: parse_css_value(context, value, property_id)
-			}
-		} else {
-			parser.consume_the_remnants_of_a_bad_declaration(mut input, .no)
-		}
-	}
-	return style
+	return parse_css_property_declaration_block_with_params(ParsingParams{
+		document:            context.document
+		rule_context:        [RuleContext.style]
+		declared_namespaces: context.declared_namespaces.clone()
+	}, block)
 }
 
 fn serialized_text_from_mutable_style_property_map_value(value MutableStylePropertyMapValue) !string {
@@ -983,11 +945,10 @@ pub fn convert_declarations_to_specified_order(declarations []StyleProperty) []S
 	mut specified_order_declarations := []StyleProperty{}
 
 	for declaration in declarations {
-		StyleComputer.for_each_property_expanding_shorthands(declaration.property_id,
-			declaration.value, fn [declaration, mut specified_order_declarations] (longhand_id PropertyID, longhand_property_value &dom.StyleValue) {
+		for longhand in expand_property_longhands(declaration.property_id, declaration.value) {
 			mut existing_entry_index := ?int(none)
 			for index, existing_declaration in specified_order_declarations {
-				if existing_declaration.property_id == longhand_id {
+				if existing_declaration.property_id == longhand.id {
 					existing_entry_index = index
 					break
 				}
@@ -997,7 +958,7 @@ pub fn convert_declarations_to_specified_order(declarations []StyleProperty) []S
 				// If there is an existing entry for this property and it is a higher cascading order than the current entry, skip the current entry.
 				if specified_order_declarations[index].important == .yes
 					&& declaration.important == .no {
-					return
+					continue
 				}
 
 				// Otherwise the existing entry has a lower cascading order and is removed.
@@ -1006,10 +967,10 @@ pub fn convert_declarations_to_specified_order(declarations []StyleProperty) []S
 
 			specified_order_declarations << StyleProperty{
 				important:   declaration.important
-				property_id: longhand_id
-				value:       unsafe { longhand_property_value }
+				property_id: longhand.id
+				value:       unsafe { longhand.value }
 			}
-		})
+		}
 	}
 
 	return specified_order_declarations
@@ -1217,14 +1178,16 @@ pub fn (mut properties CSSStyleProperties) set_property_internal(property Proper
 	// 8. If property is a shorthand property,
 	if property_is_shorthand(property_id) {
 		// then for each longhand property longhand that property maps to, in canonical order, follow these substeps:
-		StyleComputer.for_each_property_expanding_shorthands(property_id, component_value_list, fn [priority, mut properties, mut updated] (longhand_property_id PropertyID, longhand_value &dom.StyleValue) {
+		for longhand in expand_property_longhands(property_id, component_value_list) {
 			// 1. Let longhand result be the result of set the CSS declaration longhand with the appropriate value(s) from component value list,
 			//    with the important flag set if priority is not the empty string, and unset otherwise, and with the list of declarations being the declarations.
 			// 2. If longhand result is true, let updated be true.
-			updated =
-				properties.set_a_css_declaration(longhand_property_id, longhand_value, if priority.len != 0 { Important.yes } else { Important.no })
-				|| updated
-		})
+			updated = properties.set_a_css_declaration(longhand.id, longhand.value, if priority.len != 0 {
+				Important.yes
+			} else {
+				Important.no
+			}) || updated
+		}
 	}
 	// 9. Otherwise,
 	else {
@@ -1255,7 +1218,7 @@ pub fn (mut properties CSSStyleProperties) set_a_css_declaration(property_id Pro
 }
 
 fn (mut properties CSSStyleProperties) set_a_css_declaration_with_serialized(property_id PropertyID, value &dom.StyleValue, important Important, serialized_value string) bool {
-	mut new_property := CSSStyleProperty{
+	new_property := CSSStyleProperty{
 		name:        string_from_property_id(property_id)
 		value:       serialized_value
 		important:   important == .yes
@@ -1264,11 +1227,34 @@ fn (mut properties CSSStyleProperties) set_a_css_declaration_with_serialized(pro
 
 	for index, property in properties.properties {
 		if property.name == new_property.name {
-			if property.important == new_property.important && property.value == new_property.value {
-				return false
+			mut needs_append := false
+			if group := logical_property_group_for_property(property_id) {
+				is_logical_alias := property_is_logical_alias(property_id)
+				for later_property in properties.properties[index + 1..] {
+					later_property_id := property_id_from_string(later_property.name) or {
+						continue
+					}
+					if later_group := logical_property_group_for_property(later_property_id) {
+						if later_group == group
+							&& property_is_logical_alias(later_property_id) != is_logical_alias {
+							needs_append = true
+							break
+						}
+					}
+				}
 			}
-			properties.properties[index] = new_property
-			return true
+
+			if !needs_append {
+				if property.important == new_property.important
+					&& property.value == new_property.value {
+					return false
+				}
+				properties.properties[index] = new_property
+				return true
+			}
+
+			properties.properties.delete(index)
+			break
 		}
 	}
 

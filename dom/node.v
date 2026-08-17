@@ -116,6 +116,7 @@ pub enum StyleInvalidationReason {
 	base_url_changed
 	css_font_loaded
 	element_attribute_change
+	custom_state_set_change
 	element_set_active
 	element_set_shadow_root
 	html_iframe_element_geometry_change
@@ -133,6 +134,7 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 		.base_url_changed { 'BaseURLChanged' }
 		.css_font_loaded { 'CSSFontLoaded' }
 		.element_attribute_change { 'ElementAttributeChange' }
+		.custom_state_set_change { 'CustomStateSetChange' }
 		.element_set_active { 'ElementSetActive' }
 		.element_set_shadow_root { 'ElementSetShadowRoot' }
 		.html_iframe_element_geometry_change { 'HTMLIFrameElementGeometryChange' }
@@ -349,6 +351,12 @@ pub struct HTMLImageElement {
 @[heap]
 pub struct HTMLInputElement {
 	HTMLElement
+pub mut:
+	// HTMLInputElement's checkedness is state, not merely the reflected content
+	// attribute. These fields are used by RadioNodeList and the input algorithms.
+	checkedness_             bool
+	checkedness_initialized_ bool
+	dirty_checkedness_       bool
 }
 
 @[heap]
@@ -393,6 +401,7 @@ pub fn (a Node) == (b Node) bool {
 fn assign_unique_node_id[T](node &T) &T {
 	unsafe {
 		mut n := &Node(node)
+		n.EventTarget.data.kind = .node
 		n.unique_id_ = UniqueNodeID(i64(voidptr(node)))
 	}
 	return node
@@ -416,6 +425,7 @@ pub fn Node.new_with_realm(realm voidptr, document &Document, node_type NodeType
 		node_type: node_type
 		document_: document
 	}
+	node.EventTarget.data.kind = .node
 	node.unique_id_ = allocate_unique_id(node)
 	return node
 }

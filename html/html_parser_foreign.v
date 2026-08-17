@@ -199,8 +199,8 @@ fn (mut p HTMLParser) should_process_using_html_rules(token &HTMLToken) bool {
 // HTML start tags that break out of foreign content back to HTML rules.
 const foreign_breakout_tags = ['b', 'big', 'blockquote', 'body', 'br', 'center', 'code', 'dd',
 	'div', 'dl', 'dt', 'em', 'embed', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'hr', 'i', 'img',
-	'li', 'listing', 'menu', 'meta', 'nobr', 'ol', 'p', 'pre', 'ruby', 's', 'small', 'span',
-	'strong', 'strike', 'sub', 'sup', 'table', 'tt', 'u', 'ul', 'var']
+	'li', 'listing', 'menu', 'meta', 'nobr', 'ol', 'p', 'pre', 'ruby', 's', 'small', 'span', 'strong',
+	'strike', 'sub', 'sup', 'table', 'tt', 'u', 'ul', 'var']
 
 // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inforeign
 fn (mut p HTMLParser) process_using_the_rules_for_foreign_content(mut token HTMLToken) {

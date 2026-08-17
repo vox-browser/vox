@@ -1,7 +1,10 @@
 module http
 
 fn values_of(name string, value string) ?[]string {
-	return Header{ name: name, value: value }.extract_header_values()
+	return Header{
+		name:  name
+		value: value
+	}.extract_header_values()
 }
 
 fn test_token_list_header_parses_tokens() {
@@ -35,7 +38,9 @@ fn test_one_or_more_field_name_headers_require_a_token() {
 
 fn test_other_header_returns_raw_value() {
 	// Any other header yields a single value: the raw value, even if it contains commas.
-	assert values_of('Content-Type', 'text/html; charset=utf-8')? == ['text/html; charset=utf-8']
+	assert values_of('Content-Type', 'text/html; charset=utf-8')? == [
+		'text/html; charset=utf-8',
+	]
 	assert values_of('X-Custom', 'a, b')? == ['a, b']
 }
 

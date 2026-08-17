@@ -5,8 +5,7 @@
 // Translation of the self-contained core of Libraries/LibWeb/Geometry/DOMQuad.cpp — a quadrilateral of
 // four DOMPoints (p1..p4), with fromRect (a rectangle's corners), fromQuad, and getBounds (the
 // axis-aligned bounding DOMRect). getBounds uses the NaN-safe minimum/maximum: NaN if any coordinate is
-// NaN, otherwise the min/max. The (de)serialization steps need HTML StructuredSerialize (the JS
-// runtime) and are out of scope.
+// NaN, otherwise the min/max. Typed structured-clone records are in serialization.v.
 // https://drafts.fxtf.org/geometry/#domquad
 module geometry
 
@@ -53,10 +52,16 @@ pub fn DOMQuad.create() &DOMQuad {
 
 // https://drafts.fxtf.org/geometry/#dom-domquad-fromrect — a DOMQuad from a rectangle's four corners.
 pub fn DOMQuad.from_rect(other DOMRectInit) &DOMQuad {
-	return DOMQuad.construct(DOMPointInit{ x: other.x, y: other.y },
-		DOMPointInit{ x: other.x + other.width, y: other.y },
-		DOMPointInit{ x: other.x + other.width, y: other.y + other.height },
-		DOMPointInit{ x: other.x, y: other.y + other.height })
+	return DOMQuad.construct(DOMPointInit{ x: other.x, y: other.y }, DOMPointInit{
+		x: other.x + other.width
+		y: other.y
+	}, DOMPointInit{
+		x: other.x + other.width
+		y: other.y + other.height
+	}, DOMPointInit{
+		x: other.x
+		y: other.y + other.height
+	})
 }
 
 // https://drafts.fxtf.org/geometry/#dom-domquad-fromquad

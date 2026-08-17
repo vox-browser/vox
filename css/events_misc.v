@@ -159,7 +159,9 @@ pub fn (mut e MediaQueryListEvent) initialize() {
 
 // --- FontFaceSetLoadEvent ---
 
-pub struct FontFace {}
+// FontFace is the WebIDL interface name. Keep it as an alias so load events
+// carry the same translated objects created by the FontFace constructor.
+pub type FontFace = FontFaceObject
 
 pub struct FontFaceSetLoadEventInit {
 	dom.EventInit

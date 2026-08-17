@@ -33,22 +33,23 @@ pub mut:
 	// Offset from the top-left of the containing block's content area to this box's content area.
 	offset css.CSSPixelPoint
 	// Used values of the box-model edges.
-	margin_left    CSSPixels
-	margin_right   CSSPixels
-	margin_top     CSSPixels
-	margin_bottom  CSSPixels
-	border_left    CSSPixels
-	border_right   CSSPixels
-	border_top     CSSPixels
-	border_bottom  CSSPixels
-	padding_left   CSSPixels
-	padding_right  CSSPixels
-	padding_top    CSSPixels
-	padding_bottom CSSPixels
-	inset_left     CSSPixels
-	inset_right    CSSPixels
-	inset_top      CSSPixels
-	inset_bottom   CSSPixels
+	margin_left           CSSPixels
+	margin_right          CSSPixels
+	margin_top            CSSPixels
+	margin_bottom         CSSPixels
+	border_left           CSSPixels
+	border_right          CSSPixels
+	border_top            CSSPixels
+	border_bottom         CSSPixels
+	padding_left          CSSPixels
+	padding_right         CSSPixels
+	padding_top           CSSPixels
+	padding_bottom        CSSPixels
+	inset_left            CSSPixels
+	inset_right           CSSPixels
+	inset_top             CSSPixels
+	inset_bottom          CSSPixels
+	static_position_rect_ ?StaticPositionRect
 }
 
 pub fn (u &UsedValues) node() &NodeWithStyle {
@@ -74,13 +75,12 @@ pub fn (u &UsedValues) content_height() CSSPixels {
 }
 
 pub fn (mut u UsedValues) set_content_width(width CSSPixels) {
-	u.content_width_ = width
+	u.content_width_ = if width.raw_value() < 0 { CSSPixels.new(0) } else { width }
 	u.has_definite_width_ = true
 }
 
 pub fn (mut u UsedValues) set_content_height(height CSSPixels) {
-	u.content_height_ = height
-	u.has_definite_height_ = true
+	u.content_height_ = if height.raw_value() < 0 { CSSPixels.new(0) } else { height }
 }
 
 pub fn (u &UsedValues) content_size() css.CSSPixelSize {
@@ -112,6 +112,54 @@ pub fn (u &UsedValues) has_definite_height() bool {
 	return u.has_definite_height_ && u.height_constraint == .none
 }
 
+fn (u &UsedValues) available_width_inside() AvailableSize {
+	return match u.width_constraint {
+		.min_content {
+			AvailableSize.make_min_content()
+		}
+		.max_content {
+			AvailableSize.make_max_content()
+		}
+		.none {
+			if u.has_definite_width() {
+				AvailableSize.make_definite(u.content_width_)
+			} else {
+				AvailableSize.make_indefinite()
+			}
+		}
+	}
+}
+
+fn (u &UsedValues) available_height_inside() AvailableSize {
+	return match u.height_constraint {
+		.min_content {
+			AvailableSize.make_min_content()
+		}
+		.max_content {
+			AvailableSize.make_max_content()
+		}
+		.none {
+			if u.has_definite_height() {
+				AvailableSize.make_definite(u.content_height_)
+			} else {
+				AvailableSize.make_indefinite()
+			}
+		}
+	}
+}
+
+pub fn (u &UsedValues) available_inner_space_or_constraints_from(outer_space AvailableSpace) AvailableSpace {
+	mut width := u.available_width_inside()
+	mut height := u.available_height_inside()
+	if width.is_indefinite() && outer_space.width.is_intrinsic_sizing_constraint() {
+		width = outer_space.width
+	}
+	if height.is_indefinite() && outer_space.height.is_intrinsic_sizing_constraint() {
+		height = outer_space.height
+	}
+	return AvailableSpace.new(width, height)
+}
+
 // --- Offset ---
 
 pub fn (mut u UsedValues) set_content_offset(new_offset css.CSSPixelPoint) {
@@ -132,6 +180,16 @@ pub fn (u &UsedValues) cumulative_offset() css.CSSPixelPoint {
 		return css_pixel_point_add(containing_block.cumulative_offset(), u.offset)
 	}
 	return u.offset
+}
+
+pub fn (mut u UsedValues) set_static_position_rect(position StaticPositionRect) {
+	u.static_position_rect_ = position
+}
+
+pub fn (u &UsedValues) static_position() css.CSSPixelPoint {
+	position := u.static_position_rect_ or { return css.CSSPixelPoint{} }
+	return position.aligned_position_for_box_with_size(css.CSSPixelSize.new(u.margin_box_width(),
+		u.margin_box_height()))
 }
 
 // --- Margin box (margin + border + padding + content) ---

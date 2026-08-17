@@ -2,10 +2,9 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of the self-contained core of Libraries/LibWeb/StorageAPI/StorageEndpoint.cpp and
-// StorageType.h — the StorageType and StorageEndpointType enums, the StorageEndpoint record, and the set
-// of registered storage endpoints. The storage bottles/buckets/shelves/sheds that use these endpoints
-// are GC- and Page-coupled and are out of scope.
+// Translation of Libraries/LibWeb/StorageAPI/StorageEndpoint.cpp and StorageType.h — the StorageType
+// and StorageEndpointType enums, the StorageEndpoint record, and the registered endpoint set. The
+// bottles/buckets/shelves/sheds using these endpoints are translated in storage_models.v.
 // https://storage.spec.whatwg.org/#storage-endpoint
 module storageapi
 

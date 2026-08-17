@@ -10,9 +10,13 @@ fn test_extract_character_encoding_from_meta_element() {
 
 fn test_prescan_byte_stream_finds_meta_encodings() {
 	assert run_prescan_byte_stream_algorithm('<meta charset="utf-8">'.bytes()) or { '' } == 'UTF-8'
-	assert run_prescan_byte_stream_algorithm('<META HTTP-EQUIV=content-type CONTENT="text/html; charset=latin1">'.bytes()) or { '' } == 'windows-1252'
+	assert run_prescan_byte_stream_algorithm('<META HTTP-EQUIV=content-type CONTENT="text/html; charset=latin1">'.bytes()) or {
+		''
+	} == 'windows-1252'
 	assert run_prescan_byte_stream_algorithm('<meta content="text/html; charset=utf-8">'.bytes()) == none
-	assert run_prescan_byte_stream_algorithm('<!-- <meta charset=shift_jis> --><meta charset=gbk>'.bytes()) or { '' } == 'GBK'
+	assert run_prescan_byte_stream_algorithm('<!-- <meta charset=shift_jis> --><meta charset=gbk>'.bytes()) or {
+		''
+	} == 'GBK'
 	assert run_prescan_byte_stream_algorithm('<meta charset=utf-16le>'.bytes()) or { '' } == 'UTF-8'
 	assert run_prescan_byte_stream_algorithm('<meta charset=x-user-defined>'.bytes()) or { '' } == 'windows-1252'
 }

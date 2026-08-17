@@ -1,0 +1,543 @@
+// Copyright (c) 2023, Linus Groh <linusg@serenityos.org>
+// Copyright (c) 2023, Luke Wilde <lukew@serenityos.org>
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of WindowOrWorkerGlobalScope.{h,cpp}. Host services which belong
+// to Fetch, WebSockets, or LibJS are represented by explicit callbacks.
+module html
+
+import dom
+import time
+
+pub type TimerCallback = fn ([]dom.JSValue)
+
+pub type TimerScriptEvaluator = fn (string) !
+
+pub struct TimerHandler {
+pub:
+	callback ?TimerCallback
+	source   ?string
+}
+
+pub fn timer_callback_handler(callback TimerCallback) TimerHandler {
+	return TimerHandler{
+		callback: callback
+	}
+}
+
+pub fn timer_source_handler(source string) TimerHandler {
+	return TimerHandler{
+		source: source
+	}
+}
+
+struct GlobalScopeTimer {
+mut:
+	id            i32
+	handler       TimerHandler
+	timeout_ms    i64
+	due_time_ms   i64
+	arguments     []dom.JSValue
+	repeat        bool
+	nesting_level u32
+}
+
+pub struct PerformanceEntry {
+pub:
+	name       string
+	entry_type string
+	start_time f64
+	duration   f64
+}
+
+pub struct PerformanceEntryTuple {
+pub mut:
+	performance_entry_buffer []PerformanceEntry
+	max_buffer_size          usize
+}
+
+pub type PerformanceObserverCallback = fn ([]PerformanceEntry)
+
+@[heap]
+pub struct PerformanceObserverRecord {
+pub:
+	callback    PerformanceObserverCallback @[required]
+	entry_types []string
+mut:
+	queued_entries []PerformanceEntry
+}
+
+pub struct GlobalScopeWebSocket {
+pub:
+	make_disappear ?fn () bool
+}
+
+@[heap]
+pub struct GlobalScopePerformance {}
+
+@[heap]
+pub struct GlobalScopeIndexedDBFactory {}
+
+@[heap]
+pub struct GlobalScopeCrypto {}
+
+@[heap]
+pub struct GlobalScopeCacheStorage {}
+
+@[heap]
+pub struct GlobalScopeTrustedTypePolicyFactory {}
+
+pub struct ImageBitmapSource {
+pub:
+	bitmap           ?&dom.ImmutableBitmap_
+	image_bitmap     ?&ImageBitmap
+	image_data       ?&ImageData
+	offscreen_canvas ?&OffscreenCanvas
+}
+
+@[heap]
+pub struct WindowOrWorkerGlobalScope {
+	dom.EventTarget
+mut:
+	origin_                         dom.Origin
+	secure_context_                 bool
+	cross_origin_isolated_          bool
+	next_timer_id_                  i32 = 1
+	active_timers_                  map[i32]GlobalScopeTimer
+	currently_running_timer_nesting u32
+	timer_script_evaluator_         ?TimerScriptEvaluator
+	performance_entry_buffer_map_   map[string]&PerformanceEntryTuple
+	registered_observers_           []&PerformanceObserverRecord
+	observer_task_queued_           bool
+	resource_timing_buffer_limit_   u32 = 250
+	resource_timing_secondary_      []PerformanceEntry
+	resource_timing_full_pending_   bool
+	registered_event_sources_       []&EventSource
+	registered_web_sockets_         []&GlobalScopeWebSocket
+	reported_errors_                []dom.JSValue
+	error_reporting_mode_           bool
+	performance_                    ?&GlobalScopePerformance
+	indexed_db_                     ?&GlobalScopeIndexedDBFactory
+	crypto_                         ?&GlobalScopeCrypto
+	caches_                         ?&GlobalScopeCacheStorage
+	trusted_types_                  ?&GlobalScopeTrustedTypePolicyFactory
+}
+
+pub fn WindowOrWorkerGlobalScope.create(origin dom.Origin, secure_context bool, cross_origin_isolated bool) &WindowOrWorkerGlobalScope {
+	return &WindowOrWorkerGlobalScope{
+		origin_:                origin
+		secure_context_:        secure_context
+		cross_origin_isolated_: cross_origin_isolated
+	}
+}
+
+pub fn (scope &WindowOrWorkerGlobalScope) origin() string {
+	return scope.origin_.serialize()
+}
+
+pub fn (scope &WindowOrWorkerGlobalScope) is_secure_context() bool {
+	return scope.secure_context_
+}
+
+pub fn (scope &WindowOrWorkerGlobalScope) cross_origin_isolated() bool {
+	return scope.cross_origin_isolated_
+}
+
+pub fn (scope &WindowOrWorkerGlobalScope) window_or_worker_global_scope_extract_an_origin() ?dom.Origin {
+	if scope.origin_.serialize() == 'opaque' {
+		return none
+	}
+	return scope.origin_
+}
+
+fn global_scope_now_ms() i64 {
+	return time.sys_mono_now() / 1_000_000
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) set_timer_script_evaluator(evaluator ?TimerScriptEvaluator) {
+	scope.timer_script_evaluator_ = evaluator
+}
+
+fn (mut scope WindowOrWorkerGlobalScope) run_timer_initialization_steps(handler TimerHandler, timeout i32, arguments []dom.JSValue, repeat bool, previous_id ?i32) i32 {
+	id := previous_id or {
+		new_id := scope.next_timer_id_
+		scope.next_timer_id_++
+		new_id
+	}
+
+	mut normalized_timeout := i64(if timeout < 0 { 0 } else { timeout })
+	nesting := scope.currently_running_timer_nesting + 1
+	if nesting > 5 && normalized_timeout < 4 {
+		normalized_timeout = 4
+	}
+	scope.active_timers_[id] = GlobalScopeTimer{
+		id:            id
+		handler:       handler
+		timeout_ms:    normalized_timeout
+		due_time_ms:   global_scope_now_ms() + normalized_timeout
+		arguments:     arguments.clone()
+		repeat:        repeat
+		nesting_level: nesting
+	}
+	return id
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) set_timeout(handler TimerHandler, timeout i32, arguments []dom.JSValue) i32 {
+	return scope.run_timer_initialization_steps(handler, timeout, arguments, false, none)
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) set_interval(handler TimerHandler, timeout i32, arguments []dom.JSValue) i32 {
+	return scope.run_timer_initialization_steps(handler, timeout, arguments, true, none)
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) clear_timeout(id i32) {
+	scope.active_timers_.delete(id)
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) clear_interval(id i32) {
+	scope.clear_timeout(id)
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) clear_map_of_active_timers() {
+	scope.active_timers_.clear()
+}
+
+pub fn (scope &WindowOrWorkerGlobalScope) active_timer_count() int {
+	return scope.active_timers_.len
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) process_timers(now_ms i64) {
+	mut due_ids := []int{}
+	for id, timer in scope.active_timers_ {
+		if timer.due_time_ms <= now_ms {
+			due_ids << int(id)
+		}
+	}
+	due_ids.sort()
+	for raw_id in due_ids {
+		id := i32(raw_id)
+		timer := scope.active_timers_[id] or { continue }
+		if !timer.repeat {
+			scope.active_timers_.delete(id)
+		}
+		scope.currently_running_timer_nesting = timer.nesting_level
+		if callback := timer.handler.callback {
+			callback(timer.arguments)
+		} else if source := timer.handler.source {
+			if evaluator := scope.timer_script_evaluator_ {
+				evaluator(source) or { scope.report_error(dom.js_string(err.msg())) }
+			}
+		}
+		scope.currently_running_timer_nesting = 0
+		if timer.repeat && id in scope.active_timers_ {
+			mut repeated := scope.active_timers_[id] or { continue }
+			repeated.due_time_ms = now_ms + timer.timeout_ms
+			scope.active_timers_[id] = repeated
+		}
+	}
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) run_all_timers() {
+	scope.process_timers(max_i64)
+}
+
+fn image_bitmap_source_bitmap(source ImageBitmapSource) !&dom.ImmutableBitmap_ {
+	if bitmap := source.bitmap {
+		return bitmap
+	}
+	if image_bitmap := source.image_bitmap {
+		if image_bitmap.is_detached() {
+			return error('InvalidStateError: ImageBitmap is detached')
+		}
+		return image_bitmap.bitmap() or { error('InvalidStateError: ImageBitmap has no bitmap') }
+	}
+	if image_data := source.image_data {
+		bitmap := image_data.bitmap()
+		return &dom.ImmutableBitmap_{
+			width:  int(bitmap.width)
+			height: int(bitmap.height)
+			pitch:  int(bitmap.width) * 4
+			data:   bitmap.data.clone()
+		}
+	}
+	if canvas := source.offscreen_canvas {
+		return canvas.bitmap() or { error('InvalidStateError: OffscreenCanvas has no bitmap') }
+	}
+	return error('InvalidStateError: image source has no image data')
+}
+
+fn create_image_bitmap_pixels(source &dom.ImmutableBitmap_, sx i32, sy i32, sw i32, sh i32, options ImageBitmapOptions) !&dom.ImmutableBitmap_ {
+	if sw == 0 || sh == 0 {
+		return error('RangeError: source rectangle width and height must be nonzero')
+	}
+	left := if sw < 0 { sx + sw } else { sx }
+	top := if sh < 0 { sy + sh } else { sy }
+	source_width := if sw < 0 { -sw } else { sw }
+	source_height := if sh < 0 { -sh } else { sh }
+	resize_width := options.resize_width or {
+		if height := options.resize_height {
+			u32((u64(source_width) * u64(height)) / u64(source_height))
+		} else {
+			u32(source_width)
+		}
+	}
+
+	resize_height := options.resize_height or {
+		if width := options.resize_width {
+			u32((u64(source_height) * u64(width)) / u64(source_width))
+		} else {
+			u32(source_height)
+		}
+	}
+
+	if resize_width == 0 || resize_height == 0 {
+		return error('InvalidStateError: resize dimensions must be nonzero')
+	}
+	byte_length := u64(resize_width) * u64(resize_height) * 4
+	if byte_length > u64(max_int) {
+		return error('InvalidStateError: resulting bitmap is too large')
+	}
+	mut output := []u8{len: int(byte_length)}
+	for destination_y in 0 .. int(resize_height) {
+		mut source_y := top + (destination_y * source_height) / int(resize_height)
+		if options.image_orientation == .flip_y {
+			source_y = top + source_height - 1 -
+				(destination_y * source_height) / int(resize_height)
+		}
+		for destination_x in 0 .. int(resize_width) {
+			source_x := left + (destination_x * source_width) / int(resize_width)
+			if source_x < 0 || source_y < 0 || source_x >= source.width || source_y >= source.height {
+				continue
+			}
+			source_offset := source_y * source.pitch + source_x * 4
+			destination_offset := (destination_y * int(resize_width) + destination_x) * 4
+			if source_offset + 4 <= source.data.len {
+				for channel in 0 .. 4 {
+					output[destination_offset + channel] = source.data[source_offset + channel]
+				}
+			}
+		}
+	}
+	return &dom.ImmutableBitmap_{
+		width:      int(resize_width)
+		height:     int(resize_height)
+		pitch:      int(resize_width) * 4
+		format:     source.format
+		alpha_type: source.alpha_type
+		data:       output
+	}
+}
+
+pub fn (scope &WindowOrWorkerGlobalScope) create_image_bitmap(source ImageBitmapSource, options ImageBitmapOptions) !&ImageBitmap {
+	_ = scope
+	bitmap := image_bitmap_source_bitmap(source)!
+	return scope.create_image_bitmap_with_crop(source, 0, 0, bitmap.width, bitmap.height, options)
+}
+
+pub fn (scope &WindowOrWorkerGlobalScope) create_image_bitmap_with_crop(source ImageBitmapSource, sx i32, sy i32, sw i32, sh i32, options ImageBitmapOptions) !&ImageBitmap {
+	_ = scope
+	bitmap := image_bitmap_source_bitmap(source)!
+	result_bitmap := create_image_bitmap_pixels(bitmap, sx, sy, sw, sh, options)!
+	mut result := ImageBitmap.create()
+	result.set_bitmap(result_bitmap)
+	return result
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) relevant_performance_entry_tuple(entry_type string) &PerformanceEntryTuple {
+	if entry_type !in scope.performance_entry_buffer_map_ {
+		scope.performance_entry_buffer_map_[entry_type] = &PerformanceEntryTuple{}
+	}
+	return scope.performance_entry_buffer_map_[entry_type] or { &PerformanceEntryTuple{} }
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) add_performance_entry(entry PerformanceEntry) {
+	mut tuple := scope.performance_entry_buffer_map_[entry.entry_type] or {
+		created := &PerformanceEntryTuple{}
+		scope.performance_entry_buffer_map_[entry.entry_type] = created
+		created
+	}
+	if tuple.max_buffer_size == 0 || tuple.performance_entry_buffer.len < tuple.max_buffer_size {
+		tuple.performance_entry_buffer << entry
+	}
+	for observer in scope.registered_observers_ {
+		if entry.entry_type in observer.entry_types {
+			mut mutable_observer := unsafe { &PerformanceObserverRecord(observer) }
+			mutable_observer.queued_entries << entry
+			scope.observer_task_queued_ = true
+		}
+	}
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) process_performance_observers() {
+	if !scope.observer_task_queued_ {
+		return
+	}
+	scope.observer_task_queued_ = false
+	for observer in scope.registered_observers_ {
+		mut mutable_observer := unsafe { &PerformanceObserverRecord(observer) }
+		if observer.queued_entries.len > 0 {
+			entries := observer.queued_entries.clone()
+			mutable_observer.queued_entries.clear()
+			observer.callback(entries)
+		}
+	}
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) register_performance_observer(observer &PerformanceObserverRecord) {
+	if observer !in scope.registered_observers_ {
+		scope.registered_observers_ << observer
+	}
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) unregister_performance_observer(observer &PerformanceObserverRecord) {
+	scope.registered_observers_ = scope.registered_observers_.filter(it != observer)
+}
+
+pub fn (scope &WindowOrWorkerGlobalScope) filter_buffer_map_by_name_and_type(name ?string, type_ ?string) []PerformanceEntry {
+	mut entries := []PerformanceEntry{}
+	for entry_type, tuple in scope.performance_entry_buffer_map_ {
+		if requested_type := type_ {
+			if entry_type != requested_type {
+				continue
+			}
+		}
+		for entry in tuple.performance_entry_buffer {
+			if requested_name := name {
+				if entry.name != requested_name {
+					continue
+				}
+			}
+			entries << entry
+		}
+	}
+	entries.sort_with_compare(fn (left &PerformanceEntry, right &PerformanceEntry) int {
+		return if left.start_time < right.start_time {
+			-1
+		} else if left.start_time > right.start_time {
+			1
+		} else {
+			0
+		}
+	})
+	return entries
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) clear_performance_entry_buffer(entry_type string) {
+	scope.performance_entry_buffer_map_.delete(entry_type)
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) remove_entries_from_performance_entry_buffer(entry_type string, entry_name string) {
+	mut tuple := scope.performance_entry_buffer_map_[entry_type] or { return }
+	tuple.performance_entry_buffer = tuple.performance_entry_buffer.filter(it.name != entry_name)
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) register_event_source(source &EventSource) {
+	if source !in scope.registered_event_sources_ {
+		scope.registered_event_sources_ << source
+	}
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) unregister_event_source(source &EventSource) {
+	scope.registered_event_sources_ = scope.registered_event_sources_.filter(it != source)
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) forcibly_close_all_event_sources() {
+	for source in scope.registered_event_sources_ {
+		mut mutable_source := unsafe { &EventSource(source) }
+		mutable_source.forcibly_close()
+	}
+	scope.registered_event_sources_.clear()
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) register_web_socket(socket &GlobalScopeWebSocket) {
+	if socket !in scope.registered_web_sockets_ {
+		scope.registered_web_sockets_ << socket
+	}
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) unregister_web_socket(socket &GlobalScopeWebSocket) {
+	scope.registered_web_sockets_ = scope.registered_web_sockets_.filter(it != socket)
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) make_disappear_all_web_sockets() bool {
+	mut affected := false
+	for socket in scope.registered_web_sockets_ {
+		if callback := socket.make_disappear {
+			affected = callback() || affected
+		}
+	}
+	return affected
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) report_error(error dom.JSValue) {
+	scope.report_an_exception(error, false)
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) report_an_exception(exception dom.JSValue, omit_error bool) {
+	if scope.error_reporting_mode_ {
+		return
+	}
+	scope.error_reporting_mode_ = true
+	scope.reported_errors_ << exception
+	if !omit_error {
+		event := dom.Event.create('error', dom.EventInit{ cancelable: true })
+		unsafe { &dom.EventTarget(scope) }.dispatch_event(event)
+	}
+	scope.error_reporting_mode_ = false
+}
+
+pub fn (scope &WindowOrWorkerGlobalScope) reported_errors() []dom.JSValue {
+	return scope.reported_errors_.clone()
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) performance() &GlobalScopePerformance {
+	if value := scope.performance_ {
+		return value
+	}
+	value := &GlobalScopePerformance{}
+	scope.performance_ = value
+	return value
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) indexed_db() &GlobalScopeIndexedDBFactory {
+	if value := scope.indexed_db_ {
+		return value
+	}
+	value := &GlobalScopeIndexedDBFactory{}
+	scope.indexed_db_ = value
+	return value
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) crypto() &GlobalScopeCrypto {
+	if value := scope.crypto_ {
+		return value
+	}
+	value := &GlobalScopeCrypto{}
+	scope.crypto_ = value
+	return value
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) caches() &GlobalScopeCacheStorage {
+	if value := scope.caches_ {
+		return value
+	}
+	value := &GlobalScopeCacheStorage{}
+	scope.caches_ = value
+	return value
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScope) trusted_types() &GlobalScopeTrustedTypePolicyFactory {
+	if value := scope.trusted_types_ {
+		return value
+	}
+	value := &GlobalScopeTrustedTypePolicyFactory{}
+	scope.trusted_types_ = value
+	return value
+}
+
+pub fn (scope &WindowOrWorkerGlobalScope) supported_entry_types() []string {
+	return ['element', 'event', 'first-input', 'largest-contentful-paint', 'layout-shift',
+		'long-animation-frame', 'longtask', 'mark', 'measure', 'navigation', 'paint', 'resource',
+		'taskattribution', 'visibility-state']
+}

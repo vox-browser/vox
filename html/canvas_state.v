@@ -48,10 +48,6 @@ pub fn (t CanvasAffineTransform) inverse() ?CanvasAffineTransform {
 	}
 }
 
-// Placeholder for HTML::CanvasPattern (CanvasPattern.cpp is not translated yet).
-@[heap]
-pub struct CanvasPattern {}
-
 // Bindings::CanvasLineCap
 pub enum CanvasLineCap {
 	butt
@@ -223,7 +219,9 @@ pub mut:
 	text_baseline                             CanvasTextBaseline             = .alphabetic
 	direction                                 CanvasDirection                = .inherit
 	// CSS::Length letter_spacing (default 0px); represented as px in this port.
-	letter_spacing_px f64
+	letter_spacing_px     f64
+	letter_spacing_string string = '0px'
+	font_string           string = '10px sans-serif'
 	// Opaque Gfx handles (out of scope for this port): Gfx::Filter, CSS::StyleValue font,
 	// Gfx::FontCascadeList.
 }

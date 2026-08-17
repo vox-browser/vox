@@ -149,9 +149,9 @@ fn (mut l ListOfActiveFormattingElements) ensure_noahs_ark_clause(element &dom.E
 		}
 		el := entry.element or { continue }
 		tok := entry.token or { continue }
-		if el.local_name() == element.local_name()
-			&& (el.namespace_uri() or { '' }) == (element.namespace_uri() or { '' })
-			&& tok.attribute_count() == element.attribute_list_size() {
+		if el.local_name() == element.local_name() && (el.namespace_uri() or { '' }) == (element.namespace_uri() or {
+			''
+		}) && tok.attribute_count() == element.attribute_list_size() {
 			candidate_indices << i
 		}
 	}

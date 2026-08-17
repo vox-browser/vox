@@ -291,6 +291,8 @@ pub enum ProximityToTheViewport {
 pub struct CustomElementDefinition {
 pub mut:
 	disable_shadow_     bool
+	disable_internals_  bool
+	form_associated_    bool
 	construction_stack  []&Element
 	name_               string
 	local_name_         string
@@ -299,6 +301,10 @@ pub mut:
 
 pub fn (d &CustomElementDefinition) disable_shadow() bool {
 	return d.disable_shadow_
+}
+
+pub fn (d &CustomElementDefinition) disable_internals() bool {
+	return d.disable_internals_
 }
 
 pub fn (d &CustomElementDefinition) name() string {
@@ -312,7 +318,68 @@ pub fn (d &CustomElementDefinition) local_name() string {
 	return d.local_name_
 }
 
-pub struct CustomStateSet_ {}
+pub fn (d &CustomElementDefinition) form_associated() bool {
+	return d.form_associated_
+}
+
+@[heap]
+pub struct CustomStateSet_ {
+mut:
+	element_            ?&Element
+	entries_            map[string]bool
+	modification_count_ u64
+}
+
+pub fn (states &CustomStateSet_) has_state(state string) bool {
+	return states.entries_[state]
+}
+
+pub fn (states &CustomStateSet_) size() int {
+	return states.entries_.len
+}
+
+pub fn (states &CustomStateSet_) values() []string {
+	mut values := states.entries_.keys()
+	values.sort()
+	return values
+}
+
+pub fn (states &CustomStateSet_) modification_count() u64 {
+	return states.modification_count_
+}
+
+fn (mut states CustomStateSet_) did_modify() {
+	states.modification_count_++
+	if element := states.element_ {
+		mut node := unsafe { &Node(element) }
+		node.invalidate_style(.custom_state_set_change)
+	}
+}
+
+pub fn (mut states CustomStateSet_) add(state string) ! {
+	if states.entries_[state] {
+		return
+	}
+	states.entries_[state] = true
+	states.did_modify()
+}
+
+pub fn (mut states CustomStateSet_) delete(state string) bool {
+	if !states.entries_[state] {
+		return false
+	}
+	states.entries_.delete(state)
+	states.did_modify()
+	return true
+}
+
+pub fn (mut states CustomStateSet_) clear() {
+	if states.entries_.len == 0 {
+		return
+	}
+	states.entries_.clear()
+	states.did_modify()
+}
 
 @[heap]
 pub struct CSSStyleProperties_ {
@@ -648,10 +715,15 @@ fn layout_node_ancestor_path(node &LayoutNode) []&LayoutNode {
 	return result
 }
 
+@[heap]
 pub struct ImmutableBitmap_ {
 pub mut:
-	width  int = 1
-	height int = 1
+	width      int = 1
+	height     int = 1
+	pitch      int
+	format     u8
+	alpha_type u8
+	data       []u8
 }
 
 pub fn (a &CSSAnimation_) cancel() {}
@@ -1036,6 +1108,7 @@ pub mut:
 	custom_element_definition_    ?&CustomElementDefinition
 	is_value                      ?string
 	custom_state_set_             ?&CustomStateSet_
+	popover_target_element_       ?&Element
 
 	registered_intersection_observers []IntersectionObserverRegistration_
 	computed_style_map_cache_         ?&StylePropertyMapReadOnly_
@@ -2297,10 +2370,11 @@ fn serialize_html_node(node &Node, serializable_shadow_roots SerializableShadowR
 			return builder.str()
 		}
 
-		mut actual_node := node
-		if element.is_html_element() && element.local_name() == 'template' {
+		actual_node := if element.is_html_element() && element.local_name() == 'template' {
 			template_element := unsafe { &HTMLTemplateElement(element) }
-			actual_node = template_element.content().as_node()
+			template_element.content().as_node()
+		} else {
+			node
 		}
 
 		if shadow_root := element.shadow_root() {
@@ -3093,12 +3167,25 @@ pub fn (mut e Element) scroll_into_view() &Promise {
 
 // https://fullscreen.spec.whatwg.org/#dom-element-requestfullscreen
 pub fn (mut e Element) request_fullscreen(requester FullscreenRequester) &Promise {
-	promise := &Promise{}
-	doc := e.document()
+	mut promise := Promise.create()
+	mut doc := e.document()
 	if doc == unsafe { nil } || !doc.is_fully_active() {
+		promise.reject(js_string('TypeError: Document not fully active.'))
 		return promise
 	}
-	_ = e.is_element_allowed_to_enter_fullscreen(requester)
+	error := e.is_element_allowed_to_enter_fullscreen(requester)
+	if error != .false_ {
+		promise.reject(js_string('TypeError: Element is not allowed to enter fullscreen (${error}).'))
+		return promise
+	}
+
+	// Ladybird queues the platform fullscreen-enter operation here. Until the V
+	// embedder provides that queue, perform its observable DOM effects at this
+	// typed boundary and settle the promise synchronously.
+	doc.fullscreen_element_within_doc(mut e)
+	doc.append_pending_fullscreen_change(.change, e)
+	doc.run_fullscreen_steps()
+	promise.resolve(js_undefined())
 	return promise
 }
 
@@ -3478,6 +3565,15 @@ pub fn (e &Element) ensure_custom_element_reaction_queue() []CustomElementReacti
 	return e.custom_element_reaction_queue
 }
 
+// Bindings/MainThreadVM's invoke-custom-element-reactions algorithm consumes
+// the queue. Keep mutation at the DOM boundary instead of exposing the backing
+// slice to another module.
+pub fn (mut e Element) take_custom_element_reactions() []CustomElementReaction {
+	reactions := e.custom_element_reaction_queue.clone()
+	e.custom_element_reaction_queue.clear()
+	return reactions
+}
+
 // https://html.spec.whatwg.org/multipage/custom-elements.html#enqueue-a-custom-element-upgrade-reaction
 pub fn (mut e Element) enqueue_a_custom_element_upgrade_reaction(definition &CustomElementDefinition) {
 	e.custom_element_reaction_queue << CustomElementUpgradeReaction{
@@ -3499,9 +3595,56 @@ pub fn (mut e Element) ensure_custom_state_set() &CustomStateSet_ {
 	if cs := e.custom_state_set_ {
 		return cs
 	}
-	new_cs := &CustomStateSet_{}
+	new_cs := &CustomStateSet_{
+		element_: &e
+		entries_: map[string]bool{}
+	}
 	e.custom_state_set_ = new_cs
 	return new_cs
+}
+
+pub fn (e &Element) custom_element_definition() ?&CustomElementDefinition {
+	return e.custom_element_definition_
+}
+
+pub fn (mut e Element) set_custom_element_definition(definition ?&CustomElementDefinition) {
+	e.custom_element_definition_ = definition
+}
+
+pub fn (e &Element) is_form_associated_custom_element() bool {
+	definition := e.custom_element_definition_ or { return false }
+	return e.custom_element_state_ == .custom && definition.form_associated()
+}
+
+pub fn (e &Element) popover_target_element() ?&Element {
+	return e.popover_target_element_
+}
+
+pub fn (mut e Element) set_popover_target_element(value ?&Element) {
+	e.popover_target_element_ = value
+}
+
+pub fn (element &HTMLElement) popover_visibility_state() PopoverVisibilityState {
+	return element.popover_visibility_state_
+}
+
+pub fn (element &HTMLElement) popover() ?string {
+	return unsafe { &Element(element) }.get_attribute('popover')
+}
+
+pub fn (mut element HTMLElement) show_popover() ! {
+	if element.popover() == none {
+		return error('NotSupportedError: element does not have a popover attribute')
+	}
+	element.popover_visibility_state_ = .showing
+	mut base := unsafe { &Element(&element) }
+	base.set_in_top_layer(true)
+}
+
+pub fn (mut element HTMLElement) hide_popover() {
+	element.popover_visibility_state_ = .hidden
+	mut base := unsafe { &Element(&element) }
+	base.set_in_top_layer(false)
 }
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#concept-upgrade-an-element
@@ -4574,9 +4717,9 @@ pub fn (e &Element) has_hidden_ancestor() bool {
 // aria-labelledby attribute somewhere in the same root subtree.
 //
 // The C++ implementation consults Web::ARIA::AriaData, which collects every
-// IDREF-list ARIA attribute. The V port currently lacks AriaData, so we scan
-// the root subtree for HTML elements whose aria-labelledby tokens contain our
-// id. This covers the dominant accessibility use case.
+// IDREF-list ARIA attribute. The translated ARIA module depends on DOM and
+// therefore cannot be imported here without a cycle, so this DOM-side bridge
+// scans aria-labelledby tokens directly.
 pub fn (e &Element) is_referenced() bool {
 	id := e.id() or { return false }
 	root := e.as_node().root()

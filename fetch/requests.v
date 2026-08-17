@@ -4,9 +4,8 @@
 
 // Translation of Libraries/LibWeb/Fetch/Infrastructure/HTTP/Requests.{h,cpp} — the Fetch
 // `request` record (https://fetch.spec.whatwg.org/#concept-request): its enumerations, fields,
-// and the url()/current_url() accessors. The header list is a real http.HeaderList; the remaining
-// untranslated Fetch/HTML dependencies (the Body object, the client environment settings object,
-// policy containers, pending responses) are held opaquely and noted at each field.
+// and the url()/current_url() accessors. The header list and Body are translated types; HTML client
+// environments and policy containers enter through the typed projections noted at their fields.
 module fetch
 
 import dom
@@ -172,7 +171,7 @@ pub struct RequestBody {
 pub mut:
 	kind  RequestBodyKind = .empty
 	bytes []u8
-	// The GC::Ref<Body> alternative is opaque (Body is not translated).
+	// Body-object storage is represented by Body in the Web-exposed RequestObject layer.
 }
 
 // https://fetch.spec.whatwg.org/#concept-request
@@ -190,15 +189,23 @@ pub mut:
 	// https://fetch.spec.whatwg.org/#concept-request-body
 	body RequestBody
 	// The client is an EnvironmentSettingsObject (not translated) — held opaquely.
-	client                       voidptr = unsafe { nil }
-	replaces_client_id           string
-	traversable_for_user_prompts TraversableForUserPrompts = .client
-	keepalive                    bool
-	initiator_type               ?InitiatorType
-	service_workers_mode         ServiceWorkersMode = .all
-	initiator                    ?Initiator
-	destination                  ?Destination
-	priority                     Priority = .auto
+	client voidptr = unsafe { nil }
+	// Typed observable projection of the environment used by ReferrerPolicy.
+	// A Window client uses document_url; other clients use creation_url.
+	client_is_window               bool
+	client_origin_opaque           bool
+	client_document_url            ?dom.URL
+	client_creation_url            ?dom.URL
+	client_present                 bool
+	embedder_policy_credentialless bool
+	replaces_client_id             string
+	traversable_for_user_prompts   TraversableForUserPrompts = .client
+	keepalive                      bool
+	initiator_type                 ?InitiatorType
+	service_workers_mode           ServiceWorkersMode = .all
+	initiator                      ?Initiator
+	destination                    ?Destination
+	priority                       Priority = .auto
 	// https://fetch.spec.whatwg.org/#concept-request-origin
 	origin                                RequestOrigin
 	top_level_navigation_initiator_origin ?dom.Origin
@@ -236,7 +243,7 @@ pub mut:
 	prevent_no_cache_cache_control_header_modification bool
 	done                                               bool
 	timing_allow_failed                                bool
-	// Pending responses (Fetching::PendingResponse) are not translated — held opaquely.
+	// Pending responses are represented by Fetching::PendingResponse in runtime.v.
 	request_time i64
 }
 
@@ -268,4 +275,250 @@ pub fn destination_is_script_like(destination Destination) bool {
 pub fn (request &Request) destination_is_script_like() bool {
 	destination := request.destination or { return false }
 	return destination_is_script_like(destination)
+}
+
+pub fn (mut request Request) set_url(url dom.URL) {
+	request.url_list = [url]
+}
+
+pub fn (request &Request) is_subresource_request() bool {
+	destination := request.destination or { return true }
+	return destination in [Destination.audio, .audio_worklet, .font, .image, .json, .manifest,
+		.paint_worklet, .script, .style, .track, .video, .xslt]
+}
+
+pub fn (request &Request) is_non_subresource_request() bool {
+	destination := request.destination or { return false }
+	return destination in [Destination.document, .embed, .frame, .iframe, .object, .report,
+		.service_worker, .shared_worker, .worker]
+}
+
+pub fn (request &Request) is_navigation_request() bool {
+	destination := request.destination or { return false }
+	return destination in [Destination.document, .embed, .frame, .iframe, .object]
+}
+
+fn request_same_site(a dom.URL, b dom.URL) bool {
+	if a.scheme() != b.scheme() {
+		return false
+	}
+	left := a.serialized_host().split('.')
+	right := b.serialized_host().split('.')
+	left_site := if left.len >= 2 { left[left.len - 2..].join('.') } else { a.serialized_host() }
+	right_site := if right.len >= 2 { right[right.len - 2..].join('.') } else { b.serialized_host() }
+	return left_site == right_site
+}
+
+pub fn (request &Request) redirect_taint() RedirectTaint {
+	mut last := ?dom.URL(none)
+	mut taint := RedirectTaint.same_origin
+	for current in request.url_list {
+		previous := last or {
+			last = current
+			continue
+		}
+
+		origin_matches_previous := if origin := request.origin.origin {
+			origin.value == previous.origin().value
+		} else {
+			false
+		}
+		if !request_same_site(current, previous) && !origin_matches_previous {
+			return .cross_site
+		}
+		if current.origin().value != previous.origin().value && !origin_matches_previous {
+			taint = .same_site
+		}
+		last = current
+	}
+	return taint
+}
+
+pub fn (request &Request) serialize_origin() string {
+	if request.redirect_taint() != .same_origin {
+		return 'null'
+	}
+	origin := request.origin.origin or { return 'null' }
+	return origin.value
+}
+
+pub fn (request &Request) clone() &Request {
+	mut headers := http.HeaderList.create()
+	for header in request.header_list.headers() {
+		headers.append(header)
+	}
+	return &Request{
+		method:                                             request.method
+		local_urls_only:                                    request.local_urls_only
+		header_list:                                        headers
+		unsafe_request:                                     request.unsafe_request
+		body:                                               RequestBody{
+			kind:  request.body.kind
+			bytes: request.body.bytes.clone()
+		}
+		client:                                             request.client
+		client_is_window:                                   request.client_is_window
+		client_origin_opaque:                               request.client_origin_opaque
+		client_document_url:                                request.client_document_url
+		client_creation_url:                                request.client_creation_url
+		client_present:                                     request.client_present
+		embedder_policy_credentialless:                     request.embedder_policy_credentialless
+		replaces_client_id:                                 request.replaces_client_id
+		traversable_for_user_prompts:                       request.traversable_for_user_prompts
+		keepalive:                                          request.keepalive
+		initiator_type:                                     request.initiator_type
+		service_workers_mode:                               request.service_workers_mode
+		initiator:                                          request.initiator
+		destination:                                        request.destination
+		priority:                                           request.priority
+		origin:                                             request.origin
+		top_level_navigation_initiator_origin:              request.top_level_navigation_initiator_origin
+		policy_container:                                   request.policy_container
+		referrer:                                           request.referrer
+		referrer_policy:                                    request.referrer_policy
+		mode:                                               request.mode
+		use_cors_preflight:                                 request.use_cors_preflight
+		credentials_mode:                                   request.credentials_mode
+		use_url_credentials:                                request.use_url_credentials
+		cache_mode:                                         request.cache_mode
+		redirect_mode:                                      request.redirect_mode
+		integrity_metadata:                                 request.integrity_metadata
+		cryptographic_nonce_metadata:                       request.cryptographic_nonce_metadata
+		parser_metadata:                                    request.parser_metadata
+		reload_navigation:                                  request.reload_navigation
+		history_navigation:                                 request.history_navigation
+		user_activation:                                    request.user_activation
+		render_blocking:                                    request.render_blocking
+		url_list:                                           request.url_list.clone()
+		redirect_count:                                     request.redirect_count
+		response_tainting:                                  request.response_tainting
+		prevent_no_cache_cache_control_header_modification: request.prevent_no_cache_cache_control_header_modification
+		done:                                               request.done
+		timing_allow_failed:                                request.timing_allow_failed
+		request_time:                                       request.request_time
+	}
+}
+
+pub fn (mut request Request) add_range_header(first u64, last ?u64) ! {
+	if end := last {
+		if first > end {
+			return error('Range start must not exceed its end')
+		}
+		request.header_list.append(http.Header{ name: 'Range', value: 'bytes=${first}-${end}' })
+	} else {
+		request.header_list.append(http.Header{ name: 'Range', value: 'bytes=${first}-' })
+	}
+}
+
+pub fn (mut request Request) add_origin_header() {
+	mut serialized := request.serialize_origin()
+	if request.response_tainting == .cors || request.mode == .websocket {
+		request.header_list.append(http.Header{ name: 'Origin', value: serialized })
+		return
+	}
+	if request.method in ['GET', 'HEAD'] {
+		return
+	}
+	if request.mode != .cors {
+		if request.referrer_policy == 'no-referrer' {
+			serialized = 'null'
+		} else if request.referrer_policy in ['no-referrer-when-downgrade', 'strict-origin',
+			'strict-origin-when-cross-origin'] {
+			if origin := request.origin.origin {
+				if origin.value.starts_with('https://') && request.current_url().scheme() != 'https' {
+					serialized = 'null'
+				}
+			}
+		} else if request.referrer_policy == 'same-origin' {
+			if origin := request.origin.origin {
+				if origin.value != request.current_url().origin().value { serialized = 'null' }
+			}
+		}
+	}
+	request.header_list.append(http.Header{ name: 'Origin', value: serialized })
+}
+
+pub fn (request &Request) cross_origin_embedder_policy_allows_credentials() bool {
+	if request.mode != .no_cors || !request.client_present
+		|| !request.embedder_policy_credentialless {
+		return true
+	}
+	origin := request.origin.origin or { return false }
+	return origin.value == request.current_url().origin().value
+		&& request.redirect_taint() != .same_origin
+}
+
+pub fn request_destination_to_string(destination Destination) string {
+	return match destination {
+		.audio { 'audio' }
+		.audio_worklet { 'audioworklet' }
+		.document { 'document' }
+		.embed { 'embed' }
+		.font { 'font' }
+		.frame { 'frame' }
+		.iframe { 'iframe' }
+		.image { 'image' }
+		.json { 'json' }
+		.manifest { 'manifest' }
+		.object { 'object' }
+		.paint_worklet { 'paintworklet' }
+		.report { 'report' }
+		.script { 'script' }
+		.service_worker { 'serviceworker' }
+		.shared_worker { 'sharedworker' }
+		.style { 'style' }
+		.track { 'track' }
+		.video { 'video' }
+		.web_identity { 'webidentity' }
+		.worker { 'worker' }
+		.xslt { 'xslt' }
+	}
+}
+
+pub fn translate_potential_destination(value string) ?Destination {
+	if value == 'fetch' { return none }
+	return match value {
+		'audio' { Destination.audio }
+		'audioworklet' { Destination.audio_worklet }
+		'document' { Destination.document }
+		'embed' { Destination.embed }
+		'font' { Destination.font }
+		'frame' { Destination.frame }
+		'iframe' { Destination.iframe }
+		'image' { Destination.image }
+		'json' { Destination.json }
+		'manifest' { Destination.manifest }
+		'object' { Destination.object }
+		'paintworklet' { Destination.paint_worklet }
+		'report' { Destination.report }
+		'script' { Destination.script }
+		'serviceworker' { Destination.service_worker }
+		'sharedworker' { Destination.shared_worker }
+		'style' { Destination.style }
+		'track' { Destination.track }
+		'video' { Destination.video }
+		'webidentity' { Destination.web_identity }
+		'worker' { Destination.worker }
+		'xslt' { Destination.xslt }
+		else { none }
+	}
+}
+
+pub fn request_mode_to_string(mode Mode) string {
+	return match mode {
+		.same_origin { 'same-origin' }
+		.cors { 'cors' }
+		.no_cors { 'no-cors' }
+		.navigate { 'navigate' }
+		.websocket { 'websocket' }
+	}
+}
+
+pub fn request_priority_from_string(value string) ?Priority {
+	return match ascii_lowercase(value) {
+		'high' { Priority.high }
+		'low' { Priority.low }
+		'auto' { Priority.auto }
+		else { none }
+	}
 }

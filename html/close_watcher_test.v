@@ -61,12 +61,14 @@ fn test_close_watcher_user_activation_opens_a_new_group() {
 
 fn test_close_watcher_cancel_and_disabled_states() {
 	manager := CloseWatcherManager.create()
-	prevented := make_close_watcher(manager, close_watcher_enabled, close_watcher_cancel_prevents_close)
+	prevented := make_close_watcher(manager, close_watcher_enabled,
+		close_watcher_cancel_prevents_close)
 	mut mutable_prevented := unsafe { &CloseWatcher(prevented) }
 	assert !mutable_prevented.request_close(false)
 	assert prevented.is_active
 
-	disabled := make_close_watcher(manager, close_watcher_disabled, close_watcher_cancel_allows_close)
+	disabled := make_close_watcher(manager, close_watcher_disabled,
+		close_watcher_cancel_allows_close)
 	mut mutable_disabled := unsafe { &CloseWatcher(disabled) }
 	assert mutable_disabled.request_close(false)
 	assert disabled.is_active

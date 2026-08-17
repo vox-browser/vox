@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of ListOfAvailableImages.cpp. DecodedImageData remains an opaque
-// handle until the graphics-backed decoded-image classes are translated.
+// Translation of ListOfAvailableImages.cpp.
 module html
 
 import dom
@@ -34,7 +33,7 @@ pub fn (key &AvailableImageKey) equals(other &AvailableImageKey) bool {
 @[heap]
 pub struct AvailableImageEntry {
 pub:
-	image_data                  voidptr
+	image_data                  DecodedImageData
 	ignore_higher_layer_caching bool
 }
 
@@ -48,7 +47,7 @@ mut:
 	images []StoredAvailableImage
 }
 
-pub fn (mut images ListOfAvailableImages) add(key AvailableImageKey, image_data voidptr, ignore_higher_layer_caching bool) {
+pub fn (mut images ListOfAvailableImages) add(key AvailableImageKey, image_data DecodedImageData, ignore_higher_layer_caching bool) {
 	entry := &AvailableImageEntry{
 		image_data:                  image_data
 		ignore_higher_layer_caching: ignore_higher_layer_caching

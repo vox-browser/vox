@@ -2891,6 +2891,7 @@ pub fn create_element(document &Document, local_name string, namespace_ ?string,
 						})
 					})
 				}
+				assign_unique_node_id(fallback_element)
 				fallback_element.set_custom_element_state(.failed)
 				return fallback_element
 			}
@@ -4357,6 +4358,8 @@ pub struct XMLDocument {
 
 pub fn XMLDocument.create(url URL) &XMLDocument {
 	mut document := &XMLDocument{}
+	document.data.kind = .node
+	document.unique_id_ = allocate_unique_id(unsafe { &Node(document) })
 	document.node_type = .document_node
 	document.document_ = unsafe { &Document(document) }
 	document.url = url

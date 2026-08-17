@@ -52,10 +52,16 @@ mut:
 	mode_            TextTrackMode           = .disabled
 	readiness_state_ TextTrackReadinessState = .not_loaded
 	observers_       []&TextTrackObserver
+	cues_            &TextTrackCueList = unsafe { nil }
 }
 
 pub fn TextTrack.create() &TextTrack {
-	return &TextTrack{}
+	return &TextTrack{
+		EventTarget: dom.EventTarget{}
+		cues_:       &TextTrackCueList{
+			EventTarget: dom.EventTarget{}
+		}
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-kind
@@ -134,6 +140,15 @@ pub fn (mut t TextTrack) unregister_observer(observer &TextTrackObserver) {
 	t.observers_ = t.observers_.filter(it != observer)
 }
 
+pub fn (t &TextTrack) cues() &TextTrackCueList {
+	return t.cues_
+}
+
+pub fn (mut t TextTrack) add_cue(mut cue TextTrackCue) {
+	cue.track_ = t
+	t.cues_.add_cue(cue)
+}
+
 // https://html.spec.whatwg.org/multipage/media.html#attr-track-kind
 pub fn text_track_kind_from_string(value string) TextTrackKind {
 	if value.len == 0 || value.to_lower() == 'subtitles' {
@@ -198,6 +213,19 @@ mut:
 	start_time_    f64
 	end_time_      f64
 	pause_on_exit_ bool
+	text_          string
+}
+
+pub fn TextTrackCue.create(start_time f64, end_time f64, text string) !&TextTrackCue {
+	if end_time == math.inf(-1) || math.is_nan(end_time) {
+		return error('Value is negative infinity or NaN')
+	}
+	return &TextTrackCue{
+		EventTarget: dom.EventTarget{}
+		start_time_: start_time
+		end_time_:   end_time
+		text_:       text
+	}
 }
 
 pub fn (c &TextTrackCue) track() ?&TextTrack {
@@ -246,6 +274,14 @@ pub fn (c &TextTrackCue) pause_on_exit() bool {
 
 pub fn (mut c TextTrackCue) set_pause_on_exit(pause_on_exit bool) {
 	c.pause_on_exit_ = pause_on_exit
+}
+
+pub fn (c &TextTrackCue) text() string {
+	return c.text_
+}
+
+pub fn (mut c TextTrackCue) set_text(text string) {
+	c.text_ = text
 }
 
 // https://html.spec.whatwg.org/multipage/media.html#handler-texttrackcue-onenter

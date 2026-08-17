@@ -107,7 +107,8 @@ fn canonicalize_calc_leaf(leaf CalcNumeric) CalcNode {
 		}
 		.resolution {
 			unit := string_to_resolution_unit(leaf.unit) or { return CalcNode(leaf) }
-			return calc_canonical_leaf(.resolution, Resolution.new(leaf.value, unit).to_dots_per_pixel())
+			return calc_canonical_leaf(.resolution,
+				Resolution.new(leaf.value, unit).to_dots_per_pixel())
 		}
 		.flex {
 			unit := string_to_flex_unit(leaf.unit) or { return CalcNode(leaf) }

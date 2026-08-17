@@ -17,7 +17,8 @@ fn select_test_element(node &dom.Node, local_name string) ?&dom.Element {
 }
 
 fn test_select_option_list_selectedness_value_and_reset() {
-	document := parse_document('<select required><option value="">Choose</option><optgroup><option value="a"> A  label </option></optgroup><option selected value="b">B</option></select>')
+	document :=
+		parse_document('<select required><option value="">Choose</option><optgroup><option value="a"> A  label </option></optgroup><option selected value="b">B</option></select>')
 	select_element := select_test_element(unsafe { &dom.Node(document) }, 'select') or {
 		panic('missing select')
 	}
@@ -44,7 +45,8 @@ fn test_select_option_list_selectedness_value_and_reset() {
 }
 
 fn test_select_selectedness_uses_last_updated_option_and_disabled_default() {
-	document := parse_document('<select><option disabled>disabled</option><option>first</option><option>last</option></select>')
+	document :=
+		parse_document('<select><option disabled>disabled</option><option>first</option><option>last</option></select>')
 	select_element := select_test_element(unsafe { &dom.Node(document) }, 'select') or {
 		panic('missing select')
 	}
@@ -95,7 +97,9 @@ fn test_nested_select_boundaries_and_option_disabled_by_optgroup() {
 	}
 	mut outer_group_element := unsafe { &dom.Element(outer_group) }
 	outer_group_element.set_attribute_value('disabled', '')
-	first := dom.create_element(document, 'option', ns_html, none, none, false) or { panic('${err}') }
+	first := dom.create_element(document, 'option', ns_html, none, none, false) or {
+		panic('${err}')
+	}
 	mut first_node := first.as_node()
 	first_node.string_replace_all('a')
 	inner_group := dom.create_element(document, 'optgroup', ns_html, none, none, false) or {
@@ -108,7 +112,9 @@ fn test_nested_select_boundaries_and_option_disabled_by_optgroup() {
 	inside_hr := dom.create_element(document, 'option', ns_html, none, none, false) or {
 		panic('${err}')
 	}
-	last := dom.create_element(document, 'option', ns_html, none, none, false) or { panic('${err}') }
+	last := dom.create_element(document, 'option', ns_html, none, none, false) or {
+		panic('${err}')
+	}
 	mut last_node := last.as_node()
 	last_node.string_replace_all('last')
 	mut document_node := unsafe { &dom.Node(document) }
@@ -129,4 +135,42 @@ fn test_nested_select_boundaries_and_option_disabled_by_optgroup() {
 	assert options.len == 2
 	assert html_option_element_disabled(options[0])
 	assert html_option_element_text(options[1]) == 'last'
+}
+
+fn test_selectedcontent_cloning_disabling_and_non_primary_clearing() {
+	document :=
+		parse_document('<select><selectedcontent></selectedcontent><selectedcontent>stale</selectedcontent><option selected><b>Chosen</b> text</option></select>')
+	root := unsafe { &dom.Node(document) }
+	select_element := select_test_element(root, 'select') or { panic('missing select') }
+	select_control := unsafe { &dom.HTMLSelectElement(select_element) }
+	selectedcontents := html_select_element_selectedcontent_descendants(select_control)
+	assert selectedcontents.len == 2
+	html_selectedcontent_element_post_connection(selectedcontents[0])!
+	assert unsafe { &dom.Element(selectedcontents[0]) }.as_node().descendant_text_content() == 'Chosen text'
+	assert unsafe { &dom.Element(selectedcontents[1]) }.as_node().descendant_text_content() == ''
+	assert !html_selectedcontent_element_disabled(selectedcontents[0])
+
+	option := html_select_element_list_of_options(select_control)[0]
+	mut option_node_ := option_node(option)
+	option_node_.string_replace_all('Updated')
+	html_option_element_maybe_clone_into_selectedcontent(option)!
+	assert unsafe { &dom.Element(selectedcontents[0]) }.as_node().descendant_text_content() == 'Updated'
+
+	mut select_dom := unsafe { &dom.Element(select_control) }
+	select_dom.set_attribute_value('multiple', '')
+	assert html_select_element_enabled_selectedcontent(select_control) == none
+}
+
+fn test_selectedcontent_nested_select_and_option_ancestors_disable_it() {
+	document :=
+		parse_document('<select><option><selectedcontent>x</selectedcontent></option></select>')
+	root := unsafe { &dom.Node(document) }
+	selectedcontent_element := select_test_element(root, 'selectedcontent') or {
+		panic('missing selectedcontent')
+	}
+	selectedcontent := unsafe { &dom.HTMLSelectedContentElement(selectedcontent_element) }
+	html_selectedcontent_element_post_connection(selectedcontent)!
+	assert html_selectedcontent_element_disabled(selectedcontent)
+	clear_html_selectedcontent_element(selectedcontent)
+	assert selectedcontent_element.as_node().children_as_vector().len == 0
 }

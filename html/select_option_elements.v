@@ -361,9 +361,8 @@ pub fn html_select_element_update_selectedness(select_element &dom.HTMLSelectEle
 		mut last_selected_option := ?&dom.HTMLOptionElement(none)
 		mut last_selected_update_index := u64(0)
 		for option in options {
-			if html_option_element_selected(option)
-				&& (last_selected_option == none
-					|| html_option_element_selectedness_update_index(option) > last_selected_update_index) {
+			if html_option_element_selected(option) && (last_selected_option == none
+				|| html_option_element_selectedness_update_index(option) > last_selected_update_index) {
 				last_selected_option = option
 				last_selected_update_index = html_option_element_selectedness_update_index(option)
 			}
@@ -375,12 +374,14 @@ pub fn html_select_element_update_selectedness(select_element &dom.HTMLSelectEle
 			}
 		}
 	}
+	html_select_element_update_selectedcontent(select_element) or {}
 }
 
 // https://html.spec.whatwg.org/multipage/form-elements.html#the-select-element:concept-form-reset-control
 pub fn html_select_element_reset(select_element &dom.HTMLSelectElement) {
 	for option in html_select_element_list_of_options(select_element) {
-		html_option_element_set_selected_internal(option, option_dom_element(option).has_attribute('selected'))
+		html_option_element_set_selected_internal(option,
+			option_dom_element(option).has_attribute('selected'))
 		mut mutable_option := unsafe { &dom.HTMLOptionElement(option) }
 		mutable_option.dirty_ = false
 	}
@@ -415,7 +416,9 @@ pub fn html_select_element_suffering_from_being_missing(select_element &dom.HTML
 		return true
 	}
 	if selected.len == 1 {
-		placeholder := html_select_element_placeholder_label_option(select_element) or { return false }
+		placeholder := html_select_element_placeholder_label_option(select_element) or {
+			return false
+		}
 		return option_node(selected[0]).is_same_node(option_node(placeholder))
 	}
 	return false
@@ -430,9 +433,8 @@ pub fn set_html_select_element_length(select_element &dom.HTMLSelectElement, val
 		}
 		mut root := select_node(select_element)
 		for _ in 0 .. int(value) - current {
-			option := dom.create_element(select_dom_element(select_element).document(), 'option', ns_html,
-				none,
-				none, false)!
+			option := dom.create_element(select_dom_element(select_element).document(), 'option',
+				ns_html, none, none, false)!
 			root.append_child(option.as_node())!
 		}
 	} else if value < u32(current) {
@@ -455,9 +457,8 @@ pub fn set_html_select_element_indexed_option(select_element &dom.HTMLSelectElem
 		mut root := select_node(select_element)
 		if delta > 0 {
 			for _ in 0 .. int(delta) {
-				placeholder := dom.create_element(select_dom_element(select_element).document(), 'option',
-					ns_html,
-					none, none, false)!
+				placeholder := dom.create_element(select_dom_element(select_element).document(),
+					'option', ns_html, none, none, false)!
 				root.append_child(placeholder.as_node())!
 			}
 		}
@@ -512,4 +513,146 @@ pub fn html_select_element_add_option(select_element &dom.HTMLSelectElement, ele
 	}
 	parent.pre_insert(element_node, reference)!
 	html_select_element_update_selectedness(select_element)
+}
+
+fn collect_selectedcontent_descendants(node &dom.Node, mut result []&dom.HTMLSelectedContentElement) {
+	for child in node.children_as_vector() {
+		if element := child.as_element() {
+			if element.local_name() == 'selectedcontent' {
+				result << unsafe { &dom.HTMLSelectedContentElement(element) }
+			}
+		}
+		collect_selectedcontent_descendants(child, mut result)
+	}
+}
+
+fn html_select_element_selectedcontent_descendants(select_element &dom.HTMLSelectElement) []&dom.HTMLSelectedContentElement {
+	mut result := []&dom.HTMLSelectedContentElement{}
+	collect_selectedcontent_descendants(select_node(select_element), mut result)
+	return result
+}
+
+pub fn html_selectedcontent_element_disabled(selectedcontent &dom.HTMLSelectedContentElement) bool {
+	return selectedcontent.disabled_
+}
+
+fn set_html_selectedcontent_element_disabled(selectedcontent &dom.HTMLSelectedContentElement, disabled bool) {
+	mut mutable_selectedcontent := unsafe { &dom.HTMLSelectedContentElement(selectedcontent) }
+	mutable_selectedcontent.disabled_ = disabled
+}
+
+// https://html.spec.whatwg.org/multipage/form-elements.html#clear-a-selectedcontent
+pub fn clear_html_selectedcontent_element(selectedcontent &dom.HTMLSelectedContentElement) {
+	mut node := unsafe { &dom.Element(selectedcontent) }.as_node()
+	node.replace_all(none)
+}
+
+// https://html.spec.whatwg.org/multipage/form-elements.html#select-enabled-selectedcontent
+pub fn html_select_element_enabled_selectedcontent(select_element &dom.HTMLSelectElement) ?&dom.HTMLSelectedContentElement {
+	if select_dom_element(select_element).has_attribute('multiple') {
+		return none
+	}
+	selectedcontents := html_select_element_selectedcontent_descendants(select_element)
+	if selectedcontents.len == 0 || html_selectedcontent_element_disabled(selectedcontents[0]) {
+		return none
+	}
+	return selectedcontents[0]
+}
+
+// https://html.spec.whatwg.org/multipage/form-elements.html#clone-an-option-into-a-selectedcontent
+pub fn clone_html_option_into_selectedcontent(option &dom.HTMLOptionElement, selectedcontent &dom.HTMLSelectedContentElement) ! {
+	document := option_dom_element(option).document()
+	mut fragment := dom.DocumentFragment.new(document)
+	mut fragment_node := fragment.as_node()
+	for child in option_node(option).children_as_vector() {
+		clone := child.clone_node(document, true, none)!
+		fragment_node.append_child(clone)!
+	}
+	mut selectedcontent_node := unsafe { &dom.Element(selectedcontent) }.as_node()
+	selectedcontent_node.replace_all(fragment.as_node())
+}
+
+// https://html.spec.whatwg.org/multipage/form-elements.html#update-a-select%27s-selectedcontent
+pub fn html_select_element_update_selectedcontent(select_element &dom.HTMLSelectElement) ! {
+	selectedcontent := html_select_element_enabled_selectedcontent(select_element) or { return }
+	for option in html_select_element_list_of_options(select_element) {
+		if html_option_element_selected(option) {
+			clone_html_option_into_selectedcontent(option, selectedcontent)!
+			return
+		}
+	}
+	clear_html_selectedcontent_element(selectedcontent)
+}
+
+// https://html.spec.whatwg.org/multipage/form-elements.html#clear-a-select%27s-non-primary-selectedcontent-elements
+pub fn html_select_element_clear_non_primary_selectedcontent(select_element &dom.HTMLSelectElement) {
+	selectedcontents := html_select_element_selectedcontent_descendants(select_element)
+	for index in 1 .. selectedcontents.len {
+		clear_html_selectedcontent_element(selectedcontents[index])
+	}
+}
+
+pub fn html_option_element_maybe_clone_into_selectedcontent(option &dom.HTMLOptionElement) ! {
+	if !html_option_element_selected(option) {
+		return
+	}
+	select_element := html_option_element_nearest_select(option) or { return }
+	selectedcontent := html_select_element_enabled_selectedcontent(select_element) or { return }
+	clone_html_option_into_selectedcontent(option, selectedcontent)!
+}
+
+// https://html.spec.whatwg.org/multipage/form-elements.html#the-selectedcontent-element:html-element-post-connection-steps
+pub fn html_selectedcontent_element_post_connection(selectedcontent &dom.HTMLSelectedContentElement) ! {
+	set_html_selectedcontent_element_disabled(selectedcontent, false)
+	selectedcontent_node := unsafe { &dom.Element(selectedcontent) }.as_node()
+	mut nearest_select := ?&dom.HTMLSelectElement(none)
+	mut ancestor := selectedcontent_node.parent_node()
+	for ancestor != none {
+		current := ancestor or { break }
+		if element := current.as_element() {
+			if element.local_name() == 'select' {
+				if nearest_select == none {
+					nearest_select = unsafe { &dom.HTMLSelectElement(element) }
+				} else {
+					set_html_selectedcontent_element_disabled(selectedcontent, true)
+				}
+			}
+			if element.local_name() in ['option', 'selectedcontent'] {
+				set_html_selectedcontent_element_disabled(selectedcontent, true)
+			}
+		}
+		ancestor = current.parent_node()
+	}
+	select_element := nearest_select or { return }
+	if select_dom_element(select_element).has_attribute('multiple') {
+		return
+	}
+	html_select_element_update_selectedcontent(select_element)!
+	html_select_element_clear_non_primary_selectedcontent(select_element)
+}
+
+// The caller supplies old_parent after it removes selectedcontent from the tree.
+pub fn html_selectedcontent_element_removed(selectedcontent &dom.HTMLSelectedContentElement, old_parent ?&dom.Node) ! {
+	selectedcontent_node := unsafe { &dom.Element(selectedcontent) }.as_node()
+	mut ancestor := selectedcontent_node.parent_node()
+	for ancestor != none {
+		current := ancestor or { break }
+		if element := current.as_element() {
+			if element.local_name() == 'select' {
+				return
+			}
+		}
+		ancestor = current.parent_node()
+	}
+	mut old_ancestor := old_parent
+	for old_ancestor != none {
+		current := old_ancestor or { break }
+		if element := current.as_element() {
+			if element.local_name() == 'select' {
+				html_select_element_update_selectedcontent(unsafe { &dom.HTMLSelectElement(element) })!
+				return
+			}
+		}
+		old_ancestor = current.parent_node()
+	}
 }

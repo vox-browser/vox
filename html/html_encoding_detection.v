@@ -14,16 +14,16 @@ fn standardized_html_encoding(label string) ?string {
 	if encoding in ['866', 'cp866', 'csibm866', 'ibm866'] {
 		return 'IBM866'
 	}
-	if encoding in ['csisolatin2', 'iso-8859-2', 'iso-ir-101', 'iso8859-2', 'iso88592',
-		'iso_8859-2', 'iso_8859-2:1987', 'l2', 'latin2'] {
+	if encoding in ['csisolatin2', 'iso-8859-2', 'iso-ir-101', 'iso8859-2', 'iso88592', 'iso_8859-2',
+		'iso_8859-2:1987', 'l2', 'latin2'] {
 		return 'ISO-8859-2'
 	}
-	if encoding in ['csisolatin3', 'iso-8859-3', 'iso-ir-109', 'iso8859-3', 'iso88593',
-		'iso_8859-3', 'iso_8859-3:1988', 'l3', 'latin3'] {
+	if encoding in ['csisolatin3', 'iso-8859-3', 'iso-ir-109', 'iso8859-3', 'iso88593', 'iso_8859-3',
+		'iso_8859-3:1988', 'l3', 'latin3'] {
 		return 'ISO-8859-3'
 	}
-	if encoding in ['csisolatin4', 'iso-8859-4', 'iso-ir-110', 'iso8859-4', 'iso88594',
-		'iso_8859-4', 'iso_8859-4:1988', 'l4', 'latin4'] {
+	if encoding in ['csisolatin4', 'iso-8859-4', 'iso-ir-110', 'iso8859-4', 'iso88594', 'iso_8859-4',
+		'iso_8859-4:1988', 'l4', 'latin4'] {
 		return 'ISO-8859-4'
 	}
 	if encoding in ['csisolatincyrillic', 'cyrillic', 'iso-8859-5', 'iso-ir-144', 'iso8859-5',
@@ -56,8 +56,7 @@ fn standardized_html_encoding(label string) ?string {
 	if encoding in ['iso-8859-14', 'iso8859-14', 'iso885914'] {
 		return 'ISO-8859-14'
 	}
-	if encoding in ['csisolatin9', 'iso-8859-15', 'iso8859-15', 'iso885915', 'iso_8859-15',
-		'l9'] {
+	if encoding in ['csisolatin9', 'iso-8859-15', 'iso8859-15', 'iso885915', 'iso_8859-15', 'l9'] {
 		return 'ISO-8859-15'
 	}
 	if encoding == 'iso-8859-16' {
@@ -75,8 +74,7 @@ fn standardized_html_encoding(label string) ?string {
 	if encoding == 'pdfdocencoding' {
 		return 'PDFDocEncoding'
 	}
-	if encoding in ['dos-874', 'iso-8859-11', 'iso8859-11', 'iso885911', 'tis-620',
-		'windows-874'] {
+	if encoding in ['dos-874', 'iso-8859-11', 'iso8859-11', 'iso885911', 'tis-620', 'windows-874'] {
 		return 'windows-874'
 	}
 	if encoding in ['cp1250', 'windows-1250', 'x-cp1250'] {
@@ -86,16 +84,15 @@ fn standardized_html_encoding(label string) ?string {
 		return 'windows-1251'
 	}
 	if encoding in ['ansi_x3.4-1968', 'ascii', 'cp1252', 'cp819', 'csisolatin1', 'ibm819',
-		'iso-8859-1', 'iso-ir-100', 'iso8859-1', 'iso88591', 'iso_8859-1',
-		'iso_8859-1:1987', 'l1', 'latin1', 'us-ascii', 'windows-1252', 'x-cp1252'] {
+		'iso-8859-1', 'iso-ir-100', 'iso8859-1', 'iso88591', 'iso_8859-1', 'iso_8859-1:1987', 'l1',
+		'latin1', 'us-ascii', 'windows-1252', 'x-cp1252'] {
 		return 'windows-1252'
 	}
 	if encoding in ['cp1253', 'windows-1253', 'x-cp1253'] {
 		return 'windows-1253'
 	}
-	if encoding in ['cp1254', 'csisolatin5', 'iso-8859-9', 'iso-ir-148', 'iso8859-9',
-		'iso88599', 'iso_8859-9', 'iso_8859-9:1989', 'l5', 'latin5', 'windows-1254',
-		'x-cp1254'] {
+	if encoding in ['cp1254', 'csisolatin5', 'iso-8859-9', 'iso-ir-148', 'iso8859-9', 'iso88599',
+		'iso_8859-9', 'iso_8859-9:1989', 'l5', 'latin5', 'windows-1254', 'x-cp1254'] {
 		return 'windows-1254'
 	}
 	if encoding in ['cp1255', 'windows-1255', 'x-cp1255'] {
@@ -133,12 +130,12 @@ fn standardized_html_encoding(label string) ?string {
 		'windows-31j', 'x-sjis'] {
 		return 'Shift_JIS'
 	}
-	if encoding in ['cseuckr', 'csksc56011987', 'euc-kr', 'iso-ir-149', 'korean',
-		'ks_c_5601-1987', 'ks_c_5601-1989', 'ksc5601', 'ksc_5601', 'windows-949'] {
+	if encoding in ['cseuckr', 'csksc56011987', 'euc-kr', 'iso-ir-149', 'korean', 'ks_c_5601-1987',
+		'ks_c_5601-1989', 'ksc5601', 'ksc_5601', 'windows-949'] {
 		return 'EUC-KR'
 	}
-	if encoding in ['csiso2022kr', 'hz-gb-2312', 'iso-2022-cn', 'iso-2022-cn-ext',
-		'iso-2022-kr', 'replacement'] {
+	if encoding in ['csiso2022kr', 'hz-gb-2312', 'iso-2022-cn', 'iso-2022-cn-ext', 'iso-2022-kr',
+		'replacement'] {
 		return 'replacement'
 	}
 	if encoding in ['unicodefffe', 'utf-16be'] {
@@ -312,7 +309,8 @@ pub fn run_prescan_byte_stream_algorithm(input []u8) ?string {
 		}
 	}
 	for !prescan_should_abort(input, position) {
-		if !prescan_should_abort(input, position + 3) && input[position..position + 4].bytestr() == '<!--' {
+		if !prescan_should_abort(input, position + 3)
+			&& input[position..position + 4].bytestr() == '<!--' {
 			position += 2
 			for !prescan_should_abort(input, position + 2) {
 				if input[position..position + 3].bytestr() == '-->' {
@@ -326,13 +324,16 @@ pub fn run_prescan_byte_stream_algorithm(input []u8) ?string {
 			&& html_encoding_ascii_lower_byte(input[position + 2]) == `e`
 			&& html_encoding_ascii_lower_byte(input[position + 3]) == `t`
 			&& html_encoding_ascii_lower_byte(input[position + 4]) == `a`
-			&& (html_encoding_whitespace(input[position + 5]) || input[position + 5] == `/`) {
+			&& (html_encoding_whitespace(input[position + 5])
+			|| input[position + 5] == `/`) {
 			position += 6
 			mut attribute_names := []string{}
 			mut got_pragma := false
 			mut need_pragma := ?bool(none)
 			mut charset := ?string(none)
-			mut cursor := PrescanCursor{position: position}
+			mut cursor := PrescanCursor{
+				position: position
+			}
 			for {
 				attribute := prescan_get_attribute(input, mut cursor) or { break }
 				if attribute.name in attribute_names {
@@ -371,11 +372,13 @@ pub fn run_prescan_byte_stream_algorithm(input []u8) ?string {
 		} else if !prescan_should_abort(input, position + 2) && input[position] == `<`
 			&& ((input[position + 1] == `/` && prescan_ascii_alpha(input[position + 2]))
 			|| prescan_ascii_alpha(input[position + 1])) {
-			for !prescan_should_abort(input, position)
-				&& !html_encoding_whitespace(input[position]) && input[position] != `>` {
+			for !prescan_should_abort(input, position) && !html_encoding_whitespace(input[position])
+				&& input[position] != `>` {
 				position++
 			}
-			mut cursor := PrescanCursor{position: position}
+			mut cursor := PrescanCursor{
+				position: position
+			}
 			for {
 				_ := prescan_get_attribute(input, mut cursor) or { break }
 			}

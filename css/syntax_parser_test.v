@@ -60,7 +60,8 @@ fn test_single_type() {
 }
 
 fn test_multiple_keywords() {
-	values := [ident_cv('well'), delim_cv('|'), ident_cv('hello'), delim_cv('|'), ident_cv('friends')]
+	values := [ident_cv('well'), delim_cv('|'), ident_cv('hello'),
+		delim_cv('|'), ident_cv('friends')]
 	compare_dump(values, 'Alternatives:\n  Ident: well\n  Ident: hello\n  Ident: friends\n')
 }
 
@@ -83,7 +84,8 @@ fn test_complex() {
 	values << delim_cv('|')
 	values << type_tokens('string')
 	values << delim_cv('#')
-	compare_dump(values, 'Alternatives:\n  Ident: well\n  Multiplier:\n    Type: number\n  CommaSeparatedMultiplier:\n    Type: string\n')
+	compare_dump(values,
+		'Alternatives:\n  Ident: well\n  Multiplier:\n    Type: number\n  CommaSeparatedMultiplier:\n    Type: string\n')
 }
 
 fn test_syntax_string() {
@@ -129,7 +131,8 @@ fn test_invalid() {
 	two_types << whitespace_cv()
 	two_types << type_tokens('integer')
 	assert parse_as_syntax(two_types) == none
-	assert parse_as_syntax([ident_cv('thingy'), whitespace_cv(), ident_cv('whatsit')]) == none
+	assert parse_as_syntax([ident_cv('thingy'), whitespace_cv(),
+		ident_cv('whatsit')]) == none
 
 	// Whitespace isn't allowed between a type and its multiplier.
 	mut ws_plus := type_tokens('number')

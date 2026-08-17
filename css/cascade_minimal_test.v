@@ -108,7 +108,8 @@ fn test_important_beats_higher_specificity() {
 fn test_inline_important_beats_author_important() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := el_with(doc, 'p', 'style', 'color: blue !important')
-	rules := parse_css_stylesheet_contents_with_parser('p { color: red !important }', map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('p { color: red !important }',
+		map[string]bool{})
 	// Inline !important outranks author !important (inline has the higher specificity).
 	assert cascaded_value_with_stylesheet(el, pid('color'), rules) == 'blue'
 }
@@ -125,7 +126,8 @@ fn test_shorthand_expansion_inline() {
 fn test_shorthand_expansion_author_rule() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := el_with(doc, 'div', 'class', 'box')
-	rules := parse_css_stylesheet_contents_with_parser('.box { padding: 10px 20px }', map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('.box { padding: 10px 20px }',
+		map[string]bool{})
 	// 2-value padding: top/bottom 10px, left/right 20px.
 	assert cascaded_value_with_stylesheet(el, pid('padding-top'), rules) == '10px'
 	assert cascaded_value_with_stylesheet(el, pid('padding-left'), rules) == '20px'
@@ -182,7 +184,8 @@ fn test_computed_length_px() {
 	doc := dom.Document.create(dom.url_about_blank())
 	html := el_with(doc, 'html', 'style', 'font-size: 10px')
 	// div: em resolves against the div's OWN font-size (20), rem against the root (10).
-	div := el_with(doc, 'div', 'style', 'font-size: 20px; width: 2em; margin-top: 5px; padding-left: 1.5rem')
+	div := el_with(doc, 'div', 'style',
+		'font-size: 20px; width: 2em; margin-top: 5px; padding-left: 1.5rem')
 	mut html_node := html.as_node()
 	html_node.append_child(div.as_node()) or { panic('${err}') }
 
@@ -202,7 +205,8 @@ fn test_computed_length_px() {
 fn test_computed_color() {
 	doc := dom.Document.create(dom.url_about_blank())
 	parent := el_with(doc, 'div', 'style', 'color: red')
-	child := el_with(doc, 'span', 'style', 'background-color: #00ff00; border-top-color: currentColor')
+	child := el_with(doc, 'span', 'style',
+		'background-color: #00ff00; border-top-color: currentColor')
 	mut parent_node := parent.as_node()
 	parent_node.append_child(child.as_node()) or { panic('${err}') }
 
@@ -259,7 +263,8 @@ fn test_author_rule_inheritance() {
 	mut root_node := root.as_node()
 	root_node.append_child(child.as_node()) or { panic('${err}') }
 
-	rules := parse_css_stylesheet_contents_with_parser('.themed { color: purple }', map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('.themed { color: purple }',
+		map[string]bool{})
 	// color is inherited: the child inherits the author-rule color from its ancestor.
 	assert cascaded_value_with_stylesheet(child, pid('color'), rules) == 'purple'
 }
@@ -295,7 +300,8 @@ fn test_calc_computed_length() {
 fn test_computed_style_value() {
 	doc := dom.Document.create(dom.url_about_blank())
 	parent := el_with(doc, 'div', 'style', 'color: red; font-size: 20px')
-	child := el_with(doc, 'span', 'style', 'width: 100px; background-color: #00ff00; line-height: 30px')
+	child := el_with(doc, 'span', 'style',
+		'width: 100px; background-color: #00ff00; line-height: 30px')
 	mut pn := parent.as_node()
 	pn.append_child(child.as_node()) or { panic('${err}') }
 
@@ -428,7 +434,8 @@ fn test_css_wide_keyword_inherit_chain() {
 fn test_var_basic_and_fallback() {
 	doc := dom.Document.create(dom.url_about_blank())
 	mut div := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
-	div.set_attribute_value('style', '--brand: rgb(1, 2, 3); color: var(--brand); width: var(--w, 9px)')
+	div.set_attribute_value('style',
+		'--brand: rgb(1, 2, 3); color: var(--brand); width: var(--w, 9px)')
 	no := []&CSSRule{}
 
 	assert cascaded_value_with_ua(div, pid('color'), no) == 'rgb(1, 2, 3)'

@@ -49,3 +49,45 @@ fn test_request_is_mutable_record() {
 	assert request.destination? == .script
 	assert request.body.bytes.bytestr() == 'payload'
 }
+
+fn test_request_classification_clone_range_and_strings() {
+	mut request := Request.create()
+	request.destination = .script
+	request.url_list = [dom.URL{'https://example.test/a'}, dom.URL{'https://example.test/b'}]
+	request.origin = RequestOrigin{
+		is_client: false
+		origin:    dom.Origin{'https://example.test'}
+	}
+	assert request.is_subresource_request()
+	assert !request.is_navigation_request()
+	request.add_range_header(2, u64(5))!
+	assert request.header_list.get('Range')? == 'bytes=2-5'
+	clone := request.clone()
+	assert clone != request
+	assert clone.url_list == request.url_list
+	assert clone.header_list.get('Range')? == 'bytes=2-5'
+	assert request_destination_to_string(.audio_worklet) == 'audioworklet'
+	assert translate_potential_destination('fetch') == none
+	assert translate_potential_destination('worker')? == Destination.worker
+	assert request_mode_to_string(.same_origin) == 'same-origin'
+	assert request_priority_from_string('HIGH')? == Priority.high
+}
+
+fn test_request_origin_header_and_redirect_taint() {
+	mut request := Request.create()
+	request.method = 'POST'
+	request.origin = RequestOrigin{
+		is_client: false
+		origin:    dom.Origin{'https://example.test'}
+	}
+	request.url_list = [dom.URL{'https://example.test/a'}]
+	request.referrer_policy = 'strict-origin-when-cross-origin'
+	request.add_origin_header()
+	assert request.header_list.get('Origin')? == 'https://example.test'
+	assert request.redirect_taint() == .same_origin
+	request.url_list << dom.URL{'https://other.test/b'}
+	assert request.redirect_taint() == .same_origin
+	request.url_list << dom.URL{'https://third.test/c'}
+	assert request.redirect_taint() == .cross_site
+	assert request.serialize_origin() == 'null'
+}

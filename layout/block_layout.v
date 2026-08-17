@@ -34,42 +34,34 @@ fn resolve_used_border_width(computed &css.ComputedProperties, width_property cs
 // Resolve the used margin/border/padding edges from `computed` into `used_values`. `containing_block_width`
 // is the percentage basis. `auto` margins resolve to 0 here (compute_block_used_width may reassign them).
 fn resolve_box_model_edges(computed &css.ComputedProperties, mut used_values UsedValues, containing_block_width f64) {
-	used_values.padding_left = css_px(computed.length_percentage_to_px(.padding_left, containing_block_width) or {
-		0.0
-	})
-	used_values.padding_right = css_px(computed.length_percentage_to_px(.padding_right, containing_block_width) or {
-		0.0
-	})
-	used_values.padding_top = css_px(computed.length_percentage_to_px(.padding_top, containing_block_width) or {
-		0.0
-	})
-	used_values.padding_bottom = css_px(computed.length_percentage_to_px(.padding_bottom, containing_block_width) or {
-		0.0
-	})
+	used_values.padding_left = css_px(computed.length_percentage_to_px(.padding_left,
+		containing_block_width) or { 0.0 })
+	used_values.padding_right = css_px(computed.length_percentage_to_px(.padding_right,
+		containing_block_width) or { 0.0 })
+	used_values.padding_top = css_px(computed.length_percentage_to_px(.padding_top,
+		containing_block_width) or { 0.0 })
+	used_values.padding_bottom = css_px(computed.length_percentage_to_px(.padding_bottom,
+		containing_block_width) or { 0.0 })
 
 	// CSS 2.1 §8.5.3: the used border width is 0 when the border style is none or hidden.
 	used_values.border_left = css_px(resolve_used_border_width(computed, .border_left_width,
 		.border_left_style, containing_block_width))
 	used_values.border_right = css_px(resolve_used_border_width(computed, .border_right_width,
 		.border_right_style, containing_block_width))
-	used_values.border_top = css_px(resolve_used_border_width(computed, .border_top_width, .border_top_style,
-		containing_block_width))
+	used_values.border_top = css_px(resolve_used_border_width(computed, .border_top_width,
+		.border_top_style, containing_block_width))
 	used_values.border_bottom = css_px(resolve_used_border_width(computed, .border_bottom_width,
 		.border_bottom_style, containing_block_width))
 
 	// auto margins resolve to 0 for now (width computation reassigns them for centering).
-	used_values.margin_left = css_px(computed.length_percentage_to_px(.margin_left, containing_block_width) or {
-		0.0
-	})
-	used_values.margin_right = css_px(computed.length_percentage_to_px(.margin_right, containing_block_width) or {
-		0.0
-	})
-	used_values.margin_top = css_px(computed.length_percentage_to_px(.margin_top, containing_block_width) or {
-		0.0
-	})
-	used_values.margin_bottom = css_px(computed.length_percentage_to_px(.margin_bottom, containing_block_width) or {
-		0.0
-	})
+	used_values.margin_left = css_px(computed.length_percentage_to_px(.margin_left,
+		containing_block_width) or { 0.0 })
+	used_values.margin_right = css_px(computed.length_percentage_to_px(.margin_right,
+		containing_block_width) or { 0.0 })
+	used_values.margin_top = css_px(computed.length_percentage_to_px(.margin_top,
+		containing_block_width) or { 0.0 })
+	used_values.margin_bottom = css_px(computed.length_percentage_to_px(.margin_bottom,
+		containing_block_width) or { 0.0 })
 }
 
 // CSS 2.1 §10.3.3: compute the used content width (and resolve auto margins) of a normal-flow block-level
@@ -200,6 +192,12 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 		0.0
 	})
 	used_values.set_content_height(css_px(height))
+	// Like BlockFormattingContext::resolve_used_height_if_not_treated_as_auto,
+	// definiteness is established by resolving the computed height, not by the
+	// generic UsedValues setter. An auto height remains indefinite.
+	if definite_content_height != none {
+		used_values.set_has_definite_height(true)
+	}
 }
 
 // This box's definite content height, or none if it's auto (or a percentage against an indefinite
@@ -251,6 +249,7 @@ pub fn layout_viewport(mut state LayoutState, viewport &Viewport, viewport_width
 	mut viewport_used_values := state.get_mutable(viewport_node_with_style)
 	viewport_used_values.set_content_width(css_px(viewport_width))
 	viewport_used_values.set_content_height(css_px(viewport_height))
+	viewport_used_values.set_has_definite_height(true)
 
 	mut block_formatting_context := BlockFormattingContext{}
 	block_formatting_context.layout_block_level_children(mut state, viewport_node_with_style,

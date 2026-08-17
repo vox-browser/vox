@@ -32,7 +32,8 @@ fn test_block_width_auto() {
 // A definite-width block with `margin: auto` on both sides is centered in its containing block.
 fn test_block_width_definite_auto_margins() {
 	doc := dom.Document.create(dom.url_about_blank())
-	computed := computed_style_for(doc, 'div', 'width: 100px; margin-left: auto; margin-right: auto')
+	computed := computed_style_for(doc, 'div',
+		'width: 100px; margin-left: auto; margin-right: auto')
 
 	mut uv := &UsedValues{}
 	resolve_box_model_edges(computed, mut uv, 300.0)
@@ -59,7 +60,9 @@ fn test_block_width_percentage() {
 // the container's auto height is the sum of their heights.
 fn test_block_flow_vertical_layout() {
 	mut doc := dom.Document.create(dom.url_about_blank())
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	mut div1 := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
 	div1.set_attribute_value('style', 'height: 30px')
 	mut div2 := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
@@ -141,7 +144,9 @@ fn test_height_min_max_clamp() {
 // Adjacent siblings' vertical margins collapse (CSS 2.1 §8.3.1): the gap is the larger margin, not the sum.
 fn test_adjacent_margin_collapse() {
 	mut doc := dom.Document.create(dom.url_about_blank())
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	mut div1 := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
 	div1.set_attribute_value('style', 'height: 10px; margin-bottom: 20px')
 	mut div2 := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
@@ -159,8 +164,12 @@ fn test_adjacent_margin_collapse() {
 	layout_viewport(mut state, viewport, 800.0, 600.0)
 
 	html_box := root.first_child() or { panic('no html box') }
-	div1_uv := state.try_get(html_box.children()[0].as_node_with_style() or { panic('d1') }) or { panic('uv1') }
-	div2_uv := state.try_get(html_box.children()[1].as_node_with_style() or { panic('d2') }) or { panic('uv2') }
+	div1_uv := state.try_get(html_box.children()[0].as_node_with_style() or { panic('d1') }) or {
+		panic('uv1')
+	}
+	div2_uv := state.try_get(html_box.children()[1].as_node_with_style() or { panic('d2') }) or {
+		panic('uv2')
+	}
 
 	assert div1_uv.offset.y().to_double() == 0.0
 	// div1 bottom = 10; collapsed margin = max(20, 30) = 30; div2 at 10 + 30 = 40 (NOT 10+20+30=60).
@@ -171,7 +180,9 @@ fn test_adjacent_margin_collapse() {
 // collapsed margin moves out to the parent and the child sits flush against the parent's content top.
 fn test_parent_child_margin_collapse() {
 	mut doc := dom.Document.create(dom.url_about_blank())
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	// The child has a top margin but no border/padding separates it from <html>, so their top margins adjoin.
 	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
 	child.set_attribute_value('style', 'margin-top: 40px; height: 50px')
@@ -187,8 +198,12 @@ fn test_parent_child_margin_collapse() {
 	layout_viewport(mut state, viewport, 800.0, 600.0)
 
 	html_box := root.first_child() or { panic('no html box') }
-	html_uv := state.try_get(html_box.as_node_with_style() or { panic('html') }) or { panic('html uv') }
-	child_uv := state.try_get(html_box.children()[0].as_node_with_style() or { panic('c') }) or { panic('child uv') }
+	html_uv := state.try_get(html_box.as_node_with_style() or { panic('html') }) or {
+		panic('html uv')
+	}
+	child_uv := state.try_get(html_box.children()[0].as_node_with_style() or { panic('c') }) or {
+		panic('child uv')
+	}
 
 	// The child's 40px top margin collapses through <html> (which has no top margin/border/padding): <html> is
 	// pushed down to y=40, and the child sits flush at <html>'s content top (its own margin absorbed).
@@ -211,8 +226,10 @@ fn test_percentage_height() {
 
 	parent_uv := state.try_get(parent) or { panic('no parent used values') }
 	assert parent_uv.content_height().to_double() == 200.0
+	assert parent_uv.has_definite_height()
 	child_uv := state.try_get(child) or { panic('no child used values') }
 	assert child_uv.content_height().to_double() == 100.0 // 50% of the parent's 200px
+	assert child_uv.has_definite_height()
 }
 
 // A percentage height against an indefinite (auto) containing-block height is treated as auto.
@@ -229,4 +246,5 @@ fn test_percentage_height_indefinite_containing_block() {
 	child_uv := state.try_get(child) or { panic('no child used values') }
 	// Indefinite CB height -> % height is auto -> the empty child's content height is 0.
 	assert child_uv.content_height().to_double() == 0.0
+	assert !child_uv.has_definite_height()
 }

@@ -1,17 +1,16 @@
 // Copyright (c) 2018-2026, Ladybird contributors
 //
 // SPDX-License-Identifier: BSD-2-Clause
-//
-// Translated from Libraries/LibWeb/Layout/*.
-// This module is an incremental V port. Functions whose dependencies have not
-// been ported yet keep their source signature and comments and return neutral
-// stub values so the rest of libweb_v can compile against Layout.
 
+// Shared value types for the consolidated Layout translation. Upstream's
+// class-heavy formatting contexts are represented by the typed layout tree,
+// LayoutState and BlockBox algorithms in this package rather than synthetic
+// one-function-per-C++-method shims.
 module layout
 
 import css
-import dom
 
+// Audited upstream inventory: 50 implementation units plus 51 headers.
 pub const translated_layout_source_file_count = 101
 pub const translated_layout_function_count = 1698
 
@@ -20,17 +19,6 @@ pub type CSSPixelPoint = css.CSSPixelPoint
 pub type CSSPixelRect = css.CSSPixelRect
 pub type CSSPixelSize = css.CSSPixelSize
 pub type CSSPixelFraction = css.CSSPixelFraction
-
-pub struct LayoutStub {
-pub mut:
-	source string
-}
-
-pub fn layout_stub(source string) LayoutStub {
-	return LayoutStub{
-		source: source
-	}
-}
 
 pub enum LayoutMode {
 	normal
@@ -75,77 +63,72 @@ pub fn AvailableSize.make_max_content() AvailableSize {
 	}
 }
 
-pub fn (s AvailableSize) is_definite() bool {
-	return s.type_ == .definite
+pub fn (size AvailableSize) is_definite() bool {
+	return size.type_ == .definite
 }
 
-pub fn (s AvailableSize) is_indefinite() bool {
-	return s.type_ == .indefinite
+pub fn (size AvailableSize) is_indefinite() bool {
+	return size.type_ == .indefinite
 }
 
-pub fn (s AvailableSize) is_min_content() bool {
-	return s.type_ == .min_content
+pub fn (size AvailableSize) is_min_content() bool {
+	return size.type_ == .min_content
 }
 
-pub fn (s AvailableSize) is_max_content() bool {
-	return s.type_ == .max_content
+pub fn (size AvailableSize) is_max_content() bool {
+	return size.type_ == .max_content
 }
 
-pub fn (s AvailableSize) is_intrinsic_sizing_constraint() bool {
-	return s.type_ in [.min_content, .max_content]
+pub fn (size AvailableSize) is_intrinsic_sizing_constraint() bool {
+	return size.type_ in [.min_content, .max_content]
 }
 
-pub fn (s AvailableSize) to_px_or_zero() css.CSSPixels {
-	if !s.is_definite() {
+pub fn (size AvailableSize) to_px_or_zero() css.CSSPixels {
+	if !size.is_definite() {
 		return css.CSSPixels.new(0)
 	}
-	return s.value
+	return size.value
 }
 
-pub fn (s AvailableSize) to_string() string {
-	return match s.type_ {
-		.definite { '${s.value.to_double():.2f}px' }
+pub fn (size AvailableSize) to_string() string {
+	return match size.type_ {
+		.definite { 'definite(${layout_number_string(size.value.to_double())})' }
 		.indefinite { 'indefinite' }
 		.min_content { 'min-content' }
 		.max_content { 'max-content' }
 	}
 }
 
-// Comparisons between a CSSPixels length and an AvailableSize, mirroring the free operators in
-// Layout/AvailableSpace.h (min-content acts as the smallest possible size, max-content/indefinite as
-// the largest).
-
-// Is `px` less than this available size? (C++ operator<(CSSPixels, AvailableSize))
-pub fn (s AvailableSize) px_is_less(px css.CSSPixels) bool {
-	if s.is_max_content() || s.is_indefinite() {
+// Comparisons mirror the free operators in AvailableSpace.h. Min-content is
+// the smallest constraint; max-content and indefinite compare as unbounded.
+pub fn (size AvailableSize) px_is_less(px css.CSSPixels) bool {
+	if size.is_max_content() || size.is_indefinite() {
 		return true
 	}
-	if s.is_min_content() {
+	if size.is_min_content() {
 		return false
 	}
-	return px.raw_value() < s.to_px_or_zero().raw_value()
+	return px.raw_value() < size.value.raw_value()
 }
 
-// Is `px` greater than this available size? (C++ operator>(CSSPixels, AvailableSize))
-pub fn (s AvailableSize) px_is_greater(px css.CSSPixels) bool {
-	if s.is_max_content() || s.is_indefinite() {
+pub fn (size AvailableSize) px_is_greater(px css.CSSPixels) bool {
+	if size.is_max_content() || size.is_indefinite() {
 		return false
 	}
-	if s.is_min_content() {
+	if size.is_min_content() {
 		return true
 	}
-	return px.raw_value() > s.to_px_or_zero().raw_value()
+	return px.raw_value() > size.value.raw_value()
 }
 
-// Is this available size less than `px`? (C++ operator<(AvailableSize, CSSPixels))
-pub fn (s AvailableSize) is_less_than_px(px css.CSSPixels) bool {
-	if s.is_min_content() {
+pub fn (size AvailableSize) is_less_than_px(px css.CSSPixels) bool {
+	if size.is_min_content() {
 		return true
 	}
-	if s.is_max_content() || s.is_indefinite() {
+	if size.is_max_content() || size.is_indefinite() {
 		return false
 	}
-	return s.to_px_or_zero().raw_value() < px.raw_value()
+	return size.value.raw_value() < px.raw_value()
 }
 
 pub struct AvailableSpace {
@@ -161,8 +144,15 @@ pub fn AvailableSpace.new(width AvailableSize, height AvailableSize) AvailableSp
 	}
 }
 
-pub fn (s AvailableSpace) to_string() string {
-	return 'AvailableSpace(width: ${s.width.to_string()}, height: ${s.height.to_string()})'
+pub fn (space AvailableSpace) to_string() string {
+	return '${space.width.to_string()} x ${space.height.to_string()}'
+}
+
+fn layout_number_string(value f64) string {
+	if value == f64(i64(value)) {
+		return i64(value).str()
+	}
+	return value.str()
 }
 
 pub struct SizeWithAspectRatio {
@@ -172,9 +162,41 @@ pub mut:
 	aspect_ratio ?css.CSSPixelFraction
 }
 
+pub enum StaticPositionAlignment {
+	start
+	center
+	end
+}
+
 pub struct StaticPositionRect {
 pub mut:
-	rect css.CSSPixelRect
+	rect                 css.CSSPixelRect
+	horizontal_alignment StaticPositionAlignment = .start
+	vertical_alignment   StaticPositionAlignment = .start
+}
+
+pub fn (position StaticPositionRect) aligned_position_for_box_with_size(size css.CSSPixelSize) css.CSSPixelPoint {
+	mut x := position.rect.x
+	mut y := position.rect.y
+	match position.horizontal_alignment {
+		.center {
+			x = x.plus(position.rect.width.minus(size.width()).divided_by_float(2))
+		}
+		.end {
+			x = x.plus(position.rect.width.minus(size.width()))
+		}
+		.start {}
+	}
+	match position.vertical_alignment {
+		.center {
+			y = y.plus(position.rect.height.minus(size.height()).divided_by_float(2))
+		}
+		.end {
+			y = y.plus(position.rect.height.minus(size.height()))
+		}
+		.start {}
+	}
+	return css.CSSPixelPoint.new(x, y)
 }
 
 pub enum FormattingContextType {
@@ -202,650 +224,3 @@ pub fn formatting_context_type_name(type_ FormattingContextType) string {
 		.internal_dummy { 'Dummy' }
 	}
 }
-
-@[heap]
-pub struct LayoutNode {
-pub mut:
-	stub     LayoutStub
-	dom_node ?&dom.Node
-}
-
-@[heap]
-pub struct AbsposAxisMode {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct AbsposContainingBlockInfo {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct Alignment {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct AppendOrPrepend {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct AudioBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct AxisAgnosticAvailableSpace {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct Base {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct BaseWidthGetter {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct BeforeOrAfterInsideLayout {
-pub mut:
-	stub LayoutStub
-}
-
-// The real Layout::BlockContainer is defined in layout/node.v.
-// The real BlockFormattingContext + BlockMarginState (margin-collapsing core) are in
-// layout/block_formatting_context.v.
-
-@[heap]
-pub struct BorderConflictFinder {
-pub mut:
-	stub LayoutStub
-}
-
-// The real Layout::Box is defined in layout/node.v.
-
-@[heap]
-pub struct BreakNode {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct CanvasBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct Cell {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct CheckBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct Chunk {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ChunkIterator {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct Column {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ColumnFilter {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ConflictingEdge {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ConflictingSide {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct Context {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct DidIntroduceClearance {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct DirectionAgnosticMargins {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ExtraBoxMetrics {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct FieldSetBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct FlexFormattingContext {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct FlexFormattingContextFlexLine {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct FlexItem {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct FlexLine {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct FloatSide {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct FloatSideData {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct FloatingBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ForcedBreak {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct FormattingContext {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct FormattingContextTracer {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct FoundUnoccupiedPlace {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct GridDimension {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct GridFormattingContext {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct GridFormattingContextGridTrack {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct GridItem {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct GridPosition {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct GridTrack {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ImageBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ImageProvider {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct InlineFormattingContext {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct InlineLevelIterator {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct InlineNode {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct IntrinsicSizes {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct Item {
-pub mut:
-	stub LayoutStub
-}
-
-// The real Layout::LayoutState is defined in layout/layout_state.v.
-
-@[heap]
-pub struct LayoutStateUsedValues {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct LegendBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct LineBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct LineBoxFragment {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct LineBoxFragmentCoordinate {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct LineBuilder {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ListItemBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ListItemMarkerBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct MustCreateSubtree {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct NavigableContainerViewport {
-pub mut:
-	stub LayoutStub
-}
-
-// The real Layout::Node (base of the layout tree) is defined in layout/node.v.
-
-// The real Layout::NodeWithStyle is defined in layout/node.v.
-
-// The real Layout::NodeWithStyleAndBoxModelMetrics is defined in layout/node.v.
-
-@[heap]
-pub struct OccupationGrid {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct Page {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct PagedStore {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct PlacementPosition {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct RadioButton {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct RemoveTrailingWhitespace {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ReplacedBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ReplacedWithChildrenFormattingContext {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct Row {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct RowGroupInfo {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct RowOrColumn {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGClipBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGForeignObjectBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGFormattingContext {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGGeometryBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGGraphicsBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGImageBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGMaskBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGPatternBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGSVGBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGTextBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SVGTextPathBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct ShrinkToFitResult {
-pub mut:
-	stub LayoutStub
-}
-
-// The real Layout::SizeConstraint enum is defined in layout/layout_state.v.
-
-@[heap]
-pub struct SpaceDistributionPhase {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SpaceUsedAndContainingMarginForFloats {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct SpaceUsedByFloats {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TableDimension {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TableFormattingContext {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TableFormattingContextBorderConflictFinder {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TableGrid {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TableWrapper {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TextAreaBox {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TextBlock {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TextInputBox {
-pub mut:
-	stub LayoutStub
-}
-
-// The real Layout::TextNode is defined in layout/node.v.
-
-@[heap]
-pub struct TextNodeChunkIterator {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TextNodeContext {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TextPosition {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct Track {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TrackSize {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TrackSizingResult {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct TreeBuilder {
-pub mut:
-	stub LayoutStub
-}
-
-@[heap]
-pub struct Type {
-pub mut:
-	stub LayoutStub
-}
-
-// The real Layout::LayoutState::UsedValues is defined in layout/layout_state.v.
-
-@[heap]
-pub struct VideoBox {
-pub mut:
-	stub LayoutStub
-}
-
-// Viewport is now a real type (Layout/Viewport.h) — see node.v (embeds BlockContainer).

@@ -37,9 +37,11 @@ fn test_dump_css_objects() {
 		text: 'div > .item'
 	}
 	rule_list := css.CSSRuleList.create_empty()
-	rule_value := css.CSSRule.create_style(css.SelectorList{ selectors: [
-		selector_value,
-	] }, properties, rule_list)
+	rule_value := css.CSSRule.create_style(css.SelectorList{
+		selectors: [
+			selector_value,
+		]
+	}, properties, rule_list)
 	sheet_value := css.CSSStyleSheet.create(css.CSSRuleList.create([rule_value]),
 		css.MediaList.create_empty(), none)
 	assert selector(selector_value, 0).contains('ImmediateChild')

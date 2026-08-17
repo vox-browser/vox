@@ -3,7 +3,6 @@ module html
 // Hardening suite of tricky html5lib-style tree-construction cases (adoption agency furthest-block
 // paths, foster parenting + reconstruction, implied end tags, raw text, foreign content). Each
 // expected tree is the WHATWG-correct result. These exercise paths the basic parser tests do not.
-
 import dom
 
 // element -> local_name(child,...); text -> "data". (Each _test.v is compiled separately, so this

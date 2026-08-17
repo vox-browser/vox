@@ -6,6 +6,7 @@ translation of Ladybird's LibWeb. The upstream C++ reference is
 
 All translated V implementation code, tests, generated translation assets, and
 translation-specific documentation belong in this repository. See
+[`PORT_STATUS.md`](PORT_STATUS.md) for the module inventory and LOC table, and
 [`ROOT_SUPPORT.md`](ROOT_SUPPORT.md) for the root support-file mapping.
 
 Run the test suite with:

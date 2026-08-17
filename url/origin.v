@@ -135,7 +135,8 @@ pub fn (origin Origin) is_same_origin(other Origin) bool {
 	// 2. Both tuple origins with identical scheme, host, and port.
 	if a := origin.as_tuple() {
 		if b := other.as_tuple() {
-			return opt_string_eq(a.scheme, b.scheme) && a.host == b.host && opt_u16_eq(a.port, b.port)
+			return opt_string_eq(a.scheme, b.scheme) && a.host == b.host
+				&& opt_u16_eq(a.port, b.port)
 		}
 	}
 	// 3. Otherwise not same origin.
@@ -155,7 +156,8 @@ pub fn (origin Origin) is_same_origin_domain(other Origin) bool {
 	if a := origin.as_tuple() {
 		if b := other.as_tuple() {
 			// 1. Identical, non-null domains and identical schemes.
-			if a.domain != none && opt_string_eq(a.domain, b.domain) && opt_string_eq(a.scheme, b.scheme) {
+			if a.domain != none && opt_string_eq(a.domain, b.domain)
+				&& opt_string_eq(a.scheme, b.scheme) {
 				return true
 			}
 			// 2. Both domains null and same origin.

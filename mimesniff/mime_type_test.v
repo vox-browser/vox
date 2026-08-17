@@ -72,6 +72,13 @@ fn test_parse_failures() {
 	assert MimeType.parse('te xt/html') == none
 }
 
+fn test_parse_rejects_non_scalar_and_non_canonical_utf8() {
+	assert MimeType.parse([u8(0xc0), 0xaf].bytestr()) == none
+	assert MimeType.parse([u8(0xed), 0xa0, 0x80].bytestr()) == none
+	assert MimeType.parse([u8(0xf4), 0x90, 0x80, 0x80].bytestr()) == none
+	assert MimeType.parse([u8(0xf5), 0x80, 0x80, 0x80].bytestr()) == none
+}
+
 fn test_serialized_round_trip() {
 	m := parse('text/html;charset=utf-8')
 	assert m.serialized() == 'text/html;charset=utf-8'

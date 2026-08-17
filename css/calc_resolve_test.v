@@ -33,7 +33,11 @@ fn resolved_degrees(text string) ?f64 {
 
 fn approx(a f64, b f64) bool {
 	d := a - b
-	return (if d < 0 { -d } else { d }) < 0.0001
+	return (if d < 0 {
+		-d
+	} else {
+		d
+	}) < 0.0001
 }
 
 fn test_resolve_arithmetic() {

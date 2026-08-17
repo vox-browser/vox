@@ -4,14 +4,13 @@
 
 // Translation of Libraries/LibWeb/ReferrerPolicy/ReferrerPolicy.cpp and the self-contained core of
 // AbstractOperations.cpp — the ReferrerPolicy enum, its string conversions, the default policy, and the
-// policy-selection half of "parse a referrer policy from a Referrer-Policy header".
-//
-// OUT OF SCOPE: strip-url-for-use-as-referrer (URL mutation + Fetch local-scheme list), determine-a-
-// request's-referrer and set-request's-referrer-policy-on-redirect (Fetch Request/Response, DOM Document,
-// HTML Window, SecureContexts). Extracting the header-list values (step 1 of parse-from-header) is a
-// generic Fetch/HTTP operation, so the parse function here takes the already-extracted tokens.
+// policy-selection and request integration algorithms.
 // https://w3c.github.io/webappsec-referrer-policy/
 module referrerpolicy
+
+import dom
+import fetch
+import securecontexts
 
 // https://w3c.github.io/webappsec-referrer-policy/#enumdef-referrerpolicy
 pub enum ReferrerPolicy {
@@ -79,6 +78,153 @@ pub fn parse_a_referrer_policy_from_header_tokens(policy_tokens []string) Referr
 	}
 	// 4. Return policy.
 	return policy
+}
+
+// https://w3c.github.io/webappsec-referrer-policy/#parse-referrer-policy-from-header
+pub fn parse_a_referrer_policy_from_a_referrer_policy_header(response &fetch.Response) ReferrerPolicy {
+	policy_tokens := response.header_list.get_decode_and_split('Referrer-Policy') or {
+		return .empty_string
+	}
+	return parse_a_referrer_policy_from_header_tokens(policy_tokens)
+}
+
+// https://w3c.github.io/webappsec-referrer-policy/#set-requests-referrer-policy-on-redirect
+pub fn set_request_referrer_policy_on_redirect(mut request fetch.Request, response &fetch.Response) {
+	policy := parse_a_referrer_policy_from_a_referrer_policy_header(response)
+	if policy != .empty_string {
+		request.referrer_policy = to_string(policy)
+	}
+}
+
+pub enum OriginOnly {
+	no
+	yes
+}
+
+// https://w3c.github.io/webappsec-referrer-policy/#strip-url
+pub fn strip_url_for_use_as_referrer(input ?dom.URL, origin_only OriginOnly) ?dom.URL {
+	mut url := input or { return none }
+	if url.scheme() in ['about', 'blob', 'data'] {
+		return none
+	}
+	url = url.with_username('').with_password('')
+	url.set_fragment(none)
+	if origin_only == .yes {
+		url = url.with_pathname('/')
+		url = url.with_query(none)
+	}
+	return url
+}
+
+fn is_downgrade(source dom.URL, destination dom.URL) bool {
+	return securecontexts.is_url_potentially_trustworthy(source) == .potentially_trustworthy
+		&& securecontexts.is_url_potentially_trustworthy(destination) == .not_trustworthy
+}
+
+fn same_origin(a dom.URL, b dom.URL) bool {
+	left := a.origin()
+	right := b.origin()
+	return left.value != 'opaque' && left.value != '' && left.value == right.value
+}
+
+// https://w3c.github.io/webappsec-referrer-policy/#determine-requests-referrer
+pub fn determine_requests_referrer(request &fetch.Request) ?dom.URL {
+	policy := from_string(request.referrer_policy) or { panic('invalid request referrer policy') }
+	if policy == .empty_string || request.referrer.sentinel == .no_referrer {
+		return none
+	}
+	mut source := dom.URL{}
+	if explicit := request.referrer.url {
+		source = explicit
+	} else {
+		if request.client_origin_opaque {
+			return none
+		}
+		if request.client_is_window {
+			source = request.client_document_url or { return none }
+		} else {
+			source = request.client_creation_url or { return none }
+		}
+	}
+	mut referrer_url := strip_url_for_use_as_referrer(source, .no)
+	referrer_origin := strip_url_for_use_as_referrer(source, .yes)
+	if url := referrer_url {
+		if url.serialize().len > 4096 {
+			referrer_url = referrer_origin
+		}
+	}
+	destination := request.current_url()
+	return match policy {
+		.no_referrer {
+			none
+		}
+		.origin {
+			referrer_origin
+		}
+		.unsafe_url {
+			referrer_url
+		}
+		.strict_origin {
+			if url := referrer_url {
+				if is_downgrade(url, destination) {
+					none
+				} else {
+					referrer_origin
+				}
+			} else {
+				none
+			}
+		}
+		.strict_origin_when_cross_origin {
+			if url := referrer_url {
+				if same_origin(url, destination) {
+					referrer_url
+				} else if is_downgrade(url, destination) {
+					none
+				} else {
+					referrer_origin
+				}
+			} else {
+				none
+			}
+		}
+		.same_origin {
+			if url := referrer_url {
+				if same_origin(url, destination) {
+					referrer_url
+				} else {
+					none
+				}
+			} else {
+				none
+			}
+		}
+		.origin_when_cross_origin {
+			if url := referrer_url {
+				if same_origin(url, destination) {
+					referrer_url
+				} else {
+					referrer_origin
+				}
+			} else {
+				none
+			}
+		}
+		.no_referrer_when_downgrade {
+			if url := referrer_url {
+				if is_downgrade(url, destination) {
+					none
+				} else {
+					referrer_url
+				}
+			} else {
+				none
+			}
+		}
+		.empty_string {
+			none
+		}
+	}
 }
 
 // ASCII-lowercase a string (matching equals_ignoring_ascii_case for the known tokens).

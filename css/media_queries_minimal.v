@@ -1,9 +1,10 @@
 module css
 
-// A minimal media-query evaluator for the cascade: it resolves width-based `@media` conditions
+// A compact, context-free media-query evaluator: it resolves width-based `@media` conditions
 // against a known viewport width so the matching rules can be flattened into the rule list the
 // cascade consumes. This sidesteps the full CSSOM media-evaluation path (which needs a live document
-// / window) for the layout pipeline, where the viewport width is a known input.
+// / window) for callers that only have a numeric viewport width. The complete Media Queries parser,
+// CSSOM, and live-environment evaluator are implemented in media_queries.v.
 //
 // FIXME: only the `width` media features (min-width/max-width/width) and the `screen`/`all` media
 // types are modeled; `not`/`only` logic beyond the leading `only` keyword, `or` conditions, ranges

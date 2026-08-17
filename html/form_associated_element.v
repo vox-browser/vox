@@ -1,0 +1,721 @@
+// Copyright (c) 2021, Andreas Kling <andreas@ladybird.org>
+// Copyright (c) 2024-2026, Jelle Raaijmakers <jelle@ladybird.org>
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of FormAssociatedElement.{h,cpp} and ValidityState.{h,cpp}.
+module html
+
+import dom
+
+pub enum SelectionDirection {
+	forward
+	backward
+	none
+}
+
+pub enum SelectionSource {
+	ui
+	dom
+}
+
+pub enum SelectionMode {
+	select
+	start
+	end
+	preserve
+}
+
+fn selection_direction_from_string(value ?string) SelectionDirection {
+	actual := value or { return .none }
+	return match actual {
+		'forward' { .forward }
+		'backward' { .backward }
+		else { .none }
+	}
+}
+
+fn normalize_form_newlines(value string) string {
+	return value.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
+}
+
+fn form_element_input_type(element &dom.Element) string {
+	if element.local_name() != 'input' {
+		return ''
+	}
+	return ascii_lowercase_string(element.get_attribute('type') or { 'text' })
+}
+
+fn form_element_nearest_ancestor(element &dom.Element, local_name string) ?&dom.Element {
+	mut ancestor := element.as_node().parent()
+	for ancestor != none {
+		node := ancestor or { break }
+		if candidate := node.as_element() {
+			if candidate.is_html_element() && candidate.local_name() == local_name {
+				return candidate
+			}
+		}
+		ancestor = node.parent()
+	}
+	return none
+}
+
+fn form_element_find_form_by_id(root &dom.Node, id string) ?&dom.HTMLFormElement {
+	if candidate := root.as_element() {
+		if candidate.is_html_element() && candidate.local_name() == 'form' && candidate.id() or {
+			''
+		} == id {
+			return unsafe { &dom.HTMLFormElement(candidate) }
+		}
+	}
+	for child in root.children {
+		if form := form_element_find_form_by_id(child, id) {
+			return form
+		}
+	}
+	return none
+}
+
+fn remove_associated_element_from_form(form &dom.HTMLFormElement, element &dom.Element) {
+	mut mutable_form := unsafe { &dom.HTMLFormElement(form) }
+	for index, candidate in mutable_form.associated_elements_ {
+		if voidptr(candidate) == voidptr(element) {
+			mutable_form.associated_elements_.delete(index)
+			return
+		}
+	}
+}
+
+fn add_associated_element_to_form(form &dom.HTMLFormElement, element &dom.Element) {
+	for candidate in form.associated_elements_ {
+		if voidptr(candidate) == voidptr(element) {
+			return
+		}
+	}
+	mut mutable_form := unsafe { &dom.HTMLFormElement(form) }
+	mutable_form.associated_elements_ << element
+}
+
+@[heap]
+pub struct FormAssociatedElement {
+pub:
+	element &dom.Element
+pub mut:
+	form_                         ?&dom.HTMLFormElement
+	parser_inserted               bool
+	custom_validity_error_message string
+	value_                        string
+	missing_                      bool
+	type_mismatch_                bool
+	pattern_mismatch_             bool
+	underflow_                    bool
+	overflow_                     bool
+	step_mismatch_                bool
+	bad_input_                    bool
+	too_long_                     bool
+	too_short_                    bool
+	mutable_                      bool = true
+	custom_element_               bool
+}
+
+pub fn FormAssociatedElement.create(element &dom.Element) &FormAssociatedElement {
+	return &FormAssociatedElement{
+		element: element
+	}
+}
+
+pub fn FormAssociatedElement.create_custom(element &dom.Element) &FormAssociatedElement {
+	return &FormAssociatedElement{
+		element:         element
+		custom_element_: true
+	}
+}
+
+pub fn (control &FormAssociatedElement) form() ?&dom.HTMLFormElement {
+	return control.form_
+}
+
+pub fn (mut control FormAssociatedElement) set_form(form ?&dom.HTMLFormElement) {
+	if old_form := control.form_ {
+		remove_associated_element_from_form(old_form, control.element)
+	}
+	control.form_ = form
+	if new_form := form {
+		add_associated_element_to_form(new_form, control.element)
+	}
+}
+
+pub fn (control &FormAssociatedElement) enabled() bool {
+	return !control.element.is_actually_disabled()
+}
+
+pub fn (mut control FormAssociatedElement) set_parser_inserted() {
+	control.parser_inserted = true
+}
+
+pub fn (control &FormAssociatedElement) is_listed() bool {
+	if control.custom_element_ {
+		return true
+	}
+	return control.element.local_name() in ['button', 'fieldset', 'input', 'object', 'output',
+		'select', 'textarea']
+}
+
+pub fn (control &FormAssociatedElement) is_submittable() bool {
+	if control.custom_element_ {
+		return true
+	}
+	return control.element.local_name() in ['button', 'input', 'object', 'select', 'textarea']
+}
+
+pub fn (control &FormAssociatedElement) is_resettable() bool {
+	if control.custom_element_ {
+		return true
+	}
+	return control.element.local_name() in ['input', 'output', 'select', 'textarea']
+}
+
+pub fn (control &FormAssociatedElement) is_autocapitalize_and_autocorrect_inheriting() bool {
+	return control.element.local_name() in ['button', 'fieldset', 'input', 'output', 'select',
+		'textarea']
+}
+
+pub fn (control &FormAssociatedElement) is_button() bool {
+	if control.element.local_name() == 'button' {
+		return true
+	}
+	return form_element_input_type(control.element) in ['button', 'image', 'reset', 'submit']
+}
+
+pub fn (control &FormAssociatedElement) is_submit_button() bool {
+	if control.element.local_name() == 'button' {
+		return ascii_lowercase_string(control.element.get_attribute('type') or { 'submit' }) == 'submit'
+	}
+	return form_element_input_type(control.element) in ['image', 'submit']
+}
+
+pub fn (mut control FormAssociatedElement) form_node_was_inserted() {
+	if !control.parser_inserted {
+		control.reset_form_owner()
+	}
+}
+
+pub fn (mut control FormAssociatedElement) form_node_was_removed() {
+	if form := control.form_ {
+		if control.element.as_node().root() != unsafe { &dom.Element(form) }.as_node().root() {
+			control.reset_form_owner()
+		}
+	}
+}
+
+pub fn (mut control FormAssociatedElement) form_node_was_moved() {
+	control.form_node_was_removed()
+}
+
+pub fn (mut control FormAssociatedElement) form_node_attribute_changed(name string) {
+	if name == 'form' {
+		control.reset_form_owner()
+	}
+}
+
+pub fn (mut control FormAssociatedElement) element_id_changed() {
+	control.reset_form_owner()
+}
+
+pub fn (mut control FormAssociatedElement) element_with_id_was_added_or_removed() {
+	control.reset_form_owner()
+}
+
+pub fn (mut control FormAssociatedElement) reset_form_owner() {
+	control.parser_inserted = false
+	if current_form := control.form_ {
+		if !control.is_listed() || !control.element.has_attribute('form') {
+			if ancestor := form_element_nearest_ancestor(control.element, 'form') {
+				if voidptr(ancestor) == voidptr(current_form) {
+					return
+				}
+			}
+		}
+	}
+	control.set_form(none)
+	if control.is_listed() && control.element.has_attribute('form')
+		&& control.element.is_connected() {
+		form_id := control.element.get_attribute('form') or { return }
+		if form := form_element_find_form_by_id(control.element.as_node().root(), form_id) {
+			control.set_form(form)
+		}
+		return
+	}
+	if ancestor := form_element_nearest_ancestor(control.element, 'form') {
+		control.set_form(unsafe { &dom.HTMLFormElement(ancestor) })
+	}
+}
+
+pub fn (mut control FormAssociatedElement) reset_algorithm() {
+	control.value_ = control.element.get_attribute('value') or { '' }
+}
+
+pub fn (mut control FormAssociatedElement) clear_algorithm() {
+	control.reset_algorithm()
+}
+
+pub fn (control &FormAssociatedElement) form_action() string {
+	attribute := control.element.get_attribute('formaction') or {
+		return control.element.document().url_string()
+	}
+	if attribute == '' {
+		return control.element.document().url_string()
+	}
+	url := dom.dom_url_parse(attribute, control.element.document().base_url(), 'UTF-8') or {
+		return ''
+	}
+	return url.to_string()
+}
+
+pub fn (mut control FormAssociatedElement) set_form_action(value string) {
+	mut element := unsafe { &dom.Element(control.element) }
+	element.set_attribute_value('formaction', value)
+}
+
+pub fn (control &FormAssociatedElement) report_validity() bool {
+	return control.report_validity_steps()
+}
+
+pub fn (control &FormAssociatedElement) check_validity() bool {
+	return control.check_validity_steps()
+}
+
+pub fn (control &FormAssociatedElement) will_validate() bool {
+	return control.is_candidate_for_constraint_validation()
+}
+
+pub fn (control &FormAssociatedElement) validation_message() string {
+	if !control.is_candidate_for_constraint_validation() || control.satisfies_its_constraints() {
+		return ''
+	}
+	if control.suffering_from_a_custom_error() {
+		return control.custom_validity_error_message
+	}
+	return 'Invalid form'
+}
+
+pub fn (control &FormAssociatedElement) check_validity_steps() bool {
+	if control.is_candidate_for_constraint_validation() && !control.satisfies_its_constraints() {
+		event := dom.Event.create('invalid', dom.EventInit{ cancelable: true })
+		control.element.as_node().dispatch_event(event)
+		return false
+	}
+	return true
+}
+
+pub fn (control &FormAssociatedElement) report_validity_steps() bool {
+	// Reporting UI is host-specific, but the required validation event and
+	// return value are identical to check-validity.
+	return control.check_validity_steps()
+}
+
+pub fn (control &FormAssociatedElement) is_candidate_for_constraint_validation() bool {
+	if !control.is_submittable() || !control.enabled() {
+		return false
+	}
+	if form_element_nearest_ancestor(control.element, 'datalist') != none {
+		return false
+	}
+	if control.element.local_name() == 'input' {
+		if form_element_input_type(control.element) in ['hidden', 'reset', 'button']
+			|| control.element.has_attribute('readonly') {
+			return false
+		}
+	}
+	if control.element.local_name() == 'button' && !control.is_submit_button() {
+		return false
+	}
+	if control.element.local_name() == 'textarea' && control.element.has_attribute('readonly') {
+		return false
+	}
+	return true
+}
+
+pub fn (control &FormAssociatedElement) satisfies_its_constraints() bool {
+	return !(control.suffering_from_being_missing() || control.suffering_from_a_type_mismatch()
+		|| control.suffering_from_a_pattern_mismatch() || control.suffering_from_being_too_long()
+		|| control.suffering_from_being_too_short() || control.suffering_from_an_underflow()
+		|| control.suffering_from_an_overflow() || control.suffering_from_a_step_mismatch()
+		|| control.suffering_from_bad_input() || control.suffering_from_a_custom_error())
+}
+
+pub fn (control &FormAssociatedElement) novalidate_state() bool {
+	if !control.is_submit_button() {
+		return false
+	}
+	if control.element.has_attribute('formnovalidate') {
+		return true
+	}
+	if form := control.form_ {
+		return unsafe { &dom.Element(form) }.has_attribute('novalidate')
+	}
+	return false
+}
+
+pub fn (control &FormAssociatedElement) suffering_from_being_missing() bool {
+	return control.missing_
+}
+
+pub fn (control &FormAssociatedElement) suffering_from_a_type_mismatch() bool {
+	return control.type_mismatch_
+}
+
+pub fn (control &FormAssociatedElement) suffering_from_a_pattern_mismatch() bool {
+	return control.pattern_mismatch_
+}
+
+pub fn (control &FormAssociatedElement) suffering_from_being_too_long() bool {
+	return control.too_long_
+}
+
+pub fn (control &FormAssociatedElement) suffering_from_being_too_short() bool {
+	return control.too_short_
+}
+
+pub fn (control &FormAssociatedElement) suffering_from_an_underflow() bool {
+	return control.underflow_
+}
+
+pub fn (control &FormAssociatedElement) suffering_from_an_overflow() bool {
+	return control.overflow_
+}
+
+pub fn (control &FormAssociatedElement) suffering_from_a_step_mismatch() bool {
+	return control.step_mismatch_
+}
+
+pub fn (control &FormAssociatedElement) suffering_from_bad_input() bool {
+	return control.bad_input_
+}
+
+pub fn (control &FormAssociatedElement) suffering_from_a_custom_error() bool {
+	return control.custom_validity_error_message != ''
+}
+
+pub fn (control &FormAssociatedElement) value() string {
+	return control.value_
+}
+
+pub fn (control &FormAssociatedElement) is_mutable() bool {
+	return control.mutable_
+}
+
+pub fn (mut control FormAssociatedElement) set_custom_validity(message string) {
+	control.custom_validity_error_message = normalize_form_newlines(message)
+}
+
+@[heap]
+pub struct ValidityState {
+	control &FormAssociatedElement
+}
+
+pub fn ValidityState.create(control &FormAssociatedElement) &ValidityState {
+	return &ValidityState{
+		control: control
+	}
+}
+
+pub fn (state &ValidityState) value_missing() bool {
+	return state.control.suffering_from_being_missing()
+}
+
+pub fn (state &ValidityState) type_mismatch() bool {
+	return state.control.suffering_from_a_type_mismatch()
+}
+
+pub fn (state &ValidityState) pattern_mismatch() bool {
+	return state.control.suffering_from_a_pattern_mismatch()
+}
+
+pub fn (state &ValidityState) too_long() bool {
+	return state.control.suffering_from_being_too_long()
+}
+
+pub fn (state &ValidityState) too_short() bool {
+	return state.control.suffering_from_being_too_short()
+}
+
+pub fn (state &ValidityState) range_underflow() bool {
+	return state.control.suffering_from_an_underflow()
+}
+
+pub fn (state &ValidityState) range_overflow() bool {
+	return state.control.suffering_from_an_overflow()
+}
+
+pub fn (state &ValidityState) step_mismatch() bool {
+	return state.control.suffering_from_a_step_mismatch()
+}
+
+pub fn (state &ValidityState) bad_input() bool {
+	return state.control.suffering_from_bad_input()
+}
+
+pub fn (state &ValidityState) custom_error() bool {
+	return state.control.suffering_from_a_custom_error()
+}
+
+pub fn (state &ValidityState) valid() bool {
+	return state.control.satisfies_its_constraints()
+}
+
+fn form_string_to_utf16(value string) []u16 {
+	mut units := []u16{}
+	for rune_ in value.runes() {
+		point := u32(rune_)
+		if point <= 0xffff {
+			units << u16(point)
+		} else {
+			adjusted := point - 0x10000
+			units << u16(0xd800 + (adjusted >> 10))
+			units << u16(0xdc00 + (adjusted & 0x3ff))
+		}
+	}
+	return units
+}
+
+fn form_utf16_to_string(units []u16) string {
+	mut runes := []rune{}
+	mut index := 0
+	for index < units.len {
+		first := units[index]
+		if first >= 0xd800 && first <= 0xdbff && index + 1 < units.len {
+			second := units[index + 1]
+			if second >= 0xdc00 && second <= 0xdfff {
+				point := u32(0x10000) + ((u32(first) - 0xd800) << 10) + (u32(second) - 0xdc00)
+				runes << rune(point)
+				index += 2
+				continue
+			}
+		}
+		runes << rune(first)
+		index++
+	}
+	return runes.string()
+}
+
+@[heap]
+pub struct FormAssociatedTextControlElement {
+pub:
+	control &FormAssociatedElement
+pub mut:
+	relevant_value_                     string
+	dirty_value_flag                    bool
+	selection_start_                    u32
+	selection_end_                      u32
+	selection_direction_                SelectionDirection
+	has_scheduled_selectionchange_event bool
+}
+
+pub fn FormAssociatedTextControlElement.create(control &FormAssociatedElement, value string) &FormAssociatedTextControlElement {
+	return &FormAssociatedTextControlElement{
+		control:         control
+		relevant_value_: value
+	}
+}
+
+pub fn (text &FormAssociatedTextControlElement) relevant_value() string {
+	return text.relevant_value_
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_relevant_value(value string) {
+	text.relevant_value_ = value
+	mut control := text.control
+	control.value_ = value
+	text.relevant_value_was_changed()
+}
+
+pub fn (mut text FormAssociatedTextControlElement) relevant_value_was_changed() {
+	length := u32(form_string_to_utf16(text.relevant_value_).len)
+	text.selection_start_ = if text.selection_start_ > length {
+		length
+	} else {
+		text.selection_start_
+	}
+	text.selection_end_ = if text.selection_end_ > length { length } else { text.selection_end_ }
+}
+
+fn (text &FormAssociatedTextControlElement) selection_or_range_applies() bool {
+	if text.control.element.local_name() != 'input' { return true }
+	return form_element_input_type(text.control.element) in ['text', 'search', 'tel', 'url',
+		'password']
+}
+
+pub fn (mut text FormAssociatedTextControlElement) select() {
+	if !text.selection_or_range_applies() { return }
+	text.set_the_selection_range(0, max_u32, .none, .dom)
+}
+
+pub fn (text &FormAssociatedTextControlElement) selection_start_binding() ?u32 {
+	if !text.selection_or_range_applies() { return none }
+	return text.selection_start()
+}
+
+pub fn (text &FormAssociatedTextControlElement) selection_start() u32 {
+	return if text.selection_start_ < text.selection_end_ {
+		text.selection_start_
+	} else {
+		text.selection_end_
+	}
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_selection_start_binding(value ?u32) ! {
+	if !text.selection_or_range_applies() {
+		return error('InvalidStateError: selectionStart does not apply')
+	}
+	mut end := text.selection_end_
+	if actual := value {
+		if end < actual { end = actual }
+	}
+	text.set_the_selection_range(value or { 0 }, end, text.selection_direction_, .dom)
+}
+
+pub fn (text &FormAssociatedTextControlElement) selection_end_binding() ?u32 {
+	if !text.selection_or_range_applies() { return none }
+	return text.selection_end()
+}
+
+pub fn (text &FormAssociatedTextControlElement) selection_end() u32 {
+	return if text.selection_start_ < text.selection_end_ {
+		text.selection_end_
+	} else {
+		text.selection_start_
+	}
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_selection_end_binding(value ?u32) ! {
+	if !text.selection_or_range_applies() {
+		return error('InvalidStateError: selectionEnd does not apply')
+	}
+	text.set_the_selection_range(text.selection_start_, value or { 0 }, text.selection_direction_,
+		.dom)
+}
+
+pub fn (text &FormAssociatedTextControlElement) selection_direction() ?string {
+	if !text.selection_or_range_applies() { return none }
+	return match text.selection_direction_ {
+		.forward { 'forward' }
+		.backward { 'backward' }
+		.none { 'none' }
+	}
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_selection_direction(direction ?string) {
+	text.selection_direction_ = selection_direction_from_string(direction)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_selection_direction_binding(direction ?string) ! {
+	if !text.selection_or_range_applies() {
+		return error('InvalidStateError: selectionDirection does not apply')
+	}
+	text.set_the_selection_range(text.selection_start_, text.selection_end_,
+		selection_direction_from_string(direction), .dom)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_range_text(replacement string, start u32, end u32, selection_mode SelectionMode) ! {
+	if !text.selection_or_range_applies() {
+		return error('InvalidStateError: setRangeText does not apply')
+	}
+	if start > end { return error('IndexSizeError: start must be less than or equal to end') }
+	text.dirty_value_flag = true
+	mut value_units := form_string_to_utf16(text.relevant_value_)
+	replacement_units := form_string_to_utf16(replacement)
+	actual_start := if int(start) > value_units.len { value_units.len } else { int(start) }
+	actual_end := if int(end) > value_units.len { value_units.len } else { int(end) }
+	old_selection_start := int(text.selection_start_)
+	old_selection_end := int(text.selection_end_)
+	mut result := value_units[..actual_start].clone()
+	result << replacement_units
+	result << value_units[actual_end..]
+	text.relevant_value_ = form_utf16_to_string(result)
+	mut control := text.control
+	control.value_ = text.relevant_value_
+	new_end := actual_start + replacement_units.len
+	mut selection_start := old_selection_start
+	mut selection_end := old_selection_end
+	match selection_mode {
+		.select {
+			selection_start = actual_start
+			selection_end = new_end
+		}
+		.start {
+			selection_start = actual_start
+			selection_end = actual_start
+		}
+		.end {
+			selection_start = new_end
+			selection_end = new_end
+		}
+		.preserve {
+			delta := replacement_units.len - (actual_end - actual_start)
+			if selection_start > actual_end {
+				selection_start += delta
+			} else if selection_start > actual_start {
+				selection_start = actual_start
+			}
+			if selection_end > actual_end {
+				selection_end += delta
+			} else if selection_end > actual_start {
+				selection_end = new_end
+			}
+		}
+	}
+	text.set_the_selection_range(u32(selection_start), u32(selection_end), .none, .dom)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_range_text_at_selection(replacement string) ! {
+	text.set_range_text(replacement, text.selection_start_, text.selection_end_, .preserve)!
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_selection_range(start ?u32, end ?u32, direction ?string) ! {
+	if !text.selection_or_range_applies() {
+		return error('InvalidStateError: setSelectionRange does not apply')
+	}
+	text.set_the_selection_range(start or { 0 }, end or { 0 },
+		selection_direction_from_string(direction), .dom)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_the_selection_range(start u32, end u32, direction SelectionDirection, _ SelectionSource) {
+	length := u32(form_string_to_utf16(text.relevant_value_).len)
+	actual_start := if start > length { length } else { start }
+	actual_end := if end > length { length } else { end }
+	text.selection_start_ = if actual_start < actual_end { actual_start } else { actual_end }
+	text.selection_end_ = actual_end
+	text.selection_direction_ = direction
+}
+
+pub fn (text &FormAssociatedTextControlElement) selected_text_for_stringifier() ?string {
+	start := int(text.selection_start())
+	end := int(text.selection_end())
+	if start >= end { return none }
+	units := form_string_to_utf16(text.relevant_value_)
+	return form_utf16_to_string(units[start..end])
+}
+
+pub fn (mut text FormAssociatedTextControlElement) handle_insert(data string) ! {
+	if !text.control.is_mutable() { return }
+	text.set_range_text(data, text.selection_start(), text.selection_end(), .end)!
+}
+
+pub fn (mut text FormAssociatedTextControlElement) handle_delete(backward bool) ! {
+	if !text.control.is_mutable() { return }
+	mut start := text.selection_start()
+	mut end := text.selection_end()
+	if start == end {
+		if backward && start > 0 {
+			start--
+		} else if !backward {
+			end++
+		}
+	}
+	text.set_range_text('', start, end, .end)!
+}
+
+pub fn (mut text FormAssociatedTextControlElement) select_all() {
+	text.set_the_selection_range(0, max_u32, .none, .ui)
+}

@@ -75,34 +75,49 @@ fn contains_only_http_quoted_string_token_code_points(string_ string) bool {
 	return true
 }
 
-// A minimal ASCII-oriented validity check: rejects lone continuation/invalid bytes. MIME header
-// text is ASCII in practice; this mirrors the C++ Utf8View validate gate before parsing.
+// Utf8View::validate rejects malformed byte sequences before the MIME parser examines code points.
 fn is_valid_utf8(string_ string) bool {
 	bytes := string_.bytes()
 	mut i := 0
 	for i < bytes.len {
-		b := bytes[i]
-		mut extra := 0
-		if b < 0x80 {
-			extra = 0
-		} else if b & 0xE0 == 0xC0 {
-			extra = 1
-		} else if b & 0xF0 == 0xE0 {
-			extra = 2
-		} else if b & 0xF8 == 0xF0 {
-			extra = 3
+		first := bytes[i]
+		if first < 0x80 {
+			i++
+			continue
+		}
+		mut continuation_count := 0
+		mut code_point := u32(0)
+		mut minimum := u32(0)
+		if first >= 0xc2 && first <= 0xdf {
+			continuation_count = 1
+			code_point = u32(first & 0x1f)
+			minimum = 0x80
+		} else if first >= 0xe0 && first <= 0xef {
+			continuation_count = 2
+			code_point = u32(first & 0x0f)
+			minimum = 0x800
+		} else if first >= 0xf0 && first <= 0xf4 {
+			continuation_count = 3
+			code_point = u32(first & 0x07)
+			minimum = 0x10000
 		} else {
 			return false
 		}
-		if i + extra >= bytes.len {
+		if i + continuation_count >= bytes.len {
 			return false
 		}
-		for j in 1 .. extra + 1 {
-			if bytes[i + j] & 0xC0 != 0x80 {
+		for offset in 1 .. continuation_count + 1 {
+			continuation := bytes[i + offset]
+			if continuation & 0xc0 != 0x80 {
 				return false
 			}
+			code_point = (code_point << 6) | u32(continuation & 0x3f)
 		}
-		i += extra + 1
+		if code_point < minimum || code_point > 0x10ffff
+			|| (code_point >= 0xd800 && code_point <= 0xdfff) {
+			return false
+		}
+		i += continuation_count + 1
 	}
 	return true
 }

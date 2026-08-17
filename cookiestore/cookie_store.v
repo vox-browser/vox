@@ -1,0 +1,745 @@
+// Copyright (c) 2026, Ladybird contributors
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of CookieStore/CookieStore.{h,cpp,idl}.
+module cookiestore
+
+import dom
+import html
+import strconv
+import url
+
+pub struct CookieListItem {
+pub:
+	name  ?string
+	value ?string
+}
+
+pub struct CookieStoreGetOptions {
+pub:
+	name ?string
+	url  ?string
+}
+
+pub struct CookieInit {
+pub:
+	name        string
+	value       string
+	expires     ?f64
+	domain      ?string
+	path        string         = '/'
+	same_site   CookieSameSite = .strict
+	partitioned bool
+}
+
+pub struct CookieStoreDeleteOptions {
+pub:
+	name        string
+	domain      ?string
+	path        string = '/'
+	partitioned bool
+}
+
+pub enum CookiePromiseState {
+	pending
+	fulfilled
+	rejected
+}
+
+@[heap]
+pub struct CookieItemPromise {
+mut:
+	state_  CookiePromiseState
+	item_   ?CookieListItem
+	reason_ string
+}
+
+fn CookieItemPromise.pending() &CookieItemPromise {
+	return &CookieItemPromise{}
+}
+
+pub fn (promise &CookieItemPromise) state() CookiePromiseState {
+	return promise.state_
+}
+
+pub fn (promise &CookieItemPromise) item() ?CookieListItem {
+	return promise.item_
+}
+
+pub fn (promise &CookieItemPromise) reason() string {
+	return promise.reason_
+}
+
+fn (mut promise CookieItemPromise) resolve(item ?CookieListItem) {
+	if promise.state_ == .pending {
+		promise.item_ = item
+		promise.state_ = .fulfilled
+	}
+}
+
+fn (mut promise CookieItemPromise) reject(reason string) {
+	if promise.state_ == .pending {
+		promise.reason_ = reason
+		promise.state_ = .rejected
+	}
+}
+
+@[heap]
+pub struct CookieListPromise {
+mut:
+	state_  CookiePromiseState
+	items_  []CookieListItem
+	reason_ string
+}
+
+fn CookieListPromise.pending() &CookieListPromise {
+	return &CookieListPromise{}
+}
+
+pub fn (promise &CookieListPromise) state() CookiePromiseState {
+	return promise.state_
+}
+
+pub fn (promise &CookieListPromise) items() []CookieListItem {
+	return promise.items_.clone()
+}
+
+pub fn (promise &CookieListPromise) reason() string {
+	return promise.reason_
+}
+
+fn (mut promise CookieListPromise) resolve(items []CookieListItem) {
+	if promise.state_ == .pending {
+		promise.items_ = items.clone()
+		promise.state_ = .fulfilled
+	}
+}
+
+fn (mut promise CookieListPromise) reject(reason string) {
+	if promise.state_ == .pending {
+		promise.reason_ = reason
+		promise.state_ = .rejected
+	}
+}
+
+@[heap]
+pub struct CookieVoidPromise {
+mut:
+	state_  CookiePromiseState
+	reason_ string
+}
+
+fn CookieVoidPromise.pending() &CookieVoidPromise {
+	return &CookieVoidPromise{}
+}
+
+pub fn (promise &CookieVoidPromise) state() CookiePromiseState {
+	return promise.state_
+}
+
+pub fn (promise &CookieVoidPromise) reason() string {
+	return promise.reason_
+}
+
+fn (mut promise CookieVoidPromise) resolve() {
+	if promise.state_ == .pending {
+		promise.state_ = .fulfilled
+	}
+}
+
+fn (mut promise CookieVoidPromise) reject(reason string) {
+	if promise.state_ == .pending {
+		promise.reason_ = reason
+		promise.state_ = .rejected
+	}
+}
+
+pub struct CookieStoreEnvironment {
+pub:
+	creation_url     url.URL
+	api_base_url     url.URL
+	origin_is_opaque bool
+	is_window        bool = true
+	document         ?&dom.Document
+}
+
+fn first_url_delimiter(input string, start int) int {
+	for index := start; index < input.len; index++ {
+		if input[index] == `/` || input[index] == `?` || input[index] == `#` {
+			return index
+		}
+	}
+	return input.len
+}
+
+fn normalize_path_segments(segments []string) []string {
+	mut output := []string{}
+	for segment in segments {
+		if segment == '.' {
+			continue
+		}
+		if segment == '..' {
+			if output.len > 0 {
+				output.delete(output.len - 1)
+			}
+			continue
+		}
+		output << segment
+	}
+	return output
+}
+
+fn split_url_tail(record_input url.URL, tail string) url.URL {
+	mut record := record_input
+	mut path_end := tail.len
+	for index, byte in tail.bytes() {
+		if byte == `?` || byte == `#` {
+			path_end = index
+			break
+		}
+	}
+	path := tail[..path_end]
+	if path.len > 0 {
+		if path.starts_with('/') {
+			record.paths = normalize_path_segments(path[1..].split('/'))
+		} else {
+			mut base_paths := record.paths.clone()
+			if base_paths.len > 0 {
+				base_paths.delete(base_paths.len - 1)
+			}
+			base_paths << path.split('/')
+			record.paths = normalize_path_segments(base_paths)
+		}
+	}
+	record.query = none
+	record.fragment = none
+	if path_end < tail.len && tail[path_end] == `?` {
+		query_start := path_end + 1
+		mut query_end := tail.len
+		for index := query_start; index < tail.len; index++ {
+			if tail[index] == `#` {
+				query_end = index
+				break
+			}
+		}
+		record.query = tail[query_start..query_end]
+		if query_end < tail.len {
+			record.fragment = tail[query_end + 1..]
+		}
+	} else if path_end < tail.len && tail[path_end] == `#` {
+		record.fragment = tail[path_end + 1..]
+	}
+	return record
+}
+
+// The translated URL module intentionally contains records rather than the
+// full LibURL parser. CookieStore needs this focused absolute/relative parser
+// for its options dictionary; it accepts the hierarchical HTTP-family URLs
+// usable by the cookie API.
+pub fn parse_cookie_store_url(input string, base &url.URL) ?url.URL {
+	if input.len == 0 {
+		return none
+	}
+	if scheme_end := input.index('://') {
+		scheme := input[..scheme_end].to_lower()
+		if scheme !in ['http', 'https', 'ws', 'wss'] {
+			return none
+		}
+		authority_start := scheme_end + 3
+		authority_end := first_url_delimiter(input, authority_start)
+		mut authority := input[authority_start..authority_end]
+		if authority.len == 0 {
+			return none
+		}
+		mut username := ''
+		mut password := ''
+		if at := authority.last_index('@') {
+			userinfo := authority[..at]
+			authority = authority[at + 1..]
+			if colon := userinfo.index(':') {
+				username = userinfo[..colon]
+				password = userinfo[colon + 1..]
+			} else {
+				username = userinfo
+			}
+		}
+		mut host := ''
+		mut port := ?u16(none)
+		if authority.starts_with('[') {
+			closing := authority.index(']') or { return none }
+			host = authority[..closing + 1].to_lower()
+			if closing + 1 < authority.len {
+				if authority[closing + 1] != `:` {
+					return none
+				}
+				parsed_port := strconv.atoi(authority[closing + 2..]) or { return none }
+				if parsed_port < 0 || parsed_port > 65535 {
+					return none
+				}
+				port = u16(parsed_port)
+			}
+		} else {
+			if colon := authority.last_index(':') {
+				host = authority[..colon].to_lower()
+				parsed_port := strconv.atoi(authority[colon + 1..]) or { return none }
+				if parsed_port < 0 || parsed_port > 65535 {
+					return none
+				}
+				port = u16(parsed_port)
+			} else {
+				host = authority.to_lower()
+			}
+		}
+		if host.len == 0 {
+			return none
+		}
+		for code_point in host.runes() {
+			if url.is_forbidden_host_code_point(u32(code_point)) && code_point != `[`
+				&& code_point != `]` {
+				return none
+			}
+		}
+		if actual_port := port {
+			if actual_port == url.default_port_for_scheme(scheme) or { u16(0) } {
+				port = none
+			}
+		}
+		mut result := url.URL{
+			scheme:   scheme
+			username: username
+			password: password
+			host:     url.Host.from_string(host)
+			port:     port
+			paths:    ['']
+		}
+		if authority_end < input.len {
+			result = split_url_tail(result, input[authority_end..])
+		}
+		return result
+	}
+	// A colon in the first path segment denotes an absolute URL. Schemes
+	// outside the HTTP family are not cookie URLs, and malformed HTTP URLs
+	// must not be reinterpreted as relative paths.
+	first_delimiter := first_url_delimiter(input, 0)
+	if input[..first_delimiter].contains(':') {
+		return none
+	}
+	if input.starts_with('//') {
+		return parse_cookie_store_url(base.scheme + ':' + input, base)
+	}
+	if input.starts_with('#') {
+		mut result := *base
+		result.fragment = input[1..]
+		return result
+	}
+	if input.starts_with('?') {
+		mut result := *base
+		return split_url_tail(result, input)
+	}
+	mut result := *base
+	return split_url_tail(result, input)
+}
+
+fn urls_have_same_origin(a &url.URL, b &url.URL) bool {
+	return a.scheme == b.scheme && url_host_string(a) == url_host_string(b)
+		&& a.port_or_default() == b.port_or_default()
+}
+
+fn create_cookie_list_item(cookie Cookie) CookieListItem {
+	return CookieListItem{
+		name:  cookie.name
+		value: cookie.value
+	}
+}
+
+// https://cookiestore.spec.whatwg.org/#normalize-a-cookie-name-or-value
+pub fn normalize_cookie_name_or_value(input string) string {
+	return input.trim('	 ')
+}
+
+fn query_cookies(backend &CookieStoreBackend, record &url.URL, name ?string) []CookieListItem {
+	mut list := []CookieListItem{}
+	for cookie in backend.query(record) {
+		if candidate_name := name {
+			if cookie.name != normalize_cookie_name_or_value(candidate_name) {
+				continue
+			}
+		}
+		list << create_cookie_list_item(cookie)
+	}
+	return list
+}
+
+fn cookie_default_path(paths []string) []string {
+	if paths.len == 0 {
+		return ['']
+	}
+	mut result := paths.clone()
+	if result.len > 1 {
+		result.delete(result.len - 1)
+	} else {
+		result[0] = ''
+	}
+	return result
+}
+
+pub fn serialized_cookie_default_path(record &url.URL) string {
+	mut clone := *record
+	clone.paths = cookie_default_path(clone.paths)
+	return clone.serialize_path()
+}
+
+const maximum_name_value_pair_size = 4096
+const maximum_attribute_value_size = 1024
+const maximum_cookie_age_ms = f64(400 * 24 * 60 * 60 * 1000)
+
+fn contains_forbidden_cookie_byte(value string) bool {
+	for byte in value.bytes() {
+		if byte == `;` || byte == 0x7f || (byte <= 0x1f && byte != `\t`) {
+			return true
+		}
+	}
+	return false
+}
+
+// https://cookiestore.spec.whatwg.org/#set-a-cookie
+pub fn set_a_cookie(mut backend CookieStoreBackend, record &url.URL, input CookieInit) bool {
+	name := normalize_cookie_name_or_value(input.name)
+	value := normalize_cookie_name_or_value(input.value)
+	if contains_forbidden_cookie_byte(name) || contains_forbidden_cookie_byte(value)
+		|| name.contains('=') {
+		return false
+	}
+	if name.len == 0 {
+		if value.len == 0 || value.contains('=') {
+			return false
+		}
+		lower_value := value.to_lower()
+		if lower_value.starts_with('__host-') || lower_value.starts_with('__host-http-')
+			|| lower_value.starts_with('__http-') || lower_value.starts_with('__secure-') {
+			return false
+		}
+	}
+	lower_name := name.to_lower()
+	if lower_name.starts_with('__host-http-') || lower_name.starts_with('__http-') {
+		return false
+	}
+	if name.len + value.len > maximum_name_value_pair_size {
+		return false
+	}
+	host := url_host_string(record)
+	if host.len == 0 {
+		return false
+	}
+	mut parsed_domain := ''
+	mut host_only := true
+	if domain := input.domain {
+		if domain.starts_with('.') || lower_name.starts_with('__host-') {
+			return false
+		}
+		lower_domain := domain.to_lower()
+		if !dom.is_a_registrable_domain_suffix_of_or_is_equal_to(lower_domain, host) {
+			return false
+		}
+		for code_point in lower_domain.runes() {
+			if url.is_forbidden_domain_code_point(u32(code_point)) {
+				return false
+			}
+		}
+		if lower_domain.len > maximum_attribute_value_size {
+			return false
+		}
+		parsed_domain = lower_domain
+		host_only = false
+	}
+	mut expires := input.expires
+	if requested_expiry := expires {
+		age_limit := backend.now_ms() + maximum_cookie_age_ms
+		if requested_expiry > age_limit {
+			expires = age_limit
+		}
+	}
+	mut path := input.path
+	if path.len == 0 {
+		path = serialized_cookie_default_path(record)
+	}
+	if !path.starts_with('/') || (path != '/' && lower_name.starts_with('__host-'))
+		|| path.len > maximum_attribute_value_size {
+		return false
+	}
+	// Partitioned storage is also a FIXME in upstream CookieStore.cpp.
+	_ = input.partitioned
+	backend.store(record, Cookie{
+		name:        name
+		value:       value
+		domain:      parsed_domain
+		path:        path
+		expires:     expires
+		secure:      true
+		same_site:   input.same_site
+		partitioned: false
+		host_only:   host_only
+	})
+	return true
+}
+
+// https://cookiestore.spec.whatwg.org/#delete-a-cookie
+pub fn delete_a_cookie(mut backend CookieStoreBackend, record &url.URL, options CookieStoreDeleteOptions) bool {
+	name := normalize_cookie_name_or_value(options.name)
+	value := if name.len == 0 { 'ladybird' } else { '' }
+	return set_a_cookie(mut backend, record, CookieInit{
+		name:        name
+		value:       value
+		expires:     f64(-8.64e15)
+		domain:      options.domain
+		path:        options.path
+		same_site:   .strict
+		partitioned: options.partitioned
+	})
+}
+
+@[heap]
+pub struct CookieStore {
+	dom.EventTarget
+mut:
+	backend_    &CookieStoreBackend = unsafe { nil }
+	environment CookieStoreEnvironment
+	event_loop_ &html.EventLoop = unsafe { nil }
+}
+
+pub fn CookieStore.create(backend &CookieStoreBackend, environment CookieStoreEnvironment, event_loop &html.EventLoop) &CookieStore {
+	return &CookieStore{
+		backend_:    backend
+		environment: environment
+		event_loop_: event_loop
+	}
+}
+
+pub fn (store &CookieStore) event_target() &dom.EventTarget {
+	return unsafe { &dom.EventTarget(store) }
+}
+
+pub fn (store &CookieStore) backend() &CookieStoreBackend {
+	return store.backend_
+}
+
+fn (store &CookieStore) resolved_options_url(options_url ?string) !url.URL {
+	mut target := store.environment.creation_url
+	if option := options_url {
+		parsed := parse_cookie_store_url(option, &store.environment.api_base_url) or {
+			return error('TypeError: url is invalid')
+		}
+		if store.environment.is_window && !parsed.equals(&store.environment.creation_url, true) {
+			return error('TypeError: url does not match creation URL')
+		}
+		if !urls_have_same_origin(&parsed, &store.environment.creation_url) {
+			return error("TypeError: url's origin does not match creation URL's origin")
+		}
+		target = parsed
+	}
+	return target
+}
+
+fn (store &CookieStore) queue_item_query(record url.URL, name ?string, promise &CookieItemPromise) {
+	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, record, name, promise] () {
+		list := query_cookies(store.backend_, &record, name)
+		html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [list, promise] () {
+			mut mutable_promise := unsafe { &CookieItemPromise(promise) }
+			if list.len == 0 {
+				mutable_promise.resolve(none)
+			} else {
+				mutable_promise.resolve(list[0])
+			}
+		})
+	})
+}
+
+fn (store &CookieStore) queue_list_query(record url.URL, name ?string, promise &CookieListPromise) {
+	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, record, name, promise] () {
+		list := query_cookies(store.backend_, &record, name)
+		html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [list, promise] () {
+			mut mutable_promise := unsafe { &CookieListPromise(promise) }
+			mutable_promise.resolve(list)
+		})
+	})
+}
+
+// https://cookiestore.spec.whatwg.org/#dom-cookiestore-get
+pub fn (store &CookieStore) get(name string) &CookieItemPromise {
+	mut promise := CookieItemPromise.pending()
+	if store.environment.origin_is_opaque {
+		promise.reject('SecurityError: Document origin is opaque')
+		return promise
+	}
+	store.queue_item_query(store.environment.creation_url, name, promise)
+	return promise
+}
+
+pub fn (store &CookieStore) get_with_options(options CookieStoreGetOptions) &CookieItemPromise {
+	mut promise := CookieItemPromise.pending()
+	if store.environment.origin_is_opaque {
+		promise.reject('SecurityError: Document origin is opaque')
+		return promise
+	}
+	if options.name == none && options.url == none {
+		promise.reject('TypeError: CookieStoreGetOptions is empty')
+		return promise
+	}
+	record := store.resolved_options_url(options.url) or {
+		promise.reject(err.msg())
+		return promise
+	}
+	store.queue_item_query(record, options.name, promise)
+	return promise
+}
+
+// https://cookiestore.spec.whatwg.org/#dom-cookiestore-getall
+pub fn (store &CookieStore) get_all(name string) &CookieListPromise {
+	mut promise := CookieListPromise.pending()
+	if store.environment.origin_is_opaque {
+		promise.reject('SecurityError: Document origin is opaque')
+		return promise
+	}
+	store.queue_list_query(store.environment.creation_url, name, promise)
+	return promise
+}
+
+pub fn (store &CookieStore) get_all_with_options(options CookieStoreGetOptions) &CookieListPromise {
+	mut promise := CookieListPromise.pending()
+	if store.environment.origin_is_opaque {
+		promise.reject('SecurityError: Document origin is opaque')
+		return promise
+	}
+	record := store.resolved_options_url(options.url) or {
+		promise.reject(err.msg())
+		return promise
+	}
+	store.queue_list_query(record, options.name, promise)
+	return promise
+}
+
+fn (store &CookieStore) queue_set(options CookieInit, promise &CookieVoidPromise, error_message string) {
+	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, options, promise, error_message] () {
+		mut backend := store.backend_
+		result := set_a_cookie(mut backend, &store.environment.creation_url, options)
+		html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [result, error_message, promise] () {
+			mut mutable_promise := unsafe { &CookieVoidPromise(promise) }
+			if !result {
+				mutable_promise.reject('TypeError: ${error_message}')
+			} else {
+				mutable_promise.resolve()
+			}
+		})
+	})
+}
+
+// https://cookiestore.spec.whatwg.org/#dom-cookiestore-set
+pub fn (store &CookieStore) set(name string, value string) &CookieVoidPromise {
+	mut promise := CookieVoidPromise.pending()
+	if store.environment.origin_is_opaque {
+		promise.reject('SecurityError: Document origin is opaque')
+		return promise
+	}
+	store.queue_set(CookieInit{
+		name:  name
+		value: value
+	}, promise, 'Name or value are malformed')
+	return promise
+}
+
+pub fn (store &CookieStore) set_with_options(options CookieInit) &CookieVoidPromise {
+	mut promise := CookieVoidPromise.pending()
+	if store.environment.origin_is_opaque {
+		promise.reject('SecurityError: Document origin is opaque')
+		return promise
+	}
+	store.queue_set(options, promise, 'Name, value, domain or path are malformed')
+	return promise
+}
+
+fn (store &CookieStore) queue_delete(options CookieStoreDeleteOptions, promise &CookieVoidPromise) {
+	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, options, promise] () {
+		mut backend := store.backend_
+		result := delete_a_cookie(mut backend, &store.environment.creation_url, options)
+		html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [result, promise] () {
+			mut mutable_promise := unsafe { &CookieVoidPromise(promise) }
+			if !result {
+				mutable_promise.reject('TypeError: Name is malformed')
+			} else {
+				mutable_promise.resolve()
+			}
+		})
+	})
+}
+
+// https://cookiestore.spec.whatwg.org/#dom-cookiestore-delete
+pub fn (store &CookieStore) delete_(name string) &CookieVoidPromise {
+	mut promise := CookieVoidPromise.pending()
+	if store.environment.origin_is_opaque {
+		promise.reject('SecurityError: Document origin is opaque')
+		return promise
+	}
+	store.queue_delete(CookieStoreDeleteOptions{
+		name: name
+	}, promise)
+	return promise
+}
+
+pub fn (store &CookieStore) delete_with_options(options CookieStoreDeleteOptions) &CookieVoidPromise {
+	mut promise := CookieVoidPromise.pending()
+	if store.environment.origin_is_opaque {
+		promise.reject('SecurityError: Document origin is opaque')
+		return promise
+	}
+	store.queue_delete(options, promise)
+	return promise
+}
+
+pub fn (store &CookieStore) set_onchange(handler ?&dom.CallbackType) {
+	store.event_target().set_event_handler_attribute('change', handler)
+}
+
+pub fn (store &CookieStore) onchange() ?&dom.CallbackType {
+	return store.event_target().event_handler_attribute('change')
+}
+
+struct PreparedLists {
+	changed []CookieListItem
+	deleted []CookieListItem
+}
+
+fn prepare_lists(changes []Cookie, now f64) PreparedLists {
+	mut changed := []CookieListItem{}
+	mut deleted := []CookieListItem{}
+	for cookie in changes {
+		if expiry := cookie.expires {
+			if expiry < now {
+				deleted << CookieListItem{
+					name: cookie.name
+				}
+				continue
+			}
+		}
+		changed << create_cookie_list_item(cookie)
+	}
+	return PreparedLists{
+		changed: changed
+		deleted: deleted
+	}
+}
+
+// https://cookiestore.spec.whatwg.org/#process-cookie-changes
+pub fn (store &CookieStore) process_cookie_changes(changes []Cookie) {
+	now := store.backend_.now_ms()
+	html.queue_a_task(.dom_manipulation, store.event_loop_, store.environment.document, fn [store, changes, now] () {
+		lists := prepare_lists(changes, now)
+		mut event := CookieChangeEvent.create('change', CookieChangeEventInit{
+			changed: lists.changed
+			deleted: lists.deleted
+		})
+		event.set_bubbles(false)
+		event.set_cancelable(false)
+		store.event_target().dispatch_event(unsafe { &dom.Event(event) })
+	})
+}

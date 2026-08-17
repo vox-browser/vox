@@ -2,13 +2,8 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of the self-contained core of Libraries/LibWeb/HighResolutionTime/TimeOrigin.cpp — coarsen
-// time, the wall/monotonic unsafe current times, coarsened shared current time, and the estimated
-// monotonic time of the Unix epoch.
-//
-// OUT OF SCOPE: get-time-origin-timestamp, current/relative high resolution time, and relative high
-// resolution coarse time — these read a global object's relevant settings object's time origin (the
-// HTML environment settings object), which is not translated.
+// Translation of Libraries/LibWeb/HighResolutionTime/TimeOrigin.cpp. The
+// relevant settings object is represented by the explicit TimeOriginContext.
 // https://w3c.github.io/hr-time/
 module highresolutiontime
 
@@ -17,6 +12,16 @@ import math
 
 // https://w3c.github.io/hr-time/#dom-domhighrestimestamp — a count of milliseconds (may be fractional).
 pub type DOMHighResTimeStamp = f64
+
+// https://www.w3.org/TR/hr-time-3/#the-epochtimestamp-typedef
+pub type EpochTimeStamp = u64
+
+// The two environment-settings values consumed by the time-origin algorithms.
+pub struct TimeOriginContext {
+pub:
+	time_origin                      DOMHighResTimeStamp
+	cross_origin_isolated_capability bool
+}
 
 // https://w3c.github.io/hr-time/#dfn-coarsen-time
 // Coarsen a timestamp so its resolution does not exceed 100 microseconds (0.1 ms), or 5 microseconds
@@ -60,4 +65,21 @@ pub fn estimated_monotonic_time_of_the_unix_epoch() DOMHighResTimeStamp {
 	epoch_time := monotonic_time - (wall_time - 0.0)
 	// 4. Return the coarsened epoch time.
 	return coarsen_time(epoch_time, false)
+}
+
+pub fn get_time_origin_timestamp(context TimeOriginContext) DOMHighResTimeStamp {
+	return context.time_origin - estimated_monotonic_time_of_the_unix_epoch()
+}
+
+pub fn current_high_resolution_time(context TimeOriginContext) DOMHighResTimeStamp {
+	return relative_high_resolution_time(unsafe_shared_current_time(), context)
+}
+
+pub fn relative_high_resolution_time(timestamp DOMHighResTimeStamp, context TimeOriginContext) DOMHighResTimeStamp {
+	coarse_time := coarsen_time(timestamp, context.cross_origin_isolated_capability)
+	return relative_high_resolution_coarsen_time(coarse_time, context)
+}
+
+pub fn relative_high_resolution_coarsen_time(coarse_time DOMHighResTimeStamp, context TimeOriginContext) DOMHighResTimeStamp {
+	return coarse_time - context.time_origin
 }

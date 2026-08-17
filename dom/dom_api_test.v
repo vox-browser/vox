@@ -584,3 +584,20 @@ fn test_top_layer_and_fullscreen_state_machine() {
 	assert !second.in_top_layer()
 	assert (doc.fullscreen_element() or { panic('first should remain fullscreen') }) == first
 }
+
+fn test_generic_event_target_dispatch_does_not_probe_node_storage() {
+	target := EventTarget.construct_impl() or { panic(err) }
+	assert target.data.kind == .generic
+	event := Event.new('generic-target-event')
+	assert target.dispatch_event_binding(event) or { panic(err) }
+	assert (event.target() or { panic('dispatch did not set the event target') }) == target
+
+	first_document := Document.create(url_about_blank())
+	second_document := Document.create(url_about_blank())
+	first_node := unsafe { &Node(first_document) }
+	second_node := unsafe { &Node(second_document) }
+	assert first_node.data.kind == .node
+	assert second_node.data.kind == .node
+	assert first_node.unique_id_.value() != 0
+	assert first_node.unique_id_ != second_node.unique_id_
+}

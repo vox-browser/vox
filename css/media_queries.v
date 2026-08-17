@@ -33,9 +33,8 @@ pub fn (supports &Supports) dump(indent_levels int) string {
 }
 
 pub fn parse_css_supports(context ParsingParams, condition_text string) ?&Supports {
-	mut tokens :=
-		SupportsTokenStream.from_values_with_namespaces(parse_component_values_for_value_logic(condition_text),
-			context.declared_namespaces)
+	mut tokens := SupportsTokenStream.from_values_with_namespaces(parse_component_values_for_value_logic(condition_text),
+		context.declared_namespaces)
 	condition := parse_supports_condition(mut tokens) or { return none }
 	tokens.discard_whitespace()
 	if tokens.has_next_token() {

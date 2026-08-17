@@ -71,3 +71,34 @@ fn test_slice_content_type() {
 	// No content type → empty string.
 	assert blob.slice_blob(none, none, none).type_() == ''
 }
+
+fn test_blob_owns_input_and_returns_fresh_buffers() {
+	mut source := 'abc'.bytes()
+	blob := Blob.create(source, 'text/plain')
+	source[0] = `z`
+	assert blob.raw_bytes().bytestr() == 'abc'
+	mut exposed := blob.raw_bytes()
+	exposed[1] = `z`
+	assert blob.raw_bytes().bytestr() == 'abc'
+	mut bytes := blob.bytes()
+	bytes[2] = `z`
+	assert blob.bytes().bytestr() == 'abc'
+}
+
+fn test_blob_text_array_buffer_and_stream() {
+	blob := Blob.create('héllo'.bytes(), 'text/plain')
+	assert blob.text()! == 'héllo'
+	assert blob.array_buffer() == 'héllo'.bytes()
+	mut stream := blob.stream()!
+	mut reader := stream.get_default_reader()!
+	assert reader.read_all_bytes()! == 'héllo'.bytes()
+}
+
+fn test_blob_structured_serialization_round_trip() {
+	blob := Blob.create('payload'.bytes(), 'application/octet-stream')
+	serialized := blob.serialization_steps()
+	restored := Blob.deserialization_steps(serialized)
+	assert restored.type_() == blob.type_()
+	assert restored.raw_bytes() == blob.raw_bytes()
+	assert voidptr(restored) != voidptr(blob)
+}

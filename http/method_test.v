@@ -6,7 +6,7 @@ fn test_is_method_accepts_token_sequences() {
 	assert is_method('x-custom-header')
 	assert is_method('M123')
 	// A run of token punctuation is valid.
-	assert is_method("abc!#%&*+-.^_|~ABC")
+	assert is_method('abc!#%&*+-.^_|~ABC')
 	// The remaining token punctuation, individually.
 	assert is_method("'")
 	assert is_method('\$')

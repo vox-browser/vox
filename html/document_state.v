@@ -96,6 +96,23 @@ pub enum StructuredSerializeValueTag {
 	empty
 	undefined_primitive
 	null_primitive
+	boolean_primitive
+	number_primitive
+	string_primitive
+	big_int_primitive
+	boolean_object
+	number_object
+	string_object
+	big_int_object
+	date_object
+	regexp_object
+	map_object
+	set_object
+	array_object
+	error_object
+	object
+	object_reference
+	array_buffer
 }
 
 pub struct SerializationRecord {

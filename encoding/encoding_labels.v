@@ -44,8 +44,8 @@ const encoding_label_table = [
 		name:   'ISO-8859-4'
 	},
 	EncodingLabelGroup{
-		labels: ['csisolatincyrillic', 'cyrillic', 'iso-8859-5', 'iso-ir-144', 'iso8859-5', 'iso88595',
-			'iso_8859-5', 'iso_8859-5:1988']
+		labels: ['csisolatincyrillic', 'cyrillic', 'iso-8859-5', 'iso-ir-144', 'iso8859-5',
+			'iso88595', 'iso_8859-5', 'iso_8859-5:1988']
 		name:   'ISO-8859-5'
 	},
 	EncodingLabelGroup{
@@ -55,13 +55,13 @@ const encoding_label_table = [
 		name:   'ISO-8859-6'
 	},
 	EncodingLabelGroup{
-		labels: ['csisolatingreek', 'ecma-118', 'elot_928', 'greek', 'greek8', 'iso-8859-7', 'iso-ir-126',
-			'iso8859-7', 'iso88597', 'iso_8859-7', 'iso_8859-7:1987', 'sun_eu_greek']
+		labels: ['csisolatingreek', 'ecma-118', 'elot_928', 'greek', 'greek8', 'iso-8859-7',
+			'iso-ir-126', 'iso8859-7', 'iso88597', 'iso_8859-7', 'iso_8859-7:1987', 'sun_eu_greek']
 		name:   'ISO-8859-7'
 	},
 	EncodingLabelGroup{
-		labels: ['csiso88598e', 'csisolatinhebrew', 'hebrew', 'iso-8859-8', 'iso-8859-8-e', 'iso-ir-138',
-			'iso8859-8', 'iso88598', 'iso_8859-8', 'iso_8859-8:1988', 'visual']
+		labels: ['csiso88598e', 'csisolatinhebrew', 'hebrew', 'iso-8859-8', 'iso-8859-8-e',
+			'iso-ir-138', 'iso8859-8', 'iso88598', 'iso_8859-8', 'iso_8859-8:1988', 'visual']
 		name:   'ISO-8859-8'
 	},
 	EncodingLabelGroup{
@@ -69,7 +69,8 @@ const encoding_label_table = [
 		name:   'ISO-8859-8-I'
 	},
 	EncodingLabelGroup{
-		labels: ['csisolatin6', 'iso-8859-10', 'iso-ir-157', 'iso8859-10', 'iso885910', 'l6', 'latin6']
+		labels: ['csisolatin6', 'iso-8859-10', 'iso-ir-157', 'iso8859-10', 'iso885910', 'l6',
+			'latin6']
 		name:   'ISO-8859-10'
 	},
 	EncodingLabelGroup{
@@ -196,7 +197,8 @@ const encoding_label_table = [
 		name:   'UTF-16BE'
 	},
 	EncodingLabelGroup{
-		labels: ['csunicode', 'iso-10646-ucs-2', 'ucs-2', 'unicode', 'unicodefeff', 'utf-16', 'utf-16le']
+		labels: ['csunicode', 'iso-10646-ucs-2', 'ucs-2', 'unicode', 'unicodefeff', 'utf-16',
+			'utf-16le']
 		name:   'UTF-16LE'
 	},
 	EncodingLabelGroup{

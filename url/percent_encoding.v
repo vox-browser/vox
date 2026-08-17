@@ -30,16 +30,17 @@ const userinfo_extra = [u8(0x2F), 0x3A, 0x3B, 0x3D, 0x40, 0x5B, 0x5C, 0x5D, 0x7C
 const component_extra = [u8(0x24), 0x25, 0x26, 0x2B, 0x2C] // $ % & + ,
 const form_urlencoded_extra = [u8(0x21), 0x27, 0x28, 0x29, 0x7E] // ! ' ( ) ~
 // The characters JS encodeURI() leaves un-encoded.
-const encode_uri_allowed = [u8(0x3B), 0x2C, 0x2F, 0x3F, 0x3A, 0x40, 0x26, 0x3D, 0x2B, 0x24, 0x2D, 0x5F,
-	0x2E, 0x21, 0x7E, 0x2A, 0x27, 0x28, 0x29, 0x23] // ; , / ? : @ & = + $ - _ . ! ~ * ' ( ) #
+const encode_uri_allowed = [u8(0x3B), 0x2C, 0x2F, 0x3F, 0x3A, 0x40, 0x26, 0x3D, 0x2B, 0x24, 0x2D,
+	0x5F, 0x2E, 0x21, 0x7E, 0x2A, 0x27, 0x28, 0x29, 0x23] // ; , / ? : @ & = + $ - _ . ! ~ * ' ( ) #
 
 fn code_point_in(code_point u32, chars []u8) bool {
 	return code_point <= 0x7F && u8(code_point) in chars
 }
 
 fn is_ascii_alphanumeric(code_point u32) bool {
-	return (code_point >= `0` && code_point <= `9`) || (code_point >= `A` && code_point <= `Z`) ||
-		(code_point >= `a` && code_point <= `z`)
+	return (code_point >= `0` && code_point <= `9`)
+		|| (code_point >= `A` && code_point <= `Z`)
+		|| (code_point >= `a` && code_point <= `z`)
 }
 
 // https://url.spec.whatwg.org/#c0-control-percent-encode-set
@@ -49,35 +50,35 @@ pub fn code_point_is_in_percent_encode_set(code_point u32, set PercentEncodeSet)
 			code_point < 0x20 || code_point > 0x7E
 		}
 		.fragment {
-			code_point_is_in_percent_encode_set(code_point, .c0_control) ||
-				code_point_in(code_point, fragment_extra)
+			code_point_is_in_percent_encode_set(code_point, .c0_control)
+				|| code_point_in(code_point, fragment_extra)
 		}
 		.query {
-			code_point_is_in_percent_encode_set(code_point, .c0_control) ||
-				code_point_in(code_point, query_extra)
+			code_point_is_in_percent_encode_set(code_point, .c0_control)
+				|| code_point_in(code_point, query_extra)
 		}
 		.special_query {
 			code_point_is_in_percent_encode_set(code_point, .query) || code_point == `'`
 		}
 		.path {
-			code_point_is_in_percent_encode_set(code_point, .query) ||
-				code_point_in(code_point, path_extra)
+			code_point_is_in_percent_encode_set(code_point, .query)
+				|| code_point_in(code_point, path_extra)
 		}
 		.userinfo {
-			code_point_is_in_percent_encode_set(code_point, .path) ||
-				code_point_in(code_point, userinfo_extra)
+			code_point_is_in_percent_encode_set(code_point, .path)
+				|| code_point_in(code_point, userinfo_extra)
 		}
 		.component {
-			code_point_is_in_percent_encode_set(code_point, .userinfo) ||
-				code_point_in(code_point, component_extra)
+			code_point_is_in_percent_encode_set(code_point, .userinfo)
+				|| code_point_in(code_point, component_extra)
 		}
 		.application_x_www_form_urlencoded {
-			code_point_is_in_percent_encode_set(code_point, .component) ||
-				code_point_in(code_point, form_urlencoded_extra)
+			code_point_is_in_percent_encode_set(code_point, .component)
+				|| code_point_in(code_point, form_urlencoded_extra)
 		}
 		.encode_uri {
-			code_point > 0x7E || (!is_ascii_alphanumeric(code_point) &&
-				!code_point_in(code_point, encode_uri_allowed))
+			code_point > 0x7E || (!is_ascii_alphanumeric(code_point)
+				&& !code_point_in(code_point, encode_uri_allowed))
 		}
 	}
 }
@@ -134,8 +135,8 @@ pub fn percent_decode(input string) []u8 {
 	for i < bytes.len {
 		if bytes[i] != `%` {
 			output << bytes[i]
-		} else if i + 2 >= bytes.len || !is_ascii_hex_digit(bytes[i + 1]) ||
-			!is_ascii_hex_digit(bytes[i + 2]) {
+		} else if i + 2 >= bytes.len || !is_ascii_hex_digit(bytes[i + 1])
+			|| !is_ascii_hex_digit(bytes[i + 2]) {
 			output << bytes[i]
 		} else {
 			output << (parse_ascii_hex_digit(bytes[i + 1]) << 4) | parse_ascii_hex_digit(bytes[i + 2])

@@ -4,13 +4,15 @@
 
 // Translation of the self-contained core of Libraries/LibWeb/FileAPI/Blob.cpp — the Blob record
 // (a byte sequence + a MIME type), convert-line-endings-to-native, process-blob-parts, the
-// constructor, and slice. The async accessors (stream()/text()/arrayBuffer()/bytes()) require
-// Streams/Promises (the JS runtime) and are out of scope. The type is normalized via the
-// mimesniff MimeType parser, matching upstream.
+// constructor, slice, stream and data accessors. WebIDL Promise settlement is a LibJS boundary;
+// the standalone typed API returns the deterministically settled value directly. The type is
+// normalized via the mimesniff MimeType parser, matching upstream.
 // https://w3c.github.io/FileAPI/#blob-section
 module fileapi
 
 import mimesniff
+import encoding
+import streams
 
 // Bindings::EndingType.
 pub enum EndingType {
@@ -160,7 +162,7 @@ mut:
 // https://w3c.github.io/FileAPI/#ref-for-dom-blob-blob②
 pub fn Blob.create(byte_buffer []u8, type_ string) &Blob {
 	return &Blob{
-		byte_buffer: byte_buffer
+		byte_buffer: byte_buffer.clone()
 		type_:       type_
 	}
 }
@@ -200,7 +202,7 @@ pub fn (blob &Blob) type_() string {
 }
 
 pub fn (blob &Blob) raw_bytes() []u8 {
-	return blob.byte_buffer
+	return blob.byte_buffer.clone()
 }
 
 // https://w3c.github.io/FileAPI/#slice-blob
@@ -246,4 +248,55 @@ fn max_i64(a i64, b i64) i64 {
 
 fn min_i64(a i64, b i64) i64 {
 	return if a < b { a } else { b }
+}
+
+// https://w3c.github.io/FileAPI/#blob-get-stream
+pub fn (blob &Blob) get_stream() !&streams.ReadableStream {
+	mut stream := streams.ReadableStream.construct_impl(streams.UnderlyingSource{
+		type_: .bytes
+	}, streams.QueuingStrategy{})!
+	if blob.byte_buffer.len > 0 {
+		stream.pull_from_bytes(blob.byte_buffer)!
+	}
+	stream.close()
+	return stream
+}
+
+// https://w3c.github.io/FileAPI/#dom-blob-stream
+pub fn (blob &Blob) stream() !&streams.ReadableStream {
+	return blob.get_stream()
+}
+
+// https://w3c.github.io/FileAPI/#dom-blob-text
+pub fn (blob &Blob) text() !string {
+	decoder := encoding.TextDecoder.create()
+	return decoder.decode(blob.byte_buffer, encoding.TextDecodeOptions{})
+}
+
+// The WebIDL ArrayBuffer and Uint8Array wrappers are LibJS-owned. Both typed
+// accessors return a fresh byte buffer, preserving the spec's NewObject rule.
+pub fn (blob &Blob) array_buffer() []u8 {
+	return blob.byte_buffer.clone()
+}
+
+pub fn (blob &Blob) bytes() []u8 {
+	return blob.byte_buffer.clone()
+}
+
+pub struct SerializedBlob {
+pub:
+	type_ string
+	bytes []u8
+}
+
+// Typed host form of the StructuredSerialize payload.
+pub fn (blob &Blob) serialization_steps() SerializedBlob {
+	return SerializedBlob{
+		type_: blob.type_
+		bytes: blob.byte_buffer.clone()
+	}
+}
+
+pub fn Blob.deserialization_steps(serialized SerializedBlob) &Blob {
+	return Blob.create(serialized.bytes, serialized.type_)
 }

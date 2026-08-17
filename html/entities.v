@@ -72,3 +72,16 @@ fn (m &NamedCharacterReferenceMatcher) last_match_ends_with_semicolon() bool {
 fn (m &NamedCharacterReferenceMatcher) overconsumed_code_points() int {
 	return m.consumed.len - m.last_match.len
 }
+
+// XMLDocumentBuilder's LibXML callback resolves only complete, semicolon-
+// terminated named HTML references. Expose the generated table without
+// exposing the tokenizer's incremental matcher.
+pub fn resolve_named_character_reference(name string) ?string {
+	key := if name.ends_with(';') { name } else { name + ';' }
+	code_points := named_char_ref_codepoints[key] or { return none }
+	mut value := []rune{cap: code_points.len}
+	for code_point in code_points {
+		value << rune(code_point)
+	}
+	return value.string()
+}

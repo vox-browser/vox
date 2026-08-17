@@ -115,7 +115,8 @@ pub fn set_html_table_element_t_head(table &dom.HTMLTableElement, head ?&dom.HTM
 	delete_html_table_element_t_head(table)
 	if value := head {
 		mut table_node := table_element(table).as_node()
-		table_node.pre_insert(table_section_element(value).as_node(), table_head_insertion_sibling(table))!
+		table_node.pre_insert(table_section_element(value).as_node(),
+			table_head_insertion_sibling(table))!
 	}
 }
 

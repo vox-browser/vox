@@ -11,9 +11,8 @@
 //
 // The mutable DOMMatrix subclass and the post-multiply transforms (multiply/translate/flip/scale/skew/
 // rotate) live in dom_matrix_transform.v; the inverse is in dom_matrix_invert.v. STILL OUT OF SCOPE:
-// toString (needs a faithful ECMAScript ToString(Number) — V's default float formatting diverges for
-// integers and large/small values), the DOMString (CSS transform-list) constructor, and the
-// (de)serialization steps (HTML StructuredSerialize).
+// String construction/stringification and structured serialization live in
+// dom_matrix_string.v and serialization.v.
 //
 // The 4x4 elements are stored directly in the spec's column-major m<column><row> naming; since no
 // matrix arithmetic happens here, the storage layout is just the 16 named components.
@@ -130,13 +129,13 @@ pub fn DOMMatrixReadOnly.create() &DOMMatrixReadOnly {
 pub fn DOMMatrixReadOnly.construct(init ?[]f64) !&DOMMatrixReadOnly {
 	numbers := init or { return DOMMatrixReadOnly.create() }
 	if numbers.len == 6 {
-		return DOMMatrixReadOnly.create_2d(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4],
-			numbers[5])
+		return DOMMatrixReadOnly.create_2d(numbers[0], numbers[1], numbers[2], numbers[3],
+			numbers[4], numbers[5])
 	}
 	if numbers.len == 16 {
-		return DOMMatrixReadOnly.create_3d(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4],
-			numbers[5], numbers[6], numbers[7], numbers[8], numbers[9], numbers[10], numbers[11],
-			numbers[12], numbers[13], numbers[14], numbers[15])
+		return DOMMatrixReadOnly.create_3d(numbers[0], numbers[1], numbers[2], numbers[3],
+			numbers[4], numbers[5], numbers[6], numbers[7], numbers[8], numbers[9], numbers[10],
+			numbers[11], numbers[12], numbers[13], numbers[14], numbers[15])
 	}
 	return error('Sequence must contain exactly 6 or 16 elements, got ${numbers.len} element(s)')
 }
@@ -145,8 +144,9 @@ pub fn DOMMatrixReadOnly.construct(init ?[]f64) !&DOMMatrixReadOnly {
 pub fn DOMMatrixReadOnly.create_from_dom_matrix_2d_init(mut init DOMMatrix2DInit) !&DOMMatrixReadOnly {
 	validate_and_fixup_dom_matrix_2d_init(mut init)!
 	// After validation the six 2D members all have values.
-	return DOMMatrixReadOnly.create_2d(init.m11 or { 0 }, init.m12 or { 0 }, init.m21 or { 0 },
-		init.m22 or { 0 }, init.m41 or { 0 }, init.m42 or { 0 })
+	return DOMMatrixReadOnly.create_2d(init.m11 or { 0 }, init.m12 or { 0 }, init.m21 or { 0 }, init.m22 or {
+		0
+	}, init.m41 or { 0 }, init.m42 or { 0 })
 }
 
 // https://drafts.fxtf.org/geometry/#create-a-dommatrixreadonly-from-the-dictionary
@@ -154,13 +154,16 @@ pub fn DOMMatrixReadOnly.create_from_dom_matrix_init(mut init DOMMatrixInit) !&D
 	validate_and_fixup_dom_matrix_init(mut init)!
 	if is2d := init.is2d {
 		if is2d {
-			return DOMMatrixReadOnly.create_2d(init.m11 or { 0 }, init.m12 or { 0 }, init.m21 or { 0 },
-				init.m22 or { 0 }, init.m41 or { 0 }, init.m42 or { 0 })
+			return DOMMatrixReadOnly.create_2d(init.m11 or { 0 }, init.m12 or { 0 }, init.m21 or {
+				0
+			}, init.m22 or { 0 }, init.m41 or { 0 }, init.m42 or { 0 })
 		}
 	}
-	return DOMMatrixReadOnly.create_3d(init.m11 or { 0 }, init.m12 or { 0 }, init.m13, init.m14,
-		init.m21 or { 0 }, init.m22 or { 0 }, init.m23, init.m24, init.m31, init.m32, init.m33,
-		init.m34, init.m41 or { 0 }, init.m42 or { 0 }, init.m43, init.m44)
+	return DOMMatrixReadOnly.create_3d(init.m11 or { 0 }, init.m12 or { 0 }, init.m13, init.m14, init.m21 or {
+		0
+	}, init.m22 or { 0 }, init.m23, init.m24, init.m31, init.m32, init.m33, init.m34, init.m41 or {
+		0
+	}, init.m42 or { 0 }, init.m43, init.m44)
 }
 
 // https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-frommatrix
@@ -308,9 +311,10 @@ pub fn (matrix &DOMMatrixReadOnly) to_float64_array() []f64 {
 // spec's column-major storage this is result[row] = sum over columns of m<column><row> * vector.
 fn (matrix &DOMMatrixReadOnly) transform_coordinates(x f64, y f64, z f64, w f64) &DOMPoint {
 	return DOMPoint.construct(matrix.m11_ * x + matrix.m21_ * y + matrix.m31_ * z + matrix.m41_ * w,
-		matrix.m12_ * x + matrix.m22_ * y + matrix.m32_ * z + matrix.m42_ * w,
-		matrix.m13_ * x + matrix.m23_ * y + matrix.m33_ * z + matrix.m43_ * w,
-		matrix.m14_ * x + matrix.m24_ * y + matrix.m34_ * z + matrix.m44_ * w)
+
+		matrix.m12_ * x + matrix.m22_ * y + matrix.m32_ * z + matrix.m42_ * w, matrix.m13_ * x +
+		matrix.m23_ * y + matrix.m33_ * z + matrix.m43_ * w, matrix.m14_ * x + matrix.m24_ * y +
+		matrix.m34_ * z + matrix.m44_ * w)
 }
 
 // https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-transformpoint — transform an existing point.
@@ -390,9 +394,9 @@ pub fn validate_and_fixup_dom_matrix_2d_init(mut init DOMMatrix2DInit) ! {
 // Whether the 3D-only members carry a non-identity value (any of m13/m14/m23/m24/m31/m32/m34/m43 is
 // non-zero, or m33/m44 is not 1).
 fn dom_matrix_init_has_3d_components(init DOMMatrixInit) bool {
-	return init.m13 != 0.0 || init.m14 != 0.0 || init.m23 != 0.0 || init.m24 != 0.0 ||
-		init.m31 != 0.0 || init.m32 != 0.0 || init.m34 != 0.0 || init.m43 != 0.0 ||
-		init.m33 != 1.0 || init.m44 != 1.0
+	return init.m13 != 0.0 || init.m14 != 0.0 || init.m23 != 0.0 || init.m24 != 0.0
+		|| init.m31 != 0.0 || init.m32 != 0.0 || init.m34 != 0.0 || init.m43 != 0.0
+		|| init.m33 != 1.0 || init.m44 != 1.0
 }
 
 // https://drafts.fxtf.org/geometry/#validate-and-fixup

@@ -155,7 +155,10 @@ pub fn (mut transfer DataTransfer) disassociate_with_drag_data_store() {
 }
 
 pub fn (mut transfer DataTransfer) add_item(item DragDataStoreItem) &DataTransferItem {
-	mut store := transfer.associated_store or { panic('DataTransfer has no associated drag data store') }
+	mut store := transfer.associated_store or {
+		panic('DataTransfer has no associated drag data store')
+	}
+
 	store.add_item(item)
 	data_transfer_item := DataTransferItem.create(&transfer, store.size() - 1)
 	transfer.item_list << data_transfer_item
@@ -164,7 +167,10 @@ pub fn (mut transfer DataTransfer) add_item(item DragDataStoreItem) &DataTransfe
 }
 
 pub fn (mut transfer DataTransfer) remove_item(index usize) {
-	mut store := transfer.associated_store or { panic('DataTransfer has no associated drag data store') }
+	mut store := transfer.associated_store or {
+		panic('DataTransfer has no associated drag data store')
+	}
+
 	assert index < usize(transfer.item_list.len)
 	store.remove_item_at(index)
 	mut removed_item := transfer.item_list[int(index)]
@@ -178,9 +184,13 @@ pub fn (mut transfer DataTransfer) remove_item(index usize) {
 }
 
 pub fn (transfer &DataTransfer) contains_item_with_type(kind DragDataStoreItemKind, type_string string) bool {
-	store := transfer.associated_store or { panic('DataTransfer has no associated drag data store') }
+	store := transfer.associated_store or {
+		panic('DataTransfer has no associated drag data store')
+	}
+
 	for item in store.item_list {
-		if item.kind == kind && ascii_lowercase_string(item.type_string) == ascii_lowercase_string(type_string) {
+		if item.kind == kind
+			&& ascii_lowercase_string(item.type_string) == ascii_lowercase_string(type_string) {
 			return true
 		}
 	}
@@ -193,7 +203,10 @@ pub fn (transfer &DataTransfer) item(index usize) &DataTransferItem {
 }
 
 pub fn (transfer &DataTransfer) drag_data(index usize) DragDataStoreItem {
-	store := transfer.associated_store or { panic('DataTransfer has no associated drag data store') }
+	store := transfer.associated_store or {
+		panic('DataTransfer has no associated drag data store')
+	}
+
 	assert index < usize(store.item_list.len)
 	return store.item_list[int(index)]
 }
@@ -209,11 +222,15 @@ pub fn (mut transfer DataTransfer) clear_data(maybe_format ?string) {
 	if store.mode != .read_write {
 		return
 	}
-	format := if value := maybe_format { ?string(normalize_data_transfer_format(value)) } else { none }
+	format := if value := maybe_format {
+		?string(normalize_data_transfer_format(value))
+	} else {
+		none
+	}
 	mut index := store.item_list.len - 1
 	for index >= 0 && store.item_list.len > 0 {
 		item := store.item_list[index]
-		if item.kind == .text && (format == none || item.type_string == (format or { '' })) {
+		if item.kind == .text && (format == none || item.type_string == format or { '' }) {
 			transfer.remove_item(usize(index))
 		}
 		index--
@@ -343,9 +360,9 @@ pub fn (mut list DataTransferItemList) add_string(data string, type_string strin
 	mut transfer := unsafe { &DataTransfer(list.data_transfer) }
 	return DataTransferItemAddResult{
 		item: transfer.add_item(DragDataStoreItem{
-		kind:        .text
-		type_string: ascii_lowercase_string(type_string)
-		data:        data.bytes()
+			kind:        .text
+			type_string: ascii_lowercase_string(type_string)
+			data:        data.bytes()
 		})
 	}
 }

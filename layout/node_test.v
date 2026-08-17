@@ -107,7 +107,9 @@ fn test_box_hierarchy() {
 		panic('a plain Box should not cast to BlockContainer')
 	}
 
-	mut recovered_bc := root_as_node.as_block_container() or { panic('root is not a BlockContainer') }
+	mut recovered_bc := root_as_node.as_block_container() or {
+		panic('root is not a BlockContainer')
+	}
 	recovered_bc.add_contained_abspos_child(inner_as_node)
 	assert recovered_bc.contained_abspos_children().len == 1
 }

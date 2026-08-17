@@ -7,7 +7,9 @@ import dom
 // get no box.
 fn test_build_layout_tree() {
 	mut doc := dom.Document.create(dom.url_about_blank())
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	mut body := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'body') or { panic('${err}') }
 	mut div := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
 	mut hidden := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic('${err}') }
@@ -49,7 +51,9 @@ fn test_build_layout_tree() {
 // run_document_layout packages tree-building + block layout into one document entry point.
 fn test_run_document_layout() {
 	mut doc := dom.Document.create(dom.url_about_blank())
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	mut div1 := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
 	div1.set_attribute_value('style', 'height: 30px')
 	mut div2 := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
@@ -84,7 +88,9 @@ fn test_run_document_layout() {
 // A DOM text node becomes a Layout::TextNode box carrying its whitespace-collapsed text.
 fn test_text_node_layout() {
 	mut doc := dom.Document.create(dom.url_about_blank())
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	mut para := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic('${err}') }
 	text := doc.create_text_node('  Hello    world  ')
 
@@ -119,7 +125,9 @@ fn test_text_node_layout() {
 // A block whose content is inline (text) gets a single line box's height (line-height ~= 1.2 * font-size).
 fn test_inline_content_height() {
 	mut doc := dom.Document.create(dom.url_about_blank())
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	mut para := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic('${err}') }
 	text := doc.create_text_node('Hello world')
 	mut doc_node := unsafe { &dom.Node(doc) }
@@ -145,7 +153,9 @@ fn test_inline_content_height() {
 // sibling is not dropped.
 fn test_anonymous_block_wrapping_for_mixed_content() {
 	mut doc := dom.Document.create(dom.url_about_blank())
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	mut div := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
 	text := doc.create_text_node('hello')
 	mut para := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic('${err}') }
@@ -194,7 +204,9 @@ fn test_anonymous_block_wrapping_for_mixed_content() {
 // viewport height (CSS 2.1 §10.5): `html { height: 50% }` in a 600px-tall viewport is 300px.
 fn test_root_percentage_height_resolves_against_viewport() {
 	mut doc := dom.Document.create(dom.url_about_blank())
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
 	html_el.set_attribute_value('style', 'height: 50%')
 	mut doc_node := unsafe { &dom.Node(doc) }
 	doc_node.append_child(html_el.as_node()) or { panic('${err}') }

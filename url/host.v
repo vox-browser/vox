@@ -21,8 +21,8 @@ pub fn is_forbidden_host_code_point(code_point u32) bool {
 // https://url.spec.whatwg.org/#forbidden-domain-code-point — a forbidden host code point, a C0 control,
 // U+0025 (%), or U+007F DELETE.
 pub fn is_forbidden_domain_code_point(code_point u32) bool {
-	return is_forbidden_host_code_point(code_point) || code_point <= 0x1F || code_point == 0x25 ||
-		code_point == 0x7F
+	return is_forbidden_host_code_point(code_point) || code_point <= 0x1F || code_point == 0x25
+		|| code_point == 0x7F
 }
 
 // https://url.spec.whatwg.org/#concept-opaque-host-parser — validate that input has no forbidden host

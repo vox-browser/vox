@@ -95,6 +95,10 @@ mut:
 	text_alignment_ AlignSetting = .center
 	// https://w3c.github.io/webvtt/#webvtt-cue-region
 	region_ ?&VTTRegion
+	// Number of showing text tracks before this cue's track. HTML's media
+	// element owns that list; this optional value is the typed integration
+	// point used by the computed-line algorithm.
+	showing_tracks_before_ ?u32
 }
 
 // https://w3c.github.io/webvtt/#dom-vttcue-vttcue
@@ -103,19 +107,19 @@ pub fn VTTCue.construct_impl(start_time f64, end_time f64, text string) !&VTTCue
 	if end_time == math.inf(-1) || math.is_nan(end_time) {
 		return error('End time is negative infinity or NaN')
 	}
-	mut cue := &VTTCue{}
+	mut new_cue := &VTTCue{}
 	// 2. text track cue start time = startTime.
-	cue.TextTrackCue.set_start_time(start_time)
+	new_cue.TextTrackCue.set_start_time(start_time)
 	// 3. text track cue end time = endTime.
-	cue.TextTrackCue.set_end_time(end_time)!
+	new_cue.TextTrackCue.set_end_time(end_time)!
 	// 4. cue text = text.
-	cue.text_ = text
+	new_cue.text_ = text
 	// 5. text track cue identifier = "".
-	cue.TextTrackCue.set_id('')
+	new_cue.TextTrackCue.set_id('')
 	// 6. text track cue pause-on-exit flag = false.
-	cue.TextTrackCue.set_pause_on_exit(false)
+	new_cue.TextTrackCue.set_pause_on_exit(false)
 	// 7-15. The remaining WebVTT defaults match the struct field defaults.
-	return cue
+	return new_cue
 }
 
 // https://w3c.github.io/webvtt/#dom-vttcue-region
@@ -208,6 +212,10 @@ pub fn (mut cue VTTCue) set_text(text string) {
 	cue.text_ = text
 }
 
+pub fn (mut cue VTTCue) set_showing_tracks_before(count ?u32) {
+	cue.showing_tracks_before_ = count
+}
+
 // https://w3c.github.io/webvtt/#cue-computed-line
 pub fn (cue &VTTCue) computed_line() f64 {
 	// 1. If line is numeric, snap-to-lines is false, and line is < 0 or > 100, return 100.
@@ -222,14 +230,11 @@ pub fn (cue &VTTCue) computed_line() f64 {
 	if !cue.snap_to_lines_ {
 		return 100
 	}
-	// FIXME: 4-7. Depend on the cue being in a media element's list of text tracks.
-	mut n := 0
-	// 8. Increment n by one.
-	n++
-	// 9. Negate n.
-	n = -n
-	// 10. Return n. (FIXME: stubbed — the media-element track ordering is not available.)
-	return n
+	// 4-7. The media-element track list supplies the count through the typed
+	// integration point. A detached cue has no containing track and returns -1.
+	showing_before := cue.showing_tracks_before_ or { return -1 }
+	// 8-10. Increment the count, negate it, and return it.
+	return -f64(showing_before + 1)
 }
 
 // https://w3c.github.io/webvtt/#cue-computed-position
@@ -264,7 +269,50 @@ pub fn (cue &VTTCue) computed_position_alignment() PositionAlignSetting {
 	if cue.text_alignment_ == .right {
 		return .line_right
 	}
-	// FIXME: 4-5. start/end depend on the base direction of the cue text.
+	// 4-5. start/end depend on the base direction of the cue text.
+	base_direction := cue_text_base_direction(cue.text_)
+	if cue.text_alignment_ == .start {
+		return if base_direction == .ltr { .line_left } else { .line_right }
+	}
+	if cue.text_alignment_ == .end {
+		return if base_direction == .ltr { .line_right } else { .line_left }
+	}
 	// 6. Otherwise, return center.
 	return .center
+}
+
+enum CueTextDirection {
+	ltr
+	rtl
+}
+
+// WebVTT's base-direction step uses the first strong bidi code point. Unicode
+// database lookup is a platform service in upstream; the typed port covers the
+// strong Latin/Greek/Cyrillic, Hebrew and Arabic letter ranges and defaults to
+// LTR. In particular, weak Arabic-Indic digits must not decide the direction.
+fn cue_text_base_direction(text string) CueTextDirection {
+	for character in text.runes() {
+		code_point := u32(character)
+		if (code_point >= 0x05d0 && code_point <= 0x05ea)
+			|| (code_point >= 0x05ef && code_point <= 0x05f2)
+			|| (code_point >= 0x0620 && code_point <= 0x063f)
+			|| (code_point >= 0x0641 && code_point <= 0x064a)
+			|| (code_point >= 0x066e && code_point <= 0x066f)
+			|| (code_point >= 0x0671 && code_point <= 0x06d3) || code_point == 0x06d5
+			|| (code_point >= 0x06e5 && code_point <= 0x06e6)
+			|| (code_point >= 0x06ee && code_point <= 0x06ef)
+			|| (code_point >= 0x06fa && code_point <= 0x06fc) || code_point == 0x06ff
+			|| (code_point >= 0x0750 && code_point <= 0x077f)
+			|| (code_point >= 0x08a0 && code_point <= 0x08c9)
+			|| (code_point >= 0xfb1d && code_point <= 0xfdff)
+			|| (code_point >= 0xfe70 && code_point <= 0xfefc) {
+			return .rtl
+		}
+		if (code_point >= `A` && code_point <= `Z`)
+			|| (code_point >= `a` && code_point <= `z`)
+			|| (code_point >= 0x00c0 && code_point <= 0x058f) {
+			return .ltr
+		}
+	}
+	return .ltr
 }

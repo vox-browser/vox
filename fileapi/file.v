@@ -5,8 +5,8 @@
 // Translation of the self-contained core of Libraries/LibWeb/FileAPI/File.cpp — the File record,
 // which extends Blob with a name and a lastModified timestamp, plus its constructor. The type is
 // normalized through the mimesniff MimeType parser (matching upstream), and an absent lastModified
-// defaults to the current time in milliseconds since the Unix epoch. The (de)serialization steps
-// need HTML StructuredSerialize (the JS runtime) and are out of scope.
+// defaults to the current time in milliseconds since the Unix epoch. Structured serialization is
+// exposed as a typed payload while the wire encoder remains an HTML/runtime concern.
 // https://w3c.github.io/FileAPI/#file-section
 module fileapi
 
@@ -34,7 +34,7 @@ pub struct File {
 pub fn File.create(byte_buffer []u8, file_name string, type_ string, last_modified i64) &File {
 	return &File{
 		Blob:           Blob{
-			byte_buffer: byte_buffer
+			byte_buffer: byte_buffer.clone()
 			type_:       type_
 		}
 		name_:          file_name
@@ -74,4 +74,26 @@ pub fn (file &File) name() string {
 // https://w3c.github.io/FileAPI/#dfn-lastModified
 pub fn (file &File) last_modified() i64 {
 	return file.last_modified_
+}
+
+pub struct SerializedFile {
+pub:
+	type_         string
+	bytes         []u8
+	name          string
+	last_modified i64
+}
+
+pub fn (file &File) serialization_steps() SerializedFile {
+	return SerializedFile{
+		type_:         file.type_()
+		bytes:         file.raw_bytes()
+		name:          file.name_
+		last_modified: file.last_modified_
+	}
+}
+
+pub fn File.deserialization_steps(serialized SerializedFile) &File {
+	return File.create(serialized.bytes, serialized.name, serialized.type_,
+		serialized.last_modified)
 }

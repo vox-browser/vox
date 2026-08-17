@@ -1,0 +1,52 @@
+# Page module V translation — complete
+
+Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Page`
+
+Translation workspace: `~/code/libweb_v/page`
+Audited: 2026-08-16
+
+All seven upstream implementation units and their headers are represented. The
+translation keeps browser-process and painting integration behind typed records:
+`InputTarget` supplies hit-test facts, `ClientEvent` records PageClient requests,
+and platform-native backing attachments are owned by
+`SharedBackingStore`. These boundaries make the algorithms testable without
+inventing a graphics stack or IPC runtime.
+
+| Upstream implementation | V implementation |
+| --- | --- |
+| `Page.cpp`, `Page.h`, `ViewportIsFullscreen.h` | `page.v`, `geometry.v` |
+| `SharedBackingStore.cpp`, `SharedBackingStore.h` | `shared_backing_store.v` |
+| `DragAndDropEventHandler.cpp`, `DragAndDropEventHandler.h` | `drag_and_drop.v` |
+| `ElementResizeAction.cpp`, `ElementResizeAction.h` | `element_resize_action.v` |
+| `InputEvent.cpp`, `InputEvent.h` | `input_event.v` |
+| `AutoScrollHandler.cpp`, `AutoScrollHandler.h` | `auto_scroll.v` |
+| `EventHandler.cpp`, `EventHandler.h`, `EventResult.h` | `event_handler.v`, `drag_and_drop.v` |
+
+| Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `Page/` | 7 | 4,298 | 1,533 | 317 | Complete |
+
+The port covers device/CSS geometry conversion; input-event cloning and pinch
+validation; pointer/mouse/keyboard/default-action ordering, including canceled
+pointer compatibility-event suppression and unconditional mouseup cleanup;
+mouse-selection state; drag data-store modes, effect negotiation, target
+changes, drop/end and reset; auto-scroll edge expansion, capped speed and fractional accumulation;
+writing-mode-aware element resizing; top-level/focused navigable identity;
+navigation, history and window observations; blocking and non-blocking dialog
+state; clipboard request correlation; media/canvas registries and toggles; user
+style invalidation; multi-document find-in-page navigation with fragment-excluding
+document URL resets; fullscreen FIFO,
+UI handshakes, promise settlement and error checks; and move-only backing-store
+transfer.
+
+Native paint-tree traversal, DOM range mutation, PageClient IPC transport,
+platform cursor/chrome-widget operations, SDL polling, and actual scrolling are
+host integration boundaries. Their decisions and outputs are represented by
+typed inputs/results rather than empty callbacks.
+
+## Verification
+
+```text
+$ /Users/alex/code/v/v test page
+Summary for all V _test.v files: 4 passed, 4 total.
+```

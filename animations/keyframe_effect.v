@@ -1,0 +1,438 @@
+// Copyright (c) 2023-2026, Ladybird contributors
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of Libraries/LibWeb/Animations/KeyframeEffect.{h,cpp}.
+module animations
+
+import css
+import dom
+import math
+
+pub enum CompositeOperation {
+	replace
+	add
+	accumulate
+}
+
+pub enum CompositeOperationOrAuto {
+	replace
+	add
+	accumulate
+	auto_
+}
+
+pub struct KeyframeEffectOptions {
+pub mut:
+	timing         OptionalEffectTiming
+	composite      CompositeOperation = .replace
+	pseudo_element ?string
+}
+
+pub struct BaseKeyframe {
+pub mut:
+	offset            ?f64
+	easing            string                   = 'linear'
+	composite         CompositeOperationOrAuto = .auto_
+	computed_offset   ?f64
+	properties        map[string]string
+	parsed_properties map[css.PropertyID]&dom.StyleValue
+}
+
+pub struct BasePropertyIndexedKeyframe {
+pub mut:
+	offsets    []?f64
+	easings    []string
+	composites []CompositeOperationOrAuto
+	properties map[string][]string
+}
+
+pub struct ResolvedProperty {
+pub:
+	use_initial bool
+	value       ?&dom.StyleValue
+}
+
+pub struct ResolvedKeyframe {
+pub mut:
+	properties map[css.PropertyID]ResolvedProperty
+	composite  CompositeOperationOrAuto = .auto_
+	easing     ?css.EasingFunction
+}
+
+pub struct KeyFrameSet {
+pub mut:
+	keyframes_by_key map[u64]ResolvedKeyframe
+}
+
+@[heap]
+pub struct KeyframeEffect {
+	AnimationEffect
+pub mut:
+	target_element_         ?&dom.Element
+	target_pseudo_selector_ ?css.PseudoElementSelector
+	composite_              CompositeOperation = .replace
+	keyframes_              []BaseKeyframe
+	key_frame_set_          KeyFrameSet
+}
+
+pub fn KeyframeEffect.create() &KeyframeEffect {
+	return &KeyframeEffect{
+		is_keyframe_effect_: true
+	}
+}
+
+pub fn KeyframeEffect.construct_impl(target ?&dom.Element, keyframes []BaseKeyframe, options KeyframeEffectOptions) !&KeyframeEffect {
+	mut effect := KeyframeEffect.create()
+	effect.set_target(target)
+	effect.set_pseudo_element(options.pseudo_element)!
+	effect.AnimationEffect.update_timing(options.timing)!
+	effect.composite_ = options.composite
+	effect.set_keyframes(keyframes)!
+	return effect
+}
+
+pub fn KeyframeEffect.with_duration(target ?&dom.Element, keyframes []BaseKeyframe, duration f64) !&KeyframeEffect {
+	mut timing := OptionalEffectTiming{}
+	timing.duration = IterationDuration(duration)
+	return KeyframeEffect.construct_impl(target, keyframes, KeyframeEffectOptions{ timing: timing })
+}
+
+pub fn KeyframeEffect.copy(source &KeyframeEffect) &KeyframeEffect {
+	mut effect := &KeyframeEffect{
+		target_element_:         source.target_element_
+		target_pseudo_selector_: source.target_pseudo_selector_
+		composite_:              source.composite_
+		keyframes_:              source.keyframes_.clone()
+		key_frame_set_:          source.key_frame_set_
+	}
+	effect.specified_start_delay_ = source.specified_start_delay_
+	effect.specified_end_delay_ = source.specified_end_delay_
+	effect.fill_mode_ = source.fill_mode_
+	effect.iteration_start_ = source.iteration_start_
+	effect.iteration_count_ = source.iteration_count_
+	effect.specified_iteration_duration_ = source.specified_iteration_duration_
+	effect.playback_direction_ = source.playback_direction_
+	effect.timing_function_ = source.timing_function_
+	effect.has_target_ = source.has_target_
+	effect.target_properties_ = source.target_properties_.clone()
+	effect.normalize_specified_timing()
+	return effect
+}
+
+pub fn (effect &KeyframeEffect) as_animation_effect() &AnimationEffect {
+	return unsafe { &AnimationEffect(effect) }
+}
+
+pub fn (mut effect KeyframeEffect) set_target(target ?&dom.Element) {
+	effect.target_element_ = target
+	effect.has_target_ = target != none
+}
+
+pub fn (effect &KeyframeEffect) target() ?&dom.Element {
+	return effect.target_element_
+}
+
+pub fn (effect &KeyframeEffect) pseudo_element() ?string {
+	pseudo := effect.target_pseudo_selector_ or { return none }
+	return pseudo.serialize()
+}
+
+pub fn (mut effect KeyframeEffect) set_pseudo_element(value ?string) ! {
+	text := value or {
+		effect.target_pseudo_selector_ = none
+		return
+	}
+
+	effect.target_pseudo_selector_ = pseudo_element_parsing(text)!
+}
+
+pub fn (effect &KeyframeEffect) pseudo_element_type() ?css.PseudoElement {
+	pseudo := effect.target_pseudo_selector_ or { return none }
+	return pseudo.type_
+}
+
+pub fn (effect &KeyframeEffect) get_keyframes() []BaseKeyframe {
+	return effect.keyframes_.clone()
+}
+
+pub fn compute_missing_keyframe_offsets(mut keyframes []BaseKeyframe) {
+	for mut keyframe in keyframes {
+		keyframe.computed_offset = keyframe.offset
+	}
+	if keyframes.len > 1 && keyframes[0].computed_offset == none {
+		keyframes[0].computed_offset = 0.0
+	}
+	if keyframes.len > 0 && keyframes[keyframes.len - 1].computed_offset == none {
+		keyframes[keyframes.len - 1].computed_offset = 1.0
+	}
+	mut index_a := -1
+	for index, keyframe in keyframes {
+		if keyframe.computed_offset != none {
+			index_a = index
+			break
+		}
+	}
+	if index_a < 0 { return }
+	for {
+		mut index_b := -1
+		for index := index_a + 1; index < keyframes.len; index++ {
+			if keyframes[index].computed_offset != none {
+				index_b = index
+				break
+			}
+		}
+		if index_b < 0 { break
+		 }
+		offset_a := keyframes[index_a].computed_offset or { 0.0 }
+		offset_b := keyframes[index_b].computed_offset or { 1.0 }
+		span := f64(index_b - index_a)
+		for index := index_a + 1; index < index_b; index++ {
+			position := f64(index - index_a)
+			keyframes[index].computed_offset = offset_a + (offset_b - offset_a) * position / span
+		}
+		index_a = index_b
+	}
+}
+
+fn keyframes_loosely_sorted(keyframes []BaseKeyframe) bool {
+	mut last := ?f64(none)
+	for keyframe in keyframes {
+		if offset := keyframe.offset {
+			if previous := last {
+				if offset < previous { return false }
+			}
+			last = offset
+		}
+	}
+	return true
+}
+
+fn animation_property_id(name string) ?css.PropertyID {
+	if name == 'cssFloat' { return .float_ }
+	if name in ['cssOffset', 'float', 'offset'] { return none }
+	mut normalized := ''
+	for index, character in name.runes() {
+		if character >= `A` && character <= `Z` {
+			if index > 0 { normalized += '-' }
+			normalized += character.str().to_lower()
+		} else {
+			normalized += character.str()
+		}
+	}
+	return css.property_id_from_string(normalized)
+}
+
+fn process_keyframes(input []BaseKeyframe) ![]BaseKeyframe {
+	mut keyframes := input.clone()
+	if !keyframes_loosely_sorted(keyframes) {
+		return error('Keyframes are not in ascending order based on offset')
+	}
+	for index, mut keyframe in keyframes {
+		if offset := keyframe.offset {
+			if offset < 0 || offset > 1 {
+				return error('Keyframe ${index} has invalid offset value ${offset}')
+			}
+		}
+		keyframe.parsed_properties = map[css.PropertyID]&dom.StyleValue{}
+		for name, text in keyframe.properties {
+			property_id := animation_property_id(name) or { continue }
+			value := css.parse_css_value(css.ParsingParams{}, text, property_id) or { continue }
+			unsafe {
+				keyframe.parsed_properties[property_id] = value
+			}
+		}
+		_ = parse_easing_string(keyframe.easing) or {
+			return error('Invalid animation easing value: "${keyframe.easing}"')
+		}
+	}
+	compute_missing_keyframe_offsets(mut keyframes)
+	return keyframes
+}
+
+pub fn process_property_indexed_keyframes(input BasePropertyIndexedKeyframe) ![]BaseKeyframe {
+	for easing in input.easings {
+		_ = parse_easing_string(easing) or {
+			return error('Invalid animation easing value: "${easing}"')
+		}
+	}
+	mut keyframes := []BaseKeyframe{}
+	for property_name, values in input.properties {
+		mut property_frames := []BaseKeyframe{len: values.len, init: BaseKeyframe{
+			properties: map[string]string{}
+		}}
+		for index, value in values {
+			property_frames[index].properties[property_name] = value
+		}
+		compute_missing_keyframe_offsets(mut property_frames)
+		keyframes << property_frames
+	}
+	// Keep this explicit: option-valued expressions inside V's generated sort
+	// comparator are not supported by all compiler versions used by this port.
+	for i := 0; i < keyframes.len; i++ {
+		for j := i + 1; j < keyframes.len; j++ {
+			left := keyframes[i].computed_offset or { 0.0 }
+			right := keyframes[j].computed_offset or { 0.0 }
+			if right < left {
+				temporary := keyframes[i]
+				keyframes[i] = keyframes[j]
+				keyframes[j] = temporary
+			}
+		}
+	}
+	mut merged := []BaseKeyframe{}
+	for frame in keyframes {
+		if merged.len > 0 && merged[merged.len - 1].computed_offset == frame.computed_offset {
+			for name, value in frame.properties {
+				merged[merged.len - 1].properties[name] = value
+			}
+		} else {
+			merged << frame
+		}
+	}
+	for index, offset in input.offsets {
+		if index >= merged.len { break
+		 }
+		merged[index].offset = offset
+	}
+	mut easings := if input.easings.len == 0 { ['linear'] } else { input.easings.clone() }
+	base_easing_count := easings.len
+	for easings.len < merged.len {
+		easings << easings[easings.len % base_easing_count]
+	}
+	for index, mut frame in merged {
+		frame.easing = easings[index % easings.len]
+		if input.composites.len > 0 {
+			composite := input.composites[index % input.composites.len]
+			if composite != .auto_ { frame.composite = composite }
+		}
+	}
+	return process_keyframes(merged)
+}
+
+pub fn (mut effect KeyframeEffect) set_keyframes(input []BaseKeyframe) ! {
+	effect.keyframes_ = process_keyframes(input)!
+	effect.target_properties_.clear()
+	mut set := KeyFrameSet{}
+	for keyframe in effect.keyframes_ {
+		mut resolved := ResolvedKeyframe{
+			composite: keyframe.composite
+			easing:    parse_easing_string(keyframe.easing)
+		}
+		for property_id, value in keyframe.parsed_properties {
+			resolved.properties[property_id] = ResolvedProperty{
+				value: unsafe { value }
+			}
+			effect.target_properties_[property_id] = true
+		}
+		offset := keyframe.computed_offset or { continue }
+		set.keyframes_by_key[u64(offset * 100_000.0)] = resolved
+	}
+	generate_initial_and_final_frames(mut set, effect.target_properties_)
+	effect.key_frame_set_ = set
+}
+
+pub fn generate_initial_and_final_frames(mut set KeyFrameSet, properties map[css.PropertyID]bool) {
+	mut initial := set.keyframes_by_key[u64(0)] or { ResolvedKeyframe{} }
+	mut final := set.keyframes_by_key[u64(100_000)] or { ResolvedKeyframe{} }
+	for property_id, enabled in properties {
+		if !enabled { continue
+		 }
+		if property_id !in initial.properties {
+			initial.properties[property_id] = ResolvedProperty{
+				use_initial: true
+			}
+		}
+		if property_id !in final.properties {
+			final.properties[property_id] = ResolvedProperty{
+				use_initial: true
+			}
+		}
+	}
+	set.keyframes_by_key[0] = initial
+	set.keyframes_by_key[100_000] = final
+}
+
+pub fn keyframe_effect_composite_order(a &KeyframeEffect, b &KeyframeEffect) int {
+	a_animation := a.associated_animation_ or { return 0 }
+	b_animation := b.associated_animation_ or { return 0 }
+	if a_animation.animation_class_ != b_animation.animation_class_ {
+		return int(a_animation.animation_class_) - int(b_animation.animation_class_)
+	}
+	if a_animation.class_composite_order_ != b_animation.class_composite_order_ {
+		return a_animation.class_composite_order_ - b_animation.class_composite_order_
+	}
+	if a_animation.global_animation_list_order_ < b_animation.global_animation_list_order_ {
+		return -1
+	}
+	if a_animation.global_animation_list_order_ > b_animation.global_animation_list_order_ {
+		return 1
+	}
+	return 0
+}
+
+// Samples the keyframe set at the effect's transformed progress. StyleComputer
+// owns cascade invalidation; this method supplies the same typed property map
+// without introducing a css -> animations import cycle.
+pub fn (effect &KeyframeEffect) update_computed_properties() map[css.PropertyID]&dom.StyleValue {
+	mut output := map[css.PropertyID]&dom.StyleValue{}
+	progress := effect.transformed_progress() or { return output }
+	target := effect.target_element_ or { return output }
+	mut keys := effect.key_frame_set_.keyframes_by_key.keys()
+	keys.sort()
+	if keys.len == 0 { return output }
+	position := u64(math.max(0.0, math.min(1.0, progress)) * 100_000.0)
+	mut start_key := keys[0]
+	mut end_key := keys[keys.len - 1]
+	for key in keys {
+		if key <= position { start_key = key }
+		if key >= position {
+			end_key = key
+			break
+		}
+	}
+	start := effect.key_frame_set_.keyframes_by_key[start_key] or { return output }
+	end := effect.key_frame_set_.keyframes_by_key[end_key] or { return output }
+	delta := if end_key == start_key {
+		0.0
+	} else {
+		f64(position - start_key) / f64(end_key - start_key)
+	}
+	for property_id, start_property in start.properties {
+		start_value := start_property.value or { continue }
+		end_property := end.properties[property_id] or { continue }
+		end_value := end_property.value or { continue }
+		if interpolated := css.interpolate_property(target, property_id, start_value, end_value,
+			delta, .no)
+		{
+			unsafe {
+				output[property_id] = interpolated
+			}
+		} else if delta < 0.5 {
+			unsafe {
+				output[property_id] = start_value
+			}
+		} else {
+			unsafe {
+				output[property_id] = end_value
+			}
+		}
+	}
+	return output
+}
+
+pub fn composite_operation_from_css(value css.AnimationComposition) CompositeOperation {
+	return match value {
+		.replace { .replace }
+		.add { .add }
+		.accumulate { .accumulate }
+	}
+}
+
+pub fn composite_operation_or_auto_from_css(value css.AnimationComposition) CompositeOperationOrAuto {
+	return match value {
+		.replace { .replace }
+		.add { .add }
+		.accumulate { .accumulate }
+	}
+}

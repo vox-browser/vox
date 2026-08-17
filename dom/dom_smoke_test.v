@@ -204,11 +204,10 @@ fn test_insert_adjacent_and_attr() {
 	doc := Document.create(url_about_blank())
 	mut root := new_element(doc, 'div')
 	mut rn := root.as_node()
-	b := new_element(doc, 'b')
+	mut b := new_element(doc, 'b')
 	rn.append_child(b.as_node()) or { panic('${err}') }
-	mut mb := b
-	mb.insert_adjacent_element('beforebegin', new_element(doc, 'c')) or { panic('${err}') }
-	mb.insert_adjacent_element('afterend', new_element(doc, 'd')) or { panic('${err}') }
+	b.insert_adjacent_element('beforebegin', new_element(doc, 'c')) or { panic('${err}') }
+	b.insert_adjacent_element('afterend', new_element(doc, 'd')) or { panic('${err}') }
 	mut names := []string{}
 	for child in rn.children {
 		names << child.node_name()

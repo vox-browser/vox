@@ -137,7 +137,7 @@ fn test_multiple_attributes() {
 }
 
 fn test_character_reference_in_attribute() {
-	tokens := run_tokenizer("<p foo=a&amp;b bar='a&#38;b' baz=\"a&#x26;b\">")
+	tokens := run_tokenizer('<p foo=a&amp;b bar=\'a&#38;b\' baz="a&#x26;b">')
 	assert tokens[0].attribute_count() == 3
 	assert (tokens[0].raw_attribute('foo') or { panic('foo') }).value == 'a&b'
 	assert (tokens[0].raw_attribute('bar') or { panic('bar') }).value == 'a&b'

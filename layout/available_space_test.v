@@ -2,9 +2,8 @@ module layout
 
 import css
 
-// The layout module is a large, mostly-stubbed translation of LibWeb/Layout (real layout depends on
-// computed style, which is not ported yet). AvailableSize/AvailableSpace, however, are self-contained
-// value types with real logic — this is the layout module's first runtime test.
+// AvailableSize and AvailableSpace are the self-contained constraint value
+// types shared by the translated formatting-context algorithms.
 
 fn px(value int) css.CSSPixels {
 	return css.CSSPixels.new(value)
@@ -59,12 +58,32 @@ fn test_max_content_and_indefinite_are_largest() {
 }
 
 fn test_available_space_and_to_string() {
-	space := AvailableSpace.new(AvailableSize.make_definite(px(100)), AvailableSize.make_max_content())
+	space := AvailableSpace.new(AvailableSize.make_definite(px(100)),
+		AvailableSize.make_max_content())
 	assert space.width.is_definite()
 	assert space.height.is_max_content()
 
 	assert AvailableSize.make_min_content().to_string() == 'min-content'
 	assert AvailableSize.make_indefinite().to_string() == 'indefinite'
-	assert AvailableSize.make_definite(px(10)).to_string() == '10.00px'
-	assert space.to_string() == 'AvailableSpace(width: 100.00px, height: max-content)'
+	assert AvailableSize.make_definite(px(10)).to_string() == 'definite(10)'
+	assert space.to_string() == 'definite(100) x max-content'
+}
+
+fn test_static_position_rect_alignment() {
+	rect := css.CSSPixelRect.new(10, 20, 100, 80)
+	size := css.CSSPixelSize.from_values(20, 10)
+	centered := StaticPositionRect{
+		rect:                 rect
+		horizontal_alignment: .center
+		vertical_alignment:   .center
+	}.aligned_position_for_box_with_size(size)
+	assert centered.x().to_double() == 50
+	assert centered.y().to_double() == 55
+	ended := StaticPositionRect{
+		rect:                 rect
+		horizontal_alignment: .end
+		vertical_alignment:   .end
+	}.aligned_position_for_box_with_size(size)
+	assert ended.x().to_double() == 90
+	assert ended.y().to_double() == 90
 }

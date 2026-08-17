@@ -34,20 +34,50 @@ fn test_from_hsla_alpha() {
 }
 
 fn test_luminosity() {
-	assert Color{ red: 255, green: 255, blue: 255 }.luminosity() == u8(255)
-	assert Color{ red: 0, green: 0, blue: 0 }.luminosity() == u8(0)
-	assert Color{ red: 255, green: 0, blue: 0 }.luminosity() == u8(54) // round(255 * 0.2126)
-	assert Color{ red: 0, green: 255, blue: 0 }.luminosity() == u8(182) // round(255 * 0.7152)
-	assert Color{ red: 0, green: 0, blue: 255 }.luminosity() == u8(18) // round(255 * 0.0722)
+	assert Color{
+		red:   255
+		green: 255
+		blue:  255
+	}.luminosity() == u8(255)
+	assert Color{
+		red:   0
+		green: 0
+		blue:  0
+	}.luminosity() == u8(0)
+	assert Color{
+		red:   255
+		green: 0
+		blue:  0
+	}.luminosity() == u8(54) // round(255 * 0.2126)
+	assert Color{
+		red:   0
+		green: 255
+		blue:  0
+	}.luminosity() == u8(182) // round(255 * 0.7152)
+	assert Color{
+		red:   0
+		green: 0
+		blue:  255
+	}.luminosity() == u8(18) // round(255 * 0.0722)
 }
 
 fn test_inverted() {
-	red := Color{ red: 255, green: 0, blue: 0, alpha: 255 }
+	red := Color{
+		red:   255
+		green: 0
+		blue:  0
+		alpha: 255
+	}
 	inv := red.inverted()
 	assert inv.red == u8(0) && inv.green == u8(255) && inv.blue == u8(255)
 	assert inv.alpha == u8(255) // alpha is preserved
 	// A partial alpha is kept while the RGB is complemented.
-	c := Color{ red: 100, green: 150, blue: 200, alpha: 50 }
+	c := Color{
+		red:   100
+		green: 150
+		blue:  200
+		alpha: 50
+	}
 	ci := c.inverted()
 	assert ci.red == u8(155) && ci.green == u8(105) && ci.blue == u8(55) && ci.alpha == u8(50)
 }

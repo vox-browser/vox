@@ -225,7 +225,9 @@ fn test_inline_text_wraps_to_multiple_lines() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px')
 	mut n := el.as_node()
-	n.append_child(doc.create_text_node('aaaa bbbb cccc dddd eeee ffff').as_node()) or { panic('${err}') }
+	n.append_child(doc.create_text_node('aaaa bbbb cccc dddd eeee ffff').as_node()) or {
+		panic('${err}')
+	}
 
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 90.0
@@ -319,7 +321,8 @@ fn test_collect_document_author_rules() {
 // width 100, padding 10, border 5 -> content width 100 - 2*(10+5) = 70; border box stays 100.
 fn test_box_sizing_border_box_width() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'box-sizing: border-box; width: 100px; padding: 10px; border: 5px solid')
+	el := styled(doc, 'div',
+		'box-sizing: border-box; width: 100px; padding: 10px; border: 5px solid')
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.width == 70.0 // content
 	assert box.margin_box_width() == 100.0 // border box == specified width (no margins here)
@@ -337,7 +340,8 @@ fn test_box_sizing_content_box_default() {
 // border-box height subtracts vertical padding+border from the specified height.
 fn test_box_sizing_border_box_height() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'box-sizing: border-box; height: 100px; padding: 10px; border: 5px solid')
+	el := styled(doc, 'div',
+		'box-sizing: border-box; height: 100px; padding: 10px; border: 5px solid')
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 70.0 // 100 - 2*(10+5)
 	assert box.margin_box_height() == 100.0 // border box == specified height
@@ -410,7 +414,8 @@ fn test_max_width_percentage() {
 // min/max-width are box-sizing-aware: border-box max-width 100 leaves content 100 - 2*(10+5) = 70.
 fn test_min_max_width_border_box_aware() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'box-sizing: border-box; max-width: 100px; padding: 10px; border: 5px solid')
+	el := styled(doc, 'div',
+		'box-sizing: border-box; max-width: 100px; padding: 10px; border: 5px solid')
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.width == 70.0
 	assert box.margin_box_width() == 100.0 // border box hits the max-width
@@ -589,17 +594,22 @@ fn test_bfc_contains_child_bottom_margin() {
 // establishes_block_formatting_context classification.
 fn test_establishes_bfc_classification() {
 	doc := dom.Document.create(dom.url_about_blank())
-	assert establishes_block_formatting_context(styled(doc, 'div', 'overflow: hidden'), []&css.CSSRule{})
-	assert establishes_block_formatting_context(styled(doc, 'div', 'overflow-y: scroll'), []&css.CSSRule{})
-	assert establishes_block_formatting_context(styled(doc, 'div', 'display: flow-root'), []&css.CSSRule{})
+	assert establishes_block_formatting_context(styled(doc, 'div', 'overflow: hidden'),
+		[]&css.CSSRule{})
+	assert establishes_block_formatting_context(styled(doc, 'div', 'overflow-y: scroll'),
+		[]&css.CSSRule{})
+	assert establishes_block_formatting_context(styled(doc, 'div', 'display: flow-root'),
+		[]&css.CSSRule{})
 	assert !establishes_block_formatting_context(styled(doc, 'div', ''), []&css.CSSRule{})
-	assert !establishes_block_formatting_context(styled(doc, 'div', 'overflow: visible'), []&css.CSSRule{})
+	assert !establishes_block_formatting_context(styled(doc, 'div', 'overflow: visible'),
+		[]&css.CSSRule{})
 }
 
 // position: relative offsets the box by top/left from its normal-flow position.
 fn test_relative_position_offsets_box() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 100px; height: 50px; position: relative; top: 15px; left: 25px')
+	el := styled(doc, 'div',
+		'width: 100px; height: 50px; position: relative; top: 15px; left: 25px')
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.x == 25.0 // left
 	assert box.y == 15.0 // top
@@ -666,7 +676,8 @@ fn test_static_position_ignores_insets() {
 fn test_absolute_position_top_left() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
-	abs := styled(doc, 'div', 'position: absolute; top: 10px; left: 20px; width: 50px; height: 30px')
+	abs := styled(doc, 'div',
+		'position: absolute; top: 10px; left: 20px; width: 50px; height: 30px')
 	mut rn := root.as_node()
 	rn.append_child(abs.as_node()) or { panic('${err}') }
 
@@ -702,7 +713,8 @@ fn test_absolute_position_removed_from_flow() {
 fn test_absolute_position_right_bottom() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
-	abs := styled(doc, 'div', 'position: absolute; right: 10px; bottom: 15px; width: 40px; height: 20px')
+	abs := styled(doc, 'div',
+		'position: absolute; right: 10px; bottom: 15px; width: 40px; height: 20px')
 	mut rn := root.as_node()
 	rn.append_child(abs.as_node()) or { panic('${err}') }
 
@@ -883,7 +895,8 @@ fn test_line_boxes_stacked() {
 // Line boxes are positioned in absolute coordinates: a relative offset carries them along.
 fn test_line_boxes_follow_relative_offset() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px; position: relative; top: 15px; left: 25px')
+	el := styled(doc, 'div',
+		'width: 200px; font-size: 20px; line-height: 30px; position: relative; top: 15px; left: 25px')
 	mut n := el.as_node()
 	n.append_child(doc.create_text_node('Hi').as_node()) or { panic('${err}') }
 
@@ -895,7 +908,8 @@ fn test_line_boxes_follow_relative_offset() {
 // white-space: nowrap keeps text on a single line even when it would otherwise wrap.
 fn test_white_space_nowrap() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px; white-space: nowrap')
+	el := styled(doc, 'div',
+		'width: 100px; font-size: 20px; line-height: 30px; white-space: nowrap')
 	mut n := el.as_node()
 	n.append_child(doc.create_text_node('aaaa bbbb cccc').as_node()) or { panic('${err}') }
 
@@ -932,14 +946,30 @@ fn test_white_space_normal_collapses_newline() {
 
 // white_space helper classification.
 fn test_white_space_helpers() {
-	assert white_space_wraps('normal')
-	assert white_space_wraps('pre-wrap')
-	assert !white_space_wraps('nowrap')
-	assert !white_space_wraps('pre')
-	assert white_space_preserves_newlines('pre')
-	assert white_space_preserves_newlines('pre-line')
-	assert !white_space_preserves_newlines('normal')
-	assert !white_space_preserves_newlines('nowrap')
+	normal := white_space_behavior_from_longhands('collapse', 'wrap', 'none')
+	pre := white_space_behavior_from_longhands('preserve', 'nowrap', 'none')
+	pre_wrap := white_space_behavior_from_longhands('preserve', 'wrap', 'none')
+	pre_line := white_space_behavior_from_longhands('preserve-breaks', 'wrap', 'none')
+	assert normal.wraps()
+	assert pre_wrap.wraps()
+	assert !pre.wraps()
+	assert pre.preserves_newlines()
+	assert pre_line.preserves_newlines()
+	assert !normal.preserves_newlines()
+	assert !normal.preserves_spaces()
+	assert pre.preserves_spaces()
+}
+
+fn test_white_space_direct_longhands_match_shorthand_behavior() {
+	doc := dom.Document.create(dom.url_about_blank())
+	el := styled(doc, 'div',
+		'width: 100px; font-size: 20px; line-height: 30px; white-space-collapse: preserve; text-wrap-mode: nowrap')
+	mut node := el.as_node()
+	node.append_child(doc.create_text_node('one two\nthree').as_node()) or { panic('${err}') }
+	box := layout_block(el, 0, 0, 100, []&css.CSSRule{})
+	assert box.lines.len == 2
+	assert box.lines[0].fragments.map(it.text).join(' ') == 'one two'
+	assert box.lines[1].fragments.map(it.text).join(' ') == 'three'
 }
 
 // width: max-content sizes the block to its widest unbroken line. "hello world" at 20px =
@@ -1157,9 +1187,12 @@ fn test_inline_wide_word_drops_below_float() {
 fn test_paint_order_z_index() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
-	front := styled(doc, 'div', 'position: absolute; z-index: 5; top: 0; left: 0; width: 10px; height: 10px')
-	behind := styled(doc, 'div', 'position: absolute; z-index: -1; top: 0; left: 0; width: 10px; height: 10px')
-	auto := styled(doc, 'div', 'position: absolute; top: 0; left: 0; width: 10px; height: 10px') // z auto
+	front := styled(doc, 'div',
+		'position: absolute; z-index: 5; top: 0; left: 0; width: 10px; height: 10px')
+	behind := styled(doc, 'div',
+		'position: absolute; z-index: -1; top: 0; left: 0; width: 10px; height: 10px')
+	auto :=
+		styled(doc, 'div', 'position: absolute; top: 0; left: 0; width: 10px; height: 10px') // z auto
 	mut rn := root.as_node()
 	rn.append_child(front.as_node()) or { panic('${err}') }
 	rn.append_child(behind.as_node()) or { panic('${err}') }
@@ -1212,8 +1245,10 @@ fn test_paint_order_subtree_contiguous() {
 // z_index field: an integer for positioned boxes, 0 for auto/non-positioned.
 fn test_z_index_field() {
 	doc := dom.Document.create(dom.url_about_blank())
-	assert layout_block(styled(doc, 'div', 'position: absolute; z-index: 3'), 0, 0, 800, []&css.CSSRule{}).z_index == 3
-	assert layout_block(styled(doc, 'div', 'position: relative; z-index: -2'), 0, 0, 800, []&css.CSSRule{}).z_index == -2
+	assert layout_block(styled(doc, 'div', 'position: absolute; z-index: 3'), 0, 0, 800,
+		[]&css.CSSRule{}).z_index == 3
+	assert layout_block(styled(doc, 'div', 'position: relative; z-index: -2'), 0, 0, 800,
+		[]&css.CSSRule{}).z_index == -2
 	assert layout_block(styled(doc, 'div', 'z-index: 3'), 0, 0, 800, []&css.CSSRule{}).z_index == 0 // static
 	assert layout_block(styled(doc, 'div', 'position: relative'), 0, 0, 800, []&css.CSSRule{}).z_index == 0 // auto
 }
@@ -1268,7 +1303,8 @@ fn test_inline_fragments_across_wrapped_lines() {
 // Fragments ride along when the box is repositioned (relative offset translates them).
 fn test_inline_fragments_translate_with_box() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px; position: relative; top: 15px; left: 25px')
+	el := styled(doc, 'div',
+		'width: 200px; font-size: 20px; line-height: 30px; position: relative; top: 15px; left: 25px')
 	mut n := el.as_node()
 	n.append_child(doc.create_text_node('Hi').as_node()) or { panic('${err}') }
 
@@ -1335,7 +1371,8 @@ fn test_per_inline_intrinsic_width() {
 // text-align: justify spreads slack across the word gaps of every line but the last.
 fn test_text_align_justify() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 100px; font-size: 20px; line-height: 30px; text-align: justify')
+	el := styled(doc, 'div',
+		'width: 100px; font-size: 20px; line-height: 30px; text-align: justify')
 	mut n := el.as_node()
 	n.append_child(doc.create_text_node('aaaa bbbb cccc').as_node()) or { panic('${err}') }
 
@@ -1353,7 +1390,8 @@ fn test_text_align_justify() {
 // A single-line (last-line) justified paragraph is left-aligned, not stretched.
 fn test_justify_single_line_not_stretched() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 500px; font-size: 20px; line-height: 30px; text-align: justify')
+	el := styled(doc, 'div',
+		'width: 500px; font-size: 20px; line-height: 30px; text-align: justify')
 	mut n := el.as_node()
 	n.append_child(doc.create_text_node('aa bb').as_node()) or { panic('${err}') }
 
@@ -1381,7 +1419,8 @@ fn test_paint_background_fill() {
 // The background fill covers the border box (content + padding + border).
 fn test_paint_background_covers_border_box() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 100px; height: 50px; padding: 10px; border: 5px solid; background-color: blue')
+	el := styled(doc, 'div',
+		'width: 100px; height: 50px; padding: 10px; border: 5px solid; background-color: blue')
 	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
 	assert cmds[0].x == 0.0
 	assert cmds[0].width == 130.0 // 100 + 2*10 padding + 2*5 border
@@ -1409,9 +1448,12 @@ fn test_paint_draw_text() {
 // The display list follows z-index paint order: a negative-z box paints before a positive-z one.
 fn test_paint_z_index_order() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'position: relative; width: 100px; height: 100px; background-color: white')
-	behind := styled(doc, 'div', 'position: absolute; z-index: -1; width: 10px; height: 10px; background-color: red')
-	front := styled(doc, 'div', 'position: absolute; z-index: 1; width: 10px; height: 10px; background-color: blue')
+	root := styled(doc, 'div',
+		'position: relative; width: 100px; height: 100px; background-color: white')
+	behind := styled(doc, 'div',
+		'position: absolute; z-index: -1; width: 10px; height: 10px; background-color: red')
+	front := styled(doc, 'div',
+		'position: absolute; z-index: 1; width: 10px; height: 10px; background-color: blue')
 	mut rn := root.as_node()
 	rn.append_child(behind.as_node()) or { panic('${err}') }
 	rn.append_child(front.as_node()) or { panic('${err}') }
@@ -1439,7 +1481,8 @@ fn test_paint_border_edges() {
 // Background paints first, then borders.
 fn test_paint_background_then_border() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 100px; height: 50px; border: 2px solid black; background-color: yellow')
+	el := styled(doc, 'div',
+		'width: 100px; height: 50px; border: 2px solid black; background-color: yellow')
 	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
 	assert cmds.len == 5 // background + 4 edges
 	assert cmds[0].color == 'rgb(255 255 0)' // yellow background first
@@ -1457,7 +1500,8 @@ fn test_paint_border_current_color() {
 // Each text fragment paints in its own element's color (per-inline color).
 fn test_paint_per_inline_color() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 500px; font-size: 20px; line-height: 30px') // color default black
+	el :=
+		styled(doc, 'div', 'width: 500px; font-size: 20px; line-height: 30px') // color default black
 	mut n := el.as_node()
 	n.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
 	span := styled(doc, 'span', 'color: red')
@@ -1563,7 +1607,8 @@ fn test_transform_translate_single_axis() {
 // The transform carries the box's text fragments along.
 fn test_transform_moves_subtree() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 200px; font-size: 20px; line-height: 30px; transform: translate(10px, 20px)')
+	el := styled(doc, 'div',
+		'width: 200px; font-size: 20px; line-height: 30px; transform: translate(10px, 20px)')
 	mut n := el.as_node()
 	n.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
@@ -1580,9 +1625,11 @@ fn test_transform_translate_parse() {
 	assert parse_px_length('-4px') == -4.0
 	assert parse_px_length('0') == 0.0
 
-	tx, ty := transform_translate(styled(doc, 'div', 'transform: translate(10px, 20px)'), []&css.CSSRule{})
+	tx, ty := transform_translate(styled(doc, 'div', 'transform: translate(10px, 20px)'),
+		[]&css.CSSRule{})
 	assert tx == 10.0 && ty == 20.0
-	tx2, ty2 := transform_translate(styled(doc, 'div', 'transform: translateX(15px)'), []&css.CSSRule{})
+	tx2, ty2 := transform_translate(styled(doc, 'div', 'transform: translateX(15px)'),
+		[]&css.CSSRule{})
 	assert tx2 == 15.0 && ty2 == 0.0
 	tx3, ty3 := transform_translate(styled(doc, 'div', ''), []&css.CSSRule{}) // none
 	assert tx3 == 0.0 && ty3 == 0.0
@@ -1592,7 +1639,8 @@ fn test_transform_translate_parse() {
 // <text> for the word.
 fn test_render_svg() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 100px; height: 40px; background-color: #ff0000; font-size: 20px; line-height: 30px; color: blue')
+	el := styled(doc, 'div',
+		'width: 100px; height: 40px; background-color: #ff0000; font-size: 20px; line-height: 30px; color: blue')
 	mut n := el.as_node()
 	n.append_child(doc.create_text_node('hi').as_node()) or { panic('${err}') }
 
@@ -1664,7 +1712,8 @@ fn test_border_box_rect() {
 fn test_bounding_rect_for_abspos() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
-	badge := styled(doc, 'div', 'position: absolute; top: 10px; left: 20px; width: 30px; height: 30px')
+	badge := styled(doc, 'div',
+		'position: absolute; top: 10px; left: 20px; width: 30px; height: 30px')
 	mut rn := root.as_node()
 	rn.append_child(badge.as_node()) or { panic('${err}') }
 
@@ -1699,7 +1748,8 @@ fn test_hit_test() {
 fn test_hit_test_topmost_wins() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
-	badge := styled(doc, 'div', 'position: absolute; top: 10px; left: 20px; width: 50px; height: 50px')
+	badge := styled(doc, 'div',
+		'position: absolute; top: 10px; left: 20px; width: 50px; height: 50px')
 	mut rn := root.as_node()
 	rn.append_child(badge.as_node()) or { panic('${err}') }
 
@@ -1714,8 +1764,10 @@ fn test_hit_test_topmost_wins() {
 // padding box; offsetParent is the nearest positioned ancestor.
 fn test_offset_properties() {
 	doc := dom.Document.create(dom.url_about_blank())
-	container := styled(doc, 'div', 'position: relative; width: 200px; height: 200px; padding: 10px')
-	child := styled(doc, 'div', 'position: absolute; top: 30px; left: 40px; width: 50px; height: 20px; border: 5px solid')
+	container := styled(doc, 'div',
+		'position: relative; width: 200px; height: 200px; padding: 10px')
+	child := styled(doc, 'div',
+		'position: absolute; top: 30px; left: 40px; width: 50px; height: 20px; border: 5px solid')
 	mut cn := container.as_node()
 	cn.append_child(child.as_node()) or { panic('${err}') }
 
@@ -1859,7 +1911,8 @@ fn test_text_transform_inherits_and_overrides() {
 fn test_visibility_hidden_reserves_space_but_no_paint() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'width: 100px')
-	hidden := styled(doc, 'div', 'visibility: hidden; height: 30px; background-color: rgb(255, 0, 0)')
+	hidden := styled(doc, 'div',
+		'visibility: hidden; height: 30px; background-color: rgb(255, 0, 0)')
 	mut rn := root.as_node()
 	rn.append_child(hidden.as_node()) or { panic('${err}') }
 
@@ -1874,7 +1927,8 @@ fn test_visibility_visible_child_of_hidden_paints() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'width: 100px')
 	hidden := styled(doc, 'div', 'visibility: hidden; background-color: rgb(255, 0, 0)')
-	shown := styled(doc, 'div', 'visibility: visible; height: 20px; background-color: rgb(0, 128, 0)')
+	shown := styled(doc, 'div',
+		'visibility: visible; height: 20px; background-color: rgb(0, 128, 0)')
 	mut hn := hidden.as_node()
 	hn.append_child(shown.as_node()) or { panic('${err}') }
 	mut rn := root.as_node()
@@ -2105,7 +2159,8 @@ fn test_negative_text_indent() {
 // border-radius rounds the background fill: the fill_rect carries the radius and the SVG rect gets rx/ry.
 fn test_border_radius_rounds_background() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 100px; height: 50px; background-color: rgb(0, 128, 0); border-radius: 8px')
+	root := styled(doc, 'div',
+		'width: 100px; height: 50px; background-color: rgb(0, 128, 0); border-radius: 8px')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	assert box.border_radius == 8.0
@@ -2121,7 +2176,8 @@ fn test_border_radius_rounds_background() {
 // A radius larger than half the smaller dimension is clamped (a 50% pill on a 100x40 box -> 20px).
 fn test_border_radius_clamped() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 100px; height: 40px; background-color: rgb(0, 0, 0); border-radius: 999px')
+	root := styled(doc, 'div',
+		'width: 100px; height: 40px; background-color: rgb(0, 0, 0); border-radius: 999px')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	fills := box.paint_commands().filter(it.kind == 'fill_rect')
@@ -2131,7 +2187,8 @@ fn test_border_radius_clamped() {
 // border-radius: 50% resolves against the border-box width, then clamps to half the smaller side.
 fn test_border_radius_percentage() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 80px; height: 80px; background-color: rgb(1, 2, 3); border-radius: 50%')
+	root := styled(doc, 'div',
+		'width: 80px; height: 80px; background-color: rgb(1, 2, 3); border-radius: 50%')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	// 50% of 80 = 40, clamped to min(80,80)/2 = 40.
@@ -2153,7 +2210,8 @@ fn test_no_border_radius_is_square() {
 // outline paints four rects outside the border box, offset by outline-offset, in outline-color.
 fn test_outline_paints_four_edges() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 100px; height: 50px; outline: 3px solid rgb(255, 0, 0); outline-offset: 2px')
+	root := styled(doc, 'div',
+		'width: 100px; height: 50px; outline: 3px solid rgb(255, 0, 0); outline-offset: 2px')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	assert box.outline_width == 3.0
@@ -2180,7 +2238,8 @@ fn test_no_outline_by_default() {
 // outline-width defaults to medium (3px) and outline-color defaults to currentColor (the text color).
 fn test_outline_medium_and_current_color() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 40px; height: 40px; outline-style: solid; color: rgb(0, 200, 0)')
+	root := styled(doc, 'div',
+		'width: 40px; height: 40px; outline-style: solid; color: rgb(0, 200, 0)')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	assert box.outline_width == 3.0 // 'medium'
@@ -2211,7 +2270,8 @@ fn test_box_shadow_basic() {
 // The shadow is painted behind the background (emitted first).
 fn test_box_shadow_behind_background() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 50px; height: 50px; background-color: rgb(0, 128, 0); box-shadow: 2px 2px rgb(0, 0, 0)')
+	root := styled(doc, 'div',
+		'width: 50px; height: 50px; background-color: rgb(0, 128, 0); box-shadow: 2px 2px rgb(0, 0, 0)')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	fills := box.paint_commands().filter(it.kind == 'fill_rect')
@@ -2224,7 +2284,8 @@ fn test_box_shadow_behind_background() {
 // The spread radius expands the shadow rect outward on all sides.
 fn test_box_shadow_spread() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 100px; height: 40px; box-shadow: 0px 0px 0px 5px rgb(1, 2, 3)')
+	root := styled(doc, 'div',
+		'width: 100px; height: 40px; box-shadow: 0px 0px 0px 5px rgb(1, 2, 3)')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	sh := box.shadow or { panic('no shadow') }
@@ -2237,7 +2298,8 @@ fn test_box_shadow_spread() {
 // A blurred shadow gets a Gaussian-blur filter in the SVG; no shadow -> no filter.
 fn test_box_shadow_svg_blur_filter() {
 	doc := dom.Document.create(dom.url_about_blank())
-	shadowed := styled(doc, 'div', 'width: 50px; height: 50px; box-shadow: 2px 2px 6px rgb(0, 0, 0)')
+	shadowed := styled(doc, 'div',
+		'width: 50px; height: 50px; box-shadow: 2px 2px 6px rgb(0, 0, 0)')
 	svg := layout_block(shadowed, 0, 0, 800, []&css.CSSRule{}).render_svg(200, 200)
 	assert svg.contains('<filter id="blur0"')
 	assert svg.contains('feGaussianBlur')
@@ -2253,7 +2315,8 @@ fn test_box_shadow_svg_blur_filter() {
 // fill_gradient command that renders to an SVG <linearGradient>.
 fn test_linear_gradient_background() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 100px; height: 50px; background: linear-gradient(to right, rgb(255, 0, 0), rgb(0, 0, 255))')
+	root := styled(doc, 'div',
+		'width: 100px; height: 50px; background: linear-gradient(to right, rgb(255, 0, 0), rgb(0, 0, 255))')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	grad := box.background_gradient or { panic('no gradient') }
@@ -2275,7 +2338,8 @@ fn test_linear_gradient_background() {
 // The `to bottom` direction is the default and gives a top-to-bottom vector; three stops space evenly.
 fn test_linear_gradient_default_direction_and_stops() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 40px; height: 40px; background-image: linear-gradient(red, green, blue)')
+	root := styled(doc, 'div',
+		'width: 40px; height: 40px; background-image: linear-gradient(red, green, blue)')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	grad := box.background_gradient or { panic('no gradient') }
@@ -2304,7 +2368,8 @@ fn test_no_gradient_by_default() {
 fn test_resolved_style_value_used_metrics() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'width: 200px')
-	child := styled(doc, 'div', 'width: 50%; height: 30px; padding: 10px; margin-left: 5px; border-top: 2px solid; color: rgb(1, 2, 3)')
+	child := styled(doc, 'div',
+		'width: 50%; height: 30px; padding: 10px; margin-left: 5px; border-top: 2px solid; color: rgb(1, 2, 3)')
 	mut rn := root.as_node()
 	rn.append_child(child.as_node()) or { panic('${err}') }
 	no := []&css.CSSRule{}
@@ -2395,7 +2460,8 @@ fn test_flex_container_height_is_tallest_item() {
 // Build a 300px flex row with two 100px items and the given justify-content, returning the item xs.
 fn jc_item_xs(justify string) (f64, f64) {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'display: flex; justify-content: ${justify}; width: 300px; height: 20px')
+	root := styled(doc, 'div',
+		'display: flex; justify-content: ${justify}; width: 300px; height: 20px')
 	a := styled(doc, 'div', 'width: 100px; height: 20px')
 	b := styled(doc, 'div', 'width: 100px; height: 20px')
 	mut rn := root.as_node()
@@ -2486,7 +2552,8 @@ fn test_flex_gap_basic() {
 // gap and justify-content compose: the gap is fixed spacing, justify distributes the remaining space.
 fn test_flex_gap_with_center() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'display: flex; gap: 20px; justify-content: center; width: 300px; height: 20px')
+	root := styled(doc, 'div',
+		'display: flex; gap: 20px; justify-content: center; width: 300px; height: 20px')
 	a := styled(doc, 'div', 'width: 100px; height: 20px')
 	b := styled(doc, 'div', 'width: 100px; height: 20px')
 	mut rn := root.as_node()
@@ -2552,7 +2619,8 @@ fn test_flex_shrink_on_overflow() {
 // flex-grow: 0 (the default) items don't grow — free space is left for justify-content.
 fn test_flex_no_grow_leaves_free_space() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'display: flex; justify-content: flex-end; width: 300px; height: 20px')
+	root := styled(doc, 'div',
+		'display: flex; justify-content: flex-end; width: 300px; height: 20px')
 	a := styled(doc, 'div', 'width: 100px; height: 20px')
 	mut rn := root.as_node()
 	rn.append_child(a.as_node()) or { panic('${err}') }
@@ -2565,7 +2633,8 @@ fn test_flex_no_grow_leaves_free_space() {
 // align-items: stretch (the default) grows auto-height items to the container's cross size.
 fn test_align_items_stretch_fills_height() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'display: flex; width: 300px; height: 80px') // default align-items: stretch
+	root :=
+		styled(doc, 'div', 'display: flex; width: 300px; height: 80px') // default align-items: stretch
 	a := styled(doc, 'div', 'width: 100px')
 	b := styled(doc, 'div', 'width: 100px')
 	mut rn := root.as_node()
@@ -2624,7 +2693,8 @@ fn test_flex_column_basic() {
 // Column justify-content centers items vertically within the container's height.
 fn test_flex_column_justify_center() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'display: flex; flex-direction: column; justify-content: center; width: 200px; height: 300px')
+	root := styled(doc, 'div',
+		'display: flex; flex-direction: column; justify-content: center; width: 200px; height: 300px')
 	a := styled(doc, 'div', 'height: 50px')
 	b := styled(doc, 'div', 'height: 60px')
 	mut rn := root.as_node()
@@ -2639,7 +2709,8 @@ fn test_flex_column_justify_center() {
 // Column align-items centers items horizontally (their width shrink-to-fits or is definite).
 fn test_flex_column_align_center() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'display: flex; flex-direction: column; align-items: center; width: 200px; height: 300px')
+	root := styled(doc, 'div',
+		'display: flex; flex-direction: column; align-items: center; width: 200px; height: 300px')
 	a := styled(doc, 'div', 'width: 80px; height: 50px')
 	mut rn := root.as_node()
 	rn.append_child(a.as_node()) or { panic('${err}') }
@@ -2667,7 +2738,8 @@ fn test_flex_column_auto_height() {
 // radial-gradient background renders to an SVG <radialGradient> with the stop colors.
 fn test_radial_gradient_background() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 100px; height: 100px; background: radial-gradient(rgb(255, 0, 0), rgb(0, 0, 255))')
+	root := styled(doc, 'div',
+		'width: 100px; height: 100px; background: radial-gradient(rgb(255, 0, 0), rgb(0, 0, 255))')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	grad := box.background_gradient or { panic('no gradient') }
@@ -2684,7 +2756,8 @@ fn test_radial_gradient_background() {
 // A leading shape/size keyword (e.g. `circle`) is skipped; the color stops still parse.
 fn test_radial_gradient_skips_shape() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 60px; height: 60px; background-image: radial-gradient(circle, rgb(1, 2, 3), rgb(4, 5, 6))')
+	root := styled(doc, 'div',
+		'width: 60px; height: 60px; background-image: radial-gradient(circle, rgb(1, 2, 3), rgb(4, 5, 6))')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	grad := box.background_gradient or { panic('no gradient') }
@@ -2696,7 +2769,8 @@ fn test_radial_gradient_skips_shape() {
 // linear-gradient still parses as non-radial and renders a <linearGradient>.
 fn test_linear_gradient_still_linear() {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'width: 60px; height: 60px; background: linear-gradient(to right, rgb(1, 1, 1), rgb(2, 2, 2))')
+	root := styled(doc, 'div',
+		'width: 60px; height: 60px; background: linear-gradient(to right, rgb(1, 1, 1), rgb(2, 2, 2))')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	grad := box.background_gradient or { panic('no gradient') }
@@ -2752,7 +2826,8 @@ fn test_list_marker_counter_styles() {
 fn test_inline_block_atomic() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'width: 500px; font-size: 20px')
-	ib := styled(doc, 'span', 'display: inline-block; width: 40px; height: 30px; background-color: rgb(0, 128, 0)')
+	ib := styled(doc, 'span',
+		'display: inline-block; width: 40px; height: 30px; background-color: rgb(0, 128, 0)')
 	mut rn := root.as_node()
 	rn.append_child(doc.create_text_node('a').as_node()) or { panic('${err}') }
 	rn.append_child(ib.as_node()) or { panic('${err}') }
@@ -2789,7 +2864,8 @@ fn test_inline_block_auto_width_shrink_to_fit() {
 fn test_inline_block_paints() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'width: 500px; font-size: 20px')
-	ib := styled(doc, 'span', 'display: inline-block; width: 30px; height: 30px; background-color: rgb(1, 2, 3)')
+	ib := styled(doc, 'span',
+		'display: inline-block; width: 30px; height: 30px; background-color: rgb(1, 2, 3)')
 	mut rn := root.as_node()
 	rn.append_child(ib.as_node()) or { panic('${err}') }
 
@@ -2854,7 +2930,8 @@ struct GridCell {
 
 fn grid_cells(template string, gap string, n int) []GridCell {
 	doc := dom.Document.create(dom.url_about_blank())
-	root := styled(doc, 'div', 'display: grid; width: 300px; grid-template-columns: ${template}; gap: ${gap}')
+	root := styled(doc, 'div',
+		'display: grid; width: 300px; grid-template-columns: ${template}; gap: ${gap}')
 	mut rn := root.as_node()
 	for _ in 0 .. n {
 		item := styled(doc, 'div', 'height: 20px')

@@ -56,6 +56,7 @@ pub struct RuleSelectorParser {
 pub mut:
 	tokens              []Token
 	token_stream        ParserTokenStream
+	document            &dom.Document = unsafe { nil }
 	rule_context        []RuleContext
 	declared_namespaces map[string]bool
 }
@@ -65,6 +66,7 @@ pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding st
 	return RuleSelectorParser{
 		tokens:              tokens
 		token_stream:        ParserTokenStream.from_tokens(tokens)
+		document:            params.document
 		rule_context:        params.rule_context.clone()
 		declared_namespaces: params.declared_namespaces.clone()
 	}
@@ -81,6 +83,7 @@ pub fn RuleSelectorParser.create_with_namespaces(input string, declared_namespac
 
 fn (parser RuleSelectorParser) parsing_params() ParsingParams {
 	return ParsingParams{
+		document:            parser.document
 		rule_context:        parser.rule_context.clone()
 		declared_namespaces: parser.declared_namespaces.clone()
 	}
@@ -1887,8 +1890,8 @@ fn (mut parser RuleSelectorParser) convert_child_rule_list(children []RuleOrList
 }
 
 fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations ParserRuleDeclarations) &CSSStyleProperties {
-	_ = parser
-	mut style := CSSStyleProperties.create()
+	mut properties := []StyleProperty{}
+	mut custom_properties := map[string]StyleProperty{}
 	for declaration in declarations {
 		value := parser_component_values_to_string(declaration.value).trim_space()
 		if is_a_custom_property_name_string(declaration.name) {
@@ -1897,17 +1900,27 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 			} else {
 				value
 			}
-			style.custom_properties[declaration.name] = custom_property_value_with_priority(value_text,
-				declaration.important)
+			custom_properties[declaration.name] = StyleProperty{
+				important:   declaration.important
+				property_id: .color
+				value:       &dom.StyleValue{
+					css_text: value_text
+				}
+			}
 		} else {
-			style.properties << CSSStyleProperty{
-				name:      declaration.name
-				value:     value
-				important: declaration.important == .yes
+			property := PropertyNameAndID.from_name(declaration.name) or { continue }
+			property_id := property.id() or { continue }
+			parsed_value := parse_css_value(parser.parsing_params(), value, property_id) or {
+				continue
+			}
+			properties << StyleProperty{
+				important:   declaration.important
+				property_id: property_id
+				value:       parsed_value
 			}
 		}
 	}
-	return style
+	return CSSStyleProperties.create_from_declarations(properties, custom_properties)
 }
 
 fn append_descriptor(mut descriptors []Descriptor, descriptor Descriptor) {

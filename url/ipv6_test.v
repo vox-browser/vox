@@ -2,7 +2,8 @@ module url
 
 fn test_ipv6_full_form() {
 	assert parse_ipv6_address('1:2:3:4:5:6:7:8')? == [u16(1), 2, 3, 4, 5, 6, 7, 8]
-	assert parse_ipv6_address('2001:db8:0:0:0:0:0:1')? == [u16(0x2001), 0x0db8, 0, 0, 0, 0, 0, 1]
+	assert parse_ipv6_address('2001:db8:0:0:0:0:0:1')? == [u16(0x2001), 0x0db8, 0, 0, 0, 0, 0,
+		1]
 }
 
 fn test_ipv6_compression() {

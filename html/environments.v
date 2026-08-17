@@ -1,0 +1,494 @@
+// Copyright (c) 2021-2026, Ladybird contributors
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of Scripting/Environments.{h,cpp},
+// WindowEnvironmentSettingsObject.{h,cpp}, and
+// WorkerEnvironmentSettingsObject.{h,cpp}. LibJS execution-context identity is
+// represented by ScriptingRealm; browser-owned service-worker records use the
+// stable lightweight wrappers below.
+@[has_globals]
+module html
+
+import dom
+import math
+import time
+
+__global html_next_environment_id = u64(1)
+
+pub enum RunScriptDecision {
+	run
+	do_not_run
+}
+
+pub enum EnvironmentGlobalKind {
+	window
+	worker
+	snapshot
+}
+
+@[heap]
+pub struct Environment {
+pub mut:
+	id                      string
+	creation_url            dom.URL
+	top_level_creation_url  ?dom.URL
+	top_level_origin        ?dom.Origin
+	target_browsing_context ?&BrowsingContextModel
+	execution_ready         bool
+	discarded               bool
+}
+
+pub fn Environment.create(id string, creation_url dom.URL, top_level_creation_url ?dom.URL, top_level_origin ?dom.Origin, target ?&BrowsingContextModel) &Environment {
+	return &Environment{
+		id:                      id
+		creation_url:            creation_url
+		top_level_creation_url:  top_level_creation_url
+		top_level_origin:        top_level_origin
+		target_browsing_context: target
+	}
+}
+
+pub fn (mut environment Environment) discard_environment() {
+	environment.discarded = true
+}
+
+pub struct ServiceWorkerRecordModel {
+pub:
+	id    string
+	state string
+}
+
+pub struct ServiceWorkerObjectModel {
+pub:
+	record_id string
+	state     string
+}
+
+pub struct ServiceWorkerRegistrationRecordModel {
+pub:
+	storage_key string
+	scope_url   dom.URL
+	installing  ?&ServiceWorkerRecordModel
+	waiting     ?&ServiceWorkerRecordModel
+	active      ?&ServiceWorkerRecordModel
+}
+
+@[heap]
+pub struct ServiceWorkerRegistrationObjectModel {
+pub:
+	storage_key string
+	scope_url   dom.URL
+pub mut:
+	installing ?&ServiceWorkerObjectModel
+	waiting    ?&ServiceWorkerObjectModel
+	active     ?&ServiceWorkerObjectModel
+}
+
+@[heap]
+pub struct EnvironmentSettingsObject {
+pub:
+	realm &ScriptingRealm
+mut:
+	environment_                         &Environment
+	module_map_                          &ModuleMap
+	responsible_event_loop_              &EventLoop
+	global_kind_                         EnvironmentGlobalKind
+	window_                              ?&WindowModel
+	worker_                              ?&WorkerGlobalScope
+	policy_container_                    PolicyContainer
+	time_origin_                         f64
+	origin_                              dom.Origin
+	outside_has_cross_site_ancestor_     bool
+	worker_owner_secure_context_         bool
+	resolved_module_set_                 []ResolvedModuleRecord
+	service_worker_registration_objects_ map[string]&ServiceWorkerRegistrationObjectModel
+	service_worker_objects_              map[string]&ServiceWorkerObjectModel
+}
+
+fn create_environment_settings(realm &ScriptingRealm, environment &Environment, kind EnvironmentGlobalKind, event_loop &EventLoop) &EnvironmentSettingsObject {
+	settings := &EnvironmentSettingsObject{
+		realm:                   realm
+		environment_:            environment
+		module_map_:             ModuleMap.create()
+		responsible_event_loop_: event_loop
+		global_kind_:            kind
+		policy_container_:       PolicyContainer{}
+	}
+	mut mutable_realm := unsafe { &ScriptingRealm(realm) }
+	mutable_realm.settings_handle = voidptr(settings)
+	return settings
+}
+
+pub fn (settings &EnvironmentSettingsObject) environment() &Environment {
+	return settings.environment_
+}
+
+pub fn (settings &EnvironmentSettingsObject) module_map() &ModuleMap {
+	return settings.module_map_
+}
+
+pub fn (settings &EnvironmentSettingsObject) responsible_event_loop() &EventLoop {
+	return settings.responsible_event_loop_
+}
+
+pub fn (settings &EnvironmentSettingsObject) responsible_document() ?&dom.Document {
+	window := settings.window_ or { return none }
+	return window.associated_document()
+}
+
+pub fn (settings &EnvironmentSettingsObject) api_base_url() dom.URL {
+	if window := settings.window_ {
+		return window.associated_document().base_url()
+	}
+	if worker := settings.worker_ {
+		return worker.url()
+	}
+	return settings.environment_.creation_url
+}
+
+pub fn (settings &EnvironmentSettingsObject) origin() dom.Origin {
+	if window := settings.window_ {
+		return window.associated_document().origin()
+	}
+	return settings.origin_
+}
+
+pub fn (settings &EnvironmentSettingsObject) has_cross_site_ancestor() bool {
+	if window := settings.window_ {
+		context := window.browsing_context()
+		mut ancestor := context.parent()
+		for ancestor != none {
+			candidate := ancestor or { break }
+			if document := candidate.active_document() {
+				if !document.origin().is_same_site(window.associated_document().origin()) {
+					return true
+				}
+			}
+			ancestor = candidate.parent()
+		}
+		return false
+	}
+	if worker := settings.worker_ {
+		return settings.outside_has_cross_site_ancestor_ || worker.url().scheme() == 'data'
+	}
+	return settings.outside_has_cross_site_ancestor_
+}
+
+pub fn (settings &EnvironmentSettingsObject) policy_container() &PolicyContainer {
+	return &settings.policy_container_
+}
+
+pub fn (mut settings EnvironmentSettingsObject) set_policy_container(container &PolicyContainer) {
+	settings.policy_container_ = container.clone()
+}
+
+pub fn (settings &EnvironmentSettingsObject) cross_origin_isolated_capability() CanUseCrossOriginIsolatedAPIs {
+	// Ladybird's current Window and Worker implementations return No pending
+	// agent-cluster isolation and Permissions Policy integration.
+	return .no
+}
+
+pub fn (settings &EnvironmentSettingsObject) time_origin() f64 {
+	return settings.time_origin_
+}
+
+pub fn (settings &EnvironmentSettingsObject) parse_url(value string) ?dom.URL {
+	return dom.dom_url_parse(value, settings.api_base_url(), 'UTF-8')
+}
+
+pub fn (settings &EnvironmentSettingsObject) encoding_parse_url(value string) ?dom.URL {
+	encoding := if document := settings.responsible_document() {
+		document.encoding_or_default()
+	} else {
+		'UTF-8'
+	}
+	return dom.dom_url_parse(value, settings.api_base_url(), encoding)
+}
+
+pub fn (settings &EnvironmentSettingsObject) encoding_parse_and_serialize_url(value string) ?string {
+	url := settings.encoding_parse_url(value) or { return none }
+	return url.serialize()
+}
+
+pub fn (mut settings EnvironmentSettingsObject) discard_environment() {
+	settings.environment_.discard_environment()
+}
+
+pub fn (settings &EnvironmentSettingsObject) discarded() bool {
+	return settings.environment_.discarded
+}
+
+pub fn (settings &EnvironmentSettingsObject) is_secure_context() bool {
+	if settings.global_kind_ == .worker {
+		return settings.worker_owner_secure_context_
+	}
+	url := settings.environment_.top_level_creation_url or { return false }
+	return is_url_potentially_trustworthy(url)
+}
+
+pub fn is_url_potentially_trustworthy(url dom.URL) bool {
+	if url.scheme() in ['https', 'wss', 'file'] {
+		return true
+	}
+	if url.scheme() == 'about' && url.serialize() in ['about:blank', 'about:srcdoc'] {
+		return true
+	}
+	host := url.serialized_host()
+	if url.scheme() == 'http' && (host == 'localhost' || host.ends_with('.localhost')
+		|| host == '127.0.0.1' || host == '::1' || host == '[::1]') {
+		return true
+	}
+	return false
+}
+
+pub fn (settings &EnvironmentSettingsObject) serialize() SerializedEnvironmentSettingsObject {
+	secure_context := settings.is_secure_context()
+	global := if window := settings.window_ {
+		SerializedGlobal(SerializedWindow{
+			associated_document: SerializedDocument{
+				url:                                        window.associated_document().url
+				relevant_settings_object_is_secure_context: secure_context
+			}
+		})
+	} else {
+		SerializedGlobal(SerializedWorkerGlobalScope{
+			relevant_settings_object_is_secure_context: secure_context
+		})
+	}
+	return SerializedEnvironmentSettingsObject{
+		id:                               settings.environment_.id
+		creation_url:                     settings.environment_.creation_url
+		top_level_creation_url:           settings.environment_.top_level_creation_url
+		top_level_origin:                 settings.environment_.top_level_origin
+		api_base_url:                     settings.api_base_url()
+		origin:                           settings.origin()
+		has_cross_site_ancestor:          settings.has_cross_site_ancestor()
+		policy_container:                 settings.policy_container_.serialize()
+		cross_origin_isolated_capability: settings.cross_origin_isolated_capability()
+		time_origin:                      settings.time_origin()
+		global:                           global
+	}
+}
+
+pub fn (mut settings EnvironmentSettingsObject) add_module_to_resolved_module_set(serialized_base_url string, normalized_specifier string, as_url ?dom.URL) {
+	if settings.global_kind_ != .window {
+		return
+	}
+	settings.resolved_module_set_ << ResolvedModuleRecord{
+		serialized_base_url:                           serialized_base_url
+		specifier:                                     normalized_specifier
+		specifier_is_null_or_url_like_that_is_special: as_url == none
+			|| as_url or { dom.URL{} }.scheme() in ['ftp', 'file', 'http', 'https', 'ws', 'wss']
+	}
+}
+
+pub fn (settings &EnvironmentSettingsObject) resolved_module_set() []ResolvedModuleRecord {
+	return settings.resolved_module_set_.clone()
+}
+
+pub fn (mut settings EnvironmentSettingsObject) get_service_worker_object(record &ServiceWorkerRecordModel) &ServiceWorkerObjectModel {
+	if object := settings.service_worker_objects_[record.id] {
+		return object
+	}
+	object := &ServiceWorkerObjectModel{
+		record_id: record.id
+		state:     record.state
+	}
+	settings.service_worker_objects_[record.id] = object
+	return object
+}
+
+pub fn (mut settings EnvironmentSettingsObject) get_service_worker_registration_object(registration &ServiceWorkerRegistrationRecordModel) &ServiceWorkerRegistrationObjectModel {
+	key := '${registration.storage_key}\x00${registration.scope_url.serialize()}'
+	if object := settings.service_worker_registration_objects_[key] {
+		return object
+	}
+	mut object := &ServiceWorkerRegistrationObjectModel{
+		storage_key: registration.storage_key
+		scope_url:   registration.scope_url
+	}
+	if worker := registration.installing {
+		object.installing = settings.get_service_worker_object(worker)
+	}
+	if worker := registration.waiting {
+		object.waiting = settings.get_service_worker_object(worker)
+	}
+	if worker := registration.active {
+		object.active = settings.get_service_worker_object(worker)
+	}
+	settings.service_worker_registration_objects_[key] = object
+	return object
+}
+
+pub fn (settings &EnvironmentSettingsObject) current_wall_time() f64 {
+	// V exposes milliseconds; cross-origin isolation is currently No in this
+	// port, so coarsen to 100 microseconds as High Resolution Time requires.
+	unsafe_time := f64(time.now().unix_milli())
+	return math.floor(unsafe_time * 10.0) / 10.0
+}
+
+pub fn module_type_allowed(module_type string) bool {
+	return module_type in ['javascript', 'css', 'json']
+}
+
+pub fn settings_object_of_realm(realm &ScriptingRealm) ?&EnvironmentSettingsObject {
+	if realm.settings_handle == unsafe { nil } {
+		return none
+	}
+	return unsafe { &EnvironmentSettingsObject(realm.settings_handle) }
+}
+
+pub fn can_run_script_for_settings(settings &EnvironmentSettingsObject) RunScriptDecision {
+	if window := settings.window_ {
+		if !window.browsing_context().is_fully_active() {
+			return .do_not_run
+		}
+	}
+	if !settings.realm.scripting_enabled || !settings.realm.can_run {
+		return .do_not_run
+	}
+	return .run
+}
+
+pub fn can_run_script(realm &ScriptingRealm) RunScriptDecision {
+	settings := settings_object_of_realm(realm) or {
+		return if realm.scripting_enabled && realm.can_run { .run } else { .do_not_run }
+	}
+	return can_run_script_for_settings(settings)
+}
+
+pub fn is_scripting_enabled(realm &ScriptingRealm) bool {
+	return can_run_script(realm) == .run
+}
+
+pub fn is_scripting_disabled(realm &ScriptingRealm) bool {
+	return !is_scripting_enabled(realm)
+}
+
+@[heap]
+pub struct WindowEnvironmentSettingsObject {
+pub:
+	settings &EnvironmentSettingsObject
+	window   &WindowModel
+}
+
+pub fn WindowEnvironmentSettingsObject.setup(window &WindowModel, creation_url dom.URL, mut realm ScriptingRealm, reserved_environment ?&Environment, top_level_creation_url dom.URL, top_level_origin dom.Origin) &WindowEnvironmentSettingsObject {
+	mut id := ''
+	mut target := ?&BrowsingContextModel(none)
+	if mut reserved := reserved_environment {
+		id = reserved.id
+		target = reserved.target_browsing_context
+		reserved.id = ''
+	} else {
+		id = html_next_environment_id.str()
+		html_next_environment_id++
+	}
+	environment := Environment.create(id, creation_url, top_level_creation_url, top_level_origin,
+		target)
+	mut settings := create_environment_settings(realm, environment, .window,
+		main_thread_event_loop())
+	settings.window_ = window
+	settings.origin_ = window.associated_document().origin()
+	settings.time_origin_ = window.associated_document().load_timing_info.navigation_start_time
+	return &WindowEnvironmentSettingsObject{
+		settings: settings
+		window:   window
+	}
+}
+
+pub fn (object &WindowEnvironmentSettingsObject) responsible_document() &dom.Document {
+	return object.window.associated_document()
+}
+
+pub fn (object &WindowEnvironmentSettingsObject) api_base_url() dom.URL {
+	return object.settings.api_base_url()
+}
+
+pub fn (object &WindowEnvironmentSettingsObject) origin() dom.Origin {
+	return object.settings.origin()
+}
+
+pub fn (object &WindowEnvironmentSettingsObject) has_cross_site_ancestor() bool {
+	return object.settings.has_cross_site_ancestor()
+}
+
+pub fn (object &WindowEnvironmentSettingsObject) policy_container() &PolicyContainer {
+	return object.settings.policy_container()
+}
+
+pub fn (object &WindowEnvironmentSettingsObject) cross_origin_isolated_capability() CanUseCrossOriginIsolatedAPIs {
+	return object.settings.cross_origin_isolated_capability()
+}
+
+pub fn (object &WindowEnvironmentSettingsObject) time_origin() f64 {
+	return object.settings.time_origin()
+}
+
+@[heap]
+pub struct WorkerEnvironmentSettingsObject {
+pub:
+	settings     &EnvironmentSettingsObject
+	global_scope &WorkerGlobalScope
+}
+
+pub fn WorkerEnvironmentSettingsObject.setup(global_scope &WorkerGlobalScope, mut realm ScriptingRealm, outside_settings SerializedEnvironmentSettingsObject, unsafe_worker_creation_time f64) &WorkerEnvironmentSettingsObject {
+	origin := if global_scope.url().scheme() == 'data' {
+		dom.origin_create_opaque()
+	} else {
+		outside_settings.origin
+	}
+	id := html_next_environment_id.str()
+	html_next_environment_id++
+	environment := Environment.create(id, global_scope.url(), none,
+		outside_settings.top_level_origin, none)
+	mut settings := create_environment_settings(realm, environment, .worker,
+		global_scope.event_loop)
+	settings.worker_ = global_scope
+	settings.origin_ = origin
+	settings.outside_has_cross_site_ancestor_ = outside_settings.has_cross_site_ancestor
+	settings.worker_owner_secure_context_ =
+		serialized_global_is_secure_context(outside_settings.global)
+	settings.policy_container_ =
+		create_a_policy_container_from_serialized_policy_container(outside_settings.policy_container)
+	settings.time_origin_ = coarsen_worker_time(unsafe_worker_creation_time)
+	return &WorkerEnvironmentSettingsObject{
+		settings:     settings
+		global_scope: global_scope
+	}
+}
+
+fn serialized_global_is_secure_context(global SerializedGlobal) bool {
+	return match global {
+		SerializedWindow { global.associated_document.relevant_settings_object_is_secure_context }
+		SerializedWorkerGlobalScope { global.relevant_settings_object_is_secure_context }
+	}
+}
+
+fn coarsen_worker_time(value f64) f64 {
+	return math.floor(value * 10.0) / 10.0
+}
+
+pub fn (object &WorkerEnvironmentSettingsObject) api_base_url() dom.URL {
+	return object.settings.api_base_url()
+}
+
+pub fn (object &WorkerEnvironmentSettingsObject) origin() dom.Origin {
+	return object.settings.origin()
+}
+
+pub fn (object &WorkerEnvironmentSettingsObject) has_cross_site_ancestor() bool {
+	return object.settings.has_cross_site_ancestor()
+}
+
+pub fn (object &WorkerEnvironmentSettingsObject) policy_container() &PolicyContainer {
+	return object.settings.policy_container()
+}
+
+pub fn (object &WorkerEnvironmentSettingsObject) cross_origin_isolated_capability() CanUseCrossOriginIsolatedAPIs {
+	return object.settings.cross_origin_isolated_capability()
+}
+
+pub fn (object &WorkerEnvironmentSettingsObject) time_origin() f64 {
+	return object.settings.time_origin()
+}

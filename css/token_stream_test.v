@@ -36,8 +36,9 @@ fn test_token_stream_basic() {
 }
 
 fn test_token_stream_marks() {
-	tokens := [ident_token('a'), ident_token('b'), ident_token('c'), ident_token('d'),
-		ident_token('e'), ident_token('f'), ident_token('g')]
+	tokens := [ident_token('a'), ident_token('b'), ident_token('c'),
+		ident_token('d'), ident_token('e'), ident_token('f'),
+		ident_token('g')]
 	mut stream := ParserTokenStream.from_tokens(tokens)
 
 	stream.mark() // 0

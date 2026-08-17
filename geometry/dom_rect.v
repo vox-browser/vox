@@ -6,8 +6,8 @@
 // DOMRect.cpp — an axis-aligned rectangle (x, y, width, height) with a read-only base and a mutable
 // subclass. The top/right/bottom/left edges are derived, using min/max so that negative widths and
 // heights are handled, and returning NaN when the relevant inputs are NaN (coordinates are
-// `unrestricted double`). The (de)serialization steps need HTML StructuredSerialize (the JS runtime)
-// and are out of scope. As with DOMPoint, V has no default arguments, so the IDL defaults (all 0) live
+// `unrestricted double`). Typed structured-clone records are in serialization.v. As with DOMPoint,
+// V has no default arguments, so the IDL defaults (all 0) live
 // on the DOMRectInit dictionary used by fromRect and the constructors take explicit values.
 //
 // NOTE: dom.DOMRect is a separate minimal value-struct used by the CSSOM-view bounding-rect path; this
@@ -77,7 +77,8 @@ pub fn (rect &DOMRectReadOnly) top() f64 {
 	if math.is_nan(rect.y_) || math.is_nan(rect.height_) {
 		return math.nan()
 	}
-	return if rect.y_ < rect.y_ + rect.height_ { rect.y_ } else { rect.y_ + rect.height_ }
+	other_edge := rect.y_ + rect.height_
+	return if other_edge < rect.y_ { other_edge } else { rect.y_ }
 }
 
 // https://drafts.fxtf.org/geometry/#dom-domrectreadonly-right — max(x, x + width).
@@ -85,7 +86,8 @@ pub fn (rect &DOMRectReadOnly) right() f64 {
 	if math.is_nan(rect.x_) || math.is_nan(rect.width_) {
 		return math.nan()
 	}
-	return if rect.x_ > rect.x_ + rect.width_ { rect.x_ } else { rect.x_ + rect.width_ }
+	other_edge := rect.x_ + rect.width_
+	return if rect.x_ < other_edge { other_edge } else { rect.x_ }
 }
 
 // https://drafts.fxtf.org/geometry/#dom-domrectreadonly-bottom — max(y, y + height).
@@ -93,7 +95,8 @@ pub fn (rect &DOMRectReadOnly) bottom() f64 {
 	if math.is_nan(rect.y_) || math.is_nan(rect.height_) {
 		return math.nan()
 	}
-	return if rect.y_ > rect.y_ + rect.height_ { rect.y_ } else { rect.y_ + rect.height_ }
+	other_edge := rect.y_ + rect.height_
+	return if rect.y_ < other_edge { other_edge } else { rect.y_ }
 }
 
 // https://drafts.fxtf.org/geometry/#dom-domrectreadonly-left — min(x, x + width).
@@ -101,7 +104,8 @@ pub fn (rect &DOMRectReadOnly) left() f64 {
 	if math.is_nan(rect.x_) || math.is_nan(rect.width_) {
 		return math.nan()
 	}
-	return if rect.x_ < rect.x_ + rect.width_ { rect.x_ } else { rect.x_ + rect.width_ }
+	other_edge := rect.x_ + rect.width_
+	return if other_edge < rect.x_ { other_edge } else { rect.x_ }
 }
 
 // https://drafts.fxtf.org/geometry/#domrect — DOMRect : DOMRectReadOnly, adding writable coordinates.

@@ -2,11 +2,6 @@ module html
 
 import dom
 
-@[heap]
-struct AvailableImageTestData {
-	value u8
-}
-
 fn test_list_of_available_images_key_and_storage_algorithms() {
 	key := AvailableImageKey{
 		url:    'https://example.com/image.png'
@@ -25,20 +20,30 @@ fn test_list_of_available_images_key_and_storage_algorithms() {
 	assert key.equals(&key)
 	assert !key.equals(&other_origin)
 
-	first_image := &AvailableImageTestData{
-		value: 1
-	}
-	second_image := &AvailableImageTestData{
-		value: 2
-	}
+	first_image := BitmapDecodedImageData.create([
+		BitmapDecodedImageFrame{
+			bitmap: &dom.ImmutableBitmap_{
+				width:  1
+				height: 1
+			}
+		},
+	], 0, false)
+	second_image := BitmapDecodedImageData.create([
+		BitmapDecodedImageFrame{
+			bitmap: &dom.ImmutableBitmap_{
+				width:  2
+				height: 1
+			}
+		},
+	], 0, false)
 	mut images := ListOfAvailableImages{}
-	images.add(key, voidptr(first_image), false)
+	images.add(key, first_image, false)
 	entry := images.get(key) or { panic('missing image') }
-	assert entry.image_data == voidptr(first_image)
+	assert entry.image_data.intrinsic_width() or { 0 } == 1
 	assert !entry.ignore_higher_layer_caching
-	images.add(key, voidptr(second_image), true)
+	images.add(key, second_image, true)
 	replaced := images.get(key) or { panic('missing replacement') }
-	assert replaced.image_data == voidptr(second_image)
+	assert replaced.image_data.intrinsic_width() or { 0 } == 2
 	assert replaced.ignore_higher_layer_caching
 	images.remove(key)
 	assert images.get(key) == none

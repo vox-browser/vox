@@ -45,3 +45,13 @@ pub fn (ranges &TimeRanges) in_range(point f64) bool {
 	}
 	return false
 }
+
+pub fn (ranges &TimeRanges) clone() &TimeRanges {
+	return &TimeRanges{
+		ranges: ranges.ranges.clone()
+	}
+}
+
+pub fn (mut ranges TimeRanges) clear() {
+	ranges.ranges.clear()
+}

@@ -17,7 +17,8 @@ fn table_test_element(node &dom.Node, local_name string) ?&dom.Element {
 }
 
 fn test_table_caption_sections_and_ordered_rows() {
-	document := parse_document('<table><tfoot><tr id="foot"></tr></tfoot><tbody><tr id="body"></tr></tbody><thead><tr id="head"></tr></thead></table>')
+	document :=
+		parse_document('<table><tfoot><tr id="foot"></tr></tfoot><tbody><tr id="body"></tr></tbody><thead><tr id="head"></tr></thead></table>')
 	table_dom_element := table_test_element(unsafe { &dom.Node(document) }, 'table') or {
 		panic('missing table')
 	}
@@ -66,8 +67,11 @@ fn test_table_insert_delete_rows_and_cells() {
 }
 
 fn test_table_cell_spans() {
-	document := parse_document('<table><tr><td colspan="0" rowspan="0"></td><td colspan="999999999999999999999999" rowspan="70000"></td></tr></table>')
-	row_element := table_test_element(unsafe { &dom.Node(document) }, 'tr') or { panic('missing row') }
+	document :=
+		parse_document('<table><tr><td colspan="0" rowspan="0"></td><td colspan="999999999999999999999999" rowspan="70000"></td></tr></table>')
+	row_element := table_test_element(unsafe { &dom.Node(document) }, 'tr') or {
+		panic('missing row')
+	}
 	row := unsafe { &dom.HTMLTableRowElement(row_element) }
 	cells := html_table_row_element_cells(row)
 	assert html_table_cell_element_col_span(cells[0]) == 1
@@ -81,7 +85,8 @@ fn test_table_cell_spans() {
 }
 
 fn test_table_col_span_border_and_cellpadding() {
-	document := parse_document('<table border="7" cellpadding="-2"><colgroup span="0"></colgroup><col span="999999999999999999999999"></table>')
+	document :=
+		parse_document('<table border="7" cellpadding="-2"><colgroup span="0"></colgroup><col span="999999999999999999999999"></table>')
 	table_dom_element := table_test_element(unsafe { &dom.Node(document) }, 'table') or {
 		panic('missing table')
 	}

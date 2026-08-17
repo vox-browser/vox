@@ -1,5 +1,7 @@
 module webvtt
 
+import math
+
 fn test_defaults() {
 	region := VTTRegion.construct_impl()
 	assert region.id() == ''
@@ -56,6 +58,14 @@ fn test_percentage_setters_reject_out_of_range() {
 	if _ := region.set_viewport_anchor_y(-5) {
 		assert false, 'expected IndexSizeError'
 	}
+}
+
+fn test_percentage_setters_preserve_unrestricted_nan() {
+	mut region := VTTRegion.construct_impl()
+	region.set_width(math.nan())!
+	region.set_region_anchor_x(math.nan())!
+	assert math.is_nan(region.width())
+	assert math.is_nan(region.region_anchor_x())
 }
 
 fn set_width_result(mut region VTTRegion, width f64) !bool {

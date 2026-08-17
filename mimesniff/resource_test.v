@@ -81,3 +81,45 @@ fn test_rules_prefers_image_signature() {
 		false).essence() == 'image/png'
 	assert rules_for_identifying_an_unknown_mime_type('\x1F\x8B\x08'.bytes(), false).essence() == 'application/x-gzip'
 }
+
+fn test_resource_reads_at_most_1445_bytes() {
+	resource := Resource.create([]u8{len: 2000, init: u8(1)}, SniffingConfiguration{})
+	assert resource.resource_header().len == 1445
+}
+
+fn test_resource_unknown_and_no_sniff_behavior() {
+	unknown := MimeType.parse('application/unknown')?
+	assert Resource.sniff('<html>hello'.bytes(), SniffingConfiguration{
+		scheme:        'https'
+		supplied_type: unknown
+	}).essence() == 'text/html'
+	plained := MimeType.parse('text/plain')?
+	assert Resource.sniff('\x89PNG\r\n\x1a\n'.bytes(), SniffingConfiguration{
+		scheme:        'https'
+		supplied_type: plained
+		no_sniff:      true
+	}).essence() == 'text/plain'
+}
+
+fn test_resource_context_specific_sniffing() {
+	png := Resource.sniff('\x89PNG\r\n\x1a\n'.bytes(), SniffingConfiguration{
+		sniffing_context: .image
+	})
+	assert png.essence() == 'image/png'
+	font := Resource.sniff('wOFFmore'.bytes(), SniffingConfiguration{
+		sniffing_context: .font
+	})
+	assert font.essence() == 'font/woff'
+}
+
+fn test_apache_bug_text_binary_rules() {
+	plain := MimeType.parse('text/plain;charset=UTF-8')?
+	assert Resource.sniff([u8(0), 1, 2], SniffingConfiguration{
+		scheme:        'http'
+		supplied_type: plain
+	}).essence() == 'application/octet-stream'
+	assert Resource.sniff('ordinary text'.bytes(), SniffingConfiguration{
+		scheme:        'http'
+		supplied_type: plain
+	}).essence() == 'text/plain'
+}

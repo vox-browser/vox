@@ -2219,7 +2219,8 @@ fn parse_attribute_selector(body string) SimpleSelector {
 		return invalid_simple_selector('[${body}]')
 	}
 	value := if operator_index >= 0 {
-		value_text, parsed_case_type, ok := parse_attribute_value_and_case_suffix(text[operator_index + operator.len..].trim_space())
+		value_text, parsed_case_type, ok := parse_attribute_value_and_case_suffix(text[
+			operator_index + operator.len..].trim_space())
 		if !ok {
 			return invalid_simple_selector('[${body}]')
 		}
@@ -2372,7 +2373,11 @@ fn parse_pseudo_selector(text string, start int) ParsedSimpleSelector {
 fn parse_pseudo_element_selector(name string, argument string, is_function bool) SimpleSelector {
 	pseudo_element := pseudo_element_from_string(name)
 	if pseudo_element == .unknown || (pseudo_element == .unknown_webkit && is_function) {
-		return invalid_simple_selector(if is_function { '::${name}(${argument})' } else { '::${name}' })
+		return invalid_simple_selector(if is_function {
+			'::${name}(${argument})'
+		} else {
+			'::${name}'
+		})
 	}
 	if is_function {
 		if !pseudo_element_valid_as_function(pseudo_element) || argument.trim_space().len == 0 {
@@ -2471,8 +2476,8 @@ fn parse_pseudo_class_selector(name string, argument string, is_function bool) S
 			}
 		}
 		.is_, .where, .not_ {
-			if pseudo_class_type == .not_ && !selector_list_text_is_valid_for_standard(argument,
-				false) {
+			if pseudo_class_type == .not_
+				&& !selector_list_text_is_valid_for_standard(argument, false) {
 				return invalid_simple_selector(':${name}(${argument})')
 			}
 			pseudo_class.is_forgiving = pseudo_class_type in [.is_, .where]
@@ -2553,8 +2558,8 @@ fn pseudo_element_valid_as_function(pseudo_element PseudoElement) bool {
 }
 
 fn pseudo_element_valid_as_identifier(pseudo_element PseudoElement) bool {
-	if pseudo_element in [.unknown, .part, .slotted, .view_transition_group, .view_transition_image_pair,
-		.view_transition_old, .view_transition_new] {
+	if pseudo_element in [.unknown, .part, .slotted, .view_transition_group,
+		.view_transition_image_pair, .view_transition_old, .view_transition_new] {
 		return false
 	}
 	return true

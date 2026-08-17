@@ -1,0 +1,86 @@
+// Copyright (c) 2025, Ladybird contributors
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of Libraries/LibWeb/HTML/ErrorInformation.{h,cpp}.
+module html
+
+import dom
+
+// https://html.spec.whatwg.org/multipage/webappapis.html#extract-error
+pub struct ErrorInformation {
+pub:
+	message  string
+	filename string
+	error    dom.JSValue
+	lineno   usize
+	colno    usize
+}
+
+// The translated DOM currently represents JavaScript values without a VM or
+// executable stack. This record carries precisely the VM-derived information
+// consumed by extract_error_information, keeping the extraction algorithm
+// independent from the eventual JavaScript runtime implementation.
+pub struct ErrorSourceLocation {
+pub:
+	filename string
+	line     usize
+	column   usize
+}
+
+pub struct ErrorExtractionContext {
+pub:
+	// The exception object's own `message` property, when it can be read without
+	// side effects. `none` follows the C++ fallback formatting path.
+	own_message ?string
+	// JS::Error uses its traceback; other exceptions use the most recent
+	// executable execution context.
+	exception_is_error bool
+	traceback          []ErrorSourceLocation
+	execution_stack    []ErrorSourceLocation
+}
+
+fn first_nonempty_error_location(locations []ErrorSourceLocation) ?ErrorSourceLocation {
+	for location in locations {
+		if location.line != 0 || location.column != 0 {
+			return location
+		}
+	}
+	return none
+}
+
+// https://html.spec.whatwg.org/multipage/webappapis.html#extract-error
+pub fn extract_error_information(exception dom.JSValue, context ErrorExtractionContext) ErrorInformation {
+	message := context.own_message or { 'Uncaught exception: ${exception.to_string_value()}' }
+	mut filename := ''
+	mut lineno := usize(0)
+	mut colno := usize(0)
+
+	if context.exception_is_error {
+		if location := first_nonempty_error_location(context.traceback) {
+			filename = location.filename
+			lineno = location.line
+			colno = location.column
+		}
+	} else {
+		// The VM execution-context stack is ordered oldest-to-newest. Search it
+		// backwards, matching ErrorInformation.cpp.
+		for index := context.execution_stack.len - 1; index >= 0; index-- {
+			location := context.execution_stack[index]
+			if location.line != 0 || location.column != 0 {
+				filename = location.filename
+				lineno = location.line
+				colno = location.column
+				break
+			}
+		}
+	}
+
+	return ErrorInformation{
+		message:  message
+		filename: filename
+		error:    exception
+		lineno:   lineno
+		colno:    colno
+	}
+}
