@@ -16,18 +16,26 @@ Build the V-native translated-engine viewer with:
 open Build/v/Ladybird.app
 ```
 
-The application parses HTML and drives the translated DOM, CSS, Layout, and
-paint-command pipeline in a native window. Pass a local HTML path to the bundle
-executable to render that file. A small non-windowed build/startup check is
-available as:
+The application provides a native single-tab browser chrome with back/forward,
+reload, home, an editable address/search field, link navigation, loading and
+console status, and scrolling. HTTP(S), local files, external stylesheets, and
+classic scripts feed the translated HTML, DOM, CSS, Layout, hit-testing,
+history, and paint-command pipeline. On macOS, JavaScriptCore supplies actual
+ECMAScript evaluation at the translated Bindings host boundary; common
+`document`, element mutation, location, events, timers, and console operations
+are bridged back into the translated DOM before reflow.
+
+Pass a URL, local HTML path, or raw HTML to the bundle executable to open it. A
+small non-windowed build/startup check is available as:
 
 ```sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 ```
 
 This bundle is distinct from `~/code/3rd/ladybird/Build/.../Ladybird.app`, which
-is the upstream C++ application. Network navigation, JavaScript execution, and
-the complete browser chrome are not yet wired into the V-native viewer.
+is the upstream C++ application. The V-native application does not yet provide
+the full generated Web-IDL JavaScript surface, multi-process isolation, tabs,
+downloads, media/image painting, or persistent browser profiles.
 
 Run the full translation test suite with:
 
