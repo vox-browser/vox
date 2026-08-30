@@ -681,6 +681,24 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		}
 		return
 	}
+	if token.is_end_tag() && token.tag_name == 'form' {
+		if !p.stack_of_open_elements.contains_template_element() {
+			form := p.form_element or { return }
+			p.form_element = none
+			if !p.stack_of_open_elements.has_in_scope_element(form) {
+				return
+			}
+			p.generate_implied_end_tags('')
+			p.stack_of_open_elements.remove(form)
+			return
+		}
+		if !p.stack_of_open_elements.has_in_scope('form') {
+			return
+		}
+		p.generate_implied_end_tags('')
+		p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('form')
+		return
+	}
 	if token.is_start_tag() && token.tag_name == 'button' {
 		if p.stack_of_open_elements.has_in_scope('button') {
 			p.generate_implied_end_tags('')

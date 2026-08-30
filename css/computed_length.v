@@ -88,6 +88,47 @@ pub fn (c &ComputedProperties) length_percentage_to_px(property_id PropertyID, p
 	return length.to_px(context).to_double()
 }
 
+// Resolve an already-computed standalone <length-percentage> token using the
+// font, root-font, and viewport metrics retained by this computed style. This
+// is the computed-style counterpart of resolve_length_percentage_text_px(); it
+// avoids re-running the DOM cascade when a renderer adapter already owns the
+// canonical ComputedProperties object.
+pub fn (c &ComputedProperties) resolve_length_percentage_text_px(text string, percentage_basis_px f64) ?f64 {
+	typed := parse_css_value_logic(.margin_left, text) or { return none }
+	if typed.is_percentage() {
+		return typed.as_percentage().percentage().value() * percentage_basis_px / 100.0
+	}
+	font_px := CSSPixels.nearest_value_for(c.resolved_font_size_px())
+	root_font_px := CSSPixels.nearest_value_for(c.root_font_size_px_)
+	mut context := LengthResolutionContext.default()
+	context.viewport_rect = c.viewport_rect_
+	context.font_metrics = computed_interpolation_font_metrics_for_size(font_px)
+	context.font_metrics.line_height = c.line_height()
+	context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_font_px)
+	context.root_font_metrics.line_height = CSSPixels.nearest_value_for(c.root_line_height_px_)
+	if typed.is_calculated() {
+		resolution_context := CalculationResolutionContext{
+			percentage_basis: Length.make_px(percentage_basis_px)
+			length_resolution_context: context
+		}
+		if length := typed.as_calculated().resolve_length(resolution_context) {
+			return length.to_px(context).to_double()
+		}
+		return none
+	}
+	if !typed.is_length() {
+		return none
+	}
+	length := typed.as_length().length()
+	if length.is_absolute() {
+		return length.absolute_length_to_px().to_double()
+	}
+	if length.is_viewport_relative() {
+		return length.viewport_relative_length_to_px(c.viewport_rect_).to_double()
+	}
+	return length.to_px(context).to_double()
+}
+
 // This computed style's font-size in px (already absolute in a computed style). Falls back to 16px.
 pub fn (c &ComputedProperties) resolved_font_size_px() f64 {
 	value := c.property(.font_size, .yes) or { return 16.0 }

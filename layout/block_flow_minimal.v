@@ -101,15 +101,16 @@ pub:
 	rtl                   bool
 	// Paint style of the inline element that generated this word. Words with the same non-zero node
 	// id are joined into one inline box on each line before their text is painted.
-	inline_node_id   i64
-	background_color css.Color
-	border           BoxEdges
-	border_color     css.Color
-	border_colors    BoxColors
-	border_radius    f64
-	border_radii     BoxRadii
-	shadow           ?BoxShadow
-	shadows          []BoxShadow
+	inline_node_id    i64
+	background_color  css.Color
+	background_images []BackgroundImageLayer
+	border            BoxEdges
+	border_color      css.Color
+	border_colors     BoxColors
+	border_radius     f64
+	border_radii      BoxRadii
+	shadow            ?BoxShadow
+	shadows           []BoxShadow
 	// The resolved text-decoration covering this word.
 	decoration           string = 'none'
 	decoration_color     css.Color
@@ -157,6 +158,7 @@ fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 			rtl: it.rtl
 			inline_node_id: it.inline_node_id
 			background_color: it.background_color
+			background_images: it.background_images.clone()
 			border: it.border
 			border_color: it.border_color
 			border_colors: it.border_colors
@@ -220,6 +222,13 @@ pub mut:
 	// A `linear-gradient` background image, painted over the background color, or none.
 	background_gradient ?LinearGradient
 	background_images   []BackgroundImageLayer
+	// Replaced image content paints over CSS backgrounds and below borders.
+	replaced_image_url        string
+	replaced_image_size       string
+	replaced_image_position_x string
+	replaced_image_position_y string
+	form_control_kind         string
+	form_control_checked      bool
 	// Root backgrounds cover the viewport canvas. A transparent HTML root may receive these values
 	// from the body background according to CSS canvas-background propagation.
 	canvas_background_color css.Color
@@ -984,6 +993,84 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 				image_attachment: layer.attachment
 			}
 		}
+		if box.replaced_image_url != '' {
+			commands << PaintCommand{
+				kind: 'draw_background_image'
+				x: box.x
+				y: box.y
+				width: box.width
+				height: box.height
+				opacity: opacity
+				image_url: box.replaced_image_url
+				image_repeat_x: 'no-repeat'
+				image_repeat_y: 'no-repeat'
+				image_size: box.replaced_image_size
+				image_position_x: box.replaced_image_position_x
+				image_position_y: box.replaced_image_position_y
+				image_clip_x: box.x
+				image_clip_y: box.y
+				image_clip_width: box.width
+				image_clip_height: box.height
+			}
+		}
+		if box.form_control_kind == 'checkbox' {
+			commands << PaintCommand{
+				kind: 'fill_rect'
+				x: box.x
+				y: box.y
+				width: box.width
+				height: box.height
+				color: 'rgb(255 255 255)'
+				opacity: opacity
+			}
+			append_square_border_commands(mut commands, BoxEdges{1, 1, 1, 1}, BoxColors{css.Color{118, 118, 118, 255}, css.Color{118, 118, 118, 255}, css.Color{118, 118, 118, 255}, css.Color{118, 118, 118, 255}}, box.x, box.y, box.width, box.height, opacity)
+			if box.form_control_checked {
+				commands << PaintCommand{
+					kind: 'fill_polygon'
+					x: box.x + 2
+					y: box.y + 2
+					width: non_negative(box.width - 4)
+					height: non_negative(box.height - 4)
+					color: 'rgb(0 0 0)'
+					opacity: opacity
+					points: [box.x + 2, box.y + box.height * 0.5, box.x + box.width * 0.42,
+						box.y + box.height - 3, box.x + box.width - 2, box.y + 2,
+						box.x + box.width - 3, box.y + 1, box.x + box.width * 0.42,
+						box.y + box.height - 5, box.x + 3, box.y + box.height * 0.5]
+				}
+			}
+		} else if box.form_control_kind == 'radio' {
+			commands << PaintCommand{
+				kind: 'fill_ellipse'
+				x: box.x
+				y: box.y
+				width: box.width
+				height: box.height
+				color: 'rgb(255 255 255)'
+				opacity: opacity
+			}
+			commands << PaintCommand{
+				kind: 'stroke_ellipse'
+				x: box.x
+				y: box.y
+				width: box.width
+				height: box.height
+				color: 'rgb(118 118 118)'
+				stroke_width: 1
+				opacity: opacity
+			}
+			if box.form_control_checked {
+				commands << PaintCommand{
+					kind: 'fill_ellipse'
+					x: box.x + box.width * 0.25
+					y: box.y + box.height * 0.25
+					width: box.width * 0.5
+					height: box.height * 0.5
+					color: 'rgb(0 0 0)'
+					opacity: opacity
+				}
+			}
+		}
 		append_inset_shadow_commands(mut commands, box_shadows, border_left + box.border.left, border_top + box.border.top, non_negative(border_width - box.border.left - box.border.right), non_negative(border_height - box.border.top - box.border.bottom), non_negative(radius - if box.border.top < box.border.left {
 			box.border.top
 		} else {
@@ -1316,6 +1403,28 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) []PaintComman
 				color: first.background_color.serialize()
 				opacity: opacity
 				radius: radius
+			}
+		}
+		for layer_index := first.background_images.len - 1; layer_index >= 0; layer_index-- {
+			layer := first.background_images[layer_index]
+			commands << PaintCommand{
+				kind: 'draw_background_image'
+				x: left
+				y: top
+				width: width
+				height: height
+				opacity: opacity
+				image_url: layer.url
+				image_repeat_x: layer.repeat_x
+				image_repeat_y: layer.repeat_y
+				image_size: layer.size
+				image_position_x: layer.position_x
+				image_position_y: layer.position_y
+				image_clip_x: left
+				image_clip_y: top
+				image_clip_width: width
+				image_clip_height: height
+				image_attachment: layer.attachment
 			}
 		}
 		append_inset_shadow_commands(mut commands, fragment_shadows, left + first.border.left, top + first.border.top, non_negative(width - first.border.left - first.border.right), non_negative(height - first.border.top - first.border.bottom), non_negative(radius - first.border.top), opacity)

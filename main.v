@@ -50,6 +50,8 @@ fn C.native_draw_polygon_srgb(points &f32, point_count int, canvas_height f32, c
 
 fn C.native_draw_outer_box_shadow_srgb(source_x f32, source_y f32, source_width f32, source_height f32, source_radius f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, clip_radius f32, blur f32, color gg.Color)
 
+fn C.native_draw_image_part(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, canvas_height f32, opacity f32)
+
 const initial_width = 1024
 const initial_height = 768
 const toolbar_height = 88.0
@@ -408,7 +410,8 @@ fn fetch_page(address string, base string) !LoadedPage {
 fn fetch_text_resource(reference string, base string) !string {
 	resolved := resolve_document_reference(reference, base)
 	if resolved.starts_with('file://') {
-		return os.read_file(resolved['file://'.len..])
+		path := urllib.path_unescape(resolved['file://'.len..])!
+		return os.read_file(path)
 	}
 	response := vhttp.fetch(
 		url: resolved
@@ -465,11 +468,21 @@ fn install_external_styles(document &dom.Document, base_url string) []string {
 			continue
 		}
 		href := link.get_attribute_value('href')
+		resolved_url := resolve_document_reference(href, base_url)
+		if resolved_url.starts_with('file://') {
+			path := urllib.path_unescape(resolved_url['file://'.len..]) or { '' }
+			if path != '' && os.is_file(path) {
+				// The CSS bridge reads local link stylesheets itself and retains their URL.
+				continue
+			}
+		}
 		stylesheet := fetch_text_resource(href, base_url) or {
 			messages << 'Stylesheet ${href}: ${err.msg()}'
 			continue
 		}
-		style := document.create_element('style') or { continue }
+		mut style := document.create_element('style') or { continue }
+		style.set_attribute_value('data-libweb-v-source-url', resolved_url)
+		style.set_attribute_value('media', link.get_attribute_value('media'))
 		mut style_node := unsafe { &dom.Node(style) }
 		style_node.set_text_content(stylesheet) or { continue }
 		head := css.query_selector(root, 'head') or { document.document_element() or { continue } }
@@ -758,6 +771,9 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	app.load_status = loaded.status
 	app.js_messages = []
 	app.document = html.parse_document(loaded.markup)
+	if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(), 'UTF-8') {
+		app.document.set_url(document_url)
+	}
 	app.js_messages << install_external_styles(app.document, loaded.url)
 	if app.js_runtime != unsafe { nil } {
 		app.js_runtime.close()
@@ -1269,11 +1285,13 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 			mut tile_width := intrinsic_width
 			mut tile_height := intrinsic_height
 			size := command.image_size.trim_space().to_lower()
-			if size == 'cover' || size == 'contain' {
+			if size in ['cover', 'contain', 'scale-down'] {
 				x_scale := w / intrinsic_width
 				y_scale := h / intrinsic_height
 				scale := if size == 'cover' {
 					math.max(x_scale, y_scale)
+				} else if size == 'scale-down' {
+					math.min(f32(1), math.min(x_scale, y_scale))
 				} else {
 					math.min(x_scale, y_scale)
 				}
@@ -1323,12 +1341,20 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 					right_edge := math.min(column_x + tile_width, clip_x + clip_w)
 					bottom_edge := math.min(row_y + tile_height, clip_y + clip_h)
 					if right_edge > left && bottom_edge > top {
-						app.ctx.draw_image_with_config(
-							img: image
-							img_rect: gg.Rect{left, top, right_edge - left, bottom_edge - top}
-							part_rect: gg.Rect{(left - column_x) * intrinsic_width / tile_width, (top - row_y) * intrinsic_height / tile_height, (right_edge - left) * intrinsic_width / tile_width, (bottom_edge - top) * intrinsic_height / tile_height}
-							color: gg.rgba(255, 255, 255, u8(clamp(command.opacity * 255.0, 0.0, 255.0)))
-						)
+						source_x := (left - column_x) * intrinsic_width / tile_width
+						source_y := (top - row_y) * intrinsic_height / tile_height
+						source_width := (right_edge - left) * intrinsic_width / tile_width
+						source_height := (bottom_edge - top) * intrinsic_height / tile_height
+						if app.ctx.native_rendering {
+							C.native_draw_image_part(image, left, top, right_edge - left, bottom_edge - top, source_x, source_y, source_width, source_height, f32(app.ctx.height), f32(command.opacity))
+						} else {
+							app.ctx.draw_image_with_config(
+								img: image
+								img_rect: gg.Rect{left, top, right_edge - left, bottom_edge - top}
+								part_rect: gg.Rect{source_x, source_y, source_width, source_height}
+								color: gg.rgba(255, 255, 255, u8(clamp(command.opacity * 255.0, 0.0, 255.0)))
+							)
+						}
 					}
 					tile_count++
 					if !repeat_x {

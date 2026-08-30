@@ -130,10 +130,10 @@ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 This bundle is distinct from `~/code/3rd/ladybird/Build/.../Ladybird.app`, which
 is the upstream C++ application. The V-native application does not yet provide
 the full generated Web-IDL JavaScript surface, multi-process isolation, tabs,
-downloads, media/image painting, or persistent browser profiles.
+downloads, media playback, or persistent browser profiles.
 
 Run the full translation test suite with:
 
 ```sh
-v test .
+v -enable-globals test .
 ```

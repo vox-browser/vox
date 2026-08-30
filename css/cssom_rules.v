@@ -662,6 +662,22 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 
 	rule.clear_caches()
 	rule.parent_style_sheet = parent_style_sheet
+	if declaration := rule.declaration {
+		mut declaration_with_base := unsafe { &CSSStyleProperties(declaration) }
+		base_url := if sheet := parent_style_sheet {
+			sheet.base_url or { sheet.base.location or { '' } }
+		} else {
+			''
+		}
+		if base_url.len > 0 {
+			for mut property in declaration_with_base.properties {
+				if value := property.style_value {
+					mut value_with_base := unsafe { &dom.StyleValue(value) }
+					value_with_base.base_url = base_url
+				}
+			}
+		}
+	}
 	rule.clear_caches()
 
 	if rule.type_ == .import_rule {

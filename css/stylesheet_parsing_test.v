@@ -45,6 +45,15 @@ fn test_stylesheet_object() {
 	assert sheet.css_rules().length() == 2
 }
 
+fn test_stylesheet_location_is_retained_for_style_resource_urls() {
+	sheet := parse_css_stylesheet_with_parser('a { background-image: url("sprite.png") }', 'https://example.test/assets/site.css')
+	rule := sheet.css_rules().item(0) or { panic('missing style rule') }
+	declaration := decl_of(rule)
+	assert declaration.properties.len == 1
+	value := declaration.properties[0].style_value or { panic('missing parsed style value') }
+	assert value.base_url or { '' } == 'https://example.test/assets/site.css'
+}
+
 fn test_empty_and_comma_only_media_preludes() {
 	sheet := parse_css_stylesheet_with_parser('@media { .first { display: block } } @media ,, { .invalid { display: block } }',
 		?string(none))

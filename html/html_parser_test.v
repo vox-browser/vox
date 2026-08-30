@@ -103,6 +103,12 @@ fn test_paragraph_auto_close() {
 	assert tree_repr(body) == 'body(p("one"),p("two"))'
 }
 
+fn test_form_end_tag_clears_the_form_element_pointer() {
+	doc := parse('<body><form id="first"><input></form><form id="second"><button>go</button></form></body>')
+	body := nth_child(html_element(doc), 1)
+	assert tree_repr(body) == 'body(form(input),form(button("go")))'
+}
+
 fn test_formatting_element() {
 	doc := parse('<body><p>Hello <b>world</b>!</p></body>')
 	body := nth_child(html_element(doc), 1)

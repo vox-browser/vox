@@ -899,6 +899,25 @@ pub mut:
 	simple_selectors []SimpleSelector
 }
 
+// Selectors are immutable value objects in the style system, but the compact V
+// representation retains their serialized text. Scope a parsed representation
+// cache to one style/layout traversal so each selector is parsed once without
+// retaining every selector from every navigation for the process lifetime.
+__global (
+	parsed_compound_selector_cache         = map[string][]CompoundSelector{}
+	parsed_compound_selector_cache_enabled bool
+)
+
+pub fn begin_selector_parse_cache() {
+	parsed_compound_selector_cache.clear()
+	parsed_compound_selector_cache_enabled = true
+}
+
+pub fn end_selector_parse_cache() {
+	parsed_compound_selector_cache_enabled = false
+	parsed_compound_selector_cache.clear()
+}
+
 pub fn (compound_selector CompoundSelector) absolutized(selector_for_nesting SimpleSelector) ?CompoundSelector {
 	// TODO: Cache if it contains the nesting selector?
 	mut absolutized_simple_selectors := []SimpleSelector{cap: compound_selector.simple_selectors.len}
@@ -917,7 +936,16 @@ pub fn (compound_selector CompoundSelector) absolutized(selector_for_nesting Sim
 }
 
 pub fn (selector Selector) compound_selectors() []CompoundSelector {
-	return parse_complex_selector(selector.text)
+	if parsed_compound_selector_cache_enabled {
+		if cached := parsed_compound_selector_cache[selector.text] {
+			return cached
+		}
+	}
+	parsed := parse_complex_selector(selector.text)
+	if parsed_compound_selector_cache_enabled {
+		parsed_compound_selector_cache[selector.text] = parsed
+	}
+	return parsed
 }
 
 pub fn (selector Selector) pseudo_element() ?PseudoElementSelector {

@@ -9,16 +9,52 @@ static NSString *native_capture_string(string value) {
 	                            encoding:NSUTF8StringEncoding];
 }
 
+static NSView *native_cached_browser_view;
+
+static void native_consider_largest_view(NSView *view, NSView **largest_view, CGFloat *largest_area) {
+	if (view == nil || [view isHidden]) {
+		return;
+	}
+	NSSize size = [view bounds].size;
+	CGFloat area = MAX(size.width, 0.0) * MAX(size.height, 0.0);
+	if (area > *largest_area) {
+		*largest_area = area;
+		*largest_view = view;
+	}
+	for (NSView *subview in [view subviews]) {
+		native_consider_largest_view(subview, largest_view, largest_area);
+	}
+}
+
 static NSView *native_browser_view(void) {
+	if (native_cached_browser_view != nil) {
+		NSSize cached_size = [native_cached_browser_view bounds].size;
+		if (cached_size.width > 0.0 && cached_size.height > 0.0) {
+			return native_cached_browser_view;
+		}
+	}
 	NSWindow *window = [NSApp mainWindow];
 	if (window == nil) {
 		window = [NSApp keyWindow];
 	}
-	NSView *view = [window contentView];
-	if ([[view subviews] count] > 0) {
-		view = [[view subviews] lastObject];
+	if (window == nil) {
+		for (NSWindow *candidate in [NSApp windows]) {
+			NSSize size = [[candidate contentView] bounds].size;
+			if (size.width > 0.0 && size.height > 0.0) {
+				window = candidate;
+				break;
+			}
+		}
 	}
-	return view;
+	// The sokol view can acquire zero-sized helper siblings after startup, so
+	// select and retain the largest drawable view instead of the last subview.
+	NSView *largest_view = nil;
+	CGFloat largest_area = 0.0;
+	native_consider_largest_view([window contentView], &largest_view, &largest_area);
+	if (largest_view != nil) {
+		native_cached_browser_view = largest_view;
+	}
+	return native_cached_browser_view;
 }
 
 static NSString *native_document_font_name;
@@ -181,6 +217,28 @@ void native_draw_outer_box_shadow_srgb(float source_x, float source_y, float sou
 	CGContextRestoreGState(context);
 }
 
+void native_draw_image_part(gg__Image *image, float destination_x, float destination_y,
+	float destination_width, float destination_height, float source_x, float source_y,
+	float source_width, float source_height, float canvas_height, float opacity) {
+	if (image == NULL || image->data == NULL || destination_width <= 0 || destination_height <= 0
+	    || source_width <= 0 || source_height <= 0) {
+		return;
+	}
+	NSImage *native_image = (__bridge NSImage *)image->data;
+	NSRect destination = NSMakeRect(destination_x,
+		canvas_height - destination_y - destination_height, destination_width, destination_height);
+	// CSS image coordinates start at the top-left. NSImage source rectangles use
+	// the native bottom-left coordinate system.
+	NSRect source = NSMakeRect(source_x, image->height - source_y - source_height,
+		source_width, source_height);
+	[native_image drawInRect:destination
+	              fromRect:source
+	             operation:NSCompositingOperationSourceOver
+	              fraction:MIN(MAX(opacity, 0.0f), 1.0f)
+	        respectFlipped:NO
+	                 hints:@{ NSImageHintInterpolation: @(NSImageInterpolationNone) }];
+}
+
 void schedule_native_screenshot(string output_path) {
 	NSString *path = native_capture_string(output_path);
 	const char *delay_value = getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS");
@@ -192,8 +250,40 @@ void schedule_native_screenshot(string output_path) {
 	               dispatch_get_main_queue(), ^{
 		NSView *view = native_browser_view();
 		[view displayIfNeeded];
-		NSBitmapImageRep *bitmap = [view bitmapImageRepForCachingDisplayInRect:[view bounds]];
-		[view cacheDisplayInRect:[view bounds] toBitmapImageRep:bitmap];
+		NSRect bounds = [view bounds];
+		NSBitmapImageRep *bitmap = [view bitmapImageRepForCachingDisplayInRect:bounds];
+		if (bitmap == nil) {
+			CGFloat scale = [[view window] backingScaleFactor];
+			if (scale <= 0.0) {
+				scale = 1.0;
+			}
+			NSInteger pixels_wide = (NSInteger)llround(bounds.size.width * scale);
+			NSInteger pixels_high = (NSInteger)llround(bounds.size.height * scale);
+			if (pixels_wide <= 0 || pixels_high <= 0) {
+				fprintf(stderr, "Ladybird V: invalid screenshot dimensions %.0fx%.0f at scale %.2f\n",
+				        bounds.size.width, bounds.size.height, scale);
+				[NSApp terminate:nil];
+				return;
+			}
+			bitmap = [[NSBitmapImageRep alloc]
+				initWithBitmapDataPlanes:NULL
+				              pixelsWide:pixels_wide
+				              pixelsHigh:pixels_high
+				           bitsPerSample:8
+				         samplesPerPixel:4
+				                hasAlpha:YES
+				                isPlanar:NO
+				          colorSpaceName:NSDeviceRGBColorSpace
+				             bytesPerRow:pixels_wide * 4
+				            bitsPerPixel:32];
+			[bitmap setSize:bounds.size];
+		}
+		if (bitmap == nil) {
+			fprintf(stderr, "Ladybird V: could not allocate a bitmap for the window screenshot\n");
+			[NSApp terminate:nil];
+			return;
+		}
+		[view cacheDisplayInRect:bounds toBitmapImageRep:bitmap];
 		// The backing store follows the display profile (usually Display P3 on modern Macs).
 		// Normalize captures to sRGB so pixel comparisons do not report a page-sized color-space
 		// delta against Ladybird's untagged screenshot output.
@@ -204,12 +294,24 @@ void schedule_native_screenshot(string output_path) {
 			encodedBitmap = bitmap;
 		}
 		NSData *png = [encodedBitmap representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
-		BOOL saved = [png writeToFile:path atomically:YES];
+		if (png == nil) {
+			fprintf(stderr, "Ladybird V: could not encode the window screenshot as PNG\n");
+			[NSApp terminate:nil];
+			return;
+		}
+		NSError *write_error = nil;
+		BOOL saved = [png writeToFile:path options:NSDataWritingAtomic error:&write_error];
+		if (!saved) {
+			write_error = nil;
+			saved = [png writeToFile:path options:0 error:&write_error];
+		}
 		if (saved) {
 			fprintf(stdout, "Saved Ladybird V window screenshot: %s\n", [path fileSystemRepresentation]);
 			fflush(stdout);
 		} else {
-			fprintf(stderr, "Ladybird V: could not save screenshot to %s\n", [path fileSystemRepresentation]);
+			fprintf(stderr, "Ladybird V: could not save screenshot to %s: %s\n",
+			        [path fileSystemRepresentation],
+			        write_error == nil ? "unknown error" : [[write_error localizedDescription] UTF8String]);
 		}
 		[NSApp terminate:nil];
 	});

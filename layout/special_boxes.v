@@ -159,6 +159,7 @@ pub mut:
 	renders_as_alt_text_ bool
 mut:
 	svg_image_document_ ?&dom.Document
+	source_             string
 }
 
 fn image_alt_text_natural_size(alt string) css.SizeWithAspectRatio {
@@ -199,6 +200,7 @@ pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_value
 			source = source_set.select_an_image_source().source.url
 		}
 	}
+	box.source_ = source
 	if intrinsic_size := image_intrinsic_size_for_source(document, source) {
 		box.renders_as_alt_text_ = false
 		box.natural_size_ = intrinsic_size
@@ -214,6 +216,7 @@ pub fn ImageBox.new_generated(document &dom.Document, computed_values &css.Compu
 	mut box := &ImageBox{
 		ReplacedBox: generated_replaced_box_base(document, computed_values)
 		renders_as_alt_text_: true
+		source_: source
 	}
 	box.is_image_box_ = true
 	if intrinsic_size := image_intrinsic_size_for_source(document, source) {
@@ -696,6 +699,10 @@ fn webp_image_dimensions(data []u8) ?ImageDimensions {
 
 pub fn (box &ImageBox) renders_as_alt_text() bool {
 	return box.renders_as_alt_text_
+}
+
+pub fn (box &ImageBox) source() string {
+	return box.source_
 }
 
 pub fn (mut box ImageBox) dom_node_did_update_alt_text() {

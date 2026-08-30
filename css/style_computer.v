@@ -629,8 +629,13 @@ struct ExpandedLonghand {
 fn expand_property_longhands(property_id PropertyID, value &dom.StyleValue) []ExpandedLonghand {
 	mut longhands := []ExpandedLonghand{}
 	longhands_ptr := &longhands
-	StyleComputer.for_each_property_expanding_shorthands(property_id, value, fn [longhands_ptr] (longhand_id PropertyID, longhand_value &dom.StyleValue) {
+	base_url := value.base_url
+	StyleComputer.for_each_property_expanding_shorthands(property_id, value, fn [longhands_ptr, base_url] (longhand_id PropertyID, longhand_value &dom.StyleValue) {
 		unsafe {
+			mut value_with_base := &dom.StyleValue(longhand_value)
+			if value_with_base.base_url == none {
+				value_with_base.base_url = base_url
+			}
 			mut list := *longhands_ptr
 			list << ExpandedLonghand{
 				id:    longhand_id
@@ -658,7 +663,9 @@ fn opaque_is_revert_layer(property_id PropertyID, value &dom.StyleValue) bool {
 fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, property_id PropertyID, value &dom.StyleValue) &dom.StyleValue {
 	typed := parse_css_value_logic(property_id, value.css_text) or { return unsafe { value } }
 	if typed is UnresolvedStyleValue {
-		return resolve_unresolved_style_value_for_property(abstract_element, property_id, typed)
+		mut resolved := resolve_unresolved_style_value_for_property(abstract_element, property_id, typed)
+		resolved.base_url = value.base_url
+		return resolved
 	}
 	return unsafe { value }
 }

@@ -43,6 +43,170 @@ fn paint_cumulative_offset(node &Node, state &LayoutState, used &UsedValues) css
 	return offset
 }
 
+fn computed_property_text(computed &css.ComputedProperties, property css.PropertyID, fallback string) string {
+	value := computed.property(property, .yes) or { return fallback }
+	text := value.css_text.trim_space()
+	return if text == '' { fallback } else { text }
+}
+
+fn computed_paint_color(computed &css.ComputedProperties, property css.PropertyID, current_color css.Color) css.Color {
+	text := computed_property_text(computed, property, '')
+	if text.to_lower() == 'currentcolor' {
+		return current_color
+	}
+	return css.parse_color_string(text) or { current_color }
+}
+
+fn computed_border_colors(computed &css.ComputedProperties, current_color css.Color) BoxColors {
+	return BoxColors{
+		top: computed_paint_color(computed, .border_top_color, current_color)
+		right: computed_paint_color(computed, .border_right_color, current_color)
+		bottom: computed_paint_color(computed, .border_bottom_color, current_color)
+		left: computed_paint_color(computed, .border_left_color, current_color)
+	}
+}
+
+fn computed_corner_radius(computed &css.ComputedProperties, property css.PropertyID, width f64, height f64) CornerRadius {
+	tokens := split_top_level(computed_property_text(computed, property, '0'), ` `)
+	if tokens.len == 0 {
+		return CornerRadius{}
+	}
+	x := non_negative(computed.resolve_length_percentage_text_px(tokens[0], width) or { 0.0 })
+	y := if tokens.len > 1 {
+		non_negative(computed.resolve_length_percentage_text_px(tokens[1], height) or { 0.0 })
+	} else {
+		non_negative(computed.resolve_length_percentage_text_px(tokens[0], height) or { 0.0 })
+	}
+	return CornerRadius{x, y}
+}
+
+fn computed_box_radii(computed &css.ComputedProperties, width f64, height f64) BoxRadii {
+	return normalize_box_radii(BoxRadii{
+		top_left: computed_corner_radius(computed, .border_top_left_radius, width, height)
+		top_right: computed_corner_radius(computed, .border_top_right_radius, width, height)
+		bottom_right: computed_corner_radius(computed, .border_bottom_right_radius, width, height)
+		bottom_left: computed_corner_radius(computed, .border_bottom_left_radius, width, height)
+	}, width, height)
+}
+
+fn computed_outline_width(computed &css.ComputedProperties) f64 {
+	style := computed_property_text(computed, .outline_style, 'none').to_lower()
+	if style in ['none', 'hidden'] {
+		return 0
+	}
+	value := computed_property_text(computed, .outline_width, 'medium').to_lower()
+	if px := computed.resolve_length_percentage_text_px(value, 0) {
+		return px
+	}
+	return match value {
+		'thin' { 1.0 }
+		'thick' { 5.0 }
+		else { 3.0 }
+	}
+}
+
+fn computed_box_shadow_part(computed &css.ComputedProperties, value string, current_color css.Color) ?BoxShadow {
+	inset := split_top_level(value, ` `).any(it == 'inset')
+	mut lengths := []f64{}
+	mut color := current_color
+	for token in split_top_level(value, ` `) {
+		if is_length_token(token) {
+			lengths << (computed.resolve_length_percentage_text_px(token, 0) or { 0.0 })
+		} else if parsed_color := css.parse_color_string(token) {
+			color = parsed_color
+		}
+	}
+	if lengths.len < 2 {
+		return none
+	}
+	return BoxShadow{
+		offset_x: lengths[0]
+		offset_y: lengths[1]
+		blur: if lengths.len > 2 { non_negative(lengths[2]) } else { 0.0 }
+		spread: if lengths.len > 3 { lengths[3] } else { 0.0 }
+		color: color
+		inset: inset
+	}
+}
+
+fn computed_box_shadows(computed &css.ComputedProperties, current_color css.Color) []BoxShadow {
+	value := computed_property_text(computed, .box_shadow, 'none')
+	if value == 'none' {
+		return []BoxShadow{}
+	}
+	mut shadows := []BoxShadow{}
+	for part in split_top_level(value, `,`) {
+		if shadow := computed_box_shadow_part(computed, part, current_color) {
+			shadows << shadow
+		}
+	}
+	return shadows
+}
+
+fn computed_background_gradient(computed &css.ComputedProperties) ?LinearGradient {
+	value := computed_property_text(computed, .background_image, 'none')
+	if gradient := parse_linear_gradient(value) {
+		return gradient
+	}
+	if gradient := parse_radial_gradient(value) {
+		return gradient
+	}
+	return parse_conic_gradient(value)
+}
+
+fn computed_coordinated_background_value(computed &css.ComputedProperties, property css.PropertyID, index int, fallback string) string {
+	values := split_top_level(computed_property_text(computed, property, fallback), `,`)
+	if values.len == 0 {
+		return fallback
+	}
+	return values[index % values.len]
+}
+
+fn computed_background_image_layers(element &dom.Element, computed &css.ComputedProperties) []BackgroundImageLayer {
+	property_value := computed.property(.background_image, .yes) or { return []BackgroundImageLayer{} }
+	value := property_value.css_text.trim_space()
+	mut layers := []BackgroundImageLayer{}
+	for index, item in split_top_level(value, `,`) {
+		parsed := css.parse_css_image_value_logic(item) or { continue }
+		if parsed !is css.ImageStyleValue {
+			continue
+		}
+		source := parsed.url_.url()
+		resolved_url := if base_url := property_value.base_url {
+			if parsed_url := dom.dom_url_parse(source, dom.URL{
+				value: base_url
+			}, 'UTF-8') {
+				parsed_url.to_string()
+			} else {
+				source
+			}
+		} else {
+			element.document().encoding_parse_and_serialize_url(source) or { source }
+		}
+		repeat_x, repeat_y := parsed_background_repeat(computed_coordinated_background_value(computed, .background_repeat, index, 'repeat'))
+		layers << BackgroundImageLayer{
+			url: resolved_url
+			repeat_x: repeat_x
+			repeat_y: repeat_y
+			size: computed_coordinated_background_value(computed, .background_size, index, 'auto')
+			position_x: computed_coordinated_background_value(computed, .background_position_x, index, '0%')
+			position_y: computed_coordinated_background_value(computed, .background_position_y, index, '0%')
+			origin: computed_coordinated_background_value(computed, .background_origin, index, 'padding-box')
+			clip: computed_coordinated_background_value(computed, .background_clip, index, 'border-box')
+			attachment: computed_coordinated_background_value(computed, .background_attachment, index, 'scroll')
+		}
+	}
+	return layers
+}
+
+fn computed_text_decoration_thickness(computed &css.ComputedProperties, font_size f64) f64 {
+	value := computed_property_text(computed, .text_decoration_thickness, 'auto')
+	if value in ['auto', 'from-font'] {
+		return 0
+	}
+	return non_negative(computed.resolve_length_percentage_text_px(value, font_size) or { 0.0 })
+}
+
 fn inline_relative_offset(node &Node, state &LayoutState) css.CSSPixelPoint {
 	mut result := css.CSSPixelPoint.from_values(0, 0)
 	mut ancestor := node.parent()
@@ -70,6 +234,10 @@ fn inline_relative_offset(node &Node, state &LayoutState) css.CSSPixelPoint {
 pub fn layout_document_typed_in_viewport(document &dom.Document, viewport_width f64, viewport_height f64) BlockBox {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_viewport_rect(dom.Rect{0, 0, viewport_width, viewport_height})
+	css.begin_selector_parse_cache()
+	defer {
+		css.end_selector_parse_cache()
+	}
 	result := run_document_layout(document, viewport_width, viewport_height) or {
 		return BlockBox{}
 	}
@@ -128,6 +296,12 @@ fn block_box_from_typed_layout(node &Node, state &LayoutState, author_rules []&c
 	mut shadows := []BoxShadow{}
 	mut background_gradient := ?LinearGradient(none)
 	mut background_images := []BackgroundImageLayer{}
+	mut replaced_image_url := ''
+	mut replaced_image_size := ''
+	mut replaced_image_position_x := '50%'
+	mut replaced_image_position_y := '50%'
+	mut form_control_kind := ''
+	mut form_control_checked := false
 	mut svg_path := ''
 	mut svg_transform := [f64(1), 0, 0, 1, 0, 0]!
 	mut svg_points := []f64{}
@@ -144,43 +318,34 @@ fn block_box_from_typed_layout(node &Node, state &LayoutState, author_rules []&c
 	if color_value := computed.property(.color, .yes) {
 		text_color = css.parse_color_string(color_value.css_text) or { text_color }
 	}
-	if styled_element := element {
-		background_color = css.computed_color(styled_element, .background_color, author_rules) or {
-			background_color
-		}
-		text_color = css.computed_color(styled_element, .color, author_rules) or { text_color }
-		border_color = css.computed_color(styled_element, .border_top_color, author_rules) or {
-			text_color
-		}
-		border_colors = resolved_border_colors(styled_element, text_color, author_rules)
+	mut paint_element := element
+	if paint_element == none && node.is_generated_for_pseudo_element() {
+		paint_element = painted_owner_element(node)
+	}
+	if styled_element := paint_element {
+		text_color = computed_paint_color(computed, .color, text_color)
+		background_color = computed_paint_color(computed, .background_color, background_color)
+		border_colors = computed_border_colors(computed, text_color)
 		border_color = border_colors.top
-		border_radii = resolve_box_radii(styled_element, used.border_box_width().to_double(),
-			used.border_box_height().to_double(), author_rules)
+		border_radii = computed_box_radii(computed, used.border_box_width().to_double(), used.border_box_height().to_double())
 		border_radius = border_radii.top_left.x
-		outline_width = used_outline_width(styled_element, author_rules)
-		outline_offset = css.computed_length_px(styled_element, .outline_offset, author_rules) or {
-			0.0
-		}
-		outline_color = css.computed_color(styled_element, .outline_color, author_rules) or {
-			text_color
-		}
-		shadows = parse_box_shadows(styled_element, author_rules)
+		outline_width = computed_outline_width(computed)
+		outline_offset = computed.resolve_length_percentage_text_px(computed_property_text(computed, .outline_offset, '0'), 0) or { 0.0 }
+		outline_color = computed_paint_color(computed, .outline_color, text_color)
+		shadows = computed_box_shadows(computed, text_color)
 		if shadows.len > 0 {
 			shadow = shadows[0]
 		}
-		background_gradient = parse_background_gradient(styled_element, author_rules)
-		background_images = parse_background_image_layers(styled_element, author_rules)
+		background_gradient = computed_background_gradient(computed)
+		background_images = computed_background_image_layers(styled_element, computed)
 		if node.is_positioned() {
-			z_index_value := css.cascaded_value_with_ua(styled_element, .z_index, author_rules)
-			if z_index_value != 'auto' {
-				z_index = z_index_value.int()
+			if computed_z_index := computed.z_index() {
+				z_index = computed_z_index
 			}
 		}
-		paint_transform = resolved_transform_matrix(styled_element, position.x().to_double() -
-			used.padding_left.to_double() - used.border_left.to_double(),
-
-			position.y().to_double() - used.padding_top.to_double() - used.border_top.to_double(),
-			used.border_box_width().to_double(), used.border_box_height().to_double(), author_rules)
+		if computed_property_text(computed, .transform, 'none') != 'none' {
+			paint_transform = resolved_transform_matrix(styled_element, position.x().to_double() - used.padding_left.to_double() - used.border_left.to_double(), position.y().to_double() - used.padding_top.to_double() - used.border_top.to_double(), used.border_box_width().to_double(), used.border_box_height().to_double(), author_rules)
+		}
 	}
 	if path := used.computed_svg_path() {
 		svg_path = path.serialize()
@@ -223,6 +388,35 @@ fn block_box_from_typed_layout(node &Node, state &LayoutState, author_rules []&c
 			marker_shape = marker.list_style_type_.name
 		}
 	}
+	if image_box := node.as_image_box() {
+		if !image_box.renders_as_alt_text() && image_box.source() != '' {
+			source := image_box.source()
+			replaced_image_url = if styled_element := element {
+				styled_element.document().encoding_parse_and_serialize_url(source) or { source }
+			} else {
+				source
+			}
+			replaced_image_size = match computed.object_fit() {
+				.fill { '100% 100%' }
+				.contain { 'contain' }
+				.cover { 'cover' }
+				.none_ { 'auto' }
+				.scale_down { 'scale-down' }
+			}
+			object_position := computed.object_position()
+			replaced_image_position_x = object_position.offset_x.to_string()
+			replaced_image_position_y = object_position.offset_y.to_string()
+		}
+	}
+	if styled_element := element {
+		if styled_element.local_name() == 'input' && computed_property_text(computed, .appearance, 'auto') != 'none' {
+			input_type := styled_element.get_attribute_value('type').to_lower()
+			if input_type in ['checkbox', 'radio'] {
+				form_control_kind = input_type
+				form_control_checked = styled_element.has_attribute('checked')
+			}
+		}
+	}
 
 	mut children := []BlockBox{}
 	for child in node.children() {
@@ -243,7 +437,7 @@ fn block_box_from_typed_layout(node &Node, state &LayoutState, author_rules []&c
 		}
 	}
 
-	mut lines := text_lines_from_typed_layout(node, used, state, author_rules, position)
+	mut lines := text_lines_from_typed_layout(node, used, state, position)
 	if !affine_is_compact_identity(paint_transform) {
 		children = children.map(apply_ancestor_affine(it, paint_transform))
 	}
@@ -323,22 +517,28 @@ fn block_box_from_typed_layout(node &Node, state &LayoutState, author_rules []&c
 		shadow:              shadow
 		shadows:             shadows
 		background_gradient: background_gradient
-		background_images:   background_images
-		opacity:             f64(computed.opacity())
-		visible:             computed.visibility() == .visible
-		node_id:             node_id
-		children:            children
-		lines:               lines
-		svg_path:            svg_path
-		svg_transform:       svg_transform
-		svg_points:          svg_points
-		svg_fill_color:      svg_fill_color
-		svg_stroke_color:    svg_stroke_color
-		svg_stroke_width:    svg_stroke_width
-		svg_fill_opacity:    svg_fill_opacity
-		svg_stroke_opacity:  svg_stroke_opacity
-		marker_shape:        marker_shape
-		paint_transform:     paint_transform
+		background_images: background_images
+		replaced_image_url: replaced_image_url
+		replaced_image_size: replaced_image_size
+		replaced_image_position_x: replaced_image_position_x
+		replaced_image_position_y: replaced_image_position_y
+		form_control_kind: form_control_kind
+		form_control_checked: form_control_checked
+		opacity: f64(computed.opacity())
+		visible: computed.visibility() == .visible
+		node_id: node_id
+		children: children
+		lines: lines
+		svg_path: svg_path
+		svg_transform: svg_transform
+		svg_points: svg_points
+		svg_fill_color: svg_fill_color
+		svg_stroke_color: svg_stroke_color
+		svg_stroke_width: svg_stroke_width
+		svg_fill_opacity: svg_fill_opacity
+		svg_stroke_opacity: svg_stroke_opacity
+		marker_shape: marker_shape
+		paint_transform: paint_transform
 	}
 }
 
@@ -360,7 +560,7 @@ fn typed_block_descendants(node &Node, state &LayoutState, author_rules []&css.C
 	return descendants
 }
 
-fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &LayoutState, author_rules []&css.CSSRule, container_position css.CSSPixelPoint) []TextLine {
+fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &LayoutState, container_position css.CSSPixelPoint) []TextLine {
 	mut lines := []TextLine{}
 	for line_box in used.line_boxes {
 		mut fragments := []TextFragment{}
@@ -370,6 +570,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			owner_element := painted_owner_element(fragment.layout_node_)
 			mut color := css.Color{0, 0, 0, 255}
 			mut background := css.Color{0, 0, 0, 0}
+			mut background_images := []BackgroundImageLayer{}
 			mut border_color := color
 			mut border_colors := BoxColors{color, color, color, color}
 			mut decoration_color := color
@@ -382,27 +583,18 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			mut inline_shadows := []BoxShadow{}
 			mut inline_node_id := i64(0)
 			if owner := owner_element {
-				color = css.computed_color(owner, .color, author_rules) or { color }
-				background = css.computed_color(owner, .background_color, author_rules) or {
-					background
-				}
-				border_color = css.computed_color(owner, .border_top_color, author_rules) or {
-					color
-				}
-				border_colors = resolved_border_colors(owner, color, author_rules)
+				color = computed_paint_color(computed, .color, color)
+				background = computed_paint_color(computed, .background_color, background)
+				background_images = computed_background_image_layers(owner, computed)
+				border_colors = computed_border_colors(computed, color)
 				border_color = border_colors.top
-				decoration_color = css.computed_color(owner, .text_decoration_color, author_rules) or {
-					color
-				}
-				decoration_style = css.cascaded_value_with_ua(owner, .text_decoration_style,
-					author_rules)
-				decoration_thickness = resolve_text_decoration_thickness(owner,
-					computed.font_size().to_double(), author_rules)
+				decoration_color = computed_paint_color(computed, .text_decoration_color, color)
+				decoration_style = computed_property_text(computed, .text_decoration_style, 'solid')
+				decoration_thickness = computed_text_decoration_thickness(computed, computed.font_size().to_double())
 				inline_node_id = i64(owner.as_node().unique_id())
-				radii = resolve_box_radii(owner, fragment.width().to_double(),
-					fragment.height().to_double(), author_rules)
+				radii = computed_box_radii(computed, fragment.width().to_double(), fragment.height().to_double())
 				radius = radii.top_left.x
-				inline_shadows = parse_box_shadows(owner, author_rules)
+				inline_shadows = computed_box_shadows(computed, color)
 				if inline_shadows.len > 0 {
 					inline_shadow = inline_shadows[0]
 				}
@@ -418,33 +610,31 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			offset := css_pixel_point_add(fragment.offset(), inline_relative_offset(fragment.layout_node_,
 				state))
 			transport_fragment := TextFragment{
-				x:                    container_position.x().plus(offset.x()).to_double()
-				y:                    container_position.y().plus(offset.y()).to_double()
-				width:                fragment.width().to_double()
-				height:               fragment.height().to_double()
-				text:                 text
-				color:                color
-				font_size:            computed.font_size().to_double()
-				bold:                 computed.font_weight() >= 600
-				italic:               computed.property(.font_style, .yes) or { &dom.StyleValue{} }.css_text.contains('italic')
-				mono:                 (computed.property(.font_family, .yes) or {
-					&dom.StyleValue{}
-				}).css_text.to_lower().contains('mono')
-				text_run_id:          text_run_identity(fragment.layout_node_)
-				shape_as_run:
-					resolved_text_spacing_for_node(fragment.layout_node_, .letter_spacing).raw_value() == 0
-					&& resolved_text_spacing_for_node(fragment.layout_node_, .word_spacing).raw_value() == 0
-				inline_node_id:       inline_node_id
-				background_color:     background
-				border:               border
-				border_color:         border_color
-				border_colors:        border_colors
-				border_radius:        radius
-				border_radii:         radii
-				shadow:               inline_shadow
-				shadows:              inline_shadows
-				decoration:           text_decoration_string(computed.text_decoration_line())
-				decoration_color:     decoration_color
+				x: container_position.x().plus(offset.x()).to_double()
+				y: container_position.y().plus(offset.y()).to_double()
+				width: fragment.width().to_double()
+				height: fragment.height().to_double()
+				text: text
+				color: color
+				font_size: computed.font_size().to_double()
+				bold: computed.font_weight() >= 600
+				italic: computed.property(.font_style, .yes) or { &dom.StyleValue{} }.css_text.contains('italic')
+				mono: (computed.property(.font_family, .yes) or {
+					&dom.StyleValue{}}).css_text.to_lower().contains('mono')
+				text_run_id: text_run_identity(fragment.layout_node_)
+				shape_as_run: resolved_text_spacing_for_node(fragment.layout_node_, .letter_spacing).raw_value() == 0 && resolved_text_spacing_for_node(fragment.layout_node_, .word_spacing).raw_value() == 0
+				inline_node_id: inline_node_id
+				background_color: background
+				background_images: background_images
+				border: border
+				border_color: border_color
+				border_colors: border_colors
+				border_radius: radius
+				border_radii: radii
+				shadow: inline_shadow
+				shadows: inline_shadows
+				decoration: text_decoration_string(computed.text_decoration_line())
+				decoration_color: decoration_color
 				decoration_color_set: true
 				decoration_style:     decoration_style
 				decoration_thickness: decoration_thickness
@@ -498,30 +688,31 @@ fn split_transport_text_fragment(base TextFragment, source LineBoxFragment) []Te
 			start_x := f64(glyphs[word_start].position.x)
 			end_x := f64(glyphs[last_index].position.x + glyphs[last_index].advance)
 			result << TextFragment{
-				x:                    base.x + start_x
-				y:                    base.y
-				width:                end_x - start_x
-				height:               base.height
-				text:                 runes[word_start..index].string()
-				color:                base.color
-				font_size:            base.font_size
-				bold:                 base.bold
-				italic:               base.italic
-				mono:                 base.mono
-				text_run_id:          base.text_run_id
-				shape_as_run:         base.shape_as_run
-				separator_after:      if index < runes.len { ' ' } else { '' }
-				inline_node_id:       base.inline_node_id
-				background_color:     base.background_color
-				border:               base.border
-				border_color:         base.border_color
-				border_colors:        base.border_colors
-				border_radius:        base.border_radius
-				border_radii:         base.border_radii
-				shadow:               base.shadow
-				shadows:              base.shadows.clone()
-				decoration:           base.decoration
-				decoration_color:     base.decoration_color
+				x: base.x + start_x
+				y: base.y
+				width: end_x - start_x
+				height: base.height
+				text: runes[word_start..index].string()
+				color: base.color
+				font_size: base.font_size
+				bold: base.bold
+				italic: base.italic
+				mono: base.mono
+				text_run_id: base.text_run_id
+				shape_as_run: base.shape_as_run
+				separator_after: if index < runes.len { ' ' } else { '' }
+				inline_node_id: base.inline_node_id
+				background_color: base.background_color
+				background_images: base.background_images.clone()
+				border: base.border
+				border_color: base.border_color
+				border_colors: base.border_colors
+				border_radius: base.border_radius
+				border_radii: base.border_radii
+				shadow: base.shadow
+				shadows: base.shadows.clone()
+				decoration: base.decoration
+				decoration_color: base.decoration_color
 				decoration_color_set: base.decoration_color_set
 				decoration_style:     base.decoration_style
 				decoration_thickness: base.decoration_thickness

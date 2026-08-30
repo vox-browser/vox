@@ -391,11 +391,13 @@ pub fn sync_document_style_elements(document &dom.Document) {
 				continue
 			}
 			css_text := element.as_node().text_content() or { '' }
+			declared_location := element.get_attribute_value('data-libweb-v-source-url')
+			style_location := if declared_location == '' { base_url } else { declared_location }
 			style_sources << DocumentStyleSource{
-				cache_key: 'style:${css_text}'
-				css_text:  css_text
-				location:  base_url
-				media:     element.get_attribute_value('media')
+				cache_key: 'style:${style_location}:${css_text}'
+				css_text: css_text
+				location: style_location
+				media: element.get_attribute_value('media')
 			}
 		} else if element.local_name() == 'link' {
 			relations := element.get_attribute_value('rel').to_lower().fields()

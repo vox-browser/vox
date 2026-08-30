@@ -1355,6 +1355,9 @@ pub mut:
 pub struct StyleValue {
 pub mut:
 	css_text string
+	// Style resource URLs are resolved against the stylesheet that supplied the
+	// declaration, which can differ from the owning document's base URL.
+	base_url ?string
 }
 
 pub struct CustomPropertyRegistration {
