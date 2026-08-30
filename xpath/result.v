@@ -21,15 +21,60 @@ pub enum ResultType as u16 {
 
 @[heap]
 pub struct XPathResult {
-pub mut:
-	result_type            ResultType
-	number_value           f64
-	string_value           string
-	boolean_value          bool
-	invalid_iterator_state bool
-	nodes                  []&dom.Node
 mut:
-	iterator_index int
+	result_type_            ResultType
+	number_value_           f64
+	string_value_           string
+	boolean_value_          bool
+	invalid_iterator_state_ bool
+	nodes                    []&dom.Node
+	iterator_index           int
+}
+
+pub fn (result &XPathResult) result_type() ResultType {
+	return result.result_type_
+}
+
+pub fn (result &XPathResult) number_value() f64 {
+	return result.number_value_
+}
+
+pub fn (result &XPathResult) string_value() string {
+	return result.string_value_
+}
+
+pub fn (result &XPathResult) boolean_value() bool {
+	return result.boolean_value_
+}
+
+pub fn (result &XPathResult) invalid_iterator_state() bool {
+	return result.invalid_iterator_state_
+}
+
+pub fn (mut result XPathResult) set_number(number_value f64) {
+	result.result_type_ = .number
+	result.number_value_ = number_value
+}
+
+pub fn (mut result XPathResult) set_string(string_value string) {
+	result.result_type_ = .string
+	result.string_value_ = string_value
+}
+
+pub fn (mut result XPathResult) set_boolean(boolean_value bool) {
+	result.result_type_ = .boolean
+	result.boolean_value_ = boolean_value
+}
+
+pub fn (mut result XPathResult) set_node_set(nodes []&dom.Node, requested ResultType) {
+	result.nodes = nodes
+	result.iterator_index = 0
+	result.result_type_ = if int(requested) >= int(ResultType.unordered_node_iterator)
+		&& int(requested) <= int(ResultType.first_ordered_node) {
+		requested
+	} else {
+		.unordered_node_iterator
+	}
 }
 
 pub fn (result &XPathResult) single_node_value() ?&dom.Node {
@@ -60,12 +105,5 @@ pub fn (result &XPathResult) snapshot_item(index int) ?&dom.Node {
 }
 
 fn (mut result XPathResult) set_nodes(nodes []&dom.Node, requested ResultType) {
-	result.nodes = nodes
-	result.iterator_index = 0
-	result.result_type = if int(requested) >= int(ResultType.unordered_node_iterator)
-		&& int(requested) <= int(ResultType.first_ordered_node) {
-		requested
-	} else {
-		.unordered_node_iterator
-	}
+	result.set_node_set(nodes, requested)
 }

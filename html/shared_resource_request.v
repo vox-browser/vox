@@ -21,6 +21,8 @@ pub type SharedResourceCallback = fn ()
 
 pub type SharedResourceFetchCallback = fn (&SharedResourceRequest, dom.URL)
 
+pub type SharedResourceDecodeCallback = fn (dom.URL, string, []u8) !DecodedImageData
+
 pub struct SharedResourceCallbacks {
 	on_finish ?SharedResourceCallback
 	on_fail   ?SharedResourceCallback
@@ -42,6 +44,7 @@ mut:
 	image_data_      ?SharedResourceImageData
 	load_event_delay bool
 	fetch_controller voidptr
+	decode_callback  ?SharedResourceDecodeCallback
 }
 
 __global html_shared_resource_requests map[string]&SharedResourceRequest
@@ -71,12 +74,20 @@ pub fn (request &SharedResourceRequest) image_data() ?SharedResourceImageData {
 	return request.image_data_
 }
 
+pub fn (request &SharedResourceRequest) url() dom.URL {
+	return request.url
+}
+
 pub fn (request &SharedResourceRequest) fetch_controller() voidptr {
 	return request.fetch_controller
 }
 
 pub fn (mut request SharedResourceRequest) set_fetch_controller(controller voidptr) {
 	request.fetch_controller = controller
+}
+
+pub fn (mut request SharedResourceRequest) set_decode_callback(callback ?SharedResourceDecodeCallback) {
+	request.decode_callback = callback
 }
 
 pub fn (mut request SharedResourceRequest) fetch_resource(fetch SharedResourceFetchCallback) {
@@ -122,6 +133,18 @@ pub fn (mut request SharedResourceRequest) handle_successful_resource_load(image
 		if callback := callbacks.on_finish { callback() }
 	}
 	request.callbacks.clear()
+}
+
+pub fn (mut request SharedResourceRequest) handle_successful_fetch(url dom.URL, mime_type string, data []u8) {
+	decode := request.decode_callback or {
+		request.handle_failed_fetch()
+		return
+	}
+	image_data := decode(url, mime_type, data.clone()) or {
+		request.handle_failed_fetch()
+		return
+	}
+	request.handle_successful_resource_load(image_data)
 }
 
 pub fn (request &SharedResourceRequest) needs_fetching() bool {
@@ -220,6 +243,13 @@ pub fn (request &ImageRequest) preferred_density_corrected_dimensions() ?ImageRe
 
 pub fn (mut request ImageRequest) set_preferred_density_corrected_dimensions(dimensions ?ImageRequestFloatSize) {
 	request.preferred_density_corrected_dimensions_ = dimensions
+}
+
+// https://html.spec.whatwg.org/multipage/images.html#prepare-an-image-for-presentation
+pub fn (mut request ImageRequest) prepare_for_presentation(image &dom.HTMLImageElement) {
+	// The current upstream implementation has no executable steps yet: EXIF
+	// extraction, physical dimensions, and presentation adjustment are FIXMEs.
+	_ = image
 }
 
 pub fn (mut request ImageRequest) fetch_image(fetch SharedResourceFetchCallback) ! {

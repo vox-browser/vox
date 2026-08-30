@@ -162,21 +162,21 @@ pub mut:
 
 pub fn FillOrStrokeStyle.from_color(color dom.Color) FillOrStrokeStyle {
 	return FillOrStrokeStyle{
-		kind:  .color
+		kind: .color
 		color: color
 	}
 }
 
 pub fn FillOrStrokeStyle.from_gradient(gradient CanvasGradient) FillOrStrokeStyle {
 	return FillOrStrokeStyle{
-		kind:     .gradient
+		kind: .gradient
 		gradient: gradient
 	}
 }
 
 pub fn FillOrStrokeStyle.from_pattern(pattern &CanvasPattern) FillOrStrokeStyle {
 	return FillOrStrokeStyle{
-		kind:    .pattern
+		kind: .pattern
 		pattern: pattern
 	}
 }
@@ -194,6 +194,33 @@ pub fn (style &FillOrStrokeStyle) to_color_but_fixme_should_accept_any_paint_sty
 	return style.as_color() or { canvas_color_black() }
 }
 
+pub struct CanvasGfxPaintStyle {
+pub:
+	kind     FillOrStrokeKind
+	color    dom.Color
+	gradient ?CanvasGradient
+	pattern  ?&CanvasPattern
+}
+
+pub fn (style &FillOrStrokeStyle) to_gfx_paint_style() CanvasGfxPaintStyle {
+	return CanvasGfxPaintStyle{
+		kind:     style.kind
+		color:    style.color
+		gradient: style.gradient
+		pattern:  style.pattern
+	}
+}
+
+pub fn (style &FillOrStrokeStyle) to_js_fill_or_stroke_style() CanvasFillStrokeStyleValue {
+	return fill_or_stroke_style_to_value(*style)
+}
+
+pub struct CanvasClipPath {
+pub:
+	path      CanvasGfxPath
+	fill_rule string
+}
+
 // https://html.spec.whatwg.org/multipage/canvas.html#drawing-state
 pub struct DrawingState {
 pub mut:
@@ -205,23 +232,24 @@ pub mut:
 	shadow_blur                               f64
 	shadow_color                              dom.Color = canvas_color_transparent()
 	filter_string                             ?string
-	line_width                                f64            = 1.0
-	line_cap                                  CanvasLineCap  = .butt
+	line_width                                f64 = 1.0
+	line_cap                                  CanvasLineCap = .butt
 	line_join                                 CanvasLineJoin = .miter
-	miter_limit                               f64            = 10.0
+	miter_limit                               f64 = 10.0
 	dash_list                                 []f64
 	line_dash_offset                          f64
-	image_smoothing_enabled                   bool                           = true
-	image_smoothing_quality                   ImageSmoothingQuality          = .low
-	global_alpha                              f64                            = 1.0
+	image_smoothing_enabled                   bool = true
+	image_smoothing_quality                   ImageSmoothingQuality = .low
+	global_alpha                              f64 = 1.0
 	current_compositing_and_blending_operator CompositingAndBlendingOperator = .source_over
-	text_align                                CanvasTextAlign                = .start
-	text_baseline                             CanvasTextBaseline             = .alphabetic
-	direction                                 CanvasDirection                = .inherit
+	text_align                                CanvasTextAlign = .start
+	text_baseline                             CanvasTextBaseline = .alphabetic
+	direction                                 CanvasDirection = .inherit
 	// CSS::Length letter_spacing (default 0px); represented as px in this port.
 	letter_spacing_px     f64
 	letter_spacing_string string = '0px'
 	font_string           string = '10px sans-serif'
+	clip_paths            []CanvasClipPath
 	// Opaque Gfx handles (out of scope for this port): Gfx::Filter, CSS::StyleValue font,
 	// Gfx::FontCascadeList.
 }
@@ -240,7 +268,10 @@ mut:
 // https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-save
 pub fn (mut state CanvasState) save() {
 	// Push a copy of the current drawing state onto the drawing state stack.
-	state.drawing_state_stack << state.drawing_state
+	mut drawing_state_copy := state.drawing_state
+	drawing_state_copy.dash_list = state.drawing_state.dash_list.clone()
+	drawing_state_copy.clip_paths = state.drawing_state.clip_paths.clone()
+	state.drawing_state_stack << drawing_state_copy
 	// NOTE: the C++ also calls painter_for_canvas_state()->save(); no painter in this port.
 }
 

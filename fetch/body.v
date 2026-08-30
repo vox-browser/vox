@@ -36,6 +36,8 @@ mut:
 	bytes_                []u8
 	stream_locked_        bool
 	disturbed_            bool
+	errored_              bool
+	error_reason_         string
 	sniff_bytes_          []u8
 	sniff_bytes_complete_ bool
 	sniff_callback_       ?SniffBytesCallback
@@ -67,6 +69,19 @@ pub fn (body &Body) stream_locked() bool {
 
 pub fn (body &Body) disturbed() bool {
 	return body.disturbed_
+}
+
+pub fn (body &Body) errored() bool {
+	return body.errored_
+}
+
+pub fn (body &Body) error_reason() string {
+	return body.error_reason_
+}
+
+pub fn (mut body Body) error_stream(reason string) {
+	body.errored_ = true
+	body.error_reason_ = reason
 }
 
 pub fn (mut body Body) set_stream_locked(value bool) {
@@ -221,7 +236,7 @@ pub:
 fn unquote_header_parameter(value string) string {
 	trimmed := value.trim_space()
 	if trimmed.len >= 2 && trimmed[0] == `"` && trimmed[trimmed.len - 1] == `"` {
-		return trimmed[1..trimmed.len - 1].replace('\\"', '"').replace('\\\\', '\\')
+		return parse_multipart_form_data_name(trimmed[1..trimmed.len - 1]) or { '' }
 	}
 	return trimmed
 }

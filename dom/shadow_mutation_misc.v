@@ -716,16 +716,15 @@ fn html_slot_element_as_element(slot &HTMLSlotElement) &Element {
 }
 
 fn html_slot_element_name(slot &HTMLSlotElement) string {
-	return html_slot_element_as_element(slot).get_attribute('name') or { '' }
+	return slot.name_
 }
 
 pub fn (slot &HTMLSlotElement) slot_name() string {
-	return html_slot_element_name(slot)
+	return slot.name_
 }
 
 pub fn (mut slot HTMLSlotElement) set_slot_name(name string) {
-	mut element := unsafe { &Element(&slot) }
-	element.set_attribute_value('name', name)
+	slot.name_ = name
 }
 
 pub fn (mut slot HTMLSlotElement) set_assigned_nodes(assigned_nodes []&Node) {
@@ -825,10 +824,11 @@ pub fn (mut slot HTMLSlotElement) assign(nodes []&Node) {
 }
 
 pub fn (node &Node) slottable_name() string {
-	if element := node.as_element() {
-		return element.get_attribute('slot') or { '' }
-	}
-	return ''
+	return node.slottable_name_
+}
+
+pub fn (mut node Node) set_slottable_name(name string) {
+	node.slottable_name_ = name
 }
 
 pub fn (node &Node) assigned_slot_internal() ?&HTMLSlotElement {
@@ -4348,6 +4348,7 @@ pub fn pseudo_element_name(pseudo PseudoElement) string {
 		.marker { 'marker' }
 		.placeholder { 'placeholder' }
 		.selection { 'selection' }
+		.backdrop { 'backdrop' }
 	}
 }
 

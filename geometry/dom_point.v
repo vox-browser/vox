@@ -40,6 +40,10 @@ pub fn DOMPointReadOnly.construct(x f64, y f64, z f64, w f64) &DOMPointReadOnly 
 	}
 }
 
+pub fn DOMPointReadOnly.construct_impl(x f64, y f64, z f64, w f64) &DOMPointReadOnly {
+	return DOMPointReadOnly.construct(x, y, z, w)
+}
+
 // DOMPointReadOnly::create(realm) — the empty point (used for deserialization); mirrors the empty C++
 // constructor, whose coordinates default-initialize to 0.
 pub fn DOMPointReadOnly.create() &DOMPointReadOnly {
@@ -91,6 +95,10 @@ pub fn DOMPoint.construct(x f64, y f64, z f64, w f64) &DOMPoint {
 			w_: w
 		}
 	}
+}
+
+pub fn DOMPoint.construct_impl(x f64, y f64, z f64, w f64) &DOMPoint {
+	return DOMPoint.construct(x, y, z, w)
 }
 
 // DOMPoint::create(realm) — the empty point.

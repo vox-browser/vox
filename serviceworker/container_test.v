@@ -54,8 +54,13 @@ fn test_event_attributes_global_cookie_store_and_cache_rejections() {
 	assert container.controller() == none
 
 	mut scope := ServiceWorkerGlobalScope.create(42)
-	scope.set_event_handler(event_install, true)
-	assert scope.has_event_handler(event_install)
+	scope.set_oninstall(true)
+	scope.set_onactivate(true)
+	scope.set_onfetch(true)
+	scope.set_onmessage(true)
+	scope.set_onmessageerror(true)
+	assert scope.oninstall() && scope.onactivate() && scope.onfetch()
+	assert scope.onmessage() && scope.onmessageerror()
 	first := scope.cookie_store()
 	second := scope.cookie_store()
 	assert voidptr(first) == voidptr(second)
@@ -66,4 +71,12 @@ fn test_event_attributes_global_cookie_store_and_cache_rejections() {
 	has := storage.has('v1')
 	assert has.state == .rejected
 	assert has.value or { true } == false
+}
+
+fn test_container_exact_start_register_entry_point() {
+	mut agent := ServiceWorkerAgent.create()
+	mut container := ServiceWorkerContainer.create(client(), agent)
+	promise := container.start_register('sw.js', RegistrationOptions{})
+	assert promise.state == .pending
+	assert agent.queue_length('https://example.test/app/') == 1
 }

@@ -22,22 +22,16 @@ fn test_box_size_entry_geometry_and_svg_origin() {
 		absolute_padding_y: 5
 	})
 	entry := ResizeObserverEntry.create_and_populate(target)
-	assert entry.border_box_size[0] == ResizeObserverSize{
-		inline_size: 120
-		block_size:  80
-	}
-	assert entry.content_box_size[0] == ResizeObserverSize{
-		inline_size: 100
-		block_size:  60
-	}
-	assert entry.device_pixel_content_box_size[0] == ResizeObserverSize{
-		inline_size: 240
-		block_size:  160
-	}
-	assert entry.content_rect.x() == 4
-	assert entry.content_rect.y() == 5
+	assert entry.border_box_size()[0].inline_size() == 120
+	assert entry.border_box_size()[0].block_size() == 80
+	assert entry.content_box_size()[0].inline_size() == 100
+	assert entry.content_box_size()[0].block_size() == 60
+	assert entry.device_pixel_content_box_size()[0].inline_size() == 240
+	assert entry.device_pixel_content_box_size()[0].block_size() == 160
+	assert entry.content_rect().x() == 4
+	assert entry.content_rect().y() == 5
 	target.metrics.is_svg_element = true
-	assert ResizeObserverEntry.create_and_populate(target).content_rect.x() == 0
+	assert ResizeObserverEntry.create_and_populate(target).content_rect().x() == 0
 }
 
 fn test_observe_uses_pointer_identity_replaces_and_unregisters() {
@@ -49,7 +43,7 @@ fn test_observe_uses_pointer_identity_replaces_and_unregisters() {
 	assert observer.observation_targets().len == 2
 	observer.observe(first, ResizeObserverOptions{ box: .device_pixel_content_box })
 	assert observer.observation_targets().len == 2
-	assert observer.observation_targets().last().observed_box == .device_pixel_content_box
+	assert observer.observation_targets().last().observed_box() == .device_pixel_content_box
 	observer.unobserve(first)
 	assert observer.is_registered()
 	observer.unobserve(second)
@@ -85,5 +79,44 @@ fn test_observe_identity_is_the_underlying_dom_element() {
 	observer.observe(first_wrapper, ResizeObserverOptions{})
 	observer.observe(second_wrapper, ResizeObserverOptions{ box: .border_box })
 	assert observer.observation_targets().len == 1
-	assert voidptr(observer.observation_targets()[0].target) == voidptr(second_wrapper)
+	assert voidptr(observer.observation_targets()[0].target()) == voidptr(second_wrapper)
+}
+
+fn test_exact_resize_observer_entry_points() {
+	target := ResizeTarget.new(resize_test_element('div'), ResizeTargetMetrics{
+		has_layout_box:     true
+		border_width:       20
+		border_height:      30
+		content_width:      10
+		content_height:     15
+		device_pixel_ratio: 2
+	})
+	mut size := ResizeObserverSize.calculate_box_size(target, .content_box)
+	assert size.inline_size() == 10
+	assert size.block_size() == 15
+	size.set_inline_size(11)
+	size.set_block_size(16)
+	assert size.inline_size() == 11 && size.block_size() == 16
+
+	observation := ResizeObservation.create(target, .border_box)
+	assert voidptr(observation.target()) == voidptr(target)
+	assert observation.observed_box() == .border_box
+	assert observation.last_reported_sizes().len == 1
+
+	entry := ResizeObserverEntry.create_and_populate(target)
+	assert voidptr(entry.target()) == voidptr(target)
+	assert entry.content_rect().width() == 10
+	assert entry.border_box_size_js_array()[0].inline_size() == 20
+	assert entry.content_box_size_js_array()[0].inline_size() == 10
+	assert entry.device_pixel_content_box_size_js_array()[0].inline_size() == 40
+	mut copied := to_js_array(entry.content_box_size())
+	copied.clear()
+	assert entry.content_box_size().len == 1
+
+	mut observer := ResizeObserver.construct_impl(no_op_resize_callback)
+	observer.observe(target, ResizeObserverOptions{})
+	assert observer.is_registered()
+	observer.unobserve(target)
+	assert !observer.is_registered()
+	observer.unregister_observer_if_needed()
 }

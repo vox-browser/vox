@@ -1,0 +1,94 @@
+module webgl
+
+fn test_upstream_value_factories_and_native_surface_slots() {
+	mut context := WebGLRenderingContext.create(.webgl2, WebGLContextAttributes{}, [])
+	assert context.context().webgl_version() == .webgl2
+	context.set_size(8, 6)
+	context.allocate_painting_surface_if_needed()
+	assert context.surface()
+	assert context.native.default_framebuffer() == 1
+	assert context.native.default_renderbuffer() == 2
+	context.native.free_surface_resources()
+	assert !context.surface()
+
+	info := WebGLActiveInfo.create('position', GLenum(0x1406), 1)
+	assert info.name() == 'position'
+	assert info.type_() == GLenum(0x1406)
+	assert info.size() == 1
+	precision := WebGLShaderPrecisionFormat.create(-127, 127, 23)
+	assert precision.range_min() == -127
+	assert precision.range_max() == 127
+	assert precision.precision() == 23
+	event := WebGLContextEvent.construct_impl('webglcontextlost', WebGLContextEventInit{
+		status_message: 'lost'
+	})
+	assert event.status_message() == 'lost'
+}
+
+fn test_upstream_texture_renderbuffer_and_framebuffer_state() {
+	mut context := WebGLRenderingContext.create(.webgl2, WebGLContextAttributes{}, [])
+	mut texture := WebGLTexture.create(mut context)
+	context.bind_texture(texture_2d, texture)
+	context.tex_parameteri(texture_2d, texture_min_filter, 0x2601)
+	context.tex_image2d(texture_2d, 0, 0x1908, 2, 3, 0, 0x1908, 0x1401,
+		[]u8{len: 24})
+	assert texture.width_ == 2
+	assert texture.height_ == 3
+	assert context.get_tex_parameter(texture_2d, texture_min_filter).integer == 0x2601
+
+	mut renderbuffer_object := WebGLRenderbuffer.create(mut context)
+	context.bind_renderbuffer(renderbuffer, renderbuffer_object)
+	context.renderbuffer_storage(renderbuffer, 0x8058, 4, 5)
+	assert context.get_renderbuffer_parameter(renderbuffer, 0x8d42).integer == 4
+	mut framebuffer_object := WebGLFramebuffer.create(mut context)
+	context.bind_framebuffer(framebuffer, framebuffer_object)
+	context.framebuffer_texture2d(framebuffer, 0x8ce0, texture_2d, texture, 0)
+	assert framebuffer_object.attachments[0x8ce0] == texture.object.handle_
+	assert context.check_framebuffer_status(framebuffer) == GLenum(0x8cd5)
+
+	context.delete_texture(texture)
+	assert !context.is_texture(texture)
+	assert texture_2d !in context.bound_textures
+}
+
+fn test_upstream_uniform_vectors_matrices_and_webgl2_validation() {
+	mut context := WebGLRenderingContext.create(.webgl2, WebGLContextAttributes{}, [])
+	mut vertex := WebGLShader.create(mut context, vertex_shader) or { panic('vertex shader') }
+	mut fragment := WebGLShader.create(mut context, fragment_shader) or { panic('fragment shader') }
+	context.shader_source(mut vertex, 'void main() {}')
+	context.shader_source(mut fragment, 'void main() {}')
+	context.compile_shader(mut vertex)
+	context.compile_shader(mut fragment)
+	mut program := WebGLProgram.create(mut context)
+	context.attach_shader(mut program, vertex)
+	context.attach_shader(mut program, fragment)
+	context.link_program(mut program)
+	context.use_program(program)
+	location := context.get_uniform_location(mut program, 'u_color') or { panic('uniform') }
+	context.uniform4fv(location, [f32(1), 0.5, 0.25, 1])
+	assert context.get_uniform(program, location).numbers == [f64(1), 0.5, 0.25, 1]
+	context.uniform_matrix3x2fv(location, false, [f32(1), 0, 0, 1, 2, 3])
+	assert context.get_error() == no_error
+	context.uniform_matrix2fv(location, true, [f32(1), 0, 0, 1])
+	assert context.get_error() == invalid_value
+
+	mut buffer := WebGLBuffer.create(mut context)
+	context.bind_buffer(uniform_buffer, buffer)
+	context.buffer_data(uniform_buffer, []u8{len: 16}, 0x88e4)
+	context.bind_buffer_range(uniform_buffer, 0, buffer, 0, 16)
+	assert context.get_error() == no_error
+	context.bind_buffer_range(uniform_buffer, 0, buffer, -1, 16)
+	assert context.get_error() == invalid_value
+}
+
+fn test_upstream_spans_pixels_and_object_lifetime_factories() {
+	mut context := WebGLRenderingContext.create(.webgl1, WebGLContextAttributes{}, [])
+	assert context.get_offset_span([u8(1), 2, 3, 4], 1, 2)! == [u8(2), 3]
+	assert context.span_from_float32_list([f32(1), 2, 3], 1, 0)! == [f32(2), 3]
+	assert context.null_terminated_string([u8(`o`), `k`, 0, `x`]) == 'ok'
+	assert WebGLQuery.create(mut context).object.handle_ != 0
+	assert WebGLSampler.create(mut context).object.handle_ != 0
+	assert WebGLTransformFeedback.create(mut context).object.handle_ != 0
+	assert WebGLVertexArrayObject.create(mut context).object.handle_ != 0
+	assert WebGLVertexArrayObjectOES.create(mut context).object.handle_ != 0
+}

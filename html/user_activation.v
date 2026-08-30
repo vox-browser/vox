@@ -6,6 +6,28 @@
 // activation state is supplied by the caller until Window is translated.
 module html
 
+import dom
+
+@[heap]
+pub struct UserActivation {
+pub:
+	window &dom.Window
+}
+
+pub fn UserActivation.construct_impl(window &dom.Window) !&UserActivation {
+	return &UserActivation{
+		window: window
+	}
+}
+
+pub fn (activation &UserActivation) has_been_active() bool {
+	return activation.window.has_sticky_activation()
+}
+
+pub fn (activation &UserActivation) is_active() bool {
+	return activation.window.has_transient_activation()
+}
+
 pub fn user_activation_has_been_active(window_has_sticky_activation bool) bool {
 	return window_has_sticky_activation
 }

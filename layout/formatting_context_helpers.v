@@ -1,0 +1,386 @@
+// Copyright (c) 2026, Ladybird contributors
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+module layout
+
+import css
+
+// The inline ancestor whose per-line paintable owns a line-box fragment.
+// Atomic inline ancestors terminate the search because their descendants are
+// painted through the atomic box instead.
+fn fragment_inline_paintable_target(fragment_node &Node) ?&Node {
+	mut ancestor := fragment_node.parent()
+	for ancestor != none {
+		current := ancestor or { break }
+		if current.is_atomic_inline() {
+			return none
+		}
+		if current.is_inline_node() {
+			return current
+		}
+		ancestor = current.parent()
+	}
+	return none
+}
+
+// FormattingContext::can_skip_is_anonymous_text_run(). Anonymous flex/grid
+// children containing only collapsible text whitespace do not generate an
+// item. The empty anonymous button content box is covered by the vacuous case.
+fn can_skip_anonymous_text_run(box &Node) bool {
+	if !box.is_anonymous() || box.is_generated_for_pseudo_element() {
+		return false
+	}
+	for child in box.children() {
+		if child.is_block_container() {
+			return false
+		}
+	}
+	mut pending := box.children()
+	for pending.len > 0 {
+		node := pending.pop()
+		if text := node.as_text_node() {
+			if !string_is_ascii_whitespace(text.source_text_) {
+				return false
+			}
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+fn layout_length_resolution_context(node &Node) css.LengthResolutionContext {
+	computed := node.computed_values()
+	mut context := css.LengthResolutionContext.for_document(node.document())
+	font_size := computed.font_size()
+	font_metrics := layout_font_metrics_for_node(node)
+	context.font_metrics.font_size = font_size
+	context.font_metrics.x_height = CSSPixels.nearest_value_for(f64(font_metrics.x_height))
+	context.font_metrics.cap_height = font_size.scaled(0.75)
+	context.font_metrics.zero_advance =
+		CSSPixels.nearest_value_for(f64(font_metrics.advance_of_ascii_zero))
+	context.font_metrics.line_height = computed.line_height()
+	return context
+}
+
+fn resolve_layout_size(node &Node, size css.Size, percentage_basis CSSPixels) ?CSSPixels {
+	if !size.is_length() && !size.is_percentage() && !size.is_calculated() {
+		return none
+	}
+	return size.to_px(layout_length_resolution_context(node), percentage_basis)
+}
+
+// Resolve an authored preferred size to the content-box size consumed by the
+// formatting-context handshake. CSS lengths name the border box when
+// box-sizing:border-box, while UsedValues always stores content dimensions.
+fn resolve_layout_content_size(node &Node, size css.Size, percentage_basis CSSPixels, used_values &UsedValues, width bool) ?CSSPixels {
+	mut resolved := resolve_layout_size(node, size, percentage_basis) or { return none }
+	if node.computed_values().box_sizing() == .border_box {
+		edges := if width {
+			used_values.border_left.plus(used_values.padding_left).plus(used_values.padding_right).plus(used_values.border_right)
+		} else {
+			used_values.border_top.plus(used_values.padding_top).plus(used_values.padding_bottom).plus(used_values.border_bottom)
+		}
+		resolved = resolved.minus(edges)
+	}
+	return css_pixels_max(CSSPixels.new(0), resolved)
+}
+
+fn clamp_layout_content_size(node &Node, value CSSPixels, percentage_basis CSSPixels, used_values &UsedValues, width bool) CSSPixels {
+	edges := if width {
+		used_values.border_left.plus(used_values.padding_left).plus(used_values.padding_right).plus(used_values.border_right)
+	} else {
+		used_values.border_top.plus(used_values.padding_top).plus(used_values.padding_bottom).plus(used_values.border_bottom)
+	}
+	return css_px(clamp_box_content_to_min_max(node.computed_values(), if width {
+		.min_width
+	} else {
+		.min_height
+	}, if width {
+		.max_width
+	} else {
+		.max_height
+	}, value.to_double(), percentage_basis.to_double(), edges.to_double()))
+}
+
+fn resolve_layout_gap(node &Node, property_id css.PropertyID, percentage_basis CSSPixels) CSSPixels {
+	gap := node.computed_values().gap_value(property_id)
+	if gap.is_normal {
+		return CSSPixels.new(0)
+	}
+	return gap.length_percentage.to_px(layout_length_resolution_context(node), percentage_basis)
+}
+
+fn resolve_relative_inset_axis(node &NodeWithStyle, start_property css.PropertyID, end_property css.PropertyID, percentage_basis CSSPixels, percentages_are_auto bool) (CSSPixels, CSSPixels) {
+	computed := node.computed_values()
+	start_size := computed.size_value(start_property)
+	end_size := computed.size_value(end_property)
+	start_auto := property_is_auto(computed, start_property)
+		|| (percentages_are_auto && start_size.contains_percentage())
+	end_auto := property_is_auto(computed, end_property)
+		|| (percentages_are_auto && end_size.contains_percentage())
+	start := if start_auto {
+		CSSPixels.new(0)
+	} else {
+		start_size.to_px(layout_length_resolution_context(unsafe { &Node(node) }), percentage_basis)
+	}
+	end := if end_auto {
+		CSSPixels.new(0)
+	} else {
+		end_size.to_px(layout_length_resolution_context(unsafe { &Node(node) }), percentage_basis)
+	}
+	if start_auto && end_auto {
+		return CSSPixels.new(0), CSSPixels.new(0)
+	}
+	if start_auto {
+		return end.negated(), end
+	}
+	return start, start.negated()
+}
+
+// https://www.w3.org/TR/css-position-3/#relpos-insets
+fn compute_relative_inset_for_node(node &NodeWithStyle, mut used_values UsedValues, containing_block_used_values &UsedValues) {
+	if node.computed_values().position() != .relative {
+		return
+	}
+	width_basis := used_values.relative_inset_basis_width_ or {
+		containing_block_used_values.content_width()
+	}
+
+	height_basis := used_values.relative_inset_basis_height_ or {
+		containing_block_used_values.content_height()
+	}
+
+	left, right := resolve_relative_inset_axis(node, .left, .right, width_basis, false)
+	top, bottom := resolve_relative_inset_axis(node, .top, .bottom, height_basis,
+		used_values.relative_inset_basis_height_ == none
+		&& !containing_block_used_values.has_definite_height())
+	used_values.inset_left = left
+	used_values.inset_right = right
+	used_values.inset_top = top
+	used_values.inset_bottom = bottom
+}
+
+fn resolve_relative_insets(mut state LayoutState, root &Node) {
+	if styled := root.as_node_with_style() {
+		// Nodes which did not participate in layout (for example anonymous text
+		// wrappers below an SVG viewport) have no UsedValues to adjust.
+		if existing := state.try_get(styled) {
+			if containing := existing.containing_block_used_values() {
+				mut used_values := state.get_mutable(styled)
+				compute_relative_inset_for_node(styled, mut used_values, containing)
+			}
+		}
+	}
+	for child in root.children() {
+		resolve_relative_insets(mut state, child)
+	}
+}
+
+// Lay out a formatting-context child whose parent has already chosen an
+// optional content width/height. This is the shared parent/child handshake used
+// by flex, grid, table, and replaced-with-children formatting contexts.
+fn layout_independent_child(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, forced_height ?CSSPixels) &UsedValues {
+	return layout_independent_child_with_height_mode(mut state, child, mut containing_state,
+		containing_width, containing_height, forced_width, forced_height, false)
+}
+
+// Table cells use a definite computed height as the available block size for
+// their contents, but retain the independent formatting context's automatic
+// content height. The table formatting context subsequently adds the remaining
+// row height as vertical-alignment padding.
+fn layout_independent_child_using_automatic_height(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, available_content_height ?CSSPixels) &UsedValues {
+	return layout_independent_child_with_height_mode(mut state, child, mut containing_state,
+		containing_width, containing_height, forced_width, available_content_height, true)
+}
+
+fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, forced_height ?CSSPixels, use_automatic_height bool) &UsedValues {
+	styled := child.as_node_with_style() or { panic('formatting-context child must have style') }
+	computed := styled.computed_values()
+	mut child_state := state.get_mutable(styled)
+	child_state.set_containing_block_used_values(containing_state)
+	resolve_box_model_edges(computed, mut child_state, containing_width.to_double())
+	if child.is_replaced_box() && forced_width == none && forced_height == none {
+		box := child.as_box() or { panic('replaced node must be a box') }
+		size := compute_replaced_size(box, AvailableSpace.new(AvailableSize.make_definite(containing_width), if height := containing_height {
+			AvailableSize.make_definite(height)
+		} else {
+			AvailableSize.make_indefinite()
+		}))
+		child_state.set_content_width(size.width())
+		child_state.set_content_height(size.height())
+		child_state.set_has_definite_width(true)
+		child_state.set_has_definite_height(true)
+		return child_state
+	} else if width := forced_width {
+		child_state.set_content_width(width)
+		// The parent formatting context has resolved this item's used inline
+		// size. Upstream copies that definite FlexItem/GridItem dimension into
+		// UsedValues before laying out the item's independent formatting context.
+		child_state.set_has_definite_width(true)
+	} else if child_state.has_definite_width() {
+		// Flex/grid/table/independent formatting contexts consume the definite
+		// width initialized from the computed size. They do not apply the CSS
+		// 2.1 normal-flow block equation that expands the ignored end margin to
+		// fill the containing block.
+	} else {
+		compute_block_used_width_for_node(mut state, styled, mut child_state,
+			AvailableSize.make_definite(containing_width))
+	}
+
+	mut definite_height := forced_height
+	if definite_height == none {
+		if resolved := resolve_content_height_for_node(mut state, styled, child_state, if height := containing_height {
+			height.to_double()
+		} else {
+			none
+		})
+		{
+			definite_height = css_px(resolved)
+		}
+	}
+	if resolved_height := definite_height {
+		definite_height = clamp_content_height_for_node(mut state, styled, child_state,
+			resolved_height, if height := containing_height {
+			height.to_double()
+		} else {
+			none
+		})
+	}
+	available_height := if height := definite_height {
+		// Descendants must see a parent-resolved flex/grid/table block size as
+		// definite during this layout pass, not only after it has completed.
+		child_state.set_content_height(height)
+		child_state.set_has_definite_height(true)
+		AvailableSize.make_definite(height)
+	} else {
+		AvailableSize.make_indefinite()
+	}
+	inside := layout_inside_independent_formatting_context(mut state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()),
+		available_height))
+	mut height := if use_automatic_height {
+		inside.automatic_content_height
+	} else if resolved := definite_height {
+		resolved
+	} else {
+		inside.automatic_content_height
+	}
+	height = clamp_content_height_for_node(mut state, styled, child_state, height, if basis := containing_height {
+		basis.to_double()
+	} else {
+		none
+	})
+	if definite_height == none && height.raw_value() > inside.automatic_content_height.raw_value() {
+		// An auto-sized independent context constrained upward by min-height is
+		// rerun with that constrained size as its available block size. Flex and
+		// grid descendants then resolve stretch/alignment against the real used
+		// size rather than the unconstrained measurement. The root box itself
+		// remains indefinite: min-height does not make percentage child heights
+		// definite.
+		layout_inside_independent_formatting_context(mut state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()),
+			AvailableSize.make_definite(height)))
+	}
+	child_state.set_content_height(height)
+	if definite_height != none {
+		child_state.set_has_definite_height(true)
+	}
+	return child_state
+}
+
+fn flex_or_grid_item_outer_inline_edges(state &UsedValues) CSSPixels {
+	return state.margin_left.plus(state.border_left).plus(state.padding_left).plus(state.padding_right).plus(state.border_right).plus(state.margin_right)
+}
+
+fn flex_or_grid_item_outer_block_edges(state &UsedValues) CSSPixels {
+	return state.margin_top.plus(state.border_top).plus(state.padding_top).plus(state.padding_bottom).plus(state.border_bottom).plus(state.margin_bottom)
+}
+
+// FormattingContext::box_child_to_derive_baseline_from(). Find the last
+// in-flow block child which has a baseline of its own, either directly from a
+// line box or recursively from one of its descendants.
+fn layout_box_child_to_derive_baseline_from(state &LayoutState, box &Node) ?&Node {
+	if !box.has_children() || box.children_are_inline() {
+		return none
+	}
+	children := box.children()
+	for index := children.len - 1; index >= 0; index-- {
+		child := children[index]
+		if !child.is_box() || child.is_out_of_flow() {
+			continue
+		}
+		styled := child.as_node_with_style() or { continue }
+		child_state := state.try_get(styled) or { continue }
+		if child_state.line_boxes.len > 0
+			|| layout_box_child_to_derive_baseline_from(state, child) != none {
+			return child
+		}
+	}
+	return none
+}
+
+// FormattingContext::box_baseline(). This is shared by inline, flex, grid and
+// table layout; in particular, an atomic inline without an in-flow baseline
+// uses the bottom margin edge rather than merely its content height.
+fn layout_box_baseline(state &LayoutState, box &Node) CSSPixels {
+	styled := box.as_node_with_style() or { return CSSPixels.new(0) }
+	box_state := state.try_get(styled) or { return CSSPixels.new(0) }
+	computed := box.computed_values()
+	match computed.vertical_align() {
+		.top {
+			return box_state.border_box_top()
+		}
+		.middle {
+			containing_font_metrics := if containing_block := box.containing_block() {
+				layout_font_metrics_for_node(unsafe { &Node(containing_block) })
+			} else {
+				layout_font_metrics_for_node(box)
+			}
+			return CSSPixels.from_raw(box_state.margin_box_height().raw_value() / 2).plus(CSSPixels.nearest_value_for(f64(containing_font_metrics.x_height) / 2.0))
+		}
+		.bottom {
+			return box_state.content_height().plus(box_state.margin_box_top())
+		}
+		.text_top {
+			return computed.font_size()
+		}
+		.text_bottom {
+			containing_font_metrics := if containing_block := box.containing_block() {
+				layout_font_metrics_for_node(unsafe { &Node(containing_block) })
+			} else {
+				layout_font_metrics_for_node(box)
+			}
+			return box_state.margin_box_height().minus(CSSPixels.nearest_value_for(f64(containing_font_metrics.descent) * 2.0))
+		}
+		else {}
+	}
+
+	display := box.display()
+	has_visible_overflow := computed.overflow_x() == .visible && computed.overflow_y() == .visible
+	always_derive_from_content := display.is_flex_inside() || display.is_grid_inside()
+		|| has_visible_overflow
+	if always_derive_from_content && box_state.line_boxes.len > 0 {
+		last_line := box_state.line_boxes.last()
+		last_line_top := last_line.bottom().minus(last_line.block_length())
+		return box_state.margin_box_top().plus(last_line_top).plus(last_line.baseline())
+	}
+
+	if child := layout_box_child_to_derive_baseline_from(state, box) {
+		mut is_input := false
+		if dom_node := box.dom_node() {
+			if element := dom_node.as_element() {
+				is_input = element.local_name() == 'input'
+			}
+		}
+		if always_derive_from_content || is_input {
+			child_styled := child.as_node_with_style() or { return box_state.margin_box_height() }
+			child_state := state.try_get(child_styled) or { return box_state.margin_box_height() }
+			child_offset_from_margin_edge :=
+				child_state.offset.y().minus(child_state.margin_box_top())
+			return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline(state,
+				child))
+		}
+	}
+
+	return box_state.margin_box_height()
+}

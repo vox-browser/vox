@@ -59,6 +59,7 @@ pub mut:
 	document            &dom.Document = unsafe { nil }
 	rule_context        []RuleContext
 	declared_namespaces map[string]bool
+	is_ua_style_sheet   IsUAStyleSheet
 }
 
 pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding string) RuleSelectorParser {
@@ -69,6 +70,7 @@ pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding st
 		document:            params.document
 		rule_context:        params.rule_context.clone()
 		declared_namespaces: params.declared_namespaces.clone()
+		is_ua_style_sheet:   params.is_ua_style_sheet
 	}
 }
 
@@ -86,6 +88,7 @@ fn (parser RuleSelectorParser) parsing_params() ParsingParams {
 		document:            parser.document
 		rule_context:        parser.rule_context.clone()
 		declared_namespaces: parser.declared_namespaces.clone()
+		is_ua_style_sheet:   parser.is_ua_style_sheet
 	}
 }
 
@@ -1238,7 +1241,7 @@ fn (mut parser RuleSelectorParser) convert_to_layer_rule(rule AtRule, nested Par
 
 fn (mut parser RuleSelectorParser) convert_to_media_rule(rule AtRule, nested ParserNested) ?&CSSRule {
 	mut prelude_tokens := ParserTokenStream.from_values(rule.prelude)
-	if !rule.is_block_rule || rule.prelude.len == 0 {
+	if !rule.is_block_rule {
 		return none
 	}
 	mut media := MediaList.create_empty()
@@ -1576,8 +1579,8 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 
 	// https://drafts.csswg.org/css-counter-styles-3/#typedef-counter-style-name
 	// When used here, to define a counter style, it also cannot be any of the non-overridable counter-style names
-	// FIXME: We should allow these in the UA stylesheet in order to initially define them.
-	if css_counter_style_rule_matches_non_overridable_counter_style_name(name) {
+	if css_counter_style_rule_matches_non_overridable_counter_style_name(name)
+		&& parser.is_ua_style_sheet != .yes {
 		parser_report_error(ParsingError(InvalidRuleError{
 			rule_name:   '@counter-style'
 			prelude:     prelude_stream.dump_string()
@@ -2342,9 +2345,17 @@ fn convert_to_page_descriptor_for_rule_parsing(declaration Declaration) ?Descrip
 
 fn declarations_from_at_rule(rule AtRule) ParserRuleDeclarations {
 	mut declarations := []Declaration{}
-	rule.for_each_as_declaration_list(fn [mut declarations] (declaration Declaration) {
-		declarations << declaration
-	})
+	// Keep the declaration vector in the caller's frame. Capturing a mutable dynamic array in a V
+	// function value copies its header, so appending in the visitor mutated only the capture and made
+	// descriptor at-rules (notably every @counter-style in Default.css) appear empty.
+	for child in rule.child_rules_and_lists_of_declarations {
+		match child {
+			RuleNode {}
+			DeclarationList {
+				declarations << child.declarations
+			}
+		}
+	}
 	return declarations
 }
 
@@ -3815,7 +3826,11 @@ fn is_invalid_custom_property_name_string_local(name string) bool {
 }
 
 pub fn parse_css_stylesheet_with_parser(css_text string, location ?string) &CSSStyleSheet {
-	mut parser := RuleSelectorParser.create(ParsingParams{}, css_text, 'utf-8')
+	return parse_css_stylesheet_with_params(ParsingParams{}, css_text, location)
+}
+
+pub fn parse_css_stylesheet_with_params(params ParsingParams, css_text string, location ?string) &CSSStyleSheet {
+	mut parser := RuleSelectorParser.create(params, css_text, 'utf-8')
 	return parser.parse_as_css_stylesheet(location, none)
 }
 

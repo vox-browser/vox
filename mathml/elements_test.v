@@ -41,6 +41,28 @@ fn test_invalid_common_hints_are_ignored() {
 	assert hints.math_depth == none
 }
 
+fn test_mathml_element_lifecycle_preserves_and_hides_cryptographic_nonce() {
+	mut element := MathMLElement.create('math')
+	element.set_attribute('nonce', 'secret')
+	assert element.nonce() == 'secret'
+
+	mut copy := MathMLElement.create('math')
+	copy.attributes = element.attributes.clone()
+	element.cloned(mut copy, false)!
+	assert copy.nonce() == 'secret'
+
+	element.set_insertion_policy_state(true, true)
+	element.inserted()
+	assert element.attribute('nonce')? == ''
+	assert element.nonce() == 'secret'
+	element.remove_attribute('nonce')
+	assert element.nonce() == ''
+
+	first := element.global_event_handlers_to_event_target('click')
+	second := element.global_event_handlers_to_event_target('input')
+	assert voidptr(first) == voidptr(second)
+}
+
 fn test_scriptlevel_preserves_html_integer_prefix_parsing() {
 	mut element := MathMLElement.create('mrow')
 	element.set_attribute('scriptlevel', ' \t+12trailing')

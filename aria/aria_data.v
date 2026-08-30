@@ -142,69 +142,73 @@ mut:
 }
 
 pub fn AriaData.from_mixin(source &ARIAMixin) AriaData {
+	return AriaData.build_data(source)
+}
+
+pub fn AriaData.build_data(source &ARIAMixin) AriaData {
 	return AriaData{
 		aria_active_descendant_:        source.aria_active_descendant()
-		aria_atomic_:                   parse_optional_true_false(source.aria_atomic())
-		aria_auto_complete_:            parse_aria_autocomplete(source.aria_auto_complete())
+		aria_atomic_:                   AriaData.parse_optional_true_false(source.aria_atomic())
+		aria_auto_complete_:            AriaData.parse_aria_autocomplete(source.aria_auto_complete())
 		aria_braille_label_:            source.aria_braille_label() or { '' }
 		aria_braille_role_description_: source.aria_braille_role_description() or { '' }
-		aria_busy_:                     parse_true_false(source.aria_busy())
-		aria_checked_:                  parse_tristate(source.aria_checked())
-		aria_col_count_:                parse_aria_integer(source.aria_col_count())
-		aria_col_index_:                parse_aria_integer(source.aria_col_index())
+		aria_busy_:                     AriaData.parse_true_false(source.aria_busy())
+		aria_checked_:                  AriaData.parse_tristate(source.aria_checked())
+		aria_col_count_:                AriaData.parse_integer(source.aria_col_count())
+		aria_col_index_:                AriaData.parse_integer(source.aria_col_index())
 		aria_col_index_text_:           source.aria_col_index_text() or { '' }
-		aria_col_span_:                 parse_aria_integer(source.aria_col_span())
+		aria_col_span_:                 AriaData.parse_integer(source.aria_col_span())
 		aria_controls_:                 source.parse_id_reference_list(source.aria_controls())
-		aria_current_:                  parse_aria_current(source.aria_current())
+		aria_current_:                  AriaData.parse_aria_current(source.aria_current())
 		aria_described_by_:             source.parse_id_reference_list(source.aria_described_by())
 		aria_description_:              source.aria_description() or { '' }
 		aria_details_:                  source.parse_id_reference(source.aria_details())
-		aria_disabled_:                 parse_true_false(source.aria_disabled())
-		aria_drop_effect_:              parse_aria_drop_effect(source.aria_drop_effect())
+		aria_disabled_:                 AriaData.parse_true_false(source.aria_disabled())
+		aria_drop_effect_:              AriaData.parse_aria_drop_effect(source.aria_drop_effect())
 		aria_error_message_:            source.parse_id_reference(source.aria_error_message())
-		aria_expanded_:                 parse_true_false_undefined(source.aria_expanded())
+		aria_expanded_:                 AriaData.parse_true_false_undefined(source.aria_expanded())
 		aria_flow_to_:                  source.parse_id_reference_list(source.aria_flow_to())
-		aria_grabbed_:                  parse_true_false_undefined(source.aria_grabbed())
-		aria_has_popup_:                parse_aria_has_popup(source.aria_has_popup())
-		aria_hidden_:                   parse_true_false_undefined(source.aria_hidden())
-		aria_invalid_:                  parse_aria_invalid(source.aria_invalid())
+		aria_grabbed_:                  AriaData.parse_true_false_undefined(source.aria_grabbed())
+		aria_has_popup_:                AriaData.parse_aria_has_popup(source.aria_has_popup())
+		aria_hidden_:                   AriaData.parse_true_false_undefined(source.aria_hidden())
+		aria_invalid_:                  AriaData.parse_aria_invalid(source.aria_invalid())
 		aria_key_shortcuts_:            source.aria_key_shortcuts() or { '' }
 		aria_label_:                    source.aria_label() or { '' }
 		aria_labelled_by_:              source.parse_id_reference_list(source.aria_labelled_by())
-		aria_level_:                    parse_aria_integer(source.aria_level())
-		aria_live_:                     parse_aria_live(source.aria_live())
-		aria_modal_:                    parse_true_false(source.aria_modal())
-		aria_multi_line_:               parse_true_false(source.aria_multi_line())
-		aria_multi_selectable_:         parse_true_false(source.aria_multi_selectable())
-		aria_orientation_:              parse_aria_orientation(source.aria_orientation())
+		aria_level_:                    AriaData.parse_integer(source.aria_level())
+		aria_live_:                     AriaData.parse_aria_live(source.aria_live())
+		aria_modal_:                    AriaData.parse_true_false(source.aria_modal())
+		aria_multi_line_:               AriaData.parse_true_false(source.aria_multi_line())
+		aria_multi_selectable_:         AriaData.parse_true_false(source.aria_multi_selectable())
+		aria_orientation_:              AriaData.parse_aria_orientation(source.aria_orientation())
 		aria_owns_:                     source.parse_id_reference_list(source.aria_owns())
 		aria_placeholder_:              source.aria_placeholder() or { '' }
-		aria_pos_in_set_:               parse_aria_integer(source.aria_pos_in_set())
-		aria_pressed_:                  parse_tristate(source.aria_pressed())
-		aria_read_only_:                parse_true_false(source.aria_read_only())
-		aria_relevant_:                 parse_aria_relevant(source.aria_relevant())
-		aria_required_:                 parse_true_false(source.aria_required())
+		aria_pos_in_set_:               AriaData.parse_integer(source.aria_pos_in_set())
+		aria_pressed_:                  AriaData.parse_tristate(source.aria_pressed())
+		aria_read_only_:                AriaData.parse_true_false(source.aria_read_only())
+		aria_relevant_:                 AriaData.parse_aria_relevant(source.aria_relevant())
+		aria_required_:                 AriaData.parse_true_false(source.aria_required())
 		aria_role_description_:         source.aria_role_description() or { '' }
-		aria_row_count_:                parse_aria_integer(source.aria_row_count())
-		aria_row_index_:                parse_aria_integer(source.aria_row_index())
+		aria_row_count_:                AriaData.parse_integer(source.aria_row_count())
+		aria_row_index_:                AriaData.parse_integer(source.aria_row_index())
 		aria_row_index_text_:           source.aria_row_index_text() or { '' }
-		aria_row_span_:                 parse_aria_integer(source.aria_row_span())
-		aria_selected_:                 parse_true_false_undefined(source.aria_selected())
-		aria_set_size_:                 parse_aria_integer(source.aria_set_size())
-		aria_sort_:                     parse_aria_sort(source.aria_sort())
-		aria_value_max_:                parse_aria_number(source.aria_value_max())
-		aria_value_min_:                parse_aria_number(source.aria_value_min())
-		aria_value_now_:                parse_aria_number(source.aria_value_now())
+		aria_row_span_:                 AriaData.parse_integer(source.aria_row_span())
+		aria_selected_:                 AriaData.parse_true_false_undefined(source.aria_selected())
+		aria_set_size_:                 AriaData.parse_integer(source.aria_set_size())
+		aria_sort_:                     AriaData.parse_aria_sort(source.aria_sort())
+		aria_value_max_:                AriaData.parse_number(source.aria_value_max())
+		aria_value_min_:                AriaData.parse_number(source.aria_value_min())
+		aria_value_now_:                AriaData.parse_number(source.aria_value_now())
 		aria_value_text_:               source.aria_value_text() or { '' }
 	}
 }
 
-fn parse_true_false(value ?string) bool {
+pub fn AriaData.parse_true_false(value ?string) bool {
 	string_value := value or { return false }
 	return string_value == 'true'
 }
 
-fn parse_tristate(value ?string) Tristate {
+pub fn AriaData.parse_tristate(value ?string) Tristate {
 	return match value {
 		'true' { .true_ }
 		'false' { .false_ }
@@ -213,7 +217,7 @@ fn parse_tristate(value ?string) Tristate {
 	} or { return .undefined }
 }
 
-fn parse_true_false_undefined(value ?string) ?bool {
+pub fn AriaData.parse_true_false_undefined(value ?string) ?bool {
 	return match value {
 		'true' { true }
 		'false' { false }
@@ -221,22 +225,22 @@ fn parse_true_false_undefined(value ?string) ?bool {
 	} or { return none }
 }
 
-fn parse_optional_true_false(value ?string) ?bool {
-	return parse_true_false_undefined(value)
+pub fn AriaData.parse_optional_true_false(value ?string) ?bool {
+	return AriaData.parse_true_false_undefined(value)
 }
 
-fn parse_aria_integer(value ?string) ?i32 {
+pub fn AriaData.parse_integer(value ?string) ?i32 {
 	string_value := value or { return none }
 	parsed := strconv.parse_int(string_value, 10, 32) or { return none }
 	return i32(parsed)
 }
 
-fn parse_aria_number(value ?string) ?f64 {
+pub fn AriaData.parse_number(value ?string) ?f64 {
 	string_value := value or { return none }
 	return strconv.atof64(string_value.trim_space()) or { none }
 }
 
-fn parse_aria_autocomplete(value ?string) AriaAutocomplete {
+pub fn AriaData.parse_aria_autocomplete(value ?string) AriaAutocomplete {
 	return match value {
 		'inline' { .inline }
 		'list' { .list }
@@ -245,7 +249,7 @@ fn parse_aria_autocomplete(value ?string) AriaAutocomplete {
 	} or { return .none_ }
 }
 
-fn parse_aria_current(value ?string) AriaCurrent {
+pub fn AriaData.parse_aria_current(value ?string) AriaCurrent {
 	return match value {
 		'page' { .page }
 		'step' { .step }
@@ -257,7 +261,7 @@ fn parse_aria_current(value ?string) AriaCurrent {
 	} or { return .false_ }
 }
 
-fn parse_aria_drop_effect(value ?string) []AriaDropEffect {
+pub fn AriaData.parse_aria_drop_effect(value ?string) []AriaDropEffect {
 	string_value := value or { return []AriaDropEffect{} }
 	mut result := []AriaDropEffect{}
 	for token in string_value.fields() {
@@ -276,7 +280,7 @@ fn parse_aria_drop_effect(value ?string) []AriaDropEffect {
 	return result
 }
 
-fn parse_aria_has_popup(value ?string) AriaHasPopup {
+pub fn AriaData.parse_aria_has_popup(value ?string) AriaHasPopup {
 	return match value {
 		'true' { .true_ }
 		'menu' { .menu }
@@ -288,7 +292,7 @@ fn parse_aria_has_popup(value ?string) AriaHasPopup {
 	} or { return .false_ }
 }
 
-fn parse_aria_invalid(value ?string) AriaInvalid {
+pub fn AriaData.parse_aria_invalid(value ?string) AriaInvalid {
 	return match value {
 		'grammar' { .grammar }
 		'spelling' { .spelling }
@@ -297,7 +301,7 @@ fn parse_aria_invalid(value ?string) AriaInvalid {
 	} or { return .false_ }
 }
 
-fn parse_aria_live(value ?string) ?AriaLive {
+pub fn AriaData.parse_aria_live(value ?string) ?AriaLive {
 	return match value {
 		'assertive' { .assertive }
 		'off' { .off }
@@ -306,7 +310,7 @@ fn parse_aria_live(value ?string) ?AriaLive {
 	} or { return none }
 }
 
-fn parse_aria_orientation(value ?string) ?AriaOrientation {
+pub fn AriaData.parse_aria_orientation(value ?string) ?AriaOrientation {
 	return match value {
 		'horizontal' { .horizontal }
 		'undefined' { .undefined }
@@ -315,7 +319,7 @@ fn parse_aria_orientation(value ?string) ?AriaOrientation {
 	} or { return none }
 }
 
-fn parse_aria_relevant(value ?string) []AriaRelevant {
+pub fn AriaData.parse_aria_relevant(value ?string) []AriaRelevant {
 	string_value := value or { return []AriaRelevant{} }
 	tokens := string_value.fields()
 	mut result := []AriaRelevant{}
@@ -349,7 +353,7 @@ fn parse_aria_relevant(value ?string) []AriaRelevant {
 	return result
 }
 
-fn parse_aria_sort(value ?string) AriaSort {
+pub fn AriaData.parse_aria_sort(value ?string) AriaSort {
 	return match value {
 		'ascending' { .ascending }
 		'descending' { .descending }

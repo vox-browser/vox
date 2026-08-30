@@ -9,6 +9,27 @@ module html
 
 import dom
 
+// WebIDL callback conversion at the compact JS-value boundary. Object values
+// used here carry a CallbackType pointer in object_data.
+fn convert_value_to_callback_function(value dom.JSValue) !&dom.CallbackType {
+	if !value.is_object() || value.object_data == unsafe { nil } {
+		return error('TypeError: value is not a function')
+	}
+	return unsafe { &dom.CallbackType(value.object_data) }
+}
+
+// The standalone port represents an already-iterated JS sequence as a V array.
+fn convert_value_to_sequence_of_strings(values []dom.JSValue) ![]string {
+	mut result := []string{cap: values.len}
+	for value in values {
+		if value.is_object() {
+			return error('TypeError: object string conversion requires a JavaScript host')
+		}
+		result << value.to_string_value()
+	}
+	return result
+}
+
 pub struct ElementDefinitionOptions {
 pub:
 	extends ?string
@@ -137,16 +158,16 @@ pub fn (mut registry CustomElementRegistry) define(name string, constructor Cust
 		[]string{}
 	}
 	definition := &dom.CustomElementDefinition{
-		name_:               name
-		local_name_:         local_name
+		name_: name
+		local_name_: local_name
 		observed_attributes: observed_attributes
-		form_associated_:    constructor.form_associated
-		disable_internals_:  'internals' in constructor.disabled_features
-		disable_shadow_:     'shadow' in constructor.disabled_features
+		form_associated_: constructor.form_associated
+		disable_internals_: 'internals' in constructor.disabled_features
+		disable_shadow_: 'shadow' in constructor.disabled_features
 	}
 	registration := &CustomElementRegistration{
-		definition:          definition
-		constructor_id:      constructor.id
+		definition: definition
+		constructor_id: constructor.id
 		lifecycle_callbacks: lifecycle_callbacks
 	}
 	registry.definitions_ << registration
@@ -210,12 +231,16 @@ pub fn (registry &CustomElementRegistry) upgrade(root &dom.Node) {
 
 pub fn (registry &CustomElementRegistry) get_definition_with_name_and_local_name(name string, local_name string) ?&dom.CustomElementDefinition {
 	for registration in registry.definitions_ {
-		if registration.definition.name() == name
-			&& registration.definition.local_name() == local_name {
+		if registration.definition.name() == name && registration.definition.local_name() == local_name {
 			return registration.definition
 		}
 	}
 	return none
+}
+
+pub fn (registry &CustomElementRegistry) get_definition_from_new_target(new_target u64) ?&dom.CustomElementDefinition {
+	registration := registry.registration_with_constructor(new_target) or { return none }
+	return registration.definition
 }
 
 pub fn (registry &CustomElementRegistry) definition_count() int {

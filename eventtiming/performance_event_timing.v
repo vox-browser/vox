@@ -6,47 +6,15 @@
 module eventtiming
 
 import dom
+import performancetimeline
 
-pub enum AvailableFromTimeline {
-	no
-	yes
-}
+pub type AvailableFromTimeline = performancetimeline.AvailableFromTimeline
 
-pub enum ShouldAddEntry {
-	no
-	yes
-}
+pub type ShouldAddEntry = performancetimeline.ShouldAddEntry
 
-// This is the portion of PerformanceObserverInit consumed by EventTiming's
-// registry hook. The current upstream implementation accepts but does not yet
-// inspect it.
-pub struct PerformanceObserverInit {
-pub:
-	duration_threshold ?u32
-}
+pub type PerformanceEntry = performancetimeline.PerformanceEntry
 
-// Typed representation of PerformanceEntry, which is the IDL base interface of
-// PerformanceEventTiming. PerformanceTimeline is not translated yet, so this
-// package owns the narrow inherited surface it needs.
-@[heap]
-pub struct PerformanceEntry {
-mut:
-	name_       string
-	start_time_ f64
-	duration_   f64
-}
-
-pub fn (entry &PerformanceEntry) name() string {
-	return entry.name_
-}
-
-pub fn (entry &PerformanceEntry) start_time() f64 {
-	return entry.start_time_
-}
-
-pub fn (entry &PerformanceEntry) duration() f64 {
-	return entry.duration_
-}
+pub type PerformanceObserverInit = performancetimeline.PerformanceObserverInit
 
 // https://www.w3.org/TR/event-timing/#sec-performance-event-timing
 @[heap]
@@ -67,17 +35,32 @@ mut:
 // https://www.w3.org/TR/event-timing/#sec-init-event-timing
 pub fn PerformanceEventTiming.create(name string, start_time f64, duration f64, event &dom.Event, processing_start f64, interaction_id u64) &PerformanceEventTiming {
 	return &PerformanceEventTiming{
-		PerformanceEntry:  PerformanceEntry{
-			name_:       name
-			start_time_: start_time
-			duration_:   duration
+		PerformanceEntry: PerformanceEntry{
+			name: name
+			entry_type: 'event'
+			start_time: start_time
+			duration: duration
+			max_buffer_size: u64(1)
+			should_add_result: .no
 		}
-		entry_type_:       'event'
+		entry_type_: 'event'
 		event_start_time_: event.time_stamp()
 		processing_start_: processing_start
-		cancelable_:       event.cancelable()
-		interaction_id_:   interaction_id
+		cancelable_: event.cancelable()
+		interaction_id_: interaction_id
 	}
+}
+
+pub fn (entry &PerformanceEventTiming) name() string {
+	return entry.PerformanceEntry.name
+}
+
+pub fn (entry &PerformanceEventTiming) start_time() f64 {
+	return entry.PerformanceEntry.start_time
+}
+
+pub fn (entry &PerformanceEventTiming) duration() f64 {
+	return entry.PerformanceEntry.duration
 }
 
 pub fn (entry &PerformanceEventTiming) entry_type() string {
@@ -157,14 +140,14 @@ pub:
 
 pub fn (entry &PerformanceEventTiming) to_json() PerformanceEventTimingJSON {
 	return PerformanceEventTimingJSON{
-		name:             entry.name()
-		entry_type:       entry.entry_type()
-		start_time:       entry.start_time()
-		duration:         entry.duration()
+		name: entry.name()
+		entry_type: entry.entry_type()
+		start_time: entry.start_time()
+		duration: entry.duration()
 		processing_start: entry.processing_start()
-		processing_end:   entry.processing_end()
-		cancelable:       entry.cancelable()
-		target:           entry.target()
-		interaction_id:   entry.interaction_id()
+		processing_end: entry.processing_end()
+		cancelable: entry.cancelable()
+		target: entry.target()
+		interaction_id: entry.interaction_id()
 	}
 }

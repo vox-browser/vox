@@ -52,11 +52,27 @@ pub:
 
 pub fn PerformanceEntry.new(name string, entry_type string, start_time f64, duration f64) &PerformanceEntry {
 	return &PerformanceEntry{
-		name:       name
+		name: name
 		entry_type: entry_type
 		start_time: start_time
-		duration:   duration
+		duration: duration
 	}
+}
+
+pub fn (entry &PerformanceEntry) name() string {
+	return entry.name
+}
+
+pub fn (entry &PerformanceEntry) entry_type() string {
+	return entry.entry_type
+}
+
+pub fn (entry &PerformanceEntry) start_time() f64 {
+	return entry.start_time
+}
+
+pub fn (entry &PerformanceEntry) duration() f64 {
+	return entry.duration
 }
 
 pub fn (entry &PerformanceEntry) should_add_entry(_ PerformanceObserverInit) ShouldAddEntry {
@@ -73,10 +89,10 @@ pub:
 
 pub fn (entry &PerformanceEntry) to_json() PerformanceEntryJSON {
 	return PerformanceEntryJSON{
-		name:       entry.name
+		name: entry.name
 		entry_type: entry.entry_type
 		start_time: entry.start_time
-		duration:   entry.duration
+		duration: entry.duration
 	}
 }
 

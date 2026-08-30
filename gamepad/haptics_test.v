@@ -63,6 +63,7 @@ fn test_haptics_unsupported_effect_and_overflow_safe_duration() {
 	assert valid_effect(.dual_rumble, GamepadEffectParameters{
 		strong_magnitude: math.nan()
 	})
+	assert is_valid_effect(.dual_rumble, GamepadEffectParameters{ duration: 5000 })
 }
 
 fn test_haptic_platform_failure_still_completes_play_promise() {
@@ -87,4 +88,18 @@ fn test_haptic_platform_failure_still_completes_play_promise() {
 	assert reset.result? == .complete
 	assert playing.state == .pending
 	assert reset_actuator.playing_ != none
+}
+
+fn test_exact_haptic_issue_and_timer_clear_entry_points() {
+	device := new_standard_virtual_device(4, 'exact haptics')
+	pad := Gamepad.create(device, 0, 0)
+	mut actuator := pad.vibration_actuator()
+	assert actuator.issue_haptic_effect(.dual_rumble, GamepadEffectParameters{
+		strong_magnitude: 1
+		weak_magnitude:   0.5
+	})
+	assert device.received_rumble.len == 2
+	actuator.pending_type_ = .dual_rumble
+	actuator.clear_playing_effect_timers()
+	assert actuator.pending_type_ == none
 }

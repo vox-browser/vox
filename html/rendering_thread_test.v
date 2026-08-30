@@ -52,7 +52,7 @@ fn test_rendering_thread_processes_commands_swaps_and_applies_back_pressure() {
 fn test_rendering_thread_screenshot_and_lifecycle() {
 	state := &RenderingTestState{}
 	mut renderer := RenderingThread.create(fn (_ RenderingRect, _ int) {})
-	renderer.set_player(fn (_ &RenderingDisplayList, _ RenderingScrollStateSnapshot, _ &RenderingSurface) {})
+	renderer.set_skia_player(fn (_ &RenderingDisplayList, _ RenderingScrollStateSnapshot, _ &RenderingSurface) {})
 	renderer.start()!
 	renderer.update_display_list(&RenderingDisplayList{ id: 1 }, RenderingScrollStateSnapshot{})
 	target := &RenderingSurface{

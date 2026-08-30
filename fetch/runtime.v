@@ -15,6 +15,7 @@ import securecontexts
 __global (
 	fetch_http_memory_cache_enabled = true
 	fetch_next_task_id              = u64(1)
+	fetch_http_memory_cache         = map[string]&Response{}
 )
 
 pub enum BodyBytesKind {
@@ -82,6 +83,8 @@ mut:
 	ongoing_fetch_tasks_        map[u64]u64
 	next_fetch_task_id_         u64
 	inner_controller_           ?&FetchController
+	fetch_params_               ?&FetchParams
+	pending_request_            ?&Request
 }
 
 pub fn FetchController.create() &FetchController {
@@ -173,6 +176,21 @@ pub mut:
 	connect_start           f64
 	connect_end             f64
 	secure_connection_start f64
+	alpn_negotiated_protocol string
+}
+
+// Typed projection of Requests::RequestTimingInfo. Network implementations
+// fill these microsecond offsets before handing them to FetchTimingInfo.
+pub struct RequestTimingInfo {
+pub:
+	domain_lookup_start_microseconds i64
+	domain_lookup_end_microseconds   i64
+	connect_start_microseconds       i64
+	connect_end_microseconds         i64
+	secure_connect_start_microseconds i64
+	request_start_microseconds       i64
+	response_start_microseconds      i64
+	http_version_alpn_identifier     string
 }
 
 @[heap]
@@ -199,9 +217,7 @@ pub fn FetchTimingInfo.create() &FetchTimingInfo {
 pub fn create_opaque_timing_info(info &FetchTimingInfo) &FetchTimingInfo {
 	return &FetchTimingInfo{
 		start_time:               info.start_time
-		post_redirect_start_time: info.post_redirect_start_time
-		end_time:                 info.end_time
-		render_blocking:          info.render_blocking
+		post_redirect_start_time: info.start_time
 	}
 }
 
@@ -209,6 +225,12 @@ pub enum PreloadedResponseCandidateKind {
 	null_
 	pending
 	response
+}
+
+pub struct PreloadedResponseCandidate {
+pub:
+	kind     PreloadedResponseCandidateKind
+	response ?&Response
 }
 
 @[heap]
@@ -351,7 +373,10 @@ mut:
 	pulled_bytes_    int
 	lifecycle_state_ FetchedDataLifecycle
 	pending_pull_    bool
+	pending_promise_ ?FetchedDataPendingPromise
 }
+
+pub type FetchedDataPendingPromise = fn ()
 
 pub fn FetchedDataReceiver.create(params &FetchParams) &FetchedDataReceiver {
 	return &FetchedDataReceiver{
@@ -365,6 +390,14 @@ pub fn (mut receiver FetchedDataReceiver) set_response(response &Response) {
 
 pub fn (mut receiver FetchedDataReceiver) set_body(body &Body) {
 	receiver.body_ = body
+	if mut stored_body := receiver.body_ {
+		if receiver.buffer_.len > 0 {
+			stored_body.append_sniff_bytes(receiver.buffer_)
+		}
+		if receiver.lifecycle_state_ != .receiving {
+			stored_body.set_sniff_bytes_complete()
+		}
+	}
 }
 
 pub fn (mut receiver FetchedDataReceiver) set_pending_pull() {
@@ -374,17 +407,21 @@ pub fn (mut receiver FetchedDataReceiver) set_pending_pull() {
 
 pub fn (mut receiver FetchedDataReceiver) handle_network_bytes(bytes []u8, state NetworkState) {
 	if receiver.lifecycle_state_ in [.closed, .failed] { return }
-	receiver.buffer_ << bytes
-	if mut body := receiver.body_ { body.append_sniff_bytes(bytes) }
 	match state {
-		.ongoing {}
+		.ongoing {
+			receiver.buffer_ << bytes
+			if mut body := receiver.body_ { body.append_sniff_bytes(bytes) }
+		}
 		.complete {
-			if mut body := receiver.body_ { body.set_sniff_bytes_complete() }
-			receiver.lifecycle_state_ = if receiver.pending_pull_ {
-				.ready_to_close
-			} else {
-				.complete_pending
+			// Upstream delivers an empty final chunk. Accepting a non-empty
+			// final chunk keeps this boundary usable by synchronous hosts and
+			// processes those bytes exactly once before completion.
+			if bytes.len > 0 {
+				receiver.buffer_ << bytes
+				if mut body := receiver.body_ { body.append_sniff_bytes(bytes) }
 			}
+			if mut body := receiver.body_ { body.set_sniff_bytes_complete() }
+			receiver.lifecycle_state_ = .complete_pending
 		}
 		.error {
 			receiver.lifecycle_state_ = .failed
@@ -395,16 +432,27 @@ pub fn (mut receiver FetchedDataReceiver) handle_network_bytes(bytes []u8, state
 }
 
 fn (mut receiver FetchedDataReceiver) pull_bytes_into_stream() {
-	if !receiver.pending_pull_ { return }
-	receiver.pulled_bytes_ = receiver.buffer_.len
+	if !receiver.pending_pull_ && receiver.pending_promise_ == none { return }
+	if !receiver.buffer_is_eof() {
+		_ = receiver.copy_unpulled_bytes()
+	}
 	receiver.pending_pull_ = false
-	if receiver.lifecycle_state_ in [.ready_to_close, .complete_pending] {
-		receiver.lifecycle_state_ = .closed
+	if callback := receiver.pending_promise_ {
+		callback()
+		receiver.pending_promise_ = none
+	}
+	if receiver.lifecycle_state_ == .complete_pending && receiver.buffer_is_eof() {
+		receiver.lifecycle_state_ = .ready_to_close
+		if receiver.pending_promise_ == none {
+			receiver.close_stream()
+		}
 	}
 }
 
-pub fn (receiver &FetchedDataReceiver) copy_unpulled_bytes() []u8 {
-	return receiver.buffer_[receiver.pulled_bytes_..].clone()
+pub fn (mut receiver FetchedDataReceiver) copy_unpulled_bytes() []u8 {
+	bytes := receiver.buffer_[receiver.pulled_bytes_..].clone()
+	receiver.pulled_bytes_ = receiver.buffer_.len
+	return bytes
 }
 
 pub fn (receiver &FetchedDataReceiver) lifecycle_state() FetchedDataLifecycle {
@@ -729,4 +777,6 @@ pub fn http_memory_cache_enabled() bool {
 	return fetch_http_memory_cache_enabled
 }
 
-pub fn clear_http_memory_cache() {}
+pub fn clear_http_memory_cache() {
+	fetch_http_memory_cache.clear()
+}

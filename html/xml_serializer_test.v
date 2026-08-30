@@ -75,3 +75,28 @@ fn test_require_well_formed_rejects_bad_comment() {
 	// The same comment serializes fine when well-formedness is not required.
 	assert serialize(comment.as_node()) == '<!--a -- b-->'
 }
+
+fn test_xml_well_formed_character_and_name_productions() {
+	assert matches_xml_name('valid-name.2')
+	assert matches_xml_name('Élément')
+	assert !matches_xml_name('2invalid')
+	assert !matches_xml_name('has space')
+	assert is_valid_xml_public_id('Public ID -()+,./:=?;!*#@$_%')
+	assert !is_valid_xml_public_id('tab\tis-not-pubid')
+
+	if _ := xml_serialize_an_attribute_value(some_name('bad\vvalue'), .yes) {
+		assert false, 'expected invalid XML character in attribute value to be rejected'
+	}
+	if _ := xml_serialize_comment('bad\vcomment', .yes) {
+		assert false, 'expected invalid XML character in comment to be rejected'
+	}
+	if _ := xml_serialize_document_type('html', 'bad\tpublic-id', '', .yes) {
+		assert false, 'expected invalid XML PubidChar to be rejected'
+	}
+	if _ := xml_serialize_processing_instruction('target', 'bad\vdata', .yes) {
+		assert false, 'expected invalid XML character in processing instruction to be rejected'
+	}
+	if _ := xml_serialize_cdata_section('bad\vdata', .yes) {
+		assert false, 'expected invalid XML character in CDATA to be rejected'
+	}
+}

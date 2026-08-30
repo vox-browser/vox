@@ -39,6 +39,12 @@ fn test_navigable_container_origin_navigation_and_destruction() {
 	container.set_navigation_hook(embedded_navigation_hook)
 	navigable := container.create_new_child_navigable()
 	assert navigable.target_name == 'frame'
+	assert container in navigable_container_all_instances()
+	assert navigable_container_navigable_container_with_content_navigable(navigable)? == container
+	assert navigable_container_content_window(container) != none
+	assert !navigable_container_content_navigable_has_session_history_entry_and_ready_for_navigation(container)
+	navigable_container_set_content_navigable_has_session_history_entry_and_ready_for_navigation(container)
+	assert navigable_container_content_navigable_has_session_history_entry_and_ready_for_navigation(container)
 	url := container.shared_attribute_processing_steps(.yes, [])?
 	container.navigate_an_iframe_or_frame(url, .origin, none, .yes)!
 	assert navigation_requests.last().url.serialize() == 'https://example.test/a/child.html'
@@ -75,6 +81,32 @@ fn test_iframe_srcdoc_sandbox_lazy_loading_and_events() {
 	assert iframe.container.content_navigable() == none
 }
 
+fn test_concrete_iframe_attributes_tab_index_and_removal() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/root/' })
+	mut iframe_dom_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'iframe') or {
+		panic(err)
+	}
+	iframe_element := unsafe { &dom.HTMLIFrameElement(iframe_dom_element) }
+	mut model := html_iframe_element_model_for_dom_element(iframe_element)
+	model.set_navigation_hook(embedded_navigation_hook)
+	model.post_connection(true, [])!
+	assert model.container.content_navigable() != none
+	assert iframe_dom_element.tab_index() == 0
+	assert html_iframe_element_default_tab_index_value(iframe_element) == 0
+
+	html_iframe_element_attribute_changed(iframe_element, 'sandbox', none, 'allow-scripts', none)
+	assert model.iframe_sandboxing_flag_set().contains(.sandboxed_origin)
+	assert !model.iframe_sandboxing_flag_set().contains(.sandboxed_scripts)
+	html_iframe_element_attribute_changed(iframe_element, 'marginwidth', none, '8', none)
+	assert model.container.content_document_without_origin_check()?.body_needs_style_update
+	html_iframe_element_attribute_changed(iframe_element, 'srcdoc', none, '<p>child</p>', none)
+	assert model.container.content_document_without_origin_check()?.url.serialize() == 'about:srcdoc'
+
+	document_node := unsafe { &dom.Node(document) }
+	html_iframe_element_removed_from(iframe_element, none, document_node)
+	assert model.container.content_navigable() == none
+}
+
 fn test_object_representation_image_document_and_fallback() {
 	mut object := HTMLObjectElementModel.create(dom.URL{ value: 'https://example.test/' }, dom.Origin{
 		value: 'https://example.test'
@@ -95,6 +127,42 @@ fn test_object_representation_image_document_and_fallback() {
 	object.run_object_representation_steps()
 	assert object.representation() == .children
 	assert object.event_count('error') == 1
+}
+
+fn test_concrete_object_element_representation_form_lifecycle_and_image_provider() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/root/' })
+	mut navigable := &dom.Navigable{
+		active_document_:          document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
+	mut object_dom := document.create_element_ns('http://www.w3.org/1999/xhtml', 'object') or {
+		panic(err)
+	}
+	object_dom.set_attribute_value('data', '/image.png')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(object_dom.as_node()) or { panic(err) }
+	object := unsafe { &dom.HTMLObjectElement(object_dom) }
+	mut model := html_object_element_model_for_dom_element(object)
+	model.set_fetch_hook(embedded_object_fetch)
+	html_object_element_queue_element_task_to_run_object_representation_steps(object)
+	assert model.representation() == .image
+	assert html_object_element_data(object) == 'https://example.test/image.png'
+	assert html_object_element_is_image_available(object)
+	assert html_object_element_intrinsic_width(object)? == 20
+	assert html_object_element_intrinsic_height(object)? == 10
+	assert html_object_element_intrinsic_aspect_ratio(object)? == 2.0
+	assert html_object_element_current_image_bitmap_sized(object, 40, 20)?.width == 20
+	assert html_object_element_default_tab_index_value(object) == 0
+	assert object_dom.tab_index() == 0
+	assert model.event_count('load') == 1
+
+	html_object_element_set_data(object, '/child.html')
+	assert model.representation() == .content_navigable
+	assert model.container.content_navigable() != none
+	html_object_element_form_associated_element_was_removed(object, document_node)
+	assert model.container.content_navigable() == none
 }
 
 fn test_embed_and_object_presentational_hints() {

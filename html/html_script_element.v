@@ -16,44 +16,48 @@ pub enum ScriptElementType {
 	import_map
 }
 
-pub type ScriptElementFetchHook = fn (dom.URL, ScriptElementType) !string
+pub type ScriptElementFetchHook = fn(dom.URL, ScriptElementType) !string
 
-pub type ScriptElementExecuteHook = fn (ScriptElementType, string, dom.URL) !
+pub type ScriptElementExecuteHook = fn(ScriptElementType, string, dom.URL) !
 
 @[heap]
 pub struct HTMLScriptElementModel {
 mut:
-	base_url_                    dom.URL
-	event_target_                &dom.EventTarget = unsafe { nil }
-	src_                         ?string
-	text_                        string
-	type_attribute_              ?string
-	language_attribute_          ?string
-	async_attribute_             bool
-	nomodule_                    bool
-	connected_                   bool = true
-	scripting_enabled_           bool = true
-	parser_document_             ?&dom.Document
-	preparation_time_document_   ?&dom.Document
-	force_async_                 bool = true
-	already_started_             bool
-	from_external_file_          bool
-	script_ready_                bool
-	ready_to_be_parser_executed_ bool
-	failed_to_load_              bool
-	script_type_                 ScriptElementType
-	fetch_hook_                  ?ScriptElementFetchHook
-	execute_hook_                ?ScriptElementExecuteHook
-	result_source_               ?string
-	import_map_result_           ?&ImportMapParseResult
-	registered_import_map_       ImportMap
-	event_counts_                map[string]int
-	source_line_number_          usize = 1
+	element_                      ?&dom.HTMLScriptElement
+	base_url_                     dom.URL
+	event_target_                 &dom.EventTarget = unsafe { nil }
+	src_                          ?string
+	text_                         string
+	type_attribute_               ?string
+	language_attribute_           ?string
+	async_attribute_              bool
+	nomodule_                     bool
+	connected_                    bool = true
+	scripting_enabled_            bool = true
+	parser_document_              ?&dom.Document
+	preparation_time_document_    ?&dom.Document
+	force_async_                  bool = true
+	already_started_              bool
+	from_external_file_           bool
+	script_ready_                 bool
+	ready_to_be_parser_executed_  bool
+	failed_to_load_               bool
+	script_type_                  ScriptElementType
+	fetch_hook_                   ?ScriptElementFetchHook
+	execute_hook_                 ?ScriptElementExecuteHook
+	result_source_                ?string
+	import_map_result_            ?&ImportMapParseResult
+	registered_import_map_        ImportMap
+	event_counts_                 map[string]int
+	source_line_number_           usize = 1
+	crossorigin_                  CORSSettingAttribute
+	referrer_policy_              string
+	document_load_event_delaying_ bool
 }
 
 pub fn HTMLScriptElementModel.create(base_url dom.URL) &HTMLScriptElementModel {
 	return &HTMLScriptElementModel{
-		base_url_:     base_url
+		base_url_: base_url
 		event_target_: dom.EventTarget.new()
 	}
 }
@@ -70,7 +74,38 @@ fn is_javascript_mime_type(type_ string) bool {
 
 fn (mut script HTMLScriptElementModel) fire_event(name string) {
 	script.event_counts_[name]++
-	script.event_target_.dispatch_event(dom.Event.create(name, dom.EventInit{}))
+	event := dom.Event.create(name, dom.EventInit{})
+	if element := script.element_ {
+		unsafe { &dom.EventTarget(element) }
+		.dispatch_event(event)
+	} else {
+		script.event_target_.dispatch_event(event)
+	}
+}
+
+fn script_dom_element(element &dom.HTMLScriptElement) &dom.Element {
+	return unsafe { &dom.Element(element) }
+}
+
+pub fn html_script_element_model_for_dom_element(element &dom.HTMLScriptElement) &HTMLScriptElementModel {
+	if element.script_element_model_ != unsafe { nil } {
+		return unsafe { &HTMLScriptElementModel(element.script_element_model_) }
+	}
+	dom_element := script_dom_element(element)
+	mut model := HTMLScriptElementModel.create(dom_element.document().base_url())
+	model.element_ = element
+	model.src_ = dom_element.get_attribute('src')
+	model.text_ = dom_element.as_node().child_text_content()
+	model.type_attribute_ = dom_element.get_attribute('type')
+	model.language_attribute_ = dom_element.get_attribute('language')
+	model.async_attribute_ = dom_element.has_attribute('async')
+	model.nomodule_ = dom_element.has_attribute('nomodule')
+	model.connected_ = dom_element.as_node().is_connected()
+	model.crossorigin_ = cors_setting_attribute_from_keyword(dom_element.get_attribute('crossorigin'))
+	model.referrer_policy_ = ascii_lowercase_string(dom_element.get_attribute_value('referrerpolicy'))
+	mut mutable_element := unsafe { &dom.HTMLScriptElement(element) }
+	mutable_element.script_element_model_ = voidptr(model)
+	return model
 }
 
 pub fn (script &HTMLScriptElementModel) event_target() &dom.EventTarget {
@@ -111,6 +146,18 @@ pub fn (mut script HTMLScriptElementModel) set_type(value ?string) {
 
 pub fn (mut script HTMLScriptElementModel) set_language(value ?string) {
 	script.language_attribute_ = value
+}
+
+pub fn (mut script HTMLScriptElementModel) set_force_async(value bool) {
+	script.force_async_ = value
+}
+
+pub fn (mut script HTMLScriptElementModel) set_already_started(value bool) {
+	script.already_started_ = value
+}
+
+pub fn (mut script HTMLScriptElementModel) set_string_text(value string) {
+	script.text_ = value
 }
 
 pub fn (mut script HTMLScriptElementModel) set_nomodule(value bool) {
@@ -189,6 +236,7 @@ pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Documen
 	if parser_document != none && !script.async_attribute_ {
 		script.force_async_ = true
 	}
+	script.prepare_script_text()
 	if script.src_ == none && script.text_ == '' {
 		return
 	}
@@ -223,6 +271,9 @@ pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Documen
 			return
 		}
 		script.from_external_file_ = true
+		if preparation_document := script.preparation_time_document_ {
+			script.begin_delaying_document_load_event(preparation_document)
+		}
 		fetch := script.fetch_hook_ or {
 			script.failed_to_load_ = true
 			script.mark_as_ready(none)
@@ -245,12 +296,18 @@ pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Documen
 		script.execute_script()
 		return
 	}
+	if script.script_type_ == .module {
+		if preparation_document := script.preparation_time_document_ {
+			script.begin_delaying_document_load_event(preparation_document)
+		}
+	}
 	script.result_source_ = script.text_
 	script.mark_as_ready(script.text_)
 }
 
 fn (mut script HTMLScriptElementModel) mark_as_ready(result ?string) {
 	script.script_ready_ = true
+	script.document_load_event_delaying_ = false
 	if result == none {
 		script.failed_to_load_ = true
 	}
@@ -259,6 +316,19 @@ fn (mut script HTMLScriptElementModel) mark_as_ready(result ?string) {
 		return
 	}
 	script.execute_script()
+}
+
+pub fn (mut script HTMLScriptElementModel) prepare_script_text() {
+	if element := script.element_ {
+		child_text := script_dom_element(element).as_node().child_text_content()
+		if script.text_ != child_text {
+			script.text_ = child_text
+		}
+	}
+}
+
+pub fn (mut script HTMLScriptElementModel) begin_delaying_document_load_event(_ &dom.Document) {
+	script.document_load_event_delaying_ = true
 }
 
 pub fn (mut script HTMLScriptElementModel) execute_script() {
@@ -318,5 +388,158 @@ pub fn (script &HTMLScriptElementModel) registered_import_map() &ImportMap {
 }
 
 pub fn (script &HTMLScriptElementModel) is_implicitly_potentially_render_blocking() bool {
-	return script.is_parser_inserted() && !script.async_attribute_ && script.script_type_ != .module
+	defer_attribute := if element := script.element_ {
+		script_dom_element(element).has_attribute('defer')
+	} else {
+		false
+	}
+	return script.script_type_ == .classic && script.is_parser_inserted() && !script.async_attribute_ && !defer_attribute
+}
+
+pub fn html_script_element_attribute_changed(element &dom.HTMLScriptElement, name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut dom_element := script_dom_element(element)
+	dom_element.attribute_changed(name, old_value, value, namespace_)
+	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
+	if name == 'crossorigin' {
+		model.crossorigin_ = cors_setting_attribute_from_keyword(value)
+	} else if name == 'referrerpolicy' {
+		model.referrer_policy_ = ascii_lowercase_string(value or { '' })
+	} else if name == 'src' {
+		if namespace_ != none || value == none {
+			return
+		}
+		model.src_ = value
+		if dom_element.as_node().is_connected() {
+			html_script_element_post_connection(element)
+		}
+	} else if name == 'async' && value != none {
+		model.force_async_ = false
+		model.async_attribute_ = true
+	} else if name == 'async' {
+		model.async_attribute_ = false
+	} else if name == 'type' {
+		model.type_attribute_ = value
+	} else if name == 'language' {
+		model.language_attribute_ = value
+	} else if name == 'nomodule' {
+		model.nomodule_ = value != none
+	}
+}
+
+pub fn html_script_element_prepare_script_text(element &dom.HTMLScriptElement) {
+	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
+	model.prepare_script_text()
+}
+
+pub fn html_script_element_begin_delaying_document_load_event(element &dom.HTMLScriptElement, document &dom.Document) {
+	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
+	model.begin_delaying_document_load_event(document)
+}
+
+pub fn html_script_element_prepare_script(element &dom.HTMLScriptElement) {
+	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
+	model.prepare_script(script_dom_element(element).document())
+}
+
+pub fn html_script_element_execute_script(element &dom.HTMLScriptElement) {
+	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
+	model.execute_script()
+}
+
+pub fn html_script_element_children_changed(element &dom.HTMLScriptElement, metadata dom.ChildrenChangedMetadata) {
+	mut dom_element := script_dom_element(element)
+	dom_element.children_changed(metadata)
+	if metadata.type_ != .inserted || !dom_element.as_node().is_connected() {
+		return
+	}
+	html_script_element_post_connection(element)
+}
+
+pub fn html_script_element_post_connection(element &dom.HTMLScriptElement) {
+	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
+	if model.is_parser_inserted() {
+		return
+	}
+	model.prepare_script(script_dom_element(element).document())
+}
+
+pub fn html_script_element_src(element &dom.HTMLScriptElement) string {
+	dom_element := script_dom_element(element)
+	raw := dom_element.get_attribute('src') or { return '' }
+	return dom_element.document().encoding_parse_and_serialize_url(raw) or { return '' }
+}
+
+pub fn set_html_script_element_src(element &dom.HTMLScriptElement, value string) {
+	mut dom_element := script_dom_element(element)
+	old_value := dom_element.get_attribute('src')
+	dom_element.set_attribute_value('src', value)
+	html_script_element_attribute_changed(element, 'src', old_value, value, none)
+}
+
+pub fn html_script_element_text(element &dom.HTMLScriptElement) string {
+	return script_dom_element(element).as_node().child_text_content()
+}
+
+pub fn set_html_script_element_text(element &dom.HTMLScriptElement, value string) {
+	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
+	model.text_ = value
+	mut node := script_dom_element(element).as_node()
+	node.string_replace_all(value)
+}
+
+pub fn html_script_element_text_content(element &dom.HTMLScriptElement) string {
+	return script_dom_element(element).as_node().descendant_text_content()
+}
+
+pub fn html_script_element_set_text_content(element &dom.HTMLScriptElement, value string) {
+	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
+	model.text_ = value
+	mut node := script_dom_element(element).as_node()
+	node.string_replace_all(value)
+}
+
+pub fn html_script_element_inner_text(element &dom.HTMLScriptElement) string {
+	return html_element_get_the_text_steps(unsafe { &dom.HTMLElement(element) })
+}
+
+pub fn html_script_element_set_inner_text(element &dom.HTMLScriptElement, value string) {
+	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
+	model.text_ = value
+	mut dom_element := script_dom_element(element)
+	dom_element.set_inner_text(value)
+}
+
+pub fn html_script_element_async(element &dom.HTMLScriptElement) bool {
+	model := html_script_element_model_for_dom_element(element)
+	return model.force_async_ || script_dom_element(element).has_attribute('async')
+}
+
+pub fn set_html_script_element_async(element &dom.HTMLScriptElement, async_ bool) {
+	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
+	model.force_async_ = false
+	mut dom_element := script_dom_element(element)
+	if async_ {
+		dom_element.set_attribute_value('async', '')
+		model.async_attribute_ = true
+	} else {
+		dom_element.remove_attribute('async')
+		model.async_attribute_ = false
+	}
+}
+
+pub fn html_script_element_cloned(element &dom.HTMLScriptElement, copy &dom.Node, subtree bool) ! {
+	script_dom_element(element).as_node().cloned(copy, subtree)!
+	copy_element := copy.as_element() or { return }
+	if copy_element.local_name() != 'script' {
+		return
+	}
+	copy_script := unsafe { &dom.HTMLScriptElement(copy_element) }
+	mut copy_model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(copy_script)) }
+	model := html_script_element_model_for_dom_element(element)
+	copy_model.already_started_ = model.already_started_
+}
+
+pub fn html_script_element_is_implicitly_potentially_render_blocking(element &dom.HTMLScriptElement) bool {
+	model := html_script_element_model_for_dom_element(element)
+	return model.script_type_ == .classic && model.is_parser_inserted() && !script_dom_element(element).has_attribute('async') && !script_dom_element(element).has_attribute('defer')
 }

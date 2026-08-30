@@ -23,7 +23,9 @@ fn test_fetch_controller_params_tasks_and_timing() {
 		redirect_start_time: 2
 		end_time:            3
 	})
-	assert opaque.start_time == 1 && opaque.redirect_start_time == 0 && opaque.end_time == 3
+	assert opaque.start_time == 1
+	assert opaque.post_redirect_start_time == 1
+	assert opaque.redirect_start_time == 0 && opaque.end_time == 0
 }
 
 fn test_pending_response_and_fetched_data_receiver() {

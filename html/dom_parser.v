@@ -44,6 +44,10 @@ pub fn DOMParser.create(associated_document &dom.Document) &DOMParser {
 	}
 }
 
+pub fn DOMParser.construct_impl(associated_document &dom.Document) !&DOMParser {
+	return DOMParser.create(associated_document)
+}
+
 struct XMLAttributeToken {
 	name  string
 	value string
@@ -61,8 +65,7 @@ fn xml_is_space(byte u8) bool {
 }
 
 fn xml_is_name_start(byte u8) bool {
-	return byte == `:` || byte == `_` || (byte >= `A` && byte <= `Z`)
-		|| (byte >= `a` && byte <= `z`) || byte >= 0x80
+	return byte == `:` || byte == `_` || (byte >= `A` && byte <= `Z`) || (byte >= `a` && byte <= `z`) || byte >= 0x80
 }
 
 fn xml_is_name_character(byte u8) bool {
@@ -76,8 +79,7 @@ fn (mut parser SimpleXMLDocumentParser) skip_space() {
 }
 
 fn (parser &SimpleXMLDocumentParser) starts_with(value string) bool {
-	return parser.position + value.len <= parser.source.len
-		&& parser.source[parser.position..parser.position + value.len] == value
+	return parser.position + value.len <= parser.source.len && parser.source[parser.position..parser.position + value.len] == value
 }
 
 fn (mut parser SimpleXMLDocumentParser) consume(value string) ! {
@@ -140,8 +142,7 @@ fn xml_decode_references(value string) !string {
 					code_point := u32(strconv.parse_uint(entity[2..], 16, 32) or {
 						return error('invalid hexadecimal character reference')
 					})
-					if code_point == 0 || code_point > 0x10ffff
-						|| (code_point >= 0xd800 && code_point <= 0xdfff) {
+					if code_point == 0 || code_point > 0x10ffff || (code_point >= 0xd800 && code_point <= 0xdfff) {
 						return error('invalid XML character reference')
 					}
 					rune(code_point).str()
@@ -149,8 +150,7 @@ fn xml_decode_references(value string) !string {
 					code_point := u32(strconv.parse_uint(entity[1..], 10, 32) or {
 						return error('invalid decimal character reference')
 					})
-					if code_point == 0 || code_point > 0x10ffff
-						|| (code_point >= 0xd800 && code_point <= 0xdfff) {
+					if code_point == 0 || code_point > 0x10ffff || (code_point >= 0xd800 && code_point <= 0xdfff) {
 						return error('invalid XML character reference')
 					}
 					rune(code_point).str()
@@ -294,8 +294,11 @@ fn (mut parser SimpleXMLDocumentParser) parse_element(parent &dom.Node, inherite
 	} else {
 		namespaces[''] or { '' }
 	}
-	mut element := parser.document.create_element_ns(if namespace_ == '' { none } else { namespace_ },
-		qualified_name)!
+	mut element := parser.document.create_element_ns(if namespace_ == '' {
+		none
+	} else {
+		namespace_
+	}, qualified_name)!
 	for attribute in attributes {
 		attribute_prefix, _ := xml_qualified_name_parts(attribute.name)
 		attribute_namespace := if attribute.name == 'xmlns' || attribute_prefix == 'xmlns' {
@@ -370,7 +373,7 @@ fn (mut parser SimpleXMLDocumentParser) parse_element(parent &dom.Node, inherite
 }
 
 fn (mut parser SimpleXMLDocumentParser) parse_document() ! {
-	if parser.source.starts_with('\xef\xbb\xbf') {
+	if parser.source.starts_with('﻿') {
 		parser.position = 3
 	}
 	parser.skip_space()
@@ -395,8 +398,7 @@ fn (mut parser SimpleXMLDocumentParser) parse_document() ! {
 		}
 	}
 	parser.skip_space()
-	if !parser.starts_with('<') || parser.starts_with('</') || parser.starts_with('<!')
-		|| parser.starts_with('<?') {
+	if !parser.starts_with('<') || parser.starts_with('</') || parser.starts_with('<!') || parser.starts_with('<?') {
 		return error('XML document has no document element')
 	}
 	mut initial_namespaces := map[string]string{}
@@ -423,10 +425,60 @@ fn (mut parser SimpleXMLDocumentParser) parse_document() ! {
 // different XML grammars while the translated modules remain acyclic.
 pub fn parse_xml_document_source(document &dom.Document, source string) ! {
 	mut xml_parser := SimpleXMLDocumentParser{
-		source:   source
+		source: source
 		document: document
 	}
 	xml_parser.parse_document()!
+}
+
+fn xml_fragment_escape_attribute(value string) string {
+	return value.replace('&', '&amp;').replace('"', '&quot;').replace('<', '&lt;')
+}
+
+fn xml_fragment_qualified_name(element &dom.Element) string {
+	if prefix := element.prefix() {
+		if prefix != '' {
+			return '${prefix}:${element.local_name()}'
+		}
+	}
+	return element.local_name()
+}
+
+// https://html.spec.whatwg.org/multipage/xhtml.html#parsing-xhtml-fragments
+// XMLFragmentParser and DOM's fragment-parsing hook share this implementation.
+pub fn parse_xml_fragment_with_options(context &dom.Element, input string, allow_declarative_shadow_roots bool) ![]&dom.Node {
+	name := xml_fragment_qualified_name(context)
+	mut feed := '<${name}'
+	for prefix in context.as_node().get_in_scope_prefixes() {
+		if prefix == '' || prefix == 'xmlns' {
+			continue
+		}
+		if namespace_ := context.as_node().lookup_namespace_uri(prefix) {
+			if namespace_ != '' {
+				feed += ' xmlns:${prefix}="${xml_fragment_escape_attribute(namespace_)}"'
+			}
+		}
+	}
+	if default_namespace := context.as_node().locate_a_namespace(none) {
+		if default_namespace != '' {
+			feed += ' xmlns="${xml_fragment_escape_attribute(default_namespace)}"'
+		}
+	}
+	feed += '>${input}</${name}>'
+
+	mut temporary_document := dom.Document.create(dom.url_about_blank())
+	temporary_document.set_document_type(.xml)
+	temporary_document.set_allow_declarative_shadow_roots(allow_declarative_shadow_roots)
+	parse_xml_document_source(temporary_document, feed) or {
+		return error('SyntaxError: ${err}')
+	}
+	wrapper := temporary_document.document_element() or {
+		return error('SyntaxError: XML fragment has no document element')
+	}
+	if wrapper.as_node().previous_sibling() != none || wrapper.as_node().next_sibling() != none {
+		return error('SyntaxError: Document element has sibling nodes')
+	}
+	return wrapper.as_node().children_as_vector()
 }
 
 pub fn (parser &DOMParser) parse_from_string(input string, type_ DOMParserSupportedType) !&dom.Document {

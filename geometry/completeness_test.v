@@ -86,3 +86,59 @@ fn test_geometry_serialization_and_json_records_round_trip() {
 		assert false, 'malformed clone records must be rejected'
 	}
 }
+
+fn test_exact_geometry_constructor_initialization_and_deserialization_entry_points() {
+	read_only_identity := DOMMatrixReadOnly.construct_impl(none, true)!
+	assert read_only_identity.is2d()
+	read_only_sequence := DOMMatrixReadOnly.construct_impl(DOMMatrixConstructorInit([2.0,
+		0.0, 0.0, 3.0, 4.0, 5.0]), true)!
+	assert read_only_sequence.a() == 2
+	assert read_only_sequence.f() == 5
+	mutable_string := DOMMatrix.construct_impl(DOMMatrixConstructorInit('matrix(1, 0, 0, 1, 7, 8)'),
+		true)!
+	assert mutable_string.e() == 7
+	assert mutable_string.f() == 8
+	mut matrix_2d_init := DOMMatrix2DInit{
+		a: 2
+		d: 3
+	}
+	mutable_2d := DOMMatrix.create_from_dom_matrix_2d_init(mut matrix_2d_init)!
+	assert mutable_2d.a() == 2
+	assert mutable_2d.d() == 3
+
+	mut initialized := DOMMatrixReadOnly.create()
+	initialized.initialize_from_create_3d_matrix(1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+		11, 12, 13, 14, 15, 16)
+	assert !initialized.is2d()
+	assert initialized.m43() == 15
+	initialized.initialize_from_create_2d_matrix(1, 2, 3, 4, 5, 6)
+	assert initialized.is2d()
+	assert initialized.m33() == 1
+
+	mut point := DOMPointReadOnly.create()
+	point.deserialization_steps(SerializedDOMPoint{1, 2, 3, 4})
+	assert point.to_json() == DOMPointJSON{1, 2, 3, 4}
+	mut rect := DOMRectReadOnly.create()
+	rect.deserialization_steps(SerializedDOMRect{1, 2, 3, 4})
+	assert rect.to_json().width == 3
+	mut matrix := DOMMatrixReadOnly.create()
+	matrix.deserialization_steps(SerializedDOMMatrix{
+		is_2d:    true
+		elements: [2.0, 0.0, 0.0, 3.0, 4.0, 5.0]
+	})!
+	assert matrix.a() == 2
+	mut quad := DOMQuad.create()
+	quad.deserialization_steps(SerializedDOMQuad{
+		p1: SerializedDOMPoint{1, 2, 0, 1}
+		p2: SerializedDOMPoint{3, 4, 0, 1}
+		p3: SerializedDOMPoint{5, 6, 0, 1}
+		p4: SerializedDOMPoint{7, 8, 0, 1}
+	})
+	assert quad.p4().x() == 7
+
+	assert DOMPointReadOnly.construct_impl(1, 2, 3, 4).w() == 4
+	assert DOMPoint.construct_impl(1, 2, 3, 4).z() == 3
+	assert DOMRectReadOnly.construct_impl(1, 2, 3, 4).height() == 4
+	assert DOMQuad.construct_impl(DOMPointInit{}, DOMPointInit{}, DOMPointInit{},
+		DOMPointInit{}).p1().w() == 1
+}

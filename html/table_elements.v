@@ -6,6 +6,7 @@
 // HTMLTableRowElement.cpp, and HTMLTableCellElement.cpp.
 module html
 
+import aria
 import dom
 import strconv
 
@@ -115,8 +116,7 @@ pub fn set_html_table_element_t_head(table &dom.HTMLTableElement, head ?&dom.HTM
 	delete_html_table_element_t_head(table)
 	if value := head {
 		mut table_node := table_element(table).as_node()
-		table_node.pre_insert(table_section_element(value).as_node(),
-			table_head_insertion_sibling(table))!
+		table_node.pre_insert(table_section_element(value).as_node(), table_head_insertion_sibling(table))!
 	}
 }
 
@@ -280,8 +280,7 @@ pub fn insert_html_table_section_element_row(section &dom.HTMLTableSectionElemen
 	if index == -1 || index == rows.len {
 		section_node.append_child(row_element.as_node())!
 	} else {
-		section_node.insert_before(row_element.as_node(), table_row_element(rows[index]).as_node(),
-			false)
+		section_node.insert_before(row_element.as_node(), table_row_element(rows[index]).as_node(), false)
 	}
 	return unsafe { &dom.HTMLTableRowElement(row_element) }
 }
@@ -321,8 +320,7 @@ pub fn html_table_row_element_row_index(row &dom.HTMLTableRowElement) i32 {
 	parent := table_row_element(row).as_node().parent_node() or { return -1 }
 	parent_element := parent.as_element() or { return -1 }
 	if parent_element.local_name() == 'table' {
-		return index_of_table_row(html_table_element_rows(unsafe { &dom.HTMLTableElement(parent_element) }),
-			row)
+		return index_of_table_row(html_table_element_rows(unsafe { &dom.HTMLTableElement(parent_element) }), row)
 	}
 	if parent_element.local_name() in ['tbody', 'thead', 'tfoot'] {
 		grandparent := parent.parent_node() or { return -1 }
@@ -340,8 +338,7 @@ pub fn html_table_row_element_section_row_index(row &dom.HTMLTableRowElement) i3
 	parent := table_row_element(row).as_node().parent_node() or { return -1 }
 	parent_element := parent.as_element() or { return -1 }
 	if parent_element.local_name() == 'table' {
-		return index_of_table_row(html_table_element_rows(unsafe { &dom.HTMLTableElement(parent_element) }),
-			row)
+		return index_of_table_row(html_table_element_rows(unsafe { &dom.HTMLTableElement(parent_element) }), row)
 	}
 	if parent_element.local_name() in ['tbody', 'thead', 'tfoot'] {
 		return index_of_table_row(html_table_section_element_rows(unsafe {
@@ -361,8 +358,7 @@ pub fn insert_html_table_row_element_cell(row &dom.HTMLTableRowElement, index i3
 	if index == -1 || index == cells.len {
 		row_node.append_child(cell_element.as_node())!
 	} else {
-		row_node.insert_before(cell_element.as_node(), table_cell_element(cells[index]).as_node(),
-			false)
+		row_node.insert_before(cell_element.as_node(), table_cell_element(cells[index]).as_node(), false)
 	}
 	return unsafe { &dom.HTMLTableCellElement(cell_element) }
 }
@@ -421,6 +417,37 @@ pub fn html_table_cell_element_cell_index(cell &dom.HTMLTableCellElement) i32 {
 	return -1
 }
 
+pub fn html_table_cell_element_default_role(cell &dom.HTMLTableCellElement) ?aria.Role {
+	element := unsafe { &dom.Element(cell) }
+	if element.local_name() == 'th' {
+		mut ancestor := element.as_node().parent_element()
+		for ancestor != none {
+			current := ancestor or { break }
+			scope := element.get_attribute_value('scope')
+			if scope == 'columnheader' || current.local_name() == 'thead' {
+				return .columnheader
+			}
+			if scope == 'rowheader' || current.local_name() == 'tbody' {
+				return .rowheader
+			}
+			ancestor = current.as_node().parent_element()
+		}
+	}
+	mut ancestor := element.as_node().parent_element()
+	for ancestor != none {
+		current := ancestor or { break }
+		if current.local_name() == 'table' {
+			role := current.get_attribute_value('role').to_lower()
+			if role in ['grid', 'treegrid'] {
+				return .gridcell
+			}
+			return .cell
+		}
+		ancestor = current.as_node().parent_element()
+	}
+	return none
+}
+
 // https://html.spec.whatwg.org/multipage/tables.html#dom-colgroup-span
 pub fn html_table_col_element_span(col &dom.HTMLTableColElement) u32 {
 	attribute := table_col_element(col).get_attribute('span') or { return 1 }
@@ -445,10 +472,10 @@ pub fn html_table_element_border(table &dom.HTMLTableElement) u32 {
 }
 
 pub fn html_table_element_cellpadding(table &dom.HTMLTableElement) ?u32 {
-	attribute := table_element(table).get_attribute('cellpadding') or { return none }
-	value := parse_integer(attribute) or { i32(0) }
-	if value < 0 {
-		return u32(0)
-	}
-	return u32(value)
+	return table.cellpadding_
+}
+
+pub fn html_table_element_attribute_changed(table &dom.HTMLTableElement, name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut element := table_element(table)
+	element.attribute_changed(name, old_value, value, namespace_)
 }

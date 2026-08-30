@@ -94,6 +94,19 @@ pub fn DOMMatrix.construct(init ?[]f64) !&DOMMatrix {
 	return DOMMatrix.create_from_dom_matrix_read_only(read_only)
 }
 
+pub fn DOMMatrix.construct_impl(init ?DOMMatrixConstructorInit, is_window bool) !&DOMMatrix {
+	value := init or { return DOMMatrix.create() }
+	return match value {
+		[]f64 { DOMMatrix.construct(value) }
+		string { DOMMatrix.construct_from_string(value, is_window) }
+	}
+}
+
+pub fn DOMMatrix.create_from_dom_matrix_2d_init(mut init DOMMatrix2DInit) !&DOMMatrix {
+	read_only := DOMMatrixReadOnly.create_from_dom_matrix_2d_init(mut init)!
+	return DOMMatrix.create_from_dom_matrix_read_only(read_only)
+}
+
 // https://drafts.fxtf.org/geometry/#create-a-dommatrix-from-the-dictionary
 pub fn DOMMatrix.create_from_dom_matrix_init(mut init DOMMatrixInit) !&DOMMatrix {
 	read_only := DOMMatrixReadOnly.create_from_dom_matrix_init(mut init)!

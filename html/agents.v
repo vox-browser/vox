@@ -95,6 +95,10 @@ pub fn SimilarOriginWindowAgent.create() &SimilarOriginWindowAgent {
 	}
 }
 
+pub fn (agent &SimilarOriginWindowAgent) current_element_queue() ![]&dom.Element {
+	return agent.custom_element_reactions_stack.current_element_queue()
+}
+
 __global html_relevant_similar_origin_window_agent &SimilarOriginWindowAgent
 
 // A JS object selects the VM agent upstream. The V runtime currently has one

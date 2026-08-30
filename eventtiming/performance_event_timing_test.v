@@ -66,11 +66,12 @@ fn test_registry_metadata_matches_current_upstream_behavior() {
 fn test_first_input_registry_branch_is_admitted() {
 	entry := &PerformanceEventTiming{
 		PerformanceEntry: PerformanceEntry{
-			name_:       'pointerdown'
-			start_time_: 1
-			duration_:   1
+			name: 'pointerdown'
+			entry_type: 'first-input'
+			start_time: 1
+			duration: 1
 		}
-		entry_type_:      'first-input'
+		entry_type_: 'first-input'
 	}
 
 	assert entry.should_add_entry(none) == .yes

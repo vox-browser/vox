@@ -24,6 +24,13 @@ fn test_audio_constructor_creates_preloaded_audio_and_converts_source() {
 	assert unsafe { &dom.Element(without_source) }.get_attribute('src') == none
 }
 
+fn test_custom_constructor_objects_report_constructor_capability() {
+	document := constructor_test_document()
+	assert AudioConstructor.create(document).has_constructor()
+	assert ImageConstructor.create(document).has_constructor()
+	assert OptionConstructor.create(document).has_constructor()
+}
+
 fn test_image_constructor_applies_touint32_dimensions() {
 	document := constructor_test_document()
 	constructor := ImageConstructor.create(document)

@@ -52,6 +52,7 @@ pub:
 	// realm/global-object graph yet, so its embedding supplies that association.
 	associated_document   ?&dom.Document
 	fully_active_override ?bool
+	navigation            ?&Navigation
 }
 
 @[heap]
@@ -77,6 +78,7 @@ mut:
 	source_element_            ?&dom.Element
 	associated_document_       ?&dom.Document
 	fully_active_override_     ?bool
+	navigation_                 ?&Navigation
 }
 
 fn NavigateEvent.new(event_name string, event_init NavigateEventInit) !&NavigateEvent {
@@ -109,6 +111,7 @@ fn NavigateEvent.new(event_name string, event_init NavigateEventInit) !&Navigate
 		source_element_:           event_init.source_element
 		associated_document_:      event_init.associated_document
 		fully_active_override_:    event_init.fully_active_override
+		navigation_:                event_init.navigation
 	}
 }
 
@@ -172,6 +175,10 @@ pub fn (event &NavigateEvent) interception_state() NavigateEventInterceptionStat
 
 pub fn (event &NavigateEvent) navigation_handler_count() int {
 	return event.navigation_handler_list_.len
+}
+
+pub fn (event &NavigateEvent) navigation_handler_list() []NavigationInterceptHandler {
+	return event.navigation_handler_list_.clone()
 }
 
 pub fn (event &NavigateEvent) focus_reset_behavior() ?NavigationFocusReset {
@@ -295,7 +302,16 @@ fn (mut event NavigateEvent) potentially_process_scroll_behavior() {
 	event.process_scroll_behavior()
 }
 
-fn (mut event NavigateEvent) potentially_reset_focus() {
+pub fn (mut event NavigateEvent) potentially_reset_the_focus() {
+	assert event.interception_state_ in [.committed, .scrolled]
+	if navigation := event.navigation_ {
+		focus_changed := navigation.focus_changed_during_ongoing_navigation()
+		mut mutable_navigation := unsafe { &Navigation(navigation) }
+		mutable_navigation.set_focus_changed_during_ongoing_navigation(false)
+		if focus_changed {
+			return
+		}
+	}
 	if behavior := event.focus_reset_behavior_ {
 		if behavior == .manual {
 			return
@@ -309,6 +325,10 @@ fn (mut event NavigateEvent) potentially_reset_focus() {
 			mutable_document.set_focused_area(document_element.as_node())
 		}
 	}
+}
+
+fn (mut event NavigateEvent) potentially_reset_focus() {
+	event.potentially_reset_the_focus()
 }
 
 pub fn (mut event NavigateEvent) finish(did_fulfill bool) ! {

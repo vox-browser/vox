@@ -37,6 +37,13 @@ pub fn ProxyMappings.create() &ProxyMappings {
 	return &ProxyMappings{}
 }
 
+pub fn ProxyMappings.the() &ProxyMappings {
+	if loader_global_proxy_mappings == unsafe { nil } {
+		loader_global_proxy_mappings = ProxyMappings.create()
+	}
+	return loader_global_proxy_mappings
+}
+
 pub fn (mut mappings ProxyMappings) set_mappings(proxies []string, rules []ProxyMapping) {
 	mappings.proxies = proxies.clone()
 	mappings.mappings = rules.clone()

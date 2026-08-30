@@ -1,6 +1,35 @@
+@[has_globals]
 module html
 
+import css
 import dom
+
+__global (
+	textarea_event_types       []string
+	textarea_event_input_types []string
+	textarea_event_data        []string
+	textarea_event_composed    []bool
+)
+
+fn record_textarea_event(event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+	unsafe {
+		textarea_event_types << event.type_name()
+		if event.interface_ == .input_event {
+			input_event := &dom.InputEvent(event)
+			textarea_event_input_types << input_event.input_type()
+			textarea_event_data << input_event.data() or { '' }
+			textarea_event_composed << input_event.composed()
+		}
+	}
+	return dom.js_undefined()
+}
+
+fn drain_form_element_tasks() {
+	mut event_loop := main_thread_event_loop()
+	for event_loop.task_queue().has_runnable_tasks() {
+		event_loop.process()
+	}
+}
 
 fn form_elements_find(node &dom.Node, name string) ?&dom.Element {
 	if element := node.as_element() {
@@ -16,9 +45,18 @@ fn form_elements_find(node &dom.Node, name string) ?&dom.Element {
 	return none
 }
 
+fn form_elements_make_document_fully_active(mut document dom.Document) {
+	mut navigable := &dom.Navigable{
+		active_document_: &document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
+}
+
 fn test_textarea_value_constraints_dimensions_selection_and_reset() {
-	document :=
-		parse_document('<textarea required minlength="3" maxlength="5" placeholder="hint\nignored">ab</textarea>')
+	mut document := parse_document('<textarea required minlength="3" maxlength="5" placeholder="hint\nignored">ab</textarea>')
+	form_elements_make_document_fully_active(mut document)
 	element := form_elements_find(unsafe { &dom.Node(document) }, 'textarea') or {
 		panic('textarea')
 	}
@@ -27,7 +65,8 @@ fn test_textarea_value_constraints_dimensions_selection_and_reset() {
 	assert textarea.value() == 'ab'
 	assert textarea.cols() == 20
 	assert textarea.rows() == 2
-	assert textarea.placeholder_value()? == 'hint'
+	textarea.create_shadow_tree_if_needed()
+	assert textarea.placeholder_value() == none
 	textarea.set_value('abcdef')
 	assert textarea.control.suffering_from_being_too_long()
 	assert textarea.text.selection_start() == 6
@@ -44,6 +83,108 @@ fn test_textarea_value_constraints_dimensions_selection_and_reset() {
 	assert textarea.value() == 'ab'
 	textarea.clear()
 	assert textarea.control.suffering_from_being_missing()
+	assert textarea.placeholder_value()? == 'hint\nignored'
+	drain_form_element_tasks()
+}
+
+fn test_window_selection_stringifier_uses_focused_text_control_selection() {
+	mut document := parse_document('<textarea>Ladybird</textarea>')
+	form_elements_make_document_fully_active(mut document)
+	element := form_elements_find(unsafe { &dom.Node(document) }, 'textarea') or {
+		panic('textarea')
+	}
+	mut textarea := HTMLTextAreaElementModel.create(unsafe { &dom.HTMLTextAreaElement(element) })
+	textarea.text.set_selection_range(1, 5, 'forward')!
+	document.set_focused_area(element.as_node())
+	selection := dom.Selection.create(document)
+	assert selection.is_empty()
+	assert selection.to_string() == 'adyb'
+	assert html_text_area_element_model_for_dom_element(unsafe {
+		&dom.HTMLTextAreaElement(element)}) == textarea
+}
+
+fn test_textarea_shadow_selection_lifecycle_editing_and_clone_algorithms() {
+	mut document := parse_document('<textarea required maxlength="3" placeholder="hint"></textarea>')
+	form_elements_make_document_fully_active(mut document)
+	element := form_elements_find(unsafe { &dom.Node(document) }, 'textarea') or {
+		panic('textarea')
+	}
+	mut textarea := HTMLTextAreaElementModel.create(unsafe { &dom.HTMLTextAreaElement(element) })
+	textarea.form_associated_element_was_inserted()
+	assert element.shadow_root() != none
+	assert textarea.default_tab_index_value() == 0
+	assert textarea.is_focusable()
+	assert textarea.is_mutable()
+	assert textarea.suffering_from_being_missing()
+	text_node := textarea.text_node_ or { panic('textarea text node') }
+	assert text_node.max_length()? == 3
+	placeholder := textarea.placeholder_element_ or { panic('placeholder element') }
+	assert placeholder.use_pseudo_element_value()? == int(css.PseudoElement.placeholder)
+	assert placeholder.get_attribute_value('style').contains('display:inline')
+
+	textarea.set_relevant_value('abcd')!
+	assert textarea.api_value() == 'abcd'
+	textarea.set_selection_start_binding(1)!
+	textarea.set_selection_end_binding(3)!
+	textarea.set_selection_direction_binding('backward')
+	assert textarea.selection_start_binding() == 1
+	assert textarea.selection_end_binding() == 3
+	assert textarea.selection_direction_binding() == 'backward'
+
+	mut mutable_element := element
+	mutable_element.set_attribute_value('readonly', '')
+	assert !textarea.is_mutable()
+	assert !textarea.suffering_from_being_missing()
+	mutable_element.remove_attribute('readonly')
+
+	unsafe {
+		textarea_event_types = []
+		textarea_event_input_types = []
+		textarea_event_data = []
+		textarea_event_composed = []
+	}
+	listener := dom.IDLEventListener.create(&dom.CallbackType{
+		handle_event: record_textarea_event
+	})
+	target := unsafe { &dom.EventTarget(element.as_node()) }
+	target.add_event_listener_without_options('input', listener)
+	target.add_event_listener_without_options('change', listener)
+	mut mutable_text_node := text_node
+	mutable_text_node.set_data('xy')
+	textarea.did_edit_text_node('insertText', 'y')
+	textarea.did_edit_text_node('insertText', 'z')
+	assert textarea.dirty_value
+	assert textarea.input_event_task_queued_
+	drain_form_element_tasks()
+	assert textarea_event_types == ['input']
+	assert textarea_event_input_types == ['insertText']
+	assert textarea_event_data == ['z']
+	assert textarea_event_composed == [true]
+
+	textarea.handle_return_key('insertLineBreak')!
+	assert textarea.value().ends_with('\n')
+	drain_form_element_tasks()
+	assert textarea_event_types == ['input', 'input']
+	textarea.did_receive_focus()
+	textarea.did_lose_focus()
+	drain_form_element_tasks()
+	assert textarea_event_types == ['input', 'input', 'change']
+
+	textarea.form_associated_element_attribute_changed('placeholder', 'hint', 'other', none)
+	placeholder_text := textarea.placeholder_text_node_ or { panic('placeholder text') }
+	assert placeholder_text.data() == 'other'
+	mutable_element.remove_attribute('maxlength')
+	textarea.form_associated_element_attribute_changed('maxlength', '3', none, none)
+	assert text_node.max_length() == none
+
+	copy_document := parse_document('<textarea></textarea>')
+	copy_element := form_elements_find(unsafe { &dom.Node(copy_document) }, 'textarea') or {
+		panic('copy textarea')
+	}
+	mut copy := HTMLTextAreaElementModel.create(unsafe { &dom.HTMLTextAreaElement(copy_element) })
+	textarea.cloned(mut copy, true)
+	assert copy.text.relevant_value() == textarea.text.relevant_value()
+	assert copy.dirty_value == textarea.dirty_value
 }
 
 fn test_button_type_value_and_command() {
@@ -61,9 +202,42 @@ fn test_button_type_value_and_command() {
 	assert html_button_element_type(button) == 'reset'
 }
 
+fn test_button_model_activation_form_dialog_attributes_and_focusability() {
+	mut document := parse_document('<form action="https://example.test/submit"><button type="submit" value="go">Submit</button></form><button id="commander" commandfor="dialog" command="show-modal">Open</button><dialog id="dialog"></dialog>')
+	form_elements_make_document_fully_active(mut document)
+	form_element := form_elements_find(unsafe { &dom.Node(document) }, 'form') or { panic('form') }
+	mut form := HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(form_element) })
+	form_button_element := form_elements_find(form_element.as_node(), 'button') or {
+		panic('form button')
+	}
+	mut form_button := HTMLButtonElementModel.create(unsafe {
+		&dom.HTMLButtonElement(form_button_element)
+	})
+	assert form_button.type_for_bindings() == 'submit'
+	assert form_button.default_tab_index_value() == 0
+	assert form_button.has_activation_behavior()
+	assert form_button.is_focusable()
+	click := dom.Event.create('click', dom.EventInit{})
+	form_button.activation_behavior(click)
+	assert form.last_submission() != none
+
+	commander_element := document.get_element_by_id('commander') or { panic('commander') }
+	mut commander := HTMLButtonElementModel.create(unsafe { &dom.HTMLButtonElement(commander_element) })
+	dialog_element := document.get_element_by_id('dialog') or { panic('dialog') }
+	commander.activation_behavior(click)
+	assert dialog_element.has_attribute('open')
+	mut commander_dom := commander_element
+	commander_dom.set_popover_target_element(dialog_element)
+	commander.form_associated_element_attribute_changed('popovertarget', none, none, none)
+	assert commander_dom.popover_target_element() == none
+	commander_dom.set_attribute_value('disabled', '')
+	assert !commander.is_focusable()
+}
+
 fn test_form_validation_entries_get_post_and_reset() {
-	document :=
-		parse_document('<form action="/submit" method="get"><input name="q" value="hello world"><button name="send" value="yes"></button></form>')
+	mut document := parse_document('<form action="/submit" method="get"><input name="q" value="hello world"><button name="send" value="yes"></button></form>')
+	document.set_url(dom.URL{ value: 'https://example.test/form' })
+	form_elements_make_document_fully_active(mut document)
 	form_element := form_elements_find(unsafe { &dom.Node(document) }, 'form') or { panic('form') }
 	input_element := form_elements_find(unsafe { &dom.Node(document) }, 'input') or {
 		panic('input')
@@ -79,7 +253,7 @@ fn test_form_validation_entries_get_post_and_reset() {
 	form.add_control(mut input)
 	form.add_control(mut button)
 	assert form.length() == 2
-	form.submit(button, false)!
+	form.request_submit(button)!
 	submission := form.last_submission() or { panic('submission') }
 	assert submission.method == .get
 	assert submission.url.serialize().contains('q=hello+world')
@@ -88,7 +262,7 @@ fn test_form_validation_entries_get_post_and_reset() {
 	mut form_dom_element := form_element
 	form_dom_element.set_attribute_value('method', 'post')
 	form_dom_element.set_attribute_value('enctype', 'text/plain')
-	form.submit(none, true)!
+	form.submit()!
 	post := form.last_submission() or { panic('post') }
 	assert post.method == .post
 	assert post.content_type == 'text/plain'
@@ -96,4 +270,105 @@ fn test_form_validation_entries_get_post_and_reset() {
 	input.value_ = 'changed'
 	form.reset()
 	assert input.value() == input_element.get_attribute_value('value')
+}
+
+fn test_form_action_method_encoding_rel_and_collection_named_properties() {
+	mut document := parse_document('<form action="../submit" accept-charset="bogus windows-1251" rel="next noreferrer"><input id="shared" name="first"><input id="shared" name="second"><input type="image" name="ignored"></form>')
+	document.set_url(dom.URL{ value: 'https://example.test/path/page.html' })
+	form_elements_make_document_fully_active(mut document)
+	form_element := form_elements_find(unsafe { &dom.Node(document) }, 'form') or { panic('form') }
+	mut form := HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(form_element) })
+	mut controls := []&FormAssociatedElement{}
+	for node in form_element.as_node().children_as_vector() {
+		if element := node.as_element() {
+			mut control := FormAssociatedElement.create(element)
+			form.add_associated_element(mut control)
+			controls << control
+		}
+	}
+	assert form.action() == 'https://example.test/submit'
+	form.set_action('')
+	assert form.action() == 'https://example.test/path/page.html'
+	form.set_method('POST')
+	assert form.method_state_from_form_element(none) == .post
+	assert form.pick_an_encoding() == 'windows-1251'
+	assert form.rel_list().contains('noreferrer')
+	mut form_dom := form_element
+	form_dom.set_attribute_value('rel', 'noopener')
+	form.attribute_changed('rel', 'noopener')
+	assert form.rel_list().contains('noopener')
+	assert !form.rel_list().contains('noreferrer')
+	assert form.elements().length() == 2
+	assert form.item_value(0)? == controls[0].element
+	shared_result := form.named_item_value('shared')
+	assert shared_result is HTMLFormControlsCollectionRadioNodeList
+	first := form.named_item_value('first')
+	assert first is HTMLFormControlsCollectionElement
+	assert 'first' in form.supported_property_names()
+	form.remove_associated_element(controls[0])
+	assert form.named_item_value('first') is HTMLFormControlsCollectionEmpty
+}
+
+fn test_form_request_submit_validation_implicit_submission_and_dialog_method() {
+	mut document := parse_document('<form><input required><button value="go">Go</button></form>')
+	document.set_url(dom.URL{ value: 'https://example.test/form' })
+	form_elements_make_document_fully_active(mut document)
+	form_element := form_elements_find(unsafe { &dom.Node(document) }, 'form') or { panic('form') }
+	input_element := form_elements_find(unsafe { &dom.Node(document) }, 'input') or { panic('input') }
+	button_element_ := form_elements_find(unsafe { &dom.Node(document) }, 'button') or { panic('button') }
+	mut form := HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(form_element) })
+	mut input := FormAssociatedElement.create(input_element)
+	input.missing_ = true
+	mut button := FormAssociatedElement.create(button_element_)
+	button.value_ = 'go'
+	form.add_associated_element(mut input)
+	form.add_associated_element(mut button)
+	assert !form.statically_validate_constraints().result
+	form.request_submit(button)!
+	assert form.last_submission() == none
+	input.missing_ = false
+	assert form.report_validity()
+	assert form.default_button()? == button
+	assert form.number_of_fields_blocking_implicit_submission() == 1
+	form.implicitly_submit_form()!
+	assert form.last_submission() != none
+
+	mut outsider := FormAssociatedElement.create(input_element)
+	mut rejected := false
+	form.request_submit(outsider) or {
+		rejected = true
+		assert err.msg().starts_with('TypeError:')
+	}
+	assert rejected
+
+	mut dialog_document := parse_document('<dialog open><form method="dialog"><button value="PASS">Submit</button></form></dialog>')
+	dialog_document.set_url(dom.URL{ value: 'https://example.test/dialog' })
+	form_elements_make_document_fully_active(mut dialog_document)
+	dialog_element := form_elements_find(unsafe { &dom.Node(dialog_document) }, 'dialog') or { panic('dialog') }
+	dialog_form_element := form_elements_find(unsafe { &dom.Node(dialog_document) }, 'form') or { panic('dialog form') }
+	dialog_button_element := form_elements_find(unsafe { &dom.Node(dialog_document) }, 'button') or { panic('dialog button') }
+	mut dialog_form := HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(dialog_form_element) })
+	mut dialog_button := FormAssociatedElement.create(dialog_button_element)
+	dialog_button.value_ = 'PASS'
+	dialog_form.add_associated_element(mut dialog_button)
+	dialog_form.request_submit(dialog_button)!
+	dialog := unsafe { &dom.HTMLDialogElement(dialog_element) }
+	assert !dialog_element.has_attribute('open')
+	assert dialog.return_value_ == 'PASS'
+}
+
+fn test_form_submission_scheme_routing_and_mailto_body() {
+	mut document := parse_document('<form action="mailto:test@example.test?subject=hello" method="post" enctype="text/plain"><input name="message" value="hello world"></form>')
+	document.set_url(dom.URL{ value: 'https://example.test/form' })
+	form_elements_make_document_fully_active(mut document)
+	form_element := form_elements_find(unsafe { &dom.Node(document) }, 'form') or { panic('form') }
+	input_element := form_elements_find(unsafe { &dom.Node(document) }, 'input') or { panic('input') }
+	mut form := HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(form_element) })
+	mut input := FormAssociatedElement.create(input_element)
+	input.value_ = 'hello world'
+	form.add_associated_element(mut input)
+	form.submit()!
+	submission := form.last_submission() or { panic('mailto submission') }
+	assert submission.url.scheme() == 'mailto'
+	assert (submission.url.query() or { '' }) == 'subject=hello&body=message=hello%20world%0D%0A'
 }

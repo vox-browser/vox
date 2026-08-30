@@ -2,6 +2,7 @@ module layout
 
 import dom
 import css
+import platform
 
 // Translation of Ladybird's Layout::Node (Layout/Node.h) — the base of the layout tree. In C++ Node is
 // a JS::Cell + TreeNode<Node>; here the tree is modelled with a parent pointer + children array (as this
@@ -16,25 +17,54 @@ pub mut:
 	parent_   ?&Node
 	children_ []&Node
 	// Layout::Node members (Layout/Node.h).
-	document_                    &dom.Document = unsafe { nil }
-	dom_node_                    ?&dom.Node
-	pseudo_element_generator_    ?&dom.Element
-	generated_for_               ?dom.PseudoElement
-	anonymous_                   bool
-	has_style_                   bool
-	children_are_inline_         bool
-	is_flex_item_                bool
-	is_grid_item_                bool
-	is_body_                     bool
-	needs_layout_update_         bool
-	initial_quote_nesting_level_ u32
+	document_                          &dom.Document = unsafe { nil }
+	dom_node_                          ?&dom.Node
+	containing_block_                  ?&Box
+	inline_containing_block_           ?&InlineNode
+	pseudo_element_generator_          ?&dom.Element
+	generated_for_                     ?css.PseudoElement
+	anonymous_                         bool
+	has_style_                         bool
+	children_are_inline_               bool
+	is_flex_item_                      bool
+	is_grid_item_                      bool
+	is_body_                           bool
+	is_in_ua_internal_shadow_tree_     bool
+	is_button_content_box_             bool
+	needs_layout_update_               bool
+	initial_quote_nesting_level_       u32
+	has_been_wrapped_in_table_wrapper_ bool
 	// Concrete-type discriminants (C++ uses virtual fast_is<T>(); V has no RTTI). Each subclass's
 	// constructor sets its flags; a flag is true for the type AND its subclasses (is_box_ is set for
 	// Box and BlockContainer, etc.).
-	is_box_             bool
-	is_block_container_ bool
-	is_text_node_       bool
-	is_viewport_        bool
+	is_box_                          bool
+	is_block_container_              bool
+	is_inline_node_                  bool
+	is_break_node_                   bool
+	is_list_item_box_                bool
+	is_replaced_box_                 bool
+	is_navigable_container_viewport_ bool
+	is_image_box_                    bool
+	replaced_can_have_children_      bool
+	is_fieldset_box_                 bool
+	is_legend_box_                   bool
+	is_text_input_box_               bool
+	is_textarea_box_                 bool
+	is_table_wrapper_                bool
+	is_list_item_marker_box_         bool
+	is_text_node_                    bool
+	is_viewport_                     bool
+	is_svg_box_                      bool
+	is_svg_graphics_box_             bool
+	is_svg_geometry_box_             bool
+	is_svg_image_box_                bool
+	is_svg_clip_box_                 bool
+	is_svg_mask_box_                 bool
+	is_svg_pattern_box_              bool
+	is_svg_svg_box_                  bool
+	is_svg_text_box_                 bool
+	is_svg_text_path_box_            bool
+	is_svg_foreign_object_box_       bool
 }
 
 // Node(DOM::Document&, DOM::Node*) — a layout node for `dom_node` (null for anonymous boxes).
@@ -57,6 +87,18 @@ pub fn (mut n Node) append_child(child &Node) {
 	mut mutable_child := unsafe { &Node(child) }
 	mutable_child.parent_ = n
 	n.children_ << child
+}
+
+fn (mut n Node) replace_children(children []&Node) {
+	for old_child in n.children_ {
+		mut mutable_old_child := unsafe { &Node(old_child) }
+		mutable_old_child.parent_ = none
+	}
+	n.children_ = children.clone()
+	for child in n.children_ {
+		mut mutable_child := unsafe { &Node(child) }
+		mutable_child.parent_ = n
+	}
 }
 
 pub fn (n &Node) parent() ?&Node {
@@ -125,12 +167,25 @@ pub fn (n &Node) document() &dom.Document {
 	return n.document_
 }
 
+// Node::navigable().
+pub fn (n &Node) navigable() ?&dom.Navigable {
+	return n.document_.navigable()
+}
+
 pub fn (n &Node) is_anonymous() bool {
 	return n.anonymous_
 }
 
 pub fn (n &Node) has_style() bool {
 	return n.has_style_
+}
+
+pub fn (n &Node) has_style_or_parent_with_style() bool {
+	if n.has_style_ {
+		return true
+	}
+	parent := n.parent() or { return false }
+	return parent.has_style_or_parent_with_style()
 }
 
 pub fn (n &Node) children_are_inline() bool {
@@ -145,12 +200,34 @@ pub fn (n &Node) is_flex_item() bool {
 	return n.is_flex_item_
 }
 
+pub fn (mut n Node) set_flex_item(value bool) {
+	n.is_flex_item_ = value
+}
+
 pub fn (n &Node) is_grid_item() bool {
 	return n.is_grid_item_
 }
 
+pub fn (mut n Node) set_grid_item(value bool) {
+	n.is_grid_item_ = value
+}
+
 pub fn (n &Node) is_body() bool {
-	return n.is_body_
+	if n.is_body_ {
+		return true
+	}
+	dom_node := n.dom_node_ or { return false }
+	body := n.document_.body() or { return false }
+	body_node := unsafe { &dom.Element(body) }.as_node()
+	return dom_node.unique_id().value() == body_node.unique_id().value()
+}
+
+pub fn (n &Node) is_in_ua_internal_shadow_tree() bool {
+	return n.is_in_ua_internal_shadow_tree_
+}
+
+pub fn (mut n Node) set_is_in_ua_internal_shadow_tree(value bool) {
+	n.is_in_ua_internal_shadow_tree_ = value
 }
 
 pub fn (n &Node) needs_layout_update() bool {
@@ -158,11 +235,91 @@ pub fn (n &Node) needs_layout_update() bool {
 }
 
 pub fn (mut n Node) set_needs_layout_update(value bool) {
-	n.needs_layout_update_ = value
+	if !value {
+		n.needs_layout_update_ = false
+		return
+	}
+	if n.needs_layout_update_ {
+		return
+	}
+	n.needs_layout_update_ = true
+	if mut box := n.as_box() {
+		box.reset_cached_intrinsic_sizes()
+	}
+
+	// Mark anonymous box children generated by this node. Table wrappers are
+	// excluded exactly as in Node::set_needs_layout_update().
+	for child in n.children_ {
+		if child.is_box() && child.is_anonymous() && !child.is_table_wrapper() {
+			mut mutable_child := unsafe { &Node(child) }
+			mutable_child.needs_layout_update_ = true
+			if mut child_box := mutable_child.as_box() {
+				child_box.reset_cached_intrinsic_sizes()
+			}
+		}
+	}
+
+	// Propagate the layout-update bit through ancestors, stopping once an
+	// ancestor was already dirty or at the SVG-root relayout boundary.
+	mut ancestor := n.parent()
+	for ancestor != none {
+		current := ancestor or { break }
+		mut mutable_current := unsafe { &Node(current) }
+		if mutable_current.needs_layout_update_ {
+			break
+		}
+		mutable_current.needs_layout_update_ = true
+		if mutable_current.is_svg_svg_box() {
+			break
+		}
+		ancestor = mutable_current.parent()
+	}
+
+	// Intrinsic sizes are independent of the dirty-bit early exit above. Clear
+	// every ancestor cache up to an abspos or SVG-root boundary.
+	ancestor = n.parent()
+	for ancestor != none {
+		current := ancestor or { break }
+		if mut box := unsafe { &Node(current) }.as_box() {
+			box.reset_cached_intrinsic_sizes()
+			if current.is_absolutely_positioned() || current.is_svg_svg_box() {
+				break
+			}
+		}
+		ancestor = current.parent()
+	}
 }
 
-pub fn (n &Node) generated_for_pseudo_element() ?dom.PseudoElement {
+pub fn (mut n Node) reset_needs_layout_update() {
+	n.needs_layout_update_ = false
+}
+
+pub fn (n &Node) generated_for_pseudo_element() ?css.PseudoElement {
 	return n.generated_for_
+}
+
+pub fn (n &Node) is_generated_for_pseudo_element() bool {
+	return n.generated_for_ != none
+}
+
+pub fn (n &Node) is_generated_for_before_pseudo_element() bool {
+	pseudo_element := n.generated_for_ or { return false }
+	return pseudo_element == .before
+}
+
+pub fn (n &Node) is_generated_for_after_pseudo_element() bool {
+	pseudo_element := n.generated_for_ or { return false }
+	return pseudo_element == .after
+}
+
+pub fn (n &Node) is_generated_for_backdrop_pseudo_element() bool {
+	pseudo_element := n.generated_for_ or { return false }
+	return pseudo_element == .backdrop
+}
+
+pub fn (mut n Node) set_generated_for(type_ css.PseudoElement, element &dom.Element) {
+	n.generated_for_ = type_
+	n.pseudo_element_generator_ = element
 }
 
 pub fn (n &Node) pseudo_element_generator() ?&dom.Element {
@@ -171,6 +328,571 @@ pub fn (n &Node) pseudo_element_generator() ?&dom.Element {
 
 pub fn (n &Node) initial_quote_nesting_level() u32 {
 	return n.initial_quote_nesting_level_
+}
+
+pub fn (mut n Node) set_initial_quote_nesting_level(value u32) {
+	n.initial_quote_nesting_level_ = value
+}
+
+pub fn (n &Node) has_been_wrapped_in_table_wrapper() bool {
+	return n.has_been_wrapped_in_table_wrapper_
+}
+
+pub fn (mut n Node) set_has_been_wrapped_in_table_wrapper(value bool) {
+	n.has_been_wrapped_in_table_wrapper_ = value
+}
+
+pub fn (n &Node) display() css.Display {
+	if styled := n.as_node_with_style() {
+		return styled.computed_values().display()
+	}
+	// Node::display(): unstyled text content participates in inline flow.
+	return css.Display.from_outside_inside(.inline_, .flow)
+}
+
+pub fn (n &Node) display_before_box_type_transformation() css.Display {
+	if styled := n.as_node_with_style() {
+		return styled.computed_values().display_before_box_type_transformation()
+	}
+	return css.Display.from_outside_inside(.inline_, .flow)
+}
+
+// Node::computed_values(): unstyled text nodes inherit the immutable computed
+// values of their styled parent.
+pub fn (n &Node) computed_values() &css.ComputedProperties {
+	if styled := n.as_node_with_style() {
+		return styled.computed_values()
+	}
+	parent := n.parent() or { panic('VERIFY(has_style_or_parent_with_style())') }
+	return parent.computed_values()
+}
+
+pub fn (n &Node) first_available_font() &platform.Font {
+	mut computed := unsafe { &css.ComputedProperties(n.computed_values()) }
+	font_computer := css.FontComputer.create()
+	computed_font := computed.first_available_computed_font(font_computer)
+	return &platform.Font{
+		family:     computed_font.typeface.family_name
+		point_size: computed_font.point_size / 0.75
+		weight:     int(computed_font.variations.weight)
+	}
+}
+
+pub fn (n &Node) debug_description() string {
+	mut description := layout_debug_class_name(n)
+	if dom_node := n.dom_node() {
+		description += '<${dom_node.node_name()}>'
+		if element := dom_node.as_element() {
+			if id := element.id() {
+				description += '#${id}'
+			}
+			for class_name in element.get_attribute_value('class').fields() {
+				description += '.${class_name}'
+			}
+		}
+	} else {
+		description += '(anonymous)'
+	}
+	return description
+}
+
+pub fn (n &Node) is_inline() bool {
+	return n.display().is_inline_outside()
+}
+
+pub fn (n &Node) is_inline_block() bool {
+	return n.display().is_inline_block()
+}
+
+pub fn (n &Node) is_inline_table() bool {
+	display := n.display()
+	return display.is_inline_outside() && display.is_table_inside()
+}
+
+pub fn (n &Node) is_atomic_inline() bool {
+	if n.is_replaced_box() {
+		return true
+	}
+	display := n.display()
+	return display.is_inline_outside() && !display.is_flow_inside()
+}
+
+pub fn (n &Node) is_floating() bool {
+	styled := n.as_node_with_style() or { return false }
+	// Flex items do not float. Grid formatting inhibits float positioning, but
+	// Node::is_floating() still reflects the authored float value upstream.
+	if n.is_flex_item_ {
+		return false
+	}
+	return styled.computed_values().float_() != .none_
+}
+
+pub fn (n &Node) is_positioned() bool {
+	styled := n.as_node_with_style() or { return false }
+	return styled.computed_values().position() != .static_
+}
+
+pub fn (n &Node) is_absolutely_positioned() bool {
+	styled := n.as_node_with_style() or { return false }
+	position := styled.computed_values().position()
+	return position in [.absolute, .fixed]
+}
+
+pub fn (n &Node) is_fixed_position() bool {
+	styled := n.as_node_with_style() or { return false }
+	return styled.computed_values().position() == .fixed
+}
+
+pub fn (n &Node) is_sticky_position() bool {
+	styled := n.as_node_with_style() or { return false }
+	return styled.computed_values().position() == .sticky
+}
+
+// NodeWithStyle::is_scroll_container(). The viewport intentionally behaves as a scroll container
+// even though its computed overflow is visible.
+pub fn (n &Node) is_scroll_container() bool {
+	if n.is_viewport() {
+		return true
+	}
+	styled := n.as_node_with_style() or { return false }
+	return styled.computed_values().overflow_x() in [.auto_, .hidden, .scroll]
+		|| styled.computed_values().overflow_y() in [.auto_, .hidden, .scroll]
+}
+
+pub fn (n &Node) is_out_of_flow() bool {
+	return n.is_floating() || n.is_absolutely_positioned()
+}
+
+pub fn (n &Node) is_in_flow() bool {
+	return !n.is_out_of_flow()
+}
+
+pub fn (n &Node) can_have_children() bool {
+	if n.is_break_node_ || n.is_list_item_marker_box_ {
+		return false
+	}
+	if n.is_replaced_box_ {
+		return n.replaced_can_have_children_
+	}
+	return true
+}
+
+pub fn (n &Node) has_size_containment() bool {
+	display := n.display()
+	if display.is_table_inside() || display.is_internal_table() {
+		return false
+	}
+	computed := n.computed_values()
+	return computed.contain().size_containment || computed.container_type().is_size_container
+}
+
+pub fn (n &Node) has_inline_size_containment() bool {
+	display := n.display()
+	if display.is_table_inside() || display.is_internal_table() {
+		return false
+	}
+	computed := n.computed_values()
+	return computed.contain().inline_size_containment
+		|| computed.container_type().is_inline_size_container
+}
+
+pub fn (n &Node) has_layout_containment() bool {
+	display := n.display()
+	if display.is_internal_table() && !display.is_table_cell() {
+		return false
+	}
+	computed := n.computed_values()
+	return computed.contain().layout_containment || computed.content_visibility() == .auto_
+}
+
+pub fn (n &Node) has_style_containment() bool {
+	computed := n.computed_values()
+	container_type := computed.container_type()
+	return computed.contain().style_containment || container_type.is_size_container
+		|| container_type.is_inline_size_container || computed.content_visibility() == .auto_
+}
+
+pub fn (n &Node) has_paint_containment() bool {
+	display := n.display()
+	if display.is_internal_table() && !display.is_table_cell() {
+		return false
+	}
+	computed := n.computed_values()
+	return computed.contain().paint_containment || computed.content_visibility() == .auto_
+}
+
+fn layout_input_type_allows_readonly(element &dom.Element) bool {
+	return element.get_attribute_value('type').trim_space().to_lower() in ['', 'text', 'search',
+		'tel', 'url', 'email', 'password', 'date', 'month', 'week', 'time', 'datetime-local',
+		'number']
+}
+
+fn layout_form_text_control_is_mutable(element &dom.Element) bool {
+	if element.local_name() !in ['input', 'textarea'] || element.is_actually_disabled() {
+		return false
+	}
+	if element.local_name() == 'textarea' {
+		return !element.has_attribute('readonly')
+	}
+	return !element.has_attribute('readonly') || !layout_input_type_allows_readonly(element)
+}
+
+// https://drafts.csswg.org/css-ui/#propdef-user-select
+// Node::user_select_used_value().
+pub fn (n &Node) user_select_used_value() css.UserSelect {
+	computed_value := n.computed_values().user_select()
+	if dom_node := n.dom_node() {
+		if dom_node.is_editing_host() {
+			return .contain
+		}
+		if element := dom_node.as_element() {
+			if layout_form_text_control_is_mutable(element) {
+				return .contain
+			}
+		}
+	}
+	if computed_value != .auto_ {
+		return computed_value
+	}
+	if n.is_generated_for_before_pseudo_element() || n.is_generated_for_after_pseudo_element() {
+		return .none_
+	}
+	if parent := n.parent() {
+		parent_used_value := parent.user_select_used_value()
+		if parent_used_value == .all {
+			return .all
+		}
+		if parent_used_value == .none_ {
+			return .none_
+		}
+	}
+	return .text
+}
+
+pub fn (n &Node) containing_block() ?&Box {
+	return n.containing_block_
+}
+
+pub fn (n &Node) inline_containing_block_if_applicable() ?&InlineNode {
+	return n.inline_containing_block_
+}
+
+fn (n &Node) is_root_element() bool {
+	if n.is_anonymous() {
+		return false
+	}
+	dom_node := n.dom_node_ or { return false }
+	element := dom_node.as_element() or { return false }
+	return element.is_html_element() && element.local_name() == 'html'
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_positioned_layout/Stacking_context
+pub fn (n &Node) establishes_stacking_context() bool {
+	if !n.has_style() || n.is_svg_box() {
+		return false
+	}
+	if n.is_viewport() || n.is_root_element() {
+		return true
+	}
+
+	computed := n.computed_values()
+	will_change := computed.will_change()
+	position := computed.position()
+	has_z_index := computed.z_index() != none || will_change.has_property(.z_index)
+	if position in [.absolute, .relative] && has_z_index {
+		return true
+	}
+	if position in [.fixed, .sticky] || will_change.has_property(.position) {
+		return true
+	}
+	if computed.transformations().len > 0 || will_change.has_property(.transform)
+		|| computed.translate() != none || will_change.has_property(.translate)
+		|| computed.rotate() != none || will_change.has_property(.rotate)
+		|| computed.scale() != none || will_change.has_property(.scale) {
+		return true
+	}
+	if parent := n.parent() {
+		if (parent.display().is_flex_inside() || parent.display().is_grid_inside()) && has_z_index {
+			return true
+		}
+	}
+	if computed.backdrop_filter().has_filters() || computed.filter().has_filters()
+		|| will_change.has_property(.backdrop_filter) || will_change.has_property(.filter) {
+		return true
+	}
+	clip_path := computed.property(.clip_path, .yes)
+	mask_image := computed.property(.mask_image, .yes)
+	if (clip_path != none
+		&& clip_path or { panic('unreachable') }.css_text.trim_space().to_lower() != 'none')
+		|| (mask_image != none
+		&& mask_image or {
+		panic('unreachable')
+	}.css_text.trim_space().to_lower() != 'none')
+		|| will_change.has_property(.clip_path)
+		|| will_change.has_property(.mask_image) {
+		return true
+	}
+	if n.is_svg_foreign_object_box() {
+		return true
+	}
+	if computed.isolation() == .isolate || will_change.has_property(.isolation) {
+		return true
+	}
+	if n.has_layout_containment() || n.has_paint_containment() || will_change.has_property(.contain) {
+		return true
+	}
+	if computed.mix_blend_mode() != .normal || will_change.has_property(.mix_blend_mode) {
+		return true
+	}
+	if computed.view_transition_name() != none || will_change.has_property(.view_transition_name) {
+		return true
+	}
+	if computed.perspective() != none || will_change.has_property(.perspective) {
+		return true
+	}
+	if computed.transform_style() == .preserve_3d || will_change.has_property(.transform_style) {
+		return true
+	}
+	return computed.opacity() < 1.0 || will_change.has_property(.opacity)
+}
+
+fn will_change_has_property(computed &css.ComputedProperties, property_name string) bool {
+	return property_name in computed.will_change().names
+}
+
+// Node::computed_values_establish_absolute_positioning_containing_block().
+pub fn (n &Node) computed_values_establish_absolute_positioning_containing_block() bool {
+	computed := n.computed_values()
+	if computed.position() != .static_ || will_change_has_property(computed, 'position') {
+		return true
+	}
+	if computed.transformations().len > 0 || will_change_has_property(computed, 'transform') {
+		return true
+	}
+	if computed.translate() != none || will_change_has_property(computed, 'translate') {
+		return true
+	}
+	if computed.rotate() != none || will_change_has_property(computed, 'rotate') {
+		return true
+	}
+	if computed.scale() != none || will_change_has_property(computed, 'scale') {
+		return true
+	}
+	if computed.perspective() != none || will_change_has_property(computed, 'perspective') {
+		return true
+	}
+	if (computed.filter().has_filters() || will_change_has_property(computed, 'filter'))
+		&& !n.is_root_element() {
+		return true
+	}
+	if (computed.backdrop_filter().has_filters()
+		|| will_change_has_property(computed, 'backdrop-filter')) && !n.is_root_element() {
+		return true
+	}
+	if n.has_layout_containment() || n.has_paint_containment()
+		|| will_change_has_property(computed, 'contain') {
+		return true
+	}
+	if computed.transform_style() == .preserve_3d
+		|| will_change_has_property(computed, 'transform-style') {
+		return true
+	}
+	return false
+}
+
+pub fn (n &Node) establishes_an_absolute_positioning_containing_block() bool {
+	if !n.is_box() {
+		return false
+	}
+	if n.is_viewport() {
+		return true
+	}
+	// https://github.com/w3c/fxtf-drafts/issues/307#issuecomment-499612420
+	// foreignObject establishes the containing block for positioned descendants.
+	if n.is_svg_foreign_object_box() {
+		return true
+	}
+	return n.computed_values_establish_absolute_positioning_containing_block()
+}
+
+pub fn (n &Node) establishes_a_fixed_positioning_containing_block() bool {
+	if !n.is_box() {
+		return false
+	}
+	if n.is_svg_foreign_object_box() {
+		return true
+	}
+	computed := n.computed_values()
+	if computed.transformations().len > 0 || will_change_has_property(computed, 'transform') {
+		return true
+	}
+	if computed.translate() != none || will_change_has_property(computed, 'translate') {
+		return true
+	}
+	if computed.rotate() != none || will_change_has_property(computed, 'rotate') {
+		return true
+	}
+	if computed.scale() != none || will_change_has_property(computed, 'scale') {
+		return true
+	}
+	if computed.perspective() != none || will_change_has_property(computed, 'perspective') {
+		return true
+	}
+	if (computed.filter().has_filters() || will_change_has_property(computed, 'filter'))
+		&& !n.is_root_element() {
+		return true
+	}
+	if (computed.backdrop_filter().has_filters()
+		|| will_change_has_property(computed, 'backdrop-filter')) && !n.is_root_element() {
+		return true
+	}
+	if n.has_layout_containment() || n.has_paint_containment()
+		|| will_change_has_property(computed, 'contain') {
+		return true
+	}
+	if computed.transform_style() == .preserve_3d
+		|| will_change_has_property(computed, 'transform-style') {
+		return true
+	}
+	return false
+}
+
+fn nearest_ancestor_capable_of_forming_a_containing_block(node &Node) ?&Box {
+	mut ancestor := node.parent()
+	for {
+		candidate := ancestor or { return none }
+		if candidate.is_block_container() || candidate.display().is_flex_inside()
+			|| candidate.display().is_grid_inside() || candidate.is_replaced_box_with_children() {
+			return candidate.as_box() or { panic('containing-block candidate must be a Box') }
+		}
+		ancestor = candidate.parent()
+	}
+	return none
+}
+
+fn (n &Node) root_viewport() ?&Viewport {
+	mut current := n
+	for {
+		if viewport := current.as_viewport() {
+			return viewport
+		}
+		current = current.parent() or { return none }
+	}
+	return none
+}
+
+fn find_inline_layout_node_for_dom(root &Node, target &dom.Element) ?&InlineNode {
+	if inline := root.as_inline_node() {
+		if dom_node := root.dom_node() {
+			if voidptr(dom_node) == voidptr(target.as_node()) {
+				return inline
+			}
+		}
+	}
+	for child in root.children() {
+		if found := find_inline_layout_node_for_dom(child, target) {
+			return found
+		}
+	}
+	return none
+}
+
+fn (mut n Node) recompute_inline_abspos_containing_block() {
+	containing_block := n.containing_block_ or { return }
+	containing_dom_node := unsafe { &Node(containing_block) }.dom_node()
+	mut dom_ancestor := if generator := n.pseudo_element_generator_ {
+		?&dom.Element(generator)
+	} else if dom_node := n.dom_node_ {
+		dom_node.parent_element()
+	} else {
+		?&dom.Element(none)
+	}
+	viewport := n.root_viewport() or { return }
+	root := unsafe { &Node(viewport) }
+	for dom_ancestor != none {
+		candidate := dom_ancestor or { break }
+		if containing_dom := containing_dom_node {
+			if voidptr(candidate.as_node()) == voidptr(containing_dom) {
+				break
+			}
+		}
+		if inline := find_inline_layout_node_for_dom(root, candidate) {
+			inline_node := unsafe { &Node(inline) }
+			if inline_node.computed_values_establish_absolute_positioning_containing_block() {
+				n.inline_containing_block_ = inline
+				return
+			}
+		}
+		dom_ancestor = candidate.as_node().parent_element()
+	}
+}
+
+// Node::recompute_containing_block().
+pub fn (mut n Node) recompute_containing_block() {
+	n.inline_containing_block_ = none
+	if n.is_text_node() {
+		n.containing_block_ = nearest_ancestor_capable_of_forming_a_containing_block(n)
+		return
+	}
+	position := n.computed_values().position()
+	if position == .absolute {
+		mut ancestor := n.parent()
+		for {
+			candidate := ancestor or {
+				n.containing_block_ = none
+				return
+			}
+
+			if candidate.establishes_an_absolute_positioning_containing_block() {
+				n.containing_block_ = candidate.as_box()
+				n.recompute_inline_abspos_containing_block()
+				return
+			}
+			ancestor = candidate.parent()
+		}
+		return
+	}
+	if position == .fixed {
+		mut ancestor := n.parent()
+		for {
+			candidate := ancestor or {
+				viewport := n.root_viewport() or {
+					n.containing_block_ = none
+					return
+				}
+				n.containing_block_ = unsafe { &Box(viewport) }
+				return
+			}
+
+			if candidate.establishes_a_fixed_positioning_containing_block() {
+				n.containing_block_ = candidate.as_box()
+				return
+			}
+			ancestor = candidate.parent()
+		}
+		return
+	}
+	n.containing_block_ = nearest_ancestor_capable_of_forming_a_containing_block(n)
+}
+
+pub fn (n &Node) static_position_containing_block() ?&Box {
+	return nearest_ancestor_capable_of_forming_a_containing_block(n)
+}
+
+pub fn (n &Node) non_anonymous_containing_block() ?&Box {
+	mut containing_block := n.containing_block_ or { return none }
+	for containing_block.is_anonymous() {
+		containing_block = containing_block.containing_block() or { return none }
+	}
+	return containing_block
+}
+
+pub fn recompute_containing_blocks(root &Node) {
+	mut mutable_root := unsafe { &Node(root) }
+	mutable_root.recompute_containing_block()
+	for child in root.children() {
+		recompute_containing_blocks(child)
+	}
 }
 
 // --- NodeWithStyle (Layout/Node.h) ---
@@ -205,8 +927,66 @@ pub fn (mut n NodeWithStyle) set_computed_values(computed_values &css.ComputedPr
 	n.computed_values_ = computed_values
 }
 
+pub fn (mut n NodeWithStyle) apply_style(computed_style &css.ComputedProperties) {
+	n.computed_values_ = computed_style
+	n.propagate_style_to_anonymous_wrappers()
+	if metrics := unsafe { &Node(n) }.as_node_with_style_and_box_model_metrics() {
+		metrics.propagate_style_along_continuation(computed_style)
+	}
+}
+
+fn (mut n NodeWithStyle) propagate_style_to_anonymous_wrappers() {
+	node := unsafe { &Node(n) }
+	// A table wrapper inherits from its table root, not the other way around.
+	if parent := node.parent() {
+		if parent.is_table_wrapper() && node.display().is_table_inside() {
+			mut table_style := unsafe { &css.ComputedProperties(n.computed_values_) }
+			wrapper_style := table_style.take_properties_for_table_wrapper()
+			if wrapper_styled := parent.as_node_with_style() {
+				mut mutable_wrapper := unsafe { &NodeWithStyle(wrapper_styled) }
+				mutable_wrapper.set_computed_values(wrapper_style)
+			}
+		}
+	}
+
+	for child in node.children() {
+		if !child.is_anonymous() || child.is_table_wrapper() {
+			continue
+		}
+		child_styled := child.as_node_with_style() or { continue }
+		mut child_style := unsafe { &css.ComputedProperties(child_styled.computed_values_) }
+		child_style.inherit_from_for_layout(n.computed_values_)
+		mut mutable_child := unsafe { &NodeWithStyle(child_styled) }
+		mutable_child.propagate_style_to_anonymous_wrappers()
+	}
+}
+
 pub fn (n &NodeWithStyle) layout_index() u32 {
 	return n.layout_index_
+}
+
+pub fn (mut n NodeWithStyle) set_layout_index(index u32) {
+	n.layout_index_ = index
+}
+
+// DOM::Document::update_layout assigns dense indices to every styled node in
+// inclusive pre-order before constructing LayoutState. Text nodes intentionally
+// do not consume an index because they do not have independent UsedValues.
+pub fn assign_layout_indexes(root &Node) u32 {
+	return assign_layout_indexes_in_subtree(root, 0)
+}
+
+fn assign_layout_indexes_in_subtree(node &Node, starting_index u32) u32 {
+	mut next_index := starting_index
+	if styled := node.as_node_with_style() {
+		mut mutable_styled := unsafe { &NodeWithStyle(styled) }
+		mutable_styled.set_layout_index(next_index)
+		next_index++
+	}
+	for child in node.children() {
+		next_index = assign_layout_indexes_in_subtree(child, next_index)
+	}
+	return next_index
 }
 
 // Cast a &Node to &NodeWithStyle. Layout::Node is abstract in C++ (every concrete layout node is a
@@ -216,6 +996,13 @@ pub fn (n &Node) as_node_with_style() ?&NodeWithStyle {
 		return none
 	}
 	return unsafe { &NodeWithStyle(n) }
+}
+
+pub fn (n &Node) as_node_with_style_and_box_model_metrics() ?&NodeWithStyleAndBoxModelMetrics {
+	if !n.has_style_ || (!n.is_box_ && !n.is_inline_node_ && !n.is_break_node_) {
+		return none
+	}
+	return unsafe { &NodeWithStyleAndBoxModelMetrics(n) }
 }
 
 // --- NodeWithStyleAndBoxModelMetrics (Layout/Node.h) ---
@@ -233,6 +1020,144 @@ pub fn (n &NodeWithStyleAndBoxModelMetrics) continuation_of_node() ?&NodeWithSty
 	return n.continuation_of_node_
 }
 
+fn should_create_inline_continuation_with_parent(node &Node, parent &Node) bool {
+	// This node must have an inline parent.
+	parent_display := parent.display()
+	if !parent_display.is_inline_outside() || !parent_display.is_flow_inside() {
+		return false
+	}
+
+	// This node must not be inline itself or out of flow (which gets handled separately).
+	if node.display().is_inline_outside() || node.is_out_of_flow() {
+		return false
+	}
+
+	// This node must not have `display: contents`; inline continuation gets handled by its children.
+	if node.display().is_contents() {
+		return false
+	}
+
+	// Internal table display types and table captions are handled by the table fixup algorithm.
+	if node.display().is_internal_table() || node.display().is_table_caption() {
+		return false
+	}
+
+	// Parent element must not be <foreignObject>.
+	if parent_dom_node := parent.dom_node() {
+		if parent_element := parent_dom_node.as_element() {
+			if parent_element.is_svg_element() && parent_element.local_name() == 'foreignObject' {
+				return false
+			}
+		}
+	}
+
+	// Non-root SVG elements and foreign object boxes should never be split.
+	if node.is_svg_box() || node.is_svg_foreign_object_box() {
+		return false
+	}
+
+	// Nested SVG roots should never be split, but a top-level SVG root inside an HTML inline element should be.
+	if node.is_svg_svg_box() && (parent.is_svg_box() || parent.is_svg_svg_box()) {
+		return false
+	}
+
+	// Replaced boxes with children (e.g. media elements with shadow DOM controls)
+	// have their own formatting context; don't split them.
+	if parent.is_replaced_box_with_children() {
+		return false
+	}
+
+	return true
+}
+
+pub fn (n &NodeWithStyleAndBoxModelMetrics) should_create_inline_continuation() bool {
+	node := unsafe { &Node(n) }
+	parent := node.parent() or { return false }
+	return should_create_inline_continuation_with_parent(node, parent)
+}
+
+pub fn (n &NodeWithStyleAndBoxModelMetrics) propagate_style_along_continuation(computed_style &css.ComputedProperties) {
+	mut continuation := n.continuation_of_node()
+	for continuation != none {
+		current := continuation or { return }
+		current_node := unsafe { &Node(current) }
+		if !current_node.is_anonymous() {
+			mut styled := unsafe { &NodeWithStyle(current) }
+			styled.apply_style(computed_style)
+			return
+		}
+		continuation = current.continuation_of_node()
+	}
+}
+
+// --- InlineNode (Layout/InlineNode.h) : NodeWithStyleAndBoxModelMetrics ---
+
+@[heap]
+pub struct InlineNode {
+	NodeWithStyleAndBoxModelMetrics
+}
+
+pub fn InlineNode.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &InlineNode {
+	return &InlineNode{
+		NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
+			NodeWithStyle: NodeWithStyle{
+				Node:             Node{
+					document_:       document
+					dom_node_:       dom_node
+					has_style_:      true
+					is_inline_node_: true
+				}
+				computed_values_: computed_values
+			}
+		}
+	}
+}
+
+pub fn (n &Node) is_inline_node() bool {
+	return n.is_inline_node_
+}
+
+pub fn (n &Node) as_inline_node() ?&InlineNode {
+	if !n.is_inline_node_ {
+		return none
+	}
+	return unsafe { &InlineNode(n) }
+}
+
+// --- BreakNode (Layout/BreakNode.h) : NodeWithStyleAndBoxModelMetrics ---
+
+@[heap]
+pub struct BreakNode {
+	NodeWithStyleAndBoxModelMetrics
+}
+
+pub fn BreakNode.new(document &dom.Document, dom_node &dom.Node, computed_values &css.ComputedProperties) &BreakNode {
+	return &BreakNode{
+		NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
+			NodeWithStyle: NodeWithStyle{
+				Node:             Node{
+					document_:      document
+					dom_node_:      dom_node
+					has_style_:     true
+					is_break_node_: true
+				}
+				computed_values_: computed_values
+			}
+		}
+	}
+}
+
+pub fn (n &Node) is_break_node() bool {
+	return n.is_break_node_
+}
+
+pub fn (n &Node) as_break_node() ?&BreakNode {
+	if !n.is_break_node_ {
+		return none
+	}
+	return unsafe { &BreakNode(n) }
+}
+
 // --- Box (Layout/Box.h) : NodeWithStyleAndBoxModelMetrics ---
 //
 // A box in the layout tree. The used geometry (content size, offsets) lives in LayoutState::UsedValues;
@@ -243,6 +1168,19 @@ pub struct Box {
 	NodeWithStyleAndBoxModelMetrics
 pub mut:
 	contained_abspos_children_ []&Node
+	cached_intrinsic_sizes_    ?&IntrinsicSizes
+	natural_size_              css.SizeWithAspectRatio
+	has_auto_content_box_size_ bool
+	auto_content_box_size_     css.SizeWithAspectRatio
+}
+
+@[heap]
+pub struct IntrinsicSizes {
+pub mut:
+	min_content_width  ?CSSPixels
+	max_content_width  ?CSSPixels
+	min_content_height map[int]?CSSPixels
+	max_content_height map[int]?CSSPixels
 }
 
 pub fn Box.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &Box {
@@ -267,6 +1205,74 @@ pub fn (n &Box) contained_abspos_children() []&Node {
 
 pub fn (mut n Box) add_contained_abspos_child(child &Node) {
 	n.contained_abspos_children_ << child
+}
+
+pub fn (mut n Box) clear_contained_abspos_children() {
+	n.contained_abspos_children_.clear()
+}
+
+pub fn (mut n Box) cached_intrinsic_sizes() &IntrinsicSizes {
+	if cached := n.cached_intrinsic_sizes_ {
+		return cached
+	}
+	new_cache := &IntrinsicSizes{
+		min_content_height: map[int]?CSSPixels{}
+		max_content_height: map[int]?CSSPixels{}
+	}
+	n.cached_intrinsic_sizes_ = new_cache
+	return new_cache
+}
+
+pub fn (mut n Box) reset_cached_intrinsic_sizes() {
+	n.cached_intrinsic_sizes_ = none
+}
+
+pub fn (n &Box) natural_size() css.SizeWithAspectRatio {
+	return n.natural_size_
+}
+
+pub fn (n &Box) has_auto_content_box_size() bool {
+	return n.has_auto_content_box_size_
+}
+
+pub fn (n &Box) auto_content_box_size() css.SizeWithAspectRatio {
+	if unsafe { &Node(n) }.has_size_containment() {
+		return css.SizeWithAspectRatio{
+			width:  CSSPixels.new(0)
+			height: CSSPixels.new(0)
+		}
+	}
+	if n.has_auto_content_box_size_ {
+		return n.auto_content_box_size_
+	}
+	return n.natural_size_
+}
+
+// Box::preferred_aspect_ratio(). Size containment suppresses natural metrics,
+// while `auto <ratio>` uses the natural ratio when one exists and falls back
+// to the specified ratio otherwise.
+pub fn (n &Box) preferred_aspect_ratio() ?CSSPixelFraction {
+	computed_aspect_ratio := n.computed_values().aspect_ratio()
+	if !unsafe { &Node(n) }.has_size_containment()
+		&& computed_aspect_ratio.use_natural_aspect_ratio_if_available {
+		auto_size := n.auto_content_box_size()
+		if natural_ratio := auto_size.aspect_ratio {
+			return natural_ratio
+		}
+	}
+	ratio := computed_aspect_ratio.preferred_ratio or { return none }
+	if ratio.is_degenerate() {
+		return none
+	}
+	fraction := CSSPixelFraction.from_values(ratio.numerator(), ratio.denominator())
+	if fraction.numerator().raw_value() == 0 {
+		return none
+	}
+	return fraction
+}
+
+pub fn (n &Box) has_preferred_aspect_ratio() bool {
+	return n.preferred_aspect_ratio() != none
 }
 
 pub fn (n &Node) is_box() bool {
@@ -318,14 +1324,132 @@ pub fn (n &Node) as_block_container() ?&BlockContainer {
 	return unsafe { &BlockContainer(n) }
 }
 
+// --- ListItemBox (Layout/ListItemBox.h) : BlockContainer ---
+
+@[heap]
+pub struct ListItemBox {
+	BlockContainer
+pub mut:
+	marker_ ?&Node
+}
+
+pub fn ListItemBox.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &ListItemBox {
+	return &ListItemBox{
+		BlockContainer: BlockContainer{
+			Box: Box{
+				NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
+					NodeWithStyle: NodeWithStyle{
+						Node:             Node{
+							document_:           document
+							dom_node_:           dom_node
+							has_style_:          true
+							is_box_:             true
+							is_block_container_: true
+							is_list_item_box_:   true
+						}
+						computed_values_: computed_values
+					}
+				}
+			}
+		}
+	}
+}
+
+pub fn (n &Node) is_list_item_box() bool {
+	return n.is_list_item_box_
+}
+
+pub fn (n &Node) is_replaced_box() bool {
+	return n.is_replaced_box_
+}
+
+pub fn (n &Node) is_navigable_container_viewport() bool {
+	return n.is_navigable_container_viewport_
+}
+
+pub fn (n &Node) is_image_box() bool {
+	return n.is_image_box_
+}
+
+pub fn (n &Node) is_replaced_box_with_children() bool {
+	return n.is_replaced_box_ && n.can_have_children()
+}
+
+pub fn (n &Node) is_fieldset_box() bool {
+	return n.is_fieldset_box_
+}
+
+pub fn (n &Node) is_legend_box() bool {
+	return n.is_legend_box_
+}
+
+pub fn (n &Node) is_textarea_box() bool {
+	return n.is_textarea_box_
+}
+
+pub fn (n &Node) is_text_input_box() bool {
+	return n.is_text_input_box_
+}
+
+pub fn (n &Node) is_table_wrapper() bool {
+	return n.is_table_wrapper_
+}
+
+pub fn (n &Node) is_list_item_marker_box() bool {
+	return n.is_list_item_marker_box_
+}
+
+pub fn (n &Node) as_list_item_marker_box() ?&ListItemMarkerBox {
+	if !n.is_list_item_marker_box_ {
+		return none
+	}
+	return unsafe { &ListItemMarkerBox(n) }
+}
+
+pub fn (n &Node) as_list_item_box() ?&ListItemBox {
+	if !n.is_list_item_box_ {
+		return none
+	}
+	return unsafe { &ListItemBox(n) }
+}
+
+pub fn (n &ListItemBox) marker() ?&Node {
+	return n.marker_
+}
+
+pub fn (mut n ListItemBox) set_marker(marker ?&Node) {
+	n.marker_ = marker
+}
+
 // --- Viewport (Layout/Viewport.h) : BlockContainer ---
 //
 // The layout tree's root: a block container whose DOM node is the Document itself and whose content box is
-// the viewport (initial containing block). C++ Viewport also builds find-in-page text_blocks and creates a
-// ViewportPaintable — both deferred (text-block extraction and painting aren't ported yet).
+// the viewport (initial containing block).
+pub struct TextPosition {
+pub:
+	dom_node     &dom.Text
+	start_offset int
+}
+
+pub struct TextBlock {
+pub:
+	text      string
+	positions []TextPosition
+}
+
+struct ViewportTextBlockBuilder {
+mut:
+	current_text           string
+	current_start_position int
+	text_positions         []TextPosition
+	text_blocks            []TextBlock
+}
+
 @[heap]
 pub struct Viewport {
 	BlockContainer
+mut:
+	text_blocks_ ?[]TextBlock
 }
 
 // Viewport(DOM::Document&, ComputedProperties) — its DOM node is the document, per Viewport.cpp.
@@ -363,6 +1487,73 @@ pub fn (n &Node) as_viewport() ?&Viewport {
 	return unsafe { &Viewport(n) }
 }
 
+fn (mut builder ViewportTextBlockBuilder) flush() {
+	if builder.current_text.len == 0 {
+		return
+	}
+	builder.text_blocks << TextBlock{
+		text:      builder.current_text
+		positions: builder.text_positions.clone()
+	}
+	builder.current_start_position = 0
+	builder.text_positions.clear()
+	builder.current_text = ''
+}
+
+fn collect_viewport_text_blocks(node &Node, mut builder ViewportTextBlockBuilder) {
+	// Upstream requires a visible paintable. The typed V layout tree is itself the
+	// paintable source, so computed visibility is the equivalent visibility test.
+	if node.display().is_none() || node.computed_values().visibility() != .visible {
+		for child in node.children() {
+			collect_viewport_text_blocks(child, mut builder)
+		}
+		return
+	}
+
+	if node.is_box() || node.is_generated_for_pseudo_element() {
+		builder.flush()
+	} else if text_node := node.as_text_node() {
+		if dom_node := text_node.dom_node() {
+			if dom_node.is_text() && !dom_node.is_inert() {
+				builder.text_positions << TextPosition{
+					dom_node:     unsafe { &dom.Text(dom_node) }
+					start_offset: if builder.text_positions.len == 0 {
+						0
+					} else {
+						builder.current_start_position
+					}
+				}
+				current_text := text_node.text_for_rendering()
+				builder.current_start_position += utf16_code_units_for_line_box(current_text).len
+				builder.current_text += current_text
+			}
+		}
+	}
+
+	for child in node.children() {
+		collect_viewport_text_blocks(child, mut builder)
+	}
+}
+
+fn (mut viewport Viewport) update_text_blocks() {
+	mut builder := ViewportTextBlockBuilder{}
+	collect_viewport_text_blocks(unsafe { &Node(&viewport) }, mut builder)
+	builder.flush()
+	viewport.text_blocks_ = builder.text_blocks
+}
+
+pub fn (viewport &Viewport) text_blocks() []TextBlock {
+	mut mutable_viewport := unsafe { &Viewport(viewport) }
+	if mutable_viewport.text_blocks_ == none {
+		mutable_viewport.update_text_blocks()
+	}
+	return mutable_viewport.text_blocks_ or { []TextBlock{} }
+}
+
+pub fn (mut viewport Viewport) invalidate_text_blocks_cache() {
+	viewport.text_blocks_ = none
+}
+
 // --- TextNode (Layout/TextNode.h) : Node ---
 //
 // A layout node for a DOM text node. Unlike element boxes it has no independent style (it uses its
@@ -371,23 +1562,81 @@ pub fn (n &Node) as_viewport() ?&Viewport {
 pub struct TextNode {
 	Node
 pub mut:
-	text_for_rendering_ string
+	source_text_              string
+	text_for_rendering_       string
+	text_for_rendering_valid_ bool
+	font_for_rendering_       ?&platform.Font
+	is_empty_editable_        bool
 }
 
-pub fn TextNode.new(document &dom.Document, dom_text_node &dom.Node, text_for_rendering string) &TextNode {
+pub fn (n &TextNode) font_for_rendering() &platform.Font {
+	if font := n.font_for_rendering_ {
+		return font
+	}
+	mut mutable_node := unsafe { &TextNode(n) }
+	font := n.Node.first_available_font()
+	mutable_node.font_for_rendering_ = font
+	return font
+}
+
+pub fn TextNode.new(document &dom.Document, dom_text_node &dom.Node, source_text string) &TextNode {
 	return &TextNode{
-		Node:                Node{
+		Node:         Node{
 			document_:     document
 			dom_node_:     dom_text_node
 			is_text_node_: true
 		}
-		text_for_rendering_: text_for_rendering
+		source_text_: source_text
 	}
+}
+
+// TreeBuilder creates a detached DOM::Text for each generated string before it
+// creates the Layout::TextNode. The text is not inserted into the document's DOM tree.
+pub fn TextNode.new_generated(document &dom.Document, source_text string) &TextNode {
+	text := document.create_text_node(source_text)
+	return TextNode.new(document, text.as_node(), source_text)
 }
 
 // Layout::TextNode::text_for_rendering().
 pub fn (n &TextNode) text_for_rendering() string {
-	return n.text_for_rendering_
+	mut mutable_node := unsafe { &TextNode(n) }
+	if !mutable_node.text_for_rendering_valid_ {
+		mutable_node.compute_text_for_rendering()
+	}
+	return mutable_node.text_for_rendering_
+}
+
+pub fn (mut n TextNode) invalidate_text_for_rendering() {
+	n.text_for_rendering_valid_ = false
+	n.text_for_rendering_ = ''
+}
+
+fn (mut n TextNode) compute_text_for_rendering() {
+	mut text := n.source_text_
+	if dom_text := n.dom_node_ {
+		if dom_text.is_text() && unsafe { &dom.Text(dom_text) }.is_password_input() {
+			text = '●'.repeat(text.runes().len)
+			n.text_for_rendering_ = text
+			n.text_for_rendering_valid_ = true
+			return
+		}
+	}
+
+	text = apply_text_transform_for_text_node(text, n.Node.computed_values().text_transform())
+	white_space_collapse := n.Node.computed_values().white_space_collapse()
+	convert_tabs := white_space_collapse in [.collapse, .preserve_breaks, .preserve_spaces]
+	convert_newlines := white_space_collapse in [.collapse, .preserve_spaces]
+	if convert_tabs || convert_newlines {
+		mut bytes := text.bytes()
+		for i, byte in bytes {
+			if (convert_tabs && byte == `\t`) || (convert_newlines && byte == `\n`) {
+				bytes[i] = ` `
+			}
+		}
+		text = bytes.bytestr()
+	}
+	n.text_for_rendering_ = text
+	n.text_for_rendering_valid_ = true
 }
 
 pub fn (n &Node) is_text_node() bool {
@@ -401,22 +1650,93 @@ pub fn (n &Node) as_text_node() ?&TextNode {
 	return unsafe { &TextNode(n) }
 }
 
-// Collapse runs of ASCII whitespace to single spaces (the white-space: normal case of
-// TextNode::compute_text_for_rendering). FIXME: the full algorithm also honours white-space pre/nowrap/...,
-// collapses leading/trailing whitespace across element boundaries, and preserves segment breaks.
-pub fn collapse_whitespace(text string) string {
-	mut result := []u8{}
-	mut in_whitespace := false
-	for c in text {
-		if c == ` ` || c == `\t` || c == `\n` || c == `\r` || c == `\f` {
-			if !in_whitespace {
-				result << ` `
-				in_whitespace = true
-			}
+fn apply_text_transform_for_text_node(text string, transform css.TextTransform) string {
+	return match transform {
+		.none_, .full_size_kana { text }
+		.uppercase { text.to_upper() }
+		.lowercase { text.to_lower() }
+		.capitalize { titlecase_words_preserving_existing(text) }
+		.full_width { text_to_full_width(text) }
+		.math_auto { apply_math_auto_text_transform(text) }
+	}
+}
+
+fn titlecase_words_preserving_existing(text string) string {
+	mut result := []rune{}
+	mut at_word_start := true
+	for character in text.runes() {
+		if at_word_start && character.to_lower() != character.to_upper() {
+			result << character.to_title()
+			at_word_start = false
 		} else {
-			result << c
-			in_whitespace = false
+			result << character
+			if character == ` ` || character == `\t` || character == `\n` || character == `\r`
+				|| character == `\f` {
+				at_word_start = true
+			}
 		}
 	}
-	return result.bytestr()
+	return result.string()
+}
+
+fn text_to_full_width(text string) string {
+	mut result := []rune{}
+	for character in text.runes() {
+		if character == ` ` {
+			result << rune(0x3000)
+		} else if character >= rune(0x21) && character <= rune(0x7e) {
+			result << rune(int(character) + 0xfee0)
+		} else {
+			result << character
+		}
+	}
+	return result.string()
+}
+
+fn apply_math_auto_text_transform(text string) string {
+	mut result := []rune{}
+	for character in text.runes() {
+		result << math_auto_italic_code_point(character)
+	}
+	return result.string()
+}
+
+fn math_auto_italic_code_point(character rune) rune {
+	// Mathematical italic Latin letters are contiguous except lowercase h.
+	if character >= `A` && character <= `Z` {
+		return rune(0x1d434 + int(character - `A`))
+	}
+	if character >= `a` && character <= `z` {
+		if character == `h` {
+			return rune(0x210e)
+		}
+		return rune(0x1d44e + int(character - `a`))
+	}
+	// Mathematical italic Greek capitals are contiguous through rho. The
+	// mathematical theta symbol occupies the code point between rho and sigma.
+	if character >= rune(0x0391) && character <= rune(0x03a1) {
+		return rune(0x1d6e2 + int(character - rune(0x0391)))
+	}
+	if character >= rune(0x03a3) && character <= rune(0x03a9) {
+		return rune(0x1d6f4 + int(character - rune(0x03a3)))
+	}
+	// Greek lowercase letters, including final sigma, are contiguous in both
+	// Unicode ranges.
+	if character >= rune(0x03b1) && character <= rune(0x03c9) {
+		return rune(0x1d6fc + int(character - rune(0x03b1)))
+	}
+	return match character {
+		rune(0x0131) { rune(0x1d6a4) }
+		rune(0x0237) { rune(0x1d6a5) }
+		rune(0x03f4) { rune(0x1d6f3) }
+		rune(0x2207) { rune(0x1d6fb) }
+		rune(0x2202) { rune(0x1d715) }
+		rune(0x03f5) { rune(0x1d716) }
+		rune(0x03d1) { rune(0x1d717) }
+		rune(0x03f0) { rune(0x1d718) }
+		rune(0x03d5) { rune(0x1d719) }
+		rune(0x03f1) { rune(0x1d71a) }
+		rune(0x03d6) { rune(0x1d71b) }
+		else { character }
+	}
 }

@@ -46,6 +46,10 @@ pub fn DOMRectReadOnly.construct(x f64, y f64, width f64, height f64) &DOMRectRe
 	}
 }
 
+pub fn DOMRectReadOnly.construct_impl(x f64, y f64, width f64, height f64) &DOMRectReadOnly {
+	return DOMRectReadOnly.construct(x, y, width, height)
+}
+
 // DOMRectReadOnly::create(realm) — the empty rectangle (all coordinates 0).
 pub fn DOMRectReadOnly.create() &DOMRectReadOnly {
 	return &DOMRectReadOnly{}

@@ -13,12 +13,14 @@ pub enum PromiseState {
 	rejected
 }
 
-pub type ReactionSteps = fn (Value) !Value
+pub type ReactionSteps = fn(Value) !Value
 
 struct PromiseReaction {
-	on_fulfilled ?ReactionSteps
-	on_rejected  ?ReactionSteps
-	child        &Promise = unsafe { nil }
+	on_fulfilled     ReactionSteps = unsafe { nil }
+	on_rejected      ReactionSteps = unsafe { nil }
+	has_on_fulfilled bool
+	has_on_rejected  bool
+	child            &Promise = unsafe { nil }
 }
 
 struct PromiseObserver {
@@ -39,7 +41,7 @@ mut:
 
 pub fn create_promise() &Promise {
 	return &Promise{
-		state:  .pending
+		state: .pending
 		result: undefined_value()
 	}
 }
@@ -88,8 +90,8 @@ fn (mut promise Promise) settle(state PromiseState, value Value) {
 
 fn run_reaction(state PromiseState, value Value, reaction PromiseReaction) {
 	mut child := reaction.child
-	callback := if state == .fulfilled { reaction.on_fulfilled } else { reaction.on_rejected }
-	if steps := callback {
+	if (state == .fulfilled && reaction.has_on_fulfilled) || (state == .rejected && reaction.has_on_rejected) {
+		steps := if state == .fulfilled { reaction.on_fulfilled } else { reaction.on_rejected }
 		result := steps(value) or {
 			child.reject(string_value(err.msg()))
 			return
@@ -104,12 +106,18 @@ fn run_reaction(state PromiseState, value Value, reaction PromiseReaction) {
 	}
 }
 
-pub fn (mut promise Promise) react(on_fulfilled ?ReactionSteps, on_rejected ?ReactionSteps) &Promise {
+fn absent_reaction(value Value) !Value {
+	return value
+}
+
+fn (mut promise Promise) react(on_fulfilled ReactionSteps, has_on_fulfilled bool, on_rejected ReactionSteps, has_on_rejected bool) &Promise {
 	mut child := create_promise()
 	reaction := PromiseReaction{
 		on_fulfilled: on_fulfilled
-		on_rejected:  on_rejected
-		child:        child
+		on_rejected: on_rejected
+		has_on_fulfilled: has_on_fulfilled
+		has_on_rejected: has_on_rejected
+		child: child
 	}
 	if promise.state == .pending {
 		promise.reactions << reaction
@@ -120,18 +128,18 @@ pub fn (mut promise Promise) react(on_fulfilled ?ReactionSteps, on_rejected ?Rea
 }
 
 pub fn (mut promise Promise) upon_fulfillment(steps ReactionSteps) &Promise {
-	return promise.react(steps, none)
+	return promise.react(steps, true, absent_reaction, false)
 }
 
 pub fn (mut promise Promise) upon_rejection(steps ReactionSteps) &Promise {
-	return promise.react(none, steps)
+	return promise.react(absent_reaction, false, steps, true)
 }
 
 fn (mut promise Promise) observe(on_fulfilled ReactionSteps, on_rejected ReactionSteps) {
 	if promise.state == .pending {
 		promise.observers << PromiseObserver{
 			on_fulfilled: on_fulfilled
-			on_rejected:  on_rejected
+			on_rejected: on_rejected
 		}
 		return
 	}
@@ -154,9 +162,9 @@ pub fn (promise &Promise) is_rejected() bool {
 	return promise.state == .rejected
 }
 
-pub type WaitSuccessSteps = fn ([]Value)
+pub type WaitSuccessSteps = fn([]Value)
 
-pub type WaitFailureSteps = fn (Value)
+pub type WaitFailureSteps = fn(Value)
 
 @[heap]
 struct WaitForAllState {
@@ -197,7 +205,7 @@ pub fn wait_for_all(promises []&Promise, success_steps WaitSuccessSteps, failure
 		return
 	}
 	mut state := &WaitForAllState{
-		results:       []Value{len: promises.len, init: undefined_value()}
+		results: []Value{len: promises.len, init: undefined_value()}
 		success_steps: success_steps
 		failure_steps: failure_steps
 	}
@@ -228,7 +236,7 @@ pub enum OperationReturnsPromise {
 	yes
 }
 
-pub type CallbackOperation = fn (Value, []Value) !Value
+pub type CallbackOperation = fn(Value, []Value) !Value
 
 pub struct CallbackType {
 pub:
@@ -243,4 +251,51 @@ pub fn call_user_object_operation(callback CallbackType, this_argument ?Value, a
 
 pub fn invoke_callback(callback CallbackType, this_argument ?Value, arguments []Value) !Value {
 	return call_user_object_operation(callback, this_argument, arguments)
+}
+
+pub fn react_to_promise(mut promise Promise, on_fulfilled ReactionSteps, on_rejected ReactionSteps) &Promise {
+	return promise.react(on_fulfilled, true, on_rejected, true)
+}
+
+pub fn mark_promise_as_handled(mut promise Promise) {
+	promise.mark_as_handled()
+}
+
+pub fn is_promise_fulfilled(promise &Promise) bool {
+	return promise.is_fulfilled()
+}
+
+pub fn create_rejected_promise_from_exception(exception SimpleException) &Promise {
+	return create_rejected_promise(string_value(exception.message))
+}
+
+fn property_callback_stub(_ Value, _ []Value) !Value {
+	return undefined_value()
+}
+
+pub struct CallbackConversion {
+pub:
+	callback ?CallbackType
+}
+
+pub fn property_to_callback(value Value, property_key string, operation_returns_promise OperationReturnsPromise) !CallbackConversion {
+	if value.kind != .object {
+		return error('TypeError: callback owner is not an object')
+	}
+	property := value.object_value[property_key] or { return CallbackConversion{} }
+	if property.kind == .undefined {
+		return CallbackConversion{}
+	}
+	if property.kind != .callback {
+		return error('TypeError: property is not a function')
+	}
+	// Value marks callable identity, while executable closures are supplied as
+	// CallbackType by generated bindings. The stub is therefore only the raw
+	// property-conversion boundary.
+	return CallbackConversion{
+		callback: CallbackType{
+			callback:                  property_callback_stub
+			operation_returns_promise: operation_returns_promise
+		}
+	}
 }

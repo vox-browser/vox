@@ -13,6 +13,13 @@ fn test_construct_empty() {
 	assert blob.type_() == ''
 }
 
+fn test_blob_exact_constructor_and_slice_entry_points() {
+	blob := Blob.construct_impl([BlobPart.from_string('abcdef')], BlobPropertyBag{})
+	slice := blob.slice(1, 4, 'TEXT/PLAIN')
+	assert slice.raw_bytes().bytestr() == 'bcd'
+	assert slice.type_() == 'text/plain'
+}
+
 fn test_construct_from_parts() {
 	inner := Blob.create('world'.bytes(), '')
 	parts := [BlobPart.from_string('hello '), BlobPart.from_bytes('big '.bytes()),

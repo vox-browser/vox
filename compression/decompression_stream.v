@@ -29,6 +29,7 @@ mut:
 	format_    CompressionFormat
 	transform_ &ByteTransformStream = unsafe { nil }
 	input_     []u8
+	emitted_   int
 	finished_  bool
 }
 
@@ -63,6 +64,18 @@ fn (mut stream DecompressionStream) decompress_and_enqueue_chunk(chunk []u8) ! {
 		return error('TypeError: Decompression stream has already finished')
 	}
 	stream.input_ << chunk
+	// The translated codec consumes a complete byte slice rather than owning an
+	// input stream. Re-run it over the accumulated input and enqueue only the
+	// newly produced suffix once the stream is complete. Incomplete-input errors
+	// remain pending until later chunks or flush, matching a streaming decoder's
+	// need for more input.
+	if decoded := decode_bytes(stream.format_, stream.input_) {
+		if decoded.len > stream.emitted_ {
+			mut readable := stream.transform_.readable_
+			readable.enqueue(decoded[stream.emitted_..])
+			stream.emitted_ = decoded.len
+		}
+	}
 }
 
 // https://compression.spec.whatwg.org/#decompress-flush-and-enqueue
@@ -78,6 +91,9 @@ fn (mut stream DecompressionStream) decompress_flush_and_enqueue() ! {
 		return error(reason)
 	}
 	mut readable := stream.transform_.readable_
-	readable.enqueue(buffer)
+	if buffer.len > stream.emitted_ {
+		readable.enqueue(buffer[stream.emitted_..])
+		stream.emitted_ = buffer.len
+	}
 	readable.close()
 }

@@ -17,6 +17,8 @@ fn test_role_names_parsing_and_categories() {
 	assert is_landmark_role(.navigation)
 	assert is_live_region_role(.status)
 	assert is_window_role(.dialog)
+	assert is_windows_role(.dialog)
+	assert !is_windows_role(.button)
 	assert allows_name_from_content(.treeitem)
 	assert !allows_name_from_content(.application)
 	assert is_aria_attribute_name('aria-labelledby')

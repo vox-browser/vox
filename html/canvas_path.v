@@ -55,8 +55,9 @@ pub:
 @[heap]
 pub struct CanvasGfxPath {
 mut:
-	segments    []PathSegment
-	last_point_ FloatPoint
+	segments       []PathSegment
+	last_point_    FloatPoint
+	subpath_start_ FloatPoint
 }
 
 pub fn (p &CanvasGfxPath) is_empty() bool {
@@ -81,6 +82,7 @@ pub fn (mut p CanvasGfxPath) move_to(point FloatPoint) {
 		point: point
 	}
 	p.last_point_ = point
+	p.subpath_start_ = point
 }
 
 pub fn (mut p CanvasGfxPath) line_to(point FloatPoint) {
@@ -131,6 +133,9 @@ pub fn (mut p CanvasGfxPath) close() {
 	p.segments << PathSegment{
 		kind: .close_path
 	}
+	// Gfx::Path makes the start of the closed subpath the current point. This
+	// matters for a following relative SVG path instruction.
+	p.last_point_ = p.subpath_start_
 }
 
 // A copy of the path with every point transformed by `transform`.
@@ -147,6 +152,7 @@ pub fn (p &CanvasGfxPath) copy_transformed(transform CanvasAffineTransform) Canv
 		}
 	}
 	result.last_point_ = transform.map(p.last_point_)
+	result.subpath_start_ = transform.map(p.subpath_start_)
 	return result
 }
 
@@ -157,6 +163,7 @@ pub fn (mut p CanvasGfxPath) append_path(other CanvasGfxPath) {
 	}
 	if other.segments.len > 0 {
 		p.last_point_ = other.last_point_
+		p.subpath_start_ = other.subpath_start_
 	}
 }
 
@@ -187,6 +194,10 @@ pub fn CanvasPath.create_with_state(canvas_state &CanvasState) &CanvasPath {
 
 pub fn (c &CanvasPath) path() CanvasGfxPath {
 	return c.path_
+}
+
+fn (mut c CanvasPath) mutable_path_storage() &CanvasGfxPath {
+	return &c.path_
 }
 
 fn (c &CanvasPath) active_transform() CanvasAffineTransform {

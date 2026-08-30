@@ -218,6 +218,10 @@ fn role_definition_key(role Role, focusable bool, definitions map[string]json2.A
 }
 
 pub fn build_role_object(role Role, focusable bool, data AriaData) !&RoleType {
+	return RoleType.build_role_object(role, focusable, data)
+}
+
+pub fn RoleType.build_role_object(role Role, focusable bool, data AriaData) !&RoleType {
 	if is_abstract_role(role) {
 		return error('Cannot construct a role object for an abstract role.')
 	}

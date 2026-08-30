@@ -1,6 +1,8 @@
 @[has_globals]
 module html
 
+import dom
+
 __global (
 	media_track_change_tasks        int
 	media_track_audio_updates       int
@@ -32,6 +34,14 @@ fn reset_media_track_test_state() {
 	media_track_last_selected_video = unsafe { nil }
 }
 
+fn media_track_event_handler() &dom.CallbackType {
+	return &dom.CallbackType{
+		handle_event: fn (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			return dom.js_undefined()
+		}
+	}
+}
+
 fn test_media_track_base_metadata() {
 	base := MediaTrackBase.create(MediaTrackMetadata{
 		identifier:            42
@@ -61,6 +71,15 @@ fn test_audio_track_enabled_and_list_algorithms() {
 	list.add_track(track)
 	assert list.length() == 1
 	assert list.item(0)? == track
+	assert list.internal_get_own_property(dom.js_number(0))? == track
+	assert list.internal_get_own_property(dom.js_string('0')) == none
+	handler := media_track_event_handler()
+	list.set_onchange(handler)
+	list.set_onaddtrack(handler)
+	list.set_onremovetrack(handler)
+	assert list.onchange()? == handler
+	assert list.onaddtrack()? == handler
+	assert list.onremovetrack()? == handler
 	assert list.item(1) == none
 	assert list.get_track_by_id('7')? == track
 	assert list.has_enabled_track()
@@ -87,6 +106,14 @@ fn test_video_track_selection_and_list_algorithms() {
 	mut mutable_second := second
 	mutable_first.set_selected(true)
 	assert list.selected_index() == 0
+	assert list.internal_get_own_property(dom.js_number(0))? == first
+	handler := media_track_event_handler()
+	list.set_onchange(handler)
+	list.set_onaddtrack(handler)
+	list.set_onremovetrack(handler)
+	assert list.onchange()? == handler
+	assert list.onaddtrack()? == handler
+	assert list.onremovetrack()? == handler
 	assert media_track_change_tasks == 1
 	assert media_track_last_selected_video == first
 	mutable_second.set_selected(true)

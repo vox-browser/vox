@@ -5,6 +5,7 @@
 // resource-timing entries share the translated PerformanceTimeline buffer.
 module highresolutiontime
 
+import navigationtiming
 import performancetimeline
 import usertiming
 
@@ -35,6 +36,8 @@ pub mut:
 mut:
 	resource_timing_handler ?ResourceTimingBufferFullHandler
 	time_origin_timestamp   DOMHighResTimeStamp
+	timing_                 ?&navigationtiming.PerformanceTiming
+	navigation_             ?&navigationtiming.PerformanceNavigation
 }
 
 pub fn Performance.create(host PerformanceHost) &Performance {
@@ -54,6 +57,50 @@ pub fn Performance.construct_impl() &Performance {
 	})
 }
 
+// https://w3c.github.io/navigation-timing/#dom-performance-timing
+pub fn (mut performance Performance) timing() &navigationtiming.PerformanceTiming {
+	if timing := performance.timing_ {
+		return timing
+	}
+	value := fn [performance] (name string) f64 {
+		return f64(performance.host.navigation_timing_names[name] or { u64(0) })
+	}
+	timing := &navigationtiming.PerformanceTiming{
+		load_timing_info: navigationtiming.DocumentLoadTimingInfo{
+			navigation_start_time:               f64(performance.host.navigation_start)
+			dom_interactive_time:                value('domInteractive')
+			dom_content_loaded_event_start_time: value('domContentLoadedEventStart')
+			dom_content_loaded_event_end_time:   value('domContentLoadedEventEnd')
+			dom_complete_time:                   value('domComplete')
+			load_event_start_time:               value('loadEventStart')
+			load_event_end_time:                 value('loadEventEnd')
+		}
+		// PerformanceHost's legacy values are already wall-clock milliseconds.
+		estimated_monotonic_epoch: 0
+	}
+	performance.timing_ = timing
+	return timing
+}
+
+// https://w3c.github.io/navigation-timing/#dom-performance-navigation
+pub fn (mut performance Performance) navigation() &navigationtiming.PerformanceNavigation {
+	if navigation := performance.navigation_ {
+		return navigation
+	}
+	navigation := &navigationtiming.PerformanceNavigation{
+		type_:          navigationtiming.type_navigate
+		redirect_count: 0
+	}
+	performance.navigation_ = navigation
+	return navigation
+}
+
+// The V embedding represents the relevant WindowOrWorkerGlobalScope mixin by
+// the shared performance timeline it owns.
+pub fn (performance &Performance) window_or_worker() &performancetimeline.PerformanceTimeline {
+	return performance.timeline
+}
+
 pub fn (performance &Performance) time_origin() DOMHighResTimeStamp {
 	return performance.time_origin_timestamp
 }
@@ -71,7 +118,8 @@ pub fn (performance &Performance) to_json() PerformanceJSON {
 pub fn (mut performance Performance) mark(name string, options usertiming.PerformanceMarkOptions) !&usertiming.PerformanceMark {
 	entry := usertiming.PerformanceMark.new(name, options, performance.now(),
 		performance.host.window_context)!
-	performance.timeline.add_entry(entry.entry)
+	mut timeline := performance.window_or_worker()
+	timeline.add_entry(entry.entry)
 	return entry
 }
 
@@ -79,29 +127,51 @@ pub fn (mut performance Performance) clear_marks(name ?string) {
 	performance.remove_entries('mark', name)
 }
 
-fn (performance &Performance) convert_name_to_timestamp(name string) !DOMHighResTimeStamp {
+fn (mut performance Performance) convert_name_to_timestamp(name string) !DOMHighResTimeStamp {
 	if !performance.host.window_context {
 		return error("TypeError: '${name}' is a PerformanceTiming attribute and requires a Window")
 	}
 	if name == 'navigationStart' {
 		return 0
 	}
-	end_time := performance.host.navigation_timing_names[name] or {
-		return error("InvalidAccessError: '${name}' has not happened yet")
+	timing := performance.timing()
+	start_time := timing.navigation_start()
+	end_time := match name {
+		'unloadEventStart' { timing.unload_event_start() }
+		'unloadEventEnd' { timing.unload_event_end() }
+		'redirectStart' { timing.redirect_start() }
+		'redirectEnd' { timing.redirect_end() }
+		'fetchStart' { timing.fetch_start() }
+		'domainLookupStart' { timing.domain_lookup_start() }
+		'domainLookupEnd' { timing.domain_lookup_end() }
+		'connectStart' { timing.connect_start() }
+		'connectEnd' { timing.connect_end() }
+		'secureConnectionStart' { timing.secure_connection_start() }
+		'requestStart' { timing.request_start() }
+		'responseStart' { timing.response_start() }
+		'responseEnd' { timing.response_end() }
+		'domLoading' { timing.dom_loading() }
+		'domInteractive' { timing.dom_interactive() }
+		'domContentLoadedEventStart' { timing.dom_content_loaded_event_start() }
+		'domContentLoadedEventEnd' { timing.dom_content_loaded_event_end() }
+		'domComplete' { timing.dom_complete() }
+		'loadEventStart' { timing.load_event_start() }
+		'loadEventEnd' { timing.load_event_end() }
+		else { u64(0) }
 	}
 	if end_time == 0 {
 		return error("InvalidAccessError: '${name}' has not happened yet")
 	}
-	return f64(end_time - performance.host.navigation_start)
+	return f64(end_time - start_time)
 }
 
-pub fn (performance &Performance) convert_mark_to_timestamp(mark usertiming.StringOrTimestamp) !DOMHighResTimeStamp {
+pub fn (mut performance Performance) convert_mark_to_timestamp(mark usertiming.StringOrTimestamp) !DOMHighResTimeStamp {
 	match mark {
 		string {
 			if mark in usertiming.navigation_timing_entry_names {
 				return performance.convert_name_to_timestamp(mark)
 			}
-			tuple := performance.timeline.entry_buffers['mark'] or {
+			tuple := performance.window_or_worker().entry_buffers['mark'] or {
 				return error("SyntaxError: no PerformanceMark named '${mark}'")
 			}
 			for index := tuple.performance_entry_buffer.len - 1; index >= 0; index-- {
@@ -174,7 +244,8 @@ pub fn (mut performance Performance) measure(name string, start_or_options ?Star
 	}
 	detail := if measure_options := options { measure_options.detail } else { none }
 	entry := usertiming.PerformanceMeasure.new(name, start_time, end_time - start_time, detail)
-	performance.timeline.add_entry(entry.entry)
+	mut timeline := performance.window_or_worker()
+	timeline.add_entry(entry.entry)
 	return entry
 }
 
@@ -188,12 +259,12 @@ pub fn (mut performance Performance) clear_resource_timings() {
 
 pub fn (mut performance Performance) set_resource_timing_buffer_size(max_size u32) {
 	performance.resource_timing_buffer_size = max_size
-	mut tuple := performance.timeline.entry_buffers['resource'] or {
+	mut tuple := performance.window_or_worker().entry_buffers['resource'] or {
 		performancetimeline.PerformanceEntryTuple{}
 	}
 	tuple.max_buffer_size = u64(max_size)
 	unsafe {
-		performance.timeline.entry_buffers['resource'] = tuple
+		performance.window_or_worker().entry_buffers['resource'] = tuple
 	}
 }
 
@@ -211,15 +282,16 @@ pub fn (performance &Performance) dispatch_resource_timing_buffer_full() {
 }
 
 pub fn (mut performance Performance) add_entry(entry &performancetimeline.PerformanceEntry) {
+	mut timeline := performance.window_or_worker()
 	if entry.entry_type == 'resource' {
 		bounded_entry := &performancetimeline.PerformanceEntry{
 			...entry
 			max_buffer_size: u64(performance.resource_timing_buffer_size)
 		}
-		performance.timeline.add_entry(bounded_entry)
+		timeline.add_entry(bounded_entry)
 		return
 	}
-	performance.timeline.add_entry(entry)
+	timeline.add_entry(entry)
 }
 
 pub fn (performance &Performance) get_entries() []&performancetimeline.PerformanceEntry {
@@ -236,19 +308,20 @@ pub fn (performance &Performance) get_entries_by_name(name string, kind ?string)
 
 fn (mut performance Performance) remove_entries(kind string, name ?string) {
 	if expected := name {
-		mut tuple := performance.timeline.entry_buffers[kind] or { return }
+		mut tuple := performance.window_or_worker().entry_buffers[kind] or { return }
 		tuple.performance_entry_buffer = tuple.performance_entry_buffer.filter(it.name != expected)
 		unsafe {
-			performance.timeline.entry_buffers[kind] = tuple
+			performance.window_or_worker().entry_buffers[kind] = tuple
 		}
 	} else {
-		performance.timeline.entry_buffers.delete(kind)
+		mut timeline := performance.window_or_worker()
+		timeline.entry_buffers.delete(kind)
 	}
 }
 
 fn (performance &Performance) filtered_entries(name ?string, kind ?string) []&performancetimeline.PerformanceEntry {
 	mut result := []&performancetimeline.PerformanceEntry{}
-	for entry_kind, tuple in performance.timeline.entry_buffers {
+	for entry_kind, tuple in performance.window_or_worker().entry_buffers {
 		if expected_type := kind {
 			if expected_type != entry_kind {
 				continue

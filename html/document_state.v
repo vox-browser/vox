@@ -56,8 +56,8 @@ pub struct DocumentState {
 pub mut:
 	document                 ?&dom.Document
 	history_policy_container HistoryPolicyContainer = DocumentStateClient.client
-	request_referrer         RequestReferrer        = RequestReferrerClient.client
-	request_referrer_policy  ReferrerPolicy         = .strict_origin_when_cross_origin
+	request_referrer         RequestReferrer = RequestReferrerClient.client
+	request_referrer_policy  ReferrerPolicy = .strict_origin_when_cross_origin
 	initiator_origin         ?dom.Origin
 	origin                   ?dom.Origin
 	about_base_url           ?dom.URL
@@ -72,24 +72,120 @@ pub fn (state &DocumentState) clone() &DocumentState {
 	mut nested_histories := []NestedHistory{cap: state.nested_histories.len}
 	for history in state.nested_histories {
 		nested_histories << NestedHistory{
-			id:      history.id
+			id: history.id
 			entries: history.entries.clone()
 		}
 	}
 	return &DocumentState{
-		document:                 state.document
+		document: state.document
 		history_policy_container: state.history_policy_container
-		request_referrer:         state.request_referrer
-		request_referrer_policy:  state.request_referrer_policy
-		initiator_origin:         state.initiator_origin
-		origin:                   state.origin
-		about_base_url:           state.about_base_url
-		nested_histories:         nested_histories
-		resource:                 state.resource
-		reload_pending:           state.reload_pending
-		ever_populated:           state.ever_populated
-		navigable_target_name:    state.navigable_target_name
+		request_referrer: state.request_referrer
+		request_referrer_policy: state.request_referrer_policy
+		initiator_origin: state.initiator_origin
+		origin: state.origin
+		about_base_url: state.about_base_url
+		nested_histories: nested_histories
+		resource: state.resource
+		reload_pending: state.reload_pending
+		ever_populated: state.ever_populated
+		navigable_target_name: state.navigable_target_name
 	}
+}
+
+pub fn (state &DocumentState) document() ?&dom.Document {
+	return state.document
+}
+
+pub fn (mut state DocumentState) set_document(document ?&dom.Document) {
+	state.document = document
+}
+
+pub fn (state &DocumentState) history_policy_container() HistoryPolicyContainer {
+	return state.history_policy_container
+}
+
+pub fn (mut state DocumentState) set_history_policy_container(value HistoryPolicyContainer) {
+	state.history_policy_container = value
+}
+
+pub fn (state &DocumentState) request_referrer() RequestReferrer {
+	return state.request_referrer
+}
+
+pub fn (mut state DocumentState) set_request_referrer(value RequestReferrer) {
+	state.request_referrer = value
+}
+
+pub fn (state &DocumentState) request_referrer_policy() ReferrerPolicy {
+	return state.request_referrer_policy
+}
+
+pub fn (mut state DocumentState) set_request_referrer_policy(value ReferrerPolicy) {
+	state.request_referrer_policy = value
+}
+
+pub fn (state &DocumentState) initiator_origin() ?dom.Origin {
+	return state.initiator_origin
+}
+
+pub fn (mut state DocumentState) set_initiator_origin(value ?dom.Origin) {
+	state.initiator_origin = value
+}
+
+pub fn (state &DocumentState) origin() ?dom.Origin {
+	return state.origin
+}
+
+pub fn (mut state DocumentState) set_origin(value ?dom.Origin) {
+	state.origin = value
+}
+
+pub fn (state &DocumentState) about_base_url() ?dom.URL {
+	return state.about_base_url
+}
+
+pub fn (mut state DocumentState) set_about_base_url(value ?dom.URL) {
+	state.about_base_url = value
+}
+
+pub fn (state &DocumentState) nested_histories() []NestedHistory {
+	return state.nested_histories.clone()
+}
+
+pub fn (mut state DocumentState) set_nested_histories(value []NestedHistory) {
+	state.nested_histories = value.clone()
+}
+
+pub fn (state &DocumentState) resource() DocumentResource {
+	return state.resource
+}
+
+pub fn (mut state DocumentState) set_resource(value DocumentResource) {
+	state.resource = value
+}
+
+pub fn (state &DocumentState) reload_pending() bool {
+	return state.reload_pending
+}
+
+pub fn (mut state DocumentState) set_reload_pending(value bool) {
+	state.reload_pending = value
+}
+
+pub fn (state &DocumentState) ever_populated() bool {
+	return state.ever_populated
+}
+
+pub fn (mut state DocumentState) set_ever_populated(value bool) {
+	state.ever_populated = value
+}
+
+pub fn (state &DocumentState) navigable_target_name() string {
+	return state.navigable_target_name
+}
+
+pub fn (mut state DocumentState) set_navigable_target_name(value string) {
+	state.navigable_target_name = value
 }
 
 pub enum StructuredSerializeValueTag {
@@ -113,6 +209,7 @@ pub enum StructuredSerializeValueTag {
 	object
 	object_reference
 	array_buffer
+	array_buffer_view
 }
 
 pub struct SerializationRecord {
@@ -149,10 +246,10 @@ pub mut:
 	step                             SessionHistoryStep = SessionHistoryEntryPending.pending
 	url                              dom.URL
 	document_state                   ?&DocumentState
-	classic_history_api_state        SerializationRecord   = serialized_null()
-	navigation_api_state             SerializationRecord   = serialized_undefined()
-	navigation_api_key               string                = rand.uuid_v4()
-	navigation_api_id                string                = rand.uuid_v4()
+	classic_history_api_state        SerializationRecord = serialized_null()
+	navigation_api_state             SerializationRecord = serialized_undefined()
+	navigation_api_key               string = rand.uuid_v4()
+	navigation_api_id                string = rand.uuid_v4()
 	scroll_restoration_mode          ScrollRestorationMode = .auto
 	policy_container                 ?&PolicyContainer
 	browsing_context_name            ?string
@@ -165,22 +262,110 @@ pub fn (entry &SessionHistoryEntry) clone() &SessionHistoryEntry {
 	}
 
 	return &SessionHistoryEntry{
-		step:                             entry.step
-		url:                              entry.url
-		document_state:                   document_state.clone()
-		classic_history_api_state:        SerializationRecord{
+		step: entry.step
+		url: entry.url
+		document_state: document_state.clone()
+		classic_history_api_state: SerializationRecord{
 			data: entry.classic_history_api_state.data.clone()
 		}
-		navigation_api_state:             SerializationRecord{
+		navigation_api_state: SerializationRecord{
 			data: entry.navigation_api_state.data.clone()
 		}
-		navigation_api_key:               entry.navigation_api_key
-		navigation_api_id:                entry.navigation_api_id
-		scroll_restoration_mode:          entry.scroll_restoration_mode
-		policy_container:                 entry.policy_container
-		browsing_context_name:            entry.browsing_context_name
+		navigation_api_key: entry.navigation_api_key
+		navigation_api_id: entry.navigation_api_id
+		scroll_restoration_mode: entry.scroll_restoration_mode
+		policy_container: entry.policy_container
+		browsing_context_name: entry.browsing_context_name
 		original_source_browsing_context: entry.original_source_browsing_context
 	}
+}
+
+pub fn (entry &SessionHistoryEntry) step() SessionHistoryStep {
+	return entry.step
+}
+
+pub fn (mut entry SessionHistoryEntry) set_step(value SessionHistoryStep) {
+	entry.step = value
+}
+
+pub fn (entry &SessionHistoryEntry) url() dom.URL {
+	return entry.url
+}
+
+pub fn (mut entry SessionHistoryEntry) set_url(value dom.URL) {
+	entry.url = value
+}
+
+pub fn (entry &SessionHistoryEntry) document_state() ?&DocumentState {
+	return entry.document_state
+}
+
+pub fn (mut entry SessionHistoryEntry) set_document_state(value ?&DocumentState) {
+	entry.document_state = value
+}
+
+pub fn (entry &SessionHistoryEntry) classic_history_api_state() SerializationRecord {
+	return entry.classic_history_api_state
+}
+
+pub fn (mut entry SessionHistoryEntry) set_classic_history_api_state(value SerializationRecord) {
+	entry.classic_history_api_state = value
+}
+
+pub fn (entry &SessionHistoryEntry) navigation_api_state() SerializationRecord {
+	return entry.navigation_api_state
+}
+
+pub fn (mut entry SessionHistoryEntry) set_navigation_api_state(value SerializationRecord) {
+	entry.navigation_api_state = value
+}
+
+pub fn (entry &SessionHistoryEntry) navigation_api_key() string {
+	return entry.navigation_api_key
+}
+
+pub fn (mut entry SessionHistoryEntry) set_navigation_api_key(value string) {
+	entry.navigation_api_key = value
+}
+
+pub fn (entry &SessionHistoryEntry) navigation_api_id() string {
+	return entry.navigation_api_id
+}
+
+pub fn (mut entry SessionHistoryEntry) set_navigation_api_id(value string) {
+	entry.navigation_api_id = value
+}
+
+pub fn (entry &SessionHistoryEntry) scroll_restoration_mode() ScrollRestorationMode {
+	return entry.scroll_restoration_mode
+}
+
+pub fn (mut entry SessionHistoryEntry) set_scroll_restoration_mode(value ScrollRestorationMode) {
+	entry.scroll_restoration_mode = value
+}
+
+pub fn (entry &SessionHistoryEntry) policy_container() ?&PolicyContainer {
+	return entry.policy_container
+}
+
+pub fn (mut entry SessionHistoryEntry) set_policy_container(value ?&PolicyContainer) {
+	entry.policy_container = value
+}
+
+pub fn (entry &SessionHistoryEntry) browsing_context_name() ?string {
+	return entry.browsing_context_name
+}
+
+pub fn (mut entry SessionHistoryEntry) set_browsing_context_name(value ?string) {
+	entry.browsing_context_name = value
+}
+
+pub fn (entry &SessionHistoryEntry) original_source_browsing_context() voidptr {
+	return entry.original_source_browsing_context
+}
+
+pub fn (mut entry SessionHistoryEntry) set_original_source_browsing_context(value voidptr) {
+	entry.original_source_browsing_context = value
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#she-document

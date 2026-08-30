@@ -142,3 +142,15 @@ fn test_text_content_utf16_length_and_geometry_reference() {
 	assert resolve_geometry_reference('#shape', document) or { Element{} }.tag == 'path'
 	assert resolve_geometry_reference('#not-shape', document) == none
 }
+
+fn test_affine_transform_maps_rotated_rect_from_all_four_corners() {
+	transform := AffineTransform{}.translated(20, 10).multiply(Transform{
+		kind:   .rotate
+		values: [f64(90), 0, 0, 0, 0, 0]!
+	}.matrix())
+	mapped := transform.map_rect(Rect{ x: 0, y: 0, width: 30, height: 10 })
+	assert math.abs(mapped.x - 10) < 0.0001
+	assert math.abs(mapped.y - 10) < 0.0001
+	assert math.abs(mapped.width - 10) < 0.0001
+	assert math.abs(mapped.height - 30) < 0.0001
+}

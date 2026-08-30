@@ -1,5 +1,7 @@
 module css
 
+import dom
+
 // Translated from:
 // - Libraries/LibWeb/CSS/CounterStyle.cpp
 // - Libraries/LibWeb/CSS/CounterStyle.h
@@ -1104,6 +1106,125 @@ pub fn generate_a_counter_representation(counter_style ?CounterStyle, registered
 		fallback_history)
 }
 
+fn collect_counter_style_definitions_from_sheet(sheet &CSSStyleSheet, context ComputationContext, definitions_ptr &map[string]CounterStyleDefinition) {
+	sheet.for_each_effective_counter_style_at_rule(fn [context, definitions_ptr] (rule &CSSRule) {
+		counter_style_rule := rule.counter_style_rule_value() or { return }
+		definition := CounterStyleDefinition.from_counter_style_rule(counter_style_rule, context) or {
+			return
+		}
+		unsafe {
+			mut definitions := *definitions_ptr
+			definitions[definition.name()] = definition
+			*definitions_ptr = definitions
+		}
+	})
+}
+
+struct ComplexPredefinedCounterStyle {
+	name     string
+	type_    ExtendedCJKCounterStyleAlgorithmType
+	negative string
+	suffix   string
+}
+
+fn define_complex_predefined_counter_styles(mut definitions map[string]CounterStyleDefinition) {
+	extended_range := CounterStyleDefinitionRange(CounterStyleRangeEntries{
+		entries: [CounterStyleRangeEntry{-9999999999999999, 9999999999999999}]
+	})
+	definitions['ethiopic-numeric'] = CounterStyleDefinition.create('ethiopic-numeric',
+		CounterStyleAlgorithmOrExtends(CounterStyleAlgorithm(EthiopicNumericCounterStyleAlgorithm{})),
+		none, none, '/ ', CounterStyleDefinitionRange(CounterStyleRangeEntries{
+		entries: [CounterStyleRangeEntry{1, counter_i64_max}]
+	}), none, none)
+	for entry in [
+		ComplexPredefinedCounterStyle{'simp-chinese-informal', .simp_chinese_informal, '负', '、'},
+		ComplexPredefinedCounterStyle{'simp-chinese-formal', .simp_chinese_formal, '负', '、'},
+		ComplexPredefinedCounterStyle{'trad-chinese-informal', .trad_chinese_informal, '負', '、'},
+		ComplexPredefinedCounterStyle{'trad-chinese-formal', .trad_chinese_formal, '負', '、'},
+		ComplexPredefinedCounterStyle{'cjk-ideographic', .trad_chinese_informal, '負', '、'},
+		ComplexPredefinedCounterStyle{'japanese-informal', .japanese_informal, 'マイナス', '、'},
+		ComplexPredefinedCounterStyle{'japanese-formal', .japanese_formal, 'マイナス', '、'},
+		ComplexPredefinedCounterStyle{'korean-hangul-formal', .korean_hangul_formal, '마이너스 ', ', '},
+		ComplexPredefinedCounterStyle{'korean-hanja-informal', .korean_hanja_informal, '마이너스 ', ', '},
+		ComplexPredefinedCounterStyle{'korean-hanja-formal', .korean_hanja_formal, '마이너스 ', ', '},
+	] {
+		definitions[entry.name] = CounterStyleDefinition.create(entry.name, CounterStyleAlgorithmOrExtends(CounterStyleAlgorithm(ExtendedCJKCounterStyleAlgorithm{
+			type_: entry.type_
+		})), CounterStyleNegativeSign{
+			prefix: entry.negative
+			suffix: ''
+		}, none, entry.suffix, extended_range, 'cjk-decimal', none)
+	}
+}
+
+// DOM::Document::build_counter_style_cache(). The concrete cache remains on
+// the CSS side of the module boundary.
+pub fn registered_counter_styles_for_document(document &dom.Document) map[string]CounterStyle {
+	mut definitions := map[string]CounterStyleDefinition{}
+	definitions_ptr := &definitions
+	context := ComputationContext{
+		length_resolution_context: LengthResolutionContext.for_document(document)
+	}
+	scope := css_style_scope_for_document(document)
+	for origin in [CascadeOrigin.user_agent, .user] {
+		for sheet in scope.stylesheets_for_cascade_origin(origin) {
+			collect_counter_style_definitions_from_sheet(sheet, context, definitions_ptr)
+		}
+	}
+	define_complex_predefined_counter_styles(mut definitions)
+	for sheet in scope.stylesheets_for_cascade_origin(.author) {
+		collect_counter_style_definitions_from_sheet(sheet, context, definitions_ptr)
+	}
+
+	mut registered := map[string]CounterStyle{}
+	// Default.css defines decimal; retain the spec fallback even if a reduced
+	// embedding omits that stylesheet.
+	registered['decimal'] = CounterStyle.decimal()
+	registered['disc'] = CounterStyle.disc()
+	mut extending := []CounterStyleDefinition{}
+	for _, definition in definitions {
+		algorithm := definition.algorithm()
+		if algorithm is CounterStyleAlgorithm {
+			registered[definition.name()] = CounterStyle.from_counter_style_definition(definition,
+				registered)
+		} else {
+			extending << definition
+		}
+	}
+	for extending.len > 0 {
+		mut made_progress := false
+		mut remaining := []CounterStyleDefinition{}
+		for definition in extending {
+			algorithm := definition.algorithm()
+			extends := if algorithm is CounterStyleSystemExtends {
+				algorithm.name
+			} else {
+				'decimal'
+			}
+			if extends in registered {
+				registered[definition.name()] = CounterStyle.from_counter_style_definition(definition,
+					registered)
+				made_progress = true
+			} else {
+				remaining << definition
+			}
+		}
+		if !made_progress {
+			// A missing extension or an extends cycle computes as extending decimal.
+			for mut definition in remaining {
+				definition.set_algorithm(CounterStyleAlgorithmOrExtends(CounterStyleSystemExtends{
+					name: 'decimal'
+				}))
+				registered[definition.name()] = CounterStyle.from_counter_style_definition(definition,
+					registered)
+			}
+			break
+		}
+		extending = remaining.clone()
+	}
+	return registered
+}
+
 // --- CountersSet ---
 
 // "UAs may have implementation-specific limits on the maximum or minimum value of a counter.
@@ -1249,11 +1370,95 @@ pub fn (counters_set CountersSet) is_empty() bool {
 	return counters_set.counters_.len == 0
 }
 
+fn counters_set_from_dom(wrapper &dom.CSSCountersSet_) ?&CountersSet {
+	if wrapper.css_handle == unsafe { nil } {
+		return none
+	}
+	return unsafe { &CountersSet(wrapper.css_handle) }
+}
+
+// CSS owns the concrete CountersSet while DOM stores an opaque holder to avoid
+// the dom -> css import cycle, just like the ComputedProperties bridge.
+pub fn counters_set_for_abstract_element(abstract_element &dom.AbstractElement) ?CountersSet {
+	wrapper := abstract_element.counters_set() or { return none }
+	set := counters_set_from_dom(wrapper) or { return none }
+	return *set
+}
+
+pub fn set_counters_set_for_abstract_element(mut abstract_element dom.AbstractElement, counters_set ?CountersSet) {
+	if set := counters_set {
+		if set.is_empty() {
+			abstract_element.set_counters_set(none)
+			return
+		}
+		stored := &CountersSet{
+			counters_: set.counters_.clone()
+		}
+		abstract_element.set_counters_set(dom.CSSCountersSet_.with_css_handle(voidptr(stored)))
+		return
+	}
+	abstract_element.set_counters_set(none)
+}
+
+fn ensure_counters_set_for_abstract_element(abstract_element &dom.AbstractElement) &CountersSet {
+	if wrapper := abstract_element.counters_set() {
+		if set := counters_set_from_dom(wrapper) {
+			return set
+		}
+	}
+	stored := &CountersSet{}
+	mut mutable_abstract_element := unsafe { &dom.AbstractElement(abstract_element) }
+	mutable_abstract_element.set_counters_set(dom.CSSCountersSet_.with_css_handle(voidptr(stored)))
+	return stored
+}
+
 pub struct CounterOperation {
 pub mut:
 	name        string
 	is_reversed bool
 	value       ?CounterValue
+}
+
+// TreeBuilder supplies the layout-tree neighbors because counter inheritance
+// is defined over the layout tree, not the DOM tree. This invokes the literal
+// translated resolve_counters()/inherit_counters() algorithms above and then
+// publishes their result through DOM::AbstractElement.
+pub fn resolve_counters_for_layout(mut abstract_element dom.AbstractElement, computed &ComputedProperties, origin CounterOriginatingElement, has_parent_element bool, parent_counters ?CountersSet, previous_sibling_counters ?CountersSet, previous_element_counters ?CountersSet) ?CountersSet {
+	mut reset := []CounterOperation{}
+	for counter in computed.counter_data(.counter_reset) {
+		reset << CounterOperation{
+			name:        counter.name
+			is_reversed: counter.is_reversed
+			value:       counter.value
+		}
+	}
+	mut increment := []CounterOperation{}
+	for counter in computed.counter_data(.counter_increment) {
+		increment << CounterOperation{
+			name:  counter.name
+			value: counter.value
+		}
+	}
+	mut set := []CounterOperation{}
+	for counter in computed.counter_data(.counter_set) {
+		set << CounterOperation{
+			name:  counter.name
+			value: counter.value
+		}
+	}
+	resolved := resolve_counters(CounterElement{
+		origin:                         origin
+		generates_box:                  !computed.display().is_none()
+		parent_counters:                parent_counters
+		previous_sibling_in_tree_order: previous_sibling_counters
+		previous_element_in_tree_order: previous_element_counters
+		counter_reset:                  reset
+		counter_increment:              increment
+		counter_set:                    set
+		has_parent_element:             has_parent_element
+	})
+	set_counters_set_for_abstract_element(mut abstract_element, resolved.counters_set)
+	return resolved.counters_set
 }
 
 // Narrow stand-in for the DOM/Layout/style hooks used by resolve_counters()/inherit_counters().
@@ -1832,6 +2037,31 @@ pub fn (style_value CounterStyleValue) resolve(mut context CounterStyleResolutio
 		parts << counter_string
 	}
 	return parts.join(style_value.join_string_)
+}
+
+pub fn (style_value CounterStyleValue) resolve_for_abstract_element(abstract_element &dom.AbstractElement, registered_counter_styles map[string]CounterStyle) string {
+	mut counters_set := ensure_counters_set_for_abstract_element(abstract_element)
+	parent := abstract_element.parent_element()
+	origin := CounterOriginatingElement{
+		id:                abstract_element.element().as_node().unique_id().value() * 16 +
+			if pseudo := abstract_element.pseudo_element() { i64(int(pseudo) + 1) } else { 0 }
+		parent_id:         if parent_element := parent {
+			parent_element.as_node().unique_id().value() * 16
+		} else {
+			none
+		}
+		debug_description: abstract_element.debug_description()
+	}
+	mut context := CounterStyleResolutionContext{
+		counters_set:              *counters_set
+		registered_counter_styles: registered_counter_styles
+		originating_element:       origin
+	}
+	result := style_value.resolve(mut context)
+	unsafe {
+		*counters_set = context.counters_set
+	}
+	return result
 }
 
 // https://drafts.csswg.org/cssom-1/#ref-for-typedef-counter

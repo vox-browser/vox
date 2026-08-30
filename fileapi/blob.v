@@ -191,6 +191,10 @@ pub fn Blob.construct(blob_parts ?[]BlobPart, options ?BlobPropertyBag) &Blob {
 	return Blob.create(byte_buffer, type_)
 }
 
+pub fn Blob.construct_impl(blob_parts ?[]BlobPart, options ?BlobPropertyBag) &Blob {
+	return Blob.construct(blob_parts, options)
+}
+
 // https://w3c.github.io/FileAPI/#dfn-size
 pub fn (blob &Blob) size() u64 {
 	return u64(blob.byte_buffer.len)
@@ -240,6 +244,10 @@ pub fn (blob &Blob) slice_blob(start ?i64, end ?i64, content_type ?string) &Blob
 	// 6. Return a new Blob over the span consecutive bytes from relativeStart.
 	byte_buffer := blob.byte_buffer[int(relative_start)..int(relative_start + span)]
 	return Blob.create(byte_buffer, relative_content_type)
+}
+
+pub fn (blob &Blob) slice(start ?i64, end ?i64, content_type ?string) &Blob {
+	return blob.slice_blob(start, end, content_type)
 }
 
 fn max_i64(a i64, b i64) i64 {

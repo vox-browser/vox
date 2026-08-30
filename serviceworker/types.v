@@ -116,6 +116,22 @@ pub fn (object &ServiceWorkerRegistration) active() ?&ServiceWorker {
 	return object.active_
 }
 
+pub fn (object &ServiceWorkerRegistration) registration() &Registration {
+	return object.registration_
+}
+
+pub fn (mut object ServiceWorkerRegistration) set_installing(worker ?&ServiceWorker) {
+	object.installing_ = worker
+}
+
+pub fn (mut object ServiceWorkerRegistration) set_waiting(worker ?&ServiceWorker) {
+	object.waiting_ = worker
+}
+
+pub fn (mut object ServiceWorkerRegistration) set_active(worker ?&ServiceWorker) {
+	object.active_ = worker
+}
+
 pub fn (object &ServiceWorkerRegistration) scope() string {
 	return object.registration_.scope_url()
 }

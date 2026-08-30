@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 //
 // Translated from Libraries/LibWeb/DOM/Element.cpp
-
 module dom
 
 import rand
@@ -13,7 +12,6 @@ import math
 import strings
 
 // --- Types needed by Element that are NOT already in document.v ---
-
 pub struct QualifiedName {
 pub mut:
 	local_name            string
@@ -51,8 +49,7 @@ pub fn (n &NamedNodeMap) is_empty() bool {
 }
 
 fn (n &NamedNodeMap) should_lowercase_attribute_names() bool {
-	return n.element != unsafe { nil } && n.element.is_html_element()
-		&& n.element.document().is_html_document()
+	return n.element != unsafe { nil } && n.element.is_html_element() && n.element.document().is_html_document()
 }
 
 fn (n &NamedNodeMap) effective_attribute_name(qualified_name string) string {
@@ -82,8 +79,7 @@ fn (n &NamedNodeMap) attribute_index_by_name(qualified_name string) ?int {
 fn (n &NamedNodeMap) attribute_index_by_namespace(namespace_ ?string, local_name string) ?int {
 	normalized_namespace := normalize_attribute_namespace(namespace_)
 	for index, attribute in n.attrs {
-		if option_string_equal(attribute.namespace_uri_, normalized_namespace)
-			&& attribute.local_name_ == local_name {
+		if option_string_equal(attribute.namespace_uri_, normalized_namespace) && attribute.local_name_ == local_name {
 			return index
 		}
 	}
@@ -165,8 +161,7 @@ pub fn (mut a Attr_) set_owner_element(element ?&Element) {
 
 pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, new_value ?string) {
 	mut element_node := unsafe { &Node(element) }
-	element_node.queue_mutation_record(.attributes, a.local_name_, a.namespace_uri_, old_value,
-		[]&Node{}, []&Node{}, unsafe { nil }, unsafe { nil })
+	element_node.queue_mutation_record(.attributes, a.local_name_, a.namespace_uri_, old_value, []&Node{}, []&Node{}, unsafe { nil }, unsafe { nil })
 
 	mut mutable_element := unsafe { &Element(element) }
 	if element.is_custom() {
@@ -177,8 +172,7 @@ pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, 
 			a.namespace_uri_ or { '' },
 		])
 	}
-	mutable_element.run_attribute_change_steps(a.local_name_, old_value, new_value,
-		a.namespace_uri_)
+	mutable_element.run_attribute_change_steps(a.local_name_, old_value, new_value, a.namespace_uri_)
 }
 
 pub struct DOMTokenList_ {
@@ -232,7 +226,7 @@ pub struct ScrollIntoViewOptions {
 pub mut:
 	block    ScrollLogicalPosition = .start
 	inline_  ScrollLogicalPosition = .nearest
-	behavior ScrollBehavior        = .auto_
+	behavior ScrollBehavior = .auto_
 }
 
 pub enum ScrollLogicalPosition {
@@ -299,6 +293,17 @@ pub mut:
 	observed_attributes []string
 }
 
+pub fn CustomElementDefinition.create(name string, local_name string, observed_attributes []string, form_associated bool, disable_internals bool, disable_shadow bool) &CustomElementDefinition {
+	return &CustomElementDefinition{
+		name_: name
+		local_name_: local_name
+		observed_attributes: observed_attributes.clone()
+		form_associated_: form_associated
+		disable_internals_: disable_internals
+		disable_shadow_: disable_shadow
+	}
+}
+
 pub fn (d &CustomElementDefinition) disable_shadow() bool {
 	return d.disable_shadow_
 }
@@ -322,33 +327,63 @@ pub fn (d &CustomElementDefinition) form_associated() bool {
 	return d.form_associated_
 }
 
+pub fn (d &CustomElementDefinition) constructor() u64 {
+	// The translated registry uses stable constructor IDs instead of a JS
+	// callback object. Definitions originating in DOM-only code have ID zero.
+	return 0
+}
+
+pub fn (d &CustomElementDefinition) observed_attributes() []string {
+	return d.observed_attributes.clone()
+}
+
+pub fn (d &CustomElementDefinition) lifecycle_callbacks() []string {
+	_ = d
+	return []
+}
+
+pub fn (d &CustomElementDefinition) construction_stack() []&Element {
+	return d.construction_stack.clone()
+}
+
 @[heap]
-pub struct CustomStateSet_ {
+pub struct CustomStateSet {
 mut:
 	element_            ?&Element
 	entries_            map[string]bool
 	modification_count_ u64
 }
 
-pub fn (states &CustomStateSet_) has_state(state string) bool {
+pub fn CustomStateSet.create(element &Element) &CustomStateSet {
+	return &CustomStateSet{
+		element_: element
+		entries_: map[string]bool{}
+	}
+}
+
+pub fn (states &CustomStateSet) has_state(state string) bool {
 	return states.entries_[state]
 }
 
-pub fn (states &CustomStateSet_) size() int {
+pub fn (states &CustomStateSet) size() int {
 	return states.entries_.len
 }
 
-pub fn (states &CustomStateSet_) values() []string {
+pub fn (states &CustomStateSet) values() []string {
 	mut values := states.entries_.keys()
 	values.sort()
 	return values
 }
 
-pub fn (states &CustomStateSet_) modification_count() u64 {
+pub fn (states &CustomStateSet) set_entries() map[string]bool {
+	return states.entries_.clone()
+}
+
+pub fn (states &CustomStateSet) modification_count() u64 {
 	return states.modification_count_
 }
 
-fn (mut states CustomStateSet_) did_modify() {
+fn (mut states CustomStateSet) did_modify() {
 	states.modification_count_++
 	if element := states.element_ {
 		mut node := unsafe { &Node(element) }
@@ -356,7 +391,11 @@ fn (mut states CustomStateSet_) did_modify() {
 	}
 }
 
-pub fn (mut states CustomStateSet_) add(state string) ! {
+pub fn (mut states CustomStateSet) on_set_modified_from_js() {
+	states.did_modify()
+}
+
+pub fn (mut states CustomStateSet) add(state string) ! {
 	if states.entries_[state] {
 		return
 	}
@@ -364,7 +403,7 @@ pub fn (mut states CustomStateSet_) add(state string) ! {
 	states.did_modify()
 }
 
-pub fn (mut states CustomStateSet_) delete(state string) bool {
+pub fn (mut states CustomStateSet) delete(state string) bool {
 	if !states.entries_[state] {
 		return false
 	}
@@ -373,7 +412,7 @@ pub fn (mut states CustomStateSet_) delete(state string) bool {
 	return true
 }
 
-pub fn (mut states CustomStateSet_) clear() {
+pub fn (mut states CustomStateSet) clear() {
 	if states.entries_.len == 0 {
 		return
 	}
@@ -384,8 +423,10 @@ pub fn (mut states CustomStateSet_) clear() {
 @[heap]
 pub struct CSSStyleProperties_ {
 pub mut:
-	is_updating_       bool
-	associated_element ?&Element
+	is_updating_              bool
+	associated_element        ?&Element
+	prefetch_resources_target voidptr = unsafe { nil }
+	prefetch_resources        fn (voidptr, &Document) = unsafe { nil }
 }
 
 pub fn (c &CSSStyleProperties_) is_updating() bool {
@@ -401,13 +442,14 @@ fn create_element_inline_style(element &Element) &CSSStyleProperties_ {
 @[heap]
 pub struct CSSComputedProperties_ {
 pub mut:
-	display_                        CSSDisplay_           = CSSDisplay_{}
-	overflow_x_                     CSSOverflow_          = .visible
-	overflow_y_                     CSSOverflow_          = .visible
+	display_                        CSSDisplay_ = CSSDisplay_{}
+	overflow_x_                     CSSOverflow_ = .visible
+	overflow_y_                     CSSOverflow_ = .visible
 	content_visibility_             CSSContentVisibility_ = .visible
-	opacity_                        f32                   = 1.0
-	visibility_                     CSSVisibility_        = .visible
-	font_weight_                    f64                   = 400
+	opacity_                        f32 = 1.0
+	visibility_                     CSSVisibility_ = .visible
+	font_weight_                    f64 = 400
+	scrollbar_width_                string = 'auto'
 	math_depth_                     int
 	math_style_                     CSSMathStyle_ = .normal
 	attempted_pseudo_class_matches_ map[string]bool
@@ -515,8 +557,9 @@ pub enum CSSMathStyle_ {
 
 @[heap]
 pub struct CSSCascadedProperties_ {
-pub mut:
+
 	// dom<->css bridge: opaque handle to the real css.CascadedProperties. See css/dom_css_bridge.v.
+pub mut:
 	css_handle voidptr = unsafe { nil }
 }
 
@@ -531,7 +574,19 @@ pub fn (data &CSSCustomPropertyData_) get(name string) ?&CSSStyleValue_ {
 }
 
 @[heap]
-pub struct CSSCountersSet_ {}
+pub struct CSSCountersSet_ {
+
+	// dom<->css bridge: opaque handle to the real css.CountersSet. Keeping the
+	// concrete type on the CSS side avoids a dom -> css import cycle.
+pub mut:
+	css_handle voidptr = unsafe { nil }
+}
+
+pub fn CSSCountersSet_.with_css_handle(handle voidptr) &CSSCountersSet_ {
+	return &CSSCountersSet_{
+		css_handle: handle
+	}
+}
 
 pub fn (mut c CSSCountersSet_) visit_edges(visitor &CellVisitor) {
 	_ = visitor
@@ -550,9 +605,9 @@ pub fn (r RequiredInvalidationAfterStyleChange) is_none() bool {
 
 fn required_invalidation_full() RequiredInvalidationAfterStyleChange {
 	return RequiredInvalidationAfterStyleChange{
-		relayout:            true
+		relayout: true
 		rebuild_layout_tree: true
-		repaint:             true
+		repaint: true
 	}
 }
 
@@ -616,8 +671,11 @@ pub fn (n &LayoutNodeWithStyle_) is_scroll_container() bool {
 	dom_node := n.dom_node() or { return false }
 	element := dom_node.as_element() or { return false }
 	computed := element.el_computed_properties() or { return false }
-	return computed.overflow_x() in [.hidden, .scroll, .auto_]
-		|| computed.overflow_y() in [.hidden, .scroll, .auto_]
+	return computed.overflow_x() in [.hidden, .scroll, .auto_] || computed.overflow_y() in [
+		.hidden,
+		.scroll,
+		.auto_,
+	]
 }
 
 pub fn (n &LayoutNodeWithStyle_) previous_in_pre_order() ?&LayoutNodeWithStyle_ {
@@ -676,8 +734,7 @@ pub fn (n &LayoutNodeWithStyle_) is_before(other &LayoutNodeWithStyle_) bool {
 	this_path := layout_node_ancestor_path(this_node)
 	other_path := layout_node_ancestor_path(other_node)
 	mut common_length := 0
-	for common_length < this_path.len && common_length < other_path.len
-		&& voidptr(this_path[common_length]) == voidptr(other_path[common_length]) {
+	for common_length < this_path.len && common_length < other_path.len && voidptr(this_path[common_length]) == voidptr(other_path[common_length]) {
 		common_length++
 	}
 	if common_length == this_path.len {
@@ -792,8 +849,7 @@ pub fn (r CSSPixelRect_) height() f64 {
 }
 
 fn css_pixel_rect_intersects_rect(rect CSSPixelRect_, other Rect) bool {
-	return rect.x_ < other.x + other.width && rect.x_ + rect.width_ > other.x
-		&& rect.y_ < other.y + other.height && rect.y_ + rect.height_ > other.y
+	return rect.x_ < other.x + other.width && rect.x_ + rect.width_ > other.x && rect.y_ < other.y + other.height && rect.y_ + rect.height_ > other.y
 }
 
 pub struct IntersectionObserverRegistration_ {
@@ -828,6 +884,7 @@ pub enum RequestFullscreenError {
 	unsupported_element
 	element_ready_check_failed
 	no_transient_user_activation
+	element_node_doc_is_not_pending_doc
 }
 
 // Union type for custom element reaction queue
@@ -877,8 +934,8 @@ pub fn is_valid_namespace_prefix(prefix string) bool {
 // https://dom.spec.whatwg.org/#valid-attribute-local-name
 pub fn is_valid_attribute_local_name(local_name string) bool {
 	// A string is a valid attribute local name if its length is at least 1 and it does not contain ASCII whitespace, U+0000 NULL, U+002F (/), U+003D (=), or U+003E (>).
-	return local_name.len > 0
-		&& !contains_any_code_point(local_name, [u32(9), 10, 12, 13, 32, 0, 47, 61, 62])
+	return local_name.len > 0 && !contains_any_code_point(local_name, [u32(9), 10, 12, 13, 32, 0,
+		47, 61, 62])
 }
 
 // https://dom.spec.whatwg.org/#valid-element-local-name
@@ -903,8 +960,7 @@ pub fn is_valid_element_local_name(name string) bool {
 	}
 
 	// 3. If name's 0th code point is not U+003A (:), U+005F (_), or in the range U+0080 to U+10FFFF, inclusive, then return false.
-	if first_code_point != `:` && first_code_point != `_`
-		&& (first_code_point < 0x0080 || first_code_point > 0x10ffff) {
+	if first_code_point != `:` && first_code_point != `_` && (first_code_point < 0x0080 || first_code_point > 0x10ffff) {
 		return false
 	}
 
@@ -912,9 +968,7 @@ pub fn is_valid_element_local_name(name string) bool {
 	//    U+003A (:), U+005F (_), or in the range U+0080 to U+10FFFF, inclusive, then return false.
 	for i := 1; i < runes.len; i++ {
 		code_point := u32(runes[i])
-		if !is_ascii_alpha_code_point(code_point) && !is_ascii_digit_code_point(code_point)
-			&& code_point != `-` && code_point != `.` && code_point != `:` && code_point != `_`
-			&& (code_point < 0x0080 || code_point > 0x10ffff) {
+		if !is_ascii_alpha_code_point(code_point) && !is_ascii_digit_code_point(code_point) && code_point != `-` && code_point != `.` && code_point != `:` && code_point != `_` && (code_point < 0x0080 || code_point > 0x10ffff) {
 			return false
 		}
 	}
@@ -1059,8 +1113,7 @@ pub fn validate_and_extract(namespace_ ?string, qualified_name string, context V
 	}
 
 	// 11. If namespace is the XMLNS namespace and neither qualifiedName nor prefix is "xmlns", then throw a "NamespaceError" DOMException.
-	if namespace_matches(normalized_namespace, namespace_xmlns_uri) && !(qualified_name == 'xmlns'
-		|| prefix_is_xmlns) {
+	if namespace_matches(normalized_namespace, namespace_xmlns_uri) && !(qualified_name == 'xmlns' || prefix_is_xmlns) {
 		return error('NamespaceError: Namespace is the XMLNS namespace and neither qualifiedName nor prefix is xmlns')
 	}
 
@@ -1073,7 +1126,6 @@ const valid_shadow_host_names = ['article', 'aside', 'blockquote', 'body', 'div'
 	'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'main', 'nav', 'p', 'section', 'span']
 
 // --- Element struct ---
-
 @[heap]
 pub struct Element {
 	ParentNode
@@ -1107,7 +1159,7 @@ pub mut:
 	custom_element_reaction_queue []CustomElementReaction
 	custom_element_definition_    ?&CustomElementDefinition
 	is_value                      ?string
-	custom_state_set_             ?&CustomStateSet_
+	custom_state_set_             ?&CustomStateSet
 	popover_target_element_       ?&Element
 
 	registered_intersection_observers []IntersectionObserverRegistration_
@@ -1146,7 +1198,7 @@ pub mut:
 	lang_value_    ?string
 
 	had_duplicate_attribute_during_tokenization bool
-	custom_element_state_                       CustomElementState     = .undefined_
+	custom_element_state_                       CustomElementState = .undefined_
 	proximity_to_the_viewport_                  ProximityToTheViewport = .not_determined
 	captured_in_a_view_transition               bool
 	is_contained_in_list_subtree                bool
@@ -1154,6 +1206,16 @@ pub mut:
 	element_specific_css_random_base_value_cache map[string]f64
 
 	doc_ ?&Document
+}
+
+// Internal UA shadow-tree children can request the style of a pseudo-element.
+// The integer bridge avoids a dom -> css module dependency.
+pub fn (mut e Element) set_use_pseudo_element(pseudo_element int) {
+	e.use_pseudo_element = pseudo_element
+}
+
+pub fn (e &Element) use_pseudo_element_value() ?int {
+	return e.use_pseudo_element
 }
 
 pub struct StylePropertyMap_ {
@@ -1170,23 +1232,21 @@ fn create_style_property_map_for_bindings(style &CSSStyleProperties_) &StyleProp
 pub struct StylePropertyMapReadOnly_ {}
 
 // --- Constructor ---
-
 pub fn Element.new(doc &Document, qname QualifiedName) &Element {
 	return assign_unique_node_id(&Element{
-		ParentNode:     ParentNode{
+		ParentNode: ParentNode{
 			Node: Node{
-				node_type:  .element_node
-				document_:  doc
+				node_type: .element_node
+				document_: doc
 				unique_id_: UniqueNodeID(0)
 			}
 		}
 		qualified_name: qname
-		doc_:           doc
+		doc_: doc
 	})
 }
 
 // --- Core methods ---
-
 pub fn (mut e Element) initialize() {
 	// Base::initialize(realm)
 }
@@ -1231,7 +1291,6 @@ pub fn (mut e Element) visit_edges(mut visitor CellVisitor) {
 }
 
 // --- Name accessors ---
-
 pub fn (e &Element) qualified_name_str() string {
 	return e.qualified_name.as_string()
 }
@@ -1353,10 +1412,10 @@ pub fn (mut e Element) set_attribute_value_ns(local_name string, value string, p
 	} else {
 		qualified_name := QualifiedName.new(local_name, prefix, normalized_namespace)
 		attrs.append_attribute(&Attr_{
-			name_:          qualified_name.as_string()
-			value_:         value
-			local_name_:    local_name
-			prefix__:       prefix
+			name_: qualified_name.as_string()
+			value_: value
+			local_name_: local_name
+			prefix__: prefix
 			namespace_uri_: normalized_namespace
 		})
 	}
@@ -1405,8 +1464,8 @@ pub fn (mut e Element) set_attribute_node_ns_for_bindings(attr &Attr_) !&Attr_ {
 pub fn (mut e Element) append_attribute_by_name(name string, value string) {
 	mut attrs := e.ensure_attributes()
 	attrs.append_attribute(&Attr_{
-		name_:       name
-		value_:      value
+		name_: name
+		value_: value
 		local_name_: name
 	})
 }
@@ -1590,7 +1649,6 @@ pub fn (e &Element) has_class_case_insensitive(class_name string) bool {
 }
 
 // --- Shadow DOM ---
-
 fn is_valid_shadow_host_name(name string) bool {
 	if name in valid_shadow_host_names {
 		return true
@@ -1633,26 +1691,52 @@ pub fn (mut e Element) attach_a_shadow_root(mode ShadowRootMode, clonable bool, 
 		DocumentFragment: DocumentFragment{
 			ParentNode: ParentNode{
 				Node: Node{
-					node_type:  .document_fragment_node
-					document_:  e.document()
+					node_type: .document_fragment_node
+					document_: e.document()
 					unique_id_: UniqueNodeID(0)
 				}
 			}
-			host_:      e
+			host_: e
+			is_shadow_root_: true
 		}
-		mode:             mode
-		clonable_:        clonable
-		serializable_:    serializable
+		mode: mode
+		clonable_: clonable
+		serializable_: serializable
 		delegates_focus_: delegates_focus
 		slot_assignment_: slot_assignment
 	})
 	e.shadow_root_ = shadow
 }
 
+// UA widgets may have shadow roots even when their tag is not a valid author
+// shadow host. This is the DOM boundary used by native HTML controls.
+pub fn (mut e Element) attach_a_user_agent_shadow_root(slot_assignment SlotAssignmentMode) &ShadowRoot {
+	if existing := e.shadow_root_ {
+		return existing
+	}
+	shadow := assign_unique_node_id(&ShadowRoot{
+		DocumentFragment: DocumentFragment{
+			ParentNode: ParentNode{
+				Node: Node{
+					node_type: .document_fragment_node
+					document_: e.document()
+					unique_id_: UniqueNodeID(0)
+				}
+			}
+			host_: e
+			is_shadow_root_: true
+		}
+		mode: .closed
+		slot_assignment_: slot_assignment
+		user_agent_internal_: true
+	})
+	e.shadow_root_ = shadow
+	return shadow
+}
+
 // https://dom.spec.whatwg.org/#dom-element-attachshadow
 pub fn (mut e Element) attach_shadow(init ShadowRootInit) !&ShadowRoot {
-	e.attach_a_shadow_root(init.mode, init.clonable, init.serializable, init.delegates_focus,
-		init.slot_assignment)!
+	e.attach_a_shadow_root(init.mode, init.clonable, init.serializable, init.delegates_focus, init.slot_assignment)!
 	return e.shadow_root_ or { return error('Shadow root not set') }
 }
 
@@ -1791,7 +1875,6 @@ pub fn (e &Element) current_css_zoom() f64 {
 }
 
 // --- Layout node ---
-
 pub fn (e &Element) el_layout_node() ?&LayoutNodeWithStyle_ {
 	return e.layout_node_with_style_
 }
@@ -1827,7 +1910,6 @@ pub fn (e &Element) paintable_box() ?&PaintableBox_ {
 }
 
 // --- Style / Computed properties ---
-
 pub fn (e &Element) el_computed_properties() ?&CSSComputedProperties_ {
 	return e.computed_properties_
 }
@@ -1926,7 +2008,6 @@ pub fn (e &Element) get_pseudo_element_node(pseudo_element int) ?&LayoutNodeWith
 }
 
 // --- Inline style ---
-
 pub fn (e &Element) el_inline_style() ?&CSSStyleProperties_ {
 	return e.inline_style_
 }
@@ -1965,7 +2046,6 @@ pub fn (mut e Element) attribute_style_map() &StylePropertyMap_ {
 }
 
 // --- Custom property data ---
-
 pub fn (mut e Element) set_custom_property_data(pseudo_element ?int, data ?&CSSCustomPropertyData_) {
 	if pe := pseudo_element {
 		if d := data {
@@ -1990,7 +2070,6 @@ pub fn (e &Element) custom_property_data(pseudo_element ?int) ?&CSSCustomPropert
 }
 
 // --- run_attribute_change_steps ---
-
 pub fn (mut e Element) run_attribute_change_steps(local_name string, old_value ?string, value ?string, namespace_ ?string) {
 	e.attribute_changed(local_name, old_value, value, namespace_)
 	if !option_string_equal(old_value, value) {
@@ -1999,7 +2078,6 @@ pub fn (mut e Element) run_attribute_change_steps(local_name string, old_value ?
 }
 
 // --- recompute_style ---
-
 pub fn (mut e Element) recompute_style() RequiredInvalidationAfterStyleChange {
 	e.reset_style_dependency_flags()
 	e.affected_by_has_pseudo_class_in_subject_position = false
@@ -2061,10 +2139,8 @@ pub fn (e &Element) style_uses_inherit_css_function() bool {
 }
 
 // --- recompute_inherited_style ---
-
 pub fn (mut e Element) recompute_inherited_style() RequiredInvalidationAfterStyleChange {
-	if e.cascaded_properties_ == none || e.computed_properties_ == none
-		|| e.el_unsafe_layout_node() == none {
+	if e.cascaded_properties_ == none || e.computed_properties_ == none || e.el_unsafe_layout_node() == none {
 		return RequiredInvalidationAfterStyleChange{}
 	}
 	return RequiredInvalidationAfterStyleChange{}
@@ -2183,10 +2259,8 @@ pub fn (mut e Element) insert_adjacent_html(position string, text string) ! {
 		context_element = create_element(e.document(), 'body', namespace_html_, none, none, false)!
 	} else if element := context_element {
 		if element.document().document_type() == .html && element.local_name() == 'html' && element.namespace_uri() or {
-			''
-		} == namespace_html_ {
-			context_element = create_element(e.document(), 'body', namespace_html_, none, none,
-				false)!
+			''} == namespace_html_ {
+			context_element = create_element(e.document(), 'body', namespace_html_, none, none, false)!
 		}
 	}
 	element_context := context_element or { return }
@@ -2217,8 +2291,7 @@ pub fn (mut e Element) insert_adjacent_html(position string, text string) ! {
 fn html_parser_parse_html_fragment(context_element &Element, markup string, allow_declarative_shadow_roots AllowDeclarativeShadowRoots) ![]&Node {
 	if hook := context_element.document().html_fragment_parsing_hook() {
 		if hook.parse_fragment != unsafe { nil } {
-			return hook.parse_fragment(hook.target, context_element, markup,
-				allow_declarative_shadow_roots)
+			return hook.parse_fragment(hook.target, context_element, markup, allow_declarative_shadow_roots)
 		}
 	}
 	// DOM can be used without importing the html module. In that configuration there is no HTML
@@ -2230,12 +2303,12 @@ fn html_parser_parse_html_fragment(context_element &Element, markup string, allo
 }
 
 fn xml_fragment_parser_parse_xml_fragment(context_element &Element, markup string, allow_declarative_shadow_roots AllowDeclarativeShadowRoots) ![]&Node {
-	_ = allow_declarative_shadow_roots
-	// Stub for XMLFragmentParser::parse_xml_fragment until the XML parser is ported.
-	if markup.len == 0 {
-		return []&Node{}
+	if hook := context_element.document().html_fragment_parsing_hook() {
+		if hook.parse_xml_fragment != unsafe { nil } {
+			return hook.parse_xml_fragment(hook.target, context_element, markup, allow_declarative_shadow_roots)
+		}
 	}
-	return [new_text_node(context_element.document(), markup).as_node()]
+	return error('InvalidStateError: the XML fragment parser hook is not installed for this document')
 }
 
 fn append_nodes_to_new_fragment(document &Document, new_children []&Node) !&DocumentFragment {
@@ -2268,8 +2341,7 @@ fn parse_fragment_fallback(context_element &Element, html string) !&DocumentFrag
 }
 
 fn html_escape_text(value string) string {
-	return value.replace('&', '&amp;').replace('\u00a0', '&nbsp;').replace('<', '&lt;').replace('>',
-		'&gt;')
+	return value.replace('&', '&amp;').replace(' ', '&nbsp;').replace('<', '&lt;').replace('>', '&gt;')
 }
 
 fn html_escape_attribute(value string) string {
@@ -2349,8 +2421,7 @@ fn serialize_html_node(node &Node, serializable_shadow_roots SerializableShadowR
 		if parent := node.parent() {
 			if parent_element := parent.as_element() {
 				name := parent_element.local_name()
-				if name in ['style', 'script', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext']
-					|| (name == 'noscript' && !node.is_scripting_disabled()) {
+				if name in ['style', 'script', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext'] || (name == 'noscript' && !node.is_scripting_disabled()) {
 					return character_data.data()
 				}
 			}
@@ -2364,8 +2435,7 @@ fn serialize_html_node(node &Node, serializable_shadow_roots SerializableShadowR
 			if element.serializes_as_void() {
 				return builder.str()
 			}
-			builder.write_string(serialize_html_node(node, serializable_shadow_roots, shadow_roots,
-				.inner))
+			builder.write_string(serialize_html_node(node, serializable_shadow_roots, shadow_roots, .inner))
 			builder.write_string('</${tag_name}>')
 			return builder.str()
 		}
@@ -2385,8 +2455,7 @@ fn serialize_html_node(node &Node, serializable_shadow_roots SerializableShadowR
 					break
 				}
 			}
-			if (serializable_shadow_roots == .yes && shadow_root.serializable())
-				|| explicitly_included {
+			if (serializable_shadow_roots == .yes && shadow_root.serializable()) || explicitly_included {
 				mode_name := if shadow_root.mode() == .open { 'open' } else { 'closed' }
 				builder.write_string('<template shadowrootmode="${mode_name}"')
 				if shadow_root.delegates_focus() {
@@ -2399,22 +2468,19 @@ fn serialize_html_node(node &Node, serializable_shadow_roots SerializableShadowR
 					builder.write_string(' shadowrootclonable=""')
 				}
 				builder.write_string('>')
-				builder.write_string(serialize_html_node(shadow_root_as_node(shadow_root),
-					serializable_shadow_roots, shadow_roots, .inner))
+				builder.write_string(serialize_html_node(shadow_root_as_node(shadow_root), serializable_shadow_roots, shadow_roots, .inner))
 				builder.write_string('</template>')
 			}
 		}
 
 		for child in actual_node.children {
-			builder.write_string(serialize_html_node(child, serializable_shadow_roots,
-				shadow_roots, .outer))
+			builder.write_string(serialize_html_node(child, serializable_shadow_roots, shadow_roots, .outer))
 		}
 		return builder.str()
 	}
 	mut builder := strings.new_builder(0)
 	for child in node.children {
-		builder.write_string(serialize_html_node(child, serializable_shadow_roots, shadow_roots,
-			.outer))
+		builder.write_string(serialize_html_node(child, serializable_shadow_roots, shadow_roots, .outer))
 	}
 	return builder.str()
 }
@@ -2422,8 +2488,7 @@ fn serialize_html_node(node &Node, serializable_shadow_roots SerializableShadowR
 fn html_parser_serialize_html_fragment(node &Node, serializable_shadow_roots SerializableShadowRoots, shadow_roots []&ShadowRoot, fragment_serialization_mode FragmentSerializationMode) string {
 	_ = serializable_shadow_roots
 	_ = shadow_roots
-	return serialize_html_node(node, serializable_shadow_roots, shadow_roots,
-		fragment_serialization_mode)
+	return serialize_html_node(node, serializable_shadow_roots, shadow_roots, fragment_serialization_mode)
 }
 
 fn html_serialize_node_to_xml_string(node &Node, require_well_formed RequireWellFormed) !string {
@@ -2441,8 +2506,7 @@ fn xml_escape_text(value string) string {
 }
 
 fn xml_escape_attribute(value string) string {
-	return value.replace('&', '&amp;').replace('"', '&quot;').replace('\t', '&#9;').replace('\n',
-		'&#10;').replace('\r', '&#13;').replace('<', '&lt;')
+	return value.replace('&', '&amp;').replace('"', '&quot;').replace('\t', '&#9;').replace('\n', '&#10;').replace('\r', '&#13;').replace('<', '&lt;')
 }
 
 fn xml_data_is_well_formed(value string) bool {
@@ -2467,8 +2531,7 @@ fn serialize_xml_node(node &Node, require_well_formed RequireWellFormed, inherit
 	if node.is_document() || node.is_document_fragment() || node.is_shadow_root() {
 		mut builder := strings.new_builder(0)
 		for child in node.children {
-			builder.write_string(serialize_xml_node(child, require_well_formed,
-				inherited_namespaces, mut state)!)
+			builder.write_string(serialize_xml_node(child, require_well_formed, inherited_namespaces, mut state)!)
 		}
 		return builder.str()
 	}
@@ -2493,9 +2556,7 @@ fn serialize_xml_node(node &Node, require_well_formed RequireWellFormed, inherit
 			return '<![CDATA[${data}]]>'
 		}
 		if processing_instruction := node.as_processing_instruction() {
-			if require_well_formed == .yes
-				&& (to_ascii_lowercase(processing_instruction.target_) == 'xml'
-				|| data.contains('?>')) {
+			if require_well_formed == .yes && (to_ascii_lowercase(processing_instruction.target_) == 'xml' || data.contains('?>')) {
 				return error('InvalidStateError: Processing instruction is not well-formed XML')
 			}
 			return if data.len > 0 {
@@ -2614,7 +2675,6 @@ fn serialize_xml_element(element &Element, require_well_formed RequireWellFormed
 }
 
 // --- Focus / Active ---
-
 pub fn (e &Element) is_focused() bool {
 	return e.document().focused_area() or { return false } == e.as_node()
 }
@@ -2658,7 +2718,6 @@ pub fn (e &Element) is_document_element() bool {
 }
 
 // --- Void elements ---
-
 pub fn (e &Element) is_void_element() bool {
 	name := e.local_name()
 	return name in ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta',
@@ -2692,9 +2751,9 @@ pub fn (e &Element) get_bounding_client_rect() Rect {
 	first := list[0]
 	if all_rectangle_has_zero_width_or_height {
 		return Rect{
-			x:      first.x_
-			y:      first.y_
-			width:  first.width_
+			x: first.x_
+			y: first.y_
+			width: first.width_
 			height: first.height_
 		}
 	}
@@ -2724,9 +2783,9 @@ pub fn (e &Element) get_bounding_client_rect() Rect {
 		}
 	}
 	return Rect{
-		x:      left
-		y:      top
-		width:  right - left
+		x: left
+		y: top
+		width: right - left
 		height: bottom - top
 	}
 }
@@ -2740,9 +2799,9 @@ pub fn (e &Element) get_client_rects() []CSSPixelRect_ {
 	}
 	return [
 		CSSPixelRect_{
-			x_:      layout.border_box_.x
-			y_:      layout.border_box_.y
-			width_:  layout.border_box_.width
+			x_: layout.border_box_.x
+			y_: layout.border_box_.y
+			width_: layout.border_box_.width
 			height_: layout.border_box_.height
 		},
 	]
@@ -2763,7 +2822,6 @@ pub fn (e &Element) get_client_rects_for_bindings() []CSSPixelRect_ {
 }
 
 // --- Tab index ---
-
 fn parse_html_integer(value string) ?int {
 	mut index := 0
 	for index < value.len && is_ascii_whitespace(value[index]) {
@@ -2793,6 +2851,9 @@ fn parse_html_integer(value string) ?int {
 }
 
 pub fn (e &Element) default_tab_index_value() int {
+	if e.is_html_element() && e.local_name() in ['iframe', 'object'] {
+		return 0
+	}
 	return -1
 }
 
@@ -2809,7 +2870,6 @@ pub fn (mut e Element) set_tab_index(tab_index int) {
 }
 
 // --- Scrolling ---
-
 pub enum TreatOverflowClipOnBodyParentAsOverflowHidden {
 	no
 	yes
@@ -2855,15 +2915,16 @@ pub fn (e &Element) is_potentially_scrollable_with_overflow_clip_treatment(treat
 		return false
 	}
 	// NOTE: When treating 'overflow:clip' as 'overflow:hidden', we can never fail this condition.
-	if treat_overflow_clip_on_body_parent_as_overflow_hidden == .no
-		&& (parent_properties.overflow_x() == .clip || parent_properties.overflow_y() == .clip) {
+	if treat_overflow_clip_on_body_parent_as_overflow_hidden == .no && (parent_properties.overflow_x() == .clip || parent_properties.overflow_y() == .clip) {
 		return false
 	}
 
 	// - body's computed value of the overflow-x or overflow-y properties is neither visible nor clip.
 	computed_properties := e.el_computed_properties() or { return false }
-	if computed_properties.overflow_x() in [.visible, .clip]
-		|| computed_properties.overflow_y() in [.visible, .clip] {
+	if computed_properties.overflow_x() in [.visible, .clip] || computed_properties.overflow_y() in [
+		.visible,
+		.clip,
+	] {
 		return false
 	}
 
@@ -2876,8 +2937,7 @@ pub fn (e &Element) is_scroll_container() bool {
 		return true
 	}
 	computed_properties := e.el_computed_properties() or { return false }
-	return overflow_value_makes_box_a_scroll_container(computed_properties.overflow_x())
-		|| overflow_value_makes_box_a_scroll_container(computed_properties.overflow_y())
+	return overflow_value_makes_box_a_scroll_container(computed_properties.overflow_x()) || overflow_value_makes_box_a_scroll_container(computed_properties.overflow_y())
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-scrolltop
@@ -3009,6 +3069,7 @@ pub fn (mut e Element) set_scroll_left(x_ f64) {
 		if !e.is_scroll_container() {
 			return
 		}
+
 		// FIXME: or the element has no overflow.
 
 		// 11. Scroll the element to x,scrollTop, with the scroll behavior being "auto".
@@ -3064,6 +3125,7 @@ pub fn (mut e Element) set_scroll_top(y_ f64) {
 		if !e.is_scroll_container() {
 			return
 		}
+
 		// FIXME: or the element has no overflow.
 
 		// 11. Scroll the element to scrollLeft,y, with the scroll behavior being "auto".
@@ -3293,13 +3355,12 @@ fn (mut e Element) exit_fullscreen_on_element_removal() {
 }
 
 // --- Actually disabled ---
-
 fn (e &Element) is_html_element_with_local_name(name string) bool {
 	return e.is_html_element() && e.local_name() == name
 }
 
 fn (e &Element) first_ancestor_fieldset_element() ?&Element {
-	for ancestor := e.as_node().parent(); ancestor != none; {
+	for ancestor := e.as_node().parent(); ancestor != none;  {
 		current := ancestor or { break }
 		if element := current.as_element() {
 			if element.is_html_element_with_local_name('fieldset') {
@@ -3323,7 +3384,7 @@ fn (e &Element) first_legend_element_child() ?&Element {
 }
 
 fn (e &Element) is_disabled_by_fieldset_ancestor() bool {
-	for fieldset_ancestor := e.first_ancestor_fieldset_element(); fieldset_ancestor != none; {
+	for fieldset_ancestor := e.first_ancestor_fieldset_element(); fieldset_ancestor != none;  {
 		fieldset := fieldset_ancestor or { break }
 		if fieldset.has_attribute('disabled') {
 			if legend := fieldset.first_legend_element_child() {
@@ -3363,8 +3424,7 @@ fn (e &Element) option_element_disabled() bool {
 	}
 	parent := e.as_node().parent() or { return false }
 	parent_element := parent.as_element() or { return false }
-	return parent_element.is_html_element_with_local_name('optgroup')
-		&& parent_element.has_attribute('disabled')
+	return parent_element.is_html_element_with_local_name('optgroup') && parent_element.has_attribute('disabled')
 }
 
 fn (e &Element) fieldset_element_disabled() bool {
@@ -3409,7 +3469,6 @@ pub fn (e &Element) is_actually_disabled() bool {
 }
 
 // --- Insert adjacent ---
-
 fn (mut e Element) insert_adjacent(where_ string, node &Node) !&Node {
 	match to_ascii_lowercase(where_) {
 		'beforebegin' {
@@ -3524,14 +3583,12 @@ pub fn (e &Element) check_visibility(options ?CheckVisibilityOptions) bool {
 }
 
 // --- Intersection observers ---
-
 pub fn (mut e Element) register_intersection_observer(registration IntersectionObserverRegistration_) {
 	e.registered_intersection_observers << registration
 }
 
 pub fn (mut e Element) unregister_intersection_observer(observer voidptr) {
-	e.registered_intersection_observers =
-		e.registered_intersection_observers.filter(it.observer != observer)
+	e.registered_intersection_observers = e.registered_intersection_observers.filter(it.observer != observer)
 }
 
 // Mirrors the C++ Element::get_intersection_observer_registration accessor used
@@ -3546,7 +3603,6 @@ pub fn (mut e Element) get_intersection_observer_registration(observer voidptr) 
 }
 
 // --- Custom elements ---
-
 fn (mut e Element) enqueue_an_element_on_the_appropriate_element_queue() {
 	// 1. Let reactionsStack be element's relevant agent's custom element reactions stack.
 	// 2. If reactionsStack is empty, add element to reactionsStack's backup element queue.
@@ -3591,14 +3647,11 @@ pub fn (mut e Element) enqueue_a_custom_element_callback_reaction(callback_name 
 	e.enqueue_an_element_on_the_appropriate_element_queue()
 }
 
-pub fn (mut e Element) ensure_custom_state_set() &CustomStateSet_ {
+pub fn (mut e Element) ensure_custom_state_set() &CustomStateSet {
 	if cs := e.custom_state_set_ {
 		return cs
 	}
-	new_cs := &CustomStateSet_{
-		element_: &e
-		entries_: map[string]bool{}
-	}
+	new_cs := CustomStateSet.create(&e)
 	e.custom_state_set_ = new_cs
 	return new_cs
 }
@@ -3628,6 +3681,83 @@ pub fn (element &HTMLElement) popover_visibility_state() PopoverVisibilityState 
 	return element.popover_visibility_state_
 }
 
+pub fn (mut element HTMLElement) set_popover_visibility_state(state PopoverVisibilityState) {
+	element.popover_visibility_state_ = state
+}
+
+pub fn (element &HTMLElement) popover_showing_or_hiding() bool {
+	return element.popover_showing_or_hiding
+}
+
+pub fn (mut element HTMLElement) set_popover_showing_or_hiding(value bool) {
+	element.popover_showing_or_hiding = value
+}
+
+pub fn (element &HTMLElement) popover_trigger() ?&HTMLElement {
+	return element.popover_trigger_
+}
+
+pub fn (mut element HTMLElement) set_popover_trigger(value ?&HTMLElement) {
+	element.popover_trigger_ = value
+}
+
+pub fn (element &HTMLElement) opened_in_popover_mode() ?string {
+	return element.opened_in_popover_mode_
+}
+
+pub fn (mut element HTMLElement) set_opened_in_popover_mode(value ?string) {
+	element.opened_in_popover_mode_ = value
+}
+
+pub fn (element &HTMLElement) inert() bool {
+	return element.inert_
+}
+
+pub fn (mut element HTMLElement) set_inert(value bool) {
+	element.inert_ = value
+}
+
+pub fn (mut element HTMLElement) set_subtree_inertness(is_inert bool) {
+	element.set_inert(is_inert)
+	element_node := unsafe { &Node(&element) }
+	element_node.for_each_in_subtree(fn [is_inert] (node &Node) TraversalDecision {
+		descendant := node.as_element() or { return .@continue }
+		if !descendant.is_html_element() {
+			return .@continue
+		}
+		mut html_descendant := unsafe { &HTMLElement(descendant) }
+		if descendant.has_attribute('inert') {
+			return .skip_children_and_continue
+		}
+		html_descendant.set_inert(is_inert)
+		return .@continue
+	})
+}
+
+pub fn (element &HTMLElement) click_in_progress() bool {
+	return element.click_in_progress_
+}
+
+pub fn (mut element HTMLElement) set_click_in_progress(value bool) {
+	element.click_in_progress_ = value
+}
+
+pub fn (element &HTMLElement) attached_internals_handle() voidptr {
+	return element.attached_internals_
+}
+
+pub fn (mut element HTMLElement) set_attached_internals_handle(value voidptr) {
+	element.attached_internals_ = value
+}
+
+pub fn (element &HTMLElement) popover_close_watcher_handle() voidptr {
+	return element.popover_close_watcher_
+}
+
+pub fn (mut element HTMLElement) set_popover_close_watcher_handle(value voidptr) {
+	element.popover_close_watcher_ = value
+}
+
 pub fn (element &HTMLElement) popover() ?string {
 	return unsafe { &Element(element) }.get_attribute('popover')
 }
@@ -3638,13 +3768,15 @@ pub fn (mut element HTMLElement) show_popover() ! {
 	}
 	element.popover_visibility_state_ = .showing
 	mut base := unsafe { &Element(&element) }
-	base.set_in_top_layer(true)
+	mut document := unsafe { &Document(base.document()) }
+	document.add_an_element_to_the_top_layer(base)
 }
 
 pub fn (mut element HTMLElement) hide_popover() {
 	element.popover_visibility_state_ = .hidden
 	mut base := unsafe { &Element(&element) }
-	base.set_in_top_layer(false)
+	mut document := unsafe { &Document(base.document()) }
+	document.remove_an_element_from_the_top_layer_immediately(base)
 }
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#concept-upgrade-an-element
@@ -3677,8 +3809,7 @@ pub fn (mut e Element) upgrade_element(definition &CustomElementDefinition) ! {
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#concept-try-upgrade
 pub fn (mut e Element) try_to_upgrade() {
-	definition := e.document().lookup_custom_element_definition(e.namespace_uri(), e.local_name(),
-		e.is_value) or { return }
+	definition := e.document().lookup_custom_element_definition(e.namespace_uri(), e.local_name(), e.is_value) or { return }
 	e.enqueue_a_custom_element_upgrade_reaction(definition)
 }
 
@@ -3732,7 +3863,7 @@ pub fn (e &Element) locate_a_namespace_prefix(namespace_ ?string) ?string {
 	return none
 }
 
-pub fn (e &Element) for_each_attribute(callback fn (&Attr_)) {
+pub fn (e &Element) for_each_attribute(callback fn(&Attr_)) {
 	attrs := e.attributes_ or { return }
 	for i := 0; i < attrs.length(); i++ {
 		if a := attrs.item(i) {
@@ -3741,7 +3872,7 @@ pub fn (e &Element) for_each_attribute(callback fn (&Attr_)) {
 	}
 }
 
-pub fn (e &Element) for_each_attribute_name_value(callback fn (string, string)) {
+pub fn (e &Element) for_each_attribute_name_value(callback fn(string, string)) {
 	attrs := e.attributes_ or { return }
 	for i := 0; i < attrs.length(); i++ {
 		if a := attrs.item(i) {
@@ -3751,7 +3882,6 @@ pub fn (e &Element) for_each_attribute_name_value(callback fn (string, string)) 
 }
 
 // --- Directionality ---
-
 pub fn (e &Element) dir() ?Dir {
 	return e.dir__
 }
@@ -3780,8 +3910,7 @@ pub fn (e &Element) directionality() Directionality {
 		}
 		return .ltr
 	}
-	if is_html_element_with_local_name(e, 'input')
-		&& to_ascii_lowercase(e.get_attribute_value('type')) == 'tel' {
+	if is_html_element_with_local_name(e, 'input') && to_ascii_lowercase(e.get_attribute_value('type')) == 'tel' {
 		return .ltr
 	}
 	return e.parent_directionality()
@@ -3815,7 +3944,8 @@ fn (e &Element) auto_directionality() ?Directionality {
 		if assigned_nodes.len > 0 {
 			for child in assigned_nodes {
 				child_direction := if child.is_text() {
-					unsafe { &Text(child) }.directionality()
+					unsafe { &Text(child) }
+					.directionality()
 				} else if child_element := child.as_element() {
 					child_element.contained_text_auto_directionality(true)
 				} else {
@@ -3868,7 +3998,6 @@ pub fn (e &Element) is_auto_directionality_form_associated_element() bool {
 }
 
 // --- Translation mode ---
-
 pub fn (e &Element) translation_mode() TranslationMode {
 	if translate := e.get_attribute('translate') {
 		val := to_ascii_lowercase(translate)
@@ -3886,9 +4015,7 @@ pub fn (e &Element) translation_mode() TranslationMode {
 }
 
 fn element_is_filtered_for_auto_directionality(element &Element) bool {
-	return is_html_element_with_local_name(element, 'script')
-		|| is_html_element_with_local_name(element, 'style')
-		|| is_html_element_with_local_name(element, 'textarea') || element.dir() != none
+	return is_html_element_with_local_name(element, 'script') || is_html_element_with_local_name(element, 'style') || is_html_element_with_local_name(element, 'textarea') || element.dir() != none
 }
 
 fn descendant_is_filtered_for_auto_directionality(descendant &Node, root &Element, can_exclude_root bool) bool {
@@ -3897,7 +4024,7 @@ fn descendant_is_filtered_for_auto_directionality(descendant &Node, root &Elemen
 			return true
 		}
 	}
-	for ancestor := descendant.parent(); ancestor != none; {
+	for ancestor := descendant.parent(); ancestor != none;  {
 		current := ancestor or { break }
 		if current == root.as_node() {
 			if can_exclude_root && element_is_filtered_for_auto_directionality(root) {
@@ -3929,9 +4056,7 @@ fn contained_text_auto_directionality_for_subtree(node &Node, root &Element, can
 					}
 				}
 			}
-			if direction := contained_text_auto_directionality_for_subtree(child, root,
-				can_exclude_root)
-			{
+			if direction := contained_text_auto_directionality_for_subtree(child, root, can_exclude_root) {
 				return direction
 			}
 			continue
@@ -3942,9 +4067,7 @@ fn contained_text_auto_directionality_for_subtree(node &Node, root &Element, can
 				return direction
 			}
 		}
-		if direction := contained_text_auto_directionality_for_subtree(child, root,
-			can_exclude_root)
-		{
+		if direction := contained_text_auto_directionality_for_subtree(child, root, can_exclude_root) {
 			return direction
 		}
 	}
@@ -3952,7 +4075,6 @@ fn contained_text_auto_directionality_for_subtree(node &Node, root &Element, can
 }
 
 // --- Counters ---
-
 pub fn (e &Element) has_non_empty_counters_set() bool {
 	return e.counters_set_ != none
 }
@@ -3975,7 +4097,6 @@ pub fn (mut e Element) set_counters_set(cs ?&CSSCountersSet_) {
 }
 
 // --- Proximity to viewport ---
-
 pub fn (e &Element) proximity_to_the_viewport() ProximityToTheViewport {
 	return e.proximity_to_the_viewport_
 }
@@ -3986,9 +4107,9 @@ pub fn (mut e Element) determine_proximity_to_the_viewport() {
 	// a user-agent defined margin around the viewport.
 	viewport_rect := e.document().viewport_rect()
 	expanded_viewport := Rect{
-		x:      viewport_rect.x - viewport_rect.width
-		y:      viewport_rect.y - viewport_rect.height
-		width:  viewport_rect.width * 3
+		x: viewport_rect.x - viewport_rect.width
+		y: viewport_rect.y - viewport_rect.height
+		width: viewport_rect.width * 3
 		height: viewport_rect.height * 3
 	}
 
@@ -4031,11 +4152,9 @@ pub fn (mut e Element) skips_its_contents() bool {
 }
 
 // --- Pseudo-class matching ---
-
 pub fn (e &Element) matches_enabled_pseudo_class() bool {
-	return e.is_html_element()
-		&& e.local_name() in ['button', 'input', 'select', 'textarea', 'optgroup', 'option', 'fieldset']
-		&& !e.is_actually_disabled()
+	return e.is_html_element() && e.local_name() in ['button', 'input', 'select', 'textarea',
+		'optgroup', 'option', 'fieldset'] && !e.is_actually_disabled()
 }
 
 pub fn (e &Element) matches_disabled_pseudo_class() bool {
@@ -4079,8 +4198,7 @@ pub fn (e &Element) matches_placeholder_shown_pseudo_class() bool {
 
 pub fn (e &Element) matches_link_pseudo_class() bool {
 	name := e.local_name()
-	return ((e.is_html_element() && (name == 'a' || name == 'area'))
-		|| (e.is_svg_element() && name == 'a')) && e.has_attribute('href')
+	return ((e.is_html_element() && (name == 'a' || name == 'area')) || (e.is_svg_element() && name == 'a')) && e.has_attribute('href')
 }
 
 pub fn (e &Element) matches_local_link_pseudo_class() bool {
@@ -4146,10 +4264,8 @@ fn (e &Element) matches_invalidation_pseudo_class(name string) bool {
 }
 
 // --- Invalidation flags ---
-
 pub fn (e &Element) affected_by_forward_structural_changes() bool {
-	return e.affected_by_direct_sibling_combinator || e.affected_by_indirect_sibling_combinator
-		|| e.affected_by_first_child_pseudo_class || e.affected_by_forward_positional_pseudo_class
+	return e.affected_by_direct_sibling_combinator || e.affected_by_indirect_sibling_combinator || e.affected_by_first_child_pseudo_class || e.affected_by_forward_positional_pseudo_class
 }
 
 pub fn (e &Element) affected_by_backward_structural_changes() bool {
@@ -4176,7 +4292,6 @@ pub fn (e &Element) entire_subtree_needs_style_update() bool {
 }
 
 // --- List ordinals ---
-
 pub fn (e &Element) number_of_owned_list_items() int {
 	mut number_of_owned_li_elements := 0
 	for _ in e.numbered_items_owned_by_list_owner() {
@@ -4187,7 +4302,7 @@ pub fn (e &Element) number_of_owned_list_items() int {
 
 // Wraps `numbered_items_owned_by_list_owner` to mirror the C++ template
 // `Element::for_each_numbered_item_owned_by_list_owner(Callback)` API.
-pub fn (e &Element) for_each_numbered_item_owned_by_list_owner(callback fn (&Element) TraversalDecision) {
+pub fn (e &Element) for_each_numbered_item_owned_by_list_owner(callback fn(&Element) TraversalDecision) {
 	for item in e.numbered_items_owned_by_list_owner() {
 		if callback(item) == .@break {
 			return
@@ -4205,8 +4320,10 @@ fn (e &Element) numbered_items_owned_by_list_owner() []&Element {
 			mut mutable_element := unsafe { &Element(element) }
 			mutable_element.is_contained_in_list_subtree = true
 
-			if element.is_html_ol_ul_menu_element() {
-				// Skip list nodes and their descendents. They have their own, unrelated ordinals.
+			if element.is_html_ol_ul_menu_element() && current.unsafe_layout_node() != none {
+				// Skip rendered list nodes and their descendants. A display:contents
+				// list has no box, so its list items are owned and numbered by the
+				// closest rendered ancestor instead.
 				for {
 					last := node_for_next.last_child() or { break }
 					node_for_next = unsafe { &Node(last) }
@@ -4264,9 +4381,10 @@ pub fn (e &Element) list_owner() ?&Element {
 	mut inclusive_ancestor := ancestor.as_node()
 	for {
 		if element := inclusive_ancestor.as_element() {
-			// NB: unsafe_paintable_box() because this runs during list ordinal computation as part of
-			//     style recalculation, when layout is inherently stale.
-			if inclusive_ancestor.unsafe_paintable_box() != none {
+			// The V layout bridge is installed before marker layout, while paintable
+			// materialization happens later. A bridged layout node is the equivalent
+			// evidence that this inclusive ancestor produces a CSS box.
+			if inclusive_ancestor.unsafe_layout_node() != none {
 				ancestor = unsafe { &Element(element) }
 				break
 			}
@@ -4416,7 +4534,6 @@ pub fn (mut e Element) play_or_cancel_animations_after_display_property_change()
 }
 
 // --- Pointer capture ---
-
 pub fn (mut e Element) set_pointer_capture(pointer_id int) {
 	_ = pointer_id
 }
@@ -4496,7 +4613,6 @@ pub fn (mut e Element) invalidate_lang_value() {
 }
 
 // --- is_connected ---
-
 pub fn (e &Element) is_connected() bool {
 	return e.as_node().is_connected()
 }
@@ -4510,6 +4626,11 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	}
 
 	value_or_empty := value or { '' }
+
+	if local_name == 'inert' && e.is_html_element() {
+		mut html_element := unsafe { &HTMLElement(&e) }
+		html_element.set_subtree_inertness(value != none)
+	}
 
 	if local_name == 'slot' {
 		// 1. If value is oldValue, then return.
@@ -4527,7 +4648,9 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 			return
 		}
 
-		// 4-5. The slottable name is reflected from the slot attribute by slottable_name().
+		// 4-5. Update the slottable name maintained by SlottableMixin.
+		mut element_node := unsafe { &Node(&e) }
+		element_node.set_slottable_name(value or { '' })
 		// 6. If element is assigned, then run assign slottables for element's assigned slot.
 		if assigned_slot := unsafe { &Node(&e) }.assigned_slot_internal() {
 			assign_slottables(assigned_slot)
@@ -4602,6 +4725,93 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 			pl.associated_attribute_changed(value_or_empty)
 		}
 	}
+
+	if local_name == 'name' && e.local_name() == 'slot' {
+		html_slot_element_name_attribute_changed(unsafe { &HTMLSlotElement(&e) }, old_value, value)
+	}
+
+	// HTMLTableElement::attribute_changed(): cellpadding is cached because its
+	// presentational hint applies to descendant cells rather than the table.
+	if e.is_html_element() && e.local_name() == 'table' && local_name == 'cellpadding' {
+		mut table := unsafe { &HTMLTableElement(&e) }
+		old_cellpadding := table.cellpadding_
+		mut new_cellpadding := u32(1)
+		if source := value {
+			parsed := parse_html_integer(source) or { 0 }
+			new_cellpadding = if parsed < 0 { u32(0) } else { u32(parsed) }
+		}
+		table.cellpadding_ = new_cellpadding
+		if old_cellpadding != table.cellpadding_ {
+			e.as_node().for_each_in_subtree(fn (node &Node) TraversalDecision {
+				if cell := node.as_element() {
+					if cell.is_html_element() && cell.local_name() in ['td', 'th'] {
+						mut mutable_cell := unsafe { &Element(cell) }
+						mutable_cell.set_needs_style_update(true)
+					}
+				}
+				return .@continue
+			})
+		}
+	}
+
+	if e.is_html_element() && e.local_name() == 'li' && local_name == 'value' {
+		if owner := e.list_owner() {
+			mut owner_node := unsafe { &Node(owner.as_node()) }
+			owner_node.set_needs_layout_tree_update(true, .html_ol_list_element_ordinal_values)
+			mut list_item := unsafe { &Element(&e) }
+			list_item.maybe_invalidate_ordinals_for_list_owner(none)
+		}
+	}
+
+	if e.is_html_element() && e.local_name() == 'ol' && local_name in ['reversed', 'start', 'type'] {
+		mut list_node := unsafe { &Node(e.as_node()) }
+		list_node.set_needs_layout_tree_update(true, .html_ol_list_element_ordinal_values)
+		for child in e.as_node().children_as_vector() {
+			if first_child_element := child.as_element() {
+				mut mutable_first_child := unsafe { &Element(first_child_element) }
+				mutable_first_child.maybe_invalidate_ordinals_for_list_owner(none)
+				break
+			}
+		}
+	}
+}
+
+fn html_slot_element_name_attribute_changed(slot &HTMLSlotElement, old_value ?string, value ?string) {
+	// 1. If value is oldValue, then return.
+	if option_string_equal(value, old_value) {
+		return
+	}
+
+	// 2. If value is null and oldValue is the empty string, then return.
+	if value == none && old_value or { '\x01' } == '' {
+		return
+	}
+
+	// 3. If value is the empty string and oldValue is null, then return.
+	if value or { '\x01' } == '' && old_value == none {
+		return
+	}
+
+	root := unsafe { &Element(slot) }.as_node().root()
+	if mut shadow_root := root.as_shadow_root() {
+		shadow_root.unregister_slot(slot)
+	}
+
+	// 4-5. Null and the empty string both set the slot's name to the empty string;
+	// otherwise its name is value.
+	mut mutable_slot := unsafe { &HTMLSlotElement(slot) }
+	mutable_slot.set_slot_name(value or { '' })
+
+	if mut shadow_root := root.as_shadow_root() {
+		shadow_root.register_slot(slot)
+	}
+	dom_assign_slottables_for_a_tree(root)
+}
+
+// Kept separate from assign_slottables_for_a_tree so Element's attribute-change
+// implementation does not need to move the DOM algorithm out of its owning file.
+fn dom_assign_slottables_for_a_tree(root &Node) {
+	assign_slottables_for_a_tree(root)
 }
 
 fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string, old_value ?string, new_value ?string) {
@@ -4625,7 +4835,7 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 			if old_class !in new_classes {
 				changed_properties << InvalidationProperty{
 					type_: .class
-					name:  old_class
+					name: old_class
 				}
 			}
 		}
@@ -4633,7 +4843,7 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 			if new_class !in old_classes {
 				changed_properties << InvalidationProperty{
 					type_: .class
-					name:  new_class
+					name: new_class
 				}
 			}
 		}
@@ -4641,13 +4851,13 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 		if old_id := old_value {
 			changed_properties << InvalidationProperty{
 				type_: .id
-				name:  old_id
+				name: old_id
 			}
 		}
 		if new_id := new_value {
 			changed_properties << InvalidationProperty{
 				type_: .id
-				name:  new_id
+				name: new_id
 			}
 		}
 	} else {
@@ -4660,14 +4870,14 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 		}
 		for pseudo_class_name in pseudo_classes {
 			changed_properties << InvalidationProperty{
-				type_:             .pseudo_class
+				type_: .pseudo_class
 				pseudo_class_name: pseudo_class_name
 			}
 		}
 	}
 	changed_properties << InvalidationProperty{
 		type_: .attribute
-		name:  attribute_name
+		name: attribute_name
 	}
 	// Presentational-hint detection belongs to the concrete HTML element subclasses. Recomputing the
 	// changed element is conservative until those subclass hooks are represented in this module.
@@ -4676,7 +4886,6 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 }
 
 // --- Hidden / Accessibility ---
-
 pub fn (e &Element) is_hidden() bool {
 	if e.as_node().unsafe_layout_node() == none {
 		return true
@@ -4747,7 +4956,7 @@ fn id_referenced_in_subtree(node &Node, id string) bool {
 }
 
 pub fn (e &Element) has_referenced_and_hidden_ancestor() bool {
-	for ancestor := e.as_node().parent_or_shadow_host(); ancestor != none; {
+	for ancestor := e.as_node().parent_or_shadow_host(); ancestor != none;  {
 		current := ancestor or { break }
 		if element := current.as_element() {
 			if element.is_referenced() && element.is_hidden() {
@@ -4818,7 +5027,6 @@ pub fn (mut e Element) computed_style_map() &StylePropertyMapReadOnly_ {
 }
 
 // --- CSS random base value ---
-
 pub fn (mut e Element) ensure_css_random_base_value(key string) f64 {
 	if key in e.element_specific_css_random_base_value_cache {
 		return e.element_specific_css_random_base_value_cache[key]
@@ -4841,19 +5049,16 @@ pub fn (e &Element) is_focusable() bool {
 }
 
 // --- Tokenization flag ---
-
 pub fn (mut e Element) set_had_duplicate_attribute_during_tokenization() {
 	e.had_duplicate_attribute_during_tokenization = true
 }
 
 // --- Style tracking ---
-
 pub fn (mut e Element) set_style_uses_tree_counting_function() {
 	e.style_uses_tree_counting_function = true
 }
 
 // --- Lifecycle callbacks ---
-
 pub fn (mut e Element) inserted() {
 	mut node := unsafe { &Node(e.as_node()) }
 	node.recompute_editable_subtree_flag()
@@ -4898,6 +5103,19 @@ pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
 
 	// play_or_cancel_animations_after_display_property_change() depends on the animation/style subsystems.
 	e.exit_fullscreen_on_element_removal()
+
+	// https://html.spec.whatwg.org/multipage/interactive-elements.html#the-dialog-element:html-element-removing-steps
+	// HTMLDialogElement::removed_from() runs after HTMLElement::removed_from().
+	// Keep this at the translated DOM dispatch boundary until Node's lifecycle
+	// callbacks preserve the concrete HTML element type.
+	if e.is_html_element() && e.local_name() == 'dialog' {
+		mut dialog := unsafe { &HTMLDialogElement(e) }
+		if e.in_top_layer() {
+			mut document := unsafe { &Document(e.document()) }
+			document.remove_an_element_from_the_top_layer_immediately(e)
+		}
+		dialog.is_modal_ = false
+	}
 }
 
 pub fn (mut e Element) moved_from(old_parent ?&Node) {
@@ -4923,7 +5141,6 @@ pub fn (mut e Element) children_changed(metadata ChildrenChangedMetadata) {
 }
 
 // --- element_to_inherit_style_from ---
-
 pub fn (e &Element) element_to_inherit_style_from(pseudo_element ?int) ?&Element {
 	if pseudo_element != none {
 		return e
@@ -4935,13 +5152,11 @@ pub fn (e &Element) element_to_inherit_style_from(pseudo_element ?int) ?&Element
 }
 
 // --- Serialize ---
-
 pub fn (e &Element) serialize_children_as_json(mut sb strings.Builder) {
 	_ = sb
 }
 
 // --- get_an_elements_target ---
-
 pub fn (e &Element) get_an_elements_target(target ?string) string {
 	mut resolved_target := target
 	if resolved_target == none {
@@ -4999,9 +5214,7 @@ pub fn (mut e Element) follow_the_hyperlink(hyperlink_suffix ?string, user_invol
 
 	// 3. If subject is an a or area element, then set targetAttributeValue to the
 	// result of getting an element's target given subject.
-	if is_html_element_with_local_name(e, 'a')
-		|| is_html_element_with_local_name(e, 'area')
-		|| (e.is_svg_element() && e.local_name() == 'a') {
+	if is_html_element_with_local_name(e, 'a') || is_html_element_with_local_name(e, 'area') || (e.is_svg_element() && e.local_name() == 'a') {
 		target_attribute_value = e.get_an_elements_target(none)
 	}
 
@@ -5023,14 +5236,12 @@ pub fn (mut e Element) follow_the_hyperlink(hyperlink_suffix ?string, user_invol
 }
 
 // --- Misc helpers ---
-
 pub fn (e &Element) cannot_navigate() bool {
 	doc := e.document()
 	if doc == unsafe { nil } || !doc.is_fully_active() {
 		return true
 	}
-	is_anchor := is_html_element_with_local_name(e, 'a')
-		|| (e.is_svg_element() && e.local_name() == 'a')
+	is_anchor := is_html_element_with_local_name(e, 'a') || (e.is_svg_element() && e.local_name() == 'a')
 	return !is_anchor && !e.is_connected()
 }
 

@@ -18,14 +18,12 @@
 // - Libraries/LibWeb/DOM/StaticRange.cpp
 // - Libraries/LibWeb/DOM/Range.cpp
 // - Libraries/LibWeb/DOM/Position.cpp
-
 module dom
 
 // The current V DOM port has skeletal storage for some platform objects.
 // This file keeps the translated behavior narrow and uses simple snapshots
 // where the original C++ object has cache/filter/GC state that is not present
 // in the existing V structs yet.
-
 pub enum CollectionScope {
 	children
 	descendants
@@ -107,7 +105,7 @@ pub mut:
 pub struct NodePointer {
 pub mut:
 	node           &Node = unsafe { nil }
-	is_before_node bool  = true
+	is_before_node bool = true
 }
 
 pub struct NodeOrString {
@@ -125,7 +123,7 @@ pub fn node_or_string_from_node(node &Node) NodeOrString {
 
 pub fn node_or_string_from_string(text string) NodeOrString {
 	return NodeOrString{
-		text:    text
+		text: text
 		is_text: true
 	}
 }
@@ -215,7 +213,7 @@ fn node_matches_name_filter(node &Node, name string) bool {
 	return false
 }
 
-fn collect_nodes_for_scope(root &Node, scope CollectionScope, filter fn (&Node) bool) []&Node {
+fn collect_nodes_for_scope(root &Node, scope CollectionScope, filter fn(&Node) bool) []&Node {
 	mut nodes := []&Node{}
 	nodes_ptr := &nodes
 	node_filter := fn [nodes_ptr, filter] (node &Node) TraversalDecision {
@@ -232,7 +230,7 @@ fn collect_nodes_for_scope(root &Node, scope CollectionScope, filter fn (&Node) 
 	return nodes
 }
 
-fn collect_elements_for_scope(root &Node, scope CollectionScope, filter fn (&Element) bool) []&Element {
+fn collect_elements_for_scope(root &Node, scope CollectionScope, filter fn(&Element) bool) []&Element {
 	mut elements := []&Element{}
 	elements_ptr := &elements
 	node_filter := fn [elements_ptr, filter] (node &Node) TraversalDecision {
@@ -252,7 +250,6 @@ fn collect_elements_for_scope(root &Node, scope CollectionScope, filter fn (&Ele
 }
 
 // --- Node helpers needed by collection/range traversal ---
-
 pub fn (n &Node) node_type() u16 {
 	return n.node_type_value()
 }
@@ -314,7 +311,6 @@ pub fn (mut t Text) substring_data(offset int, count int) !string {
 }
 
 // --- NodeList / LiveNodeList / StaticNodeList ---
-
 @[heap]
 pub struct LiveNodeList {
 	NodeList
@@ -339,8 +335,7 @@ fn collection_scope_from_live_node_list_scope(scope LiveNodeListScope) Collectio
 
 pub fn (nl &NodeList) collection() []&Node {
 	if nl.is_live && nl.node_root != unsafe { nil } {
-		return collect_nodes_for_scope(nl.node_root,
-			collection_scope_from_live_node_list_scope(nl.live_scope), nl.live_filter)
+		return collect_nodes_for_scope(nl.node_root, collection_scope_from_live_node_list_scope(nl.live_scope), nl.live_filter)
 	}
 	if nl.nodes.len > 0 {
 		return nl.nodes.clone()
@@ -381,11 +376,11 @@ pub fn (nl &NodeList) item_value(index int) ?&Node {
 	return nl.item(index)
 }
 
-pub fn LiveNodeList.create(root &Node, scope LiveNodeListScope, filter fn (&Node) bool) &NodeList {
+pub fn LiveNodeList.create(root &Node, scope LiveNodeListScope, filter fn(&Node) bool) &NodeList {
 	return &NodeList{
-		node_root:   root
-		is_live:     true
-		live_scope:  scope
+		node_root: root
+		is_live: true
+		live_scope: scope
 		live_filter: filter
 	}
 }
@@ -400,7 +395,7 @@ pub fn (l &LiveNodeList) collection() []&Node {
 	return l.NodeList.collection()
 }
 
-pub fn (l &LiveNodeList) first_matching(filter fn (&Node) bool) ?&Node {
+pub fn (l &LiveNodeList) first_matching(filter fn(&Node) bool) ?&Node {
 	for node in l.collection() {
 		if filter(node) {
 			return node
@@ -449,19 +444,18 @@ pub fn (s &StaticNodeList) item(index int) ?&Node {
 }
 
 // --- HTMLCollection ---
-
-pub fn HTMLCollection.create(root &ParentNode, scope HTMLCollectionScope, filter fn (&Element) bool, sort fn (&Element, &Element) bool) &HTMLCollection {
+pub fn HTMLCollection.create(root &ParentNode, scope HTMLCollectionScope, filter fn(&Element) bool, sort fn(&Element, &Element) bool) &HTMLCollection {
 	mut collection := &HTMLCollection{
-		root:   root
-		scope:  scope
+		root: root
+		scope: scope
 		filter: filter
-		sort:   sort
+		sort: sort
 	}
 	collection.update_cache_if_needed()
 	return collection
 }
 
-fn sort_elements_with_comparator(mut elements []&Element, sort fn (&Element, &Element) bool) {
+fn sort_elements_with_comparator(mut elements []&Element, sort fn(&Element, &Element) bool) {
 	for i := 1; i < elements.len; i++ {
 		mut j := i
 		for j > 0 && sort(elements[j], elements[j - 1]) {
@@ -634,18 +628,36 @@ pub fn (c &HTMLCollection) named_item_value(name string) ?&Element {
 }
 
 // --- HTMLAllCollection ---
+pub fn (collection &HTMLAllCollection) is_htmldda() bool {
+	_ = collection
+	return true
+}
 
-pub fn HTMLAllCollection.create(root &ParentNode, scope HTMLAllCollectionScope, filter fn (&Element) bool) &HTMLAllCollection {
+pub fn HTMLAllCollection.create(root &ParentNode, scope HTMLAllCollectionScope, filter fn(&Element) bool) &HTMLAllCollection {
 	return &HTMLAllCollection{
-		root:   root
-		scope:  scope
+		root: root
+		scope: scope
 		filter: filter
 	}
 }
 
 fn is_all_named_element(element &Element) bool {
-	return element.namespace_uri() or { '' } == namespace_html_uri
-		&& element.local_name() in ['a', 'button', 'embed', 'form', 'frame', 'frameset', 'iframe', 'img', 'input', 'map', 'meta', 'object', 'select', 'textarea']
+	return element.namespace_uri() or { '' } == namespace_html_uri && element.local_name() in [
+		'a',
+		'button',
+		'embed',
+		'form',
+		'frame',
+		'frameset',
+		'iframe',
+		'img',
+		'input',
+		'map',
+		'meta',
+		'object',
+		'select',
+		'textarea',
+	]
 }
 
 pub fn (collection &HTMLAllCollection) collect_matching_elements() []&Element {
@@ -697,6 +709,32 @@ pub fn (collection &HTMLAllCollection) named_item(name string) ?HTMLAllCollectio
 	}
 }
 
+pub fn (collection &HTMLAllCollection) get_the_all_named_elements(name string) ?HTMLAllCollectionResult {
+	return collection.named_item(name)
+}
+
+pub fn (collection &HTMLAllCollection) get_the_all_indexed_element(index u32) ?&Element {
+	if index > u32(0x7fff_ffff) {
+		return none
+	}
+	return collection.indexed_item(int(index))
+}
+
+pub fn (collection &HTMLAllCollection) get_the_all_indexed_or_named_elements(name_or_index string) ?HTMLAllCollectionResult {
+	return collection.item(name_or_index)
+}
+
+pub fn (collection &HTMLAllCollection) item_value(index usize) ?&Element {
+	if index > usize(0x7fff_ffff) {
+		return none
+	}
+	return collection.get_the_all_indexed_element(u32(index))
+}
+
+pub fn (collection &HTMLAllCollection) named_item_value(name string) ?HTMLAllCollectionResult {
+	return collection.named_item(name)
+}
+
 pub fn (collection &HTMLAllCollection) item(name_or_index ?string) ?HTMLAllCollectionResult {
 	value := name_or_index or { return none }
 	if value != '' && value.bytes().all(it >= `0` && it <= `9`) {
@@ -731,7 +769,6 @@ pub fn (collection &HTMLAllCollection) supported_property_names() []string {
 }
 
 // --- NamedNodeMap ---
-
 pub fn NamedNodeMap.create(mut element Element) &NamedNodeMap {
 	return element.attributes()
 }
@@ -760,8 +797,7 @@ pub fn (n &NamedNodeMap) supported_property_names() []string {
 		}
 	}
 	// 2. If this NamedNodeMap object's element is in the HTML namespace and its node document is an HTML document, then for each name of names:
-	if n.element != unsafe { nil } && n.element.namespace_uri() or { '' } == namespace_html_uri
-		&& n.element.document().document_type() == .html {
+	if n.element != unsafe { nil } && n.element.namespace_uri() or { '' } == namespace_html_uri && n.element.document().document_type() == .html {
 		names = names.filter(it == to_ascii_lowercase(it))
 	}
 	// 3. Return names.
@@ -821,8 +857,7 @@ pub fn (mut n NamedNodeMap) set_attribute(attribute &Attr_) !&Attr_ {
 	}
 	// 3. Let oldAttr be the result of getting an attribute given attr's namespace, attr's local name, and element.
 	for index, old_attribute in n.attrs {
-		if option_string_equal(old_attribute.namespace_uri_, attribute.namespace_uri_)
-			&& old_attribute.local_name_ == attribute.local_name_ {
+		if option_string_equal(old_attribute.namespace_uri_, attribute.namespace_uri_) && old_attribute.local_name_ == attribute.local_name_ {
 			// 4. If oldAttr is attr, return attr.
 			if old_attribute == attribute {
 				return attribute
@@ -849,8 +884,7 @@ pub fn (mut n NamedNodeMap) replace_attribute(old_attribute &Attr_, new_attribut
 	mut mutable_old_attribute := unsafe { &Attr_(old_attribute) }
 	mutable_old_attribute.owner_element_ = none
 	if n.element != unsafe { nil } {
-		old_attribute.handle_attribute_changes(n.element, old_attribute.value_,
-			new_attribute.value_)
+		old_attribute.handle_attribute_changes(n.element, old_attribute.value_, new_attribute.value_)
 	}
 }
 
@@ -906,7 +940,6 @@ pub fn (mut n NamedNodeMap) remove_attribute_node_checked(attr &Attr_) !&Attr_ {
 }
 
 // --- DOMTokenList ---
-
 @[heap]
 pub struct DOMTokenList {
 pub mut:
@@ -917,7 +950,7 @@ pub mut:
 
 pub fn DOMTokenList.create(associated_element &Element, associated_attribute string) &DOMTokenList {
 	mut list := &DOMTokenList{
-		associated_element:   associated_element
+		associated_element: associated_element
 		associated_attribute: associated_attribute
 	}
 	// When a DOMTokenList object set is created:
@@ -1060,9 +1093,9 @@ pub fn (d &DOMTokenList) run_validation_steps(token string) !bool {
 	mut supported_tokens := []string{}
 	match key {
 		'link|rel' {
-			supported_tokens = ['modulepreload', 'preload', 'preconnect', 'dns-prefetch',
-				'stylesheet', 'icon', 'alternate', 'prefetch', 'prerender', 'next', 'manifest',
-				'apple-touch-icon', 'apple-touch-icon-precomposed', 'canonical']
+			supported_tokens = ['modulepreload', 'preload', 'preconnect', 'dns-prefetch', 'stylesheet',
+				'icon', 'alternate', 'prefetch', 'prerender', 'next', 'manifest', 'apple-touch-icon',
+				'apple-touch-icon-precomposed', 'canonical']
 		}
 		'a|rel', 'area|rel', 'form|rel' {
 			supported_tokens = ['noreferrer', 'noopener', 'opener']
@@ -1154,8 +1187,7 @@ pub fn (mut d DOMTokenList) run_update_steps() {
 		return
 	}
 	// 1. If get an attribute by namespace and local name given null, set's attribute name, and set's element returns null and set's token set is empty, then return.
-	if d.associated_element.get_attribute_ns(none, d.associated_attribute) == none
-		&& d.token_set.len == 0 {
+	if d.associated_element.get_attribute_ns(none, d.associated_attribute) == none && d.token_set.len == 0 {
 		return
 	}
 	// 2. Set an attribute value given set's element, set's attribute name, and the result of running the ordered set serializer for set's token set.
@@ -1168,7 +1200,6 @@ pub fn (d &DOMTokenList) item_value(index int) ?string {
 }
 
 // --- NodeFilter / NodeIterator / TreeWalker ---
-
 pub fn NodeFilter.create(callback &CallbackType) &NodeFilter {
 	return &NodeFilter{
 		callback_: callback
@@ -1224,11 +1255,11 @@ pub fn NodeIterator.create(root &Node, what_to_show u32, filter ?&NodeFilter) &N
 	// 2. Set iterator's root and iterator's reference to root.
 	// 3. Set iterator's pointer before reference to true.
 	iterator := &NodeIterator{
-		root:                           root
-		reference_node_:                root
+		root: root
+		reference_node_: root
 		pointer_before_reference_node_: true
-		what_to_show:                   what_to_show
-		filter:                         filter or { unsafe { nil } }
+		what_to_show: what_to_show
+		filter: filter or { unsafe { nil } }
 	}
 	// 4. Set iterator's whatToShow to whatToShow.
 	// 5. Set iterator's filter to filter.
@@ -1311,7 +1342,7 @@ pub fn (mut it NodeIterator) filter_node(node &Node) NodeFilterResult {
 // https://dom.spec.whatwg.org/#concept-nodeiterator-traverse
 pub fn (mut it NodeIterator) traverse(direction NodeIteratorDirection) ?&Node {
 	it.traversal_pointer = NodePointer{
-		node:           it.reference_node()
+		node: it.reference_node()
 		is_before_node: it.pointer_before_reference_node_
 	}
 	for {
@@ -1422,7 +1453,7 @@ pub fn (mut it NodeIterator) run_pre_removing_steps(to_be_removed_node &Node) {
 		it.traversal_pointer = traversal_pointer
 	}
 	mut pointer := NodePointer{
-		node:           it.reference_node()
+		node: it.reference_node()
 		is_before_node: it.pointer_before_reference_node_
 	}
 	it.run_pre_removing_steps_with_node_pointer(to_be_removed_node, mut pointer)
@@ -1445,10 +1476,10 @@ pub fn TreeWalker.create(root &Node, what_to_show u32, filter ?&NodeFilter) &Tre
 	// 1. Let walker be a new TreeWalker object.
 	// 2. Set walker's root and walker's current to root.
 	walker := &TreeWalker{
-		root:         root
-		current:      root
+		root: root
+		current: root
 		what_to_show: what_to_show
-		filter:       filter or { unsafe { nil } }
+		filter: filter or { unsafe { nil } }
 	}
 	// 3. Set walker's whatToShow to whatToShow.
 	// 4. Set walker's filter to filter.
@@ -1887,8 +1918,7 @@ pub fn (mut p ParentNode) visit_edges(mut visitor CellVisitor) {
 pub fn (mut p ParentNode) children_collection() &HTMLCollection {
 	// The children getter steps are to return an HTMLCollection collection rooted at this matching only element children.
 	if p.children_ == unsafe { nil } {
-		p.children_ = HTMLCollection.create(&p, .children, always_accept_element,
-			never_sort_elements)
+		p.children_ = HTMLCollection.create(&p, .children, always_accept_element, never_sort_elements)
 	}
 	return p.children_
 }
@@ -1940,8 +1970,7 @@ pub fn (mut p ParentNode) get_elements_by_tag_name_ns(namespace_ ?string, local_
 	}
 	// 5. Otherwise, return a HTMLCollection rooted at root, whose filter matches descendant elements whose namespace is namespace and local name is localName.
 	return HTMLCollection.create(&p, .descendants, fn [normalized_namespace, local_name] (element &Element) bool {
-		return option_string_equal(element.namespace_uri(), normalized_namespace)
-			&& element.local_name() == local_name
+		return option_string_equal(element.namespace_uri(), normalized_namespace) && element.local_name() == local_name
 	}, never_sort_elements)
 }
 
@@ -2044,7 +2073,6 @@ fn get_element_by_id_in_subtree(node &Node, id string) ?&Element {
 }
 
 // --- AbstractRange / StaticRange / Range ---
-
 @[heap]
 pub struct AbstractRange {
 pub mut:
@@ -2057,9 +2085,9 @@ pub mut:
 pub fn AbstractRange.new(start_container &Node, start_offset int, end_container &Node, end_offset int) &AbstractRange {
 	return &AbstractRange{
 		start_container_: start_container
-		start_offset_:    start_offset
-		end_container_:   end_container
-		end_offset_:      end_offset
+		start_offset_: start_offset
+		end_container_: end_container
+		end_offset_: end_offset
 	}
 }
 
@@ -2074,7 +2102,7 @@ pub fn (mut r AbstractRange) visit_edges(mut visitor CellVisitor) {
 
 pub fn (r &AbstractRange) start() BoundaryPoint {
 	return BoundaryPoint{
-		node:   r.start_container_
+		node: r.start_container_
 		offset: r.start_offset_
 	}
 }
@@ -2089,7 +2117,7 @@ pub fn (r &AbstractRange) start_offset() int {
 
 pub fn (r &AbstractRange) end() BoundaryPoint {
 	return BoundaryPoint{
-		node:   r.end_container_
+		node: r.end_container_
 		offset: r.end_offset_
 	}
 }
@@ -2109,8 +2137,7 @@ pub fn (r &AbstractRange) collapsed() bool {
 }
 
 pub fn (r &AbstractRange) equals(other &AbstractRange) bool {
-	return r.start_container_ == other.start_container_ && r.start_offset_ == other.start_offset_
-		&& r.end_container_ == other.end_container_ && r.end_offset_ == other.end_offset_
+	return r.start_container_ == other.start_container_ && r.start_offset_ == other.start_offset_ && r.end_container_ == other.end_container_ && r.end_offset_ == other.end_offset_
 }
 
 pub struct StaticRangeInit {
@@ -2130,9 +2157,9 @@ pub fn StaticRange.new(start_container &Node, start_offset int, end_container &N
 	return &StaticRange{
 		AbstractRange: AbstractRange{
 			start_container_: start_container
-			start_offset_:    start_offset
-			end_container_:   end_container
-			end_offset_:      end_offset
+			start_offset_: start_offset
+			end_container_: end_container
+			end_offset_: end_offset
 		}
 	}
 }
@@ -2147,8 +2174,7 @@ pub fn StaticRange.construct_impl(init StaticRangeInit) !&StaticRange {
 		return error('InvalidNodeTypeError: endContainer cannot be a DocumentType or Attribute node.')
 	}
 	// 2. Set this's start to (init["startContainer"], init["startOffset"]) and end to (init["endContainer"], init["endOffset"]).
-	return StaticRange.new(init.start_container, init.start_offset, init.end_container,
-		init.end_offset)
+	return StaticRange.new(init.start_container, init.start_offset, init.end_container, init.end_offset)
 }
 
 pub fn (mut r StaticRange) initialize() {
@@ -2158,7 +2184,7 @@ pub fn (mut r StaticRange) initialize() {
 pub fn Range.create(document &Document) &Range {
 	range := &Range{
 		start_container_: unsafe { &Node(document) }
-		end_container_:   unsafe { &Node(document) }
+		end_container_: unsafe { &Node(document) }
 	}
 	mut mutable_document := unsafe { &Document(document) }
 	mutable_document.live_ranges_ << range
@@ -2180,9 +2206,9 @@ pub fn Range.create_from_boundary_points(start_container &Node, start_offset int
 	assert end_offset <= end_container.length()
 	range := &Range{
 		start_container_: start_container
-		start_offset_:    start_offset
-		end_container_:   end_container
-		end_offset_:      end_offset
+		start_offset_: start_offset
+		end_container_: end_container
+		end_offset_: end_offset
 	}
 	mut document := unsafe { &Document(start_container.document()) }
 	if document != unsafe { nil } {
@@ -2254,7 +2280,7 @@ pub fn (r &Range) root() &Node {
 
 pub fn (r &Range) start() BoundaryPoint {
 	return BoundaryPoint{
-		node:   r.start_container_
+		node: r.start_container_
 		offset: r.start_offset_
 	}
 }
@@ -2269,7 +2295,7 @@ pub fn (r &Range) start_offset() int {
 
 pub fn (r &Range) end() BoundaryPoint {
 	return BoundaryPoint{
-		node:   r.end_container_
+		node: r.end_container_
 		offset: r.end_offset_
 	}
 }
@@ -2346,7 +2372,7 @@ pub fn (mut r Range) set_start_or_end(node &Node, offset int, start_or_end Range
 		// If these steps were invoked as "set the start":
 		// 1. If range's root is not equal to node's root, or if bp is after the range's end, set range's end to bp.
 		if r.start_container_ == unsafe { nil } || r.root() != node.root() || position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-			node:   node
+			node: node
 			offset: offset
 		}, r.end()) == .after {
 			r.end_container_ = node
@@ -2359,7 +2385,7 @@ pub fn (mut r Range) set_start_or_end(node &Node, offset int, start_or_end Range
 		// If these steps were invoked as "set the end":
 		// 1. If range's root is not equal to node's root, or if bp is before the range's start, set range's start to bp.
 		if r.end_container_ == unsafe { nil } || r.root() != node.root() || position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-			node:   node
+			node: node
 			offset: offset
 		}, r.start()) == .before {
 			r.start_container_ = node
@@ -2444,8 +2470,7 @@ pub fn (r &Range) compare_boundary_points(how HowToCompareBoundaryPoints, source
 	}
 
 	// 4. If the position of this point relative to other point is before/equal/after, return -1/0/1.
-	return match position_of_boundary_point_relative_to_other_boundary_point(this_point,
-		other_point) {
+	return match position_of_boundary_point_relative_to_other_boundary_point(this_point, other_point) {
 		.before { -1 }
 		.equal { 0 }
 		.after { 1 }
@@ -2507,8 +2532,7 @@ pub fn (mut r Range) select_node_contents(node &Node) ! {
 }
 
 pub fn (r &Range) clone_range() &Range {
-	return Range.create_from_boundary_points(r.start_container_, r.start_offset_, r.end_container_,
-		r.end_offset_)
+	return Range.create_from_boundary_points(r.start_container_, r.start_offset_, r.end_container_, r.end_offset_)
 }
 
 // https://dom.spec.whatwg.org/#dom-range-commonancestorcontainer
@@ -2544,11 +2568,11 @@ pub fn (r &Range) intersects_node(node &Node) bool {
 	offset := node.index()
 	// 5. If (parent, offset) is before end and (parent, offset plus 1) is after start, return true.
 	relative_position_to_end := position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-		node:   parent
+		node: parent
 		offset: offset
 	}, r.end())
 	relative_position_to_start := position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-		node:   parent
+		node: parent
 		offset: offset + 1
 	}, r.start())
 	if relative_position_to_end == .before && relative_position_to_start == .after {
@@ -2574,11 +2598,11 @@ pub fn (r &Range) is_point_in_range(node &Node, offset int) !bool {
 	}
 	// 4. If (node, offset) is before start or after end, return false.
 	relative_position_to_start := position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-		node:   node
+		node: node
 		offset: offset
 	}, r.start())
 	relative_position_to_end := position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-		node:   node
+		node: node
 		offset: offset
 	}, r.end())
 	if relative_position_to_start == .before || relative_position_to_end == .after {
@@ -2604,7 +2628,7 @@ pub fn (r &Range) compare_point(node &Node, offset int) !int {
 	}
 	// 4. If (node, offset) is before start, return -1.
 	relative_position_to_start := position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-		node:   node
+		node: node
 		offset: offset
 	}, r.start())
 	if relative_position_to_start == .before {
@@ -2612,7 +2636,7 @@ pub fn (r &Range) compare_point(node &Node, offset int) !int {
 	}
 	// 5. If (node, offset) is after end, return 1.
 	relative_position_to_end := position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-		node:   node
+		node: node
 		offset: offset
 	}, r.end())
 	if relative_position_to_end == .after {
@@ -2627,8 +2651,7 @@ pub fn (r &Range) to_string() string {
 	// 1. Let s be the empty string.
 	mut builder := ''
 	// 2. If this's start node is this's end node and it is a Text node, then return the substring of that Text node's data.
-	if r.start_container_ == r.end_container_
-		&& r.start_container_.is_text_node_for_range_stringifier() {
+	if r.start_container_ == r.end_container_ && r.start_container_.is_text_node_for_range_stringifier() {
 		if text := r.start_container_.character_data() {
 			return text.substring_data(r.start_offset_, r.end_offset_ - r.start_offset_) or { '' }
 		}
@@ -2636,8 +2659,7 @@ pub fn (r &Range) to_string() string {
 	// 3. If this's start node is a Text node, then append the substring of that node's data from this's start offset until the end to s.
 	if r.start_container_.is_text_node_for_range_stringifier() {
 		if text := r.start_container_.character_data() {
-			builder += text.substring_data(r.start_offset_,
-				text.length_in_utf16_code_units() - r.start_offset_) or { '' }
+			builder += text.substring_data(r.start_offset_, text.length_in_utf16_code_units() - r.start_offset_) or { '' }
 		}
 	}
 	// 4. Append the concatenation of the data of all Text nodes that are contained in this, in tree order, to s.
@@ -2687,15 +2709,13 @@ pub fn (mut r Range) extract() !&DocumentFragment {
 		mut clone_node := unsafe { &Node(clone) }
 		if mut clone_data := clone_node.character_data_mut() {
 			if data := original_start_node.character_data() {
-				clone_data.set_data(data.substring_data(original_start_offset,
-					original_end_offset - original_start_offset)!)
+				clone_data.set_data(data.substring_data(original_start_offset, original_end_offset - original_start_offset)!)
 			}
 		}
 		fragment_node.append_child(clone)!
 		mut mutable_original_start_node := unsafe { &Node(original_start_node) }
 		if mut data := mutable_original_start_node.character_data_mut() {
-			data.replace_data_with_mutation_steps(original_start_offset,
-				original_end_offset - original_start_offset, '')!
+			data.replace_data_with_mutation_steps(original_start_offset, original_end_offset - original_start_offset, '')!
 		}
 		return fragment
 	}
@@ -2739,8 +2759,7 @@ pub fn (mut r Range) extract() !&DocumentFragment {
 	mut new_offset := original_start_offset
 	if !original_start_node.is_inclusive_ancestor_of(original_end_node) {
 		mut reference_node := unsafe { &Node(original_start_node) }
-		for reference_node.parent_node() != none
-			&& !(reference_node.parent_node() or { break }).is_inclusive_ancestor_of(original_end_node) {
+		for reference_node.parent_node() != none && !(reference_node.parent_node() or { break }).is_inclusive_ancestor_of(original_end_node) {
 			reference_node = reference_node.parent_node() or { break }
 		}
 		new_node = reference_node.parent_node() or { new_node }
@@ -2752,21 +2771,18 @@ pub fn (mut r Range) extract() !&DocumentFragment {
 			mut clone_node := unsafe { &Node(clone) }
 			if mut clone_data := clone_node.character_data_mut() {
 				if data := original_start_node.character_data() {
-					clone_data.set_data(data.substring_data(original_start_offset,
-						original_start_node.length() - original_start_offset)!)
+					clone_data.set_data(data.substring_data(original_start_offset, original_start_node.length() - original_start_offset)!)
 				}
 			}
 			fragment_node.append_child(clone)!
 			mut mutable_original_start_node := unsafe { &Node(original_start_node) }
 			if mut data := mutable_original_start_node.character_data_mut() {
-				data.replace_data_with_mutation_steps(original_start_offset,
-					original_start_node.length() - original_start_offset, '')!
+				data.replace_data_with_mutation_steps(original_start_offset, original_start_node.length() - original_start_offset, '')!
 			}
 		} else {
 			clone := first_child.clone_node(none, false, none)!
 			fragment_node.append_child(clone)!
-			mut subrange := Range.create_from_boundary_points(original_start_node,
-				original_start_offset, first_child, first_child.length())
+			mut subrange := Range.create_from_boundary_points(original_start_node, original_start_offset, first_child, first_child.length())
 			subfragment := subrange.extract()!
 			mut clone_node := unsafe { &Node(clone) }
 			clone_node.append_child(subfragment.as_node())!
@@ -2792,8 +2808,7 @@ pub fn (mut r Range) extract() !&DocumentFragment {
 		} else {
 			clone := last_child.clone_node(none, false, none)!
 			fragment_node.append_child(clone)!
-			mut subrange := Range.create_from_boundary_points(last_child, 0, original_end_node,
-				original_end_offset)
+			mut subrange := Range.create_from_boundary_points(last_child, 0, original_end_node, original_end_offset)
 			subfragment := subrange.extract()!
 			mut clone_node := unsafe { &Node(clone) }
 			clone_node.append_child(subfragment.as_node())!
@@ -2812,14 +2827,14 @@ pub fn (r &Range) contains_node(node &Node) bool {
 	}
 	// and (node, 0) is after range's start,
 	if position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-		node:   node
+		node: node
 		offset: 0
 	}, r.start()) != .after {
 		return false
 	}
 	// and (node, node's length) is before range's end.
 	if position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-		node:   node
+		node: node
 		offset: node.length()
 	}, r.end()) != .before {
 		return false
@@ -2841,10 +2856,7 @@ pub fn (mut r Range) insert_node(node &Node) ! {
 // https://dom.spec.whatwg.org/#concept-range-insert
 pub fn (mut r Range) insert(node &Node) ! {
 	// 1. If range's start node is a ProcessingInstruction or Comment node, is a Text node whose parent is null, or is node, then throw.
-	if r.start_container_.node_type == .processing_instruction_node
-		|| r.start_container_.is_comment()
-		|| (r.start_container_.is_exclusive_text() && r.start_container_.parent_node() == none)
-		|| r.start_container_ == node {
+	if r.start_container_.node_type == .processing_instruction_node || r.start_container_.is_comment() || (r.start_container_.is_exclusive_text() && r.start_container_.parent_node() == none) || r.start_container_ == node {
 		return error('HierarchyRequestError: Range has inappropriate start node for insertion')
 	}
 	// 2. Let referenceNode be null.
@@ -2912,8 +2924,7 @@ pub fn (mut r Range) surround_contents(new_parent &Node) ! {
 		return error('InvalidStateError: Non-Text node is partially contained in range.')
 	}
 	// 2. If newParent is a Document, DocumentType, or DocumentFragment node, then throw an "InvalidNodeTypeError" DOMException.
-	if new_parent.is_document() || new_parent.is_document_type()
-		|| new_parent.is_document_fragment() {
+	if new_parent.is_document() || new_parent.is_document_type() || new_parent.is_document_fragment() {
 		return error('InvalidNodeTypeError: Invalid parent node type')
 	}
 	// 3. Let fragment be the result of extracting this.
@@ -2956,8 +2967,7 @@ pub fn (mut r Range) clone_the_contents() !&DocumentFragment {
 		mut clone_node := unsafe { &Node(clone) }
 		if mut clone_data := clone_node.character_data_mut() {
 			if data := original_start_node.character_data() {
-				clone_data.set_data(data.substring_data(original_start_offset,
-					original_end_offset - original_start_offset)!)
+				clone_data.set_data(data.substring_data(original_start_offset, original_end_offset - original_start_offset)!)
 			}
 		}
 		fragment_node.append_child(clone)!
@@ -3005,16 +3015,14 @@ pub fn (mut r Range) clone_the_contents() !&DocumentFragment {
 			mut clone_node := unsafe { &Node(clone) }
 			if mut clone_data := clone_node.character_data_mut() {
 				if data := original_start_node.character_data() {
-					clone_data.set_data(data.substring_data(original_start_offset,
-						original_start_node.length() - original_start_offset)!)
+					clone_data.set_data(data.substring_data(original_start_offset, original_start_node.length() - original_start_offset)!)
 				}
 			}
 			fragment_node.append_child(clone)!
 		} else {
 			clone := first_child.clone_node(none, false, none)!
 			fragment_node.append_child(clone)!
-			mut subrange := Range.create_from_boundary_points(original_start_node,
-				original_start_offset, first_child, first_child.length())
+			mut subrange := Range.create_from_boundary_points(original_start_node, original_start_offset, first_child, first_child.length())
 			subfragment := subrange.clone_the_contents()!
 			mut clone_node := unsafe { &Node(clone) }
 			clone_node.append_child(subfragment.as_node())!
@@ -3037,8 +3045,7 @@ pub fn (mut r Range) clone_the_contents() !&DocumentFragment {
 		} else {
 			clone := last_child.clone_node(none, false, none)!
 			fragment_node.append_child(clone)!
-			mut subrange := Range.create_from_boundary_points(last_child, 0, original_end_node,
-				original_end_offset)
+			mut subrange := Range.create_from_boundary_points(last_child, 0, original_end_node, original_end_offset)
 			subfragment := subrange.clone_the_contents()!
 			mut clone_node := unsafe { &Node(clone) }
 			clone_node.append_child(subfragment.as_node())!
@@ -3062,8 +3069,7 @@ pub fn (mut r Range) delete_contents() ! {
 	if original_start_node == original_end_node && original_start_node.is_character_data() {
 		mut mutable_original_start_node := unsafe { &Node(original_start_node) }
 		if mut data := mutable_original_start_node.character_data_mut() {
-			data.replace_data(original_start_offset, original_end_offset - original_start_offset,
-				'')!
+			data.replace_data(original_start_offset, original_end_offset - original_start_offset, '')!
 		}
 		return
 	}
@@ -3100,8 +3106,7 @@ pub fn (mut r Range) delete_contents() ! {
 	if original_start_node.is_character_data() {
 		mut mutable_original_start_node := unsafe { &Node(original_start_node) }
 		if mut data := mutable_original_start_node.character_data_mut() {
-			data.replace_data(original_start_offset,
-				original_start_node.length() - original_start_offset, '')!
+			data.replace_data(original_start_offset, original_start_node.length() - original_start_offset, '')!
 		}
 	}
 	// 8. For each node in nodes to remove, in tree order, remove node.
@@ -3136,9 +3141,9 @@ pub mut:
 
 pub fn DOMRect.construct_impl(x f64, y f64, width f64, height f64) DOMRect {
 	return DOMRect{
-		x:      x
-		y:      y
-		width:  width
+		x: x
+		y: y
+		width: width
 		height: height
 	}
 }
@@ -3188,7 +3193,7 @@ pub fn (r &Range) get_client_rects() &DOMRectList {
 	start := start_node or { return DOMRectList.create([]) }
 	end := end_node or { return DOMRectList.create([]) }
 	end_next := end.next_in_pre_order(none)
-	for node := ?&Node(start); node != none; {
+	for node := ?&Node(start); node != none;  {
 		current := node or { break }
 		if stop := end_next {
 			if current == stop {
@@ -3271,9 +3276,10 @@ pub fn (r &Range) create_contextual_fragment(fragment string) !&DocumentFragment
 	// 4. If node implements Element, set element to node.
 	if node_element := node.as_element() {
 		element = unsafe { &Element(node_element) }
-	}
+	} else if
+
 	// 5. Otherwise, if node implements Text or Comment node, set element to node's parent element.
-	else if node.is_text() || node.is_comment() {
+	node.is_text() || node.is_comment() {
 		element = node.parent_element()
 	}
 	// 6. If element is null or is an HTML html element, use a synthetic body element.
@@ -3290,11 +3296,16 @@ pub fn (r &Range) create_contextual_fragment(fragment string) !&DocumentFragment
 
 	// 7. Let fragment node be the result of invoking the fragment parsing algorithm steps with element and compliantString.
 	fragment_node := parse_fragment_fallback(context_element, compliant_string)!
-	// 8. Script descendant preparation is deferred until HTMLScriptElement is fully ported.
+	// 8. Reset every script descendant so scripts inserted from the contextual fragment can run.
+	if hook := context_element.document().html_fragment_parsing_hook() {
+		if hook.prepare_script_descendants != unsafe { nil } {
+			hook.prepare_script_descendants(hook.target, fragment_node.as_node())
+		}
+	}
 	return fragment_node
 }
 
-pub fn (r &Range) for_each_contained(callback fn (&Node) TraversalDecision) {
+pub fn (r &Range) for_each_contained(callback fn(&Node) TraversalDecision) {
 	for node in r.contained_nodes() {
 		if callback(node) == .@break {
 			return
@@ -3336,10 +3347,9 @@ pub fn Range.live_ranges() []&Range {
 }
 
 // --- Position ---
-
 pub fn Position.create(node &Node, offset int) &Position {
 	return &Position{
-		node_:   node
+		node_: node
 		offset_: offset
 	}
 }

@@ -12,5 +12,5 @@ pub struct GlobalPrivacyControlMixin {}
 
 // https://w3c.github.io/gpc/#dom-globalprivacycontrol-globalprivacycontrol
 pub fn (_ &GlobalPrivacyControlMixin) global_privacy_control() bool {
-	return loader.the().enable_global_privacy_control
+	return loader.the().enable_global_privacy_control()
 }

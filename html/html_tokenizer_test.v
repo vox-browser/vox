@@ -1,5 +1,18 @@
 module html
 
+fn test_html_tokenizer_exact_transition_and_emit_hooks() {
+	mut tokenizer := HTMLTokenizer.new('')
+	tokenizer.will_switch_to(.tag_name)
+	tokenizer.will_reconsume_in(.data)
+	mut token := HTMLToken.make_start_tag('div')
+	token.add_attribute(Attribute{ local_name: 'id', value: 'first' })
+	token.add_attribute(Attribute{ local_name: 'id', value: 'second' })
+	tokenizer.will_emit(mut token)
+	assert tokenizer.last_emitted_start_tag_name? == 'div'
+	assert token.attributes.len == 1
+	assert token.attribute('id')? == 'first'
+}
+
 // Runtime tests for the HTML tokenizer, translated from Tests/LibWeb/TestHTMLTokenizer.cpp.
 // (The file-based `regression` test case is omitted: it depends on an external fixture and a hash
 // tied to HTMLToken::to_string()'s exact format.)

@@ -46,6 +46,13 @@ fn encode_url_fragment(input string) string {
 	})
 }
 
+fn percent_encode_url_path_segment(input string) string {
+	return percent_encode_url_component(input, fn (byte u8) bool {
+		return byte <= 0x20 || byte > 0x7e || byte in [`"`, `#`, `<`, `>`, `?`, `^`,
+			`\``, `{`, `}`]
+	})
+}
+
 fn serialized_hostname(record urllib.URL) string {
 	if record.host.starts_with('[') {
 		closing_bracket := record.host.index_u8(`]`)
@@ -136,15 +143,23 @@ pub mut:
 	query_object &URLSearchParams
 }
 
-fn initialize_a_url(record urllib.URL, fragment_present bool) &DOMURL {
-	mut query := URLSearchParams.from_string(record.raw_query)
-	url := &DOMURL{
+pub fn DOMURL.create(record urllib.URL, fragment_present bool, query &URLSearchParams) &DOMURL {
+	return &DOMURL{
 		record:           record
 		fragment_present: fragment_present
 		query_object:     query
 	}
+}
+
+pub fn DOMURL.initialize_a_url(record urllib.URL, fragment_present bool) &DOMURL {
+	mut query := URLSearchParams.from_string(record.raw_query)
+	url := DOMURL.create(record, fragment_present, query)
 	query.bind_url(url)
 	return url
+}
+
+fn initialize_a_url(record urllib.URL, fragment_present bool) &DOMURL {
+	return DOMURL.initialize_a_url(record, fragment_present)
 }
 
 pub fn DOMURL.construct_impl(input string, base ?string) !&DOMURL {
@@ -322,6 +337,25 @@ pub fn (url &DOMURL) pathname() string {
 	return if url.record.opaque != '' { url.record.opaque } else { url.record.escaped_path() }
 }
 
+pub fn (url &DOMURL) fragment() ?string {
+	if !url.fragment_present {
+		return none
+	}
+	return url.record.fragment
+}
+
+pub fn (mut url DOMURL) set_paths(paths []string) {
+	if url.record.opaque != '' {
+		return
+	}
+	url.record.path = if paths.len == 0 { '' } else { '/' + paths.join('/') }
+	url.record.raw_path = if paths.len == 0 {
+		''
+	} else {
+		'/' + paths.map(percent_encode_url_path_segment(it)).join('/')
+	}
+}
+
 pub fn (mut url DOMURL) set_pathname(value string) {
 	if url.record.opaque == '' {
 		url.record.path = if url.record.host != '' && !value.starts_with('/') {
@@ -359,6 +393,17 @@ fn (mut url DOMURL) set_query_from_params(query ?string) {
 		url.record.raw_query = ''
 		url.record.force_query = false
 	}
+}
+
+pub fn (url &DOMURL) query() ?string {
+	if url.record.raw_query == '' && !url.record.force_query {
+		return none
+	}
+	return url.record.raw_query
+}
+
+pub fn (mut url DOMURL) set_query(query ?string) {
+	url.set_query_from_params(query)
 }
 
 pub fn (url &DOMURL) search_params() &URLSearchParams {
@@ -422,6 +467,18 @@ pub:
 	opaque_token u64
 }
 
+pub struct OriginDOMURLSource {
+pub:
+	value &DOMURL
+}
+
+pub struct OriginObjectSource {
+pub:
+	value &Origin
+}
+
+pub type OriginInput = OriginDOMURLSource | OriginObjectSource | string
+
 pub fn Origin.construct_impl() &Origin {
 	return &Origin{
 		opaque_token: rand.u64()
@@ -429,8 +486,22 @@ pub fn Origin.construct_impl() &Origin {
 }
 
 pub fn Origin.from_string(value string) !&Origin {
-	url := DOMURL.construct_impl(value, none)!
-	return url.extract_an_origin()
+	return Origin.from(value)
+}
+
+pub fn Origin.from(value OriginInput) !&Origin {
+	match value {
+		string {
+			url := DOMURL.construct_impl(value, none)!
+			return url.extract_an_origin()
+		}
+		OriginDOMURLSource {
+			return value.value.extract_an_origin()
+		}
+		OriginObjectSource {
+			return value.value.extract_an_origin()
+		}
+	}
 }
 
 pub fn (url &DOMURL) extract_an_origin() &Origin {
@@ -466,6 +537,15 @@ pub fn (url &DOMURL) extract_an_origin() &Origin {
 		scheme: url.record.scheme
 		host:   host.to_lower()
 		port:   port
+	}
+}
+
+pub fn (origin &Origin) extract_an_origin() &Origin {
+	return &Origin{
+		scheme:       origin.scheme
+		host:         origin.host
+		port:         origin.port
+		opaque_token: origin.opaque_token
 	}
 }
 

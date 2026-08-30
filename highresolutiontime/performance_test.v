@@ -1,5 +1,6 @@
 module highresolutiontime
 
+import navigationtiming
 import performancetimeline
 import usertiming
 
@@ -111,4 +112,17 @@ fn test_resource_timing_buffer_and_handler() {
 fn test_performance_to_json_exposes_time_origin() {
 	performance := deterministic_performance()
 	assert performance.to_json().time_origin == performance.time_origin()
+}
+
+fn test_legacy_navigation_objects_are_lazy_same_objects() {
+	mut performance := deterministic_performance()
+	timing := performance.timing()
+	navigation := performance.navigation()
+	assert timing.navigation_start() == 1_000
+	assert timing.load_event_end() == 1_250
+	assert voidptr(timing) == voidptr(performance.timing())
+	assert navigation.type_() == navigationtiming.type_navigate
+	assert navigation.redirect_count() == 0
+	assert voidptr(navigation) == voidptr(performance.navigation())
+	assert performance.window_or_worker() == performance.timeline
 }

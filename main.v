@@ -6,6 +6,7 @@ import css
 import dom
 import domurl
 import encoding
+import encoding.base64
 import fetch
 import fileapi
 import geolocation
@@ -16,6 +17,7 @@ import html
 import http
 import infra
 import layout
+import math
 import mimesniff
 import namespace_
 import net.http as vhttp
@@ -29,6 +31,24 @@ import storageapi
 import url
 import webvtt
 import x.json2
+
+#include "native_capture_darwin.m"
+
+fn C.schedule_native_screenshot(path string)
+
+fn C.native_window_width() int
+
+fn C.native_window_height() int
+
+fn C.native_draw_rect_srgb(x f32, y f32, width f32, height f32, fill_color gg.Color)
+
+fn C.native_configure_document_font(path string)
+
+fn C.native_draw_document_text_srgb(x f32, y f32, text string, color gg.Color, size f32, bold int, italic int, monospace int)
+
+fn C.native_draw_polygon_srgb(points &f32, point_count int, canvas_height f32, color gg.Color)
+
+fn C.native_draw_outer_box_shadow_srgb(source_x f32, source_y f32, source_width f32, source_height f32, source_radius f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, clip_radius f32, blur f32, color gg.Color)
 
 const initial_width = 1024
 const initial_height = 768
@@ -46,7 +66,7 @@ const demo_markup = '<!doctype html>
     h1 { color: #5b21b6; font-size: 34px; margin: 0 0 12px; }
     h2 { color: #334155; margin-top: 28px; }
     p { line-height: 1.55; margin: 10px 0; }
-    .badge { display: block; width: 280px; padding: 10px 14px; margin: 20px 0;
+    .badge { display: block; width: 300px; padding: 10px 14px; margin: 20px 0;
              color: white; background: #6d28d9; border-radius: 8px; }
     .js-button { display: block; width: 320px; padding: 10px 14px; margin: 12px 0;
                  color: white; background: #0f766e; border-radius: 8px; }
@@ -77,10 +97,10 @@ const demo_markup = '<!doctype html>
 
 struct BrowserApp {
 mut:
-	ctx                   &gg.Context        = unsafe { nil }
-	page_model            &page.Page         = unsafe { nil }
+	ctx                   &gg.Context = unsafe { nil }
+	page_model            &page.Page = unsafe { nil }
 	js_runtime            &browserjs.Runtime = unsafe { nil }
-	document              &dom.Document      = unsafe { nil }
+	document              &dom.Document = unsafe { nil }
 	root_box              layout.BlockBox
 	markup                string
 	source_label          string
@@ -101,6 +121,19 @@ mut:
 	hovered_link          string
 	navigation_results    chan NavigationResult
 	navigation_generation int
+	background_image_ids  map[string]int
+	screenshot_path       string
+	screenshot_scheduled  bool
+	use_document_font     bool
+}
+
+struct LaunchOptions {
+mut:
+	source         string
+	headless_smoke bool
+	screenshot     string
+	width          int = initial_width
+	height         int = initial_height
 }
 
 struct HistoryEntry {
@@ -158,28 +191,119 @@ fn html_escape(value string) string {
 	return value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 }
 
-fn initial_document() (string, string, string) {
-	for argument in os.args[1..] {
-		if argument == '--headless-smoke' || argument.starts_with('-psn_') {
-			continue
+fn schedule_native_screenshot(path string) {
+	C.schedule_native_screenshot(path)
+}
+
+fn configure_browser_layout_font() bool {
+	$if macos {
+		layout_test_font := os.getenv('LADYBIRD_LAYOUT_TEST_FONT')
+		if layout_test_font != '' {
+			C.native_configure_document_font(layout_test_font)
+			return true
 		}
-		if argument.trim_space().starts_with('<') {
-			return 'about:srcdoc', argument, 'command-line HTML'
+		mut path := os.getenv('LADYBIRD_BROWSER_FONT')
+		use_document_font := path != ''
+		if path == '' {
+			path = '/System/Library/Fonts/Supplemental/Arial.ttf'
 		}
-		mut file_name := argument
-		if file_name.starts_with('file://') {
-			file_name = file_name['file://'.len..]
-		}
-		if os.is_file(file_name) {
-			markup := os.read_file(file_name) or {
-				return 'about:error', '<h1>Could not read file</h1><p>${html_escape(err.msg())}</p>', file_name
+		if os.is_file(path) {
+			os.setenv('LADYBIRD_LAYOUT_TEST_FONT', path, true)
+			if use_document_font {
+				C.native_configure_document_font(path)
 			}
-			real_path := os.real_path(file_name)
-			return 'file://${real_path}', markup, real_path
+			return use_document_font
 		}
-		return argument, '', argument
 	}
-	return 'about:home', demo_markup, 'built-in translated-engine demo'
+	return false
+}
+
+fn browser_window_size() gg.Size {
+	$if macos {
+		return gg.Size{C.native_window_width(), C.native_window_height()}
+	} $else {
+		return gg.window_size()
+	}
+}
+
+fn positive_dimension(raw string, option string) !int {
+	value := raw.int()
+	if value <= 0 {
+		return error('${option} must be a positive integer')
+	}
+	return value
+}
+
+fn parse_launch_options(arguments []string) !LaunchOptions {
+	mut options := LaunchOptions{}
+	mut index := 0
+	for index < arguments.len {
+		argument := arguments[index]
+		if argument == '--headless-smoke' {
+			options.headless_smoke = true
+		} else if argument == '--screenshot' {
+			if index + 1 >= arguments.len {
+				return error('--screenshot requires a PNG output path')
+			}
+			index++
+			options.screenshot = arguments[index]
+			if options.screenshot == '' {
+				return error('--screenshot requires a PNG output path')
+			}
+		} else if argument.starts_with('--screenshot=') {
+			options.screenshot = argument.all_after('=')
+			if options.screenshot == '' {
+				return error('--screenshot requires a PNG output path')
+			}
+		} else if argument == '--window-width' {
+			if index + 1 >= arguments.len {
+				return error('--window-width requires a value')
+			}
+			index++
+			options.width = positive_dimension(arguments[index], '--window-width')!
+		} else if argument.starts_with('--window-width=') {
+			options.width = positive_dimension(argument.all_after('='), '--window-width')!
+		} else if argument == '--window-height' {
+			if index + 1 >= arguments.len {
+				return error('--window-height requires a value')
+			}
+			index++
+			options.height = positive_dimension(arguments[index], '--window-height')!
+		} else if argument.starts_with('--window-height=') {
+			options.height = positive_dimension(argument.all_after('='), '--window-height')!
+		} else if argument.starts_with('-psn_') {
+			// Finder supplies this process serial number when opening an app bundle.
+		} else if argument.starts_with('-') {
+			return error('unknown option: ${argument}')
+		} else if options.source == '' {
+			options.source = argument
+		} else {
+			return error('only one URL, HTML path, or literal HTML source is supported')
+		}
+		index++
+	}
+	return options
+}
+
+fn initial_document(argument string) (string, string, string) {
+	if argument == '' {
+		return 'about:home', demo_markup, 'built-in translated-engine demo'
+	}
+	if argument.trim_space().starts_with('<') {
+		return 'about:srcdoc', argument, 'command-line HTML'
+	}
+	mut file_name := argument
+	if file_name.starts_with('file://') {
+		file_name = file_name['file://'.len..]
+	}
+	if os.is_file(file_name) {
+		markup := os.read_file(file_name) or {
+			return 'about:error', '<h1>Could not read file</h1><p>${html_escape(err.msg())}</p>', file_name
+		}
+		real_path := os.real_path(file_name)
+		return 'file://${real_path}', markup, real_path
+	}
+	return argument, '', argument
 }
 
 fn resolve_url(reference string, base string) string {
@@ -193,9 +317,7 @@ fn resolve_url(reference string, base string) string {
 	if os.is_file(trimmed) {
 		return 'file://${os.real_path(trimmed)}'
 	}
-	if base != '' && (trimmed.starts_with('/') || trimmed.starts_with('./')
-		|| trimmed.starts_with('../') || trimmed.starts_with('?')
-		|| trimmed.starts_with('#')) {
+	if base != '' && (trimmed.starts_with('/') || trimmed.starts_with('./') || trimmed.starts_with('../') || trimmed.starts_with('?') || trimmed.starts_with('#')) {
 		base_url := urllib.parse(base) or { return trimmed }
 		reference_url := urllib.parse(trimmed) or { return trimmed }
 		return (base_url.resolve_reference(&reference_url) or { return trimmed }).str()
@@ -238,13 +360,11 @@ fn fetch_page(address string, base string) !LoadedPage {
 	resolved := resolve_url(address, base)
 	if resolved == 'about:home' || resolved == 'about:blank' {
 		return LoadedPage{
-			url:          resolved
-			markup:       if resolved == 'about:home' {
-				demo_markup
-			} else {
-				'<html><body></body></html>'
-			}
-			status:       'Loaded locally'
+			url: resolved
+			markup: if resolved == 'about:home' {
+				demo_markup} else {
+				'<html><body></body></html>'}
+			status: 'Loaded locally'
 			content_type: 'text/html'
 		}
 	}
@@ -252,9 +372,9 @@ fn fetch_page(address string, base string) !LoadedPage {
 		file_name := resolved['file://'.len..]
 		markup := os.read_file(file_name)!
 		return LoadedPage{
-			url:          resolved
-			markup:       markup
-			status:       'Local file'
+			url: resolved
+			markup: markup
+			status: 'Local file'
 			content_type: 'text/html'
 		}
 	}
@@ -262,11 +382,11 @@ fn fetch_page(address string, base string) !LoadedPage {
 		return error('Unsupported URL scheme')
 	}
 	response := vhttp.fetch(
-		url:        resolved
-		method:     .get
+		url: resolved
+		method: .get
 		user_agent: 'Ladybird V/0.1'
-		validate:   true
-		verify:     tls_ca_bundle()
+		validate: true
+		verify: tls_ca_bundle()
 	)!
 	content_type := response.header.get(.content_type) or { 'text/html' }
 	if response.status_code < 200 || response.status_code >= 400 {
@@ -278,9 +398,9 @@ fn fetch_page(address string, base string) !LoadedPage {
 		'<html><body><h1>${html_escape(content_type)}</h1><pre>${html_escape(response.body)}</pre></body></html>'
 	}
 	return LoadedPage{
-		url:          resolved
-		markup:       markup
-		status:       'HTTP ${response.status_code} · ${response.body.len} bytes'
+		url: resolved
+		markup: markup
+		status: 'HTTP ${response.status_code} · ${response.body.len} bytes'
 		content_type: content_type
 	}
 }
@@ -291,11 +411,11 @@ fn fetch_text_resource(reference string, base string) !string {
 		return os.read_file(resolved['file://'.len..])
 	}
 	response := vhttp.fetch(
-		url:        resolved
-		method:     .get
+		url: resolved
+		method: .get
 		user_agent: 'Ladybird V/0.1'
-		validate:   true
-		verify:     tls_ca_bundle()
+		validate: true
+		verify: tls_ca_bundle()
 	)!
 	if response.status_code < 200 || response.status_code >= 400 {
 		return error('HTTP ${response.status_code}')
@@ -306,18 +426,18 @@ fn fetch_text_resource(reference string, base string) !string {
 fn fetch_page_in_background(resolved string, base string, generation int, add_history bool, results chan NavigationResult) {
 	loaded := fetch_page(resolved, base) or {
 		results <- NavigationResult{
-			generation:  generation
+			generation: generation
 			add_history: add_history
-			resolved:    resolved
-			error:       err.msg()
+			resolved: resolved
+			error: err.msg()
 		}
 		return
 	}
 	results <- NavigationResult{
-		generation:  generation
+		generation: generation
 		add_history: add_history
-		resolved:    resolved
-		loaded:      loaded
+		resolved: resolved
+		loaded: loaded
 	}
 }
 
@@ -512,8 +632,7 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 				if text := json_string_property(element_state, 'textContent') {
 					current_text := element.as_node().text_content() or { '' }
 					if text != current_text && (json_string_property(element_state, 'innerHTML') or {
-						''
-					}) == '' {
+						''}) == '' {
 						mut node := unsafe { &dom.Node(element) }
 						node.set_text_content(text) or { messages << err.msg() }
 					}
@@ -550,8 +669,7 @@ fn run_document_javascript(document &dom.Document, current_url string, runtime &
 	if sources.len == 0 {
 		return none
 	}
-	result := runtime.evaluate(javascript_program(javascript_initial_state(document, current_url),
-		sources)) or {
+	result := runtime.evaluate(javascript_program(javascript_initial_state(document, current_url), sources)) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
@@ -584,7 +702,7 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	}
 	navigation := apply_javascript_state(app.document, result, mut app.js_messages)
 	app.js_runtime.evaluate('__ladybirdClearLogs()') or {}
-	app.relayout(app.viewport_width, app.viewport_height + int(toolbar_height + status_bar_height))
+	app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 	if destination := navigation {
 		if destination != '' {
 			app.navigate(resolve_document_reference(destination, app.address), true)
@@ -593,18 +711,30 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	return javascript_default_prevented(result)
 }
 
+fn (app &BrowserApp) chrome_height() int {
+	return int(toolbar_height + status_bar_height)
+}
+
+fn (app &BrowserApp) page_top() f32 {
+	return f32(toolbar_height)
+}
+
+fn (app &BrowserApp) status_height() int {
+	return int(status_bar_height)
+}
+
 fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	if app.document == unsafe { nil } {
 		return
 	}
 	viewport_width := if window_width > 0 { window_width } else { initial_width }
-	viewport_height := if window_height > int(toolbar_height + status_bar_height) {
-		window_height - int(toolbar_height + status_bar_height)
+	chrome_height := app.chrome_height()
+	viewport_height := if window_height > chrome_height {
+		window_height - chrome_height
 	} else {
 		1
 	}
-	app.root_box = layout.layout_document_in_viewport(app.document, f64(viewport_width),
-		f64(viewport_height))
+	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width), f64(viewport_height))
 	app.paint_commands = app.root_box.paint_commands()
 	root_rect := app.root_box.border_box()
 	document_height := root_rect.y + root_rect.height
@@ -633,21 +763,20 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		app.js_runtime.close()
 	}
 	app.js_runtime = browserjs.Runtime.create()
-	javascript_navigation := run_document_javascript(app.document, loaded.url, app.js_runtime, mut
-		app.js_messages)
+	javascript_navigation := run_document_javascript(app.document, loaded.url, app.js_runtime, mut app.js_messages)
 	app.page_model.load(loaded.url)
 	if add_history {
 		if app.history_index + 1 < app.history.len {
 			app.history = app.history[..app.history_index + 1].clone()
 		}
 		app.history << HistoryEntry{
-			url:    loaded.url
+			url: loaded.url
 			markup: loaded.markup
 		}
 		app.history_index = app.history.len - 1
 	}
 	app.relayout(if app.viewport_width > 0 { app.viewport_width } else { initial_width }, if app.viewport_height > 0 {
-		app.viewport_height + int(toolbar_height + status_bar_height)
+		app.viewport_height + app.chrome_height()
 	} else {
 		initial_height
 	})
@@ -675,15 +804,14 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	app.status = app.load_status
 	app.navigation_generation++
 	if app.ctx != unsafe { nil } {
-		spawn fetch_page_in_background(resolved, base, app.navigation_generation, add_history,
-			app.navigation_results)
+		spawn fetch_page_in_background(resolved, base, app.navigation_generation, add_history, app.navigation_results)
 		return
 	}
 	loaded := fetch_page(resolved, base) or {
 		app.install_loaded_page(LoadedPage{
-			url:          resolved
-			markup:       error_markup(resolved, err.msg())
-			status:       'Navigation error'
+			url: resolved
+			markup: error_markup(resolved, err.msg())
+			status: 'Navigation error'
 			content_type: 'text/html'
 		}, add_history)
 		return
@@ -701,14 +829,15 @@ fn (mut app BrowserApp) poll_navigation() {
 				app.install_loaded_page(loaded, result.add_history)
 			} else {
 				app.install_loaded_page(LoadedPage{
-					url:          result.resolved
-					markup:       error_markup(result.resolved, result.error)
-					status:       'Navigation error'
+					url: result.resolved
+					markup: error_markup(result.resolved, result.error)
+					status: 'Navigation error'
 					content_type: 'text/html'
 				}, result.add_history)
 			}
 		}
-		else {}
+		else {
+		}
 	}
 }
 
@@ -722,9 +851,9 @@ fn (mut app BrowserApp) history_go(delta int) {
 	entry := app.history[target]
 	app.page_model.traverse_the_history_by_delta(delta)
 	app.install_loaded_page(LoadedPage{
-		url:          entry.url
-		markup:       entry.markup
-		status:       'History'
+		url: entry.url
+		markup: entry.markup
+		status: 'History'
 		content_type: 'text/html'
 	}, false)
 }
@@ -738,8 +867,9 @@ fn (mut app BrowserApp) reload() {
 }
 
 fn (app &BrowserApp) maximum_scroll(window_height int) f64 {
-	return if app.content_height + toolbar_height + status_bar_height > f64(window_height) {
-		app.content_height + toolbar_height + status_bar_height - f64(window_height)
+	chrome_height := f64(app.chrome_height())
+	return if app.content_height + chrome_height > f64(window_height) {
+		app.content_height + chrome_height - f64(window_height)
 	} else {
 		0.0
 	}
@@ -755,40 +885,500 @@ fn paint_color(serialized string, opacity f64) gg.Color {
 	return gg.rgba(parsed.r, parsed.g, parsed.b, u8(int(alpha + 0.5)))
 }
 
+fn native_text_draw_y(line_box_top f32, line_box_height f32) f32 {
+	// Cocoa's gg adapter positions text relative to a fixed 15px baseline. Convert Layout's
+	// line-box top to that coordinate system for both body text and larger headings.
+	return line_box_top + f32(math.max(f64(line_box_height) - 14.0, 0.0))
+}
+
+fn draw_srgb_rect(ctx &gg.Context, x f32, y f32, width f32, height f32, fill_color gg.Color) {
+	$if macos {
+		if ctx.native_rendering {
+			C.native_draw_rect_srgb(x, f32(ctx.height) - (y + height), width, height, fill_color)
+			return
+		}
+	}
+	ctx.draw_rect_filled(x, y, width, height, fill_color)
+}
+
+// gg's rounded-rectangle path uses Sokol primitives even when the context is in native-rendering
+// mode. Those primitives are not presented by the macOS native frame, so compose the rounded shape
+// from CoreGraphics-backed rectangles and circles there. Transparent fills use a square native rect
+// to avoid alpha accumulating where the component shapes overlap.
+fn draw_rounded_fill(ctx &gg.Context, x f32, y f32, width f32, height f32, radius f32, fill_color gg.Color) {
+	if width <= 0 || height <= 0 {
+		return
+	}
+	if radius <= 0 {
+		draw_srgb_rect(ctx, x, y, width, height, fill_color)
+		return
+	}
+	$if macos {
+		if ctx.native_rendering {
+			if fill_color.a != 255 {
+				draw_srgb_rect(ctx, x, y, width, height, fill_color)
+				return
+			}
+			mut used_radius := radius
+			if used_radius > width / 2 {
+				used_radius = width / 2
+			}
+			if used_radius > height / 2 {
+				used_radius = height / 2
+			}
+			draw_srgb_rect(ctx, x + used_radius, y, width - 2 * used_radius, height, fill_color)
+			draw_srgb_rect(ctx, x, y + used_radius, used_radius, height - 2 * used_radius, fill_color)
+			draw_srgb_rect(ctx, x + width - used_radius, y + used_radius, used_radius, height - 2 * used_radius, fill_color)
+			// Compensate for gg's native circle adapter, which offsets its documented center by
+			// (+1,+3) before handing the ellipse to CoreGraphics.
+			ctx.draw_circle_filled(x + used_radius - 1, y + used_radius - 3, used_radius, fill_color)
+			ctx.draw_circle_filled(x + width - used_radius - 1, y + used_radius - 3, used_radius, fill_color)
+			ctx.draw_circle_filled(x + used_radius - 1, y + height - used_radius - 3, used_radius, fill_color)
+			ctx.draw_circle_filled(x + width - used_radius - 1, y + height - used_radius - 3, used_radius, fill_color)
+			return
+		}
+	}
+	if ctx.native_rendering {
+		draw_srgb_rect(ctx, x, y, width, height, fill_color)
+	} else {
+		ctx.draw_rounded_rect_filled(x, y, width, height, radius, fill_color)
+	}
+}
+
+fn point_in_paint_polygon(x f64, y f64, points []f64) bool {
+	if points.len < 6 {
+		return true
+	}
+	mut inside := false
+	mut previous := points.len - 2
+	for current := 0; current + 1 < points.len; current += 2 {
+		x1 := points[current]
+		y1 := points[current + 1]
+		x2 := points[previous]
+		y2 := points[previous + 1]
+		if (y1 > y) != (y2 > y) && x < (x2 - x1) * (y - y1) / (y2 - y1) + x1 {
+			inside = !inside
+		}
+		previous = current
+	}
+	return inside
+}
+
+fn normalized_paint_transform(transform [6]f64) [6]f64 {
+	return if transform == [6]f64{} { [f64(1), 0, 0, 1, 0, 0]! } else { transform }
+}
+
+fn map_paint_point(transform [6]f64, x f64, y f64) (f64, f64) {
+	matrix := normalized_paint_transform(transform)
+	return matrix[0] * x + matrix[2] * y + matrix[4], matrix[1] * x + matrix[3] * y + matrix[5]
+}
+
+fn paint_screen_point(command layout.PaintCommand, x f64, y f64, page_x f32, page_y f32, scroll_y f64) (f32, f32) {
+	mapped_x, mapped_y := map_paint_point(command.transform, x, y)
+	return page_x + f32(mapped_x), page_y + f32(mapped_y - scroll_y)
+}
+
+fn transformed_rect_points(command layout.PaintCommand, page_x f32, page_y f32, scroll_y f64) []f32 {
+	mut points := []f32{cap: 8}
+	for point in [[command.x, command.y], [command.x + command.width, command.y],
+		[command.x + command.width, command.y + command.height],
+		[command.x, command.y + command.height]] {
+		x, y := paint_screen_point(command, point[0], point[1], page_x, page_y, scroll_y)
+		points << x
+		points << y
+	}
+	return points
+}
+
+fn background_image_bytes(image_url string) ![]u8 {
+	if image_url.starts_with('data:') {
+		comma := image_url.index(',') or { return error('Malformed data URL') }
+		metadata := image_url[..comma].to_lower()
+		payload := image_url[comma + 1..]
+		if metadata.ends_with(';base64') {
+			return base64.decode(payload)
+		}
+		return urllib.path_unescape(payload)!.bytes()
+	}
+	if image_url.starts_with('file://') {
+		path := urllib.path_unescape(image_url['file://'.len..])!
+		return os.read_bytes(path)
+	}
+	if image_url.starts_with('http://') || image_url.starts_with('https://') {
+		response := vhttp.fetch(
+			url: image_url
+			method: .get
+			user_agent: 'Ladybird V/0.1'
+			validate: true
+			verify: tls_ca_bundle()
+		)!
+		if response.status_code < 200 || response.status_code >= 400 {
+			return error('HTTP ${response.status_code}')
+		}
+		return response.body.bytes()
+	}
+	return os.read_bytes(image_url)
+}
+
+fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
+	if image_id := app.background_image_ids[image_url] {
+		image := app.ctx.get_cached_image_by_idx(image_id)
+		if image.ok {
+			return image
+		}
+	}
+	mut image := if image_url.starts_with('file://') {
+		path := urllib.path_unescape(image_url['file://'.len..]) or { return none }
+		app.ctx.create_image(path) or { return none }
+	} else if !image_url.contains('://') && !image_url.starts_with('data:') && os.is_file(image_url) {
+		app.ctx.create_image(image_url) or { return none }
+	} else {
+		bytes := background_image_bytes(image_url) or { return none }
+		app.ctx.create_image_from_byte_array(bytes) or { return none }
+	}
+	app.background_image_ids[image_url] = image.id
+	return app.ctx.get_cached_image_by_idx(image.id)
+}
+
+fn background_length(value string, basis f32, automatic f32) f32 {
+	trimmed := value.trim_space().to_lower()
+	if trimmed == '' || trimmed == 'auto' {
+		return automatic
+	}
+	if trimmed.ends_with('%') {
+		return basis * f32(trimmed[..trimmed.len - 1].f64() / 100.0)
+	}
+	if trimmed.ends_with('px') {
+		return f32(trimmed[..trimmed.len - 2].f64())
+	}
+	return f32(trimmed.f64())
+}
+
+fn background_position(value string, free_space f32) f32 {
+	trimmed := value.trim_space().to_lower()
+	if trimmed == 'center' {
+		return free_space / 2
+	}
+	if trimmed in ['right', 'bottom'] {
+		return free_space
+	}
+	if trimmed in ['left', 'top'] {
+		return 0
+	}
+	return background_length(trimmed, free_space, 0)
+}
+
 fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, page_y f32, window_height int) {
-	x := page_x + f32(command.x)
-	y := page_y + f32(command.y - app.scroll_y)
-	w := f32(command.width)
-	h := f32(command.height)
-	if y + h < f32(toolbar_height) || y > f32(window_height - int(status_bar_height)) {
+	rect_points := transformed_rect_points(command, page_x, page_y, app.scroll_y)
+	mut x := rect_points[0]
+	mut y := rect_points[1]
+	mut bounds_right := x
+	mut bounds_bottom := y
+	for index := 2; index + 1 < rect_points.len; index += 2 {
+		x = math.min(x, rect_points[index])
+		y = math.min(y, rect_points[index + 1])
+		bounds_right = math.max(bounds_right, rect_points[index])
+		bounds_bottom = math.max(bounds_bottom, rect_points[index + 1])
+	}
+	w := bounds_right - x
+	h := bounds_bottom - y
+	matrix := normalized_paint_transform(command.transform)
+	non_axis_aligned := matrix[1] != 0 || matrix[2] != 0
+	if y + h < app.page_top() || y > f32(window_height - app.status_height()) {
 		return
 	}
 	match command.kind {
 		'fill_rect' {
 			fill := paint_color(command.color, command.opacity)
-			if command.radius > 0.0 {
-				app.ctx.draw_rounded_rect_filled(x, y, w, h, f32(command.radius), fill)
+			if non_axis_aligned {
+				app.ctx.draw_convex_poly(rect_points, fill)
+			} else if command.outer_shadow {
+				$if macos {
+					if app.ctx.native_rendering {
+						scale_x := math.abs(matrix[0])
+						scale_y := math.abs(matrix[3])
+						spread_x := f32(command.shadow_spread * scale_x)
+						spread_y := f32(command.shadow_spread * scale_y)
+						clip_x := x - f32(command.shadow_offset_x * matrix[0]) + spread_x
+						clip_y := y - f32(command.shadow_offset_y * matrix[3]) + spread_y
+						clip_width := w - 2 * spread_x
+						clip_height := h - 2 * spread_y
+						C.native_draw_outer_box_shadow_srgb(x, f32(app.ctx.height) - (y + h), w, h, f32(command.radius * math.min(scale_x, scale_y)), clip_x, f32(app.ctx.height) - (clip_y + clip_height), clip_width, clip_height, f32(command.radius * math.min(scale_x, scale_y)), f32(command.blur * math.min(scale_x, scale_y)), fill)
+						return
+					}
+				}
+				draw_rounded_fill(app.ctx, x, y, w, h, f32(command.radius), fill)
 			} else {
-				app.ctx.draw_rect_filled(x, y, w, h, fill)
+				radius_scale := math.min(math.abs(matrix[0]), math.abs(matrix[3]))
+				draw_rounded_fill(app.ctx, x, y, w, h, f32(command.radius * radius_scale), fill)
+			}
+		}
+		'fill_inset_shadow' {
+			fill := paint_color(command.color, command.opacity)
+			base := command.blur + command.shadow_spread
+			left := f32(clamp(base - command.shadow_offset_x, 0.0, command.width))
+			right := f32(clamp(base + command.shadow_offset_x, 0.0, command.width))
+			top := f32(clamp(base - command.shadow_offset_y, 0.0, command.height))
+			bottom := f32(clamp(base + command.shadow_offset_y, 0.0, command.height))
+			if left > 0 { draw_srgb_rect(app.ctx, x, y, left, h, fill) }
+			if right > 0 { draw_srgb_rect(app.ctx, x + w - right, y, right, h, fill) }
+			if top > 0 { draw_srgb_rect(app.ctx, x, y, w, top, fill) }
+			if bottom > 0 { draw_srgb_rect(app.ctx, x, y + h - bottom, w, bottom, fill) }
+		}
+		'stroke_rounded_rect' {
+			stroke := paint_color(command.color, command.opacity)
+			if command.points.len >= 4 {
+				mut points := []f32{cap: command.points.len}
+				for index := 0; index + 1 < command.points.len; index += 2 {
+					point_x, point_y := paint_screen_point(command, command.points[index], command.points[index + 1], page_x, page_y, app.scroll_y)
+					points << point_x
+					points << point_y
+				}
+				for index := 0; index + 3 < points.len; index += 2 {
+					app.ctx.draw_line_with_config(points[index], points[index + 1], points[index + 2], points[index + 3], gg.PenConfig{
+						color: stroke
+						thickness: f32(command.stroke_width)
+					})
+				}
+				app.ctx.draw_line_with_config(points[points.len - 2], points[points.len - 1], points[0], points[1], gg.PenConfig{
+					color: stroke
+					thickness: f32(command.stroke_width)
+				})
+				return
+			}
+			steps := int(clamp(command.stroke_width, 1.0, 256.0) + 0.5)
+			for inset in 0 .. steps {
+				delta := f32(inset)
+				if w - 2 * delta <= 0 || h - 2 * delta <= 0 {
+					break
+				}
+				used_radius := if f32(command.radius) > delta {
+					f32(command.radius) - delta
+				} else {
+					f32(0)
+				}
+				app.ctx.draw_rounded_rect_empty(x + delta, y + delta, w - 2 * delta, h - 2 * delta, used_radius, stroke)
+			}
+		}
+		'fill_ellipse' {
+			fill := paint_color(command.color, command.opacity)
+			if non_axis_aligned {
+				mut points := []f32{cap: 64}
+				for step in 0 .. 32 {
+					angle := f64(step) * 2.0 * math.pi / 32.0
+					point_x, point_y := paint_screen_point(command, command.x + command.width / 2.0 + math.cos(angle) * command.width / 2.0, command.y + command.height / 2.0 + math.sin(angle) * command.height / 2.0, page_x, page_y, app.scroll_y)
+					points << point_x
+					points << point_y
+				}
+				app.ctx.draw_convex_poly(points, fill)
+			} else {
+				app.ctx.draw_ellipse_filled(x + w / 2, y + h / 2, w / 2, h / 2, fill)
+			}
+		}
+		'stroke_ellipse' {
+			stroke := paint_color(command.color, command.opacity)
+			app.ctx.draw_ellipse_thick(x + w / 2, y + h / 2, w / 2, h / 2, f32(command.stroke_width), stroke)
+		}
+		'fill_polygon' {
+			mut points := []f32{cap: command.points.len}
+			for index := 0; index + 1 < command.points.len; index += 2 {
+				point_x, point_y := paint_screen_point(command, command.points[index], command.points[index + 1], page_x, page_y, app.scroll_y)
+				points << point_x
+				points << point_y
+			}
+			if points.len >= 6 {
+				fill := paint_color(command.color, command.opacity)
+				$if macos {
+					if app.ctx.native_rendering {
+						unsafe {
+							C.native_draw_polygon_srgb(&points[0], points.len / 2,
+								f32(app.ctx.height), fill)
+						}
+						return
+					}
+				}
+				app.ctx.draw_convex_poly(points, fill)
 			}
 		}
 		'fill_gradient' {
 			if gradient := command.gradient {
-				if gradient.colors.len > 0 {
-					first := gradient.colors[0]
-					app.ctx.draw_rect_filled(x, y, w, h, gg.rgba(first.r, first.g, first.b, u8(int(clamp(f64(first.a) * command.opacity,
-						0.0, 255.0)))))
+				if gradient.colors.len > 0 && w > 0 && h > 0 {
+					// Sample the resolved gradient in small clipped cells. This supports arbitrary linear
+					// angles, positioned/elliptical radials, and conics with the same stop interpolation as
+					// the SVG backend while staying inside the immediate renderer's rectangle primitive.
+					columns := int(clamp(f64(w / 4), 1.0, 128.0) + 0.5)
+					rows := int(clamp(f64(h / 4), 1.0, 128.0) + 0.5)
+					cell_width := w / f32(columns)
+					cell_height := h / f32(rows)
+					for row in 0 .. rows {
+						for column in 0 .. columns {
+							u := (f64(column) + 0.5) / f64(columns)
+							v := (f64(row) + 0.5) / f64(rows)
+							if command.points.len > 0 && !point_in_paint_polygon(command.x + u * command.width, command.y + v * command.height, command.points) {
+								continue
+							}
+							mut position := 0.0
+							if gradient.kind == 'radial' || gradient.radial {
+								rx := if gradient.radius_x > 0 {
+									gradient.radius_x
+								} else {
+									0.000001
+								}
+								ry := if gradient.radius_y > 0 {
+									gradient.radius_y
+								} else {
+									0.000001
+								}
+								dx := (u - gradient.center_x) / rx
+								dy := (v - gradient.center_y) / ry
+								position = math.sqrt(dx * dx + dy * dy)
+							} else if gradient.kind == 'conic' {
+								angle := math.atan2(v - gradient.center_y, u - gradient.center_x) * 180.0 / math.pi + 90.0 - gradient.start_degrees
+								position = angle / 360.0
+								for position < 0 {
+									position += 1.0
+								}
+								for position >= 1 {
+									position -= 1.0
+								}
+							} else {
+								dx := gradient.x2 - gradient.x1
+								dy := gradient.y2 - gradient.y1
+								length_squared := dx * dx + dy * dy
+								position = if length_squared > 0 {
+									((u - gradient.x1) * dx + (v - gradient.y1) * dy) / length_squared
+								} else {
+									0.0
+								}
+							}
+							sample_color := layout.gradient_color_at(gradient, position)
+							alpha := u8(int(clamp(f64(sample_color.a) * command.opacity, 0.0, 255.0)))
+							draw_srgb_rect(app.ctx, x + f32(column) * cell_width, y + f32(row) * cell_height, cell_width + 0.5, cell_height + 0.5, gg.rgba(sample_color.r, sample_color.g, sample_color.b, alpha))
+						}
+					}
+				}
+			}
+		}
+		'draw_background_image' {
+			image := app.background_image(command.image_url) or { return }
+			intrinsic_width := f32(image.width)
+			intrinsic_height := f32(image.height)
+			if intrinsic_width <= 0 || intrinsic_height <= 0 || w <= 0 || h <= 0 {
+				return
+			}
+			mut tile_width := intrinsic_width
+			mut tile_height := intrinsic_height
+			size := command.image_size.trim_space().to_lower()
+			if size == 'cover' || size == 'contain' {
+				x_scale := w / intrinsic_width
+				y_scale := h / intrinsic_height
+				scale := if size == 'cover' {
+					math.max(x_scale, y_scale)
+				} else {
+					math.min(x_scale, y_scale)
+				}
+				tile_width = intrinsic_width * scale
+				tile_height = intrinsic_height * scale
+			} else {
+				size_tokens := size.fields()
+				if size_tokens.len > 0 && size_tokens[0] != 'auto' {
+					tile_width = background_length(size_tokens[0], w, intrinsic_width)
+				}
+				if size_tokens.len > 1 && size_tokens[1] != 'auto' {
+					tile_height = background_length(size_tokens[1], h, intrinsic_height)
+				} else if size_tokens.len > 0 && size_tokens[0] != 'auto' {
+					tile_height = tile_width * intrinsic_height / intrinsic_width
+				}
+			}
+			if tile_width <= 0 || tile_height <= 0 {
+				return
+			}
+			clip_left, clip_top := paint_screen_point(command, command.image_clip_x, command.image_clip_y, page_x, page_y, app.scroll_y)
+			clip_right, clip_bottom := paint_screen_point(command, command.image_clip_x + command.image_clip_width, command.image_clip_y + command.image_clip_height, page_x, page_y, app.scroll_y)
+			clip_x := math.min(clip_left, clip_right)
+			clip_y := math.min(clip_top, clip_bottom)
+			clip_w := math.abs(clip_right - clip_left)
+			clip_h := math.abs(clip_bottom - clip_top)
+			mut tile_x := x + background_position(command.image_position_x, w - tile_width)
+			mut tile_y := y + background_position(command.image_position_y, h - tile_height)
+			repeat_x := command.image_repeat_x != 'no-repeat'
+			repeat_y := command.image_repeat_y != 'no-repeat'
+			if repeat_x {
+				for tile_x > clip_x {
+					tile_x -= tile_width
+				}
+			}
+			if repeat_y {
+				for tile_y > clip_y {
+					tile_y -= tile_height
+				}
+			}
+			mut row_y := tile_y
+			mut tile_count := 0
+			for row_y < clip_y + clip_h && tile_count < 4096 {
+				mut column_x := tile_x
+				for column_x < clip_x + clip_w && tile_count < 4096 {
+					left := math.max(column_x, clip_x)
+					top := math.max(row_y, clip_y)
+					right_edge := math.min(column_x + tile_width, clip_x + clip_w)
+					bottom_edge := math.min(row_y + tile_height, clip_y + clip_h)
+					if right_edge > left && bottom_edge > top {
+						app.ctx.draw_image_with_config(
+							img: image
+							img_rect: gg.Rect{left, top, right_edge - left, bottom_edge - top}
+							part_rect: gg.Rect{(left - column_x) * intrinsic_width / tile_width, (top - row_y) * intrinsic_height / tile_height, (right_edge - left) * intrinsic_width / tile_width, (bottom_edge - top) * intrinsic_height / tile_height}
+							color: gg.rgba(255, 255, 255, u8(clamp(command.opacity * 255.0, 0.0, 255.0)))
+						)
+					}
+					tile_count++
+					if !repeat_x {
+						break
+					}
+					column_x += tile_width
+				}
+				if !repeat_y {
+					break
+				}
+				row_y += tile_height
+			}
+		}
+		'draw_svg_path' {
+			mut points := []f32{cap: command.points.len}
+			for index := 0; index + 1 < command.points.len; index += 2 {
+				point_x, point_y := paint_screen_point(command, command.points[index], command.points[index + 1], page_x, page_y, app.scroll_y)
+				points << point_x
+				points << point_y
+			}
+			if command.color.len > 0 && points.len >= 6 {
+				app.ctx.draw_convex_poly(points, paint_color(command.color, command.opacity * command.fill_opacity))
+			}
+			if command.stroke_color.len > 0 && points.len >= 4 && command.stroke_width > 0 {
+				stroke := paint_color(command.stroke_color, command.opacity * command.stroke_opacity)
+				for index := 0; index + 3 < points.len; index += 2 {
+					app.ctx.draw_line_with_config(points[index], points[index + 1], points[index + 2], points[index + 3], gg.PenConfig{
+						color: stroke
+						thickness: f32(command.stroke_width)
+					})
 				}
 			}
 		}
 		'draw_text' {
-			font_size := int(clamp(command.font_size, 1.0, 256.0) + 0.5)
-			app.ctx.draw_text(int(x), int(y), command.text,
-				color:  paint_color(command.color, command.opacity)
-				size:   font_size
-				bold:   command.bold
+			font_scale := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
+			font_size := int(clamp(command.font_size * font_scale, 1.0, 256.0) + 0.5)
+			text_y := $if macos { native_text_draw_y(y, h) } $else { y }
+			text_color := paint_color(command.color, command.opacity)
+			$if macos {
+				if app.ctx.native_rendering && app.use_document_font {
+					C.native_draw_document_text_srgb(x, f32(app.ctx.height) - text_y, command.text, text_color, f32(font_size), int(command.bold), int(command.italic), int(command.mono))
+					return
+				}
+			}
+			app.ctx.draw_text(int(x), int(text_y), command.text,
+				color: text_color
+				size: font_size
+				bold: command.bold
 				italic: command.italic
-				mono:   command.mono
+				mono: command.mono
 			)
 		}
 		else {}
@@ -798,7 +1388,7 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 fn (mut app BrowserApp) draw_chrome_button(x f32, label string, enabled bool) {
 	background := if enabled { gg.rgb(51, 65, 85) } else { gg.rgb(30, 41, 59) }
 	foreground := if enabled { gg.rgb(241, 245, 249) } else { gg.rgb(100, 116, 139) }
-	app.ctx.draw_rounded_rect_filled(x, 12, 36, 34, 7, background)
+	draw_rounded_fill(app.ctx, x, 12, 36, 34, 7, background)
 	app.ctx.draw_text(int(x) + 11, 18, label, color: foreground, size: 17)
 }
 
@@ -826,69 +1416,77 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 
 fn (mut app BrowserApp) draw() {
 	app.poll_navigation()
-	window := gg.window_size()
-	content_viewport_height := window.height - int(toolbar_height + status_bar_height)
-	if window.width > 0
-		&& (window.width != app.viewport_width || content_viewport_height != app.viewport_height) {
+	window := browser_window_size()
+	content_viewport_height := window.height - app.chrome_height()
+	if window.width > 0 && (window.width != app.viewport_width || content_viewport_height != app.viewport_height) {
 		app.relayout(window.width, window.height)
 		app.scroll_y = clamp(app.scroll_y, 0.0, app.maximum_scroll(window.height))
 	}
 	app.ctx.begin()
-	app.ctx.draw_rect_filled(0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
-	page_y := f32(toolbar_height)
+	draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
+	page_y := app.page_top()
 	for command in app.paint_commands {
 		app.draw_command(command, 0, page_y, window.height)
 	}
 
-	// Draw chrome last so scrolled page content cannot paint over it.
-	app.ctx.draw_rect_filled(0, 0, f32(window.width), f32(toolbar_height), gg.rgb(23, 32, 51))
-	app.draw_chrome_button(12, '‹', app.history_index > 0)
-	app.draw_chrome_button(54, '›', app.history_index + 1 < app.history.len)
-	app.draw_chrome_button(96, '↻', app.history_index >= 0)
-	app.draw_chrome_button(138, '⌂', true)
-	address_x := f32(184)
-	address_width := f32(window.width - 252)
-	address_color := if app.address_active { gg.rgb(255, 255, 255) } else { gg.rgb(241, 245, 249) }
-	app.ctx.draw_rounded_rect_filled(address_x, 12, address_width, 34, 8, address_color)
-	if app.address_select {
-		app.ctx.draw_rounded_rect_filled(address_x + 5, 16, address_width - 10, 26, 5, gg.rgb(219,
-			234, 254))
-	}
-	visible_address := address_for_display(app.address, app.address_cursor, app.address_active,
-		int(address_width / 8.0) - 2)
-	app.ctx.draw_text(int(address_x) + 10, 19, visible_address,
-		color: gg.rgb(15, 23, 42)
-		size:  14
-	)
-	app.ctx.draw_rounded_rect_filled(f32(window.width - 60), 12, 48, 34, 8, gg.rgb(109, 40, 217))
-	app.ctx.draw_text(window.width - 48, 20, 'Go', color: gg.rgb(255, 255, 255), size: 14)
-	app.ctx.draw_text(14, 58, 'V · HTML/DOM/CSS/Layout · JavaScriptCore',
-		color: gg.rgb(196, 181, 253)
-		size:  13
-	)
-	app.ctx.draw_text(348, 58, app.status, color: gg.rgb(148, 163, 184), size: 12)
+	if app.chrome_height() > 0 {
+		// Draw chrome last so scrolled page content cannot paint over it.
+		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(toolbar_height), gg.rgb(23, 32, 51))
+		app.draw_chrome_button(12, '‹', app.history_index > 0)
+		app.draw_chrome_button(54, '›', app.history_index + 1 < app.history.len)
+		app.draw_chrome_button(96, '↻', app.history_index >= 0)
+		app.draw_chrome_button(138, '⌂', true)
+		address_x := f32(184)
+		address_width := f32(window.width - 252)
+		address_color := if app.address_active {
+			gg.rgb(255, 255, 255)
+		} else {
+			gg.rgb(241, 245, 249)
+		}
+		draw_rounded_fill(app.ctx, address_x, 12, address_width, 34, 8, address_color)
+		if app.address_select {
+			draw_rounded_fill(app.ctx, address_x + 5, 16, address_width - 10, 26, 5, gg.rgb(219, 234, 254))
+		}
+		visible_address := address_for_display(app.address, app.address_cursor, app.address_active, int(address_width / 8.0) - 2)
+		app.ctx.draw_text(int(address_x) + 10, 19, visible_address,
+			color: gg.rgb(15, 23, 42)
+			size: 14
+		)
+		draw_rounded_fill(app.ctx, f32(window.width - 60), 12, 48, 34, 8, gg.rgb(109, 40, 217))
+		app.ctx.draw_text(window.width - 48, 20, 'Go',
+			color: gg.rgb(255, 255, 255)
+			size: 14
+		)
+		app.ctx.draw_text(14, 58, 'V · HTML/DOM/CSS/Layout · JavaScriptCore',
+			color: gg.rgb(196, 181, 253)
+			size: 13
+		)
+		app.ctx.draw_text(348, 58, app.status, color: gg.rgb(148, 163, 184), size: 12)
 
-	status_y := window.height - int(status_bar_height)
-	app.ctx.draw_rect_filled(0, f32(status_y), f32(window.width), f32(status_bar_height), gg.rgb(30,
-		41, 59))
-	footer := if app.hovered_link != '' {
-		app.hovered_link
-	} else if app.js_messages.len > 0 {
-		'Console: ${app.js_messages.last()}'
-	} else {
-		app.source_label
+		status_y := window.height - int(status_bar_height)
+		draw_srgb_rect(app.ctx, 0, f32(status_y), f32(window.width), f32(status_bar_height), gg.rgb(30, 41, 59))
+		footer := if app.hovered_link != '' {
+			app.hovered_link
+		} else if app.js_messages.len > 0 {
+			'Console: ${app.js_messages.last()}'
+		} else {
+			app.source_label
+		}
+		app.ctx.draw_text(12, status_y + 4, footer, color: gg.rgb(203, 213, 225), size: 12)
 	}
-	app.ctx.draw_text(12, status_y + 4, footer, color: gg.rgb(203, 213, 225), size: 12)
 	app.ctx.end()
+	if app.screenshot_path != '' && !app.screenshot_scheduled {
+		app.screenshot_scheduled = true
+		schedule_native_screenshot(app.screenshot_path)
+	}
 }
 
 fn (app &BrowserApp) element_at_window_point(mouse_x f32, mouse_y f32) ?&dom.Element {
-	if mouse_y < f32(toolbar_height)
-		|| mouse_y >= f32(gg.window_size().height) - f32(status_bar_height) {
+	if mouse_y < app.page_top() || mouse_y >= f32(browser_window_size().height - app.status_height()) {
 		return none
 	}
 	document_x := f64(mouse_x)
-	document_y := f64(mouse_y - f32(toolbar_height)) + app.scroll_y
+	document_y := f64(mouse_y - app.page_top()) + app.scroll_y
 	root := unsafe { &dom.Node(app.document) }
 	return app.root_box.element_at_point(document_x, document_y, root)
 }
@@ -925,7 +1523,7 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 			app.navigate('about:home', true)
 			return
 		}
-		window := gg.window_size()
+		window := browser_window_size()
 		if x >= 184 && x < f32(window.width - 68) {
 			app.address_active = true
 			app.address_select = true
@@ -995,7 +1593,7 @@ fn (mut app BrowserApp) handle_character(code u32) {
 }
 
 fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
-	height := gg.window_size().height
+	height := browser_window_size().height
 	command := modifier.has(.super) || modifier.has(.ctrl)
 	if command && key == .l {
 		app.address_active = true
@@ -1065,8 +1663,12 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 		.down { app.scroll_by(42.0, height) }
 		.page_up { app.scroll_by(-f64(height) * 0.8, height) }
 		.page_down { app.scroll_by(f64(height) * 0.8, height) }
-		.home { app.scroll_y = 0.0 }
-		.end { app.scroll_y = app.maximum_scroll(height) }
+		.home {
+			app.scroll_y = 0.0
+		}
+		.end {
+			app.scroll_y = app.maximum_scroll(height)
+		}
 		.escape { app.ctx.quit() }
 		else {}
 	}
@@ -1074,26 +1676,32 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 
 fn main() {
 	link_translated_modules()
-	initial_url, markup, source_label := initial_document()
+	use_document_font := configure_browser_layout_font()
+	options := parse_launch_options(os.args[1..]) or {
+		eprintln('Ladybird V: ${err.msg()}')
+		exit(2)
+	}
+	initial_url, markup, source_label := initial_document(options.source)
 	page_model := page.Page.create(1.0) or { panic(err) }
 	mut app := &BrowserApp{
-		markup:             markup
-		source_label:       source_label
-		page_model:         page_model
-		navigation_results: chan NavigationResult{cap: 4}
+		markup: markup
+		source_label: source_label
+		page_model: page_model
+		navigation_results: chan NavigationResult{ cap: 4 }
+		screenshot_path: options.screenshot
+		use_document_font: use_document_font
 	}
 	if markup != '' {
 		app.install_loaded_page(LoadedPage{
-			url:          initial_url
-			markup:       markup
-			status:       'Loaded locally'
+			url: initial_url
+			markup: markup
+			status: 'Loaded locally'
 			content_type: 'text/html'
 		}, true)
 	} else {
 		app.navigate(initial_url, true)
 	}
-
-	if '--headless-smoke' in os.args {
+	if options.headless_smoke {
 		if app.source_label == 'about:home' {
 			js_status := app.document.get_element_by_id('js-status') or {
 				panic('headless smoke: JavaScript target element is missing')
@@ -1121,29 +1729,29 @@ fn main() {
 	}
 
 	app.ctx = gg.new_context(
-		width:            initial_width
-		height:           initial_height
-		min_width:        640
-		min_height:       480
-		window_title:     'Ladybird V'
-		bg_color:         gg.rgb(232, 237, 243)
+		width: options.width
+		height: options.height
+		min_width: 640
+		min_height: 480
+		window_title: 'Ladybird V'
+		bg_color: gg.rgb(232, 237, 243)
 		native_rendering: true
-		frame_fn:         fn (mut app BrowserApp) {
+		frame_fn: fn (mut app BrowserApp) {
 			app.draw()
 		}
-		event_fn:         fn (event &gg.Event, mut app BrowserApp) {
+		event_fn: fn (event &gg.Event, mut app BrowserApp) {
 			app.handle_event(event)
 		}
-		click_fn:         fn (x f32, y f32, _ gg.MouseButton, mut app BrowserApp) {
+		click_fn: fn (x f32, y f32, _ gg.MouseButton, mut app BrowserApp) {
 			app.handle_click(x, y)
 		}
-		char_fn:          fn (code u32, mut app BrowserApp) {
+		char_fn: fn (code u32, mut app BrowserApp) {
 			app.handle_character(code)
 		}
-		keydown_fn:       fn (key gg.KeyCode, modifier gg.Modifier, mut app BrowserApp) {
+		keydown_fn: fn (key gg.KeyCode, modifier gg.Modifier, mut app BrowserApp) {
 			app.handle_key(key, modifier)
 		}
-		user_data:        app
+		user_data: app
 	)
 	app.ctx.run()
 }

@@ -29,6 +29,10 @@ pub fn value_type_string(value ValueType) string {
 	}
 }
 
+pub fn to_value_type(type_ ValueType) ValueType {
+	return type_
+}
+
 pub struct WasmValue {
 pub:
 	type_     ValueType
@@ -137,19 +141,37 @@ pub fn Global.construct(descriptor GlobalDescriptor, initial ?webidl.Value) !&Gl
 	} else {
 		default_webassembly_value(descriptor.value)!
 	}
-	return &Global{
+	global := &Global{
 		type_:    descriptor.value
 		mutable_: descriptor.mutable_
 		stored:   stored
 	}
+	mut cache := get_cache()
+	cache.add_global_instance(global.address(), global)
+	return global
 }
 
-pub fn (global &Global) value() !webidl.Value {
+pub fn Global.construct_impl(descriptor GlobalDescriptor, initial ?webidl.Value) !&Global {
+	return Global.construct(descriptor, initial)
+}
+
+pub fn (global &Global) address() u64 {
+	return u64(voidptr(global))
+}
+
+pub fn get_global_value(global &Global) !webidl.Value {
+	if global.type_ == .v128 {
+		return error('TypeError: V128 is not supported as a global value type')
+	}
 	return global.stored.to_webidl_value()
 }
 
+pub fn (global &Global) value() !webidl.Value {
+	return get_global_value(global)
+}
+
 pub fn (global &Global) value_of() !webidl.Value {
-	return global.value()
+	return get_global_value(global)
 }
 
 pub fn (mut global Global) set_value(value webidl.Value) ! {

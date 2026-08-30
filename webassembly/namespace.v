@@ -21,7 +21,7 @@ pub fn validate(source webidl.BufferSource) bool {
 }
 
 pub fn compile(source webidl.BufferSource) !&Module {
-	return compile_module(webidl.get_buffer_source_copy(source))
+	return compile_a_webassembly_module(webidl.get_buffer_source_copy(source))
 }
 
 pub fn instantiate(source webidl.BufferSource, imports ImportObject) !WebAssemblyInstantiatedSource {
@@ -51,7 +51,7 @@ pub fn compile_streaming(response StreamingResponse) !&Module {
 	if response.content_type.to_lower().split(';')[0].trim_space() != 'application/wasm' {
 		return error('TypeError: WebAssembly response has an unsupported MIME type')
 	}
-	return compile_module(response.body)
+	return compile_a_webassembly_module(response.body)
 }
 
 pub fn instantiate_streaming(response StreamingResponse, imports ImportObject) !WebAssemblyInstantiatedSource {

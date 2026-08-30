@@ -57,6 +57,20 @@ fn test_max_content_and_indefinite_are_largest() {
 	}
 }
 
+fn test_available_size_preserves_upstream_sentinel_values_and_ordering() {
+	min_content := AvailableSize.make_min_content()
+	max_content := AvailableSize.make_max_content()
+	indefinite := AvailableSize.make_indefinite()
+	definite := AvailableSize.make_definite(px(100))
+
+	assert min_content.value.raw_value() == 0
+	assert max_content.value.raw_value() == css.CSSPixels.max().raw_value()
+	assert indefinite.value.raw_value() == css.CSSPixels.max().raw_value()
+	assert min_content.less_than(definite)
+	assert definite.less_than(max_content)
+	assert !max_content.less_than(indefinite)
+}
+
 fn test_available_space_and_to_string() {
 	space := AvailableSpace.new(AvailableSize.make_definite(px(100)),
 		AvailableSize.make_max_content())

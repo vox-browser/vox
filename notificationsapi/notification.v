@@ -116,6 +116,10 @@ fn complete_url(value string, base_url dom.URL) ?dom.URL {
 }
 
 pub fn create_a_notification(title string, options NotificationOptions, origin dom.Origin, base_url dom.URL, fallback_timestamp u64) !ConceptNotification {
+	return Notification.create_a_notification(title, options, origin, base_url, fallback_timestamp)
+}
+
+pub fn Notification.create_a_notification(title string, options NotificationOptions, origin dom.Origin, base_url dom.URL, fallback_timestamp u64) !ConceptNotification {
 	if options.renotify && options.tag == '' {
 		return error('TypeError: options["tag"] cannot be empty when renotify is true')
 	}
@@ -179,7 +183,11 @@ pub:
 }
 
 pub fn create_a_notification_with_a_settings_object(title string, options NotificationOptions, settings NotificationSettings) !ConceptNotification {
-	return create_a_notification(title, options, settings.origin, settings.api_base_url,
+	return Notification.create_a_notification_with_a_settings_object(title, options, settings)
+}
+
+pub fn Notification.create_a_notification_with_a_settings_object(title string, options NotificationOptions, settings NotificationSettings) !ConceptNotification {
+	return Notification.create_a_notification(title, options, settings.origin, settings.api_base_url,
 		u64(math.round(settings.current_wall_time)))
 }
 
@@ -191,13 +199,17 @@ mut:
 }
 
 pub fn Notification.construct(title string, options NotificationOptions, settings NotificationSettings, relevant_global_is_service_worker bool) !&Notification {
+	return Notification.construct_impl(title, options, settings, relevant_global_is_service_worker)
+}
+
+pub fn Notification.construct_impl(title string, options NotificationOptions, settings NotificationSettings, relevant_global_is_service_worker bool) !&Notification {
 	if relevant_global_is_service_worker {
 		return error('TypeError: relevant global object is a ServiceWorkerGlobalScope')
 	}
 	if options.actions.len != 0 {
 		return error('TypeError: options actions is not empty')
 	}
-	concept := create_a_notification_with_a_settings_object(title, options, settings)!
+	concept := Notification.create_a_notification_with_a_settings_object(title, options, settings)!
 	return &Notification{
 		EventTarget:   dom.EventTarget{}
 		notification_: concept

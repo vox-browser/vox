@@ -18,6 +18,12 @@ pub fn (e &ActiveFormattingElement) is_marker() bool {
 	return e.element == none
 }
 
+// Upstream names the nested record Entry; the V port gives it a descriptive
+// module-level name because V has no nested types.
+pub fn entry_is_marker(entry &ActiveFormattingElement) bool {
+	return entry.is_marker()
+}
+
 pub struct ListOfActiveFormattingElements {
 pub mut:
 	entries []ActiveFormattingElement
@@ -53,6 +59,11 @@ fn create_own_token(token &HTMLToken) &HTMLToken {
 		new_token.attributes << attribute
 	}
 	return new_token
+}
+
+pub fn (list &ListOfActiveFormattingElements) create_own_token(token &HTMLToken) &HTMLToken {
+	_ = list
+	return create_own_token(token)
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#push-onto-the-list-of-active-formatting-elements

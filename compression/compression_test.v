@@ -9,8 +9,8 @@ fn compressed_hello(format CompressionFormat) []u8 {
 			[u8(0xcb), 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00]
 		}
 		.gzip {
-			[u8(0x1f), 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xcb, 0x48, 0xcd,
-				0xc9, 0xc9, 0x07, 0x00, 0x86, 0xa6, 0x10, 0x36, 0x05, 0x00, 0x00, 0x00]
+			[u8(0x1f), 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xcb, 0x48, 0xcd, 0xc9,
+				0xc9, 0x07, 0x00, 0x86, 0xa6, 0x10, 0x36, 0x05, 0x00, 0x00, 0x00]
 		}
 	}
 }
@@ -36,9 +36,11 @@ fn test_compression_and_decompression_round_trip_all_formats() {
 		mut compressor := CompressionStream.construct_impl(format)!
 		mut compressor_writable := compressor.writable()
 		compressor_writable.write(input[..9])!
+		assert compressor.readable().chunk_count() == 1
 		compressor_writable.write(input[9..31])!
+		assert compressor.readable().chunk_count() == 2
 		compressor_writable.write(input[31..])!
-		assert compressor.readable().chunk_count() == 0
+		assert compressor.readable().chunk_count() == 3
 		compressor_writable.close()!
 		assert compressor_writable.is_closed()
 		assert compressor.readable().state() == .closed
@@ -51,7 +53,7 @@ fn test_compression_and_decompression_round_trip_all_formats() {
 		for byte in encoded {
 			decompressor_writable.write([byte])!
 		}
-		assert decompressor.readable().chunk_count() == 0
+		assert decompressor.readable().chunk_count() == 1
 		decompressor_writable.close()!
 		assert decompressor.readable().state() == .closed
 		mut decompressor_readable := decompressor.readable()
@@ -64,6 +66,7 @@ fn test_decompression_accepts_external_format_vectors() {
 		mut stream := DecompressionStream.construct_impl(format)!
 		mut writable := stream.writable()
 		writable.write(compressed_hello(format))!
+		assert stream.readable().chunk_count() == 1
 		writable.close()!
 		mut readable := stream.readable()
 		assert readable.read_all().bytestr() == 'hello'

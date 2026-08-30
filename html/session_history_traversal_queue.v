@@ -23,8 +23,19 @@ pub:
 	target_navigable ?&dom.Navigable
 }
 
+pub fn SessionHistoryTraversalQueueEntry.create(steps SessionHistoryTraversalSteps, target_navigable ?&dom.Navigable) &SessionHistoryTraversalQueueEntry {
+	return &SessionHistoryTraversalQueueEntry{
+		steps:            steps
+		target_navigable: target_navigable
+	}
+}
+
 pub fn (entry &SessionHistoryTraversalQueueEntry) execute_steps() &TraversalPromiseState {
 	return entry.steps()
+}
+
+pub fn (entry &SessionHistoryTraversalQueueEntry) target_navigable() ?&dom.Navigable {
+	return entry.target_navigable
 }
 
 @[heap]
@@ -37,17 +48,12 @@ pub mut:
 }
 
 pub fn (mut queue SessionHistoryTraversalQueue) append(steps SessionHistoryTraversalSteps) {
-	queue.queue << &SessionHistoryTraversalQueueEntry{
-		steps: steps
-	}
+	queue.queue << SessionHistoryTraversalQueueEntry.create(steps, none)
 	queue.scheduled = true
 }
 
 pub fn (mut queue SessionHistoryTraversalQueue) append_sync(steps SessionHistoryTraversalSteps, target_navigable &dom.Navigable) {
-	queue.queue << &SessionHistoryTraversalQueueEntry{
-		steps:            steps
-		target_navigable: target_navigable
-	}
+	queue.queue << SessionHistoryTraversalQueueEntry.create(steps, target_navigable)
 	queue.scheduled = true
 }
 

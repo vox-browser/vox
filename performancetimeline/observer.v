@@ -7,9 +7,10 @@ module performancetimeline
 
 pub struct PerformanceObserverInit {
 pub mut:
-	entry_types ?[]string
-	type_       ?string
-	buffered    ?bool
+	entry_types        ?[]string
+	type_              ?string
+	buffered           ?bool
+	duration_threshold ?u32
 }
 
 pub struct PerformanceObserverCallbackOptions {
@@ -23,7 +24,7 @@ pub enum ObserverType {
 	multiple
 }
 
-pub type PerformanceObserverCallback = fn (entries PerformanceObserverEntryList, observer &PerformanceObserver, options PerformanceObserverCallbackOptions)
+pub type PerformanceObserverCallback = fn(entries PerformanceObserverEntryList, observer &PerformanceObserver, options PerformanceObserverCallbackOptions)
 
 @[heap]
 pub struct PerformanceObserver {
@@ -44,12 +45,24 @@ pub fn PerformanceObserver.new(callback PerformanceObserverCallback) &Performanc
 	}
 }
 
+pub fn PerformanceObserver.construct_impl(callback PerformanceObserverCallback) &PerformanceObserver {
+	return PerformanceObserver.new(callback)
+}
+
+pub fn (observer &PerformanceObserver) callback() PerformanceObserverCallback {
+	return observer.callback_
+}
+
 pub fn (observer &PerformanceObserver) observer_type() ObserverType {
 	return observer.observer_type_
 }
 
 pub fn (observer &PerformanceObserver) requires_dropped_entries() bool {
 	return observer.requires_dropped_entries_
+}
+
+pub fn (mut observer PerformanceObserver) unset_requires_dropped_entries() {
+	observer.requires_dropped_entries_ = false
 }
 
 pub fn (observer &PerformanceObserver) options_list() []PerformanceObserverInit {
@@ -133,8 +146,9 @@ pub fn (mut observer PerformanceObserver) observe(mut timeline PerformanceTimeli
 fn clone_observer_init(options PerformanceObserverInit) PerformanceObserverInit {
 	return PerformanceObserverInit{
 		entry_types: if types := options.entry_types { types.clone() } else { none }
-		type_:       options.type_
-		buffered:    options.buffered
+		type_: options.type_
+		buffered: options.buffered
+		duration_threshold: options.duration_threshold
 	}
 }
 

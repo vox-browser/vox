@@ -6,6 +6,8 @@ import dom
 __global (
 	shared_resource_test_finished int
 	shared_resource_test_failed   int
+	shared_resource_test_decode_url string
+	shared_resource_test_decode_mime string
 )
 
 fn shared_resource_test_on_finish() {
@@ -30,6 +32,23 @@ fn shared_resource_test_fetch_success(request &SharedResourceRequest, _ dom.URL)
 fn shared_resource_test_fetch_failure(request &SharedResourceRequest, _ dom.URL) {
 	mut mutable_request := unsafe { &SharedResourceRequest(request) }
 	mutable_request.handle_failed_fetch()
+}
+
+fn shared_resource_test_decode(url dom.URL, mime_type string, bytes []u8) !DecodedImageData {
+	shared_resource_test_decode_url = url.serialize()
+	shared_resource_test_decode_mime = mime_type
+	if bytes.len == 0 {
+		return error('empty image')
+	}
+	return BitmapDecodedImageData.create([
+		BitmapDecodedImageFrame{
+			bitmap: &dom.ImmutableBitmap_{
+				width:  4
+				height: 5
+				data:   bytes.clone()
+			}
+		}
+	], 0, false)
 }
 
 fn test_shared_resource_request_shares_state_and_callbacks() {
@@ -71,9 +90,28 @@ fn test_image_request_state_fetch_and_abort() {
 	assert request.shared_resource_request()?.state() == .failed
 	request.set_state(.partially_available)
 	assert request.is_available()
+	image := &dom.HTMLImageElement{}
+	request.prepare_for_presentation(image)
+	assert request.state() == .partially_available
 	request.set_image_data(SharedResourceImageData{
 		data: BitmapDecodedImageData.create([], 0, false)
 	})
 	abort_the_image_request(request)
 	assert request.image_data() == none
+}
+
+fn test_shared_resource_request_handle_successful_fetch_decodes_and_finishes() {
+	unsafe {
+		shared_resource_test_decode_url = ''
+		shared_resource_test_decode_mime = ''
+	}
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	url := dom.URL{ value: 'https://example.test/image.bin' }
+	mut request := SharedResourceRequest.get_or_create(document, url)
+	request.set_decode_callback(shared_resource_test_decode)
+	request.handle_successful_fetch(url, 'image/test', [u8(1), 2, 3])
+	assert request.state() == .finished
+	assert request.image_data()?.data.intrinsic_width()? == 4
+	assert shared_resource_test_decode_url == url.serialize()
+	assert shared_resource_test_decode_mime == 'image/test'
 }

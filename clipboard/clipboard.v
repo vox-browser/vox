@@ -6,6 +6,7 @@
 module clipboard
 
 import dom
+import encoding
 import fileapi
 import html
 import mimesniff
@@ -142,12 +143,41 @@ pub fn check_clipboard_write_permission(has_transient_activation bool) bool {
 	return has_transient_activation
 }
 
+// The browser-process insertion call is represented by the returned native
+// item and presentation style. The caller batches those records into the
+// injectable SystemClipboardBackend after all representation promises settle.
+// https://w3c.github.io/clipboard-apis/#write-blobs-and-option-to-the-clipboard
+pub struct ClipboardNativeWrite {
+pub:
+	item               SystemClipboardItem
+	presentation_style string
+}
+
+pub fn write_blobs_and_option_to_clipboard(items []&fileapi.Blob, presentation_style string) ClipboardNativeWrite {
+	decoder := encoding.TextDecoder.create()
+	mut representations := []SystemClipboardRepresentation{cap: items.len}
+	for item in items {
+		format_string := os_specific_well_known_format(item.type_())
+		payload := decoder.decode(item.raw_bytes(), encoding.TextDecodeOptions{}) or { panic(err) }
+		representations << SystemClipboardRepresentation{
+			data: payload.bytes()
+			mime_type: format_string
+		}
+	}
+	return ClipboardNativeWrite{
+		item: SystemClipboardItem{
+			system_clipboard_representations: representations
+		}
+		presentation_style: presentation_style
+	}
+}
+
 @[heap]
 pub struct Clipboard {
 	dom.EventTarget
 mut:
 	backend_                 &SystemClipboardBackend = unsafe { nil }
-	event_loop_              &html.EventLoop         = unsafe { nil }
+	event_loop_              &html.EventLoop = unsafe { nil }
 	document_                ?&dom.Document
 	has_transient_activation bool
 	active_write_operations  []&ClipboardWriteOperation
@@ -158,9 +188,9 @@ mut:
 // activation is consumed/updated independently of this object.
 pub fn Clipboard.create(backend &SystemClipboardBackend, event_loop &html.EventLoop, document ?&dom.Document) &Clipboard {
 	return &Clipboard{
-		backend_:    backend
+		backend_: backend
 		event_loop_: event_loop
-		document_:   document
+		document_: document
 	}
 }
 
@@ -206,7 +236,7 @@ pub fn (board &Clipboard) read(formats ClipboardUnsanitizedFormats) &ClipboardRe
 					_ = is_unsanitized
 					item.append_representation(ClipboardItemRepresentation{
 						mime_type: mime_type
-						data:      ClipboardItemDataPromise.resolved_string(system_representation.data.bytestr())
+						data: ClipboardItemDataPromise.resolved_string(system_representation.data.bytestr())
 					})
 				}
 				if item.representations().len > 0 {
@@ -252,8 +282,8 @@ pub fn (board &Clipboard) write(data []&ClipboardItem) &ClipboardVoidPromise {
 		}
 		mut operation := &ClipboardWriteOperation{
 			clipboard: board
-			data:      data.clone()
-			promise:   promise
+			data: data.clone()
+			promise: promise
 		}
 		mut mutable_clipboard := unsafe { &Clipboard(board) }
 		mutable_clipboard.active_write_operations << operation
@@ -276,7 +306,7 @@ pub fn (board &Clipboard) write_text(data string) &ClipboardVoidPromise {
 				SystemClipboardItem{
 					system_clipboard_representations: [
 						SystemClipboardRepresentation{
-							data:      data.bytes()
+							data: data.bytes()
 							mime_type: os_specific_well_known_format('text/plain;charset=utf-8')
 						},
 					]
@@ -340,7 +370,7 @@ fn (mut operation ClipboardWriteOperation) process() {
 	mut system_items := []SystemClipboardItem{cap: operation.data.len}
 	mut presentation_styles := []string{cap: operation.data.len}
 	for item in operation.data {
-		mut system_representations := []SystemClipboardRepresentation{}
+		mut clean_item_list := []&fileapi.Blob{}
 		for representation in item.representations() {
 			value := representation.data.result() or {
 				operation.fail('NotAllowedError: Clipboard representation has no data')
@@ -361,20 +391,15 @@ fn (mut operation ClipboardWriteOperation) process() {
 				operation.fail('NotAllowedError: Clipboard item type ${blob.type_()} is not allowed')
 				return
 			}
-			format := os_specific_well_known_format(blob.type_())
-			if format.len == 0 {
+			if os_specific_well_known_format(blob.type_()).len == 0 {
 				operation.fail('NotAllowedError: Clipboard item type ${blob.type_()} has no native format')
 				return
 			}
-			system_representations << SystemClipboardRepresentation{
-				data:      blob.raw_bytes().clone()
-				mime_type: format
-			}
+			clean_item_list << blob
 		}
-		system_items << SystemClipboardItem{
-			system_clipboard_representations: system_representations
-		}
-		presentation_styles << presentation_style_string(item.presentation_style())
+		native_write := write_blobs_and_option_to_clipboard(clean_item_list, presentation_style_string(item.presentation_style()))
+		system_items << native_write.item
+		presentation_styles << native_write.presentation_style
 	}
 	mut backend := operation.clipboard.backend_
 	backend.replace_items(system_items, presentation_styles)

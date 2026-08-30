@@ -75,12 +75,19 @@ pub fn (buffer &WebGLBuffer) bytes() []u8 {
 pub struct WebGLFramebuffer {
 pub mut:
 	object WebGLObject
+mut:
+	attachments map[GLenum]GLuint
 }
 
 @[heap]
 pub struct WebGLRenderbuffer {
 pub mut:
 	object WebGLObject
+mut:
+	internal_format_ GLenum
+	width_           int
+	height_          int
+	samples_         int
 }
 
 @[heap]
@@ -88,7 +95,13 @@ pub struct WebGLTexture {
 pub mut:
 	object WebGLObject
 mut:
-	target_ ?GLenum
+	target_          ?GLenum
+	parameters_i_    map[GLenum]int
+	parameters_f_    map[GLenum]f32
+	width_           int
+	height_          int
+	depth_           int
+	internal_format_ GLenum
 }
 
 @[heap]

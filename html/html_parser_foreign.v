@@ -7,7 +7,6 @@ import dom
 // predicates, the MathML/SVG attribute and tag-name adjustments, and
 // process_using_the_rules_for_foreign_content.
 // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inforeign
-
 const ns_xlink = 'http://www.w3.org/1999/xlink'
 const ns_xml = 'http://www.w3.org/XML/1998/namespace'
 const ns_xmlns = 'http://www.w3.org/2000/xmlns/'
@@ -28,8 +27,11 @@ fn is_html_integration_point(element &dom.Element) bool {
 			}
 		}
 	}
-	if element_in_namespace(element, ns_svg)
-		&& element.local_name() in ['foreignObject', 'desc', 'title'] {
+	if element_in_namespace(element, ns_svg) && element.local_name() in [
+		'foreignObject',
+		'desc',
+		'title',
+	] {
 		return true
 	}
 	return false
@@ -136,24 +138,24 @@ const svg_attribute_adjustments = {
 	'zoomandpan':          'zoomAndPan'
 }
 
-fn adjust_mathml_attributes(mut token HTMLToken) {
+fn adjust_mathml_attributes_impl(mut token HTMLToken) {
 	token.adjust_attribute_name('definitionurl', 'definitionURL')
 }
 
-fn adjust_svg_tag_names(mut token HTMLToken) {
+fn adjust_svg_tag_names_impl(mut token HTMLToken) {
 	for from, to in svg_tag_name_adjustments {
 		token.adjust_tag_name(from, to)
 	}
 }
 
-fn adjust_svg_attributes(mut token HTMLToken) {
+fn adjust_svg_attributes_impl(mut token HTMLToken) {
 	for from, to in svg_attribute_adjustments {
 		token.adjust_attribute_name(from, to)
 	}
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#adjust-foreign-attributes
-fn adjust_foreign_attributes(mut token HTMLToken) {
+fn adjust_foreign_attributes_impl(mut token HTMLToken) {
 	token.adjust_foreign_attribute('xlink:actuate', 'xlink', 'actuate', ns_xlink)
 	token.adjust_foreign_attribute('xlink:arcrole', 'xlink', 'arcrole', ns_xlink)
 	token.adjust_foreign_attribute('xlink:href', 'xlink', 'href', ns_xlink)
@@ -167,6 +169,26 @@ fn adjust_foreign_attributes(mut token HTMLToken) {
 	token.adjust_foreign_attribute('xmlns:xlink', 'xmlns', 'xlink', ns_xmlns)
 }
 
+// HTMLParser's foreign-content attribute-adjustment entry points.
+fn (p &HTMLParser) adjust_mathml_attributes(mut token HTMLToken) {
+	_ = p
+	adjust_mathml_attributes_impl(mut token)
+}
+
+fn (p &HTMLParser) adjust_svg_tag_names(mut token HTMLToken) {
+	_ = p
+	adjust_svg_tag_names_impl(mut token)
+}
+
+fn (p &HTMLParser) adjust_svg_attributes(mut token HTMLToken) {
+	_ = p
+	adjust_svg_attributes_impl(mut token)
+}
+
+fn HTMLParser.adjust_foreign_attributes(mut token HTMLToken) {
+	adjust_foreign_attributes_impl(mut token)
+}
+
 // The tree-construction dispatcher's test for whether to use the HTML-content rules (vs. foreign).
 fn (mut p HTMLParser) should_process_using_html_rules(token &HTMLToken) bool {
 	if p.stack_of_open_elements.is_empty() {
@@ -176,15 +198,13 @@ fn (mut p HTMLParser) should_process_using_html_rules(token &HTMLToken) bool {
 	if element_in_namespace(acn, ns_html) {
 		return true
 	}
-	if is_mathml_text_integration_point(acn) && token.is_start_tag() && token.tag_name != 'mglyph'
-		&& token.tag_name != 'malignmark' {
+	if is_mathml_text_integration_point(acn) && token.is_start_tag() && token.tag_name != 'mglyph' && token.tag_name != 'malignmark' {
 		return true
 	}
 	if is_mathml_text_integration_point(acn) && token.is_character() {
 		return true
 	}
-	if element_in_namespace(acn, ns_mathml) && acn.local_name() == 'annotation-xml'
-		&& token.is_start_tag() && token.tag_name == 'svg' {
+	if element_in_namespace(acn, ns_mathml) && acn.local_name() == 'annotation-xml' && token.is_start_tag() && token.tag_name == 'svg' {
 		return true
 	}
 	if is_html_integration_point(acn) && (token.is_start_tag() || token.is_character()) {
@@ -197,9 +217,9 @@ fn (mut p HTMLParser) should_process_using_html_rules(token &HTMLToken) bool {
 }
 
 // HTML start tags that break out of foreign content back to HTML rules.
-const foreign_breakout_tags = ['b', 'big', 'blockquote', 'body', 'br', 'center', 'code', 'dd',
-	'div', 'dl', 'dt', 'em', 'embed', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'hr', 'i', 'img',
-	'li', 'listing', 'menu', 'meta', 'nobr', 'ol', 'p', 'pre', 'ruby', 's', 'small', 'span', 'strong',
+const foreign_breakout_tags = ['b', 'big', 'blockquote', 'body', 'br', 'center', 'code', 'dd', 'div',
+	'dl', 'dt', 'em', 'embed', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'hr', 'i', 'img', 'li',
+	'listing', 'menu', 'meta', 'nobr', 'ol', 'p', 'pre', 'ruby', 's', 'small', 'span', 'strong',
 	'strike', 'sub', 'sup', 'table', 'tt', 'u', 'ul', 'var']
 
 // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inforeign
@@ -224,17 +244,14 @@ fn (mut p HTMLParser) process_using_the_rules_for_foreign_content(mut token HTML
 	}
 
 	is_breakout_start := token.is_start_tag() && token.tag_name in foreign_breakout_tags
-	is_font_breakout := token.is_start_tag() && token.tag_name == 'font'
-		&& (token.has_attribute('color') || token.has_attribute('face')
-		|| token.has_attribute('size'))
+	is_font_breakout := token.is_start_tag() && token.tag_name == 'font' && (token.has_attribute('color') || token.has_attribute('face') || token.has_attribute('size'))
 	is_breakout_end := token.is_end_tag() && token.tag_name in ['br', 'p']
 	if is_breakout_start || is_font_breakout || is_breakout_end {
 		// Pop until the current node is a MathML text integration point, an HTML integration point,
 		// or an HTML-namespace element; then reprocess with the current insertion mode.
 		for {
 			cn := p.current_node() or { break }
-			if is_mathml_text_integration_point(cn) || is_html_integration_point(cn)
-				|| element_in_namespace(cn, ns_html) {
+			if is_mathml_text_integration_point(cn) || is_html_integration_point(cn) || element_in_namespace(cn, ns_html) {
 				break
 			}
 			p.stack_of_open_elements.pop()
@@ -246,16 +263,31 @@ fn (mut p HTMLParser) process_using_the_rules_for_foreign_content(mut token HTML
 	if token.is_start_tag() {
 		acn := p.adjusted_current_node() or { return }
 		if element_in_namespace(acn, ns_mathml) {
-			adjust_mathml_attributes(mut token)
+			p.adjust_mathml_attributes(mut token)
 		} else if element_in_namespace(acn, ns_svg) {
-			adjust_svg_tag_names(mut token)
-			adjust_svg_attributes(mut token)
+			p.adjust_svg_tag_names(mut token)
+			p.adjust_svg_attributes(mut token)
 		}
-		adjust_foreign_attributes(mut token)
+		HTMLParser.adjust_foreign_attributes(mut token)
 		acn_namespace := acn.namespace_uri()
-		p.insert_foreign_element(token, acn_namespace, false)
+		element := p.insert_foreign_element(token, acn_namespace, false)
 		if token.is_self_closing() {
-			// FIXME: an SVG <script/> would be prepared/executed here.
+			if element_in_namespace(element, ns_svg) && element.local_name() == 'script' {
+				// SVGScriptElement::prepare_script is host-equivalent to preparing a
+				// classic script with href/xlink:href as its external source.
+				mut script := HTMLScriptElementModel.create(p.document_.base_url())
+				script.set_parser_document(p.document_)
+				script.set_scripting_enabled(p.scripting_enabled)
+				mut source := token.attribute('href')
+				if source == none {
+					source = token.attribute('xlink:href')
+				}
+				script.set_src(source)
+				script.set_fetch_hook(p.script_fetch_hook)
+				script.set_execute_hook(p.script_execute_hook)
+				script.prepare_script(p.document_)
+				script.parser_execute_ready_script()
+			}
 			p.stack_of_open_elements.pop()
 			token.acknowledge_self_closing_flag_if_set()
 		}

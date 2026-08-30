@@ -104,6 +104,10 @@ pub fn (agent &ServiceWorkerAgent) queue_length(scope string) int {
 	return (agent.queues[scope] or { []&Job{} }).len
 }
 
+pub fn scope_to_job_queue_map(agent &ServiceWorkerAgent) map[string][]&Job {
+	return agent.queues.clone()
+}
+
 pub fn (mut agent ServiceWorkerAgent) schedule_job(job &Job) {
 	scope := job.scope_url
 	mut queue := agent.queues[scope] or { []&Job{} }
@@ -175,6 +179,14 @@ fn (agent &ServiceWorkerAgent) reject_job(job &Job, message string) {
 		equivalent_promise.state = .rejected
 		equivalent_promise.error = message
 	}
+}
+
+pub fn resolve_job_promise(agent &ServiceWorkerAgent, job &Job, registration ?&Registration, value ?bool) {
+	agent.resolve_job(job, registration, value)
+}
+
+pub fn reject_job_promise(agent &ServiceWorkerAgent, job &Job, message string) {
+	agent.reject_job(job, message)
 }
 
 fn javascript_mime_type(mime string) bool {
@@ -308,6 +320,20 @@ pub fn (mut agent ServiceWorkerAgent) process_scope(scope string) bool {
 	}
 	queue.delete(0)
 	agent.queues[scope] = queue
+	return true
+}
+
+pub fn run_job(mut agent ServiceWorkerAgent, scope string) bool {
+	return agent.process_scope(scope)
+}
+
+pub fn finish_job(mut agent ServiceWorkerAgent, job &Job) bool {
+	mut queue := agent.queues[job.scope_url] or { return false }
+	if queue.len == 0 || voidptr(queue[0]) != voidptr(job) {
+		return false
+	}
+	queue.delete(0)
+	agent.queues[job.scope_url] = queue
 	return true
 }
 

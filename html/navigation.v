@@ -63,11 +63,11 @@ pub:
 	finished  &dom.Promise
 }
 
-pub type NavigationNavigateHook = fn (dom.URL, HistoryHandlingBehavior, SerializationRecord) !
+pub type NavigationNavigateHook = fn(dom.URL, HistoryHandlingBehavior, SerializationRecord) !
 
-pub type NavigationReloadHook = fn (SerializationRecord) !
+pub type NavigationReloadHook = fn(SerializationRecord) !
 
-pub type NavigationTraverseHook = fn (string) !
+pub type NavigationTraverseHook = fn(string) !
 
 @[heap]
 pub struct NavigationAPIMethodTracker {
@@ -85,12 +85,12 @@ fn NavigationAPIMethodTracker.create(navigation &Navigation, key ?string, info d
 	mut finished := dom.Promise.create()
 	finished.mark_handled()
 	return &NavigationAPIMethodTracker{
-		navigation:        navigation
-		key:               key
-		info:              info
-		serialized_state:  serialized_state
+		navigation: navigation
+		key: key
+		info: info
+		serialized_state: serialized_state
 		committed_promise: dom.Promise.create()
-		finished_promise:  finished
+		finished_promise: finished
 	}
 }
 
@@ -148,8 +148,7 @@ pub fn (navigation &Navigation) entries() []&NavigationHistoryEntry {
 }
 
 pub fn (navigation &Navigation) current_entry() ?&NavigationHistoryEntry {
-	if navigation.has_entries_and_events_disabled() || navigation.current_entry_index_ < 0
-		|| navigation.current_entry_index_ >= navigation.entry_list_.len {
+	if navigation.has_entries_and_events_disabled() || navigation.current_entry_index_ < 0 || navigation.current_entry_index_ >= navigation.entry_list_.len {
 		return none
 	}
 	return navigation.entry_list_[navigation.current_entry_index_]
@@ -199,8 +198,7 @@ pub fn (navigation &Navigation) can_go_back() bool {
 }
 
 pub fn (navigation &Navigation) can_go_forward() bool {
-	return !navigation.has_entries_and_events_disabled() && navigation.current_entry_index_ >= 0
-		&& navigation.current_entry_index_ < navigation.entry_list_.len - 1
+	return !navigation.has_entries_and_events_disabled() && navigation.current_entry_index_ >= 0 && navigation.current_entry_index_ < navigation.entry_list_.len - 1
 }
 
 pub fn (navigation &Navigation) has_entries_and_events_disabled() bool {
@@ -208,8 +206,7 @@ pub fn (navigation &Navigation) has_entries_and_events_disabled() bool {
 		return override
 	}
 	document := navigation.associated_document_ or { return true }
-	return !document.is_fully_active() || document.get_is_initial_about_blank()
-		|| document.origin().serialize() == 'opaque'
+	return !document.is_fully_active() || document.get_is_initial_about_blank() || document.origin().serialize() == 'opaque'
 }
 
 pub fn (navigation &Navigation) get_the_navigation_api_entry_index(session_entry &SessionHistoryEntry) i64 {
@@ -221,22 +218,24 @@ pub fn (navigation &Navigation) get_the_navigation_api_entry_index(session_entry
 	return -1
 }
 
-fn navigation_error_result(message string) NavigationResult {
+// An early error result for an exception is a pair of promises rejected with
+// that exception.
+pub fn (navigation &Navigation) early_error_result(message string) NavigationResult {
 	reason := dom.js_string(message)
 	return NavigationResult{
 		committed: dom.Promise.rejected(reason)
-		finished:  dom.Promise.rejected(reason)
+		finished: dom.Promise.rejected(reason)
 	}
 }
 
-fn tracker_result(tracker &NavigationAPIMethodTracker) NavigationResult {
+fn navigation_api_method_tracker_derived_result(tracker &NavigationAPIMethodTracker) NavigationResult {
 	return NavigationResult{
 		committed: tracker.committed_promise
-		finished:  tracker.finished_promise
+		finished: tracker.finished_promise
 	}
 }
 
-fn (mut navigation Navigation) maybe_set_upcoming_non_traverse_tracker(info dom.JSValue, state SerializationRecord) &NavigationAPIMethodTracker {
+pub fn (mut navigation Navigation) maybe_set_the_upcoming_non_traverse_api_method_tracker(info dom.JSValue, state ?SerializationRecord) &NavigationAPIMethodTracker {
 	tracker := NavigationAPIMethodTracker.create(navigation, none, info, state)
 	if !navigation.has_entries_and_events_disabled() {
 		navigation.upcoming_non_traverse_api_method_tracker_ = tracker
@@ -244,13 +243,13 @@ fn (mut navigation Navigation) maybe_set_upcoming_non_traverse_tracker(info dom.
 	return tracker
 }
 
-fn (mut navigation Navigation) add_upcoming_traverse_tracker(key string, info dom.JSValue) &NavigationAPIMethodTracker {
+pub fn (mut navigation Navigation) add_an_upcoming_traverse_api_method_tracker(key string, info dom.JSValue) &NavigationAPIMethodTracker {
 	tracker := NavigationAPIMethodTracker.create(navigation, key, info, none)
 	navigation.upcoming_traverse_api_method_trackers_[key] = tracker
 	return tracker
 }
 
-fn (mut navigation Navigation) promote_upcoming_tracker(destination_key ?string) {
+pub fn (mut navigation Navigation) promote_an_upcoming_api_method_tracker_to_ongoing(destination_key ?string) {
 	if key := destination_key {
 		if tracker := navigation.upcoming_traverse_api_method_trackers_[key] {
 			navigation.ongoing_api_method_tracker_ = tracker
@@ -262,7 +261,7 @@ fn (mut navigation Navigation) promote_upcoming_tracker(destination_key ?string)
 	}
 }
 
-fn (mut navigation Navigation) clean_up_tracker(tracker &NavigationAPIMethodTracker) {
+pub fn (mut navigation Navigation) clean_up(tracker &NavigationAPIMethodTracker) {
 	if current := navigation.ongoing_api_method_tracker_ {
 		if current == tracker {
 			navigation.ongoing_api_method_tracker_ = none
@@ -274,7 +273,7 @@ fn (mut navigation Navigation) clean_up_tracker(tracker &NavigationAPIMethodTrac
 	}
 }
 
-fn (mut navigation Navigation) notify_about_committed_entry(tracker &NavigationAPIMethodTracker, entry &NavigationHistoryEntry) {
+pub fn (mut navigation Navigation) notify_about_the_committed_to_entry(tracker &NavigationAPIMethodTracker, entry &NavigationHistoryEntry) {
 	mut mutable_tracker := unsafe { &NavigationAPIMethodTracker(tracker) }
 	mutable_tracker.committed_to_entry = entry
 	if state := tracker.serialized_state {
@@ -286,19 +285,19 @@ fn (mut navigation Navigation) notify_about_committed_entry(tracker &NavigationA
 	committed.resolve(dom.js_object(voidptr(entry)))
 }
 
-fn (mut navigation Navigation) resolve_finished(tracker &NavigationAPIMethodTracker) {
+pub fn (mut navigation Navigation) resolve_the_finished_promise(tracker &NavigationAPIMethodTracker) {
 	entry := tracker.committed_to_entry or { return }
 	mut finished := unsafe { &dom.Promise(tracker.finished_promise) }
 	finished.resolve(dom.js_object(voidptr(entry)))
-	navigation.clean_up_tracker(tracker)
+	navigation.clean_up(tracker)
 }
 
-fn (mut navigation Navigation) reject_tracker(tracker &NavigationAPIMethodTracker, reason dom.JSValue) {
+pub fn (mut navigation Navigation) reject_the_finished_promise(tracker &NavigationAPIMethodTracker, reason dom.JSValue) {
 	mut committed := unsafe { &dom.Promise(tracker.committed_promise) }
 	mut finished := unsafe { &dom.Promise(tracker.finished_promise) }
 	committed.reject(reason)
 	finished.reject(reason)
-	navigation.clean_up_tracker(tracker)
+	navigation.clean_up(tracker)
 }
 
 fn navigation_urls_equal_excluding_fragment(left dom.URL, right dom.URL) bool {
@@ -335,7 +334,7 @@ fn (mut navigation Navigation) inner_navigate_event_firing_algorithm(navigation_
 	}
 	destination_entry := destination.navigation_history_entry()
 	destination_key := if entry := destination_entry { ?string(entry.key()) } else { none }
-	navigation.promote_upcoming_tracker(destination_key)
+	navigation.promote_an_upcoming_api_method_tracker_to_ongoing(destination_key)
 	tracker := navigation.ongoing_api_method_tracker_
 	document := navigation.associated_document_ or { return true }
 	abort_controller := dom.AbortController.construct_impl() or { return false }
@@ -353,21 +352,18 @@ fn (mut navigation Navigation) inner_navigate_event_firing_algorithm(navigation_
 		mutable_tracker.info = dom.js_undefined()
 	}
 	mut event := NavigateEvent.create('navigate', NavigateEventInit{
-		cancelable:            navigation_type != .traverse || destination.same_document()
-		navigation_type:       navigation_type
-		destination:           destination
-		can_intercept:         navigation.can_rewrite_to(destination.raw_url())
-			&& (destination.same_document() || navigation_type != .traverse)
-		user_initiated:        user_involvement != .none_
-		hash_change:           classic_history_api_state == none && destination.same_document()
-			&& navigation_urls_equal_excluding_fragment(destination.raw_url(), current_url)
-			&& !navigation_url_fragments_identical(destination.raw_url(), current_url)
-		signal:                abort_controller.signal()
-		form_data:             form_data
-		download_request:      download_request
-		info:                  info
-		source_element:        source_element
-		associated_document:   document
+		cancelable: navigation_type != .traverse || destination.same_document()
+		navigation_type: navigation_type
+		destination: destination
+		can_intercept: navigation.can_rewrite_to(destination.raw_url()) && (destination.same_document() || navigation_type != .traverse)
+		user_initiated: user_involvement != .none_
+		hash_change: classic_history_api_state == none && destination.same_document() && navigation_urls_equal_excluding_fragment(destination.raw_url(), current_url) && !navigation_url_fragments_identical(destination.raw_url(), current_url)
+		signal: abort_controller.signal()
+		form_data: form_data
+		download_request: download_request
+		info: info
+		source_element: source_element
+		associated_document: document
 		fully_active_override: !navigation.has_entries_and_events_disabled()
 	}) or { return false }
 	event.set_abort_controller(abort_controller)
@@ -392,8 +388,7 @@ fn (mut navigation Navigation) inner_navigate_event_firing_algorithm(navigation_
 			mut committed := dom.Promise.create()
 			finished := dom.Promise.create()
 			committed.resolve(dom.js_object(voidptr(destination)))
-			navigation.transition_ = NavigationTransition.create(navigation_type, from,
-				destination, committed, finished)
+			navigation.transition_ = NavigationTransition.create(navigation_type, from, destination, committed, finished)
 		}
 		event.run_navigation_handlers() or {
 			event.finish(false) or {}
@@ -427,10 +422,11 @@ pub fn (mut navigation Navigation) abort_a_navigate_event(event &NavigateEvent, 
 	}
 	navigation.ongoing_navigate_event_ = none
 	if tracker := navigation.ongoing_api_method_tracker_ {
-		navigation.reject_tracker(tracker, reason)
+		navigation.reject_the_finished_promise(tracker, reason)
 	}
 	error_event := dom.Event.create('navigateerror', dom.EventInit{})
-	unsafe { &dom.EventTarget(navigation) }.dispatch_event(error_event)
+	unsafe { &dom.EventTarget(navigation) }
+	.dispatch_event(error_event)
 	if transition := navigation.transition_ {
 		mut committed := unsafe { &dom.Promise(transition.committed()) }
 		mut finished := unsafe { &dom.Promise(transition.finished()) }
@@ -443,8 +439,8 @@ pub fn (mut navigation Navigation) abort_a_navigate_event(event &NavigateEvent, 
 fn (mut navigation Navigation) complete_navigation_tracker() {
 	if tracker := navigation.ongoing_api_method_tracker_ {
 		if current := navigation.current_entry() {
-			navigation.notify_about_committed_entry(tracker, current)
-			navigation.resolve_finished(tracker)
+			navigation.notify_about_the_committed_to_entry(tracker, current)
+			navigation.resolve_the_finished_promise(tracker)
 		}
 	}
 	if transition := navigation.transition_ {
@@ -453,52 +449,51 @@ fn (mut navigation Navigation) complete_navigation_tracker() {
 		navigation.transition_ = none
 	}
 	success_event := dom.Event.create('navigatesuccess', dom.EventInit{})
-	unsafe { &dom.EventTarget(navigation) }.dispatch_event(success_event)
+	unsafe { &dom.EventTarget(navigation) }
+	.dispatch_event(success_event)
 }
 
 pub fn (mut navigation Navigation) navigate(url string, options NavigationNavigateOptions) NavigationResult {
 	document := navigation.associated_document_ or {
-		return navigation_error_result('InvalidStateError: Navigation has no associated Document')
+		return navigation.early_error_result('InvalidStateError: Navigation has no associated Document')
 	}
 
 	url_record := dom.dom_url_parse(url, document.base_url(), 'UTF-8') or {
-		return navigation_error_result('SyntaxError: invalid navigation URL')
+		return navigation.early_error_result('SyntaxError: invalid navigation URL')
 	}
 	state_value := options.state or { dom.js_undefined() }
 	serialized_state := structured_serialize_for_storage(state_value) or {
-		return navigation_error_result(err.msg())
+		return navigation.early_error_result(err.msg())
 	}
 	if navigation.has_entries_and_events_disabled() || document.get_unload_counter() > 0 {
-		return navigation_error_result('InvalidStateError: Document is not active for navigation')
+		return navigation.early_error_result('InvalidStateError: Document is not active for navigation')
 	}
 	mut behavior := options.history
 	if behavior == .auto {
 		behavior = if navigation.current_entry_index_ < 0 { .replace } else { .push }
 	}
 	info := options.info or { dom.js_undefined() }
-	tracker := navigation.maybe_set_upcoming_non_traverse_tracker(info, serialized_state)
+	tracker := navigation.maybe_set_the_upcoming_non_traverse_api_method_tracker(info, serialized_state)
 	if hook := navigation.navigate_hook_ {
 		history_behavior := to_history_handling_behavior(behavior) or {
 			HistoryHandlingBehavior.replace
 		}
 		hook(url_record, history_behavior, serialized_state) or {
-			navigation.reject_tracker(tracker, dom.js_string(err.msg()))
-			return tracker_result(tracker)
+			navigation.reject_the_finished_promise(tracker, dom.js_string(err.msg()))
+			return navigation_api_method_tracker_derived_result(tracker)
 		}
 	}
 	same_document := navigation_urls_equal_excluding_fragment(url_record, dom.URL{
 		value: document.url_string()
 	})
 	if !navigation.fire_a_push_replace_reload_navigate_event(if behavior == .push {
-		.push
-	} else {
-		.replace
-	}, url_record, same_document, .none_, none, none, serialized_state, none) {
-		return tracker_result(tracker)
+		.push} else {
+		.replace}, url_record, same_document, .none_, none, none, serialized_state, none) {
+		return navigation_api_method_tracker_derived_result(tracker)
 	}
 	new_entry := &SessionHistoryEntry{
-		url:                  url_record
-		document_state:       &DocumentState{
+		url: url_record
+		document_state: &DocumentState{
 			document: document
 		}
 		navigation_api_state: serialized_state
@@ -515,59 +510,57 @@ pub fn (mut navigation Navigation) navigate(url string, options NavigationNaviga
 		})
 	}
 	navigation.complete_navigation_tracker()
-	return tracker_result(tracker)
+	return navigation_api_method_tracker_derived_result(tracker)
 }
 
 pub fn (mut navigation Navigation) reload(options NavigationReloadOptions) NavigationResult {
 	if navigation.has_entries_and_events_disabled() {
-		return navigation_error_result('InvalidStateError: Document is not active for reload')
+		return navigation.early_error_result('InvalidStateError: Document is not active for reload')
 	}
 	current := navigation.current_entry() or {
-		return navigation_error_result('InvalidStateError: no current entry')
+		return navigation.early_error_result('InvalidStateError: no current entry')
 	}
 	state := if value := options.state {
-		structured_serialize_for_storage(value) or { return navigation_error_result(err.msg()) }
+		structured_serialize_for_storage(value) or { return navigation.early_error_result(err.msg()) }
 	} else {
 		current.session_history_entry().navigation_api_state
 	}
-	tracker := navigation.maybe_set_upcoming_non_traverse_tracker(options.info or {
+	tracker := navigation.maybe_set_the_upcoming_non_traverse_api_method_tracker(options.info or {
 		dom.js_undefined()
 	}, state)
 	if hook := navigation.reload_hook_ {
 		hook(state) or {
-			navigation.reject_tracker(tracker, dom.js_string(err.msg()))
-			return tracker_result(tracker)
+			navigation.reject_the_finished_promise(tracker, dom.js_string(err.msg()))
+			return navigation_api_method_tracker_derived_result(tracker)
 		}
 	}
-	if !navigation.fire_a_push_replace_reload_navigate_event(.reload,
-		current.session_history_entry().url, true, .none_, none, none, state, none) {
-		return tracker_result(tracker)
+	if !navigation.fire_a_push_replace_reload_navigate_event(.reload, current.session_history_entry().url, true, .none_, none, none, state, none) {
+		return navigation_api_method_tracker_derived_result(tracker)
 	}
-	navigation.update_the_navigation_api_entries_for_a_same_document_navigation(current.session_history_entry(),
-		.reload)
+	navigation.update_the_navigation_api_entries_for_a_same_document_navigation(current.session_history_entry(), .reload)
 	navigation.complete_navigation_tracker()
-	return tracker_result(tracker)
+	return navigation_api_method_tracker_derived_result(tracker)
 }
 
-fn (mut navigation Navigation) perform_traversal(key string, options NavigationOptions) NavigationResult {
+pub fn (mut navigation Navigation) perform_a_navigation_api_traversal(key string, options NavigationOptions) NavigationResult {
 	current := navigation.current_entry() or {
-		return navigation_error_result('InvalidStateError: no current entry')
+		return navigation.early_error_result('InvalidStateError: no current entry')
 	}
 	if key == current.key() {
 		value := dom.js_object(voidptr(current))
 		return NavigationResult{
 			committed: dom.Promise.resolved(value)
-			finished:  dom.Promise.resolved(value)
+			finished: dom.Promise.resolved(value)
 		}
 	}
 	if tracker := navigation.upcoming_traverse_api_method_trackers_[key] {
-		return tracker_result(tracker)
+		return navigation_api_method_tracker_derived_result(tracker)
 	}
-	tracker := navigation.add_upcoming_traverse_tracker(key, options.info or { dom.js_undefined() })
+	tracker := navigation.add_an_upcoming_traverse_api_method_tracker(key, options.info or { dom.js_undefined() })
 	if hook := navigation.traverse_hook_ {
 		hook(key) or {
-			navigation.reject_tracker(tracker, dom.js_string(err.msg()))
-			return tracker_result(tracker)
+			navigation.reject_the_finished_promise(tracker, dom.js_string(err.msg()))
+			return navigation_api_method_tracker_derived_result(tracker)
 		}
 	}
 	mut destination_entry := ?&NavigationHistoryEntry(none)
@@ -578,46 +571,42 @@ fn (mut navigation Navigation) perform_traversal(key string, options NavigationO
 		}
 	}
 	entry := destination_entry or {
-		navigation.reject_tracker(tracker,
-			dom.js_string('InvalidStateError: stale session history entry'))
-		return tracker_result(tracker)
+		navigation.reject_the_finished_promise(tracker, dom.js_string('InvalidStateError: stale session history entry'))
+		return navigation_api_method_tracker_derived_result(tracker)
 	}
 
 	if !navigation.fire_a_traverse_navigate_event(entry.session_history_entry(), .none_) {
-		return tracker_result(tracker)
+		return navigation_api_method_tracker_derived_result(tracker)
 	}
-	navigation.update_the_navigation_api_entries_for_a_same_document_navigation(entry.session_history_entry(),
-		.traverse)
+	navigation.update_the_navigation_api_entries_for_a_same_document_navigation(entry.session_history_entry(), .traverse)
 	navigation.complete_navigation_tracker()
-	return tracker_result(tracker)
+	return navigation_api_method_tracker_derived_result(tracker)
 }
 
 pub fn (mut navigation Navigation) traverse_to(key string, options NavigationOptions) NavigationResult {
 	if navigation.current_entry_index_ < 0 {
-		return navigation_error_result('InvalidStateError: no current session history entry')
+		return navigation.early_error_result('InvalidStateError: no current session history entry')
 	}
 	for entry in navigation.entry_list_ {
 		if entry.session_history_entry().navigation_api_key == key {
-			return navigation.perform_traversal(key, options)
+			return navigation.perform_a_navigation_api_traversal(key, options)
 		}
 	}
-	return navigation_error_result('InvalidStateError: key not found in session history list')
+	return navigation.early_error_result('InvalidStateError: key not found in session history list')
 }
 
 pub fn (mut navigation Navigation) back(options NavigationOptions) NavigationResult {
 	if !navigation.can_go_back() {
-		return navigation_error_result('InvalidStateError: no previous session history entry')
+		return navigation.early_error_result('InvalidStateError: no previous session history entry')
 	}
-	return navigation.perform_traversal(navigation.entry_list_[navigation.current_entry_index_ - 1].key(),
-		options)
+	return navigation.perform_a_navigation_api_traversal(navigation.entry_list_[navigation.current_entry_index_ - 1].key(), options)
 }
 
 pub fn (mut navigation Navigation) forward(options NavigationOptions) NavigationResult {
 	if !navigation.can_go_forward() {
-		return navigation_error_result('InvalidStateError: no next session history entry')
+		return navigation.early_error_result('InvalidStateError: no next session history entry')
 	}
-	return navigation.perform_traversal(navigation.entry_list_[navigation.current_entry_index_ + 1].key(),
-		options)
+	return navigation.perform_a_navigation_api_traversal(navigation.entry_list_[navigation.current_entry_index_ + 1].key(), options)
 }
 
 pub fn (mut navigation Navigation) fire_a_traverse_navigate_event(destination_session_entry &SessionHistoryEntry, user_involvement UserNavigationInvolvement) bool {
@@ -645,8 +634,7 @@ pub fn (mut navigation Navigation) fire_a_traverse_navigate_event(destination_se
 	} else {
 		false
 	})
-	return navigation.inner_navigate_event_firing_algorithm(.traverse, destination,
-		user_involvement, none, none, none, none)
+	return navigation.inner_navigate_event_firing_algorithm(.traverse, destination, user_involvement, none, none, none, none)
 }
 
 pub fn (mut navigation Navigation) fire_a_push_replace_reload_navigate_event(navigation_type dom.NavigationType, destination_url dom.URL, is_same_document bool, user_involvement UserNavigationInvolvement, source_element ?&dom.Element, form_data_entries ?[]FormDataEntry, navigation_api_state ?SerializationRecord, classic_history_api_state ?SerializationRecord) bool {
@@ -661,8 +649,7 @@ pub fn (mut navigation Navigation) fire_a_push_replace_reload_navigate_event(nav
 	destination.set_url(destination_url)
 	destination.set_state(state)
 	destination.set_is_same_document(is_same_document)
-	return navigation.inner_navigate_event_firing_algorithm(navigation_type, destination,
-		user_involvement, source_element, form_data_entries, none, classic_history_api_state)
+	return navigation.inner_navigate_event_firing_algorithm(navigation_type, destination, user_involvement, source_element, form_data_entries, none, classic_history_api_state)
 }
 
 pub fn (mut navigation Navigation) fire_a_download_request_navigate_event(destination_url dom.URL, user_involvement UserNavigationInvolvement, source_element ?&dom.Element, filename string) bool {
@@ -672,22 +659,18 @@ pub fn (mut navigation Navigation) fire_a_download_request_navigate_event(destin
 		SerializationRecord{}
 	})
 	destination.set_is_same_document(false)
-	return navigation.inner_navigate_event_firing_algorithm(.push, destination, user_involvement,
-		source_element, none, filename, none)
+	return navigation.inner_navigate_event_firing_algorithm(.push, destination, user_involvement, source_element, none, filename, none)
 }
 
 pub fn (mut navigation Navigation) initialize_the_navigation_api_entries_for_a_new_document(new_session_entries []&SessionHistoryEntry, initial_session_entry &SessionHistoryEntry) {
-	if navigation.entry_list_.len > 0 || navigation.current_entry_index_ != -1
-		|| navigation.has_entries_and_events_disabled() {
+	if navigation.entry_list_.len > 0 || navigation.current_entry_index_ != -1 || navigation.has_entries_and_events_disabled() {
 		return
 	}
 	for session_entry in new_session_entries {
-		navigation.entry_list_ << NavigationHistoryEntry.create(session_entry,
-			navigation.associated_document_)
+		navigation.entry_list_ << NavigationHistoryEntry.create(session_entry, navigation.associated_document_)
 	}
 	navigation.refresh_entry_views()
-	navigation.current_entry_index_ =
-		navigation.get_the_navigation_api_entry_index(initial_session_entry)
+	navigation.current_entry_index_ = navigation.get_the_navigation_api_entry_index(initial_session_entry)
 }
 
 fn (mut navigation Navigation) refresh_entry_views() {
@@ -710,8 +693,7 @@ pub fn (mut navigation Navigation) update_the_navigation_api_entries_for_a_same_
 	mut disposed := []&NavigationHistoryEntry{}
 	match navigation_type {
 		.traverse {
-			navigation.current_entry_index_ =
-				navigation.get_the_navigation_api_entry_index(destination_session_entry)
+			navigation.current_entry_index_ = navigation.get_the_navigation_api_entry_index(destination_session_entry)
 			if navigation.current_entry_index_ < 0 {
 				return
 			}
@@ -721,8 +703,7 @@ pub fn (mut navigation Navigation) update_the_navigation_api_entries_for_a_same_
 			for i := int(navigation.current_entry_index_); i < navigation.entry_list_.len; i++ {
 				disposed << navigation.entry_list_[i]
 			}
-			navigation.entry_list_ =
-				navigation.entry_list_[..int(navigation.current_entry_index_)].clone()
+			navigation.entry_list_ = navigation.entry_list_[..int(navigation.current_entry_index_)].clone()
 		}
 		.replace {
 			if current := old_current {
@@ -732,8 +713,7 @@ pub fn (mut navigation Navigation) update_the_navigation_api_entries_for_a_same_
 		.reload {}
 	}
 	if navigation_type in [.push, .replace] {
-		new_entry := NavigationHistoryEntry.create(destination_session_entry,
-			navigation.associated_document_)
+		new_entry := NavigationHistoryEntry.create(destination_session_entry, navigation.associated_document_)
 		index := int(navigation.current_entry_index_)
 		if index < navigation.entry_list_.len {
 			navigation.entry_list_[index] = new_entry
@@ -744,13 +724,13 @@ pub fn (mut navigation Navigation) update_the_navigation_api_entries_for_a_same_
 	navigation.refresh_entry_views()
 	if tracker := navigation.ongoing_api_method_tracker_ {
 		if current := navigation.current_entry() {
-			navigation.notify_about_committed_entry(tracker, current)
+			navigation.notify_about_the_committed_to_entry(tracker, current)
 		}
 	}
 	if from := old_current {
 		change_event := NavigationCurrentEntryChangeEvent.construct_impl('currententrychange', NavigationCurrentEntryChangeEventInit{
 			navigation_type: navigation_type
-			from:            from
+			from: from
 		}) or { return }
 		target := unsafe { &dom.EventTarget(navigation) }
 		base_event := unsafe { &dom.Event(change_event) }
@@ -758,12 +738,14 @@ pub fn (mut navigation Navigation) update_the_navigation_api_entries_for_a_same_
 	}
 	for entry in disposed {
 		dispose_event := dom.Event.create('dispose', dom.EventInit{})
-		unsafe { &dom.EventTarget(entry) }.dispatch_event(dispose_event)
+		unsafe { &dom.EventTarget(entry) }
+		.dispatch_event(dispose_event)
 	}
 }
 
 pub fn (navigation &Navigation) set_onnavigate(handler ?&dom.CallbackType) {
-	unsafe { &dom.EventTarget(navigation) }.set_event_handler_attribute('navigate', handler)
+	unsafe { &dom.EventTarget(navigation) }
+	.set_event_handler_attribute('navigate', handler)
 }
 
 pub fn (navigation &Navigation) onnavigate() ?&dom.CallbackType {
@@ -771,7 +753,8 @@ pub fn (navigation &Navigation) onnavigate() ?&dom.CallbackType {
 }
 
 pub fn (navigation &Navigation) set_onnavigatesuccess(handler ?&dom.CallbackType) {
-	unsafe { &dom.EventTarget(navigation) }.set_event_handler_attribute('navigatesuccess', handler)
+	unsafe { &dom.EventTarget(navigation) }
+	.set_event_handler_attribute('navigatesuccess', handler)
 }
 
 pub fn (navigation &Navigation) onnavigatesuccess() ?&dom.CallbackType {
@@ -779,7 +762,8 @@ pub fn (navigation &Navigation) onnavigatesuccess() ?&dom.CallbackType {
 }
 
 pub fn (navigation &Navigation) set_onnavigateerror(handler ?&dom.CallbackType) {
-	unsafe { &dom.EventTarget(navigation) }.set_event_handler_attribute('navigateerror', handler)
+	unsafe { &dom.EventTarget(navigation) }
+	.set_event_handler_attribute('navigateerror', handler)
 }
 
 pub fn (navigation &Navigation) onnavigateerror() ?&dom.CallbackType {
@@ -787,8 +771,8 @@ pub fn (navigation &Navigation) onnavigateerror() ?&dom.CallbackType {
 }
 
 pub fn (navigation &Navigation) set_oncurrententrychange(handler ?&dom.CallbackType) {
-	unsafe { &dom.EventTarget(navigation) }.set_event_handler_attribute('currententrychange',
-		handler)
+	unsafe { &dom.EventTarget(navigation) }
+	.set_event_handler_attribute('currententrychange', handler)
 }
 
 pub fn (navigation &Navigation) oncurrententrychange() ?&dom.CallbackType {

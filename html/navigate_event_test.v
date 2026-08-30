@@ -93,3 +93,24 @@ fn test_navigate_event_enforces_shared_checks_and_state() {
 		assert err.msg().contains('fully active')
 	}
 }
+
+fn test_navigate_event_potentially_reset_the_focus_observes_navigation_state() {
+	document := parse_document('<html><body><input></body></html>')
+	mut navigation := Navigation.create(document)
+	mut event := NavigateEvent.create('navigate', NavigateEventInit{
+		destination:           NavigationDestination.create()
+		signal:                dom.AbortSignal.new()
+		associated_document:   document
+		fully_active_override: true
+		navigation:            navigation
+	})!
+	event.set_interception_state(.committed)
+	navigation.set_focus_changed_during_ongoing_navigation(true)
+	event.potentially_reset_the_focus()
+	assert !navigation.focus_changed_during_ongoing_navigation()
+	assert document.focused_area() == none
+
+	event.potentially_reset_the_focus()
+	body := document.body() or { panic('missing body') }
+	assert document.focused_area()? == unsafe { &dom.Element(body) }.as_node()
+}

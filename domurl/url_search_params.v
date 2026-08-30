@@ -19,6 +19,8 @@ pub mut:
 	value string
 }
 
+pub type URLSearchParamsInit = [][]string | map[string]string | string
+
 // --- percent-encoding ---
 
 const hex_upper = '0123456789ABCDEF'
@@ -223,6 +225,20 @@ pub fn URLSearchParams.from_record(init map[string]string) &URLSearchParams {
 	return URLSearchParams.create(list)
 }
 
+pub fn URLSearchParams.construct_impl(init URLSearchParamsInit) !&URLSearchParams {
+	match init {
+		[][]string {
+			return URLSearchParams.from_sequence(init)
+		}
+		map[string]string {
+			return URLSearchParams.from_record(init)
+		}
+		string {
+			return URLSearchParams.from_string(init)
+		}
+	}
+}
+
 // https://url.spec.whatwg.org/#concept-urlsearchparams-update
 fn (mut params URLSearchParams) update() {
 	mut url := params.url_ or { return }
@@ -252,6 +268,10 @@ pub fn (mut params URLSearchParams) append(name string, value string) {
 
 // https://url.spec.whatwg.org/#dom-urlsearchparams-delete
 pub fn (mut params URLSearchParams) delete(name string, value ?string) {
+	params.delete_(name, value)
+}
+
+pub fn (mut params URLSearchParams) delete_(name string, value ?string) {
 	// 1/2. Remove all tuples matching name (and value, if given).
 	if v := value {
 		params.list = params.list.filter(!(it.name == name && it.value == v))

@@ -76,6 +76,17 @@ mut:
 }
 
 pub fn URLPattern.new(input URLPatternInput, base_url ?string, options URLPatternOptions) !&URLPattern {
+	return URLPattern.construct_impl(input, base_url, options)
+}
+
+// V does not overload functions, so the nullable base_url represents both
+// Web IDL constructor overloads from URLPattern.cpp.
+pub fn URLPattern.construct_impl(input URLPatternInput, base_url ?string, options URLPatternOptions) !&URLPattern {
+	return URLPattern.create(input, base_url, options)
+}
+
+// https://urlpattern.spec.whatwg.org/#urlpattern-initialize
+pub fn URLPattern.create(input URLPatternInput, base_url ?string, options URLPatternOptions) !&URLPattern {
 	components := components_from_input(input, base_url)!
 	return &URLPattern{
 		ignore_case: options.ignore_case

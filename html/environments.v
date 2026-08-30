@@ -12,9 +12,13 @@ module html
 
 import dom
 import math
+import storageapi
 import time
 
-__global html_next_environment_id = u64(1)
+__global (
+	html_next_environment_id               = u64(1)
+	html_scripting_execution_context_stack = []&ScriptingRealm{}
+)
 
 pub enum RunScriptDecision {
 	run
@@ -37,14 +41,15 @@ pub mut:
 	target_browsing_context ?&BrowsingContextModel
 	execution_ready         bool
 	discarded               bool
+	settings_handle         voidptr
 }
 
 pub fn Environment.create(id string, creation_url dom.URL, top_level_creation_url ?dom.URL, top_level_origin ?dom.Origin, target ?&BrowsingContextModel) &Environment {
 	return &Environment{
-		id:                      id
-		creation_url:            creation_url
-		top_level_creation_url:  top_level_creation_url
-		top_level_origin:        top_level_origin
+		id: id
+		creation_url: creation_url
+		top_level_creation_url: top_level_creation_url
+		top_level_origin: top_level_origin
 		target_browsing_context: target
 	}
 }
@@ -85,11 +90,15 @@ pub mut:
 	active     ?&ServiceWorkerObjectModel
 }
 
+pub struct FetchGroup {
+pub mut:
+	controllers []voidptr
+}
+
 @[heap]
 pub struct EnvironmentSettingsObject {
-pub:
-	realm &ScriptingRealm
 mut:
+	realm_                               &ScriptingRealm
 	environment_                         &Environment
 	module_map_                          &ModuleMap
 	responsible_event_loop_              &EventLoop
@@ -101,27 +110,57 @@ mut:
 	origin_                              dom.Origin
 	outside_has_cross_site_ancestor_     bool
 	worker_owner_secure_context_         bool
+	global_object_                       &dom.EventTarget = unsafe { nil }
+	universal_global_scope_              &UniversalGlobalScopeMixin = unsafe { nil }
+	storage_manager_                     &storageapi.StorageManager = unsafe { nil }
 	resolved_module_set_                 []ResolvedModuleRecord
 	service_worker_registration_objects_ map[string]&ServiceWorkerRegistrationObjectModel
 	service_worker_objects_              map[string]&ServiceWorkerObjectModel
+	fetch_group_                         FetchGroup
+	script_fetch_hook_                   ?PerformTheFetchHook
 }
 
 fn create_environment_settings(realm &ScriptingRealm, environment &Environment, kind EnvironmentGlobalKind, event_loop &EventLoop) &EnvironmentSettingsObject {
 	settings := &EnvironmentSettingsObject{
-		realm:                   realm
-		environment_:            environment
-		module_map_:             ModuleMap.create()
+		realm_: realm
+		environment_: environment
+		module_map_: ModuleMap.create()
 		responsible_event_loop_: event_loop
-		global_kind_:            kind
-		policy_container_:       PolicyContainer{}
+		global_kind_: kind
+		policy_container_: PolicyContainer{}
 	}
 	mut mutable_realm := unsafe { &ScriptingRealm(realm) }
 	mutable_realm.settings_handle = voidptr(settings)
+	mutable_realm.module_map_ = settings.module_map_
+	mut mutable_environment := unsafe { &Environment(environment) }
+	mutable_environment.settings_handle = voidptr(settings)
 	return settings
 }
 
 pub fn (settings &EnvironmentSettingsObject) environment() &Environment {
 	return settings.environment_
+}
+
+// All environment settings objects are created with a realm execution
+// context. ScriptingRealm is the compact port's execution-context record.
+pub fn (settings &EnvironmentSettingsObject) realm_execution_context() &ScriptingRealm {
+	return settings.realm_
+}
+
+// https://html.spec.whatwg.org/multipage/webappapis.html#environment-settings-object%27s-realm
+pub fn (settings &EnvironmentSettingsObject) realm() &ScriptingRealm {
+	return settings.realm_execution_context()
+}
+
+// https://html.spec.whatwg.org/multipage/webappapis.html#concept-settings-object-global
+pub fn (settings &EnvironmentSettingsObject) global_object() &dom.EventTarget {
+	assert settings.global_object_ != unsafe { nil }
+	return settings.global_object_
+}
+
+pub fn (settings &EnvironmentSettingsObject) universal_global_scope() &UniversalGlobalScopeMixin {
+	assert settings.universal_global_scope_ != unsafe { nil }
+	return settings.universal_global_scope_
 }
 
 pub fn (settings &EnvironmentSettingsObject) module_map() &ModuleMap {
@@ -130,6 +169,20 @@ pub fn (settings &EnvironmentSettingsObject) module_map() &ModuleMap {
 
 pub fn (settings &EnvironmentSettingsObject) responsible_event_loop() &EventLoop {
 	return settings.responsible_event_loop_
+}
+
+pub fn (settings &EnvironmentSettingsObject) fetch_group() &FetchGroup {
+	return &settings.fetch_group_
+}
+
+// Platform fetching remains a host boundary in the V translation. Script
+// fetching algorithms use this hook when they are not passed an override.
+pub fn (mut settings EnvironmentSettingsObject) set_script_fetch_hook(hook ?PerformTheFetchHook) {
+	settings.script_fetch_hook_ = hook
+}
+
+pub fn (settings &EnvironmentSettingsObject) script_fetch_hook() ?PerformTheFetchHook {
+	return settings.script_fetch_hook_
 }
 
 pub fn (settings &EnvironmentSettingsObject) responsible_document() ?&dom.Document {
@@ -219,6 +272,10 @@ pub fn (settings &EnvironmentSettingsObject) discarded() bool {
 	return settings.environment_.discarded
 }
 
+pub fn (mut settings EnvironmentSettingsObject) set_discarded(discarded bool) {
+	settings.environment_.discarded = discarded
+}
+
 pub fn (settings &EnvironmentSettingsObject) is_secure_context() bool {
 	if settings.global_kind_ == .worker {
 		return settings.worker_owner_secure_context_
@@ -235,8 +292,7 @@ pub fn is_url_potentially_trustworthy(url dom.URL) bool {
 		return true
 	}
 	host := url.serialized_host()
-	if url.scheme() == 'http' && (host == 'localhost' || host.ends_with('.localhost')
-		|| host == '127.0.0.1' || host == '::1' || host == '[::1]') {
+	if url.scheme() == 'http' && (host == 'localhost' || host.ends_with('.localhost') || host == '127.0.0.1' || host == '::1' || host == '[::1]') {
 		return true
 	}
 	return false
@@ -247,7 +303,7 @@ pub fn (settings &EnvironmentSettingsObject) serialize() SerializedEnvironmentSe
 	global := if window := settings.window_ {
 		SerializedGlobal(SerializedWindow{
 			associated_document: SerializedDocument{
-				url:                                        window.associated_document().url
+				url: window.associated_document().url
 				relevant_settings_object_is_secure_context: secure_context
 			}
 		})
@@ -257,17 +313,17 @@ pub fn (settings &EnvironmentSettingsObject) serialize() SerializedEnvironmentSe
 		})
 	}
 	return SerializedEnvironmentSettingsObject{
-		id:                               settings.environment_.id
-		creation_url:                     settings.environment_.creation_url
-		top_level_creation_url:           settings.environment_.top_level_creation_url
-		top_level_origin:                 settings.environment_.top_level_origin
-		api_base_url:                     settings.api_base_url()
-		origin:                           settings.origin()
-		has_cross_site_ancestor:          settings.has_cross_site_ancestor()
-		policy_container:                 settings.policy_container_.serialize()
+		id: settings.environment_.id
+		creation_url: settings.environment_.creation_url
+		top_level_creation_url: settings.environment_.top_level_creation_url
+		top_level_origin: settings.environment_.top_level_origin
+		api_base_url: settings.api_base_url()
+		origin: settings.origin()
+		has_cross_site_ancestor: settings.has_cross_site_ancestor()
+		policy_container: settings.policy_container_.serialize()
 		cross_origin_isolated_capability: settings.cross_origin_isolated_capability()
-		time_origin:                      settings.time_origin()
-		global:                           global
+		time_origin: settings.time_origin()
+		global: global
 	}
 }
 
@@ -276,10 +332,16 @@ pub fn (mut settings EnvironmentSettingsObject) add_module_to_resolved_module_se
 		return
 	}
 	settings.resolved_module_set_ << ResolvedModuleRecord{
-		serialized_base_url:                           serialized_base_url
-		specifier:                                     normalized_specifier
-		specifier_is_null_or_url_like_that_is_special: as_url == none
-			|| as_url or { dom.URL{} }.scheme() in ['ftp', 'file', 'http', 'https', 'ws', 'wss']
+		serialized_base_url: serialized_base_url
+		specifier: normalized_specifier
+		specifier_is_null_or_url_like_that_is_special: as_url == none || as_url or { dom.URL{} }.scheme() in [
+			'ftp',
+			'file',
+			'http',
+			'https',
+			'ws',
+			'wss',
+		]
 	}
 }
 
@@ -293,20 +355,20 @@ pub fn (mut settings EnvironmentSettingsObject) get_service_worker_object(record
 	}
 	object := &ServiceWorkerObjectModel{
 		record_id: record.id
-		state:     record.state
+		state: record.state
 	}
 	settings.service_worker_objects_[record.id] = object
 	return object
 }
 
 pub fn (mut settings EnvironmentSettingsObject) get_service_worker_registration_object(registration &ServiceWorkerRegistrationRecordModel) &ServiceWorkerRegistrationObjectModel {
-	key := '${registration.storage_key}\x00${registration.scope_url.serialize()}'
+	key := '${registration.storage_key}\0${registration.scope_url.serialize()}'
 	if object := settings.service_worker_registration_objects_[key] {
 		return object
 	}
 	mut object := &ServiceWorkerRegistrationObjectModel{
 		storage_key: registration.storage_key
-		scope_url:   registration.scope_url
+		scope_url: registration.scope_url
 	}
 	if worker := registration.installing {
 		object.installing = settings.get_service_worker_object(worker)
@@ -328,6 +390,13 @@ pub fn (settings &EnvironmentSettingsObject) current_wall_time() f64 {
 	return math.floor(unsafe_time * 10.0) / 10.0
 }
 
+pub fn (mut settings EnvironmentSettingsObject) storage_manager() &storageapi.StorageManager {
+	if settings.storage_manager_ == unsafe { nil } {
+		settings.storage_manager_ = storageapi.StorageManager.create()
+	}
+	return settings.storage_manager_
+}
+
 pub fn module_type_allowed(module_type string) bool {
 	return module_type in ['javascript', 'css', 'json']
 }
@@ -339,13 +408,136 @@ pub fn settings_object_of_realm(realm &ScriptingRealm) ?&EnvironmentSettingsObje
 	return unsafe { &EnvironmentSettingsObject(realm.settings_handle) }
 }
 
+// In the compact runtime ScriptingRealm is both the Realm record and its realm
+// execution context, preserving the identity required by the HTML algorithms.
+pub fn execution_context_of_realm(realm &ScriptingRealm) &ScriptingRealm {
+	return realm
+}
+
+fn top_most_script_having_execution_context() ?&ScriptingRealm {
+	for index := html_scripting_execution_context_stack.len - 1; index >= 0; index-- {
+		realm := html_scripting_execution_context_stack[index]
+		if realm.script_execution_depth > 0 {
+			return realm
+		}
+	}
+	return none
+}
+
+pub fn module_map_of_realm(realm &ScriptingRealm) &ModuleMap {
+	if module_map := realm.module_map_ {
+		return module_map
+	}
+	if settings := settings_object_of_realm(principal_realm(realm)) {
+		return settings.module_map()
+	}
+	panic('realm has no module map')
+}
+
+pub fn principal_realm(realm &ScriptingRealm) &ScriptingRealm {
+	return realm.principal_realm_ or { realm }
+}
+
+pub fn principal_realm_settings_object(realm &ScriptingRealm) &EnvironmentSettingsObject {
+	principal := principal_realm(realm)
+	return settings_object_of_realm(principal) or { panic('principal realm has no settings object') }
+}
+
+pub fn incumbent_realm() &ScriptingRealm {
+	if context := top_most_script_having_execution_context() {
+		if context.skip_when_determining_incumbent_counter == 0 {
+			return context
+		}
+	}
+	event_loop := main_thread_event_loop()
+	if !event_loop.is_backup_incumbent_realm_stack_empty() {
+		return event_loop.top_of_backup_incumbent_realm_stack()
+	}
+	if html_scripting_execution_context_stack.len > 0 {
+		return html_scripting_execution_context_stack.last()
+	}
+	panic('incumbent realm requested without a scripting execution context')
+}
+
+pub fn incumbent_settings_object() &EnvironmentSettingsObject {
+	return principal_realm_settings_object(incumbent_realm())
+}
+
+pub fn incumbent_global_object() &dom.EventTarget {
+	return incumbent_settings_object().global_object()
+}
+
+pub fn current_principal_realm() &ScriptingRealm {
+	assert html_scripting_execution_context_stack.len > 0
+	return principal_realm(html_scripting_execution_context_stack.last())
+}
+
+pub fn current_principal_settings_object() &EnvironmentSettingsObject {
+	return principal_realm_settings_object(current_principal_realm())
+}
+
+pub fn current_principal_global_object() &dom.EventTarget {
+	return current_principal_settings_object().global_object()
+}
+
+pub struct RealmBoundObject {
+pub:
+	realm &ScriptingRealm
+}
+
+pub fn relevant_realm(object &RealmBoundObject) &ScriptingRealm {
+	return object.realm
+}
+
+pub fn relevant_principal_realm(object &RealmBoundObject) &ScriptingRealm {
+	return principal_realm(relevant_realm(object))
+}
+
+pub fn relevant_settings_object(object &RealmBoundObject) &EnvironmentSettingsObject {
+	return principal_realm_settings_object(relevant_realm(object))
+}
+
+pub fn relevant_principal_settings_object(object &RealmBoundObject) &EnvironmentSettingsObject {
+	return principal_realm_settings_object(relevant_principal_realm(object))
+}
+
+pub fn relevant_global_object(object &RealmBoundObject) &dom.EventTarget {
+	return relevant_settings_object(object).global_object()
+}
+
+pub fn relevant_principal_global_object(object &RealmBoundObject) &dom.EventTarget {
+	return relevant_principal_settings_object(object).global_object()
+}
+
+pub fn entry_realm() &ScriptingRealm {
+	assert html_scripting_execution_context_stack.len > 0
+	return html_scripting_execution_context_stack.last()
+}
+
+pub fn entry_settings_object() &EnvironmentSettingsObject {
+	return principal_realm_settings_object(entry_realm())
+}
+
+pub fn entry_global_object() &dom.EventTarget {
+	return entry_settings_object().global_object()
+}
+
+pub fn is_non_secure_context(environment &Environment) bool {
+	if environment.settings_handle != unsafe { nil } {
+		settings := unsafe { &EnvironmentSettingsObject(environment.settings_handle) }
+		return !settings.is_secure_context()
+	}
+	url := environment.top_level_creation_url or { return true }
+	return !is_url_potentially_trustworthy(url)
+}
+
 pub fn can_run_script_for_settings(settings &EnvironmentSettingsObject) RunScriptDecision {
 	if window := settings.window_ {
 		if !window.browsing_context().is_fully_active() {
 			return .do_not_run
 		}
 	}
-	if !settings.realm.scripting_enabled || !settings.realm.can_run {
+	if !settings.realm().scripting_enabled || !settings.realm().can_run {
 		return .do_not_run
 	}
 	return .run
@@ -384,16 +576,16 @@ pub fn WindowEnvironmentSettingsObject.setup(window &WindowModel, creation_url d
 		id = html_next_environment_id.str()
 		html_next_environment_id++
 	}
-	environment := Environment.create(id, creation_url, top_level_creation_url, top_level_origin,
-		target)
-	mut settings := create_environment_settings(realm, environment, .window,
-		main_thread_event_loop())
+	environment := Environment.create(id, creation_url, top_level_creation_url, top_level_origin, target)
+	mut settings := create_environment_settings(realm, environment, .window, main_thread_event_loop())
 	settings.window_ = window
+	settings.global_object_ = unsafe { &dom.EventTarget(window) }
+	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm, window.associated_document())
 	settings.origin_ = window.associated_document().origin()
 	settings.time_origin_ = window.associated_document().load_timing_info.navigation_start_time
 	return &WindowEnvironmentSettingsObject{
 		settings: settings
-		window:   window
+		window: window
 	}
 }
 
@@ -440,20 +632,18 @@ pub fn WorkerEnvironmentSettingsObject.setup(global_scope &WorkerGlobalScope, mu
 	}
 	id := html_next_environment_id.str()
 	html_next_environment_id++
-	environment := Environment.create(id, global_scope.url(), none,
-		outside_settings.top_level_origin, none)
-	mut settings := create_environment_settings(realm, environment, .worker,
-		global_scope.event_loop)
+	environment := Environment.create(id, global_scope.url(), none, outside_settings.top_level_origin, none)
+	mut settings := create_environment_settings(realm, environment, .worker, global_scope.event_loop)
 	settings.worker_ = global_scope
+	settings.global_object_ = unsafe { &dom.EventTarget(global_scope) }
+	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm, none)
 	settings.origin_ = origin
 	settings.outside_has_cross_site_ancestor_ = outside_settings.has_cross_site_ancestor
-	settings.worker_owner_secure_context_ =
-		serialized_global_is_secure_context(outside_settings.global)
-	settings.policy_container_ =
-		create_a_policy_container_from_serialized_policy_container(outside_settings.policy_container)
+	settings.worker_owner_secure_context_ = serialized_global_is_secure_context(outside_settings.global)
+	settings.policy_container_ = create_a_policy_container_from_serialized_policy_container(outside_settings.policy_container)
 	settings.time_origin_ = coarsen_worker_time(unsafe_worker_creation_time)
 	return &WorkerEnvironmentSettingsObject{
-		settings:     settings
+		settings: settings
 		global_scope: global_scope
 	}
 }
@@ -471,6 +661,11 @@ fn coarsen_worker_time(value f64) f64 {
 
 pub fn (object &WorkerEnvironmentSettingsObject) api_base_url() dom.URL {
 	return object.settings.api_base_url()
+}
+
+pub fn (object &WorkerEnvironmentSettingsObject) responsible_document() ?&dom.Document {
+	_ = object
+	return none
 }
 
 pub fn (object &WorkerEnvironmentSettingsObject) origin() dom.Origin {

@@ -158,14 +158,28 @@ pub fn (matcher &AsciiStringMatcher) contains(text string) bool {
 }
 
 pub struct ContentFilter {
-pub mut:
-	filtering_enabled bool = true
 mut:
-	matcher ?AsciiStringMatcher
+	filtering_enabled_ bool = true
+	matcher            ?AsciiStringMatcher
 }
 
 pub fn ContentFilter.create() &ContentFilter {
 	return &ContentFilter{}
+}
+
+pub fn ContentFilter.the() &ContentFilter {
+	if loader_global_content_filter == unsafe { nil } {
+		loader_global_content_filter = ContentFilter.create()
+	}
+	return loader_global_content_filter
+}
+
+pub fn (filter &ContentFilter) filtering_enabled() bool {
+	return filter.filtering_enabled_
+}
+
+pub fn (mut filter ContentFilter) set_filtering_enabled(enabled bool) {
+	filter.filtering_enabled_ = enabled
 }
 
 pub fn (mut filter ContentFilter) set_patterns(patterns []string) ! {
@@ -178,7 +192,7 @@ pub fn (filter &ContentFilter) contains(text string) bool {
 }
 
 pub fn (filter &ContentFilter) is_filtered(url dom.URL) bool {
-	if !filter.filtering_enabled || url.scheme() == 'data' {
+	if !filter.filtering_enabled() || url.scheme() == 'data' {
 		return false
 	}
 	return filter.contains(url.to_string())

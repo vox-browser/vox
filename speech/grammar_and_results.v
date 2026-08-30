@@ -15,6 +15,10 @@ mut:
 }
 
 pub fn SpeechGrammar.new() &SpeechGrammar {
+	return SpeechGrammar.construct_impl()
+}
+
+pub fn SpeechGrammar.construct_impl() &SpeechGrammar {
 	return &SpeechGrammar{}
 }
 
@@ -41,6 +45,10 @@ mut:
 }
 
 pub fn SpeechGrammarList.new() &SpeechGrammarList {
+	return SpeechGrammarList.construct_impl()
+}
+
+pub fn SpeechGrammarList.construct_impl() &SpeechGrammarList {
 	return &SpeechGrammarList{}
 }
 

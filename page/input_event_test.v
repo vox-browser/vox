@@ -4,9 +4,9 @@ import math
 
 fn test_input_clones_strip_native_data_and_drag_files() {
 	key := KeyEvent{
-		type_:        .key_down
-		key:          65
-		code_point:   `A`
+		type_: .key_down
+		key: 65
+		code_point: u32(`A`)
 		browser_data: voidptr(42)
 	}
 	key_clone := key.clone_without_browser_data()
@@ -14,8 +14,8 @@ fn test_input_clones_strip_native_data_and_drag_files() {
 	assert key_clone.browser_data == unsafe { nil }
 
 	mouse := MouseEvent{
-		type_:        .mouse_move
-		position:     PixelPoint{
+		type_: .mouse_move
+		position: PixelPoint{
 			x: 2
 			y: 3
 		}
@@ -24,8 +24,8 @@ fn test_input_clones_strip_native_data_and_drag_files() {
 	assert mouse.clone_without_browser_data().browser_data == unsafe { nil }
 
 	drag := DragEvent{
-		type_:        .drag_start
-		files:        [SelectedFile{ name: 'secret.txt', contents: [u8(1), 2] }]
+		type_: .drag_start
+		files: [SelectedFile{ name: 'secret.txt', contents: [u8(1), 2] }]
 		browser_data: voidptr(9)
 	}
 	clone := drag.clone_without_browser_data()

@@ -84,3 +84,10 @@ pub fn (mut gradient CanvasGradient) add_color_stop(offset f64, color string) ! 
 	}
 	gradient.color_stops << CanvasColorStop{offset, parsed_color}
 }
+
+pub fn (gradient &CanvasGradient) to_gfx_paint_style() CanvasGfxPaintStyle {
+	return CanvasGfxPaintStyle{
+		kind:     .gradient
+		gradient: *gradient
+	}
+}

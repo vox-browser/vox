@@ -27,11 +27,12 @@ pub:
 	index_name  string
 	direction   IDBCursorDirection
 	with_value  bool
-	request     &IDBRequest
 pub mut:
+	request   &IDBRequest
 	entries   []CursorEntry
 	position  int
 	got_value bool = true
+	range_    IDBKeyRange = IDBKeyRange.unbounded()
 }
 
 pub fn IDBCursor.create(transaction &IDBTransaction, store_name string, index_name string, direction IDBCursorDirection, entries []CursorEntry, with_value bool, request &IDBRequest) &IDBCursor {
@@ -72,7 +73,9 @@ fn (cursor &IDBCursor) validate_source() ! {
 		return error('InvalidStateError: cursor object store was deleted')
 	}
 	if cursor.index_name != '' {
-		store := cursor.transaction.database.data.stores[cursor.store_name]
+		store := cursor.transaction.database.data.stores[cursor.store_name] or {
+			return error('InvalidStateError: cursor object store was deleted')
+		}
 		if cursor.index_name !in store.indexes {
 			return error('InvalidStateError: cursor index was deleted')
 		}

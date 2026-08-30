@@ -1,6 +1,7 @@
 module layout
 
 import dom
+import html
 
 // After layout, attach_layout_nodes wires the real layout tree back onto the DOM: node.layout_node()
 // returns real data (its DOM node, parent layout node, and computed display) instead of the old stubs.
@@ -56,12 +57,13 @@ fn test_document_update_layout_runs_registered_layout_engine() {
 		panic('${err}')
 	}
 	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
-	child.set_attribute_value('style',
-		'width: 100px; height: 40px; padding: 10px; border: 2px solid')
+	child.set_attribute_value('style', 'position: relative; left: 20px; top: 10px; width: 100px; height: 40px; padding: 10px; border: 2px solid')
 	mut doc_node := unsafe { &dom.Node(doc) }
 	doc_node.append_child(html_el.as_node()) or { panic('${err}') }
 	mut html_node := html_el.as_node()
 	html_node.append_child(child.as_node()) or { panic('${err}') }
+	mut child_node := child.as_node()
+	child_node.append_child(doc.create_text_node('  a   b  ').as_node()) or { panic('${err}') }
 
 	install_document_layout_hook(doc)
 	doc.needs_full_layout_tree_update = true
@@ -75,6 +77,17 @@ fn test_document_update_layout_runs_registered_layout_engine() {
 	assert child.client_width() == 120
 	assert child.client_height() == 60
 	rect := child.get_bounding_client_rect()
+	assert rect.x == 20
+	assert rect.y == 10
 	assert rect.width == 124
 	assert rect.height == 64
+	html_child := unsafe { &dom.HTMLElement(child) }
+	assert html.html_element_offset_width(html_child) == 124
+	assert html.html_element_offset_height(html_child) == 64
+	assert html.html_element_offset_left(html_child) == 20
+	assert html.html_element_offset_top(html_child) == 10
+	assert html.html_element_offset_parent(html_child) == none
+	assert voidptr(html.html_element_scroll_parent(html_child) or {
+		panic('missing scroll parent')}) == voidptr(html_el)
+	assert html.html_element_inner_text(html_child) == 'a b'
 }

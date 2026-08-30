@@ -6,6 +6,24 @@ import layout
 import dom
 import math
 
+fn test_parsed_empty_and_invalid_media_groups() {
+	doc :=
+		html.parse_document('<style>div { display: none } @media { div.first { display: block } } @media ,, { div.invalid { display: block } }</style><div class="first"></div><div class="invalid"></div>')
+	css.sync_document_style_elements(doc)
+	mut computer := css.css_style_computer_for(doc)
+	root_element := doc.document_element() or { panic('missing document element') }
+	css.recompute_style_for_subtree(mut computer, root_element.as_node())
+	root := unsafe { &dom.Node(doc) }
+	first := css.query_selector(root, '.first') or { panic('missing first') }
+	invalid := css.query_selector(root, '.invalid') or { panic('missing invalid') }
+	first_style := css.computed_properties_for_element(first) or { panic('missing first style') }
+	invalid_style := css.computed_properties_for_element(invalid) or {
+		panic('missing invalid style')
+	}
+	assert first_style.display().is_block_outside()
+	assert invalid_style.display().is_none()
+}
+
 // Full-stack integration: parse an HTML string with the html parser, then query the resulting DOM
 // tree with the css selector engine. Exercises html + dom + css composing end to end.
 
@@ -289,6 +307,25 @@ fn test_layout_document_entry_point() {
 	assert root_box.height >= 40.0
 }
 
+// Author stylesheet paint properties on an inline element survive parsing, cascade, layout, and
+// display-list generation.
+fn test_inline_author_style_paints_over_parsed_document() {
+	doc :=
+		html.parse_document('<html><head><style>.highlight { background-color: orange; border: 2px solid green; border-radius: 6px; box-shadow: 4px 4px 4px darkgreen; }</style></head><body><span class="highlight">two words</span></body></html>')
+	root := unsafe { &dom.Node(doc) }
+	span := css.query_selector(root, '.highlight') or { panic('no span') }
+	rules := layout.collect_document_author_rules(doc)
+	background_id := css.property_id_from_string('background-color') or { panic('no property') }
+	assert css.cascaded_value_with_ua(span, background_id, rules) == 'orange'
+	assert (css.computed_color(span, background_id, rules) or { panic('no background') }).serialize() == 'rgb(255 165 0)'
+
+	root_box := layout.layout_document(doc, 800)
+	commands := root_box.paint_commands()
+	assert commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(255 165 0)').len == 1
+	assert commands.filter(it.kind == 'stroke_rounded_rect' && it.color == 'rgb(0 128 0)').len == 1
+	assert commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(0 100 0)').len == 1
+}
+
 // Regression for example.com and the native browser host: vw/vh use the actual content viewport,
 // the body's background propagates to the whole canvas, and CSS font attributes reach painting.
 fn test_example_domain_layout_matches_browser_viewport() {
@@ -312,10 +349,10 @@ fn test_example_domain_layout_matches_browser_viewport() {
 	assert commands[0].width == 1024 && commands[0].height == 656
 	assert commands[0].color == 'rgb(238 238 238)'
 	assert commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(238 238 238)').len == 1
-	heading_words := commands.filter(it.kind == 'draw_text' && it.text in ['Example', 'Domain'])
-	assert heading_words.len == 2
-	assert heading_words.all(it.font_size == 24)
-	assert heading_words.all(it.bold)
+	heading_runs := commands.filter(it.kind == 'draw_text' && it.text == 'Example Domain')
+	assert heading_runs.len == 1
+	assert heading_runs[0].font_size == 24
+	assert heading_runs[0].bold
 
 	heading_box := root_box.find_box(i64(heading.as_node().unique_id())) or {
 		panic('no heading box')
@@ -352,7 +389,7 @@ fn test_box_sizing_over_parsed_document() {
 	card := root_box.children[0].children[0] // html > body > div.card
 	assert card.tag_name == 'div'
 	assert card.width == 150.0 // 200 - 2*(20 padding + 5 border)
-	assert card.margin_box_width() == 200.0 // border box stays at the specified width
+	assert card.border_box().width == 200.0 // border box stays at the specified width
 }
 
 // Full-stack min/max: the classic responsive container -- width:auto capped by max-width -- clamps
@@ -456,8 +493,8 @@ fn test_full_pipeline_box_tree_snapshot() {
 	box := layout.layout_document(doc, 1000)
 
 	expected := [
-		'html (0,0) 1000x186', // fills the 1000px viewport; height flows up from content
-		'  body (0,0) 1000x186', // UA 8px margin overridden to 0
+		'html (0,0) 1000x600', // the initial containing block is the 1000x600 viewport
+		'  body (0,0) 1000x600', // body stretches to the root's viewport height
 		'    div (220,20) 560x146', // .container: centered (200 margin + 20 pad), 600 border-box -> 560 content
 		'      div (232,32) 536x26', // .card: inset by border+padding; 50 border-box height -> 26 content
 		'      div (220,86) 560x80', // .rel: y = card bottom 70 + collapsed 16px margin (not stacked below .hidden)
@@ -466,8 +503,8 @@ fn test_full_pipeline_box_tree_snapshot() {
 	assert box.tree_repr() == expected
 }
 
-// Full-stack word wrapping: "alpha beta gamma" over a 100px line -- "alpha beta" (50+10+40=100)
-// fills the first line, "gamma" wraps to a second -> 2 lines * 25px line-height.
+// Full-stack word wrapping with the actual shaped font advances. Each word occupies a separate
+// 100px line, so the result is three 25px line boxes.
 fn test_word_wrap_over_parsed_document() {
 	doc :=
 		html.parse_document('<div style="width: 100px; font-size: 20px; line-height: 25px">alpha beta gamma</div>')
@@ -475,7 +512,7 @@ fn test_word_wrap_over_parsed_document() {
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
 	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
-	assert box.height == 50.0
+	assert box.height == 75.0
 }
 
 // Full-stack <br>: three <br>-separated lines each fit the 500px box, so height is 3 line-heights.
@@ -489,8 +526,7 @@ fn test_br_over_parsed_document() {
 	assert box.height == 60.0 // 3 lines * 20px
 }
 
-// Full-stack text-align: centered text in a 300px box. "hey" = 3 glyphs * 8 (16px font) = 24px,
-// centered -> x = (300 - 24) / 2.
+// Full-stack text-align: center the shaped "hey" run in a 300px box.
 fn test_text_align_over_parsed_document() {
 	doc :=
 		html.parse_document('<div style="width: 300px; text-align: center; line-height: 20px">hey</div>')
@@ -499,8 +535,8 @@ fn test_text_align_over_parsed_document() {
 
 	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
 	assert box.lines.len == 1
-	assert box.lines[0].width == 24.0
-	assert box.lines[0].x == 138.0 // (300 - 24) / 2
+	assert box.lines[0].width == 25.1875
+	assert box.lines[0].x == 137.40625 // (300 - 25.1875) / 2
 }
 
 // Full-stack <pre>: the UA sheet gives <pre> white-space: pre, so its newlines become forced line
@@ -523,7 +559,7 @@ fn test_max_content_over_parsed_document() {
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
 	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
-	assert box.width == 110.0 // 50 + 10 space + 50, not the 1000 available width
+	assert box.width == 109.21875 // shaped max-content width, not the 1000px available width
 }
 
 // Full-stack floats: an overflow:hidden container clears its floated children (the clearfix): a
@@ -584,9 +620,9 @@ fn test_inline_fragments_over_parsed_document() {
 	assert frags[0].text == 'one'
 	assert frags[0].x == 0.0
 	assert frags[1].text == 'two'
-	assert frags[1].x == 40.0 // "one" = 3*10=30, + 10 space
+	assert frags[1].x == 45.875
 	assert frags[2].text == 'three'
-	assert frags[2].x == 80.0 // + "two" (20) + space (10) = 40 + 40
+	assert frags[2].x == 91.4375
 }
 
 // Full-stack per-inline font: a bigger <span> inside a paragraph is measured at its own size and
@@ -601,24 +637,24 @@ fn test_per_inline_font_over_parsed_document() {
 	frags := box.lines[0].fragments
 	assert frags.len == 2
 	assert frags[0].text == 'hi'
-	assert frags[0].height == 24.0 // 20px font -> 24 line-height
+	assert frags[0].height == 23.0
 	assert frags[1].text == 'BIG'
-	assert frags[1].width == 60.0 // measured at 40px
-	assert frags[1].height == 48.0 // 40px font -> 48 line-height
-	assert box.lines[0].height == 48.0 // line grows to the tallest word
+	assert frags[1].width == 67.9375 // measured and shaped at 40px
+	assert frags[1].height == 46.0
+	assert box.lines[0].height == 46.0 // line grows to the tallest word
 }
 
 // Full-stack justify: a wrapped justified paragraph fills each full line; the last line stays left.
 fn test_justify_over_parsed_document() {
 	doc :=
-		html.parse_document('<div style="width: 100px; font-size: 20px; line-height: 30px; text-align: justify">aaaa bbbb cccc</div>')
+		html.parse_document('<div style="width: 120px; font-size: 20px; line-height: 30px; text-align: justify">aaaa bbbb cccc</div>')
 	root := unsafe { &dom.Node(doc) }
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
 	box := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{})
-	assert box.lines[0].width == 100.0 // first line fills the width
-	assert box.lines[0].fragments[1].x == 60.0 // bbbb pushed right by the justify slack
-	assert box.lines[1].width == 40.0 // last line: natural width, left-aligned
+	assert box.lines[0].width == 120.0 // first line fills the width
+	assert box.lines[0].fragments[1].x == 72.625 // bbbb pushed right by the justify slack
+	assert box.lines[1].width == 44.4375 // last line: natural width, left-aligned
 }
 
 // Full-stack display list: parse HTML, lay out, and produce paint commands (background fill + text)
@@ -687,7 +723,8 @@ fn test_opacity_over_parsed_document() {
 	}
 }
 
-// Full-stack transform: a translated box moves while its sibling keeps its flow position.
+// Full-stack transform: layout geometry stays in normal flow and the translation is carried by the
+// paint transform consumed by the renderer.
 fn test_transform_over_parsed_document() {
 	doc :=
 		html.parse_document('<div style="width: 300px"><div style="height: 40px; transform: translate(20px, 10px)"></div><div style="height: 25px"></div></div>')
@@ -695,8 +732,9 @@ fn test_transform_over_parsed_document() {
 	container := css.query_selector(root, 'div') or { panic('no div') }
 
 	box := layout.layout_block(container, 0, 0, 1000, []&css.CSSRule{})
-	assert box.children[0].x == 20.0 // translated
-	assert box.children[0].y == 10.0
+	assert box.children[0].x == 0.0
+	assert box.children[0].y == 0.0
+	assert box.children[0].paint_transform == [f64(1), 0, 0, 1, 20, 10]!
 	assert box.children[1].y == 40.0 // sibling flows after the untransformed first box
 	assert box.height == 65.0 // 40 + 25 (flow)
 }
@@ -806,6 +844,8 @@ fn test_offset_properties_over_parsed_document() {
 	assert root_box.offset_height_for(item) or { -1 } == 30.0
 	assert root_box.offset_top_for(item, rules) or { -1 } == 25.0 // relative to .box padding box
 	assert root_box.offset_left_for(item, rules) or { -1 } == 35.0
+	item_rect := root_box.bounding_rect_for(item) or { panic('no item rect') }
+	assert item_rect.x == 35.0 && item_rect.y == 25.0
 	parent := layout.offset_parent_element(item, rules) or { panic('no offsetParent') }
 	assert (parent.get_attribute('class') or { '' }) == 'box'
 }
@@ -911,8 +951,8 @@ fn test_text_decoration_over_parsed_document() {
 	assert svg.contains('<rect') // the underline
 }
 
-// Full-stack list markers: parse a <ul>, lay it out, and confirm each <li> gets a disc marker that
-// reaches the SVG output alongside the item text.
+// Full-stack list markers: parse a <ul>, lay it out, and confirm each <li> gets the geometric disc
+// image used by MarkerPaintable rather than an approximate bullet glyph.
 fn test_list_markers_over_parsed_document() {
 	doc := html.parse_document('<body><ul><li>alpha</li><li>beta</li></ul></body>')
 	root_box := layout.layout_document(doc, 600)
@@ -922,13 +962,16 @@ fn test_list_markers_over_parsed_document() {
 	assert lis.len == 2
 	for li in lis {
 		li_box := root_box.find_box(i64(li.as_node().unique_id())) or { panic('no li box') }
-		assert li_box.lines[0].fragments[0].text == '•' // marker line prepended
+		assert li_box.lines[0].fragments[0].text in ['alpha', 'beta']
 	}
 
+	commands := root_box.paint_commands()
+	assert commands.filter(it.kind == 'fill_ellipse').len == 2
 	svg := root_box.render_svg(600, root_box.height + 20)
 	assert svg.contains('alpha')
 	assert svg.contains('beta')
-	assert svg.contains('•')
+	assert svg.count('<ellipse') == 2
+	assert !svg.contains('•')
 }
 
 // Full-stack letter-spacing: an author stylesheet adds letter-spacing to a paragraph; the rendered
@@ -943,7 +986,7 @@ fn test_letter_spacing_over_parsed_document() {
 	p_box := root_box.find_box(i64(p.as_node().unique_id())) or { panic('no p box') }
 	frag := p_box.lines[0].fragments[0]
 	assert frag.text == 'hi'
-	assert frag.width == 30.0 // 2 runes × (10px glyph + 5px letter-spacing)
+	assert frag.width == 27.328125 // shaped glyph advances plus 5px spacing per character
 }
 
 // Full-stack CSS logical properties: the UA sheet expresses block/inline edges logically
@@ -1297,8 +1340,8 @@ fn test_inline_block_over_parsed_document() {
 	badge_rect := root_box.bounding_rect_for(badge) or { panic('no badge box') }
 	assert badge_rect.width == 50.0
 	assert badge_rect.height == 24.0
-	// It sits after the 'x' glyph and a space (10px each at 20px font).
-	assert badge_rect.x == 20.0
+	// The source has no whitespace between `x` and the span, so it sits immediately after the glyph.
+	assert badge_rect.x == 12.125
 
 	// Its background reaches the SVG.
 	assert root_box.render_svg(600, root_box.height + 20).contains('fill="rgb(200 0 0)"')
@@ -1318,13 +1361,14 @@ fn test_table_over_parsed_document() {
 	a_rect := root_box.bounding_rect_for(a) or { panic('no #a box') }
 	b_rect := root_box.bounding_rect_for(b) or { panic('no #b box') }
 	c_rect := root_box.bounding_rect_for(c) or { panic('no #c box') }
+	// Ladybird's UA sheet gives separate-border tables 2px border spacing.
 	// Row 1: b is to the right of a and its column (yyyy) is wider than a's (x).
-	assert b_rect.x == a_rect.x + a_rect.width
+	assert b_rect.x == a_rect.x + a_rect.width + 2.0
 	assert b_rect.width > a_rect.width
 	// Row 2: c is below a.
-	assert c_rect.y == a_rect.y + a_rect.height
-	// Columns fill the 400px table.
-	assert a_rect.width + b_rect.width == 400.0
+	assert c_rect.y == a_rect.y + a_rect.height + 2.0
+	// Columns plus the leading, inter-column, and trailing spacing fill the 400px table.
+	assert a_rect.width + b_rect.width + 6.0 == 400.0
 }
 
 // Full-stack grid: a parsed card grid (repeat(3, 1fr), gap) places its cards across three equal

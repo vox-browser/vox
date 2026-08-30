@@ -138,6 +138,7 @@ pub enum PseudoElement {
 	placeholder
 	selection
 	backdrop
+	details_content
 	file_selector_button
 	grammar_error
 	spelling_error
@@ -319,6 +320,7 @@ pub fn pseudo_element_name(pseudo_element PseudoElement) string {
 		.placeholder { 'placeholder' }
 		.selection { 'selection' }
 		.backdrop { 'backdrop' }
+		.details_content { 'details-content' }
 		.file_selector_button { 'file-selector-button' }
 		.grammar_error { 'grammar-error' }
 		.spelling_error { 'spelling-error' }
@@ -1569,10 +1571,8 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			return true
 		}
 		.root {
-			if element.document() == unsafe { nil } {
-				return false
-			}
-			return element.document().document_element() or { return false } == element
+			// SelectorEngine.cpp currently limits :root to HTMLHtmlElement.
+			return element.is_html_element() && element.local_name() == 'html'
 		}
 		.host {
 			return matches_host_pseudo_class(element, shadow_host, mut context,
@@ -1580,11 +1580,9 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 		}
 		.scope {
 			if scope_node := scope {
-				return scope_node.as_node() == element.as_node()
+				return voidptr(scope_node.as_node()) == voidptr(element.as_node())
 			}
-			return element.document() != unsafe { nil } && element.document().document_element() or {
-				return false
-			} == element
+			return element.is_html_element() && element.local_name() == 'html'
 		}
 		.first_of_type {
 			if context.collect_per_element_selector_involvement_metadata {
@@ -1787,12 +1785,13 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 		}
 		.modal {
 			return element.local_name() == 'dialog' && element.has_attribute('open')
+				&& element.in_top_layer()
 		}
 		.popover_open {
 			// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-popover-open
 			// The :popover-open pseudo-class is defined to match any HTML element whose popover attribute is not in the
 			// No Popover state and whose popover visibility state is showing.
-			return false
+			return element.has_attribute('popover') && element.in_top_layer()
 		}
 		.valid, .invalid_state, .user_valid, .user_invalid, .required, .optional, .default_ {
 			// FIXME: Requires form-associated element constraint-validation hooks.

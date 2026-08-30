@@ -1,26 +1,26 @@
 module css
 
 import dom
+import math
 
-// The approximation used for `line-height: normal` (the initial value). Real `normal` depends on the
-// font's metrics; browsers land around 1.1–1.2× the font-size. FIXME: use real font metrics.
-const normal_line_height_factor = 1.2
+// ComputedProperties::normal_line_height_scale.
+const normal_line_height_factor = 1.15
+
+fn normal_line_height(font_px f64) f64 {
+	return math.round_to_even(font_px * normal_line_height_factor)
+}
 
 // Resolve the computed `line-height` of `element` to px (line-height is inherited, so the cascade
 // already yields the effective specified value): `normal` -> ~1.2 * font-size; a unitless number ->
 // number * font-size; a length -> px (em/rem against font-size); a percentage -> % * font-size.
 pub fn computed_line_height_px(element &dom.Element, author_rules []&CSSRule) f64 {
 	font_px := computed_font_size_px(element, author_rules)
-	line_id := property_id_from_string('line-height') or {
-		return font_px * normal_line_height_factor
-	}
+	line_id := property_id_from_string('line-height') or { return normal_line_height(font_px) }
 	specified := cascaded_value_with_ua(element, line_id, author_rules)
 	if specified == 'normal' || specified == '' {
-		return font_px * normal_line_height_factor
+		return normal_line_height(font_px)
 	}
-	value := parse_css_value_logic(line_id, specified) or {
-		return font_px * normal_line_height_factor
-	}
+	value := parse_css_value_logic(line_id, specified) or { return normal_line_height(font_px) }
 	if value.is_number() {
 		return value.as_number().number() * font_px
 	}
@@ -40,7 +40,7 @@ pub fn computed_line_height_px(element &dom.Element, author_rules []&CSSRule) f6
 		if unit == 'rem' {
 			return raw * root_font_size_px(element, author_rules)
 		}
-		return font_px * normal_line_height_factor
+		return normal_line_height(font_px)
 	}
-	return font_px * normal_line_height_factor
+	return normal_line_height(font_px)
 }

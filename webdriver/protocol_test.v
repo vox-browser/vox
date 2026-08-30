@@ -10,7 +10,9 @@ fn test_error_table_and_response_preserve_protocol_codes() {
 	assert protocol_error.http_status == 405
 	assert !success('ok').is_error()
 	with_data := WebDriverError.from_code_with_data(.unknown_error, 'details', json2.Any('payload'))
-	assert (with_data.data or { panic('missing data') }) as string == 'payload'
+	data := with_data.data or { panic('missing data') }
+	assert data is string
+	assert data as string == 'payload'
 }
 
 fn test_timeout_deserialization_is_transactional_and_nullable() {
@@ -30,7 +32,9 @@ fn test_proxy_validation_checks_keys_types_and_schemes() {
 	proxy := deserialize_proxy(json_value_from_text('{"proxyType":"manual","httpProxy":"http://localhost:8080","noProxy":["localhost"]}')) or {
 		panic(err)
 	}
-	assert (proxy['proxyType'] or { panic('missing') }) as string == 'manual'
+	proxy_type := proxy['proxyType'] or { panic('missing') }
+	assert proxy_type is string
+	assert proxy_type as string == 'manual'
 	deserialize_proxy(json_value_from_text('{"sslProxy":"http://wrong"}')) or {
 		assert err.msg().contains('wrong URL scheme')
 		return
@@ -55,7 +59,7 @@ fn test_prompt_behavior_string_and_object_forms() {
 	}
 	assert structured[.alert] == PromptHandlerConfiguration{
 		handler: .ignore
-		notify:  true
+		notify: true
 	}
 	serialized := serialize_user_prompt_handler(structured)
 	assert serialized is map[string]json2.Any

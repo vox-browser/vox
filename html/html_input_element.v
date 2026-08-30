@@ -9,8 +9,10 @@
 @[has_globals]
 module html
 
+import aria
 import dom
 import math
+import regex
 
 pub enum HTMLInputTypeState {
 	hidden
@@ -42,30 +44,143 @@ pub enum MultipleFileHandling {
 	append
 }
 
+pub enum HTMLInputValueAttributeMode {
+	value
+	default_
+	default_on
+	filename
+}
+
+pub enum InputPickerKind {
+	file
+	color
+}
+
+pub struct InputPickerRequest {
+pub:
+	element        &dom.HTMLInputElement
+	kind           InputPickerKind
+	file_filter    FileFilter
+	allow_multiple bool
+	initial_color  string
+}
+
+pub type InputPickerRequestCallback = fn(voidptr, InputPickerRequest)
+
+pub struct InputPickerHook {
+pub:
+	target  voidptr = unsafe { nil }
+	request InputPickerRequestCallback = unsafe { nil }
+}
+
+pub struct InputSelectedCoordinate {
+pub:
+	x int
+	y int
+}
+
+pub enum InputFormAction {
+	submit
+	reset
+	implicit_submit
+}
+
+pub type InputFormActionCallback = fn(voidptr, &FormAssociatedElement, InputFormAction) !
+
+pub struct InputFormActionHook {
+pub:
+	target voidptr = unsafe { nil }
+	run    InputFormActionCallback = unsafe { nil }
+}
+
 @[heap]
 pub struct HTMLInputElementModel {
 pub:
 	element &dom.HTMLInputElement
 pub mut:
-	control                  &FormAssociatedElement
-	text_control             &FormAssociatedTextControlElement
-	type_state_              HTMLInputTypeState
-	value_                   string
-	dirty_value_             bool
-	checked_                 bool
-	dirty_checkedness_       bool
-	indeterminate_           bool
-	user_validity_           bool
-	has_uncommitted_changes_ bool
-	selected_files_          []SelectedFile
-	event_target_            &dom.EventTarget = unsafe { nil }
-	event_counts_            map[string]int
-	selected_x_              int
-	selected_y_              int
-	is_open_                 bool
+	control                          &FormAssociatedElement
+	text_control                     &FormAssociatedTextControlElement
+	type_state_                      HTMLInputTypeState
+	value_                           string
+	dirty_value_                     bool
+	checked_                         bool
+	dirty_checkedness_               bool
+	indeterminate_                   bool
+	user_validity_                   bool
+	has_uncommitted_changes_         bool
+	selected_files_                  []SelectedFile
+	event_target_                    &dom.EventTarget = unsafe { nil }
+	event_counts_                    map[string]int
+	selected_x_                      int
+	selected_y_                      int
+	is_open_                         bool
+	has_transient_activation         bool
+	same_origin_with_top_            bool = true
+	picker_hook_                     ?InputPickerHook
+	inner_text_element_              ?&dom.Element
+	text_node_                       ?&dom.Text
+	placeholder_element_             ?&dom.Element
+	placeholder_text_node_           ?&dom.Text
+	up_button_element_               ?&dom.Element
+	down_button_element_             ?&dom.Element
+	color_well_element_              ?&dom.Element
+	file_button_                     ?&dom.Element
+	file_label_                      ?&dom.Element
+	slider_progress_element_         ?&dom.Element
+	slider_thumb_                    ?&dom.Element
+	before_activation_checked_       bool
+	before_activation_indeterminate_ bool
+	previously_checked_radio_        ?&HTMLInputElementModel
+	last_src_value_                  string
+	resource_request_                ?&SharedResourceRequest
+	image_fetch_hook_                ?HTMLImageFetchHook
+	visible_in_viewport_             bool = true
+	form_action_hook_                ?InputFormActionHook
 }
 
 __global html_input_models []&HTMLInputElementModel
+
+fn is_integral_multiple(value f64, step f64) bool {
+	assert step > 0
+	if math.abs(value) / math.ldexp(1.0, 53) > step {
+		return true
+	}
+	remainder := math.abs(value - math.round(value / step) * step)
+	acceptable_error := if math.round(step) == step { 0.0 } else { step / f64(1 << 24) }
+	return remainder <= acceptable_error || remainder >= step - acceptable_error
+}
+
+fn inner_text_style_when_visible() string {
+	return 'width:100%;height:1lh;align-items:center;overflow:auto;scrollbar-width:none;text-overflow:clip;white-space:nowrap;'
+}
+
+fn inner_text_style_when_hidden() string {
+	return 'width:0;display:inline;'
+}
+
+fn stepper_button_style_when_visible() string {
+	return 'padding:0;cursor:default;'
+}
+
+fn stepper_button_style_when_hidden() string {
+	return 'display:none;'
+}
+
+fn placeholder_style_when_visible() string {
+	return 'width:100%;height:1lh;align-items:center;overflow:hidden;scrollbar-width:none;text-overflow:clip;white-space:nowrap;'
+}
+
+fn placeholder_style_when_hidden() string {
+	return 'display:none;'
+}
+
+fn is_applicable_for_maxlength_attribute(state HTMLInputTypeState) bool {
+	return state in [.text, .search, .telephone, .url, .email, .password]
+}
+
+fn is_allowed_to_have_placeholder(state HTMLInputTypeState) bool {
+	return state in [.text, .search, .url, .telephone, .email, .password, .number]
+}
 
 fn input_element(model &HTMLInputElementModel) &dom.Element {
 	return unsafe { &dom.Element(model.element) }
@@ -126,22 +241,36 @@ fn html_input_type_name(state HTMLInputTypeState) string {
 }
 
 pub fn HTMLInputElementModel.create(element &dom.HTMLInputElement) &HTMLInputElementModel {
+	if element.input_element_model_ != unsafe { nil } {
+		return unsafe { &HTMLInputElementModel(element.input_element_model_) }
+	}
 	dom_element := unsafe { &dom.Element(element) }
 	control := FormAssociatedElement.create(dom_element)
 	type_state := parse_html_input_type(dom_element.get_attribute_value('type'))
 	mut model := &HTMLInputElementModel{
-		element:       element
-		control:       control
-		text_control:  FormAssociatedTextControlElement.create(control, '')
-		type_state_:   type_state
-		checked_:      dom_element.has_attribute('checked')
+		element: element
+		control: control
+		text_control: FormAssociatedTextControlElement.create(control, '')
+		type_state_: type_state
+		checked_: dom_element.has_attribute('checked')
 		event_target_: dom.EventTarget.new()
 	}
 	model.value_ = model.sanitize_value(dom_element.get_attribute_value('value'))
+	model.text_control.did_edit_target_ = voidptr(model)
+	model.text_control.did_edit_callback_ = html_input_element_did_edit_callback
 	model.text_control.set_relevant_value(model.value_)
 	model.update_validity()
+	model.create_shadow_tree_if_needed()
 	html_input_models << model
+	mut mutable_element := unsafe { &dom.HTMLInputElement(element) }
+	mutable_element.input_element_model_ = voidptr(model)
+	install_form_control_selected_text_callback(dom_element.document())
 	return model
+}
+
+fn html_input_element_did_edit_callback(target voidptr, input_type string, data ?string) {
+	mut model := unsafe { &HTMLInputElementModel(target) }
+	model.did_edit_text_node(input_type, data)
 }
 
 fn (mut model HTMLInputElementModel) fire_event(name string) {
@@ -161,21 +290,157 @@ pub fn (model &HTMLInputElementModel) type_() string {
 	return html_input_type_name(model.type_state_)
 }
 
+pub fn (model &HTMLInputElementModel) default_value() string {
+	return input_element(model).get_attribute_value('value')
+}
+
+pub fn (model &HTMLInputElementModel) type_state() HTMLInputTypeState {
+	return model.type_state_
+}
+
+pub fn (model &HTMLInputElementModel) placeholder_element() ?&dom.Element {
+	return model.placeholder_element_
+}
+
+pub fn (model &HTMLInputElementModel) is_html_input_element() bool {
+	_ = model
+	return true
+}
+
+pub fn (model &HTMLInputElementModel) to_html_element() &dom.Element {
+	return input_element(model)
+}
+
+pub fn (model &HTMLInputElementModel) current_frame_index() usize {
+	_ = model
+	return 0
+}
+
+pub fn (model &HTMLInputElementModel) decoded_image_data() ?DecodedImageData {
+	return model.image_data()
+}
+
+pub fn (model &HTMLInputElementModel) relevant_value() string {
+	return model.value()
+}
+
+pub fn (mut model HTMLInputElementModel) set_relevant_value(value string) ! {
+	model.set_value(value)!
+}
+
+pub fn (model &HTMLInputElementModel) selected_text_for_stringifier() ?string {
+	return model.text_control.selected_text_for_stringifier()
+}
+
+pub fn (mut model HTMLInputElementModel) set_dirty_value_flag(flag bool) {
+	model.dirty_value_ = flag
+	model.text_control.dirty_value_flag = flag
+}
+
+pub fn (model &HTMLInputElementModel) user_validity() bool {
+	return model.user_validity_
+}
+
+pub fn (mut model HTMLInputElementModel) set_user_validity(flag bool) {
+	model.user_validity_ = flag
+}
+
+pub fn (model &HTMLInputElementModel) has_uncommitted_changes() bool {
+	return model.has_uncommitted_changes_
+}
+
+pub fn (model &HTMLInputElementModel) checked_binding() bool {
+	return model.checked()
+}
+
+pub fn (mut model HTMLInputElementModel) set_being_activated(activated bool) {
+	mut element := input_element(&model)
+	element.set_being_activated(activated)
+	if model.type_state_ in [.checkbox, .radio_button] {
+		mut node := element.as_node()
+		node.set_needs_repaint(.yes)
+	}
+}
+
 pub fn (mut model HTMLInputElementModel) set_type(value string) {
 	old_state := model.type_state_
 	mut element := input_element(&model)
 	element.set_attribute_value('type', value)
-	model.type_state_ = parse_html_input_type(value)
-	if old_state != model.type_state_ {
-		model.value_ = model.sanitize_value(model.value_)
-		model.text_control.set_relevant_value(model.value_)
-		if !model.checked_applies() {
-			model.indeterminate_ = false
+	new_state := parse_html_input_type(value)
+	if old_state != new_state {
+		model.type_attribute_changed(old_state, new_state)
+	}
+}
+
+pub fn HTMLInputElementModel.parse_type_attribute(value string) HTMLInputTypeState {
+	return parse_html_input_type(value)
+}
+
+pub fn html_input_element_parse_type_attribute(value string) HTMLInputTypeState {
+	return parse_html_input_type(value)
+}
+
+pub fn html_input_value_attribute_mode_for_type_state(state HTMLInputTypeState) HTMLInputValueAttributeMode {
+	return match state {
+		.text, .search, .telephone, .url, .email, .password, .date, .month, .week, .time, .local_date_and_time, .number, .range, .color {
+			.value
 		}
-		if model.type_state_ != .file_upload {
-			model.selected_files_.clear()
+		.hidden, .submit_button, .image_button, .reset_button, .button { .default_ }
+		.checkbox, .radio_button { .default_on }
+		.file_upload { .filename }
+	}
+}
+
+pub fn html_input_element_value_attribute_mode_for_type_state(state HTMLInputTypeState) HTMLInputValueAttributeMode {
+	return html_input_value_attribute_mode_for_type_state(state)
+}
+
+pub fn (model &HTMLInputElementModel) value_attribute_mode() HTMLInputValueAttributeMode {
+	return html_input_value_attribute_mode_for_type_state(model.type_state_)
+}
+
+pub fn (mut model HTMLInputElementModel) type_attribute_changed(old_state HTMLInputTypeState, new_state HTMLInputTypeState) {
+	old_mode := html_input_value_attribute_mode_for_type_state(old_state)
+	new_mode := html_input_value_attribute_mode_for_type_state(new_state)
+	mut element := input_element(&model)
+	if old_mode == .value && model.value_ != '' && new_mode in [.default_, .default_on] {
+		element.set_attribute_value('value', model.value_)
+	} else if old_mode != .value && new_mode == .value {
+		model.value_ = element.get_attribute_value('value')
+		model.dirty_value_ = false
+	} else if old_mode != .filename && new_mode == .filename {
+		model.value_ = ''
+		model.selected_files_.clear()
+	}
+	previously_selectable := html_input_selection_or_range_applies_for_type_state(old_state)
+	model.type_state_ = new_state
+	element.set_shadow_root(none)
+	model.clear_shadow_tree_handles()
+	model.create_shadow_tree_if_needed()
+	model.signal_a_type_change()
+	model.value_ = model.value_sanitization_algorithm(model.value_)
+	model.text_control.set_relevant_value(model.value_)
+	if !model.checked_applies() {
+		model.indeterminate_ = false
+	}
+	if new_state != .file_upload {
+		model.selected_files_.clear()
+	}
+	if !previously_selectable && model.selection_or_range_applies() {
+		model.text_control.set_the_selection_range(0, 0, .none, .dom)
+	}
+	model.update_validity()
+	model.update_shadow_tree()
+}
+
+pub fn (mut model HTMLInputElementModel) signal_a_type_change() {
+	if model.type_state_ == .radio_button && model.checked_ {
+		for mut other in html_input_models {
+			if same_radio_group(&model, other) {
+				other.checked_ = false
+				other.update_validity()
+			}
 		}
-		model.update_validity()
 	}
 }
 
@@ -188,8 +453,7 @@ fn valid_simple_color(value string) bool {
 		return false
 	}
 	for byte in value[1..].bytes() {
-		if !((byte >= `0` && byte <= `9`) || (byte >= `a` && byte <= `f`)
-			|| (byte >= `A` && byte <= `F`)) {
+		if !((byte >= `0` && byte <= `9`) || (byte >= `a` && byte <= `f`) || (byte >= `A` && byte <= `F`)) {
 			return false
 		}
 	}
@@ -249,8 +513,12 @@ fn (model &HTMLInputElementModel) sanitize_value(value string) string {
 			if step := model.allowed_value_step() {
 				base := model.step_base()
 				number = base + math.round((number - base) / step) * step
-				if number < minimum { number = minimum }
-				if maximum >= minimum && number > maximum { number = maximum }
+				if number < minimum {
+					number = minimum
+				}
+				if maximum >= minimum && number > maximum {
+					number = maximum
+				}
 			}
 			return number.str()
 		}
@@ -261,6 +529,10 @@ fn (model &HTMLInputElementModel) sanitize_value(value string) string {
 			return value
 		}
 	}
+}
+
+pub fn (model &HTMLInputElementModel) value_sanitization_algorithm(value string) string {
+	return model.sanitize_value(value)
 }
 
 pub fn (model &HTMLInputElementModel) value() string {
@@ -294,10 +566,10 @@ pub fn (model &HTMLInputElementModel) value() string {
 }
 
 pub fn (model &HTMLInputElementModel) optional_value() ?string {
-	if model.type_state_ in [.checkbox, .radio_button] {
+	if model.type_state_ == .submit_button {
 		return input_element(model).get_attribute('value')
 	}
-	return model.value()
+	return none
 }
 
 pub fn (mut model HTMLInputElementModel) set_value(value string) ! {
@@ -306,12 +578,14 @@ pub fn (mut model HTMLInputElementModel) set_value(value string) ! {
 			return error('InvalidStateError: file input value can only be set to the empty string')
 		}
 		model.selected_files_.clear()
+		model.update_file_input_shadow_tree()
 		return
 	}
 	if model.type_state_ in [.checkbox, .radio_button, .submit_button, .image_button, .reset_button,
 		.button, .hidden] {
 		mut element := input_element(&model)
 		element.set_attribute_value('value', value)
+		model.update_shadow_tree()
 		return
 	}
 	old := model.value_
@@ -324,6 +598,7 @@ pub fn (mut model HTMLInputElementModel) set_value(value string) ! {
 		model.text_control.set_the_selection_range(length, length, .none, .dom)
 	}
 	model.update_validity()
+	model.update_shadow_tree()
 }
 
 pub fn (model &HTMLInputElementModel) checked() bool {
@@ -336,9 +611,7 @@ fn same_radio_group(a &HTMLInputElementModel, b &HTMLInputElementModel) bool {
 	}
 	a_element := input_element(a)
 	b_element := input_element(b)
-	return a_element.as_node().root() == b_element.as_node().root()
-		&& a_element.get_attribute_value('name') == b_element.get_attribute_value('name')
-		&& a_element.get_attribute_value('name') != ''
+	return a_element.as_node().root() == b_element.as_node().root() && a_element.get_attribute_value('name') == b_element.get_attribute_value('name') && a_element.get_attribute_value('name') != ''
 }
 
 pub fn (mut model HTMLInputElementModel) set_checked(value bool) {
@@ -354,6 +627,18 @@ pub fn (mut model HTMLInputElementModel) set_checked(value bool) {
 	model.update_validity()
 }
 
+pub fn (mut model HTMLInputElementModel) set_checked_within_group() {
+	model.set_checked(true)
+}
+
+pub fn (mut model HTMLInputElementModel) set_checked_binding(value bool) {
+	if model.type_state_ == .radio_button && value {
+		model.set_checked_within_group()
+	} else {
+		model.set_checked(value)
+	}
+}
+
 pub fn (mut model HTMLInputElementModel) set_indeterminate(value bool) {
 	model.indeterminate_ = value
 }
@@ -362,30 +647,444 @@ pub fn (model &HTMLInputElementModel) indeterminate() bool {
 	return model.indeterminate_
 }
 
-pub fn (mut model HTMLInputElementModel) activate() {
-	if !model.is_mutable() && model.type_state_ !in [.checkbox, .radio_button] {
+fn find_input_suggestions_source(node &dom.Node, id string, mut found ?&dom.Element) bool {
+	if element := node.as_element() {
+		if element.id() or { '' } == id {
+			found = element
+			return true
+		}
+	}
+	for child in node.children_as_vector() {
+		if find_input_suggestions_source(child, id, mut found) {
+			return true
+		}
+	}
+	return false
+}
+
+// https://html.spec.whatwg.org/multipage/input.html#concept-input-list
+pub fn (model &HTMLInputElementModel) suggestions_source_element() ?&dom.HTMLDataListElement {
+	list_id := input_element(model).get_attribute('list') or { return none }
+	mut found := ?&dom.Element(none)
+	find_input_suggestions_source(input_element(model).as_node().root(), list_id, mut found)
+	element := found or { return none }
+	if !element.is_html_element() || element.local_name() != 'datalist' {
+		return none
+	}
+	return unsafe { &dom.HTMLDataListElement(element) }
+}
+
+pub fn (model &HTMLInputElementModel) list() ?&dom.HTMLDataListElement {
+	return model.suggestions_source_element()
+}
+
+// https://html.spec.whatwg.org/multipage/input.html#compiled-pattern-regular-expression
+pub fn (model &HTMLInputElementModel) compiled_pattern_regular_expression() ?regex.RE {
+	pattern := input_element(model).get_attribute('pattern') or { return none }
+	// V's regexp engine has no ECMAScript UnicodeSets flag, but compiling the
+	// same source and anchoring it preserves the observable HTML validation
+	// contract for the supported regexp grammar.
+	return regex.regex_opt('^(${pattern})\$') or { return none }
+}
+
+pub fn (model &HTMLInputElementModel) placeholder() string {
+	return strip_input_newlines(input_element(model).get_attribute_value('placeholder'))
+}
+
+pub fn (model &HTMLInputElementModel) placeholder_value() ?string {
+	if model.value() != '' || model.type_state_ !in [.text, .search, .url, .telephone, .email,
+		.password, .number] || !input_element(model).has_attribute('placeholder') {
+		return none
+	}
+	return model.placeholder()
+}
+
+pub fn (model &HTMLInputElementModel) button_label() string {
+	if label := input_element(model).get_attribute('value') {
+		return label
+	}
+	return match model.type_state_ {
+		.reset_button { 'Reset' }
+		.submit_button { 'Submit' }
+		else { model.value() }
+	}
+}
+
+fn replace_element_text(element &dom.Element, text string) {
+	mut node := element.as_node()
+	node.string_replace_all(text)
+}
+
+fn append_input_shadow_child(mut parent dom.Node, child &dom.Node) {
+	parent.append_child(child) or {}
+}
+
+fn (mut model HTMLInputElementModel) clear_shadow_tree_handles() {
+	model.inner_text_element_ = none
+	model.text_node_ = none
+	model.text_control.text_node_ = none
+	model.placeholder_element_ = none
+	model.placeholder_text_node_ = none
+	model.up_button_element_ = none
+	model.down_button_element_ = none
+	model.color_well_element_ = none
+	model.file_button_ = none
+	model.file_label_ = none
+	model.slider_progress_element_ = none
+	model.slider_thumb_ = none
+}
+
+pub fn (mut model HTMLInputElementModel) create_shadow_tree_if_needed() {
+	if input_element(&model).shadow_root() != none {
 		return
 	}
 	match model.type_state_ {
-		.checkbox {
-			model.set_checked(!model.checked_)
-			model.indeterminate_ = false
+		.hidden, .radio_button, .checkbox, .image_button {}
+		.button, .submit_button, .reset_button { model.create_button_input_shadow_tree() }
+		.color { model.create_color_input_shadow_tree() }
+		.file_upload { model.create_file_input_shadow_tree() }
+		.range { model.create_range_input_shadow_tree() }
+		else { model.create_text_input_shadow_tree() }
+	}
+}
+
+pub fn (mut model HTMLInputElementModel) update_shadow_tree() {
+	match model.type_state_ {
+		.color { model.update_color_well_element() }
+		.file_upload { model.update_file_input_shadow_tree() }
+		.range { model.update_slider_shadow_tree_elements() }
+		.button, .reset_button, .submit_button { model.update_button_input_shadow_tree() }
+		else { model.update_text_input_shadow_tree() }
+	}
+}
+
+pub fn (mut model HTMLInputElementModel) create_button_input_shadow_tree() {
+	mut element := input_element(&model)
+	shadow := element.attach_a_user_agent_shadow_root(.named)
+	mut container := dom.create_element(element.document(), 'span', ns_html, none, none, false) or { return }
+	container.set_attribute_value('style', 'display: inline-block; pointer-events: none;')
+	text := element.document().create_text_node(model.button_label())
+	mut container_node := container.as_node()
+	append_input_shadow_child(mut container_node, text.as_node())
+	mut shadow_node := unsafe { &dom.Node(shadow) }
+	append_input_shadow_child(mut shadow_node, container.as_node())
+	model.text_node_ = text
+	model.text_control.text_node_ = text
+}
+
+pub fn (mut model HTMLInputElementModel) update_button_input_shadow_tree() {
+	if text := model.text_node_ {
+		mut mutable_text := text
+		mutable_text.set_data(model.button_label())
+	}
+	model.update_placeholder_visibility()
+}
+
+pub fn (mut model HTMLInputElementModel) create_text_input_shadow_tree() {
+	mut element := input_element(&model)
+	shadow := element.attach_a_user_agent_shadow_root(.named)
+	mut container := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	container.set_attribute_value('style', 'display:flex;height:100%;align-items:center;white-space:pre;border:none;padding:1px 2px;')
+	inner := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	text := element.document().create_text_node(model.value_)
+	mut inner_node := inner.as_node()
+	append_input_shadow_child(mut inner_node, text.as_node())
+	placeholder := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	placeholder_text := element.document().create_text_node(model.placeholder())
+	mut placeholder_node := placeholder.as_node()
+	append_input_shadow_child(mut placeholder_node, placeholder_text.as_node())
+	mut container_node := container.as_node()
+	append_input_shadow_child(mut container_node, inner.as_node())
+	append_input_shadow_child(mut container_node, placeholder.as_node())
+	if model.type_state_ == .number {
+		mut up := dom.create_element(element.document(), 'button', ns_html, none, none, false) or { return }
+		mut down := dom.create_element(element.document(), 'button', ns_html, none, none, false) or { return }
+		up.set_attribute_value('style', stepper_button_style_when_visible())
+		down.set_attribute_value('style', stepper_button_style_when_visible())
+		replace_element_text(up, '▲')
+		replace_element_text(down, '▼')
+		append_input_shadow_child(mut container_node, up.as_node())
+		append_input_shadow_child(mut container_node, down.as_node())
+		model.up_button_element_ = up
+		model.down_button_element_ = down
+	}
+	mut shadow_node := unsafe { &dom.Node(shadow) }
+	append_input_shadow_child(mut shadow_node, container.as_node())
+	model.inner_text_element_ = inner
+	model.text_node_ = text
+	model.text_control.text_node_ = text
+	model.placeholder_element_ = placeholder
+	model.placeholder_text_node_ = placeholder_text
+	model.handle_maxlength_attribute()
+	model.update_text_input_shadow_tree()
+}
+
+pub fn (mut model HTMLInputElementModel) create_color_input_shadow_tree() {
+	mut element := input_element(&model)
+	shadow := element.attach_a_user_agent_shadow_root(.named)
+	mut border := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	border.set_attribute_value('style', 'width:fit-content;height:fit-content;padding:4px;border:1px solid ButtonBorder;background-color:ButtonFace;')
+	well := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	mut border_node := border.as_node()
+	append_input_shadow_child(mut border_node, well.as_node())
+	mut shadow_node := unsafe { &dom.Node(shadow) }
+	append_input_shadow_child(mut shadow_node, border.as_node())
+	model.color_well_element_ = well
+	model.update_color_well_element()
+}
+
+pub fn (mut model HTMLInputElementModel) update_color_well_element() {
+	if well := model.color_well_element_ {
+		mut mutable_well := well
+		mutable_well.set_attribute_value('style', 'width:32px;height:16px;border:1px solid ButtonBorder;box-sizing:border-box;background-color:${model.value_};')
+	}
+}
+
+pub fn (mut model HTMLInputElementModel) create_file_input_shadow_tree() {
+	mut element := input_element(&model)
+	shadow := element.attach_a_user_agent_shadow_root(.named)
+	button := dom.create_element(element.document(), 'button', ns_html, none, none, false) or { return }
+	mut label := dom.create_element(element.document(), 'label', ns_html, none, none, false) or { return }
+	label.set_attribute_value('style', 'padding-left: 4px;')
+	mut shadow_node := unsafe { &dom.Node(shadow) }
+	append_input_shadow_child(mut shadow_node, button.as_node())
+	append_input_shadow_child(mut shadow_node, label.as_node())
+	model.file_button_ = button
+	model.file_label_ = label
+	model.update_file_input_shadow_tree()
+}
+
+pub fn (mut model HTMLInputElementModel) update_file_input_shadow_tree() {
+	mut button := model.file_button_ or { return }
+	mut label := model.file_label_ or { return }
+	files_label := if input_element(&model).has_attribute('multiple') { 'files' } else { 'file' }
+	replace_element_text(button, 'Select ${files_label}...')
+	label_text := if model.selected_files_.len == 1 {
+		model.selected_files_[0].name
+	} else if model.selected_files_.len > 1 {
+		'${model.selected_files_.len} files selected.'
+	} else {
+		'No ${files_label} selected.'
+	}
+	replace_element_text(label, label_text)
+}
+
+pub fn (mut model HTMLInputElementModel) create_range_input_shadow_tree() {
+	mut element := input_element(&model)
+	shadow := element.attach_a_user_agent_shadow_root(.named)
+	track := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	progress := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	thumb := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	mut track_node := track.as_node()
+	append_input_shadow_child(mut track_node, progress.as_node())
+	append_input_shadow_child(mut track_node, thumb.as_node())
+	mut shadow_node := unsafe { &dom.Node(shadow) }
+	append_input_shadow_child(mut shadow_node, track.as_node())
+	model.slider_progress_element_ = progress
+	model.slider_thumb_ = thumb
+	model.update_slider_shadow_tree_elements()
+}
+
+pub fn (mut model HTMLInputElementModel) update_slider_shadow_tree_elements() {
+	minimum := model.minimum() or { 0.0 }
+	maximum := model.maximum() or { 100.0 }
+	value := model.convert_string_to_number(model.value_sanitization_algorithm(model.value_)) or {
+		minimum
+	}
+	position := if maximum == minimum {
+		0.0
+	} else {
+		(value - minimum) / (maximum - minimum) * 100.0
+	}
+	if progress := model.slider_progress_element_ {
+		mut mutable_progress := progress
+		mutable_progress.set_attribute_value('style', 'width:${position}%;')
+	}
+	if thumb := model.slider_thumb_ {
+		mut mutable_thumb := thumb
+		mutable_thumb.set_attribute_value('style', 'margin-left:${position}%;')
+	}
+}
+
+pub fn (mut model HTMLInputElementModel) update_text_input_shadow_tree() {
+	if text := model.text_node_ {
+		mut mutable_text := text
+		mutable_text.set_data(model.value_)
+	}
+	model.update_placeholder_visibility()
+}
+
+pub fn (mut model HTMLInputElementModel) update_placeholder_visibility() {
+	mut inner := model.inner_text_element_ or { return }
+	mut placeholder := model.placeholder_element_ or { return }
+	if model.placeholder_value() != none {
+		inner.set_attribute_value('style', inner_text_style_when_hidden())
+		placeholder.set_attribute_value('style', placeholder_style_when_visible())
+	} else {
+		inner.set_attribute_value('style', inner_text_style_when_visible())
+		placeholder.set_attribute_value('style', placeholder_style_when_hidden())
+	}
+}
+
+pub fn (mut model HTMLInputElementModel) handle_maxlength_attribute() {
+	model.update_validity()
+}
+
+pub fn (mut model HTMLInputElementModel) user_interaction_did_change_input_value(input_type string, data ?string) {
+	_ = input_type
+	_ = data
+	model.has_uncommitted_changes_ = true
+	model.user_validity_ = true
+	model.fire_event('input')
+	model.update_validity()
+}
+
+pub fn (mut model HTMLInputElementModel) did_edit_text_node(input_type string, data ?string) {
+	old_value := model.value_
+	if text := model.text_node_ {
+		model.value_ = model.value_sanitization_algorithm(text.data())
+	}
+	model.dirty_value_ = true
+	model.text_control.dirty_value_flag = true
+	model.text_control.set_relevant_value(model.value_)
+	if model.value_ != old_value {
+		model.update_placeholder_visibility()
+	}
+	model.user_interaction_did_change_input_value(input_type, data)
+}
+
+pub fn (mut model HTMLInputElementModel) did_receive_focus() {
+	if model.has_selectable_text() {
+		model.text_control.select()
+	}
+}
+
+pub fn (mut model HTMLInputElementModel) did_lose_focus() {
+	model.commit_pending_changes()
+}
+
+pub fn (model &HTMLInputElementModel) has_activation_behavior() bool {
+	return true
+}
+
+pub fn (mut model HTMLInputElementModel) set_form_action_hook(hook ?InputFormActionHook) {
+	model.form_action_hook_ = hook
+}
+
+fn (mut model HTMLInputElementModel) run_form_action(action InputFormAction) ! {
+	if model.control.form() == none || !input_element(&model).document().is_fully_active() {
+		return
+	}
+	hook := model.form_action_hook_ or { return }
+	if hook.run != unsafe { nil } {
+		hook.run(hook.target, model.control, action)!
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/input.html#input-activation-behavior
+pub fn (mut model HTMLInputElementModel) run_input_activation_behavior(event &dom.Event) ! {
+	match model.type_state_ {
+		.checkbox, .radio_button {
+			if !input_element(&model).is_connected() {
+				return
+			}
 			model.fire_event('input')
 			model.fire_event('change')
 		}
-		.radio_button {
-			if !model.checked_ {
-				model.set_checked(true)
-				model.fire_event('input')
-				model.fire_event('change')
+		.submit_button {
+			if !input_element(&model).is_actually_disabled() {
+				model.run_form_action(.submit)!
+			}
+		}
+		.file_upload, .color {
+			model.show_the_picker_if_applicable()
+		}
+		.image_button {
+			if event.is_trusted() && event.interface_ in [.mouse_event, .pointer_event] {
+				mouse_event := unsafe { &dom.MouseEvent(event) }
+				model.selected_x_ = int(mouse_event.offset_x())
+				model.selected_y_ = int(mouse_event.offset_y())
+			}
+			model.run_form_action(.submit)!
+		}
+		.reset_button {
+			if !input_element(&model).is_actually_disabled() {
+				model.run_form_action(.reset)!
 			}
 		}
 		else {}
 	}
 }
 
+pub fn (mut model HTMLInputElementModel) activation_behavior(event &dom.Event) ! {
+	if !model.is_mutable() && model.type_state_ !in [.checkbox, .radio_button] {
+		return
+	}
+	model.run_input_activation_behavior(event)!
+}
+
+pub fn (mut model HTMLInputElementModel) legacy_pre_activation_behavior() {
+	model.before_activation_checked_ = model.checked_
+	model.before_activation_indeterminate_ = model.indeterminate_
+	if model.type_state_ == .checkbox {
+		model.set_checked(!model.checked_)
+		model.indeterminate_ = false
+	} else if model.type_state_ == .radio_button {
+		model.previously_checked_radio_ = none
+		for other in html_input_models {
+			if other.checked_ && same_radio_group(&model, other) {
+				model.previously_checked_radio_ = other
+				break
+			}
+		}
+		model.set_checked_within_group()
+	}
+}
+
+pub fn (mut model HTMLInputElementModel) legacy_cancelled_activation_behavior() {
+	if model.type_state_ == .checkbox {
+		model.set_checked(model.before_activation_checked_)
+		model.indeterminate_ = model.before_activation_indeterminate_
+	} else if model.type_state_ == .radio_button {
+		mut did_reselect := false
+		if previous := model.previously_checked_radio_ {
+			if same_radio_group(&model, previous) {
+				mut mutable_previous := previous
+				mutable_previous.set_checked_within_group()
+				did_reselect = true
+			}
+		}
+		model.previously_checked_radio_ = none
+		if !did_reselect {
+			model.set_checked(false)
+		}
+	}
+}
+
+pub fn (mut model HTMLInputElementModel) legacy_cancelled_activation_behavior_was_not_called() {
+	model.previously_checked_radio_ = none
+}
+
+pub fn (mut model HTMLInputElementModel) activate() {
+	if !model.is_mutable() && model.type_state_ !in [.checkbox, .radio_button] {
+		return
+	}
+	model.legacy_pre_activation_behavior()
+	event := dom.Event.create('click', dom.EventInit{})
+	model.run_input_activation_behavior(event) or {
+		model.legacy_cancelled_activation_behavior()
+		return
+	}
+	model.legacy_cancelled_activation_behavior_was_not_called()
+}
+
 pub fn (mut model HTMLInputElementModel) did_select_files(files []SelectedFile, handling MultipleFileHandling) {
+	model.set_is_open(false)
 	if model.type_state_ != .file_upload {
+		return
+	}
+	if files.len == 0 {
+		model.fire_event('cancel')
 		return
 	}
 	if handling == .replace || !input_element(&model).has_attribute('multiple') {
@@ -396,6 +1095,23 @@ pub fn (mut model HTMLInputElementModel) did_select_files(files []SelectedFile, 
 	model.fire_event('input')
 	model.fire_event('change')
 	model.update_validity()
+	model.update_file_input_shadow_tree()
+}
+
+pub fn (mut model HTMLInputElementModel) set_files(files ?[]SelectedFile) {
+	if model.type_state_ != .file_upload {
+		return
+	}
+	if replacement := files {
+		model.selected_files_ = replacement.clone()
+	}
+}
+
+pub fn (mut model HTMLInputElementModel) update_the_file_selection(files []SelectedFile) {
+	model.set_files(files)
+	model.fire_event('input')
+	model.fire_event('change')
+	model.update_validity()
 }
 
 pub fn (model &HTMLInputElementModel) files() ?[]SelectedFile {
@@ -403,6 +1119,95 @@ pub fn (model &HTMLInputElementModel) files() ?[]SelectedFile {
 		return none
 	}
 	return model.selected_files_.clone()
+}
+
+pub fn (model &HTMLInputElementModel) max_length() i32 {
+	return limited_nonnegative_attribute(input_element(model), 'maxlength')
+}
+
+pub fn (mut model HTMLInputElementModel) set_max_length(value i32) ! {
+	if value < 0 {
+		return error('IndexSizeError: maxLength must be non-negative')
+	}
+	mut element := input_element(&model)
+	element.set_attribute_value('maxlength', value.str())
+	model.handle_maxlength_attribute()
+}
+
+pub fn (model &HTMLInputElementModel) min_length() i32 {
+	return limited_nonnegative_attribute(input_element(model), 'minlength')
+}
+
+pub fn (mut model HTMLInputElementModel) set_min_length(value i32) ! {
+	if value < 0 {
+		return error('IndexSizeError: minLength must be non-negative')
+	}
+	mut element := input_element(&model)
+	element.set_attribute_value('minlength', value.str())
+	model.update_validity()
+}
+
+pub fn (model &HTMLInputElementModel) size() u32 {
+	value := limited_nonnegative_attribute(input_element(model), 'size')
+	return if value > 0 { u32(value) } else { u32(20) }
+}
+
+pub fn (mut model HTMLInputElementModel) set_size(value u64) ! {
+	if value == 0 {
+		return error('IndexSizeError: size must be greater than zero')
+	}
+	actual := if value > 2147483647 { u64(20) } else { value }
+	mut element := input_element(&model)
+	element.set_attribute_value('size', actual.str())
+}
+
+pub fn (model &HTMLInputElementModel) height() u32 {
+	if model.type_state_ != .image_button {
+		return 0
+	}
+	if attribute := input_element(model).get_attribute('height') {
+		if parsed := parse_non_negative_integer(attribute) {
+			if parsed <= 2147483647 {
+				return parsed
+			}
+		}
+	}
+	bitmap := model.current_image_bitmap_sized(0, 0) or { return 0 }
+	return u32(bitmap.height)
+}
+
+pub fn (mut model HTMLInputElementModel) set_height(value u64) {
+	actual := if value > 2147483647 { u64(0) } else { value }
+	mut element := input_element(&model)
+	element.set_attribute_value('height', actual.str())
+}
+
+pub fn (model &HTMLInputElementModel) width() u32 {
+	if model.type_state_ != .image_button {
+		return 0
+	}
+	if attribute := input_element(model).get_attribute('width') {
+		if parsed := parse_non_negative_integer(attribute) {
+			if parsed <= 2147483647 {
+				return parsed
+			}
+		}
+	}
+	bitmap := model.current_image_bitmap_sized(0, 0) or { return 0 }
+	return u32(bitmap.width)
+}
+
+pub fn (mut model HTMLInputElementModel) set_width(value u64) {
+	actual := if value > 2147483647 { u64(0) } else { value }
+	mut element := input_element(&model)
+	element.set_attribute_value('width', actual.str())
+}
+
+pub fn (model &HTMLInputElementModel) selected_coordinate() InputSelectedCoordinate {
+	return InputSelectedCoordinate{
+		x: model.selected_x_
+		y: model.selected_y_
+	}
 }
 
 pub fn (model &HTMLInputElementModel) parse_accept_attribute() FileFilter {
@@ -427,6 +1232,147 @@ pub fn (model &HTMLInputElementModel) parse_accept_attribute() FileFilter {
 	return filter
 }
 
+pub fn (mut model HTMLInputElementModel) set_picker_hook(hook ?InputPickerHook) {
+	model.picker_hook_ = hook
+}
+
+pub fn (mut model HTMLInputElementModel) set_image_fetch_hook(hook ?HTMLImageFetchHook) {
+	model.image_fetch_hook_ = hook
+}
+
+// https://html.spec.whatwg.org/multipage/input.html#attr-input-src
+pub fn (mut model HTMLInputElementModel) handle_src_attribute(value string) ! {
+	if model.type_state_ != .image_button {
+		return
+	}
+	model.last_src_value_ = value
+	url := input_element(&model).document().encoding_parse_url(value) or { return }
+	mut request := SharedResourceRequest.get_or_create(input_element(&model).document(), url)
+	model.resource_request_ = request
+	if request.state() == .finished {
+		model.fire_event('load')
+		return
+	}
+	if request.state() == .failed {
+		model.fire_event('error')
+		return
+	}
+	fetch := model.image_fetch_hook_ or { return }
+	decoded := fetch(url) or {
+		request.handle_failed_fetch()
+		model.fire_event('error')
+		return
+	}
+	request.handle_successful_resource_load(decoded)
+	model.fire_event('load')
+	mut node := input_element(&model).as_node()
+	node.set_needs_layout_tree_update(true, .html_input_element_src_attribute)
+}
+
+pub fn (model &HTMLInputElementModel) image_data() ?DecodedImageData {
+	request := model.resource_request_ or { return none }
+	data := request.image_data() or { return none }
+	return data.data
+}
+
+pub fn (model &HTMLInputElementModel) is_image_available() bool {
+	return model.image_data() != none
+}
+
+pub fn (model &HTMLInputElementModel) intrinsic_width() ?f64 {
+	data := model.image_data() or { return none }
+	return data.intrinsic_width()
+}
+
+pub fn (model &HTMLInputElementModel) intrinsic_height() ?f64 {
+	data := model.image_data() or { return none }
+	return data.intrinsic_height()
+}
+
+pub fn (model &HTMLInputElementModel) intrinsic_aspect_ratio() ?f64 {
+	data := model.image_data() or { return none }
+	return data.intrinsic_aspect_ratio()
+}
+
+pub fn (model &HTMLInputElementModel) current_image_bitmap_sized(_ int, _ int) ?&dom.ImmutableBitmap_ {
+	data := model.image_data() or { return none }
+	return data.bitmap(0)
+}
+
+pub fn (mut model HTMLInputElementModel) set_visible_in_viewport(visible bool) {
+	model.visible_in_viewport_ = visible
+}
+
+pub fn (mut model HTMLInputElementModel) set_picker_security_state(has_transient_activation bool, same_origin_with_top bool) {
+	model.has_transient_activation = has_transient_activation
+	model.same_origin_with_top_ = same_origin_with_top
+}
+
+pub fn (model &HTMLInputElementModel) supports_a_picker() bool {
+	return model.type_state_ in [.file_upload, .color]
+}
+
+pub fn (mut model HTMLInputElementModel) set_is_open(is_open bool) {
+	model.is_open_ = is_open
+}
+
+pub fn (model &HTMLInputElementModel) is_open() bool {
+	return model.is_open_
+}
+
+fn (mut model HTMLInputElementModel) show_the_picker_if_applicable() {
+	if !model.has_transient_activation || !model.is_mutable() {
+		return
+	}
+	model.has_transient_activation = false
+	if !model.supports_a_picker() {
+		return
+	}
+	model.set_is_open(true)
+	hook := model.picker_hook_ or { return }
+	if hook.request == unsafe { nil } {
+		return
+	}
+	hook.request(hook.target, InputPickerRequest{
+		element: model.element
+		kind: if model.type_state_ == .file_upload { .file } else { .color }
+		file_filter: model.parse_accept_attribute()
+		allow_multiple: input_element(&model).has_attribute('multiple')
+		initial_color: model.value()
+	})
+}
+
+// https://html.spec.whatwg.org/multipage/input.html#dom-input-showpicker
+pub fn (mut model HTMLInputElementModel) show_picker() ! {
+	if !model.is_mutable() {
+		return error('InvalidStateError: element is not mutable')
+	}
+	if !model.same_origin_with_top_ && model.type_state_ !in [.file_upload, .color] {
+		return error('SecurityError: cross-origin pickers are not allowed')
+	}
+	if !model.has_transient_activation {
+		return error('NotAllowedError: no transient user activation')
+	}
+	model.show_the_picker_if_applicable()
+}
+
+pub fn (mut model HTMLInputElementModel) did_pick_color(picked_color ?string, closed bool) {
+	if model.type_state_ != .color {
+		return
+	}
+	if color := picked_color {
+		model.value_ = model.value_sanitization_algorithm(color)
+		model.dirty_value_ = true
+		model.update_color_well_element()
+		model.user_interaction_did_change_input_value('', none)
+	}
+	if closed {
+		model.set_is_open(false)
+		model.user_validity_ = true
+		model.fire_event('change')
+	}
+}
+
 fn (model &HTMLInputElementModel) convert_string_to_number(value string) ?f64 {
 	match model.type_state_ {
 		.number, .range {
@@ -435,6 +1381,10 @@ fn (model &HTMLInputElementModel) convert_string_to_number(value string) ?f64 {
 		.month {
 			month := parse_a_month_string(value) or { return none }
 			return f64(number_of_months_since_unix_epoch(month))
+		}
+		.week {
+			week := parse_a_week_string(value) or { return none }
+			return f64(iso_week_monday_days(i64(week.week_year), i64(week.week))) * 86400000.0
 		}
 		.time {
 			time := parse_time_string(value) or { return none }
@@ -446,15 +1396,20 @@ fn (model &HTMLInputElementModel) convert_string_to_number(value string) ?f64 {
 		}
 		.local_date_and_time {
 			value_ := parse_a_local_date_and_time_string(value) or { return none }
-			days := days_from_civil(i64(value_.date.year), i64(value_.date.month),
-				i64(value_.date.day))
-			return f64(days) * 86400000.0 + f64(value_.time.hour * 3600000 +
-				value_.time.minute * 60000) + f64(value_.time.second) * 1000
+			days := days_from_civil(i64(value_.date.year), i64(value_.date.month), i64(value_.date.day))
+			return f64(days) * 86400000.0 + f64(value_.time.hour * 3600000 + value_.time.minute * 60000) + f64(value_.time.second) * 1000
 		}
 		else {
 			return none
 		}
 	}
+}
+
+pub fn (model &HTMLInputElementModel) convert_time_string_to_number(value string) ?f64 {
+	if model.type_state_ != .time {
+		return none
+	}
+	return model.convert_string_to_number(value)
 }
 
 fn days_from_civil(year i64, month i64, day i64) i64 {
@@ -481,6 +1436,30 @@ fn civil_from_days(days i64) (i64, i64, i64) {
 	return year, month, day
 }
 
+fn positive_mod(value i64, modulus i64) i64 {
+	result := value % modulus
+	return if result < 0 { result + modulus } else { result }
+}
+
+fn iso_weekday_from_days(days i64) i64 {
+	// 1970-01-01 was Thursday (ISO weekday 4).
+	return positive_mod(days + 3, 7) + 1
+}
+
+fn iso_week_monday_days(year i64, week i64) i64 {
+	jan_fourth := days_from_civil(year, 1, 4)
+	week_one_monday := jan_fourth - (iso_weekday_from_days(jan_fourth) - 1)
+	return week_one_monday + (week - 1) * 7
+}
+
+fn iso_week_from_days(days i64) (i64, i64) {
+	weekday := iso_weekday_from_days(days)
+	thursday := days + (4 - weekday)
+	week_year, _, _ := civil_from_days(thursday)
+	week_one_monday := iso_week_monday_days(week_year, 1)
+	return week_year, (days - week_one_monday) / 7 + 1
+}
+
 fn numeric_input_string(model &HTMLInputElementModel, value f64) string {
 	match model.type_state_ {
 		.number, .range {
@@ -488,9 +1467,14 @@ fn numeric_input_string(model &HTMLInputElementModel, value f64) string {
 		}
 		.month {
 			months := i64(math.floor(value))
-			year := 1970 + months / 12
-			month := months % 12 + 1
+			year := 1970 + (months - positive_mod(months, 12)) / 12
+			month := positive_mod(months, 12) + 1
 			return '${year:04d}-${month:02d}'
+		}
+		.week {
+			days := i64(math.floor(value / 86400000.0))
+			year, week := iso_week_from_days(days)
+			return '${year:04d}-W${week:02d}'
 		}
 		.time {
 			milliseconds := i64(math.floor(value))
@@ -501,7 +1485,9 @@ fn numeric_input_string(model &HTMLInputElementModel, value f64) string {
 			if millisecond != 0 {
 				return '${hour:02d}:${minute:02d}:${second:02d}.${millisecond:03d}'
 			}
-			if second != 0 { return '${hour:02d}:${minute:02d}:${second:02d}' }
+			if second != 0 {
+				return '${hour:02d}:${minute:02d}:${second:02d}'
+			}
 			return '${hour:02d}:${minute:02d}'
 		}
 		.date {
@@ -520,6 +1506,54 @@ fn numeric_input_string(model &HTMLInputElementModel, value f64) string {
 			return ''
 		}
 	}
+}
+
+pub fn (model &HTMLInputElementModel) convert_number_to_string(value f64) string {
+	return numeric_input_string(model, value)
+}
+
+pub fn (model &HTMLInputElementModel) convert_string_to_date(value string) ?f64 {
+	if model.type_state_ in [.date, .week, .time] {
+		return model.convert_string_to_number(value)
+	}
+	if model.type_state_ == .month {
+		month := parse_a_month_string(value) or { return none }
+		return f64(days_from_civil(i64(month.year), i64(month.month), 1)) * 86400000.0
+	}
+	return none
+}
+
+pub fn (model &HTMLInputElementModel) convert_date_to_string(milliseconds f64) string {
+	return match model.type_state_ {
+		.date, .week, .time { numeric_input_string(model, milliseconds) }
+		.month {
+			year, month, _ := civil_from_days(i64(math.floor(milliseconds / 86400000.0)))
+			'${year:04d}-${month:02d}'
+		}
+		else { '' }
+	}
+}
+
+pub fn (model &HTMLInputElementModel) value_as_date() ?f64 {
+	if !model.value_as_date_applies() {
+		return none
+	}
+	return model.convert_string_to_date(model.value())
+}
+
+pub fn (mut model HTMLInputElementModel) set_value_as_date(value ?f64) ! {
+	if !model.value_as_date_applies() {
+		return error('InvalidStateError: valueAsDate does not apply')
+	}
+	milliseconds := value or {
+		model.set_value('')!
+		return
+	}
+	if math.is_nan(milliseconds) || math.is_inf(milliseconds, 0) {
+		model.set_value('')!
+		return
+	}
+	model.set_value(model.convert_date_to_string(milliseconds))!
 }
 
 pub fn (model &HTMLInputElementModel) value_as_number() f64 {
@@ -541,18 +1575,34 @@ pub fn (mut model HTMLInputElementModel) set_value_as_number(value f64) ! {
 
 pub fn (model &HTMLInputElementModel) minimum() ?f64 {
 	if value := input_element(model).get_attribute('min') {
-		if number := model.convert_string_to_number(value) { return number }
+		if number := model.convert_string_to_number(value) {
+			return number
+		}
 	}
-	if model.type_state_ == .range { return 0.0 }
+	if model.type_state_ == .range {
+		return 0.0
+	}
 	return none
+}
+
+pub fn (model &HTMLInputElementModel) min() ?f64 {
+	return model.minimum()
 }
 
 pub fn (model &HTMLInputElementModel) maximum() ?f64 {
 	if value := input_element(model).get_attribute('max') {
-		if number := model.convert_string_to_number(value) { return number }
+		if number := model.convert_string_to_number(value) {
+			return number
+		}
 	}
-	if model.type_state_ == .range { return 100.0 }
+	if model.type_state_ == .range {
+		return 100.0
+	}
 	return none
+}
+
+pub fn (model &HTMLInputElementModel) max() ?f64 {
+	return model.maximum()
 }
 
 fn (model &HTMLInputElementModel) default_step() f64 {
@@ -572,24 +1622,36 @@ fn (model &HTMLInputElementModel) step_scale_factor() f64 {
 }
 
 pub fn (model &HTMLInputElementModel) allowed_value_step() ?f64 {
-	if !model.step_applies() { return none }
+	if !model.step_applies() {
+		return none
+	}
 	value := input_element(model).get_attribute('step') or {
 		return model.default_step() * model.step_scale_factor()
 	}
-	if ascii_lowercase_string(value) == 'any' { return none }
+	if ascii_lowercase_string(value) == 'any' {
+		return none
+	}
 	parsed := parse_floating_point_number(value) or {
 		return model.default_step() * model.step_scale_factor()
 	}
-	if parsed <= 0 { return model.default_step() * model.step_scale_factor() }
+	if parsed <= 0 {
+		return model.default_step() * model.step_scale_factor()
+	}
 	return parsed * model.step_scale_factor()
 }
 
 pub fn (model &HTMLInputElementModel) step_base() f64 {
-	if minimum := model.minimum() { return minimum }
-	if value := input_element(model).get_attribute('value') {
-		if number := model.convert_string_to_number(value) { return number }
+	if minimum := model.minimum() {
+		return minimum
 	}
-	if model.type_state_ == .week { return -259200000.0 }
+	if value := input_element(model).get_attribute('value') {
+		if number := model.convert_string_to_number(value) {
+			return number
+		}
+	}
+	if model.type_state_ == .week {
+		return -259200000.0
+	}
 	return 0.0
 }
 
@@ -602,7 +1664,9 @@ fn (mut model HTMLInputElementModel) step_up_or_down(down bool, n i32) ! {
 	maximum := model.maximum()
 	if min := minimum {
 		if max := maximum {
-			if min > max { return }
+			if min > max {
+				return
+			}
 		}
 	}
 	mut value := model.convert_string_to_number(model.value_) or { 0.0 }
@@ -614,10 +1678,14 @@ fn (mut model HTMLInputElementModel) step_up_or_down(down bool, n i32) ! {
 		value += step * f64(if down { -n } else { n })
 	}
 	if min := minimum {
-		if value < min { value = base + math.ceil((min - base) / step) * step }
+		if value < min {
+			value = base + math.ceil((min - base) / step) * step
+		}
 	}
 	if max := maximum {
-		if value > max { value = base + math.floor((max - base) / step) * step }
+		if value > max {
+			value = base + math.floor((max - base) / step) * step
+		}
 	}
 	model.set_value(numeric_input_string(&model, value))!
 }
@@ -636,7 +1704,23 @@ pub fn (model &HTMLInputElementModel) select_applies() bool {
 }
 
 pub fn (model &HTMLInputElementModel) selection_or_range_applies() bool {
-	return model.type_state_ in [.text, .search, .telephone, .url, .password]
+	return html_input_selection_or_range_applies_for_type_state(model.type_state_)
+}
+
+pub fn html_input_selection_or_range_applies_for_type_state(state HTMLInputTypeState) bool {
+	return state in [.text, .search, .telephone, .url, .password]
+}
+
+pub fn html_input_element_selection_or_range_applies_for_type_state(state HTMLInputTypeState) bool {
+	return html_input_selection_or_range_applies_for_type_state(state)
+}
+
+pub fn (model &HTMLInputElementModel) selection_direction_applies() bool {
+	return html_input_selection_or_range_applies_for_type_state(model.type_state_)
+}
+
+pub fn (model &HTMLInputElementModel) selection_direction_binding() ?string {
+	return model.text_control.selection_direction()
 }
 
 pub fn (model &HTMLInputElementModel) pattern_applies() bool {
@@ -656,6 +1740,21 @@ pub fn (model &HTMLInputElementModel) checked_applies() bool {
 	return model.type_state_ in [.checkbox, .radio_button]
 }
 
+pub fn (model &HTMLInputElementModel) has_selectable_text() bool {
+	return model.type_state_ in [.text, .search, .telephone, .url, .password, .date, .month, .week,
+		.time, .local_date_and_time, .number, .email]
+}
+
+pub fn (model &HTMLInputElementModel) change_event_applies() bool {
+	return model.type_state_ in [.checkbox, .color, .date, .email, .file_upload, .local_date_and_time,
+		.month, .number, .password, .radio_button, .range, .search, .telephone, .text, .time, .url,
+		.week]
+}
+
+pub fn (model &HTMLInputElementModel) value_as_date_applies() bool {
+	return model.type_state_ in [.date, .month, .week, .time]
+}
+
 pub fn (model &HTMLInputElementModel) value_as_number_applies() bool {
 	return model.type_state_ in [.date, .month, .time, .local_date_and_time, .number, .range]
 }
@@ -668,8 +1767,29 @@ pub fn (model &HTMLInputElementModel) step_up_or_down_applies() bool {
 	return model.value_as_number_applies()
 }
 
+pub fn (model &HTMLInputElementModel) has_input_activation_behavior() bool {
+	return model.type_state_ in [.checkbox, .color, .file_upload, .image_button, .radio_button,
+		.reset_button, .submit_button]
+}
+
 pub fn (model &HTMLInputElementModel) is_button() bool {
 	return model.type_state_ in [.submit_button, .image_button, .reset_button, .button]
+}
+
+pub fn (model &HTMLInputElementModel) is_listed() bool {
+	return true
+}
+
+pub fn (model &HTMLInputElementModel) is_submittable() bool {
+	return true
+}
+
+pub fn (model &HTMLInputElementModel) is_resettable() bool {
+	return true
+}
+
+pub fn (model &HTMLInputElementModel) is_autocapitalize_and_autocorrect_inheriting() bool {
+	return true
 }
 
 pub fn (model &HTMLInputElementModel) is_submit_button() bool {
@@ -680,9 +1800,71 @@ pub fn (model &HTMLInputElementModel) is_single_line() bool {
 	return model.type_state_ in [.text, .search, .password, .email, .telephone, .number]
 }
 
+pub fn (model &HTMLInputElementModel) is_labelable() bool {
+	return model.type_state_ != .hidden
+}
+
+pub fn (model &HTMLInputElementModel) has_periodic_domain() bool {
+	return model.type_state_ == .time
+}
+
+pub fn (model &HTMLInputElementModel) supports_dimension_attributes() bool {
+	return model.type_state_ == .image_button
+}
+
+pub fn (model &HTMLInputElementModel) default_tab_index_value() i32 {
+	return 0
+}
+
+pub fn (model &HTMLInputElementModel) form_associated_element_to_text_node() ?&dom.Text {
+	return model.text_node_
+}
+
+pub fn (model &HTMLInputElementModel) text_control_scroll_container() ?&dom.Element {
+	return model.inner_text_element_
+}
+
+pub fn (model &HTMLInputElementModel) can_have_text_editing_cursor() bool {
+	return model.type_state_ !in [.submit_button, .reset_button, .button]
+}
+
+pub fn (model &HTMLInputElementModel) uses_button_layout() bool {
+	return model.type_state_ in [.submit_button, .reset_button, .button, .color, .file_upload]
+}
+
+pub fn (model &HTMLInputElementModel) is_focusable() bool {
+	return model.type_state_ != .hidden && !input_element(model).is_actually_disabled()
+}
+
+pub fn (model &HTMLInputElementModel) default_role() ?aria.Role {
+	if !input_element(model).is_connected() {
+		return none
+	}
+	element := input_element(model)
+	return match model.type_state_ {
+		.button, .image_button, .reset_button, .submit_button { aria.Role.button }
+		.checkbox {
+			if element.has_attribute('switch') { aria.Role.switch_ } else { aria.Role.checkbox }
+		}
+		.email {
+			if element.has_attribute('list') { aria.Role.combobox } else { aria.Role.textbox }
+		}
+		.number { aria.Role.spinbutton }
+		.radio_button { aria.Role.radio }
+		.range { aria.Role.slider }
+		.search {
+			if element.has_attribute('list') { aria.Role.combobox } else { aria.Role.searchbox }
+		}
+		.telephone, .url { aria.Role.textbox }
+		.text {
+			if element.has_attribute('list') { aria.Role.combobox } else { aria.Role.textbox }
+		}
+		else { none }
+	}
+}
+
 pub fn (model &HTMLInputElementModel) is_mutable() bool {
-	return !input_element(model).is_actually_disabled()
-		&& (!input_element(model).has_attribute('readonly') || !model.is_allowed_to_be_readonly())
+	return !input_element(model).is_actually_disabled() && (!input_element(model).has_attribute('readonly') || !model.is_allowed_to_be_readonly())
 }
 
 pub fn (model &HTMLInputElementModel) is_allowed_to_be_readonly() bool {
@@ -690,53 +1872,271 @@ pub fn (model &HTMLInputElementModel) is_allowed_to_be_readonly() bool {
 		.week, .time, .local_date_and_time, .number]
 }
 
+pub fn (model &HTMLInputElementModel) is_presentational_hint(name string) bool {
+	return model.type_state_ == .image_button && ascii_lowercase_string(name) in [
+		'align',
+		'border',
+		'height',
+		'hspace',
+		'vspace',
+		'width',
+	]
+}
+
+pub fn (model &HTMLInputElementModel) apply_presentational_hints() EmbeddedPresentationalHints {
+	if model.type_state_ != .image_button {
+		return EmbeddedPresentationalHints{}
+	}
+	element := input_element(model)
+	return embedded_presentational_hints({
+		'align':  element.get_attribute_value('align')
+		'border': element.get_attribute_value('border')
+		'height': element.get_attribute_value('height')
+		'hspace': element.get_attribute_value('hspace')
+		'vspace': element.get_attribute_value('vspace')
+		'width':  element.get_attribute_value('width')
+	}, true)
+}
+
 fn valid_email_address(value string) bool {
 	parts := value.split('@')
-	return parts.len == 2 && parts[0] != '' && parts[1].contains('.') && !value.contains(' ')
+	if parts.len != 2 || parts[0] == '' || parts[1] == '' {
+		return false
+	}
+	for byte in parts[0].bytes() {
+		if !byte.is_alnum() && byte !in [`.`, `!`, `#`, `$`, `%`, `&`, `'`, `*`, `+`, `/`, `=`,
+			`?`, `^`, `_`, `{`, `|`, `}`, `~`, `-`] && byte != 0x60 {
+			return false
+		}
+	}
+	for label in parts[1].split('.') {
+		if label.len == 0 || label.len > 63 || !label[0].is_alnum() || !label[label.len - 1].is_alnum() {
+			return false
+		}
+		for byte in label.bytes() {
+			if !byte.is_alnum() && byte != `-` {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+pub fn (model &HTMLInputElementModel) has_reversed_range() bool {
+	minimum := model.minimum() or { return false }
+	maximum := model.maximum() or { return false }
+	return model.type_state_ == .time && maximum < minimum
+}
+
+pub fn (model &HTMLInputElementModel) is_number_underflowing(number f64) bool {
+	minimum := model.minimum() or { return false }
+	if !model.has_reversed_range() {
+		return number < minimum
+	}
+	maximum := model.maximum() or { return false }
+	return number > maximum && number < minimum
+}
+
+pub fn (model &HTMLInputElementModel) is_number_overflowing(number f64) bool {
+	maximum := model.maximum() or { return false }
+	if !model.has_reversed_range() {
+		return number > maximum
+	}
+	minimum := model.minimum() or { return false }
+	return number > maximum && number < minimum
+}
+
+pub fn (model &HTMLInputElementModel) is_number_mismatching_step(number f64) bool {
+	step := model.allowed_value_step() or { return false }
+	ratio := (model.step_base() - number) / step
+	return math.abs(ratio - math.round(ratio)) > 1e-7
+}
+
+pub fn (model &HTMLInputElementModel) suffering_from_being_missing() bool {
+	return model.control.suffering_from_being_missing()
+}
+
+pub fn (model &HTMLInputElementModel) suffering_from_a_type_mismatch() bool {
+	return model.control.suffering_from_a_type_mismatch()
+}
+
+pub fn (model &HTMLInputElementModel) suffering_from_a_pattern_mismatch() bool {
+	return model.control.suffering_from_a_pattern_mismatch()
+}
+
+pub fn (model &HTMLInputElementModel) suffering_from_an_underflow() bool {
+	return model.control.suffering_from_an_underflow()
+}
+
+pub fn (model &HTMLInputElementModel) suffering_from_an_overflow() bool {
+	return model.control.suffering_from_an_overflow()
+}
+
+pub fn (model &HTMLInputElementModel) suffering_from_a_step_mismatch() bool {
+	return model.control.suffering_from_a_step_mismatch()
+}
+
+pub fn (model &HTMLInputElementModel) suffering_from_bad_input() bool {
+	return model.control.suffering_from_bad_input()
+}
+
+pub fn (mut model HTMLInputElementModel) computed_properties_changed() {
+	model.create_shadow_tree_if_needed()
+	model.update_shadow_tree()
+}
+
+pub fn (mut model HTMLInputElementModel) form_associated_element_was_inserted() {
+	model.control.form_node_was_inserted()
+	model.create_shadow_tree_if_needed()
+	if input_element(&model).is_connected() && model.type_state_ == .radio_button && model.checked_ {
+		model.signal_a_type_change()
+	}
+}
+
+pub fn (mut model HTMLInputElementModel) form_associated_element_attribute_changed(name string, old_value ?string, value ?string, namespace_ ?string) {
+	if namespace_ != none {
+		return
+	}
+	model.control.form_node_attribute_changed(name)
+	match ascii_lowercase_string(name) {
+		'checked' {
+			if !model.dirty_checkedness_ {
+				model.set_checked(value != none)
+				model.dirty_checkedness_ = false
+			}
+		}
+		'type' {
+			new_state := parse_html_input_type(value or { '' })
+			if new_state != model.type_state_ {
+				model.type_attribute_changed(model.type_state_, new_state)
+			}
+			if model.type_state_ == .image_button {
+				if src := input_element(&model).get_attribute('src') {
+					if src != model.last_src_value_ {
+						model.handle_src_attribute(src) or {}
+					}
+				}
+			}
+		}
+		'value' {
+			if !model.dirty_value_ {
+				model.value_ = model.value_sanitization_algorithm(value or { '' })
+				model.text_control.set_relevant_value(model.value_)
+				model.update_shadow_tree()
+				model.update_validity()
+			}
+		}
+		'placeholder' {
+			if text := model.placeholder_text_node_ {
+				mut mutable_text := text
+				mutable_text.set_data(model.placeholder())
+				model.update_placeholder_visibility()
+			}
+		}
+		'src' { model.handle_src_attribute(value or { '' }) or {} }
+		'maxlength' { model.handle_maxlength_attribute() }
+		'multiple' {
+			if model.type_state_ == .email && (old_value == none) != (value == none) {
+				model.value_ = model.value_sanitization_algorithm(model.value_)
+				model.text_control.set_relevant_value(model.value_)
+			}
+			model.update_shadow_tree()
+			model.update_validity()
+		}
+		'min', 'max', 'step' {
+			if model.type_state_ == .range {
+				model.value_ = model.value_sanitization_algorithm(model.value_)
+				model.text_control.set_relevant_value(model.value_)
+				model.update_shadow_tree()
+			}
+			model.update_validity()
+		}
+		else {}
+	}
+}
+
+pub fn (mut model HTMLInputElementModel) handle_return_key(_ string) ! {
+	if model.control.form() != none {
+		model.run_form_action(.implicit_submit)!
+	} else {
+		model.commit_pending_changes()
+	}
+}
+
+pub fn (model &HTMLInputElementModel) cloned(mut copy HTMLInputElementModel, _ bool) {
+	copy.value_ = model.value_
+	copy.dirty_value_ = model.dirty_value_
+	copy.text_control.set_relevant_value(model.text_control.relevant_value())
+	copy.checked_ = model.checked_
+	copy.dirty_checkedness_ = model.dirty_checkedness_
+	copy.indeterminate_ = model.indeterminate_
 }
 
 pub fn (mut model HTMLInputElementModel) update_validity() {
 	element := input_element(&model)
 	model.control.value_ = model.value()
 	model.control.missing_ = false
-	if element.has_attribute('required') && model.required_applies() {
+	if model.type_state_ == .radio_button {
+		mut group_has_checked := model.checked_
+		mut group_has_required := element.has_attribute('required')
+		for other in html_input_models {
+			if same_radio_group(&model, other) {
+				group_has_checked = group_has_checked || other.checked_
+				group_has_required = group_has_required || input_element(other).has_attribute('required')
+			}
+		}
+		model.control.missing_ = group_has_required && !group_has_checked
+	} else if element.has_attribute('required') && model.required_applies() {
 		model.control.missing_ = match model.type_state_ {
-			.checkbox, .radio_button { !model.checked_ }
+			.checkbox { !model.checked_ }
 			.file_upload { model.selected_files_.len == 0 }
 			else { model.value() == '' }
 		}
 	}
 	model.control.type_mismatch_ = false
 	if model.value() != '' && model.type_state_ == .email {
-		values := if element.has_attribute('multiple') { model.value().split(',') } else { [
+		values := if element.has_attribute('multiple') {
+			model.value().split(',')
+		} else {
+			[
 				model.value(),
-			] }
+			]
+		}
 		model.control.type_mismatch_ = values.any(!valid_email_address(it.trim_space()))
 	} else if model.value() != '' && model.type_state_ == .url {
 		model.control.type_mismatch_ = !model.value().contains(':')
+	}
+	model.control.pattern_mismatch_ = false
+	if model.pattern_applies() && model.value() != '' {
+		if expression := model.compiled_pattern_regular_expression() {
+			values := if element.has_attribute('multiple') && model.multiple_applies() {
+				model.value().split(',')
+			} else {
+				[model.value()]
+			}
+			model.control.pattern_mismatch_ = values.any(!expression.matches_string(it))
+		}
 	}
 	number := model.convert_string_to_number(model.value())
 	model.control.underflow_ = false
 	model.control.overflow_ = false
 	model.control.step_mismatch_ = false
 	if actual := number {
-		if min := model.minimum() { model.control.underflow_ = actual < min }
-		if max := model.maximum() { model.control.overflow_ = actual > max }
-		if step := model.allowed_value_step() {
-			ratio := (actual - model.step_base()) / step
-			model.control.step_mismatch_ = math.abs(ratio - math.round(ratio)) > 1e-7
-		}
+		model.control.underflow_ = model.is_number_underflowing(actual)
+		model.control.overflow_ = model.is_number_overflowing(actual)
+		model.control.step_mismatch_ = model.is_number_mismatching_step(actual)
 	}
 	max_length := limited_nonnegative_attribute(element, 'maxlength')
 	min_length := limited_nonnegative_attribute(element, 'minlength')
 	length := i32(form_string_to_utf16(model.value()).len)
 	model.control.too_long_ = model.dirty_value_ && max_length >= 0 && length > max_length
-	model.control.too_short_ = model.dirty_value_ && model.value() != '' && min_length >= 0
-		&& length < min_length
+	model.control.too_short_ = model.dirty_value_ && model.value() != '' && min_length >= 0 && length < min_length
 }
 
 pub fn (mut model HTMLInputElementModel) commit_pending_changes() {
-	if !model.has_uncommitted_changes_ { return }
+	if !model.has_uncommitted_changes_ {
+		return
+	}
 	model.has_uncommitted_changes_ = false
 	model.fire_event('change')
 }
@@ -750,6 +2150,11 @@ pub fn (mut model HTMLInputElementModel) reset() {
 	model.selected_files_.clear()
 	model.text_control.set_relevant_value(model.value_)
 	model.update_validity()
+	model.update_shadow_tree()
+}
+
+pub fn (mut model HTMLInputElementModel) reset_algorithm() {
+	model.reset()
 }
 
 pub fn (mut model HTMLInputElementModel) clear() {
@@ -761,4 +2166,9 @@ pub fn (mut model HTMLInputElementModel) clear() {
 	model.text_control.set_relevant_value(model.value_)
 	model.fire_event('input')
 	model.update_validity()
+	model.update_shadow_tree()
+}
+
+pub fn (mut model HTMLInputElementModel) clear_algorithm() {
+	model.clear()
 }

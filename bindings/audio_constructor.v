@@ -36,6 +36,10 @@ pub fn (_ &AudioConstructor) metadata() ConstructorMetadata {
 	}
 }
 
+pub fn (_ &AudioConstructor) has_constructor() bool {
+	return true
+}
+
 pub fn (_ &AudioConstructor) call() !dom.JSValue {
 	return error("TypeError: Constructor Audio requires 'new'")
 }

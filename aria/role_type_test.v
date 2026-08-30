@@ -55,3 +55,12 @@ fn test_every_non_abstract_role_has_generated_metadata() {
 		assert role_type.role == role
 	}
 }
+
+fn test_role_type_exact_build_role_object_entry_point() {
+	data := empty_aria_data_for_role_test()
+	button := RoleType.build_role_object(.button, true, data)!
+	assert button.role == .button
+	if _ := RoleType.build_role_object(.command, false, data) {
+		assert false
+	}
+}

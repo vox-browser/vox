@@ -184,7 +184,7 @@ pub fn (internals &ElementInternals) labels() ![]&dom.Element {
 	return labels
 }
 
-pub fn (mut internals ElementInternals) states() &dom.CustomStateSet_ {
+pub fn (mut internals ElementInternals) states() &dom.CustomStateSet {
 	mut target := unsafe { &dom.Element(internals.target_element) }
 	return target.ensure_custom_state_set()
 }

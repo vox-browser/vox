@@ -17,8 +17,7 @@ fn meter_test_first_element_with_local_name(node &dom.Node, local_name string) ?
 }
 
 fn test_progress_element_value_max_and_position() {
-	document :=
-		parse_document('<progress id="p" value="12" max="10"></progress><progress id="i"></progress>')
+	document := parse_document('<progress id="p" value="12" max="10"></progress><progress id="i"></progress>')
 	document_node := unsafe { &dom.Node(document) }
 	progress_element := meter_test_first_element_with_local_name(document_node, 'progress') or {
 		panic('missing progress')
@@ -37,13 +36,16 @@ fn test_progress_element_value_max_and_position() {
 	}, 'progress') or { panic('missing second progress') }
 	indeterminate := unsafe { &dom.HTMLProgressElement(second) }
 	assert html_progress_element_position(indeterminate) == -1
+	html_progress_element_inserted(progress)
+	assert progress.progress_value_element_ != none
+	assert progress.progress_value_element_?.get_attribute_value('style').contains('0')
+	set_html_progress_element_value(progress, 5)
+	assert progress.progress_value_element_?.get_attribute_value('style').contains('50')
 }
 
 fn test_meter_element_numeric_algorithms() {
-	document :=
-		parse_document('<meter min="10" max="20" low="12" high="18" optimum="15" value="30"></meter>')
-	meter_element := meter_test_first_element_with_local_name(unsafe { &dom.Node(document) },
-		'meter') or { panic('missing meter') }
+	document := parse_document('<meter min="10" max="20" low="12" high="18" optimum="15" value="30"></meter>')
+	meter_element := meter_test_first_element_with_local_name(unsafe { &dom.Node(document) }, 'meter') or { panic('missing meter') }
 	meter := unsafe { &dom.HTMLMeterElement(meter_element) }
 	assert html_meter_element_min(meter) == 10
 	assert html_meter_element_max(meter) == 20
@@ -58,4 +60,9 @@ fn test_meter_element_numeric_algorithms() {
 	set_html_meter_element_optimum(meter, 30)
 	set_html_meter_element_value(meter, 10)
 	assert html_meter_element_value_state(meter) == .even_less_good
+	html_meter_element_inserted(meter)
+	assert meter.meter_value_element_ != none
+	assert meter.meter_value_element_?.get_attribute_value('style').contains('0')
+	set_html_meter_element_value(meter, 15)
+	assert meter.meter_value_element_?.get_attribute_value('style').contains('50')
 }

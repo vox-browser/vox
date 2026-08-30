@@ -5,6 +5,8 @@
 // Translation of DataTransfer.cpp, DataTransferItem.cpp, and DataTransferItemList.cpp.
 module html
 
+import entriesapi
+
 const data_transfer_drop_effects = ['none', 'copy', 'link', 'move']
 const data_transfer_allowed_effects = ['none', 'copy', 'copyLink', 'copyMove', 'link', 'linkMove',
 	'move', 'all', 'uninitialized']
@@ -36,6 +38,10 @@ pub fn DataTransfer.construct() &DataTransfer {
 	mut store := DragDataStore.create()
 	store.mode = .read_write
 	return DataTransfer.create(store)
+}
+
+pub fn DataTransfer.construct_impl() &DataTransfer {
+	return DataTransfer.construct()
 }
 
 pub fn (transfer &DataTransfer) drop_effect() string {
@@ -271,6 +277,10 @@ pub fn DataTransferItem.create(data_transfer &DataTransfer, item_index usize) &D
 	}
 }
 
+pub fn (mut item DataTransferItem) set_item_index(item_index ?usize) {
+	item.item_index = item_index
+}
+
 pub fn (item &DataTransferItem) mode() ?DragDataStoreMode {
 	if item.item_index == none {
 		return none
@@ -292,6 +302,12 @@ pub fn (item &DataTransferItem) type_() string {
 		return ''
 	}
 	return item.data_transfer.drag_data(index).type_string
+}
+
+// V reserves `type`, so the translated WebIDL getter keeps the class name in
+// the free-function entry point.
+pub fn data_transfer_item_type(item &DataTransferItem) string {
+	return item.type_()
 }
 
 pub fn (item &DataTransferItem) get_as_string(callback ?DataTransferStringCallback) {
@@ -328,6 +344,19 @@ pub fn (item &DataTransferItem) get_as_file() ?FormDataFile {
 	}
 }
 
+pub fn (item &DataTransferItem) webkit_get_as_entry() ?&entriesapi.FileSystemEntry {
+	mode := item.mode() or { return none }
+	if mode !in [.read_write, .read_only] {
+		return none
+	}
+	index := item.item_index or { return none }
+	drag_data := item.data_transfer.drag_data(index)
+	if drag_data.kind != .file {
+		return none
+	}
+	return entriesapi.FileSystemEntry.create(.file, drag_data.file_name)
+}
+
 @[heap]
 pub struct DataTransferItemList {
 mut:
@@ -347,6 +376,24 @@ pub fn (list &DataTransferItemList) length() usize {
 pub struct DataTransferItemAddResult {
 pub:
 	item ?&DataTransferItem
+}
+
+pub type DataTransferItemAddInput = FormDataFile | string
+
+// DataTransferItemList::add is overloaded in C++. A sum type plus an optional
+// trailing type string preserves both overloads in V under the exact name.
+pub fn (mut list DataTransferItemList) add(input DataTransferItemAddInput, type_strings ...string) !DataTransferItemAddResult {
+	match input {
+		string {
+			type_string := if type_strings.len > 0 { type_strings[0] } else { '' }
+			return list.add_string(input, type_string)
+		}
+		FormDataFile {
+			return DataTransferItemAddResult{
+				item: list.add_file(input)
+			}
+		}
+	}
 }
 
 pub fn (mut list DataTransferItemList) add_string(data string, type_string string) !DataTransferItemAddResult {
@@ -410,4 +457,8 @@ pub fn (list &DataTransferItemList) item(index usize) ?&DataTransferItem {
 		return none
 	}
 	return list.data_transfer.item(index)
+}
+
+pub fn (list &DataTransferItemList) item_value(index usize) ?&DataTransferItem {
+	return list.item(index)
 }

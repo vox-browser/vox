@@ -63,3 +63,20 @@ fn test_html_canvas_resize_resets_context_and_offscreen_transfer_rules() {
 		assert err.msg().starts_with('InvalidStateError:')
 	}
 }
+
+fn test_canvas_attribute_change_and_external_content_source_follow_element_lifecycle() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'canvas') or {
+		panic(err)
+	}
+	canvas := unsafe { &dom.HTMLCanvasElement(element) }
+	mut context := html_canvas_element_get_context(canvas, '2d', none) or { panic(err) }
+	context.set_global_alpha(0.25)
+	source := html_canvas_element_ensure_external_content_source(canvas)
+	assert !source.cleared
+	element.set_attribute_value('width', '24')
+	html_canvas_element_attribute_changed(canvas, 'width', none, '24', none)
+	assert html_canvas_element_width(canvas) == 24
+	assert context.global_alpha() == 1.0
+	assert source.cleared
+}

@@ -1,0 +1,481 @@
+// Copyright (c) 2018-2026, Ladybird contributors
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Literal translation of Libraries/LibWeb/HTML/HTMLFormElement.cpp. LibJS
+// values and actual navigable scheduling terminate at the typed submission
+// hook, while the HTML algorithms leading to that boundary live here.
+module html
+
+import dom
+import encoding
+
+pub struct SubmitFormOptions {
+pub:
+	from_submit_binding bool
+	user_involvement    UserNavigationInvolvement = .none_
+}
+
+pub struct StaticFormValidationResult {
+pub:
+	result                     bool
+	unhandled_invalid_controls []&FormAssociatedElement
+}
+
+fn html_form_element_is_listed(element &dom.Element) bool {
+	return element.local_name() in ['button', 'fieldset', 'input', 'object', 'output', 'select',
+		'textarea']
+}
+
+fn html_form_element_is_associated(form &HTMLFormElementModel, element &dom.Element) bool {
+	for associated in form.element.associated_elements_ {
+		if voidptr(associated) == voidptr(element) {
+			return true
+		}
+	}
+	return false
+}
+
+fn html_form_element_is_form_control(form &HTMLFormElementModel, element &dom.Element) bool {
+	if !html_form_element_is_listed(element) || !html_form_element_is_associated(form, element) {
+		return false
+	}
+	return !(element.local_name() == 'input' && form_element_input_type(element) == 'image')
+}
+
+fn html_form_element_root(form &HTMLFormElementModel) &dom.Node {
+	return form_model_element(form).as_node().root()
+}
+
+// HTMLFormElement::implicitly_submit_form().
+pub fn (mut form HTMLFormElementModel) implicitly_submit_form() ! {
+	if default_button := form.default_button() {
+		if default_button.enabled() {
+			click := dom.Event.create('click', dom.EventInit{ bubbles: true, cancelable: true })
+			if unsafe { &dom.EventTarget(default_button.element.as_node()) }.dispatch_event(click) {
+				form.submit_form(default_button, SubmitFormOptions{
+					user_involvement: .activation
+				})!
+			}
+		}
+		return
+	}
+	if form.number_of_fields_blocking_implicit_submission() > 1 {
+		return
+	}
+	form.submit_form(none, SubmitFormOptions{
+		user_involvement: .activation
+	})!
+}
+
+// HTMLFormElement::submit(), the legacy binding which bypasses submit events
+// and constraint validation.
+pub fn (mut form HTMLFormElementModel) submit() ! {
+	form.submit_form(none, SubmitFormOptions{
+		from_submit_binding: true
+	})!
+}
+
+// HTMLFormElement::request_submit().
+pub fn (mut form HTMLFormElementModel) request_submit(submitter ?&FormAssociatedElement) ! {
+	if control := submitter {
+		if !control.is_submit_button() {
+			return error('TypeError: the submitter is not a submit button')
+		}
+		owner := control.form() or {
+			return error('NotFoundError: the submitter is not owned by this form element')
+		}
+		if voidptr(owner) != voidptr(form.element) {
+			return error('NotFoundError: the submitter is not owned by this form element')
+		}
+	}
+	form.submit_form(submitter, SubmitFormOptions{})!
+}
+
+// HTMLFormElement::add_associated_element()/remove_associated_element().
+pub fn (mut form HTMLFormElementModel) add_associated_element(mut control FormAssociatedElement) {
+	form.add_control(mut control)
+}
+
+pub fn (mut form HTMLFormElementModel) remove_associated_element(control &FormAssociatedElement) {
+	form.remove_control(control)
+	for name, element in form.past_names_map_.clone() {
+		if voidptr(element) == voidptr(control.element) {
+			form.past_names_map_.delete(name)
+		}
+	}
+}
+
+// HTMLFormElement::action_from_form_element(). `none` denotes the form itself.
+pub fn (form &HTMLFormElementModel) action_from_form_element(submitter ?&FormAssociatedElement) string {
+	if control := submitter {
+		if control.is_submit_button() {
+			if value := control.element.get_attribute('formaction') {
+				return value
+			}
+		}
+	}
+	return form_model_element(form).get_attribute('action') or { '' }
+}
+
+pub fn (form &HTMLFormElementModel) method_state_from_form_element(submitter ?&FormAssociatedElement) FormMethodState {
+	return form.method_state(submitter)
+}
+
+pub fn (form &HTMLFormElementModel) encoding_type_state_from_form_element(submitter ?&FormAssociatedElement) FormEncodingType {
+	return form.encoding_type(submitter)
+}
+
+// HTMLFormElement::elements().
+pub fn (mut form HTMLFormElementModel) elements() &HTMLFormControlsCollection {
+	if collection := form.elements_ {
+		return collection
+	}
+	root := html_form_element_root(&form)
+	collection := HTMLFormControlsCollection.create(unsafe { &dom.ParentNode(root) }, .descendants, fn [form] (element &dom.Element) bool {
+		return html_form_element_is_form_control(form, element)
+	})
+	form.elements_ = collection
+	return collection
+}
+
+// HTMLFormElement::statically_validate_constraints().
+pub fn (form &HTMLFormElementModel) statically_validate_constraints() StaticFormValidationResult {
+	mut invalid_controls := []&FormAssociatedElement{}
+	for control in form.get_submittable_elements() {
+		if !control.is_candidate_for_constraint_validation() || control.satisfies_its_constraints() {
+			continue
+		}
+		invalid_controls << control
+	}
+	if invalid_controls.len == 0 {
+		return StaticFormValidationResult{ result: true }
+	}
+	mut unhandled := []&FormAssociatedElement{}
+	for control in invalid_controls {
+		event := dom.Event.create('invalid', dom.EventInit{ cancelable: true })
+		if unsafe { &dom.EventTarget(control.element.as_node()) }.dispatch_event(event) {
+			unhandled << control
+		}
+	}
+	return StaticFormValidationResult{
+		result: false
+		unhandled_invalid_controls: unhandled
+	}
+}
+
+// HTMLFormElement::interactively_validate_constraints(). The platform's
+// validation bubble is outside LibWeb; focus state still follows the algorithm.
+pub fn (form &HTMLFormElementModel) interactively_validate_constraints() bool {
+	result := form.statically_validate_constraints()
+	if result.result {
+		return true
+	}
+	if result.unhandled_invalid_controls.len > 0 {
+		control := result.unhandled_invalid_controls[0]
+		mut document := control.element.document()
+		document.set_focused_area(control.element.as_node())
+	}
+	return false
+}
+
+pub fn (form &HTMLFormElementModel) report_validity() bool {
+	return form.interactively_validate_constraints()
+}
+
+pub fn (form &HTMLFormElementModel) get_submittable_elements() []&FormAssociatedElement {
+	mut controls := []&FormAssociatedElement{}
+	for control in form.controls_ {
+		owner := control.form() or { continue }
+		if control.is_submittable() && voidptr(owner) == voidptr(form.element) {
+			controls << control
+		}
+	}
+	return controls
+}
+
+pub fn (mut form HTMLFormElementModel) rel_list() &dom.DOMTokenList {
+	if list := form.rel_list_ {
+		return list
+	}
+	list := dom.DOMTokenList.create(form_model_element(&form), 'rel')
+	form.rel_list_ = list
+	return list
+}
+
+pub fn (mut form HTMLFormElementModel) set_method(method string) {
+	mut element := form_model_element(&form)
+	element.set_attribute_value('method', method)
+}
+
+// The action IDL getter resolves the reflected value against the document URL.
+pub fn (form &HTMLFormElementModel) action() string {
+	element := form_model_element(form)
+	attribute := element.get_attribute('action') or { return element.document().url_string() }
+	if attribute == '' {
+		return element.document().url_string()
+	}
+	return dom.dom_url_parse(attribute, element.document().base_url(), 'UTF-8') or {
+		return ''
+	}.serialize()
+}
+
+pub fn (mut form HTMLFormElementModel) set_action(value string) {
+	mut element := form_model_element(&form)
+	element.set_attribute_value('action', value)
+}
+
+pub fn (mut form HTMLFormElementModel) attribute_changed(name string, value ?string) {
+	if name == 'rel' {
+		if existing_list := form.rel_list_ {
+			mut list := unsafe { &dom.DOMTokenList(existing_list) }
+			list.associated_attribute_changed(value or { '' })
+		}
+	}
+}
+
+// HTMLFormElement::pick_an_encoding().
+pub fn (form &HTMLFormElementModel) pick_an_encoding() string {
+	element := form_model_element(form)
+	if input := element.get_attribute('accept-charset') {
+		for label in input.fields() {
+			if candidate := encoding.get_an_encoding(label) {
+				return candidate
+			}
+		}
+		return 'UTF-8'
+	}
+	encoding_name := encoding.get_an_encoding(element.document().encoding_or_default()) or {
+		'UTF-8'
+	}
+	// The Encoding Standard's output-encoding operation maps replacement and
+	// both UTF-16 encodings to UTF-8.
+	return if encoding_name in ['replacement', 'UTF-16BE', 'UTF-16LE'] {
+		'UTF-8'
+	} else {
+		encoding_name
+	}
+}
+
+fn form_entry_string_value(value FormDataEntryValue) string {
+	return match value {
+		FormDataFile { value.name }
+		string { value }
+	}
+}
+
+fn html_form_name_value_pairs(entries []FormDataEntry) []FormDataEntry {
+	mut pairs := []FormDataEntry{}
+	for entry in entries {
+		pairs << create_form_data_string_entry(normalize_line_breaks(entry.name), normalize_line_breaks(form_entry_string_value(entry.value)))
+	}
+	return pairs
+}
+
+fn html_form_url_encode(entries []FormDataEntry) string {
+	mut fields := []string{}
+	for entry in html_form_name_value_pairs(entries) {
+		fields << '${form_url_encode_component(entry.name)}=${form_url_encode_component(form_entry_string_value(entry.value))}'
+	}
+	return fields.join('&')
+}
+
+fn html_form_plain_text_encode(entries []FormDataEntry) string {
+	mut output := ''
+	for entry in html_form_name_value_pairs(entries) {
+		output += '${entry.name}=${form_entry_string_value(entry.value)}\r\n'
+	}
+	return output
+}
+
+fn html_form_percent_encode_path(value string) string {
+	mut output := ''
+	for byte in value.bytes() {
+		if (byte >= `a` && byte <= `z`) || (byte >= `A` && byte <= `Z`) || (byte >= `0` && byte <= `9`) || byte in [
+			`-`,
+			`_`,
+			`.`,
+			`~`,
+			`!`,
+			`$`,
+			`&`,
+			`'`,
+			`(`,
+			`)`,
+			`*`,
+			`+`,
+			`,`,
+			`;`,
+			`=`,
+			`:`,
+			`@`,
+		] {
+			output += byte.ascii_str()
+		} else {
+			output += '%${byte.hex().to_upper()}'
+		}
+	}
+	return output
+}
+
+pub fn (mut form HTMLFormElementModel) mutate_action_url(parsed_action dom.URL, entry_list []FormDataEntry, _ string, user_involvement UserNavigationInvolvement) ! {
+	url := parsed_action.with_query(html_form_url_encode(entry_list))
+	form.plan_to_navigate_to(FormSubmission{
+		url: url
+		method: .get
+		encoding: .url_encoded
+		entries: entry_list
+		referrer_policy: if form.rel_list().contains('noreferrer') { 'no-referrer' } else { '' }
+		user_involvement: user_involvement
+	})!
+}
+
+pub fn (mut form HTMLFormElementModel) submit_as_entity_body(parsed_action dom.URL, entry_list []FormDataEntry, encoding_type FormEncodingType, _ string, user_involvement UserNavigationInvolvement) ! {
+	mut body := []u8{}
+	mut content_type := ''
+	match encoding_type {
+		.url_encoded {
+			body = html_form_url_encode(entry_list).bytes()
+			content_type = 'application/x-www-form-urlencoded'
+		}
+		.multipart {
+			serialized := serialize_to_multipart_form_data(entry_list)
+			body = serialized.serialized_data.clone()
+			content_type = 'multipart/form-data; boundary=${serialized.boundary}'
+		}
+		.plain_text {
+			body = html_form_plain_text_encode(entry_list).bytes()
+			content_type = 'text/plain'
+		}
+	}
+	form.plan_to_navigate_to(FormSubmission{
+		url: parsed_action
+		method: .post
+		encoding: encoding_type
+		entries: entry_list
+		body: body
+		content_type: content_type
+		referrer_policy: if form.rel_list().contains('noreferrer') { 'no-referrer' } else { '' }
+		user_involvement: user_involvement
+	})!
+}
+
+pub fn (mut form HTMLFormElementModel) get_action_url(parsed_action dom.URL, entry_list []FormDataEntry, user_involvement UserNavigationInvolvement) ! {
+	form.plan_to_navigate_to(FormSubmission{
+		url: parsed_action
+		method: .get
+		encoding: .url_encoded
+		entries: entry_list
+		referrer_policy: if form.rel_list().contains('noreferrer') { 'no-referrer' } else { '' }
+		user_involvement: user_involvement
+	})!
+}
+
+pub fn (mut form HTMLFormElementModel) mail_with_headers(parsed_action dom.URL, entry_list []FormDataEntry, _ string, user_involvement UserNavigationInvolvement) ! {
+	headers := html_form_url_encode(entry_list).replace('+', '%20')
+	form.get_action_url(parsed_action.with_query(headers), entry_list, user_involvement)!
+}
+
+pub fn (mut form HTMLFormElementModel) mail_as_body(parsed_action dom.URL, entry_list []FormDataEntry, encoding_type FormEncodingType, _ string, user_involvement UserNavigationInvolvement) ! {
+	body := if encoding_type == .plain_text {
+		html_form_percent_encode_path(html_form_plain_text_encode(entry_list))
+	} else {
+		html_form_url_encode(entry_list)
+	}
+	old_query := parsed_action.query() or { '' }
+	separator := if old_query == '' { '' } else { '&' }
+	form.get_action_url(parsed_action.with_query('${old_query}${separator}body=${body}'), entry_list, user_involvement)!
+}
+
+// HTMLFormElement::plan_to_navigate_to(). Task coalescing and actual navigation
+// are represented by replacing the pending typed submission and invoking the
+// host hook once.
+pub fn (mut form HTMLFormElementModel) plan_to_navigate_to(submission FormSubmission) ! {
+	form.last_submission_ = submission
+	if hook := form.submission_hook_ {
+		hook(submission)!
+	}
+}
+
+pub fn (mut form HTMLFormElementModel) item_value(index usize) ?&dom.Element {
+	return form.elements().item(int(index))
+}
+
+pub fn (form &HTMLFormElementModel) supported_property_names() []string {
+	mut names := []string{}
+	for element in form.element.associated_elements_ {
+		if !html_form_element_is_form_control(form, element) && element.local_name() != 'img' {
+			continue
+		}
+		for value in [element.id() or { '' }, element.get_attribute('name') or { '' }] {
+			if value != '' && value !in names {
+				names << value
+			}
+		}
+	}
+	for name, _ in form.past_names_map_ {
+		if name != '' && name !in names {
+			names << name
+		}
+	}
+	return names
+}
+
+pub fn (mut form HTMLFormElementModel) named_item_value(name string) HTMLFormControlsNamedItem {
+	if name == '' {
+		return HTMLFormControlsCollectionEmpty{}
+	}
+	result := form.elements().named_item_or_radio_node_list(name)
+	if result !is HTMLFormControlsCollectionEmpty {
+		if result is HTMLFormControlsCollectionElement {
+			form.past_names_map_[name] = result.element
+		}
+		return result
+	}
+	root := html_form_element_root(&form)
+	images := RadioNodeList.create(root, .descendants, fn [form, name] (node &dom.Node) bool {
+		element := node.as_element() or { return false }
+		return element.local_name() == 'img' && html_form_element_is_associated(form, element) && (element.id() or { '' } == name || element.get_attribute('name') or { '' } == name)
+	})
+	if images.length() > 1 {
+		return HTMLFormControlsCollectionRadioNodeList{ list: images }
+	}
+	if images.length() == 1 {
+		node := images.item(0) or { return HTMLFormControlsCollectionEmpty{} }
+		element := node.as_element() or { return HTMLFormControlsCollectionEmpty{} }
+		form.past_names_map_[name] = element
+		return HTMLFormControlsCollectionElement{ element: element }
+	}
+	if element := form.past_names_map_[name] {
+		return HTMLFormControlsCollectionElement{ element: element }
+	}
+	return HTMLFormControlsCollectionEmpty{}
+}
+
+pub fn (form &HTMLFormElementModel) default_button() ?&FormAssociatedElement {
+	for control in form.controls_ {
+		owner := control.form() or { continue }
+		if voidptr(owner) == voidptr(form.element) && control.is_submit_button() {
+			return control
+		}
+	}
+	return none
+}
+
+pub fn (form &HTMLFormElementModel) number_of_fields_blocking_implicit_submission() usize {
+	mut count := 0
+	for control in form.controls_ {
+		if control.element.local_name() != 'input' {
+			continue
+		}
+		owner := control.form() or { continue }
+		if voidptr(owner) != voidptr(form.element) {
+			continue
+		}
+		if form_element_input_type(control.element) in ['text', 'search', 'tel', 'url', 'email',
+			'password', 'date', 'month', 'week', 'time', 'datetime-local', 'number'] {
+			count++
+		}
+	}
+	return usize(count)
+}

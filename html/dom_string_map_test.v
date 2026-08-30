@@ -19,8 +19,10 @@ fn test_dom_string_map_pairs_and_named_property() {
 fn test_dom_string_map_set_and_delete() {
 	element := dataset_test_element()
 	mut dataset := DOMStringMap.create(element)
-	dataset.set_value_of_named_property('accountName', 'alice')!
+	dataset.set_value_of_new_named_property('accountName', dom.js_string('alice'))!
 	assert element.get_attribute('data-account-name')? == 'alice'
+	dataset.set_value_of_existing_named_property('accountName', dom.js_number(42))!
+	assert dataset.named_item_value('accountName').string_data == '42.0'
 	dataset.delete_value('accountName')
 	assert element.get_attribute('data-account-name') == none
 

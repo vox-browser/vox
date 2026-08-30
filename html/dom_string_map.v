@@ -108,6 +108,18 @@ pub fn (mut string_map DOMStringMap) set_value_of_named_property(name string, va
 	element.set_attribute_value(data_name, value)
 }
 
+pub fn (mut string_map DOMStringMap) set_value_of_new_named_property(name string, unconverted_value dom.JSValue) ! {
+	string_map.set_value_of_named_property(name, unconverted_value.to_string_value())!
+}
+
+pub fn (mut string_map DOMStringMap) set_value_of_existing_named_property(name string, value dom.JSValue) ! {
+	string_map.set_value_of_new_named_property(name, value)!
+}
+
+pub fn (string_map &DOMStringMap) named_item_value(name string) dom.JSValue {
+	return dom.js_string(string_map.determine_value_of_named_property(name))
+}
+
 // https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-removeitem
 pub fn (mut string_map DOMStringMap) delete_value(name string) {
 	data_name := dom_string_map_attribute_name(name, false) or { return }

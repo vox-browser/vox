@@ -45,9 +45,9 @@ fn test_nonce_integrity_and_script_checks() {
 	mut request := new_request(matching_url('', 'https', 'evil.test', ['x.js'], none))
 	request.destination = .script
 	request.parser_metadata = .parser_inserted
-	assert script_directives_pre_request_check(request, policy.directives[0], policy) == .blocked
+	assert script_directives_pre_request_check(request, policy.directives()[0], policy) == .blocked
 	request.cryptographic_nonce_metadata = 'abc'
-	assert script_directives_pre_request_check(request, policy.directives[0], policy) == .allowed
+	assert script_directives_pre_request_check(request, policy.directives()[0], policy) == .allowed
 }
 
 fn test_inline_nonce_hash_and_unsafe_inline() {

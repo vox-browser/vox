@@ -124,3 +124,46 @@ fn test_platform_object_ordinary_descriptor_invariants() {
 	assert !object.define_ordinary_property(property_key('late'), data_property_descriptor(dom.js_number(1),
 		true, true, true))
 }
+
+fn test_platform_object_exact_realm_setter_deleter_and_fast_path_entry_points() {
+	realm := &html.ScriptingRealm{}
+	state := &PlatformHookState{}
+	mut object := PlatformObject.create(realm)
+	assert object.realm() == realm
+	assert !object.eligible_for_own_property_enumeration_fast_path()
+	object.configure_legacy_platform_object(LegacyPlatformObjectFlags{}, LegacyPlatformObjectHooks{
+		set_value_of_new_named_property:        fn [state] (name string, _ dom.JSValue) ! {
+			unsafe { state.setter_log << 'new-name:${name}' }
+		}
+		set_value_of_existing_named_property:   fn [state] (name string, _ dom.JSValue) ! {
+			unsafe { state.setter_log << 'name:${name}' }
+		}
+		set_value_of_named_property:            fn [state] (name string, _ dom.JSValue) ! {
+			unsafe { state.setter_log << 'identified-name:${name}' }
+		}
+		set_value_of_new_indexed_property:      fn [state] (index u32, _ dom.JSValue) ! {
+			unsafe { state.setter_log << 'new-index:${index}' }
+		}
+		set_value_of_existing_indexed_property: fn [state] (index u32, _ dom.JSValue) ! {
+			unsafe { state.setter_log << 'index:${index}' }
+		}
+		set_value_of_indexed_property:          fn [state] (index u32, _ dom.JSValue) ! {
+			unsafe { state.setter_log << 'identified-index:${index}' }
+		}
+		delete_value:                           fn [state] (name string) !DidDeletionFail {
+			unsafe { state.deleter_log << name }
+			return .no
+		}
+	})
+	value := dom.js_string('value')
+	object.set_value_of_new_named_property('a', value)!
+	object.set_value_of_existing_named_property('b', value)!
+	object.set_value_of_named_property('c', value)!
+	object.set_value_of_new_indexed_property(1, value)!
+	object.set_value_of_existing_indexed_property(2, value)!
+	object.set_value_of_indexed_property(3, value)!
+	assert object.delete_value('d')! == .no
+	assert state.setter_log == ['new-name:a', 'name:b', 'identified-name:c', 'new-index:1',
+		'index:2', 'identified-index:3']
+	assert state.deleter_log == ['d']
+}

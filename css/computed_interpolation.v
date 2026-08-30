@@ -2,6 +2,8 @@ module css
 
 import math
 import dom
+import platform
+import strconv
 
 // Translated scaffolding from:
 // - LibWeb/CSS/ComputedProperties.h/cpp
@@ -14,11 +16,9 @@ import dom
 // Generated property metadata, selector/parser types, style values, fonts, and
 // animations are translated in the neighboring CSS files. Layout/rendering
 // objects and DOM-owned opaque handles cross explicit typed adapters below.
-
 pub const computed_properties_normal_line_height_scale = 1.15
 
 // --- Small support records for layout/rendering and DOM integration adapters ---
-
 pub struct ComputedColor {
 pub mut:
 	red_   u8
@@ -29,18 +29,18 @@ pub mut:
 
 pub fn ComputedColor.rgb(red u8, green u8, blue u8) ComputedColor {
 	return ComputedColor{
-		red_:   red
+		red_: red
 		green_: green
-		blue_:  blue
+		blue_: blue
 		alpha_: 255
 	}
 }
 
 pub fn ComputedColor.rgba(red u8, green u8, blue u8, alpha u8) ComputedColor {
 	return ComputedColor{
-		red_:   red
+		red_: red
 		green_: green
-		blue_:  blue
+		blue_: blue
 		alpha_: alpha
 	}
 }
@@ -78,7 +78,7 @@ pub struct NormalGap {}
 
 pub struct GapValue {
 pub mut:
-	is_normal         bool             = true
+	is_normal         bool = true
 	length_percentage LengthPercentage = LengthPercentage.from_length(Length.make_px(0))
 }
 
@@ -88,7 +88,7 @@ pub fn GapValue.normal() GapValue {
 
 pub fn GapValue.from_length_percentage(length_percentage LengthPercentage) GapValue {
 	return GapValue{
-		is_normal:         false
+		is_normal: false
 		length_percentage: length_percentage
 	}
 }
@@ -211,11 +211,23 @@ pub enum ContentDataType {
 	list
 }
 
+pub enum ContentItemType {
+	text
+	image
+}
+
+pub struct ContentItem {
+pub:
+	type_ ContentItemType
+	value string
+}
+
 pub struct ContentData {
 pub mut:
 	type_    ContentDataType
 	text     string
 	alt_text string
+	items    []ContentItem
 }
 
 pub struct ContentDataAndQuoteNestingLevel {
@@ -245,7 +257,7 @@ pub fn TabSize.number(value f64) TabSize {
 pub fn TabSize.length(value Length) TabSize {
 	return TabSize{
 		is_length: true
-		length:    value
+		length: value
 	}
 }
 
@@ -358,9 +370,21 @@ pub enum TextWrapStyle {
 	pretty
 }
 
+pub enum ListStyleTypeKind {
+	none_
+	counter_style
+	string
+}
+
+// CSS::ListStyleType is Variant<Empty, RefPtr<CounterStyle const>, String>
+// upstream. Keep the kind even when a named counter style fails to resolve:
+// a missing <counter-style> is distinct from `none` and falls back to decimal
+// when its representation is generated.
 pub struct ListStyleType {
 pub mut:
-	name string
+	kind          ListStyleTypeKind
+	name          string
+	counter_style ?CounterStyle
 }
 
 pub enum ListStylePosition {
@@ -630,12 +654,12 @@ pub fn TouchActionData.auto_() TouchActionData {
 
 pub fn TouchActionData.none_() TouchActionData {
 	return TouchActionData{
-		allow_left:       false
-		allow_right:      false
-		allow_up:         false
-		allow_down:       false
+		allow_left: false
+		allow_right: false
+		allow_up: false
+		allow_down: false
 		allow_pinch_zoom: false
-		allow_other:      false
+		allow_other: false
 	}
 }
 
@@ -688,7 +712,7 @@ pub struct TransformOrigin {
 pub mut:
 	x LengthPercentage = LengthPercentage.from_percentage(Percentage.new(50))
 	y LengthPercentage = LengthPercentage.from_percentage(Percentage.new(50))
-	z Length           = Length.make_px(0)
+	z Length = Length.make_px(0)
 }
 
 pub enum TransformStyle {
@@ -817,6 +841,10 @@ pub fn WillChange.make_auto() WillChange {
 	return WillChange{}
 }
 
+pub fn (will_change &WillChange) has_property(property_id PropertyID) bool {
+	return string_from_property_id(property_id) in will_change.names
+}
+
 pub struct FontData {
 pub mut:
 	monospace  bool
@@ -845,12 +873,14 @@ pub enum Positioning {
 pub struct QuotesData {
 pub mut:
 	pairs []string
+	none_ bool
 }
 
 pub struct CounterData {
 pub mut:
-	name  string
-	value int
+	name        string
+	is_reversed bool
+	value       ?i32
 }
 
 pub struct ScrollbarColorData {
@@ -936,7 +966,7 @@ pub mut:
 	duration        f64
 	duration_string string
 	timing_function EasingFunction = EasingFunction.linear()
-	iteration_count f64            = 1
+	iteration_count f64 = 1
 	direction       AnimationDirection
 	play_state      AnimationPlayState
 	delay           f64
@@ -975,12 +1005,10 @@ fn computed_interpolation_longhand_property_ids() ComputedInterpolationPropertyI
 }
 
 fn computed_interpolation_is_longhand_property(property_id PropertyID) bool {
-	for longhand_id in computed_interpolation_longhand_property_ids() {
-		if longhand_id == property_id {
-			return true
-		}
-	}
-	return false
+	// PropertyID is generated with every longhand in one contiguous block followed by
+	// the shorthand-only entries. This is the V equivalent of the constant-time
+	// generated longhand-index validation used by upstream.
+	return int(property_id) >= int(first_longhand_property_id()) && int(property_id) <= int(last_longhand_property_id())
 }
 
 fn computed_interpolation_verify_longhand_property(property_id PropertyID) {
@@ -1103,28 +1131,19 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.min_block_size, .min_inline_size {
 			'0'
 		}
-		.bottom, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
-		.left, .right, .top {
+		.bottom, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left, .right, .top {
 			'auto'
 		}
-		.border_block_end_color, .border_block_start_color, .border_bottom_color,
-		.border_inline_end_color, .border_inline_start_color, .border_left_color,
-		.border_right_color, .border_top_color {
+		.border_block_end_color, .border_block_start_color, .border_bottom_color, .border_inline_end_color, .border_inline_start_color, .border_left_color, .border_right_color, .border_top_color {
 			'currentcolor'
 		}
-		.border_block_end_style, .border_block_start_style, .border_bottom_style,
-		.border_inline_end_style, .border_inline_start_style, .border_left_style,
-		.border_right_style, .border_top_style {
+		.border_block_end_style, .border_block_start_style, .border_bottom_style, .border_inline_end_style, .border_inline_start_style, .border_left_style, .border_right_style, .border_top_style {
 			'none'
 		}
-		.border_block_end_width, .border_block_start_width, .border_bottom_width,
-		.border_inline_end_width, .border_inline_start_width, .border_left_width,
-		.border_right_width, .border_top_width {
+		.border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width {
 			'medium'
 		}
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius,
-		.border_end_start_radius, .border_start_end_radius, .border_start_start_radius,
-		.border_top_left_radius, .border_top_right_radius {
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius, .border_start_end_radius, .border_start_start_radius, .border_top_left_radius, .border_top_right_radius {
 			'0'
 		}
 		.border_collapse {
@@ -1187,9 +1206,7 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.empty_cells {
 			'show'
 		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape,
-		.corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape,
-		.corner_top_left_shape, .corner_top_right_shape {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape {
 			'round'
 		}
 		.fill_opacity, .flood_opacity {
@@ -1279,10 +1296,7 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.list_style_position {
 			'outside'
 		}
-		.margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end,
-		.margin_inline_start, .margin_left, .margin_right, .margin_top, .padding_block_end,
-		.padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start,
-		.padding_left, .padding_right, .padding_top {
+		.margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top {
 			'0'
 		}
 		.mask_clip {
@@ -1354,10 +1368,7 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.overflow_block, .overflow_inline, .overflow_x, .overflow_y {
 			'visible'
 		}
-		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
-		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
-		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
-		.overflow_clip_margin_right, .overflow_clip_margin_top {
+		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top {
 			'0px'
 		}
 		.overflow_wrap {
@@ -1630,8 +1641,7 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		.stroke {
 			'none'
 		}
-		.font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian,
-		.font_variant_alternates {
+		.font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .font_variant_alternates {
 			'normal'
 		}
 		.clip_path, .shape_outside {
@@ -1653,75 +1663,13 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 
 fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
-	return match property_id {
-		.accent_color, .caption_side, .caret_color, .clip_rule, .color, .color_interpolation,
-		.color_scheme, .direction, .empty_cells, .fill_opacity, .fill_rule, .font_kerning,
-		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
-		.font_variant_emoji, .font_variant_position, .font_weight, .letter_spacing,
-		.image_rendering, .list_style_image, .list_style_position, .math_depth, .math_style,
-		.math_shift, .orphans, .widows, .overflow_wrap, .pointer_events, .shape_rendering,
-		.scrollbar_color, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity,
-		.stroke_width, .stroke_dashoffset, .tab_size, .text_align, .text_anchor,
-		.text_decoration_line, .paint_order, .text_justify, .text_rendering, .text_transform,
-		.text_underline_offset, .text_underline_position, .text_indent, .text_wrap_mode,
-		.text_wrap_style, .visibility, .webkit_text_fill_color, .white_space_collapse, .word_break,
-		.word_spacing, .writing_mode, .border_collapse, .border_spacing, .dominant_baseline,
-		.quotes, .text_shadow, .list_style_type, .stroke_dasharray, .font_family, .cursor,
-		.font_size, .fill, .stroke, .font_variant_ligatures, .font_variant_numeric,
-		.font_variant_east_asian, .font_variant_alternates {
-			true
-		}
-		else {
-			false
-		}
-	}
+	return string_from_property_id(property_id) in inherited_properties
 }
 
 fn computed_interpolation_property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.accent_color, .animation_delay, .animation_duration, .animation_iteration_count,
-		.animation_name, .animation_timeline, .animation_timing_function, .aspect_ratio,
-		.background_color, .background_image, .background_attachment, .background_blend_mode,
-		.background_clip, .background_origin, .background_position_x, .background_position_y,
-		.background_repeat, .background_size, .border_block_end_color, .border_block_end_width,
-		.border_block_start_color, .border_block_start_width, .border_bottom_color,
-		.border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius,
-		.border_end_end_radius, .border_end_start_radius, .border_image_outset,
-		.border_image_slice, .border_image_source, .border_image_width, .border_inline_end_color,
-		.border_inline_end_width, .border_inline_start_color, .border_inline_start_width,
-		.border_left_color, .border_left_width, .border_right_color, .border_right_width,
-		.border_spacing, .border_start_end_radius, .border_start_start_radius, .border_top_color,
-		.border_top_width, .border_top_left_radius, .border_top_right_radius, .block_size, .bottom,
-		.caret_color, .color, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape,
-		.corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.flood_color, .flood_opacity, .font_feature_settings, .font_style,
-		.font_variation_settings, .font_weight, .font_width, .flex_grow, .flex_shrink,
-		.column_count, .column_width, .column_height, .column_gap, .row_gap, .height, .inline_size,
-		.inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left,
-		.letter_spacing, .line_height, .list_style_image, .margin_block_end, .margin_block_start,
-		.margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right,
-		.margin_top, .mask_image, .mask_position, .mask_size, .math_depth, .max_block_size,
-		.max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size,
-		.min_width, .object_position, .opacity, .order, .orphans, .widows, .outline_color,
-		.outline_offset, .outline_width, .overflow_clip_margin_block_end,
-		.overflow_clip_margin_block_start, .overflow_clip_margin_bottom,
-		.overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start,
-		.overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top,
-		.padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
-		.padding_inline_start, .padding_left, .padding_right, .padding_top, .perspective,
-		.perspective_origin, .position_area, .right, .scrollbar_color, .shape_margin,
-		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_miterlimit, .stroke_opacity,
-		.stroke_width, .stroke_dashoffset, .tab_size, .text_decoration_color,
-		.text_decoration_thickness, .text_underline_offset, .text_indent, .top, .transform_origin,
-		.vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate, .scale, .transform,
-		.transition_delay, .transition_duration, .transition_timing_function, .translate,
-		.view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis,
-		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_columns, .grid_auto_rows,
-		.grid_template_columns, .grid_template_rows, .filter, .backdrop_filter, .counter_increment,
-		.counter_reset, .counter_set, .cursor, .font_size, .fill, .stroke, .clip_path,
-		.shape_outside, .content {
+		.accent_color, .animation_delay, .animation_duration, .animation_iteration_count, .animation_name, .animation_timeline, .animation_timing_function, .aspect_ratio, .background_color, .background_image, .background_attachment, .background_blend_mode, .background_clip, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size, .border_block_end_color, .border_block_end_width, .border_block_start_color, .border_block_start_width, .border_bottom_color, .border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius, .border_image_outset, .border_image_slice, .border_image_source, .border_image_width, .border_inline_end_color, .border_inline_end_width, .border_inline_start_color, .border_inline_start_width, .border_left_color, .border_left_width, .border_right_color, .border_right_width, .border_spacing, .border_start_end_radius, .border_start_start_radius, .border_top_color, .border_top_width, .border_top_left_radius, .border_top_right_radius, .block_size, .bottom, .caret_color, .color, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity, .font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width, .flex_grow, .flex_shrink, .column_count, .column_width, .column_height, .column_gap, .row_gap, .height, .inline_size, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left, .letter_spacing, .line_height, .list_style_image, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .mask_image, .mask_position, .mask_size, .math_depth, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .object_position, .opacity, .order, .orphans, .widows, .outline_color, .outline_offset, .outline_width, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .perspective, .perspective_origin, .position_area, .right, .scrollbar_color, .shape_margin, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .tab_size, .text_decoration_color, .text_decoration_thickness, .text_underline_offset, .text_indent, .top, .transform_origin, .vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate, .scale, .transform, .transition_delay, .transition_duration, .transition_timing_function, .translate, .view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis, .box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows, .filter, .backdrop_filter, .counter_increment, .counter_reset, .counter_set, .cursor, .font_size, .fill, .stroke, .clip_path, .shape_outside, .content {
 			true
 		}
 		else {
@@ -1733,8 +1681,7 @@ fn computed_interpolation_property_requires_computation_with_cascaded_value(prop
 fn computed_interpolation_property_requires_computation_with_inherited_value(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.background_attachment, .background_blend_mode, .background_clip, .background_origin,
-		.background_position_x, .background_position_y, .background_repeat, .background_size {
+		.background_attachment, .background_blend_mode, .background_clip, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size {
 			true
 		}
 		else {
@@ -1746,16 +1693,7 @@ fn computed_interpolation_property_requires_computation_with_inherited_value(pro
 fn computed_interpolation_property_requires_computation_with_initial_value(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
 	return match property_id {
-		.background_attachment, .background_blend_mode, .background_clip, .background_color,
-		.background_origin, .background_position_x, .background_position_y, .background_repeat,
-		.background_size, .border_block_end_width, .border_block_start_width, .border_bottom_width,
-		.border_inline_end_width, .border_inline_start_width, .border_left_width,
-		.border_right_width, .border_top_width, .color, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape,
-		.corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .flood_color, .font_style, .font_weight, .font_width,
-		.letter_spacing, .math_depth, .outline_width, .stop_color, .text_decoration_color,
-		.word_spacing, .font_size, .fill {
+		.background_attachment, .background_blend_mode, .background_clip, .background_color, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size, .border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width, .color, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .flood_color, .font_style, .font_weight, .font_width, .letter_spacing, .math_depth, .outline_width, .stop_color, .text_decoration_color, .word_spacing, .font_size, .fill {
 			true
 		}
 		else {
@@ -1825,7 +1763,6 @@ fn property_affects_computed_font_list(id PropertyID) bool {
 }
 
 // --- ComputedProperties ---
-
 pub enum ComputedPropertyInheritance {
 	no
 	yes
@@ -1852,16 +1789,142 @@ pub mut:
 	animated_property_values_               map[PropertyID]&dom.StyleValue
 	display_before_box_type_transformation_ Display = Display.new()
 	cached_computed_font_list_              ?&FontCascadeList
-	cached_first_available_computed_font_   ?&FontData
+	cached_first_available_computed_font_   ?&PlatformFont
 	line_height_                            ?CSSPixels
 	attempted_pseudo_class_matches_         map[string]bool
+	// Lengths whose computed value remains viewport- or root-font-relative
+	// need the same style-computation context when Layout resolves their used
+	// value. LibWeb carries that context through the layout node; retaining it
+	// here avoids silently turning vw/vh/rem into zero at the V boundary.
+	viewport_rect_       CSSPixelRect
+	root_font_size_px_   f64 = 16.0
+	root_line_height_px_ f64 = 19.2
 }
 
 pub fn ComputedProperties.new() &ComputedProperties {
 	return &ComputedProperties{}
 }
 
-pub fn (c &ComputedProperties) for_each_property(callback fn (PropertyID, &dom.StyleValue)) {
+// ComputedValues::clone_inherited_values(), followed by the display override
+// used by Layout::NodeWithStyle::create_anonymous_wrapper(). Anonymous layout
+// boxes inherit inherited properties from their generator, reset every other
+// property to its initial value, and propagate the text-decoration properties
+// which CSS applies through the anonymous box even though they are formally
+// non-inherited.
+pub fn (c &ComputedProperties) clone_for_anonymous_block() &ComputedProperties {
+	mut clone := ComputedProperties.new()
+	clone.viewport_rect_ = c.viewport_rect_
+	clone.root_font_size_px_ = c.root_font_size_px_
+	clone.root_line_height_px_ = c.root_line_height_px_
+	for property_id in computed_interpolation_longhand_property_ids() {
+		mut value := computed_interpolation_property_initial_value(property_id)
+		mut inherited := ComputedPropertyInheritance.no
+		if computed_interpolation_is_inherited_property(property_id) {
+			if inherited_value := c.property(property_id, .no) {
+				value = inherited_value
+				inherited = .yes
+			}
+		}
+		clone.set_property(property_id, value, inherited, .no)
+	}
+	for property_id in [PropertyID.text_decoration_line, .text_decoration_thickness,
+		.text_decoration_color, .text_decoration_style] {
+		if value := c.property(property_id, .no) {
+			clone.set_property_without_modifying_flags(property_id, value)
+		}
+	}
+	display := Display.from_outside_inside(.block, .flow)
+	clone.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(display))))
+	clone.display_before_box_type_transformation_ = display
+	return clone
+}
+
+pub fn (c &ComputedProperties) clone_for_anonymous_with_display(display Display) &ComputedProperties {
+	mut clone := c.clone_for_anonymous_block()
+	clone.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(display))))
+	clone.display_before_box_type_transformation_ = display
+	return clone
+}
+
+// ComputedValues::inherit_from(), used by Layout::NodeWithStyle when a style
+// update has to be propagated into an already-existing anonymous wrapper.
+// Keep the target's non-inherited values (notably its generated display), but
+// refresh every inherited property and the text-decoration values which CSS
+// propagates through anonymous boxes despite being formally non-inherited.
+pub fn (mut c ComputedProperties) inherit_from_for_layout(source &ComputedProperties) {
+	c.viewport_rect_ = source.viewport_rect_
+	c.root_font_size_px_ = source.root_font_size_px_
+	c.root_line_height_px_ = source.root_line_height_px_
+	for property_id in computed_interpolation_longhand_property_ids() {
+		if !computed_interpolation_is_inherited_property(property_id) {
+			continue
+		}
+		if value := source.property(property_id, .no) {
+			c.set_property(property_id, value, .yes, .no)
+		}
+	}
+	for property_id in [PropertyID.text_decoration_line, .text_decoration_thickness,
+		.text_decoration_color, .text_decoration_style] {
+		if value := source.property(property_id, .no) {
+			c.set_property_without_modifying_flags(property_id, value)
+		}
+	}
+}
+
+// The anonymous flex wrapper mandated by HTML's button-layout algorithm.
+// TreeBuilder.cpp overrides these computed values after creating an ordinary
+// anonymous wrapper.
+pub fn (c &ComputedProperties) clone_for_button_flex_wrapper() &ComputedProperties {
+	mut clone := c.clone_for_anonymous_with_display(Display.from_outside_inside(.block, .flex))
+	for property_id, css_text in {
+		PropertyID.justify_content: 'center'
+		PropertyID.flex_direction:  'column'
+		PropertyID.height:          '100%'
+	} {
+		parsed := parse_css_value_logic(property_id, css_text) or { continue }
+		clone.set_property_without_modifying_flags(property_id, dom_style_value_from_value_logic(parsed))
+	}
+	if min_height := c.property(.min_height, .no) {
+		clone.set_property_without_modifying_flags(.min_height, min_height)
+	}
+	return clone
+}
+
+// TreeBuilder.cpp currently transfers overflow to the anonymous fieldset
+// content box. The remaining properties listed by the HTML rendering spec are
+// deliberately not transferred upstream yet.
+pub fn (mut c ComputedProperties) take_properties_for_fieldset_content_box() &ComputedProperties {
+	mut content := c.clone_for_anonymous_with_display(Display.from_short(.flow_root))
+	for property_id in [PropertyID.overflow_x, .overflow_y] {
+		if value := c.property(property_id, .no) {
+			content.set_property_without_modifying_flags(property_id, value)
+		}
+		c.set_property_without_modifying_flags(property_id, computed_interpolation_property_initial_value(property_id))
+	}
+	return content
+}
+
+// NodeWithStyle::transfer_table_box_computed_values_to_wrapper_computed_values().
+// CSS table wrapper properties live on the anonymous wrapper and are reset to
+// their initial values on the table-root box itself.
+pub fn (mut c ComputedProperties) take_properties_for_table_wrapper() &ComputedProperties {
+	wrapper_display := if c.display().is_inline_outside() {
+		Display.from_short(.inline_block)
+	} else {
+		Display.from_short(.flow_root)
+	}
+	mut wrapper := c.clone_for_anonymous_with_display(wrapper_display)
+	for property_id in [PropertyID.position, .top, .right, .bottom, .left, .float_, .clear,
+		.margin_top, .margin_right, .margin_bottom, .margin_left, .z_index] {
+		if value := c.property(property_id, .no) {
+			wrapper.set_property_without_modifying_flags(property_id, value)
+		}
+		c.set_property_without_modifying_flags(property_id, computed_interpolation_property_initial_value(property_id))
+	}
+	return wrapper
+}
+
+pub fn (c &ComputedProperties) for_each_property(callback fn(PropertyID, &dom.StyleValue)) {
 	for property_id, value in c.property_values_ {
 		callback(property_id, value)
 	}
@@ -1971,9 +2034,7 @@ pub fn (mut c ComputedProperties) remove_animated_property(property_id PropertyI
 pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_value WithAnimationsApplied) ?&dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
 	// Important properties override animated but not transitioned properties.
-	if (!c.is_property_important(property_id)
-		|| c.is_animated_property_result_of_transition(property_id))
-		&& return_animated_value == .yes {
+	if (!c.is_property_important(property_id) || c.is_animated_property_result_of_transition(property_id)) && return_animated_value == .yes {
 		if animated_value := c.animated_property_values_[property_id] {
 			return animated_value
 		}
@@ -2025,8 +2086,12 @@ pub fn (c &ComputedProperties) size_value(property_id PropertyID) Size {
 	parsed := parse_css_value_logic(property_id, value.css_text) or { return Size.make_auto() }
 	keyword := parsed.to_keyword()
 	match keyword {
-		.auto { return Size.make_auto() }
-		.none_ { return Size.make_none() }
+		.auto {
+			return Size.make_auto()
+		}
+		.none_ {
+			return Size.make_none()
+		}
 		else {}
 	}
 	if parsed.serialize(.normal) == 'min-content' {
@@ -2142,17 +2207,13 @@ fn computed_interpolation_default_color_scheme(preferred_scheme PreferredColorSc
 
 pub fn (c &ComputedProperties) color_scheme(preferred_scheme PreferredColorScheme, document_supported_schemes ?[]string) PreferredColorScheme {
 	scheme_property := c.property(.color_scheme, .yes) or {
-		return computed_interpolation_default_color_scheme(preferred_scheme,
-			document_supported_schemes)
+		return computed_interpolation_default_color_scheme(preferred_scheme, document_supported_schemes)
 	}
 	scheme_value := color_scheme_style_value_from_dom_style_value(scheme_property) or {
-		return computed_interpolation_default_color_scheme(preferred_scheme,
-			document_supported_schemes)
+		return computed_interpolation_default_color_scheme(preferred_scheme, document_supported_schemes)
 	}
 
-	if element_scheme := used_color_scheme_from_scheme_list(scheme_value.schemes(),
-		preferred_scheme)
-	{
+	if element_scheme := used_color_scheme_from_scheme_list(scheme_value.schemes(), preferred_scheme) {
 		return element_scheme
 	}
 
@@ -2381,7 +2442,7 @@ pub fn (c &ComputedProperties) text_underline_position() TextUnderlinePosition {
 	if parsed is TextUnderlinePositionStyleValue {
 		return TextUnderlinePosition{
 			horizontal: parsed.horizontal()
-			vertical:   parsed.vertical()
+			vertical: parsed.vertical()
 		}
 	}
 	return TextUnderlinePosition{}
@@ -2431,9 +2492,7 @@ pub fn (c &ComputedProperties) background_layers() []BackgroundLayerData {
 		positions_y := coordinated[.background_position_y] or { continue }
 		repeats := coordinated[.background_repeat] or { continue }
 		sizes := coordinated[.background_size] or { continue }
-		if index >= attachments.len || index >= blends.len || index >= clips.len
-			|| index >= origins.len || index >= positions_x.len || index >= positions_y.len
-			|| index >= repeats.len || index >= sizes.len {
+		if index >= attachments.len || index >= blends.len || index >= clips.len || index >= origins.len || index >= positions_x.len || index >= positions_y.len || index >= repeats.len || index >= sizes.len {
 			continue
 		}
 		attachment_value := attachments[index]
@@ -2446,30 +2505,24 @@ pub fn (c &ComputedProperties) background_layers() []BackgroundLayerData {
 		size_value := sizes[index]
 
 		mut layer := BackgroundLayerData{
-			image:      image.css_text
+			image: image.css_text
 			attachment: keyword_to_background_attachment_for_computed_properties(computed_interpolation_style_value_keyword(attachment_value) or {
-				Keyword.scroll
-			}) or { BackgroundAttachment.scroll }
+				Keyword.scroll}) or { BackgroundAttachment.scroll }
 			blend_mode: keyword_to_mix_blend_mode_for_computed_properties(computed_interpolation_style_value_keyword(blend_value) or {
-				Keyword.normal
-			}) or { MixBlendMode.normal }
-			clip:       keyword_to_background_box_for_computed_properties(computed_interpolation_style_value_keyword(clip_value) or {
-				Keyword.border_box
-			}, .border_box)
-			origin:     keyword_to_background_box_for_computed_properties(computed_interpolation_style_value_keyword(origin_value) or {
-				Keyword.padding_box
-			}, .padding_box)
+				Keyword.normal}) or { MixBlendMode.normal }
+			clip: keyword_to_background_box_for_computed_properties(computed_interpolation_style_value_keyword(clip_value) or {
+				Keyword.border_box}, .border_box)
+			origin: keyword_to_background_box_for_computed_properties(computed_interpolation_style_value_keyword(origin_value) or {
+				Keyword.padding_box}, .padding_box)
 		}
 		if parsed_x := parse_css_value_logic(.background_position_x, position_x_value.css_text) {
 			if parsed_x is EdgeStyleValue {
-				layer.position_x =
-					LengthPercentage.from_style_value_logic(parsed_x.with_resolved_keywords().offset())
+				layer.position_x = LengthPercentage.from_style_value_logic(parsed_x.with_resolved_keywords().offset())
 			}
 		}
 		if parsed_y := parse_css_value_logic(.background_position_y, position_y_value.css_text) {
 			if parsed_y is EdgeStyleValue {
-				layer.position_y =
-					LengthPercentage.from_style_value_logic(parsed_y.with_resolved_keywords().offset())
+				layer.position_y = LengthPercentage.from_style_value_logic(parsed_y.with_resolved_keywords().offset())
 			}
 		}
 		if repeat := parse_css_value_logic(.background_repeat, repeat_value.css_text) {
@@ -2574,8 +2627,7 @@ pub fn (c &ComputedProperties) border_spacing_vertical() Length {
 	value := c.property(.border_spacing, .yes) or { return Length.make_px(0) }
 	parsed := parse_css_value_logic(.border_spacing, value.css_text) or { return Length.make_px(0) }
 	if parsed is StyleValueList && parsed.size() > 0 {
-		return Length.from_style_value_logic(parsed.value_at(if parsed.size() > 1 { 1 } else { 0 },
-			false), none)
+		return Length.from_style_value_logic(parsed.value_at(if parsed.size() > 1 { 1 } else { 0 }, false), none)
 	}
 	return Length.from_style_value_logic(parsed, none)
 }
@@ -2661,8 +2713,7 @@ pub fn (c &ComputedProperties) column_span() ColumnSpan {
 	}
 }
 
-pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, initial_quote_nesting_level u32) ContentDataAndQuoteNestingLevel {
-	_ = abstract_element
+pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, initial_quote_nesting_level u32, registered_counter_styles map[string]CounterStyle) ContentDataAndQuoteNestingLevel {
 	value := c.property(.content, .yes) or {
 		return ContentDataAndQuoteNestingLevel{
 			final_quote_nesting_level: initial_quote_nesting_level
@@ -2676,8 +2727,10 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 	keyword := parsed.to_keyword()
 	if keyword == .none_ || keyword == .normal {
 		return ContentDataAndQuoteNestingLevel{
-			content_data:              ContentData{
-				type_: if keyword == .none_ { ContentDataType.none_ } else { ContentDataType.normal }
+			content_data: ContentData{
+				type_: if keyword == .none_ {
+					ContentDataType.none_} else {
+					ContentDataType.normal}
 			}
 			final_quote_nesting_level: initial_quote_nesting_level
 		}
@@ -2691,9 +2744,31 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 	quotes := c.quotes()
 	mut nesting := initial_quote_nesting_level
 	mut text := ''
+	mut items := []ContentItem{}
 	for item in content_value.content().values() {
 		if item is StringStyleValue {
-			text += item.string_value()
+			string_item := item.string_value()
+			text += string_item
+			items << ContentItem{
+				type_: .text
+				value: string_item
+			}
+			continue
+		}
+		if item is ImageStyleValue {
+			items << ContentItem{
+				type_: .image
+				value: item.url_.url()
+			}
+			continue
+		}
+		if item is CounterStyleValue {
+			counter_text := item.resolve_for_abstract_element(abstract_element, registered_counter_styles)
+			text += counter_text
+			items << ContentItem{
+				type_: .text
+				value: counter_text
+			}
 			continue
 		}
 		item_keyword := item.to_keyword()
@@ -2706,14 +2781,24 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 				nesting--
 			}
 			depth := nesting
-			if quotes.pairs.len >= 2 {
+			mut quote_text := ''
+			if quotes.none_ {
+				quote_text = ''
+			} else if quotes.pairs.len >= 2 {
 				pair_count := quotes.pairs.len / 2
 				pair_index := if int(depth) < pair_count { int(depth) } else { pair_count - 1 }
-				text += quotes.pairs[pair_index * 2 + if is_open { 0 } else { 1 }]
+				quote_text = quotes.pairs[pair_index * 2 + if is_open { 0 } else { 1 }]
 			} else if is_open {
-				text += if depth == 0 { '“' } else { '‘' }
+				quote_text = if depth == 0 { '“' } else { '‘' }
 			} else {
-				text += if depth == 0 { '”' } else { '’' }
+				quote_text = if depth == 0 { '”' } else { '’' }
+			}
+			if quote_text.len > 0 {
+				text += quote_text
+				items << ContentItem{
+					type_: .text
+					value: quote_text
+				}
 			}
 			if is_open {
 				nesting++
@@ -2729,14 +2814,17 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 		for item in alt.values() {
 			if item is StringStyleValue {
 				alt_text += item.string_value()
+			} else if item is CounterStyleValue {
+				alt_text += item.resolve_for_abstract_element(abstract_element, registered_counter_styles)
 			}
 		}
 	}
 	return ContentDataAndQuoteNestingLevel{
-		content_data:              ContentData{
-			type_:    .list
-			text:     text
+		content_data: ContentData{
+			type_: .list
+			text: text
 			alt_text: alt_text
+			items: items
 		}
 		final_quote_nesting_level: nesting
 	}
@@ -2823,9 +2911,15 @@ pub fn (c &ComputedProperties) white_space_trim() WhiteSpaceTrimData {
 		for entry in parsed_value.values() {
 			if entry is KeywordStyleValue {
 				match entry.keyword() {
-					.discard_before { trim_data.discard_before = true }
-					.discard_after { trim_data.discard_after = true }
-					.discard_inner { trim_data.discard_inner = true }
+					.discard_before {
+						trim_data.discard_before = true
+					}
+					.discard_after {
+						trim_data.discard_after = true
+					}
+					.discard_inner {
+						trim_data.discard_inner = true
+					}
 					else {}
 				}
 			}
@@ -2997,7 +3091,7 @@ pub fn (c &ComputedProperties) text_decoration_thickness() TextDecorationThickne
 	}
 	if keyword == .from_font {
 		return TextDecorationThickness{
-			is_auto:   false
+			is_auto: false
 			from_font: true
 		}
 	}
@@ -3007,7 +3101,7 @@ pub fn (c &ComputedProperties) text_decoration_thickness() TextDecorationThickne
 	match parsed_value {
 		LengthStyleValue, PercentageStyleValue, CalculatedStyleValue {
 			return TextDecorationThickness{
-				is_auto:           false
+				is_auto: false
 				length_percentage: LengthPercentage.from_style_value_logic(parsed_value)
 			}
 		}
@@ -3044,8 +3138,8 @@ pub fn (c &ComputedProperties) text_indent() TextIndentData {
 	if parsed_value is TextIndentStyleValue {
 		return TextIndentData{
 			length_percentage: LengthPercentage.from_style_value_logic(parsed_value.length_percentage())
-			each_line:         parsed_value.each_line()
-			hanging:           parsed_value.hanging()
+			each_line: parsed_value.each_line()
+			hanging: parsed_value.hanging()
 		}
 	}
 	return TextIndentData{}
@@ -3073,31 +3167,43 @@ pub fn (c &ComputedProperties) text_wrap_style() TextWrapStyle {
 	}
 }
 
-pub fn (c &ComputedProperties) list_style_type(registered_counter_styles map[string]string) ListStyleType {
-	_ = registered_counter_styles
-	value := c.property(.list_style_type, .yes) or { return ListStyleType{
-		name: 'disc'
-	} }
+pub fn (c &ComputedProperties) list_style_type(registered_counter_styles map[string]CounterStyle) ListStyleType {
+	value := c.property(.list_style_type, .yes) or {
+		return ListStyleType{
+			kind: .counter_style
+			name: 'disc'
+			counter_style: registered_counter_styles['disc'] or { CounterStyle.disc() }
+		}
+	}
 	parsed := parse_css_value_logic(.list_style_type, value.css_text) or {
 		return ListStyleType{
+			kind: .counter_style
 			name: 'disc'
+			counter_style: registered_counter_styles['disc'] or { CounterStyle.disc() }
 		}
 	}
 	if parsed.to_keyword() == .none_ {
-		return ListStyleType{}
+		return ListStyleType{
+			kind: .none_
+		}
 	}
 	if parsed is StringStyleValue {
 		return ListStyleType{
+			kind: .string
 			name: parsed.string_value()
 		}
 	}
 	if parsed is CounterStyleStyleValue {
 		return ListStyleType{
+			kind: .counter_style
 			name: parsed.serialize(.normal)
+			counter_style: parsed.resolve_counter_style(registered_counter_styles)
 		}
 	}
 	return ListStyleType{
+		kind: .counter_style
 		name: 'disc'
+		counter_style: registered_counter_styles['disc'] or { CounterStyle.disc() }
 	}
 }
 
@@ -3299,6 +3405,35 @@ pub fn (c &ComputedProperties) opacity() f32 {
 	return f32(computed_interpolation_number_from_dom_style_value(value) or { 1.0 })
 }
 
+pub fn (c &ComputedProperties) aspect_ratio() AspectRatio {
+	value := c.property(.aspect_ratio, .yes) or { return AspectRatio{} }
+	parsed := parse_css_value_logic(.aspect_ratio, value.css_text) or { return AspectRatio{} }
+	if parsed is StyleValueList {
+		values := parsed.values()
+		if values.len == 2 && values[0].to_keyword() == .auto && values[1].is_ratio() {
+			return AspectRatio{
+				use_natural_aspect_ratio_if_available: true
+				preferred_ratio: values[1].as_ratio().ratio()
+			}
+		}
+		return AspectRatio{}
+	}
+	if parsed.to_keyword() == .auto {
+		return AspectRatio{}
+	}
+	if parsed.is_ratio() {
+		ratio := parsed.as_ratio().ratio()
+		if ratio.is_degenerate() {
+			return AspectRatio{}
+		}
+		return AspectRatio{
+			use_natural_aspect_ratio_if_available: false
+			preferred_ratio: ratio
+		}
+	}
+	return AspectRatio{}
+}
+
 pub fn (c &ComputedProperties) visibility() Visibility {
 	value := c.property(.visibility, .yes) or { return .visible }
 	keyword := computed_interpolation_style_value_keyword(value) or { return .visible }
@@ -3437,13 +3572,12 @@ fn (c &ComputedProperties) shadow(property_id PropertyID, layout_node &dom.Layou
 		shadow_value := layer as ShadowStyleValue
 		color := shadow_value.color().to_color(context) or { return []ShadowData{} }
 		result << ShadowData{
-			offset_x:        Length.from_style_value_logic(shadow_value.offset_x(), none)
-			offset_y:        Length.from_style_value_logic(shadow_value.offset_y(), none)
-			blur_radius:     Length.from_style_value_logic(shadow_value.blur_radius(), none)
+			offset_x: Length.from_style_value_logic(shadow_value.offset_x(), none)
+			offset_y: Length.from_style_value_logic(shadow_value.offset_y(), none)
+			blur_radius: Length.from_style_value_logic(shadow_value.blur_radius(), none)
 			spread_distance: Length.from_style_value_logic(shadow_value.spread_distance(), none)
-			color:           ComputedColor.rgba(color.red(), color.green(), color.blue(),
-				color.alpha())
-			inset:           shadow_value.placement() == .inner
+			color: ComputedColor.rgba(color.red(), color.green(), color.blue(), color.alpha())
+			inset: shadow_value.placement() == .inner
 		}
 	}
 	return result
@@ -3490,6 +3624,35 @@ pub fn (c &ComputedProperties) vertical_align() VerticalAlign {
 	}
 }
 
+pub fn (c &ComputedProperties) vertical_align_length_percentage() ?LengthPercentage {
+	value := c.property(.vertical_align, .yes) or { return none }
+	parsed_value := parse_css_value_logic(.vertical_align, value.css_text) or { return none }
+	return match parsed_value {
+		LengthStyleValue, PercentageStyleValue, CalculatedStyleValue {
+			LengthPercentage.from_style_value_logic(parsed_value)
+		}
+		else {
+			none
+		}
+	}
+}
+
+// TreeBuilder::missing_cells_fixup() overrides this non-inherited property on
+// the generated anonymous table cells after cloning the row's inherited values.
+pub fn (mut c ComputedProperties) set_vertical_align_for_anonymous_table_cell(value VerticalAlign) {
+	keyword := match value {
+		.baseline { Keyword.baseline }
+		.sub { Keyword.sub }
+		.super_ { Keyword.super }
+		.text_top { Keyword.text_top }
+		.text_bottom { Keyword.text_bottom }
+		.middle { Keyword.middle }
+		.top { Keyword.top }
+		.bottom { Keyword.bottom }
+	}
+	c.set_property_without_modifying_flags(.vertical_align, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(keyword))))
+}
+
 pub fn (c &ComputedProperties) font_feature_data() FontFeatureData {
 	mut settings := map[string]u32{}
 	for tag, value in c.font_feature_settings() {
@@ -3497,15 +3660,15 @@ pub fn (c &ComputedProperties) font_feature_data() FontFeatureData {
 	}
 	return FontFeatureData{
 		font_variant_alternates: c.font_variant_alternates()
-		font_variant_caps:       c.font_variant_caps()
+		font_variant_caps: c.font_variant_caps()
 		font_variant_east_asian: c.font_variant_east_asian()
-		font_variant_emoji:      c.font_variant_emoji()
-		font_variant_ligatures:  c.font_variant_ligatures()
-		font_variant_numeric:    c.font_variant_numeric()
-		font_variant_position:   c.font_variant_position()
-		font_feature_settings:   settings
-		font_kerning:            c.font_kerning()
-		text_rendering:          c.text_rendering()
+		font_variant_emoji: c.font_variant_emoji()
+		font_variant_ligatures: c.font_variant_ligatures()
+		font_variant_numeric: c.font_variant_numeric()
+		font_variant_position: c.font_variant_position()
+		font_feature_settings: settings
+		font_kerning: c.font_kerning()
+		text_rendering: c.text_rendering()
 	}
 }
 
@@ -3524,7 +3687,7 @@ pub fn (c &ComputedProperties) font_variant_alternates() ?FontVariantAlternates 
 			for name in entry.names() {
 				result.font_feature_value_entries << FontFeatureValueKey{
 					type_: entry.function_type()
-					name:  name.serialize(.normal)
+					name: name.serialize(.normal)
 				}
 			}
 		}
@@ -3793,7 +3956,7 @@ pub fn (c &ComputedProperties) grid_auto_flow() GridAutoFlow {
 	parsed := parse_css_value_logic(.grid_auto_flow, value.css_text) or { return GridAutoFlow{} }
 	if parsed is GridAutoFlowStyleValue {
 		return GridAutoFlow{
-			row:   parsed.is_row()
+			row: parsed.is_row()
 			dense: parsed.is_dense()
 		}
 	}
@@ -3854,8 +4017,8 @@ pub fn (c &ComputedProperties) grid_template_areas() GridTemplateAreas {
 	}
 	if parsed is GridTemplateAreaStyleValue {
 		return GridTemplateAreas{
-			areas:        parsed.grid_areas()
-			row_count:    parsed.row_count()
+			areas: parsed.grid_areas()
+			row_count: parsed.row_count()
 			column_count: parsed.column_count()
 		}
 	}
@@ -4181,8 +4344,7 @@ pub fn (c &ComputedProperties) animations(abstract_element &dom.AbstractElement)
 	animation_name_property := c.property(.animation_name, .yes) or {
 		return []ComputedAnimationProperties{}
 	}
-	animation_name_values :=
-		computed_interpolation_split_coordinating_list_value(animation_name_property)
+	animation_name_values := computed_interpolation_split_coordinating_list_value(animation_name_property)
 
 	// OPTIMIZATION: If all animation names are 'none', there are no animations to process
 	mut all_animation_names_are_none := true
@@ -4258,29 +4420,25 @@ pub fn (c &ComputedProperties) animations(abstract_element &dom.AbstractElement)
 		}
 
 		animation_duration_style_value := duration_values[i]
-		duration :=
-			computed_interpolation_animation_duration_to_milliseconds(animation_duration_style_value)
+		duration := computed_interpolation_animation_duration_to_milliseconds(animation_duration_style_value)
 		duration_keyword := computed_interpolation_style_value_keyword(animation_duration_style_value) or {
 			Keyword.invalid
 		}
 
 		animations << ComputedAnimationProperties{
-			duration:        duration
+			duration: duration
 			duration_string: if duration_keyword == .auto {
-				'auto'
-			} else {
-				''
-			}
+				'auto'} else {
+				''}
 			timing_function: EasingFunction.from_style_value(timing_function_values[i])
 			iteration_count: computed_interpolation_animation_iteration_count_from_style_value(iteration_count_values[i])
-			direction:       computed_interpolation_animation_direction_from_style_value(direction_values[i])
-			play_state:      computed_interpolation_animation_play_state_from_style_value(play_state_values[i])
-			delay:           computed_interpolation_time_value_to_milliseconds(delay_values[i])
-			fill_mode:       computed_interpolation_animation_fill_mode_from_style_value(fill_mode_values[i])
-			composition:     computed_interpolation_animation_composition_from_style_value(composition_values[i])
-			name:            computed_interpolation_animation_name_from_style_value(name_values[i])
-			timeline:        computed_interpolation_animation_timeline_from_style_value(timeline_values[i],
-				abstract_element)
+			direction: computed_interpolation_animation_direction_from_style_value(direction_values[i])
+			play_state: computed_interpolation_animation_play_state_from_style_value(play_state_values[i])
+			delay: computed_interpolation_time_value_to_milliseconds(delay_values[i])
+			fill_mode: computed_interpolation_animation_fill_mode_from_style_value(fill_mode_values[i])
+			composition: computed_interpolation_animation_composition_from_style_value(composition_values[i])
+			name: computed_interpolation_animation_name_from_style_value(name_values[i])
+			timeline: computed_interpolation_animation_timeline_from_style_value(timeline_values[i], abstract_element)
 		}
 	}
 
@@ -4452,7 +4610,7 @@ pub fn (c &ComputedProperties) transitions() []TransitionProperties {
 				}
 				mapping_context := LogicalAliasMappingContext{
 					writing_mode: c.writing_mode()
-					direction:    c.direction()
+					direction: c.direction()
 				}
 				for candidate in candidates {
 					physical := if property_is_logical_alias(candidate) {
@@ -4468,10 +4626,10 @@ pub fn (c &ComputedProperties) transitions() []TransitionProperties {
 		}
 
 		transitions << TransitionProperties{
-			properties:          properties
-			duration:            computed_interpolation_time_value_to_milliseconds(duration_values[i])
-			timing_function:     EasingFunction.from_style_value(timing_function_values[i])
-			delay:               computed_interpolation_time_value_to_milliseconds(delay_values[i])
+			properties: properties
+			duration: computed_interpolation_time_value_to_milliseconds(duration_values[i])
+			timing_function: EasingFunction.from_style_value(timing_function_values[i])
+			delay: computed_interpolation_time_value_to_milliseconds(delay_values[i])
 			transition_behavior: computed_interpolation_transition_behavior_from_style_value(behavior_values[i])
 		}
 	}
@@ -4524,7 +4682,7 @@ fn transformation_data_from_transformation_style_value(value TransformationStyle
 	}
 	return TransformationData{
 		property_id: property_id_from_transform_property(value.property_)
-		values:      values
+		values: values
 	}
 }
 
@@ -4911,11 +5069,10 @@ pub fn (c &ComputedProperties) stroke_dasharray() []StrokeDasharrayItem {
 	list := parsed as StyleValueList
 	mut result := []StrokeDasharrayItem{}
 	for dash in list.values() {
-		if dash is LengthStyleValue || dash is PercentageStyleValue
-			|| (dash is CalculatedStyleValue && dash.resolves_to_length()) {
+		if dash is LengthStyleValue || dash is PercentageStyleValue || (dash is CalculatedStyleValue && dash.resolves_to_length()) {
 			result << StrokeDasharrayItem{
 				is_length_percentage: true
-				length_percentage:    LengthPercentage.from_style_value_logic(dash)
+				length_percentage: LengthPercentage.from_style_value_logic(dash)
 			}
 		} else if dash is CalculatedStyleValue {
 			result << StrokeDasharrayItem{
@@ -5113,7 +5270,7 @@ pub fn (c &ComputedProperties) will_change() WillChange {
 	}
 	return WillChange{
 		is_auto: false
-		names:   names
+		names: names
 	}
 }
 
@@ -5127,21 +5284,45 @@ pub fn (mut c ComputedProperties) clear_computed_font_list_cache() {
 }
 
 pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer) &FontCascadeList {
-	_ = font_computer
 	if font_list := c.cached_computed_font_list_ {
 		return font_list
 	}
-	font_list := &FontCascadeList{}
+	value := c.property(.font_family, .yes) or {
+		&dom.StyleValue{
+			css_text: 'sans-serif'
+		}
+	}
+	parsed := parse_css_value_logic(.font_family, value.css_text) or {
+		StyleValue(KeywordStyleValue.create(.sans_serif))
+	}
+	mut families := []string{}
+	values := if parsed is StyleValueList { parsed.values() } else { [parsed] }
+	for family in values {
+		match family {
+			StringStyleValue { families << family.string_value() }
+			CustomIdentStyleValue { families << family.custom_ident() }
+			else { families << family.serialize(.normal) }
+		}
+	}
+	if families.len == 0 {
+		families << 'sans-serif'
+	}
+	mut mutable_font_computer := unsafe { &FontComputer(font_computer) }
+	computed := mutable_font_computer.compute_font_for_style_values(families, c.font_size(), c.font_slope(), c.font_weight(), c.font_width(), c.font_optical_sizing(), c.font_variation_settings(), c.font_feature_data())
+	assert !computed.is_empty()
+	font_list := &FontCascadeList{
+		fonts: computed.fonts.clone()
+		last_resort_font: computed.last_resort_font
+	}
 	c.cached_computed_font_list_ = font_list
 	return font_list
 }
 
-pub fn (mut c ComputedProperties) first_available_computed_font(font_computer &FontComputer) &FontData {
-	_ = font_computer
+pub fn (mut c ComputedProperties) first_available_computed_font(font_computer &FontComputer) &PlatformFont {
 	if font := c.cached_first_available_computed_font_ {
 		return font
 	}
-	font := ComputedProperties.font_fallback(false, false, f32(c.font_size().to_double()))
+	font := c.computed_font_list(font_computer).font_for_code_point(u32(` `))
 	c.cached_first_available_computed_font_ = font
 	return font
 }
@@ -5188,7 +5369,9 @@ pub fn (c &ComputedProperties) line_height() CSSPixels {
 			return c.font_size().times_float(number)
 		}
 	}
-	return c.font_size().times_float(computed_properties_normal_line_height_scale)
+	// ComputedProperties::line_height(): `normal` is rounded to an integer
+	// CSS pixel after applying the engine's 1.15 scale.
+	return CSSPixels.new(int(math.round_to_even(c.font_size().to_double() * computed_properties_normal_line_height_scale)))
 }
 
 pub fn (c &ComputedProperties) font_size() CSSPixels {
@@ -5291,7 +5474,9 @@ pub fn (c &ComputedProperties) quotes() QuotesData {
 	value := c.property(.quotes, .yes) or { return QuotesData{} }
 	parsed := parse_css_value_logic(.quotes, value.css_text) or { return QuotesData{} }
 	if parsed !is StyleValueList {
-		return QuotesData{}
+		return QuotesData{
+			none_: parsed.to_keyword() == .none_
+		}
 	}
 	list := parsed as StyleValueList
 	mut pairs := []string{}
@@ -5314,15 +5499,13 @@ pub fn (c &ComputedProperties) counter_data(property_id PropertyID) []CounterDat
 	definitions := parsed as CounterDefinitionsStyleValue
 	mut result := []CounterData{}
 	for definition in definitions.counter_definitions() {
-		mut number := match property_id {
-			.counter_increment { 1 }
-			else { 0 }
-		}
+		mut number := ?i32(none)
 		if specified := definition.value {
-			number = int(int_from_style_value(specified))
+			number = i32(int_from_style_value(specified))
 		}
 		result << CounterData{
-			name:  definition.name
+			name: definition.name
+			is_reversed: definition.is_reversed
 			value: number
 		}
 	}
@@ -5385,8 +5568,8 @@ pub fn (c &ComputedProperties) resize() Resize {
 
 pub fn ComputedProperties.font_fallback(monospace bool, bold bool, point_size f32) &FontData {
 	return &FontData{
-		monospace:  monospace
-		bold:       bold
+		monospace: monospace
+		bold: bold
 		point_size: f64(point_size)
 	}
 }
@@ -5404,7 +5587,6 @@ pub fn (c &ComputedProperties) attempted_pseudo_class_matches() map[string]bool 
 }
 
 // --- Interpolation ---
-
 pub enum AllowDiscrete {
 	yes
 	no
@@ -5483,16 +5665,10 @@ pub fn interpolate_raw_int(from int, to int, delta f64, accepted_type_range ?Acc
 }
 
 fn with_keyword_values_resolved_boundary(element &dom.Element, property_id PropertyID, value &dom.StyleValue) &dom.StyleValue {
-	if computed_interpolation_style_value_is_initial(value)
-		|| computed_interpolation_style_value_is_revert(value)
-		|| computed_interpolation_style_value_is_revert_layer(value)
-		|| (computed_interpolation_style_value_is_unset(value)
-		&& !computed_interpolation_is_inherited_property(property_id)) {
+	if computed_interpolation_style_value_is_initial(value) || computed_interpolation_style_value_is_revert(value) || computed_interpolation_style_value_is_revert_layer(value) || (computed_interpolation_style_value_is_unset(value) && !computed_interpolation_is_inherited_property(property_id)) {
 		return computed_interpolation_property_initial_value(property_id)
 	}
-	if computed_interpolation_style_value_is_inherit(value)
-		|| (computed_interpolation_style_value_is_unset(value)
-		&& computed_interpolation_is_inherited_property(property_id)) {
+	if computed_interpolation_style_value_is_inherit(value) || (computed_interpolation_style_value_is_unset(value) && computed_interpolation_is_inherited_property(property_id)) {
 		abstract_element := dom.AbstractElement.new(element, none)
 		if parent := parent_computed_properties(abstract_element) {
 			return parent.property(property_id, .yes) or {
@@ -5519,85 +5695,22 @@ pub fn interpolate_discrete(from &dom.StyleValue, to &dom.StyleValue, delta f64,
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
-		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
-		.animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state,
-		.animation_timeline, .animation_timing_function, .direction, .math_depth, .math_style,
-		.contain, .container_type, .math_shift, .scroll_behavior, .scroll_timeline_axis,
-		.scroll_timeline_name, .timeline_scope, .transition_behavior, .transition_delay,
-		.transition_duration, .transition_property, .transition_timing_function, .unicode_bidi,
-		.view_timeline_axis, .view_timeline_inset, .view_timeline_name, .will_change,
-		.writing_mode, .resize {
+		.animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .direction, .math_depth, .math_style, .contain, .container_type, .math_shift, .scroll_behavior, .scroll_timeline_axis, .scroll_timeline_name, .timeline_scope, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .unicode_bidi, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .will_change, .writing_mode, .resize {
 			.none_
 		}
-		.accent_color, .aspect_ratio, .background_color, .border_block_end_color,
-		.border_block_end_width, .border_block_start_color, .border_block_start_width,
-		.border_bottom_color, .border_bottom_width, .border_bottom_left_radius,
-		.border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius,
-		.border_image_outset, .border_image_slice, .border_image_width, .border_inline_end_color,
-		.border_inline_end_width, .border_inline_start_color, .border_inline_start_width,
-		.border_left_color, .border_left_width, .border_right_color, .border_right_width,
-		.border_start_end_radius, .border_start_start_radius, .border_top_color, .border_top_width,
-		.border_top_left_radius, .border_top_right_radius, .border_spacing, .block_size, .bottom,
-		.caret_color, .color, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape,
-		.corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity,
-		.flood_color, .flood_opacity, .font_weight, .font_width, .flex_grow, .flex_shrink,
-		.column_count, .column_width, .column_height, .column_gap, .row_gap, .height, .inline_size,
-		.inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left,
-		.letter_spacing, .line_height, .margin_block_end, .margin_block_start, .margin_bottom,
-		.margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top,
-		.max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height,
-		.min_inline_size, .min_width, .opacity, .order, .orphans, .widows, .outline_color,
-		.outline_offset, .outline_style, .outline_width, .overflow_clip_margin_block_end,
-		.overflow_clip_margin_block_start, .overflow_clip_margin_bottom,
-		.overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start,
-		.overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top,
-		.padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
-		.padding_inline_start, .padding_left, .padding_right, .padding_top, .perspective,
-		.perspective_origin, .right, .scrollbar_color, .shape_margin, .shape_image_threshold,
-		.stop_color, .stop_opacity, .stroke_miterlimit, .stroke_opacity, .stroke_width,
-		.stroke_dashoffset, .tab_size, .text_decoration_color, .text_decoration_thickness,
-		.text_underline_offset, .text_indent, .top, .transform_origin, .vertical_align, .width,
-		.cx, .cy, .x, .y, .r, .rx, .ry, .webkit_text_fill_color, .word_spacing, .scrollbar_width,
-		.z_index, .flex_basis, .clip, .grid_auto_columns, .grid_auto_rows, .counter_increment,
-		.counter_reset, .counter_set, .font_size, .fill, .stroke, .clip_path, .shape_outside {
+		.accent_color, .aspect_ratio, .background_color, .border_block_end_color, .border_block_end_width, .border_block_start_color, .border_block_start_width, .border_bottom_color, .border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius, .border_image_outset, .border_image_slice, .border_image_width, .border_inline_end_color, .border_inline_end_width, .border_inline_start_color, .border_inline_start_width, .border_left_color, .border_left_width, .border_right_color, .border_right_width, .border_start_end_radius, .border_start_start_radius, .border_top_color, .border_top_width, .border_top_left_radius, .border_top_right_radius, .border_spacing, .block_size, .bottom, .caret_color, .color, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity, .font_weight, .font_width, .flex_grow, .flex_shrink, .column_count, .column_width, .column_height, .column_gap, .row_gap, .height, .inline_size, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left, .letter_spacing, .line_height, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .opacity, .order, .orphans, .widows, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .perspective, .perspective_origin, .right, .scrollbar_color, .shape_margin, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .tab_size, .text_decoration_color, .text_decoration_thickness, .text_underline_offset, .text_indent, .top, .transform_origin, .vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .webkit_text_fill_color, .word_spacing, .scrollbar_width, .z_index, .flex_basis, .clip, .grid_auto_columns, .grid_auto_rows, .counter_increment, .counter_reset, .counter_set, .font_size, .fill, .stroke, .clip_path, .shape_outside {
 			.by_computed_value
 		}
-		.content_visibility, .visibility, .display, .box_shadow, .text_shadow, .stroke_dasharray,
-		.grid_template_columns, .grid_template_rows, .filter, .backdrop_filter, .font_style,
-		.font_variation_settings, .rotate, .scale, .transform, .translate {
+		.content_visibility, .visibility, .display, .box_shadow, .text_shadow, .stroke_dasharray, .grid_template_columns, .grid_template_rows, .filter, .backdrop_filter, .font_style, .font_variation_settings, .rotate, .scale, .transform, .translate {
 			.custom
 		}
-		.background_clip, .background_origin, .background_position_x, .background_position_y,
-		.background_size, .mask_position, .mask_size {
+		.background_clip, .background_origin, .background_position_x, .background_position_y, .background_size, .mask_position, .mask_size {
 			.repeatable_list
 		}
 		.object_position {
 			.repeatable_list
 		}
-		.anchor_name, .anchor_scope, .background_attachment, .background_blend_mode,
-		.background_image, .background_repeat, .border_block_end_style, .border_block_start_style,
-		.border_bottom_style, .border_collapse, .border_image_repeat, .border_image_source,
-		.border_inline_end_style, .border_inline_start_style, .border_left_style,
-		.border_right_style, .border_top_style, .box_sizing, .caption_side, .clear, .clip_rule,
-		.color_interpolation, .color_scheme, .empty_cells, .fill_rule, .float_,
-		.font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing,
-		.font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_direction,
-		.flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items,
-		.justify_self, .appearance, .column_span, .image_rendering, .isolation, .list_style_image,
-		.list_style_position, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin,
-		.mask_repeat, .mask_type, .mix_blend_mode, .object_fit, .overflow_block, .overflow_inline,
-		.overflow_x, .overflow_y, .overflow_wrap, .pointer_events, .position, .position_anchor,
-		.position_area, .position_try_fallbacks, .position_try_order, .position_visibility,
-		.paint_order, .scrollbar_gutter, .shape_rendering, .stroke_linecap, .stroke_linejoin,
-		.table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style,
-		.text_justify, .text_overflow, .text_rendering, .text_transform, .text_underline_position,
-		.text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .touch_action,
-		.user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break,
-		.dominant_baseline, .quotes, .list_style_type, .font_family, .grid_column_start,
-		.grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow, .grid_template_areas,
-		.cursor, .font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian,
-		.content, .font_variant_alternates {
+		.anchor_name, .anchor_scope, .background_attachment, .background_blend_mode, .background_image, .background_repeat, .border_block_end_style, .border_block_start_style, .border_bottom_style, .border_collapse, .border_image_repeat, .border_image_source, .border_inline_end_style, .border_inline_start_style, .border_left_style, .border_right_style, .border_top_style, .box_sizing, .caption_side, .clear, .clip_rule, .color_interpolation, .color_scheme, .empty_cells, .fill_rule, .float_, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation, .list_style_image, .list_style_position, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_repeat, .mask_type, .mix_blend_mode, .object_fit, .overflow_block, .overflow_inline, .overflow_x, .overflow_y, .overflow_wrap, .pointer_events, .position, .position_anchor, .position_area, .position_try_fallbacks, .position_try_order, .position_visibility, .paint_order, .scrollbar_gutter, .shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify, .text_overflow, .text_rendering, .text_transform, .text_underline_position, .text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .touch_action, .user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break, .dominant_baseline, .quotes, .list_style_type, .font_family, .grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow, .grid_template_areas, .cursor, .font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .content, .font_variant_alternates {
 			.discrete
 		}
 		else {
@@ -5620,50 +5733,38 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 			return unsafe { to }
 		}
 		.repeatable_list {
-			return interpolate_repeatable_list(element, calculation_context, from, to, delta,
-				allow_discrete)
+			return interpolate_repeatable_list(element, calculation_context, from, to, delta, allow_discrete)
 		}
 		.custom {
 			if property_id == .transform {
-				return interpolate_transform(element, calculation_context, from, to, delta,
-					allow_discrete)
+				return interpolate_transform(element, calculation_context, from, to, delta, allow_discrete)
 			}
 			if property_id in [.box_shadow, .text_shadow] {
-				if result := interpolate_box_shadow(element, calculation_context, from, to, delta,
-					allow_discrete)
-				{
+				if result := interpolate_box_shadow(element, calculation_context, from, to, delta, allow_discrete) {
 					return result
 				}
 				return interpolate_discrete(from, to, delta, allow_discrete)
 			}
 			if property_id == .font_style {
-				return interpolate_font_style_property(calculation_context, from, to, delta,
-					allow_discrete)
+				return interpolate_font_style_property(calculation_context, from, to, delta, allow_discrete)
 			}
 			if property_id == .font_variation_settings {
-				if result := interpolate_value(element, calculation_context, from, to, delta,
-					allow_discrete)
-				{
+				if result := interpolate_value(element, calculation_context, from, to, delta, allow_discrete) {
 					return result
 				}
 				return interpolate_discrete(from, to, delta, allow_discrete)
 			}
 			if property_id == .scale {
-				return interpolate_scale_property(calculation_context, from, to, delta,
-					allow_discrete)
+				return interpolate_scale_property(calculation_context, from, to, delta, allow_discrete)
 			}
 			if property_id == .translate {
-				return interpolate_translate_property(calculation_context, from, to, delta,
-					allow_discrete)
+				return interpolate_translate_property(calculation_context, from, to, delta, allow_discrete)
 			}
 			if property_id == .rotate {
-				return interpolate_rotate_property(calculation_context, from, to, delta,
-					allow_discrete)
+				return interpolate_rotate_property(calculation_context, from, to, delta, allow_discrete)
 			}
 			if property_id in [.filter, .backdrop_filter] {
-				if result := interpolate_filter_value_list(element, calculation_context, from, to,
-					delta, allow_discrete)
-				{
+				if result := interpolate_filter_value_list(element, calculation_context, from, to, delta, allow_discrete) {
 					return result
 				}
 				return interpolate_discrete(from, to, delta, allow_discrete)
@@ -5736,14 +5837,12 @@ pub fn property_values_are_transitionable(property_id PropertyID, old_value &dom
 	// When comparing the before-change style and after-change style for a given property,
 	// the property values are transitionable if they have an animation type that is neither not animatable nor discrete.
 	animation_type := animation_type_from_longhand_property(property_id)
-	if animation_type == .none_
-		|| (transition_behavior != .allow_discrete && animation_type == .discrete) {
+	if animation_type == .none_ || (transition_behavior != .allow_discrete && animation_type == .discrete) {
 		return false
 	}
 
 	// Even when a property is transitionable, the two values may not be. The spec uses the example of inset/non-inset shadows.
-	if transition_behavior != .allow_discrete
-		&& interpolate_property(element, property_id, old_value, new_value, 0.5, .no) == none {
+	if transition_behavior != .allow_discrete && interpolate_property(element, property_id, old_value, new_value, 0.5, .no) == none {
 		return false
 	}
 	return true
@@ -5752,13 +5851,11 @@ pub fn property_values_are_transitionable(property_id PropertyID, old_value &dom
 pub fn interpolate_length_percentage(calculation_context InterpolationCalculationContext, from LengthPercentage, to LengthPercentage, delta f64) ?LengthPercentage {
 	if from.is_length() && to.is_length() {
 		range := interpolation_accepted_type_range(calculation_context, .length)
-		return LengthPercentage.from_length(Length.make_px(interpolate_raw(from.length().raw_value(),
-			to.length().raw_value(), delta, range)))
+		return LengthPercentage.from_length(Length.make_px(interpolate_raw(from.length().raw_value(), to.length().raw_value(), delta, range)))
 	}
 	if from.is_percentage() && to.is_percentage() {
 		range := interpolation_accepted_type_range(calculation_context, .percentage)
-		return LengthPercentage.from_percentage(Percentage.new(interpolate_raw(from.percentage().value(),
-			to.percentage().value(), delta, range)))
+		return LengthPercentage.from_percentage(Percentage.new(interpolate_raw(from.percentage().value(), to.percentage().value(), delta, range)))
 	}
 
 	from_value := interpolation_length_percentage_to_style_value(from)
@@ -5766,8 +5863,7 @@ pub fn interpolate_length_percentage(calculation_context InterpolationCalculatio
 	interpolated := interpolate_mixed_style_value(calculation_context, from_value, to_value, delta) or {
 		return none
 	}
-	if interpolated is LengthStyleValue || interpolated is PercentageStyleValue
-		|| interpolated is CalculatedStyleValue {
+	if interpolated is LengthStyleValue || interpolated is PercentageStyleValue || interpolated is CalculatedStyleValue {
 		return LengthPercentage.from_style_value_logic(interpolated)
 	}
 	return none
@@ -5779,13 +5875,11 @@ pub fn interpolate_length_percentage_or_auto(calculation_context InterpolationCa
 	}
 	if from.is_length() && to.is_length() {
 		range := interpolation_accepted_type_range(calculation_context, .length)
-		return LengthPercentageOrAuto.from_length(Length.make_px(interpolate_raw(from.length().raw_value(),
-			to.length().raw_value(), delta, range)))
+		return LengthPercentageOrAuto.from_length(Length.make_px(interpolate_raw(from.length().raw_value(), to.length().raw_value(), delta, range)))
 	}
 	if from.is_percentage() && to.is_percentage() {
 		range := interpolation_accepted_type_range(calculation_context, .percentage)
-		return LengthPercentageOrAuto.from_percentage(Percentage.new(interpolate_raw(from.percentage().value(),
-			to.percentage().value(), delta, range)))
+		return LengthPercentageOrAuto.from_percentage(Percentage.new(interpolate_raw(from.percentage().value(), to.percentage().value(), delta, range)))
 	}
 
 	from_value := interpolation_length_percentage_or_auto_to_style_value(from)
@@ -5793,8 +5887,7 @@ pub fn interpolate_length_percentage_or_auto(calculation_context InterpolationCa
 	interpolated := interpolate_mixed_style_value(calculation_context, from_value, to_value, delta) or {
 		return none
 	}
-	if interpolated is LengthStyleValue || interpolated is PercentageStyleValue
-		|| interpolated is CalculatedStyleValue {
+	if interpolated is LengthStyleValue || interpolated is PercentageStyleValue || interpolated is CalculatedStyleValue {
 		return LengthPercentageOrAuto.from_style_value_logic(interpolated)
 	}
 	return none
@@ -5842,8 +5935,7 @@ fn interpolate_mixed_style_value(calculation_context InterpolationCalculationCon
 	// a complete value of the surrounding property. Reify the numeric
 	// calculation directly when whole-property parsing is therefore inapplicable.
 	numeric := CSSNumericValue.parse(serialization) or { return none }
-	return numeric.create_an_internal_representation(PropertyNameAndID.from_id(calculation_context.property),
-		.no) or { none }
+	return numeric.create_an_internal_representation(PropertyNameAndID.from_id(calculation_context.property), .no) or { none }
 }
 
 pub fn interpolate_discrete_style_value(from StyleValue, to StyleValue, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
@@ -5864,7 +5956,6 @@ pub fn interpolate_css_color(from Color, to Color, delta f64, syntax ColorSyntax
 	// FIXME: Handle all interpolation methods.
 	// FIXME: Handle "analogous", "missing", and "powerless" components, somehow.
 	// FIXME: Remove duplicated code with Color::mixed_with(Color other, float weight)
-
 	from_alpha := f64(from.alpha()) / 255.0
 	to_alpha := f64(to.alpha()) / 255.0
 	interpolated_alpha := interpolate_raw(from_alpha, to_alpha, delta, none)
@@ -5876,9 +5967,7 @@ pub fn interpolate_css_color(from Color, to Color, delta f64, syntax ColorSyntax
 	if syntax == .modern {
 		from_oklab := from.to_premultiplied_oklab()
 		to_oklab := to.to_premultiplied_oklab()
-		return Color.from_oklab(interpolate_raw(from_oklab.l, to_oklab.l, delta, none) / clamped_alpha, interpolate_raw(from_oklab.a,
-			to_oklab.a, delta, none) / clamped_alpha, interpolate_raw(from_oklab.b, to_oklab.b,
-			delta, none) / clamped_alpha, clamped_alpha)
+		return Color.from_oklab(interpolate_raw(from_oklab.l, to_oklab.l, delta, none) / clamped_alpha, interpolate_raw(from_oklab.a, to_oklab.a, delta, none) / clamped_alpha, interpolate_raw(from_oklab.b, to_oklab.b, delta, none) / clamped_alpha, clamped_alpha)
 	}
 
 	premultiply_interpolate_unpremultiply := fn [delta, clamped_alpha, from_alpha, to_alpha] (from_channel u8, to_channel u8) u8 {
@@ -5888,9 +5977,7 @@ pub fn interpolate_css_color(from Color, to Color, delta f64, syntax ColorSyntax
 		return u8(clamp_f64(math.round(interpolated / clamped_alpha), 0, 255))
 	}
 
-	return Color.rgba(premultiply_interpolate_unpremultiply(from.red(), to.red()), premultiply_interpolate_unpremultiply(from.green(),
-		to.green()), premultiply_interpolate_unpremultiply(from.blue(), to.blue()),
-		u8(math.round(clamped_alpha * 255.0)))
+	return Color.rgba(premultiply_interpolate_unpremultiply(from.red(), to.red()), premultiply_interpolate_unpremultiply(from.green(), to.green()), premultiply_interpolate_unpremultiply(from.blue(), to.blue()), u8(math.round(clamped_alpha * 255.0)))
 }
 
 fn interpolate_raw_i64(from i64, to i64, delta f64, accepted_type_range ?AcceptedTypeRange) i64 {
@@ -5906,9 +5993,7 @@ fn interpolation_length_or_auto(from LengthOrAuto, to LengthOrAuto, delta f64, c
 	}
 	from_length := from.length() or { return LengthOrAuto.make_auto() }
 	to_length := to.length() or { return LengthOrAuto.make_auto() }
-	return LengthOrAuto.new(Length.new(interpolate_raw(from_length.raw_value(),
-		to_length.raw_value(), delta, interpolation_accepted_type_range(calculation_context,
-		.length)), from_length.unit()))
+	return LengthOrAuto.new(Length.new(interpolate_raw(from_length.raw_value(), to_length.raw_value(), delta, interpolation_accepted_type_range(calculation_context, .length)), from_length.unit()))
 }
 
 fn normalized_superellipse_half_corner(parameter f64) f64 {
@@ -5957,8 +6042,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		mut interpolated_color := Color.black()
 		if resolved_from_color := from_color {
 			if resolved_to_color := to_color {
-				interpolated_color = interpolate_css_color(resolved_from_color, resolved_to_color,
-					delta, .modern)
+				interpolated_color = interpolate_css_color(resolved_from_color, resolved_to_color, delta, .modern)
 			}
 		}
 		return StyleValue(ColorStyleValue.create(interpolated_color))
@@ -5968,8 +6052,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		AngleStyleValue {
 			if to is AngleStyleValue {
 				range := interpolation_accepted_type_range(calculation_context, .angle)
-				interpolated_value := interpolate_raw(from.angle().to_degrees(),
-					to.angle().to_degrees(), delta, range)
+				interpolated_value := interpolate_raw(from.angle().to_degrees(), to.angle().to_degrees(), delta, range)
 				StyleValue(AngleStyleValue.create(Angle.make_degrees(interpolated_value)))
 			} else {
 				none
@@ -5977,10 +6060,8 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		BackgroundSizeStyleValue {
 			if to is BackgroundSizeStyleValue {
-				x := interpolate_style_value_impl(calculation_context, from.size_x(), to.size_x(),
-					delta, allow_discrete) or { return none }
-				y := interpolate_style_value_impl(calculation_context, from.size_y(), to.size_y(),
-					delta, allow_discrete) or { return none }
+				x := interpolate_style_value_impl(calculation_context, from.size_x(), to.size_x(), delta, allow_discrete) or { return none }
+				y := interpolate_style_value_impl(calculation_context, from.size_y(), to.size_y(), delta, allow_discrete) or { return none }
 				StyleValue(BackgroundSizeStyleValue.create(x, y))
 			} else {
 				none
@@ -5991,14 +6072,10 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				if from.fill() != to.fill() {
 					return none
 				}
-				top := interpolate_style_value_impl(calculation_context, from.top(), to.top(),
-					delta, allow_discrete) or { return none }
-				right := interpolate_style_value_impl(calculation_context, from.right(),
-					to.right(), delta, allow_discrete) or { return none }
-				bottom := interpolate_style_value_impl(calculation_context, from.bottom(),
-					to.bottom(), delta, allow_discrete) or { return none }
-				left := interpolate_style_value_impl(calculation_context, from.left(), to.left(),
-					delta, allow_discrete) or { return none }
+				top := interpolate_style_value_impl(calculation_context, from.top(), to.top(), delta, allow_discrete) or { return none }
+				right := interpolate_style_value_impl(calculation_context, from.right(), to.right(), delta, allow_discrete) or { return none }
+				bottom := interpolate_style_value_impl(calculation_context, from.bottom(), to.bottom(), delta, allow_discrete) or { return none }
+				left := interpolate_style_value_impl(calculation_context, from.left(), to.left(), delta, allow_discrete) or { return none }
 				StyleValue(BorderImageSliceStyleValue.create(top, right, bottom, left, from.fill()))
 			} else {
 				none
@@ -6006,16 +6083,13 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		BorderRadiusStyleValue {
 			if to is BorderRadiusStyleValue {
-				interpolated_horizontal_radius := interpolate_style_value_impl(calculation_context,
-					from.horizontal_radius_(), to.horizontal_radius_(), delta, allow_discrete) or {
+				interpolated_horizontal_radius := interpolate_style_value_impl(calculation_context, from.horizontal_radius_(), to.horizontal_radius_(), delta, allow_discrete) or {
 					return none
 				}
-				interpolated_vertical_radius := interpolate_style_value_impl(calculation_context,
-					from.vertical_radius_(), to.vertical_radius_(), delta, allow_discrete) or {
+				interpolated_vertical_radius := interpolate_style_value_impl(calculation_context, from.vertical_radius_(), to.vertical_radius_(), delta, allow_discrete) or {
 					return none
 				}
-				StyleValue(BorderRadiusStyleValue.create(interpolated_horizontal_radius,
-					interpolated_vertical_radius))
+				StyleValue(BorderRadiusStyleValue.create(interpolated_horizontal_radius, interpolated_vertical_radius))
 			} else {
 				none
 			}
@@ -6031,26 +6105,20 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 					min: 0
 					max: math.max_f64
 				}
-				interpolated_top_left := interpolate_style_value_impl(border_radius_rect_context,
-					from.top_left(), to.top_left(), delta, allow_discrete) or { return none }
-				interpolated_top_right := interpolate_style_value_impl(border_radius_rect_context,
-					from.top_right(), to.top_right(), delta, allow_discrete) or { return none }
-				interpolated_bottom_right := interpolate_style_value_impl(border_radius_rect_context,
-					from.bottom_right(), to.bottom_right(), delta, allow_discrete) or {
+				interpolated_top_left := interpolate_style_value_impl(border_radius_rect_context, from.top_left(), to.top_left(), delta, allow_discrete) or { return none }
+				interpolated_top_right := interpolate_style_value_impl(border_radius_rect_context, from.top_right(), to.top_right(), delta, allow_discrete) or { return none }
+				interpolated_bottom_right := interpolate_style_value_impl(border_radius_rect_context, from.bottom_right(), to.bottom_right(), delta, allow_discrete) or {
 					return none
 				}
-				interpolated_bottom_left := interpolate_style_value_impl(border_radius_rect_context,
-					from.bottom_left(), to.bottom_left(), delta, allow_discrete) or { return none }
-				StyleValue(BorderRadiusRectStyleValue.create(interpolated_top_left,
-					interpolated_top_right, interpolated_bottom_right, interpolated_bottom_left))
+				interpolated_bottom_left := interpolate_style_value_impl(border_radius_rect_context, from.bottom_left(), to.bottom_left(), delta, allow_discrete) or { return none }
+				StyleValue(BorderRadiusRectStyleValue.create(interpolated_top_left, interpolated_top_right, interpolated_bottom_right, interpolated_bottom_left))
 			} else {
 				none
 			}
 		}
 		EdgeStyleValue {
 			if to is EdgeStyleValue {
-				offset := interpolate_style_value_impl(calculation_context, from.offset(),
-					to.offset(), delta, allow_discrete) or { return none }
+				offset := interpolate_style_value_impl(calculation_context, from.offset(), to.offset(), delta, allow_discrete) or { return none }
 				StyleValue(EdgeStyleValue.create(none, offset))
 			} else {
 				none
@@ -6058,8 +6126,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		FlexStyleValue {
 			if to is FlexStyleValue {
-				StyleValue(FlexStyleValue.create(Flex.new(interpolate_raw(from.raw_value(),
-					to.raw_value(), delta, none), from.flex().unit())))
+				StyleValue(FlexStyleValue.create(Flex.new(interpolate_raw(from.raw_value(), to.raw_value(), delta, none), from.flex().unit())))
 			} else {
 				none
 			}
@@ -6077,8 +6144,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 						min: -90
 						max: 90
 					}
-					angle := interpolate_style_value_impl(angle_context, from_angle, to_angle,
-						delta, allow_discrete) or { return none }
+					angle := interpolate_style_value_impl(angle_context, from_angle, to_angle, delta, allow_discrete) or { return none }
 					StyleValue(FontStyleStyleValue.create(from.font_style(), angle))
 				} else {
 					StyleValue(FontStyleStyleValue.create(from.font_style(), none))
@@ -6089,8 +6155,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		FrequencyStyleValue {
 			if to is FrequencyStyleValue {
-				StyleValue(FrequencyStyleValue.create(Frequency.new(interpolate_raw(from.raw_value(),
-					to.raw_value(), delta, none), from.frequency().unit())))
+				StyleValue(FrequencyStyleValue.create(Frequency.new(interpolate_raw(from.raw_value(), to.raw_value(), delta, none), from.frequency().unit())))
 			} else {
 				none
 			}
@@ -6101,8 +6166,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				// Interpolation of <integer> is defined as Vresult = round((1 - p) x VA + p x VB);
 				// that is, interpolation happens in the real number space as for <number>s, and the result is converted to an <integer> by rounding to the nearest integer.
 				range := interpolation_accepted_type_range(calculation_context, .integer)
-				StyleValue(IntegerStyleValue.create(interpolate_raw_i64(from.integer(),
-					to.integer(), delta, range)))
+				StyleValue(IntegerStyleValue.create(interpolate_raw_i64(from.integer(), to.integer(), delta, range)))
 			} else {
 				none
 			}
@@ -6112,10 +6176,8 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				from_length := from.length()
 				to_length := to.length()
 				range := interpolation_accepted_type_range(calculation_context, .length)
-				interpolated_value := interpolate_raw(from_length.raw_value(),
-					to_length.raw_value(), delta, range)
-				StyleValue(LengthStyleValue.create(Length.new(interpolated_value,
-					from_length.unit())))
+				interpolated_value := interpolate_raw(from_length.raw_value(), to_length.raw_value(), delta, range)
+				StyleValue(LengthStyleValue.create(Length.new(interpolated_value, from_length.unit())))
 			} else {
 				none
 			}
@@ -6123,8 +6185,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		NumberStyleValue {
 			if to is NumberStyleValue {
 				range := interpolation_accepted_type_range(calculation_context, .number)
-				StyleValue(NumberStyleValue.create(interpolate_raw(from.number(), to.number(),
-					delta, range)))
+				StyleValue(NumberStyleValue.create(interpolate_raw(from.number(), to.number(), delta, range)))
 			} else {
 				none
 			}
@@ -6134,10 +6195,8 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				if from.tag() != to.tag() {
 					return none
 				}
-				value := interpolate_style_value_impl(calculation_context, from.value(),
-					to.value(), delta, allow_discrete) or { return none }
-				StyleValue(OpenTypeTaggedStyleValue.create(.font_variation_settings, from.tag(),
-					value))
+				value := interpolate_style_value_impl(calculation_context, from.value(), to.value(), delta, allow_discrete) or { return none }
+				StyleValue(OpenTypeTaggedStyleValue.create(.font_variation_settings, from.tag(), value))
 			} else {
 				none
 			}
@@ -6145,18 +6204,15 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		PercentageStyleValue {
 			if to is PercentageStyleValue {
 				range := interpolation_accepted_type_range(calculation_context, .percentage)
-				StyleValue(PercentageStyleValue.create(Percentage.new(interpolate_raw(from.percentage().value(),
-					to.percentage().value(), delta, range))))
+				StyleValue(PercentageStyleValue.create(Percentage.new(interpolate_raw(from.percentage().value(), to.percentage().value(), delta, range))))
 			} else {
 				none
 			}
 		}
 		PositionStyleValue {
 			if to is PositionStyleValue {
-				x := interpolate_style_value_impl(calculation_context, StyleValue(from.edge_x()),
-					StyleValue(to.edge_x()), delta, allow_discrete) or { return none }
-				y := interpolate_style_value_impl(calculation_context, StyleValue(from.edge_y()),
-					StyleValue(to.edge_y()), delta, allow_discrete) or { return none }
+				x := interpolate_style_value_impl(calculation_context, StyleValue(from.edge_x()), StyleValue(to.edge_x()), delta, allow_discrete) or { return none }
+				y := interpolate_style_value_impl(calculation_context, StyleValue(from.edge_y()), StyleValue(to.edge_y()), delta, allow_discrete) or { return none }
 				if x is EdgeStyleValue && y is EdgeStyleValue {
 					StyleValue(PositionStyleValue.create(x, y))
 				} else {
@@ -6188,10 +6244,8 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 					from_x
 				}
 				to_y := if to_components.len > 1 { to_components[1] as StyleValue } else { to_x }
-				x := interpolate_style_value_impl(calculation_context, from_x, to_x, delta,
-					allow_discrete) or { return none }
-				y := interpolate_style_value_impl(calculation_context, from_y, to_y, delta,
-					allow_discrete) or { return none }
+				x := interpolate_style_value_impl(calculation_context, from_x, to_x, delta, allow_discrete) or { return none }
+				y := interpolate_style_value_impl(calculation_context, from_y, to_y, delta, allow_discrete) or { return none }
 				if from_components.len == 1 && to_components.len == 1 {
 					StyleValue(RadialSizeStyleValue.create([
 						RadialSizeStyleValueComponent(x),
@@ -6213,8 +6267,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				if from_ratio.is_degenerate() || to_ratio.is_degenerate() {
 					return none
 				}
-				value := math.exp(interpolate_raw(math.log(from_ratio.value()),
-					math.log(to_ratio.value()), delta, none))
+				value := math.exp(interpolate_raw(math.log(from_ratio.value()), math.log(to_ratio.value()), delta, none))
 				StyleValue(RatioStyleValue.create(Ratio.new_single(value)))
 			} else {
 				none
@@ -6224,21 +6277,14 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 			if to is RectStyleValue {
 				from_rect := from.rect()
 				to_rect := to.rect()
-				if from_rect.top_edge.is_auto() != to_rect.top_edge.is_auto()
-					|| from_rect.right_edge.is_auto() != to_rect.right_edge.is_auto()
-					|| from_rect.bottom_edge.is_auto() != to_rect.bottom_edge.is_auto()
-					|| from_rect.left_edge.is_auto() != to_rect.left_edge.is_auto() {
+				if from_rect.top_edge.is_auto() != to_rect.top_edge.is_auto() || from_rect.right_edge.is_auto() != to_rect.right_edge.is_auto() || from_rect.bottom_edge.is_auto() != to_rect.bottom_edge.is_auto() || from_rect.left_edge.is_auto() != to_rect.left_edge.is_auto() {
 					return none
 				}
 				StyleValue(RectStyleValue.create(EdgeRect{
-					top_edge:    interpolation_length_or_auto(from_rect.top_edge, to_rect.top_edge,
-						delta, calculation_context)
-					right_edge:  interpolation_length_or_auto(from_rect.right_edge,
-						to_rect.right_edge, delta, calculation_context)
-					bottom_edge: interpolation_length_or_auto(from_rect.bottom_edge,
-						to_rect.bottom_edge, delta, calculation_context)
-					left_edge:   interpolation_length_or_auto(from_rect.left_edge,
-						to_rect.left_edge, delta, calculation_context)
+					top_edge: interpolation_length_or_auto(from_rect.top_edge, to_rect.top_edge, delta, calculation_context)
+					right_edge: interpolation_length_or_auto(from_rect.right_edge, to_rect.right_edge, delta, calculation_context)
+					bottom_edge: interpolation_length_or_auto(from_rect.bottom_edge, to_rect.bottom_edge, delta, calculation_context)
+					left_edge: interpolation_length_or_auto(from_rect.left_edge, to_rect.left_edge, delta, calculation_context)
 				}))
 			} else {
 				none
@@ -6246,8 +6292,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		ResolutionStyleValue {
 			if to is ResolutionStyleValue {
-				StyleValue(ResolutionStyleValue.create(Resolution.new(interpolate_raw(from.raw_value(),
-					to.raw_value(), delta, none), from.resolution().unit())))
+				StyleValue(ResolutionStyleValue.create(Resolution.new(interpolate_raw(from.raw_value(), to.raw_value(), delta, none), from.resolution().unit())))
 			} else {
 				none
 			}
@@ -6259,8 +6304,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				}
 				mut interpolated_values := []StyleValue{cap: from.size()}
 				for i in 0 .. from.size() {
-					interpolated := interpolate_style_value(calculation_context, from.values()[i],
-						to.values()[i], delta, .no) or { return none }
+					interpolated := interpolate_style_value(calculation_context, from.values()[i], to.values()[i], delta, .no) or { return none }
 					interpolated_values << interpolated
 				}
 				StyleValue(StyleValueList.create(interpolated_values, from.separator(), .yes))
@@ -6273,8 +6317,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				if from.each_line() != to.each_line() || from.hanging() != to.hanging() {
 					return none
 				}
-				interpolated_length_percentage := interpolate_style_value(calculation_context,
-					from.length_percentage(), to.length_percentage(), delta, allow_discrete) or {
+				interpolated_length_percentage := interpolate_style_value(calculation_context, from.length_percentage(), to.length_percentage(), delta, allow_discrete) or {
 					return none
 				}
 				StyleValue(TextIndentStyleValue.create(interpolated_length_percentage, if from.hanging() {
@@ -6301,8 +6344,11 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		TimeStyleValue {
 			if to is TimeStyleValue {
-				StyleValue(TimeStyleValue.create(Time.new(interpolate_raw(from.raw_value(),
-					to.raw_value(), delta, none), from.time().unit())))
+				interpolated_value := interpolate_raw(from.raw_value(), to.raw_value(), delta,
+					none)
+				unit := from.time().unit()
+				interpolated_time := Time.new(interpolated_value, unit)
+				StyleValue(TimeStyleValue.create(interpolated_time))
 			} else {
 				none
 			}
@@ -6353,10 +6399,8 @@ fn interpolate_repeatable_style_value_lists(calculation_context InterpolationCal
 	}
 	mut interpolated_values := []StyleValue{cap: repeated_size}
 	for i in 0 .. repeated_size {
-		value := interpolate_style_value(calculation_context, from_list.value_at(i, true),
-			to_list.value_at(i, true), delta, .no) or {
-			return interpolate_discrete_style_value(from_original, to_original, delta,
-				allow_discrete)
+		value := interpolate_style_value(calculation_context, from_list.value_at(i, true), to_list.value_at(i, true), delta, .no) or {
+			return interpolate_discrete_style_value(from_original, to_original, delta, allow_discrete)
 		}
 		interpolated_values << value
 	}
@@ -6368,17 +6412,14 @@ pub fn interpolate_repeatable_style_value_list(calculation_context Interpolation
 	// Same as by computed value except that if the two lists have differing numbers of items, they are first repeated to the least common multiple number of items.
 	if from is StyleValueList {
 		if to is StyleValueList {
-			return interpolate_repeatable_style_value_lists(calculation_context, from, to, from,
-				to, delta, allow_discrete)
+			return interpolate_repeatable_style_value_lists(calculation_context, from, to, from, to, delta, allow_discrete)
 		}
 		to_list := interpolation_make_single_value_list(to, from.size(), from.separator())
-		return interpolate_repeatable_style_value_lists(calculation_context, from, to_list, from,
-			to, delta, allow_discrete)
+		return interpolate_repeatable_style_value_lists(calculation_context, from, to_list, from, to, delta, allow_discrete)
 	}
 	if to is StyleValueList {
 		from_list := interpolation_make_single_value_list(from, to.size(), to.separator())
-		return interpolate_repeatable_style_value_lists(calculation_context, from_list, to, from,
-			to, delta, allow_discrete)
+		return interpolate_repeatable_style_value_lists(calculation_context, from_list, to, from, to, delta, allow_discrete)
 	}
 	return interpolate_style_value(calculation_context, from, to, delta, allow_discrete)
 }
@@ -6391,8 +6432,7 @@ pub fn interpolate_value(element &dom.Element, calculation_context Interpolation
 	to_value := parse_css_value_logic(calculation_context.property, to.css_text) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
-	interpolated := interpolate_style_value(calculation_context, from_value, to_value, delta,
-		allow_discrete) or { return none }
+	interpolated := interpolate_style_value(calculation_context, from_value, to_value, delta, allow_discrete) or { return none }
 	return dom_style_value_from_value_logic(interpolated)
 }
 
@@ -6404,8 +6444,7 @@ pub fn interpolate_repeatable_list(element &dom.Element, calculation_context Int
 	to_value := parse_css_value_logic(calculation_context.property, to.css_text) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
-	interpolated := interpolate_repeatable_style_value_list(calculation_context, from_value,
-		to_value, delta, allow_discrete) or { return none }
+	interpolated := interpolate_repeatable_style_value_list(calculation_context, from_value, to_value, delta, allow_discrete) or { return none }
 	return dom_style_value_from_value_logic(interpolated)
 }
 
@@ -6415,8 +6454,7 @@ fn interpolation_font_style_with_normal_as_oblique_zero(value StyleValue) ?Style
 	}
 	font_style := value as FontStyleStyleValue
 	if font_style.font_style() == .normal {
-		return StyleValue(FontStyleStyleValue.create(.oblique,
-			StyleValue(AngleStyleValue.create(Angle.make_degrees(0)))))
+		return StyleValue(FontStyleStyleValue.create(.oblique, StyleValue(AngleStyleValue.create(Angle.make_degrees(0)))))
 	}
 	return value
 }
@@ -6434,8 +6472,7 @@ fn interpolate_font_style_property(calculation_context InterpolationCalculationC
 	normalized_to := interpolation_font_style_with_normal_as_oblique_zero(parsed_to) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
-	result := interpolate_style_value(calculation_context, normalized_from, normalized_to, delta,
-		allow_discrete) or { return none }
+	result := interpolate_style_value(calculation_context, normalized_from, normalized_to, delta, allow_discrete) or { return none }
 	return dom_style_value_from_value_logic(result)
 }
 
@@ -6451,8 +6488,7 @@ fn interpolation_transform_or_identity(property_id PropertyID, value &dom.StyleV
 }
 
 fn interpolate_scale_property(calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	if from.css_text.trim_space().to_lower() == 'none'
-		&& to.css_text.trim_space().to_lower() == 'none' {
+	if from.css_text.trim_space().to_lower() == 'none' && to.css_text.trim_space().to_lower() == 'none' {
 		return unsafe { from }
 	}
 	one := StyleValue(NumberStyleValue.create(1))
@@ -6484,14 +6520,16 @@ fn interpolate_scale_property(calculation_context InterpolationCalculationContex
 		}
 		values << z
 	}
-	result := TransformationStyleValue.create(.scale,
-		if values.len == 3 { .scale3d } else { .scale }, values)
+	result := TransformationStyleValue.create(.scale, if values.len == 3 {
+		.scale3d
+	} else {
+		.scale
+	}, values)
 	return dom_style_value_from_value_logic(StyleValue(result))
 }
 
 fn interpolate_translate_property(calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	if from.css_text.trim_space().to_lower() == 'none'
-		&& to.css_text.trim_space().to_lower() == 'none' {
+	if from.css_text.trim_space().to_lower() == 'none' && to.css_text.trim_space().to_lower() == 'none' {
 		return unsafe { from }
 	}
 	zero := StyleValue(LengthStyleValue.create(Length.make_px(0)))
@@ -6635,8 +6673,7 @@ fn interpolation_rotation_transform(from TransformationStyleValue, to Transforma
 			StyleValue(AngleStyleValue.create(Angle.make_degrees(angle))),
 		])
 	}
-	quaternion := interpolation_slerp(interpolation_axis_angle_to_quaternion(from_axis, from_angle), interpolation_axis_angle_to_quaternion(to_axis,
-		to_angle), delta)
+	quaternion := interpolation_slerp(interpolation_axis_angle_to_quaternion(from_axis, from_angle), interpolation_axis_angle_to_quaternion(to_axis, to_angle), delta)
 	sin_half_angle := math.sqrt(math.max(0.0, 1.0 - quaternion[3] * quaternion[3]))
 	mut axis := FloatVector3{
 		x: quaternion[0]
@@ -6659,8 +6696,7 @@ fn interpolation_rotation_transform(from TransformationStyleValue, to Transforma
 }
 
 fn interpolate_rotate_property(calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	if from.css_text.trim_space().to_lower() == 'none'
-		&& to.css_text.trim_space().to_lower() == 'none' {
+	if from.css_text.trim_space().to_lower() == 'none' && to.css_text.trim_space().to_lower() == 'none' {
 		return unsafe { from }
 	}
 	zero_angle := StyleValue(AngleStyleValue.create(Angle.make_degrees(0)))
@@ -6671,12 +6707,11 @@ fn interpolate_rotate_property(calculation_context InterpolationCalculationConte
 	to_transform := interpolation_transform_or_identity(.rotate, to, identity) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
-	if from_transform.transform_function() == to_transform.transform_function()
-		&& from_transform.values().len == 1 && to_transform.values().len == 1 {
-		angle := interpolate_style_value(calculation_context, from_transform.values()[0],
-			to_transform.values()[0], delta, allow_discrete) or { return none }
-		return dom_style_value_from_value_logic(StyleValue(TransformationStyleValue.create(.rotate,
-			from_transform.transform_function(), [angle])))
+	if from_transform.transform_function() == to_transform.transform_function() && from_transform.values().len == 1 && to_transform.values().len == 1 {
+		angle := interpolate_style_value(calculation_context, from_transform.values()[0], to_transform.values()[0], delta, allow_discrete) or { return none }
+		return dom_style_value_from_value_logic(StyleValue(TransformationStyleValue.create(.rotate, from_transform.transform_function(), [
+			angle,
+		])))
 	}
 	result := interpolation_rotation_transform(from_transform, to_transform, delta, allow_discrete) or {
 		return none
@@ -6706,8 +6741,8 @@ fn interpolation_filter_initial_value(value FilterStyleValue) ?FilterStyleValue 
 			FilterStyleValue(FilterOperationDropShadow{
 				offset_x: zero_length
 				offset_y: zero_length
-				radius:   zero_length
-				color:    StyleValue(ColorStyleValue.create(Color.rgba(0, 0, 0, 0)))
+				radius: zero_length
+				color: StyleValue(ColorStyleValue.create(Color.rgba(0, 0, 0, 0)))
 			})
 		}
 		FilterOperationHueRotate {
@@ -6718,15 +6753,13 @@ fn interpolation_filter_initial_value(value FilterStyleValue) ?FilterStyleValue 
 		FilterOperationColor {
 			FilterStyleValue(FilterOperationColor{
 				operation: value.operation
-				amount:    StyleValue(NumberStyleValue.create(if value.operation in [
+				amount: StyleValue(NumberStyleValue.create(if value.operation in [
 					.grayscale,
 					.invert,
 					.sepia,
 				] {
-					0
-				} else {
-					1
-				}))
+					0} else {
+					1}))
 			})
 		}
 		URL {
@@ -6739,8 +6772,7 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 	return match from {
 		FilterOperationBlur {
 			if to is FilterOperationBlur {
-				radius := interpolate_style_value(calculation_context, from.radius, to.radius,
-					delta, allow_discrete) or { return none }
+				radius := interpolate_style_value(calculation_context, from.radius, to.radius, delta, allow_discrete) or { return none }
 				FilterStyleValue(FilterOperationBlur{
 					radius: radius
 				})
@@ -6750,8 +6782,7 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 		}
 		FilterOperationHueRotate {
 			if to is FilterOperationHueRotate {
-				angle := interpolate_style_value(calculation_context, from.angle, to.angle, delta,
-					allow_discrete) or { return none }
+				angle := interpolate_style_value(calculation_context, from.angle, to.angle, delta, allow_discrete) or { return none }
 				FilterStyleValue(FilterOperationHueRotate{
 					angle: angle
 				})
@@ -6761,11 +6792,10 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 		}
 		FilterOperationColor {
 			if to is FilterOperationColor {
-				amount := interpolate_style_value(calculation_context, from.amount, to.amount,
-					delta, allow_discrete) or { return none }
+				amount := interpolate_style_value(calculation_context, from.amount, to.amount, delta, allow_discrete) or { return none }
 				FilterStyleValue(FilterOperationColor{
 					operation: if delta >= 0.5 { to.operation } else { from.operation }
-					amount:    amount
+					amount: amount
 				})
 			} else {
 				none
@@ -6773,15 +6803,12 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 		}
 		FilterOperationDropShadow {
 			if to is FilterOperationDropShadow {
-				x := interpolate_style_value(calculation_context, from.offset_x, to.offset_x,
-					delta, allow_discrete) or { return none }
-				y := interpolate_style_value(calculation_context, from.offset_y, to.offset_y,
-					delta, allow_discrete) or { return none }
+				x := interpolate_style_value(calculation_context, from.offset_x, to.offset_x, delta, allow_discrete) or { return none }
+				y := interpolate_style_value(calculation_context, from.offset_y, to.offset_y, delta, allow_discrete) or { return none }
 				zero := StyleValue(LengthStyleValue.create(Length.make_px(0)))
 				from_radius := from.radius or { zero }
 				to_radius := to.radius or { zero }
-				interpolated_radius := interpolate_style_value(calculation_context, from_radius,
-					to_radius, delta, allow_discrete) or { return none }
+				interpolated_radius := interpolate_style_value(calculation_context, from_radius, to_radius, delta, allow_discrete) or { return none }
 				transparent := StyleValue(ColorStyleValue.create(Color.rgba(0, 0, 0, 0)))
 				from_color := (from.color or { transparent }).to_color(color_context) or {
 					Color.rgba(0, 0, 0, 0)
@@ -6792,13 +6819,10 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 				FilterStyleValue(FilterOperationDropShadow{
 					offset_x: x
 					offset_y: y
-					radius:   if if delta >= 0.5 { to.radius != none } else { from.radius != none } {
-						interpolated_radius
-					} else {
-						none
-					}
-					color:    StyleValue(ColorStyleValue.create(interpolate_css_color(from_color,
-						to_color, delta, .modern)))
+					radius: if if delta >= 0.5 { to.radius != none } else { from.radius != none } {
+						interpolated_radius} else {
+						none}
+					color: StyleValue(ColorStyleValue.create(interpolate_css_color(from_color, to_color, delta, .modern)))
 				})
 			} else {
 				none
@@ -6832,8 +6856,7 @@ fn interpolate_filter_value_list(element &dom.Element, calculation_context Inter
 	}
 	mut result := []FilterStyleValue{cap: from_list.len}
 	for i in 0 .. from_list.len {
-		result << (interpolate_filter_function(calculation_context, from_list[i], to_list[i],
-			delta, allow_discrete, color_context) or { return none })
+		result << (interpolate_filter_function(calculation_context, from_list[i], to_list[i], delta, allow_discrete, color_context) or { return none })
 	}
 	return dom_style_value_from_value_logic(StyleValue(FilterValueListStyleValue.create(result)))
 }
@@ -6868,14 +6891,10 @@ pub fn interpolate_box_shadow(element &dom.Element, calculation_context Interpol
 			return interpolate_discrete(from, to, delta, allow_discrete)
 		}
 
-		offset_x := interpolate_style_value(calculation_context, from_shadow.offset_x(),
-			to_shadow.offset_x(), delta, allow_discrete) or { return none }
-		offset_y := interpolate_style_value(calculation_context, from_shadow.offset_y(),
-			to_shadow.offset_y(), delta, allow_discrete) or { return none }
-		blur_radius := interpolate_style_value(calculation_context, from_shadow.blur_radius(),
-			to_shadow.blur_radius(), delta, allow_discrete) or { return none }
-		spread_distance := interpolate_style_value(calculation_context,
-			from_shadow.spread_distance(), to_shadow.spread_distance(), delta, allow_discrete) or {
+		offset_x := interpolate_style_value(calculation_context, from_shadow.offset_x(), to_shadow.offset_x(), delta, allow_discrete) or { return none }
+		offset_y := interpolate_style_value(calculation_context, from_shadow.offset_y(), to_shadow.offset_y(), delta, allow_discrete) or { return none }
+		blur_radius := interpolate_style_value(calculation_context, from_shadow.blur_radius(), to_shadow.blur_radius(), delta, allow_discrete) or { return none }
+		spread_distance := interpolate_style_value(calculation_context, from_shadow.spread_distance(), to_shadow.spread_distance(), delta, allow_discrete) or {
 			return none
 		}
 
@@ -6888,9 +6907,7 @@ pub fn interpolate_box_shadow(element &dom.Element, calculation_context Interpol
 			}
 		}
 		placement := if delta >= 0.5 { to_shadow.placement() } else { from_shadow.placement() }
-		result << StyleValue(ShadowStyleValue.create(from_shadow.shadow_type(),
-			StyleValue(ColorStyleValue.create(color)), offset_x, offset_y, blur_radius,
-			spread_distance, placement))
+		result << StyleValue(ShadowStyleValue.create(from_shadow.shadow_type(), StyleValue(ColorStyleValue.create(color)), offset_x, offset_y, blur_radius, spread_distance, placement))
 	}
 
 	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(result, .comma, .yes)))
@@ -6919,9 +6936,7 @@ fn interpolation_shadow_list(value StyleValue) ?[]ShadowStyleValue {
 fn interpolation_extend_shadow_list(mut values []ShadowStyleValue, other []ShadowStyleValue) {
 	for i := values.len; i < other.len; i++ {
 		other_shadow := other[i]
-		values << ShadowStyleValue.create(other_shadow.shadow_type(), StyleValue(ColorStyleValue.create(Color.rgba(0,
-			0, 0, 0))), zero_length_style_value(), zero_length_style_value(),
-			zero_length_style_value(), zero_length_style_value(), other_shadow.placement())
+		values << ShadowStyleValue.create(other_shadow.shadow_type(), StyleValue(ColorStyleValue.create(Color.rgba(0, 0, 0, 0))), zero_length_style_value(), zero_length_style_value(), zero_length_style_value(), zero_length_style_value(), other_shadow.placement())
 	}
 }
 
@@ -6951,15 +6966,14 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 	for i in 0 .. from_transformations.len {
 		mut from_transform := from_transformations[i]
 		mut to_transform := to_transformations[i]
-		if interpolation_is_2d_primitive_transform(from_transform.transform_function())
-			&& interpolation_is_2d_primitive_transform(to_transform.transform_function()) {
+		if interpolation_is_2d_primitive_transform(from_transform.transform_function()) && interpolation_is_2d_primitive_transform(to_transform.transform_function()) {
 			from_transform = interpolation_convert_to_2d_primitive(from_transform)
 			to_transform = interpolation_convert_to_2d_primitive(to_transform)
 		}
 
 		function := from_transform.transform_function()
-		if function != to_transform.transform_function()
-			|| function in [.matrix, .matrix3d, .perspective] {
+		if function != to_transform.transform_function() || function in [.matrix, .matrix3d,
+			.perspective] {
 			return interpolate_discrete(from, to, delta, allow_discrete)
 		}
 		from_values := from_transform.values()
@@ -6971,19 +6985,16 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 		mut values := []StyleValue{cap: from_values.len}
 		if function == .rotate3d {
 			// Equal axes need no matrix decomposition: only the angle changes.
-			if from_values.len != 4 || !from_values[0].equals(to_values[0])
-				|| !from_values[1].equals(to_values[1]) || !from_values[2].equals(to_values[2]) {
+			if from_values.len != 4 || !from_values[0].equals(to_values[0]) || !from_values[1].equals(to_values[1]) || !from_values[2].equals(to_values[2]) {
 				return interpolate_discrete(from, to, delta, allow_discrete)
 			}
 			values << from_values[0]
 			values << from_values[1]
 			values << from_values[2]
-			values << (interpolate_style_value(calculation_context, from_values[3], to_values[3],
-				delta, .no) or { return interpolate_discrete(from, to, delta, allow_discrete) })
+			values << (interpolate_style_value(calculation_context, from_values[3], to_values[3], delta, .no) or { return interpolate_discrete(from, to, delta, allow_discrete) })
 		} else {
 			for value_index in 0 .. from_values.len {
-				values << (interpolate_style_value(calculation_context, from_values[value_index],
-					to_values[value_index], delta, .no) or {
+				values << (interpolate_style_value(calculation_context, from_values[value_index], to_values[value_index], delta, .no) or {
 					return interpolate_discrete(from, to, delta, allow_discrete)
 				})
 			}
@@ -7070,7 +7081,6 @@ pub fn interpolate_color(from ComputedColor, to ComputedColor, delta f64, syntax
 	// FIXME: Handle all interpolation methods.
 	// FIXME: Handle "analogous", "missing", and "powerless" components, somehow.
 	// FIXME: Remove duplicated code with Color::mixed_with(Color other, float weight)
-
 	from_alpha := f64(from.alpha()) / 255.0
 	to_alpha := f64(to.alpha()) / 255.0
 	interpolated_alpha := interpolate_raw(from_alpha, to_alpha, delta, none)
@@ -7080,14 +7090,10 @@ pub fn interpolate_color(from ComputedColor, to ComputedColor, delta f64, syntax
 	}
 
 	if syntax == .modern {
-		from_oklab :=
-			Color.rgba(from.red(), from.green(), from.blue(), from.alpha()).to_premultiplied_oklab()
+		from_oklab := Color.rgba(from.red(), from.green(), from.blue(), from.alpha()).to_premultiplied_oklab()
 		to_oklab := Color.rgba(to.red(), to.green(), to.blue(), to.alpha()).to_premultiplied_oklab()
-		interpolated := Color.from_oklab(interpolate_raw(from_oklab.l, to_oklab.l, delta, none) / clamped_alpha, interpolate_raw(from_oklab.a,
-			to_oklab.a, delta, none) / clamped_alpha, interpolate_raw(from_oklab.b, to_oklab.b,
-			delta, none) / clamped_alpha, clamped_alpha)
-		return ComputedColor.rgba(interpolated.red(), interpolated.green(), interpolated.blue(),
-			interpolated.alpha())
+		interpolated := Color.from_oklab(interpolate_raw(from_oklab.l, to_oklab.l, delta, none) / clamped_alpha, interpolate_raw(from_oklab.a, to_oklab.a, delta, none) / clamped_alpha, interpolate_raw(from_oklab.b, to_oklab.b, delta, none) / clamped_alpha, clamped_alpha)
+		return ComputedColor.rgba(interpolated.red(), interpolated.green(), interpolated.blue(), interpolated.alpha())
 	}
 
 	premultiply_interpolate_unpremultiply := fn [delta, clamped_alpha, from_alpha, to_alpha] (from_channel u8, to_channel u8) u8 {
@@ -7097,9 +7103,7 @@ pub fn interpolate_color(from ComputedColor, to ComputedColor, delta f64, syntax
 		return u8(clamp_f64(math.round(interpolated / clamped_alpha), 0, 255))
 	}
 
-	return ComputedColor.rgba(premultiply_interpolate_unpremultiply(from.red(), to.red()), premultiply_interpolate_unpremultiply(from.green(),
-		to.green()), premultiply_interpolate_unpremultiply(from.blue(), to.blue()),
-		u8(math.round(clamped_alpha * 255.0)))
+	return ComputedColor.rgba(premultiply_interpolate_unpremultiply(from.red(), to.red()), premultiply_interpolate_unpremultiply(from.green(), to.green()), premultiply_interpolate_unpremultiply(from.blue(), to.blue()), u8(math.round(clamped_alpha * 255.0)))
 }
 
 fn filter_style_value_zero_length() StyleValue {
@@ -7125,7 +7129,7 @@ fn filter_style_value_initial_value_for_accumulation(value FilterStyleValue) ?Fi
 			FilterStyleValue(FilterOperationDropShadow{
 				offset_x: filter_style_value_zero_length()
 				offset_y: filter_style_value_zero_length()
-				radius:   filter_style_value_zero_length()
+				radius: filter_style_value_zero_length()
 			})
 		}
 		FilterOperationHueRotate {
@@ -7141,7 +7145,7 @@ fn filter_style_value_initial_value_for_accumulation(value FilterStyleValue) ?Fi
 
 			FilterStyleValue(FilterOperationColor{
 				operation: value.operation
-				amount:    filter_style_value_number(default_amount)
+				amount: filter_style_value_number(default_amount)
 			})
 		}
 		URL {
@@ -7151,10 +7155,8 @@ fn filter_style_value_initial_value_for_accumulation(value FilterStyleValue) ?Fi
 }
 
 fn filter_style_value_add_lengths(a StyleValue, b StyleValue) StyleValue {
-	a_value :=
-		style_values_extra_length_from_style_value(a).absolute_length_to_px_without_rounding()
-	b_value :=
-		style_values_extra_length_from_style_value(b).absolute_length_to_px_without_rounding()
+	a_value := style_values_extra_length_from_style_value(a).absolute_length_to_px_without_rounding()
+	b_value := style_values_extra_length_from_style_value(b).absolute_length_to_px_without_rounding()
 	return StyleValue(LengthStyleValue.create(Length.make_px(a_value + b_value)))
 }
 
@@ -7188,8 +7190,7 @@ fn filter_style_value_accumulate_filter(underlying FilterStyleValue, animated Fi
 		FilterOperationBlur {
 			if animated is FilterOperationBlur {
 				FilterStyleValue(FilterOperationBlur{
-					radius: StyleValue(LengthStyleValue.create(Length.make_px(
-						underlying.resolved_radius() + animated.resolved_radius())))
+					radius: StyleValue(LengthStyleValue.create(Length.make_px(underlying.resolved_radius() + animated.resolved_radius())))
 				})
 			} else {
 				none
@@ -7198,8 +7199,7 @@ fn filter_style_value_accumulate_filter(underlying FilterStyleValue, animated Fi
 		FilterOperationHueRotate {
 			if animated is FilterOperationHueRotate {
 				FilterStyleValue(FilterOperationHueRotate{
-					angle: StyleValue(AngleStyleValue.create(Angle.make_degrees(
-						underlying.angle_degrees() + animated.angle_degrees())))
+					angle: StyleValue(AngleStyleValue.create(Angle.make_degrees(underlying.angle_degrees() + animated.angle_degrees())))
 				})
 			} else {
 				none
@@ -7223,7 +7223,7 @@ fn filter_style_value_accumulate_filter(underlying FilterStyleValue, animated Fi
 
 				FilterStyleValue(FilterOperationColor{
 					operation: underlying.operation
-					amount:    filter_style_value_number(accumulated)
+					amount: filter_style_value_number(accumulated)
 				})
 			} else {
 				none
@@ -7236,11 +7236,7 @@ fn filter_style_value_accumulate_filter(underlying FilterStyleValue, animated Fi
 					if animated_color_value := animated.color {
 						if underlying_color := underlying_color_value.to_color(ColorResolutionContext{}) {
 							if animated_color := animated_color_value.to_color(ColorResolutionContext{}) {
-								accumulated_color = StyleValue(ColorStyleValue.create(Color.rgba(filter_style_value_saturating_channel_add(underlying_color.red(),
-									animated_color.red()), filter_style_value_saturating_channel_add(underlying_color.green(),
-									animated_color.green()), filter_style_value_saturating_channel_add(underlying_color.blue(),
-									animated_color.blue()), filter_style_value_saturating_channel_add(underlying_color.alpha(),
-									animated_color.alpha()))))
+								accumulated_color = StyleValue(ColorStyleValue.create(Color.rgba(filter_style_value_saturating_channel_add(underlying_color.red(), animated_color.red()), filter_style_value_saturating_channel_add(underlying_color.green(), animated_color.green()), filter_style_value_saturating_channel_add(underlying_color.blue(), animated_color.blue()), filter_style_value_saturating_channel_add(underlying_color.alpha(), animated_color.alpha()))))
 							}
 						}
 					}
@@ -7248,9 +7244,8 @@ fn filter_style_value_accumulate_filter(underlying FilterStyleValue, animated Fi
 				FilterStyleValue(FilterOperationDropShadow{
 					offset_x: filter_style_value_add_lengths(underlying.offset_x, animated.offset_x)
 					offset_y: filter_style_value_add_lengths(underlying.offset_y, animated.offset_y)
-					radius:   filter_style_value_add_optional_lengths(underlying.radius,
-						animated.radius)
-					color:    accumulated_color
+					radius: filter_style_value_add_optional_lengths(underlying.radius, animated.radius)
+					color: accumulated_color
 				})
 			} else {
 				none
@@ -7294,8 +7289,7 @@ pub fn accumulate_filter_function(underlying_list []FilterStyleValue, animated_l
 
 	mut result := []FilterStyleValue{cap: max_size}
 	for i in 0 .. max_size {
-		accumulated := filter_style_value_accumulate_filter(extended_underlying[i],
-			extended_animated[i]) or { return []FilterStyleValue{} }
+		accumulated := filter_style_value_accumulate_filter(extended_underlying[i], extended_animated[i]) or { return []FilterStyleValue{} }
 		result << accumulated
 	}
 	return result
@@ -7328,33 +7322,28 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 	if operation == .replace {
 		return none
 	}
-	if underlying.type_() != animated.type_() || underlying.is_calculated()
-		|| animated.is_calculated() {
+	if underlying.type_() != animated.type_() || underlying.is_calculated() || animated.is_calculated() {
 		return composite_mixed_style_value(property_id, underlying, animated)
 	}
 
 	return match underlying {
 		AngleStyleValue {
 			if animated is AngleStyleValue && underlying.angle().unit() == animated.angle().unit() {
-				StyleValue(AngleStyleValue.create(Angle.new(underlying.raw_value() +
-					animated.raw_value(), underlying.angle().unit())))
+				StyleValue(AngleStyleValue.create(Angle.new(underlying.raw_value() + animated.raw_value(), underlying.angle().unit())))
 			} else {
 				none
 			}
 		}
 		FlexStyleValue {
 			if animated is FlexStyleValue && underlying.flex().unit() == animated.flex().unit() {
-				StyleValue(FlexStyleValue.create(Flex.new(underlying.raw_value() +
-					animated.raw_value(), underlying.flex().unit())))
+				StyleValue(FlexStyleValue.create(Flex.new(underlying.raw_value() + animated.raw_value(), underlying.flex().unit())))
 			} else {
 				none
 			}
 		}
 		FrequencyStyleValue {
-			if animated is FrequencyStyleValue
-				&& underlying.frequency().unit() == animated.frequency().unit() {
-				StyleValue(FrequencyStyleValue.create(Frequency.new(underlying.raw_value() +
-					animated.raw_value(), underlying.frequency().unit())))
+			if animated is FrequencyStyleValue && underlying.frequency().unit() == animated.frequency().unit() {
+				StyleValue(FrequencyStyleValue.create(Frequency.new(underlying.raw_value() + animated.raw_value(), underlying.frequency().unit())))
 			} else {
 				none
 			}
@@ -7367,10 +7356,8 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 			}
 		}
 		LengthStyleValue {
-			if animated is LengthStyleValue
-				&& underlying.length().unit() == animated.length().unit() {
-				StyleValue(LengthStyleValue.create(Length.new(underlying.raw_value() +
-					animated.raw_value(), underlying.length().unit())))
+			if animated is LengthStyleValue && underlying.length().unit() == animated.length().unit() {
+				StyleValue(LengthStyleValue.create(Length.new(underlying.raw_value() + animated.raw_value(), underlying.length().unit())))
 			} else {
 				none
 			}
@@ -7384,51 +7371,40 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 		}
 		PercentageStyleValue {
 			if animated is PercentageStyleValue {
-				StyleValue(PercentageStyleValue.create(Percentage.new(underlying.raw_value() +
-					animated.raw_value())))
+				StyleValue(PercentageStyleValue.create(Percentage.new(underlying.raw_value() + animated.raw_value())))
 			} else {
 				none
 			}
 		}
 		ResolutionStyleValue {
-			if animated is ResolutionStyleValue
-				&& underlying.resolution().unit() == animated.resolution().unit() {
-				StyleValue(ResolutionStyleValue.create(Resolution.new(underlying.raw_value() +
-					animated.raw_value(), underlying.resolution().unit())))
+			if animated is ResolutionStyleValue && underlying.resolution().unit() == animated.resolution().unit() {
+				StyleValue(ResolutionStyleValue.create(Resolution.new(underlying.raw_value() + animated.raw_value(), underlying.resolution().unit())))
 			} else {
 				none
 			}
 		}
 		TimeStyleValue {
 			if animated is TimeStyleValue && underlying.time().unit() == animated.time().unit() {
-				StyleValue(TimeStyleValue.create(Time.new(underlying.raw_value() +
-					animated.raw_value(), underlying.time().unit())))
+				StyleValue(TimeStyleValue.create(Time.new(underlying.raw_value() + animated.raw_value(), underlying.time().unit())))
 			} else {
 				none
 			}
 		}
 		BorderImageSliceStyleValue {
 			if animated is BorderImageSliceStyleValue && underlying.fill() == animated.fill() {
-				top := composite_style_value(property_id, underlying.top(), animated.top(),
-					operation) or { return none }
-				right := composite_style_value(property_id, underlying.right(), animated.right(),
-					operation) or { return none }
-				bottom := composite_style_value(property_id, underlying.bottom(),
-					animated.bottom(), operation) or { return none }
-				left := composite_style_value(property_id, underlying.left(), animated.left(),
-					operation) or { return none }
-				StyleValue(BorderImageSliceStyleValue.create(top, right, bottom, left,
-					underlying.fill()))
+				top := composite_style_value(property_id, underlying.top(), animated.top(), operation) or { return none }
+				right := composite_style_value(property_id, underlying.right(), animated.right(), operation) or { return none }
+				bottom := composite_style_value(property_id, underlying.bottom(), animated.bottom(), operation) or { return none }
+				left := composite_style_value(property_id, underlying.left(), animated.left(), operation) or { return none }
+				StyleValue(BorderImageSliceStyleValue.create(top, right, bottom, left, underlying.fill()))
 			} else {
 				none
 			}
 		}
 		BorderRadiusStyleValue {
 			if animated is BorderRadiusStyleValue {
-				horizontal := composite_style_value(property_id, underlying.horizontal_radius_(),
-					animated.horizontal_radius_(), operation) or { return none }
-				vertical := composite_style_value(property_id, underlying.vertical_radius_(),
-					animated.vertical_radius_(), operation) or { return none }
+				horizontal := composite_style_value(property_id, underlying.horizontal_radius_(), animated.horizontal_radius_(), operation) or { return none }
+				vertical := composite_style_value(property_id, underlying.vertical_radius_(), animated.vertical_radius_(), operation) or { return none }
 				StyleValue(BorderRadiusStyleValue.create(horizontal, vertical))
 			} else {
 				none
@@ -7436,8 +7412,7 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 		}
 		EdgeStyleValue {
 			if animated is EdgeStyleValue && underlying.offset_ != none && animated.offset_ != none {
-				offset := composite_style_value(property_id, underlying.offset(),
-					animated.offset(), operation) or { return none }
+				offset := composite_style_value(property_id, underlying.offset(), animated.offset(), operation) or { return none }
 				StyleValue(EdgeStyleValue.create(none, offset))
 			} else {
 				none
@@ -7445,20 +7420,16 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 		}
 		OpenTypeTaggedStyleValue {
 			if animated is OpenTypeTaggedStyleValue && underlying.tag() == animated.tag() {
-				value := composite_style_value(property_id, underlying.value(), animated.value(),
-					operation) or { return none }
-				StyleValue(OpenTypeTaggedStyleValue.create(underlying.mode_, underlying.tag(),
-					value))
+				value := composite_style_value(property_id, underlying.value(), animated.value(), operation) or { return none }
+				StyleValue(OpenTypeTaggedStyleValue.create(underlying.mode_, underlying.tag(), value))
 			} else {
 				none
 			}
 		}
 		PositionStyleValue {
 			if animated is PositionStyleValue {
-				x := composite_style_value(property_id, StyleValue(underlying.edge_x()),
-					StyleValue(animated.edge_x()), operation) or { return none }
-				y := composite_style_value(property_id, StyleValue(underlying.edge_y()),
-					StyleValue(animated.edge_y()), operation) or { return none }
+				x := composite_style_value(property_id, StyleValue(underlying.edge_x()), StyleValue(animated.edge_x()), operation) or { return none }
+				y := composite_style_value(property_id, StyleValue(underlying.edge_y()), StyleValue(animated.edge_y()), operation) or { return none }
 				if x is EdgeStyleValue && y is EdgeStyleValue {
 					StyleValue(PositionStyleValue.create(x, y))
 				} else {
@@ -7469,12 +7440,10 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 			}
 		}
 		StyleValueList {
-			if animated is StyleValueList && underlying.size() == animated.size()
-				&& underlying.separator() == animated.separator() {
+			if animated is StyleValueList && underlying.size() == animated.size() && underlying.separator() == animated.separator() {
 				mut values := []StyleValue{cap: underlying.size()}
 				for i in 0 .. underlying.size() {
-					values << (composite_style_value(property_id, underlying.value_at(i, false), animated.value_at(i,
-						false), operation) or { return none })
+					values << (composite_style_value(property_id, underlying.value_at(i, false), animated.value_at(i, false), operation) or { return none })
 				}
 				StyleValue(StyleValueList.create(values, underlying.separator(), .yes))
 			} else {
@@ -7488,8 +7457,7 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 					filters << animated.filter_value_list()
 					StyleValue(FilterValueListStyleValue.create(filters))
 				} else {
-					filters := accumulate_filter_function(underlying.filter_value_list(),
-						animated.filter_value_list())
+					filters := accumulate_filter_function(underlying.filter_value_list(), animated.filter_value_list())
 					if filters.len == 0 {
 						none
 					} else {
@@ -7507,84 +7475,16 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 }
 
 // --- Style invalidation after style changes ---
-
 fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) bool {
 	return match property_id {
 		// C++ handles ContentVisibility as a full layout-tree rebuild before the
 		// generated property metadata check. For the currently translated
 		// PropertyID set, the missing generated metadata has no remaining
 		// layout-affecting properties.
-		.accent_color, .anchor_scope, .animation_composition, .animation_delay,
-		.animation_direction, .animation_duration, .animation_fill_mode,
-		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
-		.animation_timing_function, .background_attachment, .background_blend_mode,
-		.background_clip, .background_color, .background_image, .background_origin,
-		.background_position_x, .background_position_y, .background_repeat, .background_size,
-		.border_block_end_color, .border_block_start_color, .border_bottom_color,
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius,
-		.border_end_start_radius, .border_image_outset, .border_image_repeat, .border_image_slice,
-		.border_image_source, .border_image_width, .border_inline_end_color,
-		.border_inline_start_color, .border_left_color, .border_right_color,
-		.border_start_end_radius, .border_start_start_radius, .border_top_color,
-		.border_top_left_radius, .border_top_right_radius, .caret_color, .clip_rule, .color,
-		.color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape,
-		.corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape,
-		.corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape,
-		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity,
-		.font_feature_settings, .font_variation_settings, .font_weight, .font_width,
-		.image_rendering, .line_height, .mask_clip, .mask_composite, .mask_image, .mask_mode,
-		.mask_origin, .mask_position, .mask_repeat, .mask_size, .mask_type, .math_depth,
-		.math_style, .mix_blend_mode, .object_fit, .object_position, .opacity, .outline_color,
-		.outline_offset, .outline_style, .outline_width, .perspective_origin, .pointer_events,
-		.scrollbar_color, .scrollbar_gutter, .shape_image_threshold, .stop_color, .stop_opacity,
-		.stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity, .stroke_width,
-		.stroke_dashoffset, .rotate, .scale, .scroll_timeline_axis, .scroll_timeline_name,
-		.timeline_scope, .transform, .transform_box, .transform_origin, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.translate, .touch_action, .user_select, .view_timeline_axis, .view_timeline_inset,
-		.view_timeline_name, .view_transition_name, .will_change, .scrollbar_width,
-		.scroll_behavior, .resize, .text_decoration_color, .text_decoration_line,
-		.text_decoration_style, .text_decoration_thickness, .text_overflow, .text_rendering,
-		.webkit_text_fill_color, .z_index, .box_shadow, .text_shadow, .clip, .stroke_dasharray,
-		.filter, .backdrop_filter, .cursor, .fill, .stroke, .clip_path {
+		.accent_color, .anchor_scope, .animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .background_attachment, .background_blend_mode, .background_clip, .background_color, .background_image, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size, .border_block_end_color, .border_block_start_color, .border_bottom_color, .border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius, .border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source, .border_image_width, .border_inline_end_color, .border_inline_start_color, .border_left_color, .border_right_color, .border_start_end_radius, .border_start_start_radius, .border_top_color, .border_top_left_radius, .border_top_right_radius, .caret_color, .clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .font_feature_settings, .font_variation_settings, .font_weight, .font_width, .image_rendering, .line_height, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_position, .mask_repeat, .mask_size, .mask_type, .math_depth, .math_style, .mix_blend_mode, .object_fit, .object_position, .opacity, .outline_color, .outline_offset, .outline_style, .outline_width, .perspective_origin, .pointer_events, .scrollbar_color, .scrollbar_gutter, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .rotate, .scale, .scroll_timeline_axis, .scroll_timeline_name, .timeline_scope, .transform, .transform_box, .transform_origin, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .translate, .touch_action, .user_select, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .view_transition_name, .will_change, .scrollbar_width, .scroll_behavior, .resize, .text_decoration_color, .text_decoration_line, .text_decoration_style, .text_decoration_thickness, .text_overflow, .text_rendering, .webkit_text_fill_color, .z_index, .box_shadow, .text_shadow, .clip, .stroke_dasharray, .filter, .backdrop_filter, .cursor, .fill, .stroke, .clip_path {
 			false
 		}
-		.anchor_name, .aspect_ratio, .block_size, .bottom, .border_block_end_style,
-		.border_block_end_width, .border_block_start_style, .border_block_start_width,
-		.border_bottom_style, .border_bottom_width, .border_collapse, .border_inline_end_style,
-		.border_inline_end_width, .border_inline_start_style, .border_inline_start_width,
-		.border_left_style, .border_left_width, .border_right_style, .border_right_width,
-		.border_spacing, .border_top_style, .border_top_width, .box_sizing, .caption_side, .clear,
-		.direction, .empty_cells, .float_, .font_kerning, .font_language_override,
-		.font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji,
-		.font_variant_position, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap,
-		.align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self,
-		.appearance, .column_span, .column_count, .column_width, .column_height, .column_gap,
-		.row_gap, .contain, .container_type, .height, .inline_size, .inset_block_end,
-		.inset_block_start, .inset_inline_end, .inset_inline_start, .isolation, .left,
-		.letter_spacing, .list_style_image, .list_style_position, .margin_block_end,
-		.margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start,
-		.margin_left, .margin_right, .margin_top, .math_shift, .max_block_size, .max_height,
-		.max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width,
-		.order, .orphans, .widows, .overflow_block, .overflow_clip_margin_block_end,
-		.overflow_clip_margin_block_start, .overflow_clip_margin_bottom,
-		.overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start,
-		.overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top,
-		.overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .padding_block_end,
-		.padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start,
-		.padding_left, .padding_right, .padding_top, .paint_order, .perspective, .position,
-		.position_anchor, .position_area, .position_try_fallbacks, .position_try_order,
-		.position_visibility, .right, .shape_margin, .shape_rendering, .tab_size, .table_layout,
-		.text_align, .text_anchor, .text_justify, .text_underline_offset, .text_underline_position,
-		.text_indent, .text_transform, .text_wrap_mode, .text_wrap_style, .top, .transform_style,
-		.unicode_bidi, .vertical_align, .visibility, .white_space_collapse, .white_space_trim,
-		.width, .word_break, .word_spacing, .writing_mode, .cx, .cy, .x, .y, .r, .rx, .ry,
-		.dominant_baseline, .display, .flex_basis, .quotes, .list_style_type, .font_family,
-		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow,
-		.grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows,
-		.grid_template_areas, .counter_increment, .counter_reset, .counter_set, .font_size,
-		.font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .shape_outside,
-		.content, .font_variant_alternates {
+		.anchor_name, .aspect_ratio, .block_size, .bottom, .border_block_end_style, .border_block_end_width, .border_block_start_style, .border_block_start_width, .border_bottom_style, .border_bottom_width, .border_collapse, .border_inline_end_style, .border_inline_end_width, .border_inline_start_style, .border_inline_start_width, .border_left_style, .border_left_width, .border_right_style, .border_right_width, .border_spacing, .border_top_style, .border_top_width, .box_sizing, .caption_side, .clear, .direction, .empty_cells, .float_, .font_kerning, .font_language_override, .font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span, .column_count, .column_width, .column_height, .column_gap, .row_gap, .contain, .container_type, .height, .inline_size, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .isolation, .left, .letter_spacing, .list_style_image, .list_style_position, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .math_shift, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .order, .orphans, .widows, .overflow_block, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .paint_order, .perspective, .position, .position_anchor, .position_area, .position_try_fallbacks, .position_try_order, .position_visibility, .right, .shape_margin, .shape_rendering, .tab_size, .table_layout, .text_align, .text_anchor, .text_justify, .text_underline_offset, .text_underline_position, .text_indent, .text_transform, .text_wrap_mode, .text_wrap_style, .top, .transform_style, .unicode_bidi, .vertical_align, .visibility, .white_space_collapse, .white_space_trim, .width, .word_break, .word_spacing, .writing_mode, .cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes, .list_style_type, .font_family, .grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow, .grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas, .counter_increment, .counter_reset, .counter_set, .font_size, .font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .shape_outside, .content, .font_variant_alternates {
 			true
 		}
 		else {
@@ -7599,56 +7499,10 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 		// None of the currently translated longhands maps to the C++ generated
 		// affects-stacking-context metadata. ContentVisibility is handled by the
 		// full-invalidation branch above.
-		.contain, .container_type, .mask_image, .mix_blend_mode, .opacity, .perspective, .rotate,
-		.scale, .transform, .translate, .view_transition_name, .will_change, .z_index {
+		.contain, .container_type, .mask_image, .mix_blend_mode, .opacity, .perspective, .rotate, .scale, .transform, .translate, .view_transition_name, .will_change, .z_index {
 			true
 		}
-		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
-		.animation_direction, .animation_duration, .animation_fill_mode,
-		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
-		.animation_timing_function, .aspect_ratio, .background_attachment, .background_blend_mode,
-		.background_clip, .background_color, .background_image, .background_origin,
-		.background_position_x, .background_position_y, .background_repeat, .background_size,
-		.border_bottom_color, .border_bottom_style, .border_bottom_width,
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_collapse,
-		.border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source,
-		.border_image_width, .border_left_color, .border_left_style, .border_left_width,
-		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
-		.border_top_style, .border_top_width, .border_top_left_radius, .border_top_right_radius,
-		.box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation,
-		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color,
-		.flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_kerning,
-		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
-		.font_variant_emoji, .font_variant_position, .font_variation_settings, .font_weight,
-		.font_width, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content,
-		.align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance,
-		.column_span, .column_count, .column_width, .column_height, .column_gap, .row_gap,
-		.image_rendering, .isolation, .letter_spacing, .line_height, .list_style_image,
-		.list_style_position, .mask_clip, .mask_composite, .mask_mode, .mask_origin,
-		.mask_position, .mask_repeat, .mask_size, .mask_type, .math_depth, .math_shift,
-		.math_style, .object_fit, .object_position, .order, .orphans, .widows, .outline_color,
-		.outline_offset, .outline_style, .outline_width, .overflow_block,
-		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
-		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
-		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
-		.overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap,
-		.overflow_x, .overflow_y, .perspective_origin, .pointer_events, .position_area,
-		.position_try_fallbacks, .position_try_order, .paint_order, .scroll_behavior,
-		.scroll_timeline_axis, .scrollbar_color, .scrollbar_gutter, .shape_margin,
-		.shape_rendering, .position, .position_anchor, .position_visibility, .scroll_timeline_name,
-		.shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin,
-		.stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .tab_size,
-		.table_layout, .text_align, .text_anchor, .text_decoration_color, .text_decoration_line,
-		.text_decoration_style, .text_decoration_thickness, .text_underline_offset,
-		.text_underline_position, .text_indent, .text_justify, .text_overflow, .text_rendering,
-		.text_transform, .text_wrap_mode, .text_wrap_style, .timeline_scope, .transform_box,
-		.transform_origin, .transform_style, .touch_action, .transition_behavior,
-		.transition_delay, .transition_duration, .transition_property, .transition_timing_function,
-		.unicode_bidi, .user_select, .vertical_align, .view_timeline_axis, .view_timeline_inset,
-		.view_timeline_name, .writing_mode, .scrollbar_width, .resize, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing, .cx, .cy, .x, .y, .r, .rx, .ry {
+		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .aspect_ratio, .background_attachment, .background_blend_mode, .background_clip, .background_color, .background_image, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size, .border_bottom_color, .border_bottom_style, .border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius, .border_collapse, .border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source, .border_image_width, .border_left_color, .border_left_style, .border_left_width, .border_right_color, .border_right_style, .border_right_width, .border_top_color, .border_top_style, .border_top_width, .border_top_left_radius, .border_top_right_radius, .box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji, .font_variant_position, .font_variation_settings, .font_weight, .font_width, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span, .column_count, .column_width, .column_height, .column_gap, .row_gap, .image_rendering, .isolation, .letter_spacing, .line_height, .list_style_image, .list_style_position, .mask_clip, .mask_composite, .mask_mode, .mask_origin, .mask_position, .mask_repeat, .mask_size, .mask_type, .math_depth, .math_shift, .math_style, .object_fit, .object_position, .order, .orphans, .widows, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_block, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .perspective_origin, .pointer_events, .position_area, .position_try_fallbacks, .position_try_order, .paint_order, .scroll_behavior, .scroll_timeline_axis, .scrollbar_color, .scrollbar_gutter, .shape_margin, .shape_rendering, .position, .position_anchor, .position_visibility, .scroll_timeline_name, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .tab_size, .table_layout, .text_align, .text_anchor, .text_decoration_color, .text_decoration_line, .text_decoration_style, .text_decoration_thickness, .text_underline_offset, .text_underline_position, .text_indent, .text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .timeline_scope, .transform_box, .transform_origin, .transform_style, .touch_action, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .unicode_bidi, .user_select, .vertical_align, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .writing_mode, .scrollbar_width, .resize, .visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .word_spacing, .cx, .cy, .x, .y, .r, .rx, .ry {
 			false
 		}
 		else {
@@ -7707,56 +7561,10 @@ fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&d
 
 fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 	return match property_id {
-		.clip, .filter, .mask_image, .mix_blend_mode, .opacity, .perspective, .perspective_origin,
-		.rotate, .scale, .transform, .transform_origin, .translate {
+		.clip, .filter, .mask_image, .mix_blend_mode, .opacity, .perspective, .perspective_origin, .rotate, .scale, .transform, .transform_origin, .translate {
 			true
 		}
-		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
-		.animation_direction, .animation_duration, .animation_fill_mode,
-		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
-		.animation_timing_function, .aspect_ratio, .background_attachment, .background_blend_mode,
-		.background_clip, .background_color, .background_image, .background_origin,
-		.background_position_x, .background_position_y, .background_repeat, .background_size,
-		.border_bottom_color, .border_bottom_style, .border_bottom_width,
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_collapse,
-		.border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source,
-		.border_image_width, .border_left_color, .border_left_style, .border_left_width,
-		.border_right_color, .border_right_style, .border_right_width, .border_top_color,
-		.border_top_style, .border_top_width, .border_top_left_radius, .border_top_right_radius,
-		.box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation,
-		.color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
-		.corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color,
-		.flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_kerning,
-		.font_language_override, .font_optical_sizing, .font_style, .font_variant_caps,
-		.font_variant_emoji, .font_variant_position, .font_variation_settings, .font_weight,
-		.font_width, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content,
-		.align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance,
-		.column_span, .column_count, .column_width, .column_height, .column_gap, .row_gap,
-		.contain, .container_type, .image_rendering, .isolation, .letter_spacing, .line_height,
-		.list_style_image, .list_style_position, .mask_clip, .mask_composite, .mask_mode,
-		.mask_origin, .mask_position, .mask_repeat, .mask_size, .mask_type, .math_depth,
-		.math_shift, .math_style, .object_fit, .object_position, .order, .orphans, .widows,
-		.outline_color, .outline_offset, .outline_style, .outline_width, .overflow_block,
-		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
-		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
-		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
-		.overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap,
-		.overflow_x, .overflow_y, .pointer_events, .position_area, .position_try_fallbacks,
-		.position_try_order, .scroll_behavior, .scroll_timeline_axis, .scrollbar_color,
-		.scrollbar_gutter, .shape_margin, .shape_rendering, .position, .position_anchor,
-		.position_visibility, .scroll_timeline_name, .shape_image_threshold, .stop_color,
-		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity,
-		.stroke_width, .stroke_dashoffset, .tab_size, .table_layout, .text_align, .text_anchor,
-		.text_justify, .text_overflow, .text_decoration_color, .text_decoration_line,
-		.text_decoration_style, .text_decoration_thickness, .text_underline_offset,
-		.text_underline_position, .text_indent, .paint_order, .text_rendering, .text_transform,
-		.text_wrap_mode, .text_wrap_style, .timeline_scope, .transform_box, .transform_style,
-		.touch_action, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .unicode_bidi, .user_select,
-		.vertical_align, .view_timeline_axis, .view_timeline_inset, .view_timeline_name,
-		.view_transition_name, .will_change, .writing_mode, .scrollbar_width, .resize, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
-		.word_spacing, .z_index, .cx, .cy, .x, .y, .r, .rx, .ry {
+		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .aspect_ratio, .background_attachment, .background_blend_mode, .background_clip, .background_color, .background_image, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size, .border_bottom_color, .border_bottom_style, .border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius, .border_collapse, .border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source, .border_image_width, .border_left_color, .border_left_style, .border_left_width, .border_right_color, .border_right_style, .border_right_width, .border_top_color, .border_top_style, .border_top_width, .border_top_left_radius, .border_top_right_radius, .box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji, .font_variant_position, .font_variation_settings, .font_weight, .font_width, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span, .column_count, .column_width, .column_height, .column_gap, .row_gap, .contain, .container_type, .image_rendering, .isolation, .letter_spacing, .line_height, .list_style_image, .list_style_position, .mask_clip, .mask_composite, .mask_mode, .mask_origin, .mask_position, .mask_repeat, .mask_size, .mask_type, .math_depth, .math_shift, .math_style, .object_fit, .object_position, .order, .orphans, .widows, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_block, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .pointer_events, .position_area, .position_try_fallbacks, .position_try_order, .scroll_behavior, .scroll_timeline_axis, .scrollbar_color, .scrollbar_gutter, .shape_margin, .shape_rendering, .position, .position_anchor, .position_visibility, .scroll_timeline_name, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .tab_size, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow, .text_decoration_color, .text_decoration_line, .text_decoration_style, .text_decoration_thickness, .text_underline_offset, .text_underline_position, .text_indent, .paint_order, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .timeline_scope, .transform_box, .transform_style, .touch_action, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .unicode_bidi, .user_select, .vertical_align, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .view_transition_name, .will_change, .writing_mode, .scrollbar_width, .resize, .visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .word_spacing, .z_index, .cx, .cy, .x, .y, .r, .rx, .ry {
 			false
 		}
 		else {
@@ -7769,8 +7577,7 @@ fn property_requires_full_invalidation(property_id PropertyID) bool {
 	return match property_id {
 		// C++: Display, Position, Content, ContentVisibility, OverflowX, OverflowY.
 		// Only these represented properties are currently present in the V PropertyID enum.
-		.content_visibility, .overflow_block, .overflow_inline, .overflow_x, .overflow_y,
-		.position {
+		.content_visibility, .overflow_block, .overflow_inline, .overflow_x, .overflow_y, .position {
 			true
 		}
 		else {
@@ -7859,32 +7666,28 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 
 pub fn required_invalidation_after_style_change_full() RequiredInvalidationAfterStyleChange {
 	return RequiredInvalidationAfterStyleChange{
-		repaint:                       true
-		relayout:                      true
-		rebuild_layout_tree:           true
+		repaint: true
+		relayout: true
+		rebuild_layout_tree: true
 		rebuild_stacking_context_tree: true
 	}
 }
 
 pub fn required_invalidation_after_style_change_is_full(invalidation RequiredInvalidationAfterStyleChange) bool {
-	return invalidation.repaint && invalidation.rebuild_stacking_context_tree
-		&& invalidation.relayout && invalidation.rebuild_layout_tree
+	return invalidation.repaint && invalidation.rebuild_stacking_context_tree && invalidation.relayout && invalidation.rebuild_layout_tree
 }
 
 pub fn required_invalidation_after_style_change_or(left RequiredInvalidationAfterStyleChange, right RequiredInvalidationAfterStyleChange) RequiredInvalidationAfterStyleChange {
 	return RequiredInvalidationAfterStyleChange{
-		repaint:                             left.repaint || right.repaint
-		relayout:                            left.relayout || right.relayout
-		rebuild_layout_tree:                 left.rebuild_layout_tree || right.rebuild_layout_tree
-		rebuild_stacking_context_tree:       left.rebuild_stacking_context_tree
-			|| right.rebuild_stacking_context_tree
-		rebuild_accumulated_visual_contexts: left.rebuild_accumulated_visual_contexts
-			|| right.rebuild_accumulated_visual_contexts
+		repaint: left.repaint || right.repaint
+		relayout: left.relayout || right.relayout
+		rebuild_layout_tree: left.rebuild_layout_tree || right.rebuild_layout_tree
+		rebuild_stacking_context_tree: left.rebuild_stacking_context_tree || right.rebuild_stacking_context_tree
+		rebuild_accumulated_visual_contexts: left.rebuild_accumulated_visual_contexts || right.rebuild_accumulated_visual_contexts
 	}
 }
 
 // --- InvalidationSet ---
-
 pub enum CSSPseudoClass {
 	enabled
 	disabled
@@ -8017,7 +7820,7 @@ pub fn InvalidationProperty.attribute(name string) InvalidationProperty {
 
 pub fn InvalidationProperty.pseudo_class(pseudo_class CSSPseudoClass) InvalidationProperty {
 	return InvalidationProperty{
-		type_:        .pseudo_class
+		type_: .pseudo_class
 		pseudo_class: pseudo_class
 	}
 }
@@ -8028,7 +7831,7 @@ pub fn (p InvalidationProperty) name() string {
 
 pub fn (p InvalidationProperty) key() string {
 	return match p.type_ {
-		.invalidate_self { '$' }
+		.invalidate_self { '\$' }
 		.invalidate_whole_subtree { '*' }
 		.class { '.${p.value}' }
 		.id { '#${p.value}' }
@@ -8040,7 +7843,7 @@ pub fn (p InvalidationProperty) key() string {
 
 pub fn (p InvalidationProperty) to_string() string {
 	return match p.type_ {
-		.invalidate_self { '$' }
+		.invalidate_self { '\$' }
 		.invalidate_whole_subtree { '*' }
 		.class { '.${p.value}' }
 		.id { '#${p.value}' }
@@ -8059,8 +7862,7 @@ mut:
 
 pub fn (mut s InvalidationSet) include_all_from(other InvalidationSet) {
 	s.needs_invalidate_self_ = s.needs_invalidate_self_ || other.needs_invalidate_self_
-	s.needs_invalidate_whole_subtree_ = s.needs_invalidate_whole_subtree_
-		|| other.needs_invalidate_whole_subtree_
+	s.needs_invalidate_whole_subtree_ = s.needs_invalidate_whole_subtree_ || other.needs_invalidate_whole_subtree_
 	for property in other.properties_ {
 		s.add_property(property)
 	}
@@ -8124,7 +7926,7 @@ pub fn (s &InvalidationSet) properties() ComputedInterpolationInvalidationProper
 	return s.properties_.clone()
 }
 
-pub fn (s &InvalidationSet) for_each_property(callback fn (InvalidationProperty) bool) {
+pub fn (s &InvalidationSet) for_each_property(callback fn(InvalidationProperty) bool) {
 	if s.needs_invalidate_self_ {
 		if !callback(InvalidationProperty.invalidate_self()) {
 			return
@@ -8152,7 +7954,6 @@ pub fn (s &InvalidationSet) to_string() string {
 }
 
 // --- StyleInvalidationData ---
-
 pub enum ExcludePropertiesNestedInNotPseudoClass {
 	no
 	yes
@@ -8197,8 +7998,7 @@ pub fn InvalidationPlan.create() &InvalidationPlan {
 }
 
 pub fn (p &InvalidationPlan) is_empty() bool {
-	return !p.invalidate_self && !p.invalidate_whole_subtree && p.descendant_rules.len == 0
-		&& p.sibling_rules.len == 0
+	return !p.invalidate_self && !p.invalidate_whole_subtree && p.descendant_rules.len == 0 && p.sibling_rules.len == 0
 }
 
 pub fn (mut p InvalidationPlan) include_all_from(other &InvalidationPlan) {
@@ -8361,35 +8161,36 @@ fn simple_selector_for_invalidation(simple_selector SimpleSelector) Invalidation
 		.class {
 			return InvalidationSimpleSelector{
 				type_: .class
-				name:  simple_selector.name.name
+				name: simple_selector.name.name
 			}
 		}
 		.id {
 			return InvalidationSimpleSelector{
 				type_: .id
-				name:  simple_selector.name.name
+				name: simple_selector.name.name
 			}
 		}
 		.tag_name {
 			return InvalidationSimpleSelector{
 				type_: .tag_name
-				name:  simple_selector.qualified_name.name.lowercase_name
+				name: simple_selector.qualified_name.name.lowercase_name
 			}
 		}
 		.attribute {
 			return InvalidationSimpleSelector{
 				type_: .attribute
-				name:  simple_selector.attribute.qualified_name.name.lowercase_name
+				name: simple_selector.attribute.qualified_name.name.lowercase_name
 			}
 		}
 		.pseudo_class {
 			return InvalidationSimpleSelector{
-				type_:            .pseudo_class
-				name:             selector_pseudo_class_name(simple_selector.pseudo_class.type_)
-				pseudo_class:     css_pseudo_class_from_selector_pseudo_class(simple_selector.pseudo_class.type_)
+				type_: .pseudo_class
+				name: selector_pseudo_class_name(simple_selector.pseudo_class.type_)
+				pseudo_class: css_pseudo_class_from_selector_pseudo_class(simple_selector.pseudo_class.type_)
 				nested_selectors: simple_selector.pseudo_class.argument_selector_list.selectors.clone()
 			}
 		}
+
 		// Boundary: pseudo-elements, nesting selectors, and parser-invalid pieces
 		// are represented in selectors.v, but this translated invalidation subset
 		// has no property kind for them. Match the C++ default branch by ignoring
@@ -8420,7 +8221,7 @@ fn selector_groups_for_invalidation(selector Selector) []InvalidationSimpleSelec
 		}
 		groups << InvalidationSimpleSelectorGroup{
 			simple_selectors: simple_selectors
-			combinator:       selector_combinator_for_invalidation(compound_selector.combinator)
+			combinator: selector_combinator_for_invalidation(compound_selector.combinator)
 		}
 	}
 	return groups
@@ -8449,15 +8250,14 @@ fn collect_properties_used_in_has(selector InvalidationSimpleSelector, mut style
 			}
 		}
 		.pseudo_class {
-			if in_has
-				&& selector.pseudo_class in [.enabled, .disabled, .defined, .placeholder_shown, .checked, .required, .optional, .link, .any_link, .local_link, .default_] {
+			if in_has && selector.pseudo_class in [.enabled, .disabled, .defined, .placeholder_shown,
+				.checked, .required, .optional, .link, .any_link, .local_link, .default_] {
 				style_invalidation_data.pseudo_classes_used_in_has_selectors[selector.pseudo_class] = true
 			}
 			for child_selector in selector.nested_selectors {
 				for group in selector_groups_for_invalidation(child_selector) {
 					for simple_selector in group.simple_selectors {
-						collect_properties_used_in_has(simple_selector, mut
-							style_invalidation_data, in_has || selector.pseudo_class == .has)
+						collect_properties_used_in_has(simple_selector, mut style_invalidation_data, in_has || selector.pseudo_class == .has)
 					}
 				}
 			}
@@ -8469,9 +8269,7 @@ fn collect_properties_used_in_has(selector InvalidationSimpleSelector, mut style
 fn build_invalidation_set_for_simple_selectors(simple_selectors []InvalidationSimpleSelector, exclude_properties_nested_in_not_pseudo_class ExcludePropertiesNestedInNotPseudoClass, mut style_invalidation_data StyleInvalidationData, inside_nth_child_pseudo_class InsideNthChildPseudoClass) InvalidationSet {
 	mut invalidation_set := InvalidationSet{}
 	for simple_selector in simple_selectors {
-		build_invalidation_sets_for_simple_selector(simple_selector, mut invalidation_set,
-			exclude_properties_nested_in_not_pseudo_class, mut style_invalidation_data,
-			inside_nth_child_pseudo_class)
+		build_invalidation_sets_for_simple_selector(simple_selector, mut invalidation_set, exclude_properties_nested_in_not_pseudo_class, mut style_invalidation_data, inside_nth_child_pseudo_class)
 	}
 	return invalidation_set
 }
@@ -8481,8 +8279,7 @@ fn simple_selector_group_matches_any(simple_selectors []InvalidationSimpleSelect
 }
 
 fn build_invalidation_for_combinator(combinator SelectorCombinator, righthand SelectorRighthand) &InvalidationPlan {
-	if righthand.payload.invalidate_whole_subtree
-		|| (!righthand.subject_matches_any && righthand.subject_match_set.is_empty()) {
+	if righthand.payload.invalidate_whole_subtree || (!righthand.subject_matches_any && righthand.subject_match_set.is_empty()) {
 		return make_invalidate_whole_subtree_invalidation()
 	}
 
@@ -8492,23 +8289,23 @@ fn build_invalidation_for_combinator(combinator SelectorCombinator, righthand Se
 			invalidation.descendant_rules << DescendantInvalidationRule{
 				match_set: righthand.subject_match_set
 				match_any: righthand.subject_matches_any
-				payload:   righthand.payload
+				payload: righthand.payload
 			}
 		}
 		.next_sibling {
 			invalidation.sibling_rules << SiblingInvalidationRule{
-				reach:     .adjacent
+				reach: .adjacent
 				match_set: righthand.subject_match_set
 				match_any: righthand.subject_matches_any
-				payload:   righthand.payload
+				payload: righthand.payload
 			}
 		}
 		.subsequent_sibling {
 			invalidation.sibling_rules << SiblingInvalidationRule{
-				reach:     .subsequent
+				reach: .subsequent
 				match_set: righthand.subject_match_set
 				match_any: righthand.subject_matches_any
-				payload:   righthand.payload
+				payload: righthand.payload
 			}
 		}
 		else {
@@ -8539,8 +8336,7 @@ pub fn build_invalidation_sets_for_simple_selector(selector InvalidationSimpleSe
 				.enabled, .defined, .disabled, .placeholder_shown, .checked, .has {
 					if pseudo_class == .has {
 						for nested_selector in selector.nested_selectors {
-							add_invalidation_sets_to_cover_scope_leakage_of_relative_selector_in_has_pseudo_class(nested_selector, mut
-								style_invalidation_data)
+							add_invalidation_sets_to_cover_scope_leakage_of_relative_selector_in_has_pseudo_class(nested_selector, mut style_invalidation_data)
 						}
 					}
 					invalidation_set.set_needs_invalidate_pseudo_class(pseudo_class)
@@ -8562,8 +8358,7 @@ pub fn build_invalidation_sets_for_simple_selector(selector InvalidationSimpleSe
 				inside_nested = .yes
 			}
 			for nested_selector in selector.nested_selectors {
-				rightmost_set := build_invalidation_sets_for_selector_impl(mut style_invalidation_data,
-					nested_selector, inside_nested)
+				rightmost_set := build_invalidation_sets_for_selector_impl(mut style_invalidation_data, nested_selector, inside_nested)
 				invalidation_set.include_all_from(rightmost_set)
 
 				if selector_contains_pseudo_class(nested_selector, .has) {
@@ -8571,8 +8366,7 @@ pub fn build_invalidation_sets_for_simple_selector(selector InvalidationSimpleSe
 					if selector_groups_for_invalidation(nested_selector).len > 1 {
 						mut has_only := InvalidationSet{}
 						has_only.set_needs_invalidate_pseudo_class(.has)
-						add_invalidation_plan_for_properties(mut style_invalidation_data, has_only,
-							make_invalidate_whole_subtree_invalidation())
+						add_invalidation_plan_for_properties(mut style_invalidation_data, has_only, make_invalidate_whole_subtree_invalidation())
 					}
 				}
 			}
@@ -8584,8 +8378,7 @@ pub fn build_invalidation_sets_for_simple_selector(selector InvalidationSimpleSe
 fn selector_contains_pseudo_class(selector Selector, pseudo_class CSSPseudoClass) bool {
 	for group in selector_groups_for_invalidation(selector) {
 		for simple_selector in group.simple_selectors {
-			if simple_selector.type_ == .pseudo_class
-				&& simple_selector.pseudo_class == pseudo_class {
+			if simple_selector.type_ == .pseudo_class && simple_selector.pseudo_class == pseudo_class {
 				return true
 			}
 			for nested_selector in simple_selector.nested_selectors {
@@ -8606,10 +8399,8 @@ fn add_whole_subtree_invalidation_for_non_subject_complex_selector_properties(se
 			continue
 		}
 
-		invalidation_set := build_invalidation_set_for_simple_selectors(group.simple_selectors,
-			.no, mut style_invalidation_data, .no)
-		add_invalidation_plan_for_properties(mut style_invalidation_data, invalidation_set,
-			make_invalidate_whole_subtree_invalidation())
+		invalidation_set := build_invalidation_set_for_simple_selectors(group.simple_selectors, .no, mut style_invalidation_data, .no)
+		add_invalidation_plan_for_properties(mut style_invalidation_data, invalidation_set, make_invalidate_whole_subtree_invalidation())
 	}
 }
 
@@ -8619,7 +8410,6 @@ fn add_invalidation_sets_to_cover_scope_leakage_of_relative_selector_in_has_pseu
 	// For example ".a:has(:is(.b .c))" requires invalidation whenever "b" class is added or removed.
 	// To cover this case, we add descendant invalidation set that requires whole subtree invalidation for each
 	// property used in non-subject part of complex selector.
-
 	groups := selector_groups_for_invalidation(selector)
 	for group in groups {
 		for simple_selector in group.simple_selectors {
@@ -8628,8 +8418,7 @@ fn add_invalidation_sets_to_cover_scope_leakage_of_relative_selector_in_has_pseu
 			}
 			if simple_selector.pseudo_class in [.is_, .where, .not] {
 				for nested_selector in simple_selector.nested_selectors {
-					add_whole_subtree_invalidation_for_non_subject_complex_selector_properties(nested_selector, mut
-						style_invalidation_data)
+					add_whole_subtree_invalidation_for_non_subject_complex_selector_properties(nested_selector, mut style_invalidation_data)
 				}
 			}
 		}
@@ -8653,12 +8442,9 @@ fn build_invalidation_sets_for_selector_impl(mut style_invalidation_data StyleIn
 			collect_properties_used_in_has(simple_selector, mut style_invalidation_data, in_has)
 		}
 
-		invalidation_properties := build_invalidation_set_for_simple_selectors(group.simple_selectors,
-			.no, mut style_invalidation_data, inside_nth_child_pseudo_class)
-		mut subject_match_set := build_invalidation_set_for_simple_selectors(group.simple_selectors,
-			.yes, mut style_invalidation_data, inside_nth_child_pseudo_class)
-		subject_matches_any := subject_match_set.is_empty()
-			&& simple_selector_group_matches_any(group.simple_selectors)
+		invalidation_properties := build_invalidation_set_for_simple_selectors(group.simple_selectors, .no, mut style_invalidation_data, inside_nth_child_pseudo_class)
+		mut subject_match_set := build_invalidation_set_for_simple_selectors(group.simple_selectors, .yes, mut style_invalidation_data, inside_nth_child_pseudo_class)
+		subject_matches_any := subject_match_set.is_empty() && simple_selector_group_matches_any(group.simple_selectors)
 
 		if is_rightmost {
 			mut root_plan := make_invalidate_self_invalidation()
@@ -8667,23 +8453,21 @@ fn build_invalidation_sets_for_selector_impl(mut style_invalidation_data StyleIn
 				// p:nth-child(even of #t1, #t2, #t3), we need to make sure all affected siblings are invalidated.
 				root_plan.invalidate_whole_subtree = true
 			}
-			add_invalidation_plan_for_properties(mut style_invalidation_data,
-				invalidation_properties, root_plan)
+			add_invalidation_plan_for_properties(mut style_invalidation_data, invalidation_properties, root_plan)
 			invalidation_set_for_rightmost_selector = subject_match_set
 			selector_righthand = SelectorRighthand{
-				subject_match_set:   subject_match_set
+				subject_match_set: subject_match_set
 				subject_matches_any: subject_matches_any
-				payload:             root_plan
+				payload: root_plan
 			}
 		} else {
 			righthand := selector_righthand or { break }
 			mut plan := build_invalidation_for_combinator(previous_compound_combinator, righthand)
-			add_invalidation_plan_for_properties(mut style_invalidation_data,
-				invalidation_properties, plan)
+			add_invalidation_plan_for_properties(mut style_invalidation_data, invalidation_properties, plan)
 			selector_righthand = SelectorRighthand{
-				subject_match_set:   subject_match_set
+				subject_match_set: subject_match_set
 				subject_matches_any: subject_matches_any
-				payload:             plan
+				payload: plan
 			}
 		}
 
@@ -8694,7 +8478,6 @@ fn build_invalidation_sets_for_selector_impl(mut style_invalidation_data StyleIn
 }
 
 // --- StyleComputer ---
-
 const counting_bloom_filter_key_bits = 14
 const counting_bloom_filter_bucket_count = 1 << counting_bloom_filter_key_bits
 const counting_bloom_filter_key_mask = counting_bloom_filter_bucket_count - 1
@@ -8806,7 +8589,7 @@ pub mut:
 pub struct LogicalAliasMappingContext {
 pub mut:
 	writing_mode WritingMode = .horizontal_tb
-	direction    Direction   = .ltr
+	direction    Direction = .ltr
 }
 
 pub struct RuleCache {
@@ -8834,7 +8617,7 @@ pub mut:
 @[heap]
 pub struct StyleComputer {
 pub mut:
-	document_                              &dom.Document     = unsafe { nil }
+	document_                              &dom.Document = unsafe { nil }
 	default_font_metrics                   LengthFontMetrics = LengthFontMetrics.default()
 	root_element_font_metrics              LengthFontMetrics = LengthFontMetrics.default()
 	cached_font_computation_context        ?StyleComputationContextStub
@@ -8843,7 +8626,7 @@ pub mut:
 	viewport_rect_                         CSSPixelRect
 	ancestor_filter_                       CountingBloomFilter = CountingBloomFilter.new()
 	has_result_cache_                      map[string]HasMatchResult
-	css_animation_storage_                 &CSSAnimationStorage  = unsafe { nil }
+	css_animation_storage_                 &CSSAnimationStorage = unsafe { nil }
 	css_transition_storage_                &CSSTransitionStorage = unsafe { nil }
 	animation_time_ms_                     f64
 	transition_generation_                 int
@@ -8851,14 +8634,14 @@ pub mut:
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
 	return &StyleComputer{
-		document_:               unsafe { document }
-		viewport_rect_:          css_pixel_rect_from_dom_rect(document.viewport_rect())
-		css_animation_storage_:  &CSSAnimationStorage{}
+		document_: unsafe { document }
+		viewport_rect_: css_pixel_rect_from_dom_rect(document.viewport_rect())
+		css_animation_storage_: &CSSAnimationStorage{}
 		css_transition_storage_: &CSSTransitionStorage{}
 	}
 }
 
-pub fn StyleComputer.for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn (PropertyID, &dom.StyleValue)) {
+pub fn StyleComputer.for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn(PropertyID, &dom.StyleValue)) {
 	// Cascaded properties store opaque dom.StyleValues that only carry the serialized text. To expand a shorthand we
 	// re-parse that text into a typed ShorthandStyleValue and run the typed expansion, bridging each longhand back to
 	// a dom.StyleValue.
@@ -8892,12 +8675,10 @@ pub fn StyleComputer.get_animated_inherit_value(property_id PropertyID, abstract
 	parent := parent_computed_properties(abstract_element) or { return none }
 	animated_value := parent.animated_property_values()[property_id] or { return none }
 	return AnimatedInheritValue{
-		value:                   animated_value
+		value: animated_value
 		is_result_of_transition: if parent.is_animated_property_result_of_transition(property_id) {
-			AnimatedPropertyResultOfTransition.yes
-		} else {
-			AnimatedPropertyResultOfTransition.no
-		}
+			AnimatedPropertyResultOfTransition.yes} else {
+			AnimatedPropertyResultOfTransition.no}
 	}
 }
 
@@ -8948,17 +8729,16 @@ pub fn (mut s StyleComputer) pop_ancestor(element &dom.Element) {
 
 pub fn (s &StyleComputer) create_document_style() &ComputedProperties {
 	mut style := ComputedProperties.new()
+	style.viewport_rect_ = s.viewport_rect_
+	style.root_font_size_px_ = s.root_element_font_metrics.font_size.to_double()
+	style.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
 	for property_id in computed_interpolation_longhand_property_ids() {
-		style.set_property_without_modifying_flags(property_id,
-			computed_interpolation_property_initial_value(property_id))
+		style.set_property_without_modifying_flags(property_id, computed_interpolation_property_initial_value(property_id))
 	}
 	s.compute_property_values(mut style, none)
-	style.set_property_without_modifying_flags(.width,
-		dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(s.viewport_rect_.width_value())))))
-	style.set_property_without_modifying_flags(.height,
-		dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(s.viewport_rect_.height_value())))))
-	style.set_property_without_modifying_flags(.display,
-		dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.block)))))
+	style.set_property_without_modifying_flags(.width, dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(s.viewport_rect_.width_value())))))
+	style.set_property_without_modifying_flags(.height, dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(s.viewport_rect_.height_value())))))
+	style.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.block)))))
 	return style
 }
 
@@ -8993,13 +8773,11 @@ pub fn (mut s StyleComputer) compute_style_with_seeded_ancestors(abstract_elemen
 
 pub fn (s &StyleComputer) compute_pseudo_element_style_if_needed(abstract_element dom.AbstractElement) ?&ComputedProperties {
 	scope := css_style_scope_for(abstract_element)
-	return s.compute_style_impl(abstract_element, .create_pseudo_element_style_if_needed, none,
-		scope)
+	return s.compute_style_impl(abstract_element, .create_pseudo_element_style_if_needed, none, scope)
 }
 
 pub fn (s &StyleComputer) collect_matching_rules(abstract_element dom.AbstractElement, origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []MatchingRule {
-	return style_computer_collect_matching_rules_without_scope_boundary(s, abstract_element,
-		origin, mut attempted_pseudo_class_matches, qualified_layer_name)
+	return style_computer_collect_matching_rules_without_scope_boundary(s, abstract_element, origin, mut attempted_pseudo_class_matches, qualified_layer_name)
 }
 
 pub fn (s &StyleComputer) invalidation_plan_for_properties(properties ComputedInterpolationInvalidationProperties, scope &StyleScope) &InvalidationPlan {
@@ -9061,8 +8839,7 @@ pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.Abs
 	mut is_single_monospace := parsed_family.to_keyword() == .monospace
 	if parsed_family is StyleValueList {
 		family_list := parsed_family as StyleValueList
-		is_single_monospace = family_list.values().len == 1
-			&& family_list.values()[0].to_keyword() == .monospace
+		is_single_monospace = family_list.values().len == 1 && family_list.values()[0].to_keyword() == .monospace
 	}
 	if !is_single_monospace {
 		return none
@@ -9094,8 +8871,7 @@ pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.Abs
 			continue
 		}
 		if absolute_size := computed_interpolation_keyword_to_absolute_size(keyword) {
-			current_size = StyleComputer.absolute_size_mapping(absolute_size,
-				default_monospace_font_size)
+			current_size = StyleComputer.absolute_size_mapping(absolute_size, default_monospace_font_size)
 			continue
 		}
 		if relative_size := computed_interpolation_keyword_to_relative_size(keyword) {
@@ -9118,8 +8894,8 @@ pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.Abs
 			}
 		}
 		current_size = length.to_px(LengthResolutionContext{
-			viewport_rect:     s.viewport_rect_
-			font_metrics:      font_metrics
+			viewport_rect: s.viewport_rect_
+			font_metrics: font_metrics
 			root_font_metrics: s.root_element_font_metrics
 		})
 	}
@@ -9157,19 +8933,16 @@ fn compute_text_align(mut properties ComputedProperties, abstract_element dom.Ab
 							parent_keyword
 						}
 					}
-					properties.set_property_without_modifying_flags(.text_align,
-						dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(resolved))))
+					properties.set_property_without_modifying_flags(.text_align, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(resolved))))
 					return
 				}
 			}
 		}
-		properties.set_property_without_modifying_flags(.text_align,
-			dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.start))))
+		properties.set_property_without_modifying_flags(.text_align, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.start))))
 		return
 	}
 
-	if text_align_keyword == .libweb_inherit_or_center
-		&& abstract_element.element().local_name() == 'th' {
+	if text_align_keyword == .libweb_inherit_or_center && abstract_element.element().local_name() == 'th' {
 		mut maybe_parent := abstract_element.element_to_inherit_style_from()
 		for {
 			parent := maybe_parent or { break }
@@ -9202,15 +8975,14 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 
 	mapping_context := LogicalAliasMappingContext{
 		writing_mode: computed_properties.writing_mode()
-		direction:    computed_properties.direction()
+		direction: computed_properties.direction()
 	}
 	mut specified_values := map[PropertyID]&dom.StyleValue{}
 	for property_id, _ in property_ids {
 		mut value := keyframe.properties[property_id] or {
 			computed_properties.property(property_id, .no) or { continue }
 		}
-		value = with_keyword_values_resolved_boundary(abstract_element.element(), property_id,
-			value)
+		value = with_keyword_values_resolved_boundary(abstract_element.element(), property_id, value)
 		physical_property_id := map_logical_alias_to_physical_property(property_id, mapping_context)
 		specified_values[physical_property_id] = value
 	}
@@ -9223,8 +8995,7 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 					computed_interpolation_property_initial_value(id)
 				}
 			}
-		}, s.get_computation_context_for_property(property_id, computed_properties,
-			abstract_element), 1.0)
+		}, s.get_computation_context_for_property(property_id, computed_properties, abstract_element), 1.0)
 		result[property_id] = computed_value
 	}
 	return result
@@ -9262,8 +9033,7 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 	start_keyframe := key_frame_set.keyframes_by_key[start_key] or { return }
 	end_keyframe := key_frame_set.keyframes_by_key[end_key] or { return }
 	mut interval_progress := (progress - f64(start_key)) / f64(end_key - start_key)
-	interval_progress = (start_keyframe.easing or { effect.default_easing }).evaluate_at(interval_progress,
-		false)
+	interval_progress = (start_keyframe.easing or { effect.default_easing }).evaluate_at(interval_progress, false)
 
 	start_values := s.compute_keyframe_values(abstract_element, start_keyframe, computed_properties)
 	end_values := s.compute_keyframe_values(abstract_element, end_keyframe, computed_properties)
@@ -9283,26 +9053,24 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 		if composited := composite_value(property_id, underlying, end, end_operation) {
 			end = composited
 		}
-		if interpolated := interpolate_property(abstract_element.element(), property_id, start,
-			end, interval_progress, .yes)
-		{
+		if interpolated := interpolate_property(abstract_element.element(), property_id, start, end, interval_progress, .yes) {
 			computed_properties.set_animated_property(property_id, interpolated, if effect.is_css_transition {
 				AnimatedPropertyResultOfTransition.yes
 			} else {
 				AnimatedPropertyResultOfTransition.no
 			}, .no)
 		} else {
-			computed_properties.set_animated_property(.visibility,
-				dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))),
-				.no, .no)
+			computed_properties.set_animated_property(.visibility, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))), .no, .no)
 		}
 	}
 }
 
 pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) &ComputedProperties {
 	mut properties := ComputedProperties.new()
-	recascaded_font_size := s.recascade_font_size_if_needed(abstract_element, mut
-		cascaded_properties)
+	properties.viewport_rect_ = s.viewport_rect_
+	properties.root_font_size_px_ = s.root_element_font_metrics.font_size.to_double()
+	properties.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
+	recascaded_font_size := s.recascade_font_size_if_needed(abstract_element, mut cascaded_properties)
 	if font_size := recascaded_font_size {
 		properties.set_property(.font_size, font_size, .no, .no)
 	}
@@ -9323,36 +9091,30 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 				properties.set_property_important(property_id, .yes)
 			}
 			value = cascaded_style_property.value
-			requires_computation =
-				computed_interpolation_property_requires_computation_with_cascaded_value(property_id)
+			requires_computation = computed_interpolation_property_requires_computation_with_cascaded_value(property_id)
 		}
 		if property_id == .font_size && value == none && recascaded_font_size != none {
 			continue
 		}
 
-		mut should_inherit := value == none
-			&& computed_interpolation_is_inherited_property(property_id)
+		mut should_inherit := value == none && computed_interpolation_is_inherited_property(property_id)
 
 		// https://www.w3.org/TR/css-cascade-4/#inherit
 		// If the cascaded value of a property is the inherit keyword, the property’s specified and computed values are the inherited value.
 		if style_value := value {
-			should_inherit = should_inherit
-				|| computed_interpolation_style_value_is_inherit(style_value)
+			should_inherit = should_inherit || computed_interpolation_style_value_is_inherit(style_value)
 		}
 
 		// https://www.w3.org/TR/css-cascade-4/#inherit-initial
 		// If the cascaded value of a property is the unset keyword, then if it is an inherited property, this is treated as inherit, and if it is not, this is treated as initial.
 		if style_value := value {
-			should_inherit = should_inherit
-				|| (computed_interpolation_style_value_is_unset(style_value)
-				&& computed_interpolation_is_inherited_property(property_id))
+			should_inherit = should_inherit || (computed_interpolation_style_value_is_unset(style_value) && computed_interpolation_is_inherited_property(property_id))
 		}
 
 		// https://www.w3.org/TR/css-color-4/#resolving-other-colors
 		// In the color property, the used value of currentcolor is the resolved inherited value.
 		if style_value := value {
-			should_inherit = should_inherit || (property_id == .color
-				&& computed_interpolation_style_value_is_currentcolor(style_value))
+			should_inherit = should_inherit || (property_id == .color && computed_interpolation_style_value_is_currentcolor(style_value))
 		}
 
 		if should_inherit && inherited_source_available {
@@ -9362,28 +9124,20 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 					value = inherited_value
 				}
 			}
-			requires_computation =
-				computed_interpolation_property_requires_computation_with_inherited_value(property_id)
-			if animated_inherit := StyleComputer.get_animated_inherit_value(property_id,
-				abstract_element)
-			{
-				properties.set_animated_property(property_id, animated_inherit.value,
-					animated_inherit.is_result_of_transition, .yes)
+			requires_computation = computed_interpolation_property_requires_computation_with_inherited_value(property_id)
+			if animated_inherit := StyleComputer.get_animated_inherit_value(property_id, abstract_element) {
+				properties.set_animated_property(property_id, animated_inherit.value, animated_inherit.is_result_of_transition, .yes)
 			}
 		}
 
 		if style_value := value {
-			if computed_interpolation_style_value_is_initial(style_value)
-				|| computed_interpolation_style_value_is_unset(style_value)
-				|| (should_inherit && !inherited_source_available) {
+			if computed_interpolation_style_value_is_initial(style_value) || computed_interpolation_style_value_is_unset(style_value) || (should_inherit && !inherited_source_available) {
 				value = computed_interpolation_property_initial_value(property_id)
-				requires_computation =
-					computed_interpolation_property_requires_computation_with_initial_value(property_id)
+				requires_computation = computed_interpolation_property_requires_computation_with_initial_value(property_id)
 			}
 		} else {
 			value = computed_interpolation_property_initial_value(property_id)
-			requires_computation =
-				computed_interpolation_property_requires_computation_with_initial_value(property_id)
+			requires_computation = computed_interpolation_property_requires_computation_with_initial_value(property_id)
 		}
 
 		style_value := value or { continue }
@@ -9399,6 +9153,16 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		properties.set_property_without_modifying_flags(property_id, computed_value)
 	}
 
+	// The root element establishes the root font metrics used by rem/rlh for every
+	// subsequently computed descendant. This is the mutable update performed by
+	// StyleComputer::compute_properties() after its longhand computation loop.
+	if abstract_element.pseudo_element() == none && abstract_element.element().is_html_element() && abstract_element.element().local_name().to_lower() == 'html' {
+		mut mutable_computer := unsafe { &StyleComputer(s) }
+		mutable_computer.root_element_font_metrics = s.calculate_root_element_font_metrics(properties)
+		properties.root_font_size_px_ = mutable_computer.root_element_font_metrics.font_size.to_double()
+		properties.root_line_height_px_ = mutable_computer.root_element_font_metrics.line_height.to_double()
+	}
+
 	// Compute the value of custom properties.
 	s.compute_custom_properties(mut properties, abstract_element)
 
@@ -9408,8 +9172,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		for existing in s.css_animation_storage_.animations_for(abstract_element) {
 			mut animation := existing
 			if animation.sample_at(s.animation_time_ms_) != none {
-				s.collect_animation_into(abstract_element, voidptr(animation.effect_), mut
-					properties)
+				s.collect_animation_into(abstract_element, voidptr(animation.effect_), mut properties)
 			}
 		}
 	}
@@ -9417,8 +9180,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		for existing in s.css_transition_storage_.transitions_for(abstract_element) {
 			mut transition := existing
 			if transition.sample_at(s.animation_time_ms_) != none {
-				s.collect_animation_into(abstract_element, voidptr(transition.keyframe_effect_), mut
-					properties)
+				s.collect_animation_into(abstract_element, voidptr(transition.keyframe_effect_), mut properties)
 			}
 		}
 	}
@@ -9429,11 +9191,13 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	// Apply any property-specific computed value logic.
 	s.resolve_effective_overflow_values(mut properties)
 	compute_text_align(mut properties, abstract_element)
+	if abstract_element.pseudo_element() == none {
+		adjust_element_computed_style(mut properties, abstract_element.element())
+	}
 
 	if s.css_transition_storage_ != unsafe { nil } {
 		mut transition_storage := s.css_transition_storage_
-		compute_transitioned_properties_for_storage(properties, abstract_element, mut
-			transition_storage)
+		compute_transitioned_properties_for_storage(properties, abstract_element, mut transition_storage)
 		if old_dom_style := abstract_element.computed_properties() {
 			if old_style := computed_properties_from_dom(old_dom_style) {
 				s.start_needed_transitions(old_style, mut properties, abstract_element)
@@ -9444,13 +9208,285 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	return properties
 }
 
+// HTMLSelectElement::adjust_computed_style(). This class-specific boundary is
+// called from the central DOM/CSS dispatch below to avoid a css -> html cycle.
+pub fn html_select_element_adjust_computed_style(mut properties ComputedProperties) {
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+	display := properties.display()
+	if display.is_inline_outside() && display.is_flow_inside() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_block)))))
+	}
+	properties.set_property_without_modifying_flags(.line_height, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.normal))))
+}
+
+// HTMLTextAreaElement::adjust_computed_style(). This class-specific boundary
+// is called from the central DOM/CSS dispatch below to avoid a css -> html cycle.
+pub fn html_text_area_element_adjust_computed_style(mut properties ComputedProperties) {
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+	display := properties.display()
+	if display.is_inline_outside() && display.is_flow_inside() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_block)))))
+	}
+}
+
+pub fn html_button_element_adjust_computed_style(mut properties ComputedProperties) {
+	display := properties.display()
+	if display.is_flex_inside() || display.is_grid_inside() || display.is_none()
+		|| display.is_contents() {
+		return
+	}
+	adjusted := if display.is_inline_outside() {
+		Display.from_short(.inline_block)
+	} else {
+		Display.from_short(.flow_root)
+	}
+	properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(adjusted))))
+}
+
+pub fn html_embed_element_adjust_computed_style(mut properties ComputedProperties) {
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+}
+
+pub fn html_iframe_element_adjust_computed_style(mut properties ComputedProperties) {
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+}
+
+pub fn html_canvas_element_adjust_computed_style(mut properties ComputedProperties) {
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+}
+
+pub fn html_image_element_adjust_computed_style(mut properties ComputedProperties) {
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+}
+
+pub fn html_object_element_adjust_computed_style(mut properties ComputedProperties) {
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+}
+
+pub fn htmli_frame_element_adjust_computed_style(mut properties ComputedProperties) {
+	html_iframe_element_adjust_computed_style(mut properties)
+}
+
+pub fn html_frame_element_adjust_computed_style(mut properties ComputedProperties) {
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+}
+
+pub fn html_frame_set_element_adjust_computed_style(mut properties ComputedProperties) {
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+}
+
+pub fn htmlbr_element_adjust_computed_style(mut properties ComputedProperties) {
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+}
+
+pub fn html_br_element_adjust_computed_style(mut properties ComputedProperties) {
+	htmlbr_element_adjust_computed_style(mut properties)
+}
+
+pub fn html_audio_element_adjust_computed_style(mut properties ComputedProperties, element &dom.HTMLAudioElement) {
+	dom_element := unsafe { &dom.Element(element) }
+	html_media_element_adjust_computed_style(mut properties)
+	if !dom_element.has_attribute('controls') {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+}
+
+pub fn html_media_element_adjust_computed_style(mut properties ComputedProperties) {
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+	display := properties.display()
+	if display.is_inline_outside() && display.is_flow_inside() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_block)))))
+	}
+}
+
+pub fn html_element_adjust_computed_style(mut properties ComputedProperties, element &dom.HTMLElement) {
+	dom_element := unsafe { &dom.Element(element) }
+	if dom_element.local_name() == 'wbr' && properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	}
+}
+
+// DOM::Element::adjust_computed_style() overrides implemented by the element
+// classes. Keep this after the generic box-type transformations, matching
+// StyleComputer::compute_properties().
+fn adjust_element_computed_style(mut properties ComputedProperties, element &dom.Element) {
+	if element.is_svg_element() {
+		// SVGElement::adjust_computed_style(): only the outermost <svg>
+		// participates in CSS box positioning. Every other SVG element uses the
+		// SVG coordinate system and is forced to position: static.
+		mut is_outermost_svg := element.local_name() == 'svg'
+		if is_outermost_svg {
+			mut ancestor := element.as_node().parent_element()
+			for ancestor != none {
+				candidate := ancestor or { break }
+				if candidate.is_svg_element() && candidate.local_name() == 'svg' {
+					is_outermost_svg = false
+					break
+				}
+				ancestor = candidate.as_node().parent_element()
+			}
+		}
+		if !is_outermost_svg {
+			properties.set_property_without_modifying_flags(.position, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.static_))))
+		}
+		return
+	}
+	if !element.is_html_element() {
+		return
+	}
+	html_element_adjust_computed_style(mut properties, unsafe { &dom.HTMLElement(element) })
+	local_name := element.local_name().to_lower()
+	if local_name == 'select' {
+		html_select_element_adjust_computed_style(mut properties)
+		return
+	}
+	if local_name == 'textarea' {
+		html_text_area_element_adjust_computed_style(mut properties)
+		return
+	}
+	if local_name == 'button' {
+		html_button_element_adjust_computed_style(mut properties)
+		return
+	}
+	if local_name == 'embed' {
+		html_embed_element_adjust_computed_style(mut properties)
+		return
+	}
+	if local_name == 'iframe' {
+		html_iframe_element_adjust_computed_style(mut properties)
+		return
+	}
+	if local_name == 'canvas' {
+		html_canvas_element_adjust_computed_style(mut properties)
+		return
+	}
+	if local_name == 'img' {
+		html_image_element_adjust_computed_style(mut properties)
+		return
+	}
+	if local_name == 'object' {
+		html_object_element_adjust_computed_style(mut properties)
+		return
+	}
+	if local_name == 'video' {
+		html_media_element_adjust_computed_style(mut properties)
+		return
+	}
+	if local_name == 'frame' {
+		html_frame_element_adjust_computed_style(mut properties)
+		return
+	}
+	if local_name == 'frameset' {
+		html_frame_set_element_adjust_computed_style(mut properties)
+		return
+	}
+	if local_name == 'br' {
+		htmlbr_element_adjust_computed_style(mut properties)
+		return
+	}
+	// HTMLTableElement::recompute_style(): legacy -libweb-* alignment values
+	// center/right-align the table wrapper but are not inherited by table
+	// contents.
+	if local_name == 'table' && properties.text_align() in [.libweb_left, .libweb_center,
+		.libweb_right] {
+		properties.set_property_without_modifying_flags(.text_align, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.start))))
+	}
+	// HTMLElement::adjust_computed_style() and the replaced/control element
+	// overrides that implement CSS Display's display:contents unboxing rule.
+	if local_name == 'wbr' || local_name in ['iframe', 'br', 'img', 'canvas', 'object', 'textarea',
+		'meter', 'embed', 'progress', 'frame', 'frameset', 'select', 'audio', 'video'] {
+		if properties.display().is_contents() {
+			properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+		}
+	}
+	// HTMLMediaElement, HTMLSelectElement and HTMLTextAreaElement need an
+	// atomic inline box for their internal shadow-tree layout.
+	if local_name in ['audio', 'video', 'select', 'textarea'] {
+		display := properties.display()
+		if display.is_inline_outside() && display.is_flow_inside() {
+			properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_block)))))
+		}
+	}
+	if local_name == 'audio' && !element.has_attribute('controls') {
+		html_audio_element_adjust_computed_style(mut properties, unsafe { &dom.HTMLAudioElement(element) })
+		return
+	}
+	if local_name == 'input' {
+		html_input_element_adjust_computed_style(mut properties, element)
+		return
+	}
+}
+
+// HTMLInputElement::adjust_computed_style(). Keep the element-specific
+// adjustments at the same post-computation boundary as the upstream style
+// computer, after the generic box-type transformations have run.
+fn html_input_element_adjust_computed_style(mut properties ComputedProperties, element &dom.Element) {
+	mut type_ := element.get_attribute_value('type').trim_space().to_lower()
+	if type_.len == 0 {
+		type_ = 'text'
+	}
+	if type_ in ['hidden', 'submit', 'button', 'reset', 'image', 'checkbox', 'radio'] {
+		return
+	}
+
+	if properties.display().is_contents() {
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	} else {
+		display := properties.display()
+		if display.is_inline_outside() && display.is_flow_inside() {
+			properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_block)))))
+		}
+	}
+
+	if type_ != 'file' && properties.size_value(.width).is_auto() {
+		size := element.get_attribute_value('size').int()
+		columns := if size > 0 { size } else { 20 }
+		if parsed := parse_css_value_logic(.width, '${columns}ch') {
+			properties.set_property_without_modifying_flags(.width, dom_style_value_from_value_logic(parsed))
+		}
+	}
+
+	// For web compatibility, these are the one-line plain-text controls used by
+	// HTMLInputElement::is_single_line(). URL is intentionally not in this set.
+	if type_ in ['text', 'search', 'password', 'email', 'tel', 'number'] && properties.size_value(.height).is_auto() {
+		current_line_height := properties.line_height().to_double()
+		minimum_line_height := properties.font_size().to_double() * computed_properties_normal_line_height_scale
+		if current_line_height < minimum_line_height {
+			if parsed := parse_css_value_logic(.line_height, 'normal') {
+				properties.set_property_without_modifying_flags(.line_height, dom_style_value_from_value_logic(parsed))
+			}
+		}
+	}
+}
+
 pub fn (s &StyleComputer) compute_property_values(mut computed_properties ComputedProperties, abstract_element ?dom.AbstractElement) {
 	for property_id in computed_interpolation_property_computation_order() {
 		specified_value := computed_properties.property(property_id, .no) or {
 			computed_interpolation_property_initial_value(property_id)
 		}
-		computation_context := s.get_computation_context_for_property(property_id,
-			computed_properties, abstract_element)
+		computation_context := s.get_computation_context_for_property(property_id, computed_properties, abstract_element)
 		computed_value := StyleComputer.compute_value_of_property(property_id, specified_value, fn [computed_properties] (id PropertyID) &dom.StyleValue {
 			return computed_properties.property(id, .no) or {
 				computed_interpolation_property_initial_value(id)
@@ -9532,10 +9568,9 @@ pub fn StyleComputer.compute_value_of_custom_property(abstract_element dom.Abstr
 		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
 	}
 	mut guarded_contexts := GuardedSubstitutionContexts{}
-	result := substitute_arbitrary_substitution_functions_for_element(abstract_element, mut
-		guarded_contexts, parse_component_values_for_value_logic(value.css_text), SubstitutionContext{
+	result := substitute_arbitrary_substitution_functions_for_element(abstract_element, mut guarded_contexts, parse_component_values_for_value_logic(value.css_text), SubstitutionContext{
 		dependency_type: .property
-		first:           custom_property
+		first: custom_property
 	})
 	if contains_guaranteed_invalid_value(result) {
 		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
@@ -9545,27 +9580,21 @@ pub fn StyleComputer.compute_value_of_custom_property(abstract_element dom.Abstr
 	}
 }
 
-pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified_value &dom.StyleValue, get_property_specified_value fn (PropertyID) &dom.StyleValue, computation_context StyleComputationContextStub, device_pixels_per_css_pixel f64) &dom.StyleValue {
+pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified_value &dom.StyleValue, get_property_specified_value fn(PropertyID) &dom.StyleValue, computation_context StyleComputationContextStub, device_pixels_per_css_pixel f64) &dom.StyleValue {
 	absolutized_value := unsafe { specified_value }
 
 	return match property_id {
 		.animation_name {
 			StyleComputer.compute_animation_name(absolutized_value)
 		}
-		.border_block_end_width, .border_block_start_width, .border_bottom_width,
-		.border_inline_end_width, .border_inline_start_width, .border_left_width,
-		.border_right_width, .border_top_width, .outline_width {
-			StyleComputer.compute_border_or_outline_width(absolutized_value,
-				device_pixels_per_css_pixel)
+		.border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width, .outline_width {
+			StyleComputer.compute_border_or_outline_width(absolutized_value, device_pixels_per_css_pixel, computation_context)
 		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape,
-		.corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape,
-		.corner_top_left_shape, .corner_top_right_shape {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape {
 			StyleComputer.compute_corner_shape(absolutized_value)
 		}
 		.font_feature_settings {
-			StyleComputer.compute_font_feature_tag_value_list(absolutized_value,
-				computation_context)
+			StyleComputer.compute_font_feature_tag_value_list(absolutized_value, computation_context)
 		}
 		.font_size {
 			math_depth_value := get_property_specified_value(.math_depth)
@@ -9573,8 +9602,7 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 				0
 			})
 			inheritance_parent := style_computation_inheritance_parent(computation_context)
-			StyleComputer.compute_font_size(absolutized_value, computed_math_depth,
-				inheritance_parent)
+			StyleComputer.compute_font_size(absolutized_value, computed_math_depth, inheritance_parent)
 		}
 		.font_style {
 			StyleComputer.compute_font_style(absolutized_value)
@@ -9593,15 +9621,10 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 			StyleComputer.compute_letter_or_word_spacing(absolutized_value)
 		}
 		.line_height {
-			StyleComputer.compute_line_height(absolutized_value,
-				computation_context.length_resolution_context.font_metrics.font_size)
+			StyleComputer.compute_line_height(absolutized_value, computation_context.length_resolution_context.font_metrics.font_size)
 		}
-		.object_position, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
-		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
-		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
-		.overflow_clip_margin_right, .overflow_clip_margin_top, .perspective, .perspective_origin {
-			StyleComputer.compute_absolutized_value(property_id, absolutized_value,
-				computation_context)
+		.object_position, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .perspective, .perspective_origin {
+			StyleComputer.compute_absolutized_value(property_id, absolutized_value, computation_context)
 		}
 		.outline_offset {
 			StyleComputer.compute_length(absolutized_value, computation_context)
@@ -9610,16 +9633,14 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 			inheritance_parent := style_computation_inheritance_parent(computation_context)
 			StyleComputer.compute_math_depth(absolutized_value, inheritance_parent)
 		}
-		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity {
+		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity, .stroke_opacity {
 			StyleComputer.compute_opacity(absolutized_value)
 		}
 		.position_area {
 			StyleComputer.compute_position_area(absolutized_value)
 		}
 		.scrollbar_color, .tab_size, .transform_origin, .vertical_align {
-			StyleComputer.compute_absolutized_value(property_id, absolutized_value,
-				computation_context)
+			StyleComputer.compute_absolutized_value(property_id, absolutized_value, computation_context)
 		}
 		else {
 			unsafe { specified_value }
@@ -9634,7 +9655,7 @@ fn style_computation_inheritance_parent(computation_context StyleComputationCont
 	return none
 }
 
-fn computed_interpolation_compute_style_value_list(style_value &dom.StyleValue, compute_entry fn (StyleValue) ?StyleValue) ?&dom.StyleValue {
+fn computed_interpolation_compute_style_value_list(style_value &dom.StyleValue, compute_entry fn(StyleValue) ?StyleValue) ?&dom.StyleValue {
 	mut computed_entries := []StyleValue{}
 	for entry_component_values in parse_a_comma_separated_list_of_component_values_for_value_logic(parse_component_values_for_value_logic(style_value.css_text)) {
 		mut entry_tokens := ComponentValueStream.new(entry_component_values)
@@ -9647,8 +9668,7 @@ fn computed_interpolation_compute_style_value_list(style_value &dom.StyleValue, 
 		}
 		computed_entries << (compute_entry(entry) or { return none })
 	}
-	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(computed_entries,
-		.comma, .yes)))
+	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(computed_entries, .comma, .yes)))
 }
 
 fn computed_interpolation_animation_name_entry_from_tokens(mut tokens ComponentValueStream) ?StyleValue {
@@ -9678,8 +9698,10 @@ fn computed_interpolation_compute_animation_name_entry(entry StyleValue) ?StyleV
 		string_value := entry.as_string().string_value()
 
 		// AD-HOC: We shouldn't convert strings that aren't valid <custom-ident>s
-		if is_css_wide_keyword_string(string_value)
-			|| to_ascii_lowercase(string_value) in ['default', 'none'] {
+		if is_css_wide_keyword_string(string_value) || to_ascii_lowercase(string_value) in [
+			'default',
+			'none',
+		] {
 			return entry
 		}
 
@@ -9692,8 +9714,7 @@ fn computed_interpolation_compute_animation_name_entry(entry StyleValue) ?StyleV
 pub fn StyleComputer.compute_animation_name(absolutized_value &dom.StyleValue) &dom.StyleValue {
 	// https://drafts.csswg.org/css-animations-1/#animation-name
 	// list, each item either a case-sensitive css identifier or the keyword none
-	return computed_interpolation_compute_style_value_list(absolutized_value,
-		computed_interpolation_compute_animation_name_entry) or { unsafe { absolutized_value } }
+	return computed_interpolation_compute_style_value_list(absolutized_value, computed_interpolation_compute_animation_name_entry) or { unsafe { absolutized_value } }
 }
 
 fn computed_interpolation_line_width_keyword_to_css_pixels(value string) ?CSSPixels {
@@ -9747,17 +9768,34 @@ fn computed_interpolation_length_from_dom_style_value(style_value &dom.StyleValu
 	return none
 }
 
-pub fn StyleComputer.compute_border_or_outline_width(absolutized_value &dom.StyleValue, device_pixels_per_css_pixel f64) &dom.StyleValue {
+pub fn StyleComputer.compute_border_or_outline_width(absolutized_value &dom.StyleValue, device_pixels_per_css_pixel f64, computation_context StyleComputationContextStub) &dom.StyleValue {
 	// https://drafts.csswg.org/css-backgrounds/#border-width
 	// absolute length, snapped as a border width
-	absolute_length := computed_interpolation_line_width_keyword_to_css_pixels(absolutized_value.css_text) or {
-		length := computed_interpolation_length_from_dom_style_value(absolutized_value) or {
+	mut absolute_length := computed_interpolation_line_width_keyword_to_css_pixels(absolutized_value.css_text) or {
+		parsed_value := parse_css_value_logic(.border_top_width, absolutized_value.css_text) or {
 			return unsafe { absolutized_value }
 		}
-		length.absolute_length_to_px()
+		match parsed_value {
+			LengthStyleValue {
+				parsed_value.length().to_px(computation_context.length_resolution_context)
+			}
+			CalculatedStyleValue {
+				length := parsed_value.resolve_length(CalculationResolutionContext{
+					length_resolution_context: computation_context.length_resolution_context
+				}) or { return unsafe { absolutized_value } }
+				length.to_px(computation_context.length_resolution_context)
+			}
+			else {
+				return unsafe { absolutized_value }
+			}
+		}
 	}
-	snapped_length := computed_interpolation_snap_a_length_as_a_border_width(device_pixels_per_css_pixel,
-		absolute_length)
+	// The <line-width> grammar has the [0,∞] range restriction. Calculated values
+	// are clamped at computed-value time before the border-width snapping steps.
+	if absolute_length.raw_value() < 0 {
+		absolute_length = CSSPixels.new(0)
+	}
+	snapped_length := computed_interpolation_snap_a_length_as_a_border_width(device_pixels_per_css_pixel, absolute_length)
 	return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_css_px(snapped_length))))
 }
 
@@ -9884,7 +9922,9 @@ fn computed_interpolation_parse_font_feature_settings_entry(values []ComponentVa
 			match to_ascii_lowercase(component_value.token().ident()) {
 				'on' { StyleValue(IntegerStyleValue.create(1)) }
 				'off' { StyleValue(IntegerStyleValue.create(0)) }
-				else { return none }
+				else {
+					return none
+				}
 			}
 		}
 	} else {
@@ -9895,8 +9935,7 @@ fn computed_interpolation_parse_font_feature_settings_entry(values []ComponentVa
 	if tag_tokens.has_more_tokens() {
 		return none
 	}
-	return OpenTypeTaggedStyleValue.create(.font_feature_settings, opentype_tag.string_value(),
-		value)
+	return OpenTypeTaggedStyleValue.create(.font_feature_settings, opentype_tag.string_value(), value)
 }
 
 fn computed_interpolation_parse_font_variation_settings_entry(values []ComponentValue) ?OpenTypeTaggedStyleValue {
@@ -9914,8 +9953,7 @@ fn computed_interpolation_parse_font_variation_settings_entry(values []Component
 		return none
 	}
 
-	return OpenTypeTaggedStyleValue.create(.font_variation_settings, opentype_tag.string_value(),
-		number)
+	return OpenTypeTaggedStyleValue.create(.font_variation_settings, opentype_tag.string_value(), number)
 }
 
 fn computed_interpolation_compute_font_feature_tag_value_list(absolutized_value &dom.StyleValue, mode OpenTypeTaggedStyleValueMode) ?&dom.StyleValue {
@@ -9950,8 +9988,7 @@ fn computed_interpolation_compute_font_feature_tag_value_list(absolutized_value 
 		axis_tags << StyleValue(axis_tags_map[tag] or { return none })
 	}
 
-	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(axis_tags, .comma,
-		.yes)))
+	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(axis_tags, .comma, .yes)))
 }
 
 pub fn StyleComputer.compute_font_feature_tag_value_list(absolutized_value &dom.StyleValue, computation_context StyleComputationContextStub) &dom.StyleValue {
@@ -9960,8 +9997,7 @@ pub fn StyleComputer.compute_font_feature_tag_value_list(absolutized_value &dom.
 	// https://drafts.csswg.org/css-fonts/#font-feature-settings-prop
 	// NB: The computation logic is the same for both font-feature-settings and font-variation-settings, first we
 	//     deduplicate feature tags (with latter taking precedence), then we sort them in ascending order by code unit
-	return computed_interpolation_compute_font_feature_tag_value_list(absolutized_value,
-		.font_feature_settings) or { unsafe { absolutized_value } }
+	return computed_interpolation_compute_font_feature_tag_value_list(absolutized_value, .font_feature_settings) or { unsafe { absolutized_value } }
 }
 
 pub fn StyleComputer.compute_math_depth(absolutized_value &dom.StyleValue, inheritance_parent ?dom.AbstractElement) &dom.StyleValue {
@@ -9985,8 +10021,7 @@ pub fn StyleComputer.compute_math_depth(absolutized_value &dom.StyleValue, inher
 	// - If the specified value of math-depth is auto-add and the inherited value of math-style is compact
 	//   then the computed value of math-depth of the element is its inherited value plus one.
 	if parsed_value.to_keyword() == .auto_add && inherited_math_style == .compact {
-		return dom_style_value_from_value_logic(StyleValue(IntegerStyleValue.create(i64(
-			inherited_math_depth + 1))))
+		return dom_style_value_from_value_logic(StyleValue(IntegerStyleValue.create(i64(inherited_math_depth + 1))))
 	}
 
 	// - If the specified value of math-depth is of the form add(<integer>) then the computed value of
@@ -10030,12 +10065,17 @@ fn computed_interpolation_keyword_to_relative_size(keyword Keyword) ?RelativeSiz
 
 fn computed_interpolation_font_metrics_for_size(font_size CSSPixels) LengthFontMetrics {
 	ratio := font_size.to_double() / 16.0
+	font := platform.Font{
+		family: 'sans-serif'
+		point_size: f32(font_size.to_double())
+	}
+	metrics := font.pixel_metrics()
 	return LengthFontMetrics{
-		font_size:    font_size
-		x_height:     CSSPixels.nearest_value_for(8.0 * ratio)
-		cap_height:   CSSPixels.nearest_value_for(12.0 * ratio)
-		zero_advance: CSSPixels.nearest_value_for(8.0 * ratio)
-		line_height:  CSSPixels.nearest_value_for(19.2 * ratio)
+		font_size: font_size
+		x_height: CSSPixels.nearest_value_for(f64(metrics.x_height))
+		cap_height: CSSPixels.nearest_value_for(12.0 * ratio)
+		zero_advance: CSSPixels.nearest_value_for(f64(metrics.advance_of_ascii_zero))
+		line_height: CSSPixels.nearest_value_for(19.2 * ratio)
 	}
 }
 
@@ -10074,8 +10114,7 @@ pub fn StyleComputer.compute_font_size(absolutized_value &dom.StyleValue, comput
 	}
 	keyword := parsed_value.to_keyword()
 	if absolute_size := computed_interpolation_keyword_to_absolute_size(keyword) {
-		font_size := StyleComputer.absolute_size_mapping(absolute_size,
-			StyleComputer.default_user_font_size())
+		font_size := StyleComputer.absolute_size_mapping(absolute_size, StyleComputer.default_user_font_size())
 		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_css_px(font_size))))
 	}
 	if relative_size := computed_interpolation_keyword_to_relative_size(keyword) {
@@ -10085,8 +10124,8 @@ pub fn StyleComputer.compute_font_size(absolutized_value &dom.StyleValue, comput
 
 	root_font_size := computed_interpolation_root_font_size(inheritance_parent)
 	context := LengthResolutionContext{
-		viewport_rect:     viewport_rect
-		font_metrics:      computed_interpolation_font_metrics_for_size(inherited_font_size)
+		viewport_rect: viewport_rect
+		font_metrics: computed_interpolation_font_metrics_for_size(inherited_font_size)
 		root_font_metrics: computed_interpolation_font_metrics_for_size(root_font_size)
 	}
 	if parsed_value is LengthStyleValue {
@@ -10102,7 +10141,7 @@ pub fn StyleComputer.compute_font_size(absolutized_value &dom.StyleValue, comput
 	}
 	if parsed_value is CalculatedStyleValue {
 		font_size := parsed_value.resolve_length(CalculationResolutionContext{
-			percentage_basis:          Length.make_css_px(inherited_font_size)
+			percentage_basis: Length.make_css_px(inherited_font_size)
 			length_resolution_context: context
 		}) or { return unsafe { absolutized_value } }
 		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(font_size)))
@@ -10162,9 +10201,7 @@ pub fn StyleComputer.compute_font_weight(absolutized_value &dom.StyleValue, inhe
 	}
 
 	// AD-HOC: Anywhere we support a numbers we should also support calcs
-	if calculated_number := computed_interpolation_calculated_number_from_dom_style_value(absolutized_value,
-		CSSPixels.nearest_value_for(0))
-	{
+	if calculated_number := computed_interpolation_calculated_number_from_dom_style_value(absolutized_value, CSSPixels.nearest_value_for(0)) {
 		return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(calculated_number)))
 	}
 
@@ -10383,8 +10420,7 @@ pub fn StyleComputer.compute_font_variation_settings(absolutized_value &dom.Styl
 	// https://drafts.csswg.org/css-fonts/#font-feature-settings-prop
 	// NB: The computation logic is the same for both font-feature-settings and font-variation-settings, first we
 	//     deduplicate feature tags (with latter taking precedence), then we sort them in ascending order by code unit
-	return computed_interpolation_compute_font_feature_tag_value_list(absolutized_value,
-		.font_variation_settings) or { unsafe { absolutized_value } }
+	return computed_interpolation_compute_font_feature_tag_value_list(absolutized_value, .font_variation_settings) or { unsafe { absolutized_value } }
 }
 
 pub fn StyleComputer.compute_line_height(absolutized_value &dom.StyleValue, computed_font_size CSSPixels) &dom.StyleValue {
@@ -10412,16 +10448,12 @@ pub fn StyleComputer.compute_line_height(absolutized_value &dom.StyleValue, comp
 	}
 
 	// NOTE: We also support calc()'d lengths (percentages resolve to lengths so we don't have to handle them separately)
-	if calculated_length := computed_interpolation_calculated_length_from_dom_style_value(absolutized_value,
-		computed_font_size)
-	{
+	if calculated_length := computed_interpolation_calculated_length_from_dom_style_value(absolutized_value, computed_font_size) {
 		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(calculated_length)))
 	}
 
 	// NOTE: We also support calc()'d numbers
-	if calculated_number := computed_interpolation_calculated_number_from_dom_style_value(absolutized_value,
-		computed_font_size)
-	{
+	if calculated_number := computed_interpolation_calculated_number_from_dom_style_value(absolutized_value, computed_font_size) {
 		return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(calculated_number)))
 	}
 
@@ -10481,8 +10513,7 @@ pub fn StyleComputer.compute_position_area(absolutized_value &dom.StyleValue) &d
 }
 
 pub fn (s &StyleComputer) build_matching_rule_set(abstract_element dom.AbstractElement, mut attempted_pseudo_class_matches PseudoClassBitmap, did_match_any_pseudo_element_rules &bool, mode ComputeStyleMode, scope &StyleScope) MatchingRuleSet {
-	return style_computer_build_matching_rule_set_impl(s, abstract_element, mut
-		attempted_pseudo_class_matches, did_match_any_pseudo_element_rules, mode, scope)
+	return style_computer_build_matching_rule_set_impl(s, abstract_element, mut attempted_pseudo_class_matches, did_match_any_pseudo_element_rules, mode, scope)
 }
 
 pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element dom.AbstractElement, mode ComputeStyleMode, matching_rule_set MatchingRuleSet) LogicalAliasMappingContext {
@@ -10491,13 +10522,10 @@ pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element
 	// used to resolve logical property aliases (e.g. margin-inline-start -> margin-left/right).
 	did_match_any_pseudo_element_rules := false
 	properties_to_cascade := [PropertyID.writing_mode, PropertyID.direction]
-	cascaded_properties := s.compute_cascaded_values(abstract_element,
-		did_match_any_pseudo_element_rules, mode, matching_rule_set, none, properties_to_cascade)
+	cascaded_properties := s.compute_cascaded_values(abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, none, properties_to_cascade)
 
-	writing_mode_value := logical_alias_normalize_value(abstract_element, .writing_mode,
-		cascaded_properties.property(.writing_mode))
-	direction_value := logical_alias_normalize_value(abstract_element, .direction,
-		cascaded_properties.property(.direction))
+	writing_mode_value := logical_alias_normalize_value(abstract_element, .writing_mode, cascaded_properties.property(.writing_mode))
+	direction_value := logical_alias_normalize_value(abstract_element, .direction, cascaded_properties.property(.direction))
 
 	writing_mode_keyword := computed_interpolation_style_value_keyword(writing_mode_value) or {
 		Keyword.horizontal_tb
@@ -10508,7 +10536,7 @@ pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element
 
 	return LogicalAliasMappingContext{
 		writing_mode: keyword_to_writing_mode(writing_mode_keyword) or { WritingMode.horizontal_tb }
-		direction:    keyword_to_direction(direction_keyword) or { Direction.ltr }
+		direction: keyword_to_direction(direction_keyword) or { Direction.ltr }
 	}
 }
 
@@ -10562,8 +10590,7 @@ fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, 
 	}
 	// Important author layers reverse layer order, so earlier layers win.
 	for index := matching_rule_set.author_rules.len - 1; index >= 0; index-- {
-		apply_custom_properties_from_matching_rules(matching_rule_set.author_rules[index].rules,
-			.yes, mut values)
+		apply_custom_properties_from_matching_rules(matching_rule_set.author_rules[index].rules, .yes, mut values)
 	}
 
 	if abstract_element.pseudo_element() == none {
@@ -10596,8 +10623,7 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 	// 1. Perform the cascade. This produces the "specified style".
 	mut did_match_any_pseudo_element_rules := false
 	mut attempted_pseudo_class_matches := PseudoClassBitmap{}
-	matching_rule_set := s.build_matching_rule_set(abstract_element, mut
-		attempted_pseudo_class_matches, &did_match_any_pseudo_element_rules, mode, scope)
+	matching_rule_set := s.build_matching_rule_set(abstract_element, mut attempted_pseudo_class_matches, &did_match_any_pseudo_element_rules, mode, scope)
 
 	if mode == .create_pseudo_element_style_if_needed {
 		pseudo_element := abstract_element.pseudo_element() or { return none }
@@ -10609,11 +10635,8 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 
 	install_custom_property_data_for_style(abstract_element, matching_rule_set)
 
-	logical_alias_mapping_context := s.compute_logical_alias_mapping_context(abstract_element,
-		mode, matching_rule_set)
-	mut cascaded_properties := s.compute_cascaded_values(abstract_element,
-		did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context,
-		[]PropertyID{})
+	logical_alias_mapping_context := s.compute_logical_alias_mapping_context(abstract_element, mode, matching_rule_set)
+	mut cascaded_properties := s.compute_cascaded_values(abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context, []PropertyID{})
 	if mode == .create_pseudo_element_style_if_needed {
 		pseudo_element := abstract_element.pseudo_element() or { return none }
 		content_value := cascaded_properties.property(.content)
@@ -10634,8 +10657,7 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 	mut mutable_abstract_element := abstract_element
 	mutable_abstract_element.set_cascaded_properties(cascaded_properties_to_dom(cascaded_properties))
 
-	mut computed_properties := s.compute_properties(mutable_abstract_element, mut
-		cascaded_properties)
+	mut computed_properties := s.compute_properties(mutable_abstract_element, mut cascaded_properties)
 	mut attempted_matches_by_name := map[string]bool{}
 	for pseudo_class, attempted in attempted_pseudo_class_matches.values {
 		if attempted {
@@ -10655,46 +10677,1069 @@ pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractE
 	}
 
 	// Normal user agent declarations
-	s.cascade_declarations(mut cascaded_properties, abstract_element,
-		matching_rule_set.user_agent_rules, .user_agent, .no, none, logical_alias_mapping_context,
-		properties_to_cascade)
+	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_agent_rules, .user_agent, .no, none, logical_alias_mapping_context, properties_to_cascade)
 
 	// Normal user declarations
-	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_rules,
-		.user, .no, none, logical_alias_mapping_context, properties_to_cascade)
+	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_rules, .user, .no, none, logical_alias_mapping_context, properties_to_cascade)
 
-	// Author presentational hints are not exposed by the current V DOM surface. SVG
-	// presentation attributes are represented as cascaded properties elsewhere, so
-	// keep the unresolved-property hook in the same cascade position.
+	// Element::apply_presentational_hints(). These occupy the author origin
+	// before author rules, so a stylesheet or inline declaration correctly wins.
 	if abstract_element.pseudo_element() == none {
-		if abstract_element.element().is_svg_element() {
+		if abstract_element.element().is_html_element() {
+			apply_html_presentational_hints(mut cascaded_properties, abstract_element.element(), properties_to_cascade)
+			cascaded_properties.resolve_unresolved_properties(&abstract_element)
+		} else if abstract_element.element().is_svg_element() {
+			apply_svg_presentational_hints(mut cascaded_properties, abstract_element.element(), properties_to_cascade)
 			cascaded_properties.resolve_unresolved_properties(&abstract_element)
 		}
 	}
 
 	// Normal author declarations, ordered by @layer, with un-@layer-ed rules last.
 	for layer in matching_rule_set.author_rules {
-		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author,
-			.no, layer.qualified_layer_name, logical_alias_mapping_context, properties_to_cascade)
+		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author, .no, layer.qualified_layer_name, logical_alias_mapping_context, properties_to_cascade)
 	}
 
 	// Important author declarations, with un-@layer-ed rules first, followed by each @layer in reverse order.
 	for i := matching_rule_set.author_rules.len - 1; i >= 0; i-- {
 		layer := matching_rule_set.author_rules[i]
-		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author,
-			.yes, none, logical_alias_mapping_context, properties_to_cascade)
+		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author, .yes, none, logical_alias_mapping_context, properties_to_cascade)
 	}
 
 	// Important user declarations
-	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_rules,
-		.user, .yes, none, logical_alias_mapping_context, properties_to_cascade)
+	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_rules, .user, .yes, none, logical_alias_mapping_context, properties_to_cascade)
 
 	// Important user agent declarations
-	s.cascade_declarations(mut cascaded_properties, abstract_element,
-		matching_rule_set.user_agent_rules, .user_agent, .yes, none, logical_alias_mapping_context,
-		properties_to_cascade)
+	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_agent_rules, .user_agent, .yes, none, logical_alias_mapping_context, properties_to_cascade)
 
 	return cascaded_properties
+}
+
+fn set_html_presentational_hint(mut cascaded_properties CascadedProperties, properties_to_cascade ComputedInterpolationPropertyIDs, property_id PropertyID, value StyleValue) {
+	if properties_to_cascade.len > 0 && property_id !in properties_to_cascade {
+		return
+	}
+	cascaded_properties.set_property_from_presentational_hint(property_id, dom_style_value_from_value_logic(value))
+}
+
+fn html_dimension_presentational_hint(source string, property_id PropertyID, reject_zero bool) ?StyleValue {
+	// HTML's legacy dimension microsyntax consumes the leading decimal number
+	// and ignores any trailing unit text (except an immediately following `%`).
+	// Thus values such as "420px" are valid 420px presentational hints.
+	mut position := 0
+	for position < source.len && source[position] in [`\t`, `\n`, `\f`, `\r`, ` `] {
+		position++
+	}
+	if position >= source.len || source[position] < `0` || source[position] > `9` {
+		return none
+	}
+	start := position
+	for position < source.len && source[position] >= `0` && source[position] <= `9` {
+		position++
+	}
+	if position < source.len && source[position] == `.` {
+		position++
+		for position < source.len && source[position] >= `0` && source[position] <= `9` {
+			position++
+		}
+	}
+	number := strconv.atof64(source[start..position]) or { return none }
+	if reject_zero && number == 0 {
+		return none
+	}
+	normalized := if position < source.len && source[position] == `%` {
+		'${number}%'
+	} else {
+		'${number}px'
+	}
+	return parse_css_value_logic(property_id, normalized)
+}
+
+// https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size
+fn legacy_font_size_presentational_hint(source string) ?StyleValue {
+	mut position := 0
+	for position < source.len && source[position] in [`\t`, `\n`, `\f`, `\r`, ` `] {
+		position++
+	}
+	if position == source.len {
+		return none
+	}
+	mut mode := 0
+	if source[position] == `+` {
+		mode = 1
+		position++
+	} else if source[position] == `-` {
+		mode = -1
+		position++
+	}
+	start := position
+	for position < source.len && source[position] >= `0` && source[position] <= `9` {
+		position++
+	}
+	if position == start {
+		return none
+	}
+	mut value := strconv.atoi(source[start..position]) or { return none }
+	if mode == 1 {
+		value += 3
+	} else if mode == -1 {
+		value = 3 - value
+	}
+	value = if value < 1 {
+		1
+	} else if value > 7 {
+		7
+	} else {
+		value
+	}
+	keyword := ['x-small', 'small', 'medium', 'large', 'x-large', 'xx-large', 'xxx-large'][value - 1]
+	return parse_css_value_logic(.font_size, keyword)
+}
+
+fn nearest_ancestor_html_table(element &dom.Element) ?&dom.Element {
+	mut ancestor := element.as_node().parent_element()
+	for ancestor != none {
+		candidate := ancestor or { break }
+		if candidate.local_name() == 'table' {
+			return candidate
+		}
+		ancestor = candidate.as_node().parent_element()
+	}
+	return none
+}
+
+fn legacy_unsigned_integer(source string) ?int {
+	trimmed := source.trim_space()
+	if trimmed.len == 0 {
+		return none
+	}
+	for character in trimmed.bytes() {
+		if character < `0` || character > `9` {
+			return none
+		}
+	}
+	return strconv.atoi(trimmed) or { return none }
+}
+
+fn legacy_non_negative_integer_prefix(source string) ?int {
+	mut position := 0
+	for position < source.len && source[position] in [`\t`, `\n`, `\f`, `\r`, ` `] {
+		position++
+	}
+	mut sign := 1
+	if position < source.len && source[position] in [`+`, `-`] {
+		if source[position] == `-` {
+			sign = -1
+		}
+		position++
+	}
+	start := position
+	for position < source.len && source[position] >= `0` && source[position] <= `9` {
+		position++
+	}
+	if position == start {
+		return none
+	}
+	value := strconv.atoi(source[start..position]) or { return none }
+	if sign < 0 && value != 0 {
+		return none
+	}
+	return value
+}
+
+fn legacy_integer_prefix(source string) ?int {
+	mut position := 0
+	for position < source.len && source[position] in [`\t`, `\n`, `\f`, `\r`, ` `] {
+		position++
+	}
+	mut sign := 1
+	if position < source.len && source[position] in [`+`, `-`] {
+		if source[position] == `-` {
+			sign = -1
+		}
+		position++
+	}
+	start := position
+	for position < source.len && source[position] >= `0` && source[position] <= `9` {
+		position++
+	}
+	if position == start {
+		return none
+	}
+	return sign * (strconv.atoi(source[start..position]) or { return none })
+}
+
+fn html_body_margin_source(element &dom.Element, first_attribute string, second_attribute string, container_attribute string) ?string {
+	if value := element.get_attribute(first_attribute) {
+		return value
+	}
+	if value := element.get_attribute(second_attribute) {
+		return value
+	}
+	navigable := element.document().navigable() or { return none }
+	container_node := navigable.container() or { return none }
+	container := container_node.as_element() or { return none }
+	return container.get_attribute(container_attribute)
+}
+
+fn set_html_table_border_hints(mut cascaded_properties CascadedProperties, properties_to_cascade ComputedInterpolationPropertyIDs, style_keyword string, width string, color string) {
+	for side in ['top', 'right', 'bottom', 'left'] {
+		style_property := property_id_from_string('border-${side}-style') or { continue }
+		width_property := property_id_from_string('border-${side}-width') or { continue }
+		color_property := property_id_from_string('border-${side}-color') or { continue }
+		if value := parse_css_value_logic(style_property, style_keyword) {
+			set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, style_property, value)
+		}
+		if value := parse_css_value_logic(width_property, width) {
+			set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, width_property, value)
+		}
+		if value := parse_css_value_logic(color_property, color) {
+			set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, color_property, value)
+		}
+	}
+}
+
+fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs) {
+	tag_name := element.local_name().to_lower()
+	if tag_name == 'body' {
+		if background_color := element.get_attribute('bgcolor') {
+			if value := parse_css_value_logic(.background_color, background_color) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+					.background_color, value)
+			}
+		}
+		if text_color := element.get_attribute('text') {
+			if value := parse_css_value_logic(.color, text_color) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+					.color, value)
+			}
+		}
+		if background := element.get_attribute('background') {
+			if parsed_url := element.document().encoding_parse_url(background) {
+				if value := parse_css_value_logic(.background_image,
+					'url("${parsed_url.serialize()}")') {
+					set_html_presentational_hint(mut cascaded_properties,
+						properties_to_cascade, .background_image, value)
+				}
+			}
+		}
+		for property_id, source in {
+			PropertyID.margin_top: html_body_margin_source(element, 'marginheight', 'topmargin',
+				'marginheight')
+			PropertyID.margin_bottom: html_body_margin_source(element, 'marginheight',
+				'bottommargin', 'marginheight')
+			PropertyID.margin_left: html_body_margin_source(element, 'marginwidth', 'leftmargin',
+				'marginwidth')
+			PropertyID.margin_right: html_body_margin_source(element, 'marginwidth',
+				'rightmargin', 'marginwidth')
+		} {
+			if source_value := source {
+				if pixels := legacy_non_negative_integer_prefix(source_value) {
+					if value := parse_css_value_logic(property_id, '${pixels}px') {
+						set_html_presentational_hint(mut cascaded_properties,
+							properties_to_cascade, property_id, value)
+					}
+				}
+			}
+		}
+	}
+	if tag_name == 'font' {
+		if color := element.get_attribute('color') {
+			if value := parse_css_value_logic(.color, color) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .color, value)
+			}
+		}
+		if size := element.get_attribute('size') {
+			if value := legacy_font_size_presentational_hint(size) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .font_size, value)
+			}
+		}
+		if face := element.get_attribute('face') {
+			if value := parse_css_value_logic(.font_family, face) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .font_family, value)
+			}
+		}
+	}
+	if tag_name == 'hr' {
+		has_solid_border := element.has_attribute('color') || element.has_attribute('noshade')
+		if has_solid_border {
+			for property_id in [PropertyID.border_top_style, .border_right_style,
+				.border_bottom_style, .border_left_style] {
+				if value := parse_css_value_logic(property_id, 'solid') {
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+						property_id, value)
+				}
+			}
+		}
+		if align := element.get_attribute('align') {
+			match align.to_lower() {
+				'left' {
+					if zero := parse_css_value_logic(.margin_left, '0px') {
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+							.margin_left, zero)
+					}
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+						.margin_right, StyleValue(KeywordStyleValue.create(.auto)))
+				}
+				'right' {
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+						.margin_left, StyleValue(KeywordStyleValue.create(.auto)))
+					if zero := parse_css_value_logic(.margin_right, '0px') {
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+							.margin_right, zero)
+					}
+				}
+				'center' {
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+						.margin_left, StyleValue(KeywordStyleValue.create(.auto)))
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+						.margin_right, StyleValue(KeywordStyleValue.create(.auto)))
+				}
+				else {}
+			}
+		}
+		if color_value := element.get_attribute('color') {
+			if value := parse_css_value_logic(.color, color_value) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+					.color, value)
+			}
+		}
+		if size_source := element.get_attribute('size') {
+			if size := legacy_unsigned_integer(size_source) {
+				if has_solid_border {
+					for property_id in [PropertyID.border_top_width, .border_right_width,
+						.border_bottom_width, .border_left_width] {
+						if value := parse_css_value_logic(property_id, '${f64(size) / 2.0}px') {
+							set_html_presentational_hint(mut cascaded_properties,
+								properties_to_cascade, property_id, value)
+						}
+					}
+				} else if size == 1 {
+					if value := parse_css_value_logic(.border_bottom_width, '0px') {
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+							.border_bottom_width, value)
+					}
+				} else if size > 1 {
+					if value := parse_css_value_logic(.height, '${size - 2}px') {
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+							.height, value)
+					}
+				}
+			}
+		}
+		if width := element.get_attribute('width') {
+			if value := html_dimension_presentational_hint(width, .width, false) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+					.width, value)
+			}
+		}
+	}
+	if tag_name == 'marquee' {
+		if background_color := element.get_attribute('bgcolor') {
+			if value := parse_css_value_logic(.background_color, background_color) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+					.background_color, value)
+			}
+		}
+		for attribute, properties in {
+			'height': [PropertyID.height]
+			'width':   [PropertyID.width]
+			'hspace':  [PropertyID.margin_left, .margin_right]
+			'vspace':  [PropertyID.margin_top, .margin_bottom]
+		} {
+			if source := element.get_attribute(attribute) {
+				for property_id in properties {
+					if value := html_dimension_presentational_hint(source, property_id, false) {
+						set_html_presentational_hint(mut cascaded_properties,
+							properties_to_cascade, property_id, value)
+					}
+				}
+			}
+		}
+	}
+	if tag_name == 'embed' {
+		if align := element.get_attribute('align') {
+			keyword := match align.to_lower() {
+				'center' { Keyword.center }
+				'middle' { Keyword.middle }
+				else { Keyword.invalid }
+			}
+			if keyword != .invalid {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+					.text_align, StyleValue(KeywordStyleValue.create(keyword)))
+			}
+		}
+		for attribute, properties in {
+			'hspace': [PropertyID.margin_left, .margin_right]
+			'vspace': [PropertyID.margin_top, .margin_bottom]
+		} {
+			if source := element.get_attribute(attribute) {
+				for property_id in properties {
+					if value := html_dimension_presentational_hint(source, property_id, false) {
+						set_html_presentational_hint(mut cascaded_properties,
+							properties_to_cascade, property_id, value)
+					}
+				}
+			}
+		}
+	}
+	if tag_name == 'iframe' {
+		if frameborder := element.get_attribute('frameborder') {
+			parsed := legacy_integer_prefix(frameborder)
+			if parsed == none || parsed or { 0 } == 0 {
+				for property_id in [PropertyID.border_top_width, .border_right_width,
+					.border_bottom_width, .border_left_width] {
+					if zero := parse_css_value_logic(property_id, '0px') {
+						set_html_presentational_hint(mut cascaded_properties,
+							properties_to_cascade, property_id, zero)
+					}
+				}
+			}
+		}
+	}
+	if tag_name in ['pre', 'listing', 'xmp'] && element.has_attribute('wrap') {
+		set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+			.text_wrap_mode, StyleValue(KeywordStyleValue.create(.wrap)))
+	}
+	if tag_name == 'caption' && element.get_attribute_value('align') == 'bottom' {
+		set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+			.caption_side, StyleValue(KeywordStyleValue.create(.bottom)))
+	}
+	if tag_name in ['li', 'ol', 'ul'] {
+		if type_value := element.get_attribute('type') {
+			list_style_type := match type_value {
+				'1' { 'decimal' }
+				'a' { 'lower-alpha' }
+				'A' { 'upper-alpha' }
+				'i' { 'lower-roman' }
+				'I' { 'upper-roman' }
+				else { type_value.to_lower() }
+			}
+			numbered_style := list_style_type in ['decimal', 'lower-alpha', 'upper-alpha',
+				'lower-roman', 'upper-roman']
+			unordered_style := list_style_type in ['none', 'disc', 'circle', 'square']
+			if (tag_name == 'ol' && numbered_style) || (tag_name == 'ul' && unordered_style)
+				|| (tag_name == 'li' && (numbered_style || unordered_style)) {
+				if value := parse_css_value_logic(.list_style_type, list_style_type) {
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+						.list_style_type, value)
+				}
+			}
+		}
+	}
+	if tag_name == 'br' {
+		if clear := element.get_attribute('clear') {
+			keyword := match clear.to_lower() {
+				'left' { Keyword.left }
+				'right' { Keyword.right }
+				'all', 'both' { Keyword.both }
+				else { Keyword.invalid }
+			}
+			if keyword != .invalid {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+					.clear, StyleValue(KeywordStyleValue.create(keyword)))
+			}
+		}
+	}
+	if tag_name in ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'] {
+		if align := element.get_attribute('align') {
+			lowercase_align := align.to_lower()
+			keyword := match lowercase_align {
+				'left' {
+					if tag_name == 'div' { Keyword.libweb_left } else { Keyword.left }
+				}
+				'right' {
+					if tag_name == 'div' { Keyword.libweb_right } else { Keyword.right }
+				}
+				'center' {
+					if tag_name == 'div' { Keyword.libweb_center } else { Keyword.center }
+				}
+				'justify' {
+					Keyword.justify
+				}
+				else {
+					Keyword.invalid
+				}
+			}
+			if keyword != .invalid {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .text_align, StyleValue(KeywordStyleValue.create(keyword)))
+			}
+		}
+	}
+	input_accepts_dimensions := tag_name == 'input' && element.get_attribute_value('type').trim_space().to_lower() == 'image'
+	if tag_name in ['table', 'td', 'th', 'tr', 'col', 'colgroup', 'img', 'iframe', 'embed', 'object',
+		'canvas', 'video'] || input_accepts_dimensions {
+		if width := element.get_attribute('width') {
+			if value := html_dimension_presentational_hint(width, .width, tag_name in [
+				'table',
+				'td',
+				'th',
+				'col',
+				'colgroup',
+			]) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .width, value)
+			}
+		}
+		if height := element.get_attribute('height') {
+			if value := html_dimension_presentational_hint(height, .height, tag_name in [
+				'td',
+				'th',
+			]) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .height, value)
+			}
+		}
+	}
+	if tag_name == 'canvas' {
+		width := legacy_non_negative_integer_prefix(element.get_attribute_value('width'))
+		height := legacy_non_negative_integer_prefix(element.get_attribute_value('height'))
+		if w := width {
+			if h := height {
+				if value := parse_css_value_logic(.aspect_ratio, 'auto ${w} / ${h}') {
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+						.aspect_ratio, value)
+				}
+			}
+		}
+	}
+	if input_accepts_dimensions {
+		if align := element.get_attribute('align') {
+			keyword := match align.to_lower() {
+				'center' { Keyword.center }
+				'middle' { Keyword.middle }
+				else { Keyword.invalid }
+			}
+			if keyword != .invalid {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .text_align, StyleValue(KeywordStyleValue.create(keyword)))
+			}
+		}
+		if border := element.get_attribute('border') {
+			if width := legacy_unsigned_integer(border) {
+				for side in ['top', 'right', 'bottom', 'left'] {
+					width_property := property_id_from_string('border-${side}-width') or { continue }
+					style_property := property_id_from_string('border-${side}-style') or { continue }
+					if value := parse_css_value_logic(width_property, '${width}px') {
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, width_property, value)
+					}
+					if value := parse_css_value_logic(style_property, 'solid') {
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, style_property, value)
+					}
+				}
+			}
+		}
+		for attribute, properties in {
+			'hspace': [PropertyID.margin_left, .margin_right]
+			'vspace': [PropertyID.margin_top, .margin_bottom]
+		} {
+			if source := element.get_attribute(attribute) {
+				for property_id in properties {
+					if value := html_dimension_presentational_hint(source, property_id, false) {
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, value)
+					}
+				}
+			}
+		}
+	}
+	if tag_name == 'img' {
+		for attribute, properties in {
+			'hspace': [PropertyID.margin_left, .margin_right]
+			'vspace': [PropertyID.margin_top, .margin_bottom]
+		} {
+			if source := element.get_attribute(attribute) {
+				for property_id in properties {
+					if value := html_dimension_presentational_hint(source, property_id, false) {
+						set_html_presentational_hint(mut cascaded_properties,
+							properties_to_cascade, property_id, value)
+					}
+				}
+			}
+		}
+		if border := element.get_attribute('border') {
+			if width := legacy_unsigned_integer(border) {
+				for side in ['top', 'right', 'bottom', 'left'] {
+					width_property := property_id_from_string('border-${side}-width') or { continue }
+					style_property := property_id_from_string('border-${side}-style') or { continue }
+					if value := parse_css_value_logic(width_property, '${width}px') {
+						set_html_presentational_hint(mut cascaded_properties,
+							properties_to_cascade, width_property, value)
+					}
+					if value := parse_css_value_logic(style_property, 'solid') {
+						set_html_presentational_hint(mut cascaded_properties,
+							properties_to_cascade, style_property, value)
+					}
+				}
+			}
+		}
+	}
+	if tag_name == 'object' {
+		if align := element.get_attribute('align') {
+			keyword := match align.to_lower() {
+				'center' { Keyword.center }
+				'middle' { Keyword.middle }
+				else { Keyword.invalid }
+			}
+			if keyword != .invalid {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+					.text_align, StyleValue(KeywordStyleValue.create(keyword)))
+			}
+		}
+		for attribute, properties in {
+			'hspace': [PropertyID.margin_left, .margin_right]
+			'vspace': [PropertyID.margin_top, .margin_bottom]
+		} {
+			if source := element.get_attribute(attribute) {
+				for property_id in properties {
+					if value := html_dimension_presentational_hint(source, property_id, false) {
+						set_html_presentational_hint(mut cascaded_properties,
+							properties_to_cascade, property_id, value)
+					}
+				}
+			}
+		}
+		if border := element.get_attribute('border') {
+			if width := legacy_unsigned_integer(border) {
+				for side in ['top', 'right', 'bottom', 'left'] {
+					width_property := property_id_from_string('border-${side}-width') or { continue }
+					style_property := property_id_from_string('border-${side}-style') or { continue }
+					if value := parse_css_value_logic(width_property, '${width}px') {
+						set_html_presentational_hint(mut cascaded_properties,
+							properties_to_cascade, width_property, value)
+					}
+					if value := parse_css_value_logic(style_property, 'solid') {
+						set_html_presentational_hint(mut cascaded_properties,
+							properties_to_cascade, style_property, value)
+					}
+				}
+			}
+		}
+	}
+	if tag_name in ['tr', 'thead', 'tbody', 'tfoot'] {
+		if height := element.get_attribute('height') {
+			if value := html_dimension_presentational_hint(height, .height, false) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .height, value)
+			}
+		}
+	}
+	if tag_name == 'table' {
+		if align := element.get_attribute('align') {
+			if align.to_lower() == 'center' {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .margin_left, StyleValue(KeywordStyleValue.create(.auto)))
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .margin_right, StyleValue(KeywordStyleValue.create(.auto)))
+			} else if align.to_lower() in ['left', 'right'] {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .float_, StyleValue(KeywordStyleValue.create(if align.to_lower() == 'left' {
+					.left
+				} else {
+					.right
+				})))
+			}
+		}
+		if cellspacing := element.get_attribute('cellspacing') {
+			if value := html_dimension_presentational_hint(cellspacing, .border_spacing, false) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .border_spacing, value)
+			}
+		}
+		if border := element.get_attribute('border') {
+			if width := legacy_unsigned_integer(border) {
+				if width > 0 {
+					set_html_table_border_hints(mut cascaded_properties, properties_to_cascade, 'outset', '${width}px', 'rgb(128 128 128)')
+				}
+			}
+		}
+		if border_color := element.get_attribute('bordercolor') {
+			for side in ['top', 'right', 'bottom', 'left'] {
+				property_id := property_id_from_string('border-${side}-color') or { continue }
+				if value := parse_css_value_logic(property_id, border_color) {
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, value)
+				}
+			}
+		}
+	}
+	if tag_name in ['table', 'td', 'th', 'tr', 'thead', 'tbody', 'tfoot'] {
+		if background_color := element.get_attribute('bgcolor') {
+			if value := parse_css_value_logic(.background_color, background_color) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .background_color, value)
+			}
+		}
+		if background := element.get_attribute('background') {
+			if parsed_url := element.document().encoding_parse_url(background) {
+				if value := parse_css_value_logic(.background_image,
+					'url("${parsed_url.serialize()}")') {
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
+						.background_image, value)
+				}
+			}
+		}
+	}
+	if tag_name in ['td', 'th'] {
+		if align := element.get_attribute('align') {
+			keyword := match align.to_lower() {
+				'center', 'middle' { Keyword.libweb_center }
+				'left' { Keyword.libweb_left }
+				'right' { Keyword.libweb_right }
+				else { Keyword.invalid }
+			}
+			if keyword != .invalid {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .text_align, StyleValue(KeywordStyleValue.create(keyword)))
+			}
+		}
+		if nowrap := element.get_attribute('nowrap') {
+			_ = nowrap
+			set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .text_wrap_mode, StyleValue(KeywordStyleValue.create(.nowrap)))
+		}
+	}
+	if tag_name in ['td', 'th', 'tr'] {
+		if valign := element.get_attribute('valign') {
+			if value := parse_css_value_logic(.vertical_align, valign) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .vertical_align, value)
+			}
+		}
+	}
+	if tag_name in ['td', 'th'] {
+		if table := nearest_ancestor_html_table(element) {
+			if cellpadding := table.get_attribute('cellpadding') {
+				if value := html_dimension_presentational_hint(cellpadding, .padding_top, false) {
+					for property_id in [PropertyID.padding_top, .padding_right, .padding_bottom,
+						.padding_left] {
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, value)
+					}
+				}
+			}
+			if table_border := table.get_attribute('border') {
+				if width := legacy_unsigned_integer(table_border) {
+					if width > 0 {
+						color := table.get_attribute_value('bordercolor')
+						set_html_table_border_hints(mut cascaded_properties, properties_to_cascade, 'inset', '1px', if color.len > 0 {
+							color
+						} else {
+							'rgb(128 128 128)'
+						})
+					}
+				}
+			}
+		}
+	}
+}
+
+pub fn html_div_element_is_presentational_hint(_ &dom.HTMLDivElement, name string) bool {
+	return name == 'align'
+}
+
+pub fn html_div_element_apply_presentational_hints(element &dom.HTMLDivElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_hr_element_is_presentational_hint(_ &dom.HTMLHRElement, name string) bool {
+	return name in ['align', 'color', 'noshade', 'width', 'size']
+}
+
+pub fn html_hr_element_apply_presentational_hints(element &dom.HTMLHRElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn htmlhr_element_is_presentational_hint(element &dom.HTMLHRElement, name string) bool {
+	return html_hr_element_is_presentational_hint(element, name)
+}
+
+pub fn htmlhr_element_apply_presentational_hints(element &dom.HTMLHRElement, mut properties CascadedProperties) {
+	html_hr_element_apply_presentational_hints(element, mut properties)
+}
+
+pub fn html_marquee_element_is_presentational_hint(_ &dom.HTMLMarqueeElement, name string) bool {
+	return name in ['bgcolor', 'height', 'hspace', 'vspace', 'width']
+}
+
+pub fn html_marquee_element_apply_presentational_hints(element &dom.HTMLMarqueeElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_paragraph_element_is_presentational_hint(_ &dom.HTMLParagraphElement, name string) bool {
+	return name == 'align'
+}
+
+pub fn html_paragraph_element_apply_presentational_hints(element &dom.HTMLParagraphElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_pre_element_is_presentational_hint(_ &dom.HTMLPreElement, name string) bool {
+	return name == 'wrap'
+}
+
+pub fn html_pre_element_apply_presentational_hints(element &dom.HTMLPreElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_table_caption_element_is_presentational_hint(_ &dom.HTMLTableCaptionElement, name string) bool {
+	return name == 'align'
+}
+
+pub fn html_table_caption_element_apply_presentational_hints(element &dom.HTMLTableCaptionElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_table_col_element_is_presentational_hint(_ &dom.HTMLTableColElement, name string) bool {
+	return name == 'width'
+}
+
+pub fn html_table_col_element_apply_presentational_hints(element &dom.HTMLTableColElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_table_row_element_is_presentational_hint(_ &dom.HTMLTableRowElement, name string) bool {
+	return name in ['bgcolor', 'background', 'height', 'valign']
+}
+
+pub fn html_table_row_element_apply_presentational_hints(element &dom.HTMLTableRowElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_table_section_element_is_presentational_hint(_ &dom.HTMLTableSectionElement, name string) bool {
+	return name in ['background', 'bgcolor', 'height']
+}
+
+pub fn html_table_section_element_apply_presentational_hints(element &dom.HTMLTableSectionElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_ulist_element_is_presentational_hint(_ &dom.HTMLUListElement, name string) bool {
+	return name == 'type'
+}
+
+pub fn html_ulist_element_apply_presentational_hints(element &dom.HTMLUListElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn htmlu_list_element_is_presentational_hint(element &dom.HTMLUListElement, name string) bool {
+	return html_ulist_element_is_presentational_hint(element, name)
+}
+
+pub fn htmlu_list_element_apply_presentational_hints(element &dom.HTMLUListElement, mut properties CascadedProperties) {
+	html_ulist_element_apply_presentational_hints(element, mut properties)
+}
+
+pub fn html_heading_element_is_presentational_hint(_ &dom.HTMLHeadingElement, name string) bool {
+	return name == 'align'
+}
+
+pub fn html_heading_element_apply_presentational_hints(element &dom.HTMLHeadingElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_table_cell_element_is_presentational_hint(_ &dom.HTMLTableCellElement, name string) bool {
+	return name in ['align', 'background', 'bgcolor', 'height', 'nowrap', 'valign', 'width']
+}
+
+pub fn html_table_cell_element_apply_presentational_hints(element &dom.HTMLTableCellElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_body_element_is_presentational_hint(_ &dom.HTMLBodyElement, name string) bool {
+	return name in ['bgcolor', 'text', 'background', 'marginheight', 'marginwidth', 'topmargin',
+		'rightmargin', 'bottommargin', 'leftmargin']
+}
+
+pub fn html_body_element_apply_presentational_hints(element &dom.HTMLBodyElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_li_element_is_presentational_hint(_ &dom.HTMLLIElement, name string) bool {
+	return name == 'type'
+}
+
+pub fn html_li_element_apply_presentational_hints(element &dom.HTMLLIElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn htmlli_element_is_presentational_hint(element &dom.HTMLLIElement, name string) bool {
+	return html_li_element_is_presentational_hint(element, name)
+}
+
+pub fn htmlli_element_apply_presentational_hints(element &dom.HTMLLIElement, mut properties CascadedProperties) {
+	html_li_element_apply_presentational_hints(element, mut properties)
+}
+
+pub fn htmlol_list_element_is_presentational_hint(_ &dom.HTMLOListElement, name string) bool {
+	return name == 'type'
+}
+
+pub fn htmlol_list_element_apply_presentational_hints(element &dom.HTMLOListElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn htmlo_list_element_is_presentational_hint(element &dom.HTMLOListElement, name string) bool {
+	return htmlol_list_element_is_presentational_hint(element, name)
+}
+
+pub fn htmlo_list_element_apply_presentational_hints(element &dom.HTMLOListElement, mut properties CascadedProperties) {
+	htmlol_list_element_apply_presentational_hints(element, mut properties)
+}
+
+pub fn htmlbr_element_is_presentational_hint(_ &dom.HTMLBRElement, name string) bool {
+	return name == 'clear'
+}
+
+pub fn htmlbr_element_apply_presentational_hints(element &dom.HTMLBRElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_br_element_is_presentational_hint(element &dom.HTMLBRElement, name string) bool {
+	return htmlbr_element_is_presentational_hint(element, name)
+}
+
+pub fn html_br_element_apply_presentational_hints(element &dom.HTMLBRElement, mut properties CascadedProperties) {
+	htmlbr_element_apply_presentational_hints(element, mut properties)
+}
+
+pub fn html_embed_element_is_presentational_hint(_ &dom.HTMLEmbedElement, name string) bool {
+	return name in ['align', 'height', 'hspace', 'vspace', 'width']
+}
+
+pub fn html_embed_element_apply_presentational_hints(element &dom.HTMLEmbedElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_iframe_element_is_presentational_hint(_ &dom.HTMLIFrameElement, name string) bool {
+	return name == 'frameborder'
+}
+
+pub fn html_iframe_element_apply_presentational_hints(element &dom.HTMLIFrameElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_canvas_element_is_presentational_hint(_ &dom.HTMLCanvasElement, name string) bool {
+	return name in ['width', 'height']
+}
+
+pub fn html_canvas_element_apply_presentational_hints(element &dom.HTMLCanvasElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_image_element_is_presentational_hint(_ &dom.HTMLImageElement, name string) bool {
+	return name in ['width', 'height', 'hspace', 'vspace', 'border']
+}
+
+pub fn html_image_element_apply_presentational_hints(element &dom.HTMLImageElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_object_element_is_presentational_hint(_ &dom.HTMLObjectElement, name string) bool {
+	return name in ['align', 'border', 'height', 'hspace', 'vspace', 'width']
+}
+
+pub fn html_object_element_apply_presentational_hints(element &dom.HTMLObjectElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn htmli_frame_element_is_presentational_hint(element &dom.HTMLIFrameElement, name string) bool {
+	return html_iframe_element_is_presentational_hint(element, name)
+}
+
+pub fn htmli_frame_element_apply_presentational_hints(element &dom.HTMLIFrameElement, mut properties CascadedProperties) {
+	html_iframe_element_apply_presentational_hints(element, mut properties)
+}
+
+pub fn html_font_element_is_presentational_hint(_ &dom.HTMLFontElement, name string) bool {
+	return name in ['color', 'face', 'size']
+}
+
+pub fn html_font_element_apply_presentational_hints(element &dom.HTMLFontElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+pub fn html_table_element_is_presentational_hint(_ &dom.HTMLTableElement, name string) bool {
+	return name in ['align', 'background', 'bgcolor', 'border', 'bordercolor', 'cellpadding',
+		'cellspacing', 'height', 'width']
+}
+
+pub fn html_table_element_apply_presentational_hints(element &dom.HTMLTableElement, mut properties CascadedProperties) {
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
+		ComputedInterpolationPropertyIDs{})
+}
+
+fn apply_svg_presentational_hints(mut cascaded_properties CascadedProperties, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs) {
+	tag_name := element.local_name()
+	geometry_only := {
+		'cx': ['circle', 'ellipse']
+		'cy': ['circle', 'ellipse']
+		'r':  ['circle']
+		'rx': ['ellipse', 'rect']
+		'ry': ['ellipse', 'rect']
+	}
+	sizing_only := ['foreignObject', 'image', 'rect', 'svg', 'symbol', 'use']
+	for attribute_name in element.get_attribute_names() {
+		lower_name := attribute_name.to_lower()
+		mut property_name := lower_name
+		if lower_name == 'gradienttransform' || lower_name == 'patterntransform' {
+			property_name = 'transform'
+		} else if lower_name == 'font-stretch' {
+			property_name = 'font-width'
+		}
+		if lower_name in ['cx', 'cy', 'r', 'rx', 'ry'] {
+			if tag_name !in geometry_only[lower_name] {
+				continue
+			}
+		} else if lower_name in ['height', 'width', 'x', 'y'] {
+			if tag_name !in sizing_only {
+				continue
+			}
+		} else if lower_name !in ['fill', 'clip-path', 'clip-rule', 'color', 'color-interpolation',
+			'cursor', 'direction', 'display', 'dominant-baseline', 'fill-opacity', 'fill-rule',
+			'filter', 'flood-color', 'flood-opacity', 'font-family', 'font-size', 'font-style',
+			'font-variant', 'font-weight', 'font-stretch', 'image-rendering', 'letter-spacing',
+			'mask', 'mask-type', 'opacity', 'overflow', 'paint-order', 'pointer-events',
+			'shape-rendering', 'stop-color', 'stop-opacity', 'stroke', 'stroke-dasharray',
+			'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit',
+			'stroke-opacity', 'stroke-width', 'text-anchor', 'text-decoration', 'text-rendering',
+			'text-overflow', 'gradienttransform', 'patterntransform', 'transform-origin',
+			'unicode-bidi', 'visibility', 'white-space', 'word-spacing', 'writing-mode'] {
+			continue
+		}
+		property_id := property_id_from_string(property_name) or { continue }
+		if properties_to_cascade.len > 0 && property_id !in properties_to_cascade {
+			continue
+		}
+		value := parse_svg_presentation_attribute_value(property_id, element.get_attribute_value(attribute_name)) or { continue }
+		cascaded_properties.set_property_from_presentational_hint(property_id, dom_style_value_from_value_logic(value))
+	}
+}
+
+// SVG presentation attributes are parsed in SVGPresentationAttribute mode in
+// LibWeb. That mode accepts unitless user-unit values where ordinary CSS
+// requires a length. The translated parser has no parsing-mode parameter yet,
+// so perform the mode's number-to-px conversion at this boundary.
+fn parse_svg_presentation_attribute_value(property_id PropertyID, source string) ?StyleValue {
+	if value := parse_css_value_logic(property_id, source) {
+		return value
+	}
+	if property_id !in [.cx, .cy, .r, .rx, .ry, .x, .y, .width, .height, .font_size, .letter_spacing,
+		.word_spacing, .stroke_width, .stroke_dashoffset] {
+		return none
+	}
+	text := source.trim_space()
+	if text.len == 0 {
+		return none
+	}
+	strconv.atof64(text) or { return none }
+	return parse_css_value_logic(property_id, '${text}px')
 }
 
 pub fn (s &StyleComputer) compute_custom_properties(mut computed_properties ComputedProperties, abstract_element dom.AbstractElement) {
@@ -10725,8 +11770,7 @@ pub fn (s &StyleComputer) start_needed_transitions(old_style &ComputedProperties
 	}
 	mut storage := s.css_transition_storage_
 	storage.transition_generation++
-	start_needed_transitions_for_storage(old_style, mut new_style, abstract_element,
-		storage.transition_generation, s.animation_time_ms_, mut storage)
+	start_needed_transitions_for_storage(old_style, mut new_style, abstract_element, storage.transition_generation, s.animation_time_ms_, mut storage)
 }
 
 pub fn (s &StyleComputer) resolve_effective_overflow_values(mut computed_properties ComputedProperties) {
@@ -10740,20 +11784,16 @@ pub fn (s &StyleComputer) resolve_effective_overflow_values(mut computed_propert
 	overflow_y_is_visible_or_clip := overflow_y == .visible || overflow_y == .clip
 	if !overflow_x_is_visible_or_clip || !overflow_y_is_visible_or_clip {
 		if overflow_x == .visible {
-			computed_properties.set_property_without_modifying_flags(.overflow_x,
-				dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto))))
+			computed_properties.set_property_without_modifying_flags(.overflow_x, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto))))
 		}
 		if overflow_x == .clip {
-			computed_properties.set_property_without_modifying_flags(.overflow_x,
-				dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))))
+			computed_properties.set_property_without_modifying_flags(.overflow_x, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))))
 		}
 		if overflow_y == .visible {
-			computed_properties.set_property_without_modifying_flags(.overflow_y,
-				dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto))))
+			computed_properties.set_property_without_modifying_flags(.overflow_y, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto))))
 		}
 		if overflow_y == .clip {
-			computed_properties.set_property_without_modifying_flags(.overflow_y,
-				dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))))
+			computed_properties.set_property_without_modifying_flags(.overflow_y, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))))
 		}
 	}
 }
@@ -10762,8 +11802,7 @@ pub fn (s &StyleComputer) transform_box_type_if_needed(mut computed_properties C
 	_ = s
 	display := computed_properties.display()
 	computed_properties.set_display_before_box_type_transformation(display)
-	if display.is_none()
-		|| (display.is_contents() && !abstract_element.element().is_document_element()) {
+	if display.is_none() || (display.is_contents() && !abstract_element.element().is_document_element()) {
 		return
 	}
 
@@ -10787,15 +11826,11 @@ pub fn (s &StyleComputer) transform_box_type_if_needed(mut computed_properties C
 
 		position := computed_properties.position()
 		if position == .absolute || position == .fixed {
-			computed_properties.set_property_without_modifying_flags(.float_,
-				dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.none_))))
+			computed_properties.set_property_without_modifying_flags(.float_, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.none_))))
 		}
 
-		is_br := abstract_element.pseudo_element() == none
-			&& abstract_element.element().is_html_element()
-			&& to_ascii_lowercase(abstract_element.element().local_name()) == 'br'
-		mut should_blockify := !is_br && (position == .absolute || position == .fixed
-			|| computed_properties.float_() != .none_)
+		is_br := abstract_element.pseudo_element() == none && abstract_element.element().is_html_element() && to_ascii_lowercase(abstract_element.element().local_name()) == 'br'
+		mut should_blockify := !is_br && (position == .absolute || position == .fixed || computed_properties.float_() != .none_)
 		if !should_blockify && !is_br {
 			mut parent := abstract_element.element_to_inherit_style_from()
 			for {
@@ -10817,19 +11852,16 @@ pub fn (s &StyleComputer) transform_box_type_if_needed(mut computed_properties C
 				new_display = Display.from_short(.block)
 			} else if display.is_outside_and_inside() {
 				if display.is_inline_block() {
-					new_display = Display.from_outside_inside_and_list_item(.block, .flow,
-						display.list_item())
+					new_display = Display.from_outside_inside_and_list_item(.block, .flow, display.list_item())
 				} else {
-					new_display = Display.from_outside_inside_and_list_item(.block,
-						display.inside(), display.list_item())
+					new_display = Display.from_outside_inside_and_list_item(.block, display.inside(), display.list_item())
 				}
 			}
 		}
 	}
 
 	if new_display != display {
-		computed_properties.set_property_without_modifying_flags(.display,
-			dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(new_display))))
+		computed_properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(new_display))))
 	}
 }
 
@@ -10858,8 +11890,7 @@ pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedP
 	for match_rule in rules {
 		rule := match_rule.rule or { continue }
 		declaration := rule.style() or { continue }
-		cascade_one_declaration(mut cascaded_properties, abstract_element, declaration, origin,
-			important, layer_name, logical_alias_mapping_context, properties_to_cascade)
+		cascade_one_declaration(mut cascaded_properties, abstract_element, declaration, origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
 	}
 
 	if origin == .author && abstract_element.pseudo_element() == none {
@@ -10869,15 +11900,13 @@ pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedP
 		style_text := abstract_element.element().get_attribute('style') or { return }
 		if style_text.len > 0 {
 			inline_declaration := parse_css_property_declaration_block_with_parser(style_text)
-			cascade_one_declaration(mut cascaded_properties, abstract_element, inline_declaration,
-				origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
+			cascade_one_declaration(mut cascaded_properties, abstract_element, inline_declaration, origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
 		}
 	}
 }
 
 pub fn (s &StyleComputer) rule_cache_for_cascade_origin(origin CascadeOrigin, qualified_layer_name ?string, shadow_root ?&dom.ShadowRoot) ?&RuleCache {
-	return style_computer_rule_cache_for_cascade_origin_without_scope_boundary(s, origin,
-		qualified_layer_name, shadow_root)
+	return style_computer_rule_cache_for_cascade_origin_without_scope_boundary(s, origin, qualified_layer_name, shadow_root)
 }
 
 pub fn (s &StyleComputer) clear_computation_context_caches() {
@@ -10901,14 +11930,11 @@ pub fn (s &StyleComputer) css_animation_for(abstract_element dom.AbstractElement
 }
 
 pub fn (s &StyleComputer) computation_context_cache_is_empty() bool {
-	return s.cached_font_computation_context == none
-		&& s.cached_line_height_computation_context == none
-		&& s.cached_generic_computation_context == none
+	return s.cached_font_computation_context == none && s.cached_line_height_computation_context == none && s.cached_generic_computation_context == none
 }
 
 pub fn (s &StyleComputer) get_computation_context_for_property(property_id PropertyID, computed_properties &ComputedProperties, abstract_element ?dom.AbstractElement) StyleComputationContextStub {
-	mut font_metrics :=
-		computed_interpolation_font_metrics_for_size(computed_properties.font_size())
+	mut font_metrics := computed_interpolation_font_metrics_for_size(computed_properties.font_size())
 	font_metrics.line_height = computed_properties.line_height()
 	mut root_font_metrics := s.root_element_font_metrics
 	if root := s.document_.document_element() {
@@ -10925,12 +11951,12 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 		}
 	}
 	return StyleComputationContextStub{
-		property_id:               property_id
+		property_id: property_id
 		length_resolution_context: LengthResolutionContext{
-			viewport_rect:     s.viewport_rect_
-			font_metrics:      font_metrics
+			viewport_rect: s.viewport_rect_
+			font_metrics: font_metrics
 			root_font_metrics: root_font_metrics
 		}
-		abstract_element:          abstract_element
+		abstract_element: abstract_element
 	}
 }

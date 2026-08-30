@@ -39,3 +39,13 @@ fn test_blob_url_store_opaque_origin_and_environment_cleanup() {
 	store.run_unloading_cleanup_steps('document-a')
 	assert store.length() == 0
 }
+
+fn test_process_wide_blob_url_store_entry_points() {
+	blob := Blob.create('global'.bytes(), 'text/plain')
+	environment := blob_url_environment('global-test', 'https://example.test', 'global-partition')
+	value := add_entry_to_blob_url_store(BlobURLObject.from_blob(blob), environment)!
+	entry := resolve_a_blob_url('${value}#fragment') or { panic('entry was not resolved') }
+	assert entry.object.blob or { panic('blob was not stored') } == blob
+	remove_entry_from_blob_url_store(value)
+	assert resolve_a_blob_url(value) == none
+}

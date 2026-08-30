@@ -106,6 +106,10 @@ pub fn (mut renderer RenderingThread) set_player(execute RenderingExecuteHook) {
 	renderer.execute_hook_ = execute
 }
 
+pub fn (mut renderer RenderingThread) set_skia_player(execute RenderingExecuteHook) {
+	renderer.set_player(execute)
+}
+
 pub fn (mut renderer RenderingThread) start() ! {
 	if renderer.execute_hook_ == none {
 		return error('RenderingThread requires a display-list player before start')

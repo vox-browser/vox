@@ -23,6 +23,13 @@ mut:
 	about_to_be_notified_rejected_promises_ []&dom.Promise
 }
 
+pub struct QueuingStrategyChunk {
+pub:
+	byte_length f64
+}
+
+pub type QueuingStrategySizeFunction = fn (QueuingStrategyChunk) f64
+
 pub fn UniversalGlobalScopeMixin.create(event_target &dom.EventTarget, realm &ScriptingRealm, document ?&dom.Document) &UniversalGlobalScopeMixin {
 	return &UniversalGlobalScopeMixin{
 		event_target: event_target
@@ -83,6 +90,18 @@ pub fn (scope &UniversalGlobalScopeMixin) count_queuing_strategy_size() f64 {
 
 pub fn (scope &UniversalGlobalScopeMixin) byte_length_queuing_strategy_size(byte_length usize) f64 {
 	return f64(byte_length)
+}
+
+pub fn (_ &UniversalGlobalScopeMixin) count_queuing_strategy_size_function() QueuingStrategySizeFunction {
+	return fn (_ QueuingStrategyChunk) f64 {
+		return 1.0
+	}
+}
+
+pub fn (_ &UniversalGlobalScopeMixin) byte_length_queuing_strategy_size_function() QueuingStrategySizeFunction {
+	return fn (chunk QueuingStrategyChunk) f64 {
+		return chunk.byte_length
+	}
 }
 
 pub fn (mut scope UniversalGlobalScopeMixin) push_onto_outstanding_rejected_promises_weak_set(promise &dom.Promise) {
@@ -159,9 +178,17 @@ pub fn (mut scope UniversalGlobalScopeMixin) set_import_map(import_map &ImportMa
 }
 
 pub fn set_experimental_interfaces_exposed(exposed bool) {
-	html_experimental_interfaces_exposed = exposed
+	UniversalGlobalScopeMixin.set_experimental_interfaces_exposed(exposed)
 }
 
 pub fn expose_experimental_interfaces() bool {
+	return UniversalGlobalScopeMixin.expose_experimental_interfaces()
+}
+
+pub fn UniversalGlobalScopeMixin.set_experimental_interfaces_exposed(exposed bool) {
+	html_experimental_interfaces_exposed = exposed
+}
+
+pub fn UniversalGlobalScopeMixin.expose_experimental_interfaces() bool {
 	return html_experimental_interfaces_exposed
 }

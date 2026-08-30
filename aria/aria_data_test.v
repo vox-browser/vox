@@ -67,3 +67,37 @@ fn test_state_and_property_string_serialization() {
 	assert state_or_property_to_string_value(.aria_has_popup, &data,
 		DefaultValue(AriaHasPopup.listbox)) == 'false'
 }
+
+fn test_aria_data_exact_parser_entry_points_match_upstream_semantics() {
+	assert AriaData.parse_true_false('true')
+	assert !AriaData.parse_true_false('TRUE')
+	assert AriaData.parse_tristate('mixed') == .mixed
+	assert AriaData.parse_tristate(none) == .undefined
+	assert AriaData.parse_true_false_undefined('false')? == false
+	assert AriaData.parse_true_false_undefined('undefined') == none
+	assert AriaData.parse_optional_true_false('true')? == true
+	assert AriaData.parse_integer('-2147483648')? == i32(-2147483648)
+	assert AriaData.parse_integer('1.5') == none
+	assert AriaData.parse_number(' 12.5 ')? == 12.5
+	assert AriaData.parse_aria_autocomplete('inline') == .inline
+	assert AriaData.parse_aria_current('unknown') == .false_
+	assert AriaData.parse_aria_drop_effect('copy unknown move') == [.copy, .move]
+	assert AriaData.parse_aria_drop_effect('unknown') == [.none_]
+	assert AriaData.parse_aria_has_popup('menu') == .menu
+	assert AriaData.parse_aria_invalid('grammar') == .grammar
+	assert AriaData.parse_aria_live('assertive')? == .assertive
+	assert AriaData.parse_aria_orientation('horizontal')? == .horizontal
+	assert AriaData.parse_aria_relevant('additions removals text') == [.all]
+	assert AriaData.parse_aria_sort('descending') == .descending
+}
+
+fn test_aria_data_build_data_is_the_constructor_logic() {
+	document := dom.Document.create(dom.url_about_blank())
+	element := aria_data_test_element(document, 'div')
+	mut mixin := ARIAMixin.create(element, none, none)
+	mixin.set_aria_busy('true')
+	mixin.set_aria_value_now('7.25')
+	data := AriaData.build_data(mixin)
+	assert data.aria_busy_or_default()
+	assert data.aria_value_now_or_default()? == 7.25
+}

@@ -2,6 +2,10 @@ module fileapi
 
 import dom
 
+fn record_queued_file_reader_task(mut reader FileReader) {
+	reader.event_log_ << 'queued-task'
+}
+
 struct FileReaderCallbackState {
 mut:
 	call_count int
@@ -76,6 +80,22 @@ fn test_file_reader_sync_accessors() {
 	assert reader.read_as_binary_string(Blob.create([u8(0xff)], ''))! == 'ÿ'
 	assert reader.read_as_text(blob, none)! == 'hello'
 	assert reader.read_as_data_url(blob)! == 'data:text/plain;base64,aGVsbG8='
+}
+
+fn test_file_reader_exact_package_queue_and_sync_read_entry_points() {
+	packaged := FileReader.blob_package_data('abc'.bytes(), .binary_string, none, none)!
+	assert packaged.text == 'abc'
+
+	mut reader := FileReader.construct_impl()
+	reader.queue_a_task(record_queued_file_reader_task)
+	assert 'queued-task' !in reader.event_log()
+	reader.process_queued_tasks()
+	assert reader.event_log() == ['queued-task']
+
+	blob := Blob.create('sync'.bytes(), 'text/plain')
+	sync_reader := FileReaderSync.construct_impl()
+	result := sync_reader.read_as(blob, .text, 'UTF-8')!
+	assert result.text == 'sync'
 }
 
 fn test_file_reader_events_use_the_inherited_event_target() {

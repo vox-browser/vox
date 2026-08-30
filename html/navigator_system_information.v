@@ -9,8 +9,16 @@ module html
 
 import runtime
 
+pub struct NavigatorConcurrentHardwareMixin {}
+
+pub struct NavigatorDeviceMemoryMixin {}
+
 // https://html.spec.whatwg.org/multipage/workers.html#dom-navigator-hardwareconcurrency
 pub fn navigator_hardware_concurrency() u64 {
+	return u64(runtime.nr_cpus())
+}
+
+pub fn (_ &NavigatorConcurrentHardwareMixin) hardware_concurrency() u64 {
 	return u64(runtime.nr_cpus())
 }
 
@@ -41,5 +49,9 @@ pub fn compute_device_memory_value(physical_memory_bytes u64) f64 {
 }
 
 pub fn navigator_device_memory() !f64 {
+	return compute_device_memory_value(u64(runtime.total_memory()!))
+}
+
+pub fn (_ &NavigatorDeviceMemoryMixin) device_memory() !f64 {
 	return compute_device_memory_value(u64(runtime.total_memory()!))
 }

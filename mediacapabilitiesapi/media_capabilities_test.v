@@ -7,10 +7,10 @@ import math
 fn video(content_type string, framerate f64) VideoConfiguration {
 	return VideoConfiguration{
 		content_type: content_type
-		width:        1920
-		height:       1080
-		bitrate:      4_000_000
-		framerate:    framerate
+		width: 1920
+		height: 1080
+		bitrate: 4_000_000
+		framerate: framerate
 	}
 }
 
@@ -48,17 +48,17 @@ fn test_decode_support_matches_html_media_subtype_registry() {
 	}
 	assert is_able_to_decode_media(MediaDecodingConfiguration{
 		MediaConfiguration: base
-		type_:              .media_source
+		type_: .media_source
 	})
 	assert !is_able_to_decode_media(MediaDecodingConfiguration{
 		MediaConfiguration: base
-		type_:              .file
+		type_: .file
 	})
 	assert !is_able_to_decode_media(MediaDecodingConfiguration{
 		MediaConfiguration: MediaConfiguration{
 			video: video('video/unsupported', 24)
 		}
-		type_:              .media_source
+		type_: .media_source
 	})
 }
 
@@ -73,15 +73,16 @@ fn test_decoding_info_rejects_invalid_and_resolves_on_media_task() {
 
 	mut sessions := ['temporary']
 	valid := MediaDecodingConfiguration{
-		MediaConfiguration:       MediaConfiguration{
+		MediaConfiguration: MediaConfiguration{
 			video: video('video/mp4', 30)
 		}
-		type_:                    .media_source
+		type_: .media_source
 		key_system_configuration: MediaCapabilitiesKeySystemConfiguration{
-			key_system:    'org.w3.clearkey'
+			key_system: 'org.w3.clearkey'
 			session_types: sessions
 		}
 	}
+	internal_info := create_a_media_capabilities_decoding_info(valid)
 	promise := capabilities.decoding_info(valid)
 	sessions[0] = 'mutated-after-call'
 	assert promise.state() == dom.PromiseState.pending
@@ -91,9 +92,10 @@ fn test_decoding_info_rejects_invalid_and_resolves_on_media_task() {
 	assert info.supported
 	assert !info.smooth
 	assert !info.power_efficient
-	key_system := info.configuration.key_system_configuration or {
+
+	key_system := internal_info.configuration.key_system_configuration or {
 		panic('missing key system configuration')
 	}
-
 	assert (key_system.session_types or { []string{} }) == ['temporary']
+	assert internal_info.to_object() == info
 }

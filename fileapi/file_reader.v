@@ -120,6 +120,17 @@ pub fn blob_package_data(bytes []u8, type_ FileReaderType, mime_type ?string, en
 	}
 }
 
+pub fn FileReader.blob_package_data(bytes []u8, type_ FileReaderType, mime_type ?string, encoding_name ?string) !FileReaderResult {
+	return blob_package_data(bytes, type_, mime_type, encoding_name)
+}
+
+pub type FileReaderTask = fn (mut FileReader)
+
+struct QueuedFileReaderTask {
+	id   u64
+	task ?FileReaderTask
+}
+
 struct PendingFileRead {
 	id            u64
 	bytes         []u8
@@ -139,6 +150,9 @@ mut:
 	is_aborted_   bool
 	event_log_    []string
 	next_read_id_ u64
+	queued_tasks_ []QueuedFileReaderTask
+	pending_task_ids_ []u64
+	next_task_id_ u64
 }
 
 pub fn FileReader.create() &FileReader {
@@ -208,6 +222,25 @@ pub fn (mut reader FileReader) read_as_data_url(blob &Blob) ! {
 	reader.read_operation(blob, .data_url, none)!
 }
 
+pub fn (mut reader FileReader) queue_a_task(task FileReaderTask) {
+	reader.next_task_id_++
+	reader.pending_task_ids_ << reader.next_task_id_
+	reader.queued_tasks_ << QueuedFileReaderTask{
+		id:   reader.next_task_id_
+		task: task
+	}
+}
+
+pub fn (mut reader FileReader) process_queued_tasks() {
+	for reader.queued_tasks_.len > 0 {
+		queued := reader.queued_tasks_[0]
+		reader.queued_tasks_.delete(0)
+		task := queued.task or { continue }
+		task(mut reader)
+		reader.pending_task_ids_ = reader.pending_task_ids_.filter(it != queued.id)
+	}
+}
+
 // Runs the queued file-reading work at the explicit HTML event-loop boundary.
 pub fn (mut reader FileReader) process_pending_tasks() {
 	pending := reader.pending_read_ or { return }
@@ -263,6 +296,8 @@ pub fn (mut reader FileReader) abort() {
 	reader.result_ = FileReaderResult{}
 	reader.pending_read_ = none
 	reader.is_aborted_ = true
+	reader.queued_tasks_.clear()
+	reader.pending_task_ids_.clear()
 	reader.fire_event('abort')
 	if reader.state_ != .loading {
 		reader.fire_event('loadend')
@@ -328,21 +363,22 @@ pub fn FileReaderSync.construct_impl() &FileReaderSync {
 }
 
 pub fn (reader &FileReaderSync) read_as_array_buffer(blob &Blob) ![]u8 {
-	_ = reader
-	return blob_package_data(blob.raw_bytes(), .array_buffer, blob.type_(), none)!.bytes
+	return reader.read_as(blob, .array_buffer, none)!.bytes
 }
 
 pub fn (reader &FileReaderSync) read_as_binary_string(blob &Blob) !string {
-	_ = reader
-	return blob_package_data(blob.raw_bytes(), .binary_string, blob.type_(), none)!.text
+	return reader.read_as(blob, .binary_string, none)!.text
 }
 
 pub fn (reader &FileReaderSync) read_as_text(blob &Blob, encoding_name ?string) !string {
-	_ = reader
-	return blob_package_data(blob.raw_bytes(), .text, blob.type_(), encoding_name)!.text
+	return reader.read_as(blob, .text, encoding_name)!.text
 }
 
 pub fn (reader &FileReaderSync) read_as_data_url(blob &Blob) !string {
+	return reader.read_as(blob, .data_url, none)!.text
+}
+
+pub fn (reader &FileReaderSync) read_as(blob &Blob, type_ FileReaderType, encoding_name ?string) !FileReaderResult {
 	_ = reader
-	return blob_package_data(blob.raw_bytes(), .data_url, blob.type_(), none)!.text
+	return FileReader.blob_package_data(blob.raw_bytes(), type_, blob.type_(), encoding_name)
 }

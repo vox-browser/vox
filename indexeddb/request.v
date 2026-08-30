@@ -22,11 +22,12 @@ pub enum RequestResultKind {
 	cursor
 }
 
+pub type IDBEventHandler = fn ()
+
 @[heap]
 pub struct IDBRequest {
-pub:
-	source_name string
 pub mut:
+	source_name   string
 	ready_state   IDBRequestReadyState = .pending
 	result_kind   RequestResultKind
 	value         Value
@@ -40,6 +41,10 @@ pub mut:
 	events        []string
 	processed     bool
 	aborted       bool
+	transaction_  ?&IDBTransaction
+	uuid_          string
+	onsucceed_     ?IDBEventHandler
+	onerror_       ?IDBEventHandler
 }
 
 pub fn IDBRequest.create(source_name string) &IDBRequest {
@@ -70,6 +75,9 @@ fn (mut request IDBRequest) succeed(kind RequestResultKind) {
 	request.processed = true
 	request.ready_state = .done
 	request.events << 'success'
+	if callback := request.onsucceed_ {
+		callback()
+	}
 }
 
 fn (mut request IDBRequest) fail(message string) {
@@ -77,6 +85,9 @@ fn (mut request IDBRequest) fail(message string) {
 	request.processed = true
 	request.ready_state = .done
 	request.events << 'error'
+	if callback := request.onerror_ {
+		callback()
+	}
 }
 
 @[heap]
@@ -89,6 +100,8 @@ pub mut:
 	old_version         u64
 	new_version         ?u64
 	upgrade_transaction &IDBTransaction = unsafe { nil }
+	onblocked_           ?IDBEventHandler
+	onupgradeneeded_     ?IDBEventHandler
 }
 
 pub struct IDBVersionChangeEvent {

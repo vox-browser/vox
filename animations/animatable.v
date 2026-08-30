@@ -66,8 +66,6 @@ pub fn (mut animatable Animatable) animate(keyframes []BaseKeyframe, options Key
 
 	mut animation := Animation.construct_impl(effect.as_animation_effect(), timeline)!
 	animation.id_ = options.id
-	animatable.next_animation_order_++
-	animation.global_animation_list_order_ = animatable.next_animation_order_
 	animatable.associate_with_animation(animation)
 	animation.play()!
 	return animation
@@ -84,6 +82,10 @@ pub fn (mut animatable Animatable) animate_with_duration(keyframes []BaseKeyfram
 }
 
 pub fn (mut animatable Animatable) get_animations(options GetAnimationsOptions) ![]&Animation {
+	return animatable.get_animations_internal(true, options)
+}
+
+pub fn (mut animatable Animatable) get_animations_internal(sorted bool, options GetAnimationsOptions) ![]&Animation {
 	if pseudo := options.pseudo_element {
 		_ = pseudo_element_parsing(pseudo)!
 	}
@@ -93,27 +95,35 @@ pub fn (mut animatable Animatable) get_animations(options GetAnimationsOptions) 
 	}
 	if options.subtree {
 		for mut descendant in animatable.descendants_ {
-			result << descendant.get_animations(GetAnimationsOptions{
+			result << descendant.get_animations_internal(false, GetAnimationsOptions{
 				pseudo_element: options.pseudo_element
 			})!
 		}
 	}
-	for i := 0; i < result.len; i++ {
-		for j := i + 1; j < result.len; j++ {
+	if sorted {
+		for i := 0; i < result.len; i++ {
+			for j := i + 1; j < result.len; j++ {
 			a_effect := result[i].effect_ or { continue }
 			b_effect := result[j].effect_ or { continue }
 			if !a_effect.is_keyframe_effect_ || !b_effect.is_keyframe_effect_ { continue
-			 }
-			order := keyframe_effect_composite_order(unsafe { &KeyframeEffect(a_effect) },
-				unsafe { &KeyframeEffect(b_effect) })
-			if order > 0 {
-				temporary := result[i]
-				result[i] = result[j]
-				result[j] = temporary
+				}
+				order := keyframe_effect_composite_order(unsafe { &KeyframeEffect(a_effect) },
+					unsafe { &KeyframeEffect(b_effect) })
+				if order > 0 {
+					temporary := result[i]
+					result[i] = result[j]
+					result[j] = temporary
+				}
 			}
 		}
 	}
 	return result
+}
+
+// The C++ object lazily allocates a separate Impl. This representation stores
+// the same state inline, so ensuring the implementation returns that storage.
+pub fn (mut animatable Animatable) ensure_impl() &Animatable {
+	return animatable
 }
 
 pub fn (mut animatable Animatable) add_descendant(value &Animatable) {

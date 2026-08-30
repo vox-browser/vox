@@ -131,6 +131,13 @@ pub fn (pattern &CanvasPattern) transform() CanvasAffineTransform {
 	return pattern.transform_
 }
 
+pub fn (pattern &CanvasPattern) to_gfx_paint_style() CanvasGfxPaintStyle {
+	return CanvasGfxPaintStyle{
+		kind:    .pattern
+		pattern: pattern
+	}
+}
+
 pub fn (mut pattern CanvasPattern) set_transform(mut transform geometry.DOMMatrix2DInit) ! {
 	matrix := geometry.DOMMatrixReadOnly.create_from_dom_matrix_2d_init(mut transform)!
 	values := [matrix.a(), matrix.b(), matrix.c(), matrix.d(),

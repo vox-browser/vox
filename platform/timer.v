@@ -6,35 +6,38 @@
 // fire() is the host timeout edge.
 module platform
 
-pub type TimerCallback = fn ()
+pub type TimerCallback = fn()
 
 @[heap]
 pub struct Timer {
 pub mut:
-	on_timeout ?TimerCallback
+	on_timeout TimerCallback = unsafe { nil }
 mut:
 	active_      bool
 	interval_ms_ int
 	single_shot_ bool
+	has_timeout_ bool
 }
 
 pub fn Timer.create() &Timer {
 	return &Timer{}
 }
 
-pub fn Timer.create_repeating(interval_ms int, handler ?TimerCallback) &Timer {
+pub fn Timer.create_repeating(interval_ms int, handler TimerCallback) &Timer {
 	return &Timer{
 		interval_ms_: interval_ms
 		single_shot_: false
-		on_timeout:   handler
+		on_timeout: handler
+		has_timeout_: true
 	}
 }
 
-pub fn Timer.create_single_shot(interval_ms int, handler ?TimerCallback) &Timer {
+pub fn Timer.create_single_shot(interval_ms int, handler TimerCallback) &Timer {
 	return &Timer{
 		interval_ms_: interval_ms
 		single_shot_: true
-		on_timeout:   handler
+		on_timeout: handler
+		has_timeout_: true
 	}
 }
 
@@ -85,7 +88,13 @@ pub fn (mut timer Timer) set_single_shot(single_shot bool) {
 }
 
 pub fn (mut timer Timer) fire() {
-	if !timer.active_ { return }
-	if timer.single_shot_ { timer.active_ = false }
-	if callback := timer.on_timeout { callback() }
+	if !timer.active_ {
+		return
+	}
+	if timer.single_shot_ {
+		timer.active_ = false
+	}
+	if timer.has_timeout_ {
+		timer.on_timeout()
+	}
 }

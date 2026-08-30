@@ -52,6 +52,13 @@ mut:
 	unpack_flip_y_                      bool
 	unpack_premultiply_alpha_           bool
 	unpack_colorspace_conversion_       GLenum = browser_default_webgl
+	active_texture_                     GLenum
+	blend_color_                        [4]f32
+	line_width_                         f32 = 1.0
+	depth_range_                        [2]f64 = [f64(0), 1]!
+	generic_parameters_                 map[GLenum]WebGLParameterValue
+	uniform_values_                     map[GLuint][]f32
+	vertex_attrib_values_               map[GLuint][]f32
 }
 
 pub fn WebGLRenderingContext.new(version WebGLVersion, attributes WebGLContextAttributes, supported_native_extensions []string) &WebGLRenderingContext {

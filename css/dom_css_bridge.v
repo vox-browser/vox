@@ -1,6 +1,7 @@
 module css
 
 import dom
+import os
 
 // dom <-> css bridge
 // ==================
@@ -120,7 +121,14 @@ fn cascaded_properties_from_dom(placeholder &dom.CSSCascadedProperties_) ?&Casca
 @[heap]
 struct DocumentAuthorStyleSheets {
 mut:
+	// Sheets installed explicitly by CSS-aware callers (link/adopted-sheet
+	// equivalents in this port).
 	sheets []&CSSStyleSheet
+	// Sheets backed by <style> elements are kept separately so rebuilding the
+	// DOM-derived list neither duplicates them on every layout nor discards
+	// explicitly installed sheets.
+	embedded_sheets  []&CSSStyleSheet
+	embedded_sources []string
 }
 
 // The document's author-stylesheet holder, created on first use and cached on the document via its handle.
@@ -265,6 +273,201 @@ pub fn add_document_author_style_sheet(document &dom.Document, css_text string) 
 	}
 	mut scope := css_style_scope_for_document(document)
 	scope.invalidate_rule_cache()
+}
+
+struct DocumentStyleSource {
+	cache_key string
+	css_text  string
+	location  string
+	media     string
+}
+
+fn resolve_stylesheet_url(reference string, base_url string) ?string {
+	resolved := dom.dom_url_parse(reference, dom.URL{
+		value: base_url
+	}, 'utf-8') or { return none }
+	return resolved.to_string()
+}
+
+fn local_path_for_stylesheet_url(url string) ?string {
+	if !url.starts_with('file://') {
+		return none
+	}
+	mut path := url['file://'.len..]
+	for path.starts_with('//') {
+		path = path[1..]
+	}
+	query_index := path.index_any('?#')
+	if query_index >= 0 {
+		path = path[..query_index]
+	}
+	return path
+}
+
+fn read_local_stylesheet(reference string, base_url string) ?(string, string) {
+	resolved_url := resolve_stylesheet_url(reference, base_url) or { return none }
+	path := local_path_for_stylesheet_url(resolved_url) or { return none }
+	return os.read_file(path) or { return none }, resolved_url
+}
+
+fn load_local_imported_stylesheets(document &dom.Document, mut sheet CSSStyleSheet, location string, mut active_urls map[string]bool) {
+	for mut import_rule in sheet.import_rules {
+		if supports := import_rule.supports {
+			if !supports.matches_condition() {
+				continue
+			}
+		}
+		if mut media := import_rule.media {
+			media.evaluate(document)
+			if !media.matches() {
+				continue
+			}
+		}
+		css_text, resolved_url := read_local_stylesheet(import_rule.url, location) or { continue }
+		if active_urls[resolved_url] {
+			continue
+		}
+		active_urls[resolved_url] = true
+		mut imported_sheet := parse_css_stylesheet_with_parser(css_text, resolved_url)
+		imported_sheet.set_parent_css_style_sheet(sheet)
+		load_local_imported_stylesheets(document, mut imported_sheet, resolved_url, mut active_urls)
+		imported_sheet.evaluate_media_queries(document)
+		import_rule.set_style_sheet(imported_sheet)
+		active_urls.delete(resolved_url)
+	}
+}
+
+fn sync_shadow_root_style_sheets(document &dom.Document, shadow_root &dom.ShadowRoot) {
+	mut scope := css_style_scope_for_shadow_root(shadow_root)
+	scope.author_style_sheets.clear()
+	location := document.base_url().to_string()
+	root := unsafe { &dom.Node(shadow_root) }
+	for style_element in query_selector_all(root, 'style') {
+		type_ := style_element.get_attribute_value('type').trim_space().to_lower()
+		if type_.len > 0 && type_ != 'text/css' {
+			continue
+		}
+		mut sheet := parse_css_stylesheet_with_parser(style_element.as_node().text_content() or {
+			''
+		}, location)
+		mut active_urls := map[string]bool{}
+		active_urls[location] = true
+		load_local_imported_stylesheets(document, mut sheet, location, mut active_urls)
+		sheet.evaluate_media_queries(document)
+		scope.author_style_sheets << sheet
+	}
+	scope.invalidate_rule_cache()
+	for element in query_selector_all(root, '*') {
+		if nested_root := element.shadow_root() {
+			sync_shadow_root_style_sheets(document, nested_root)
+		}
+	}
+}
+
+fn sync_shadow_style_sheets_in_subtree(document &dom.Document, node &dom.Node) {
+	if element := node.as_element() {
+		if shadow_root := element.shadow_root() {
+			sync_shadow_root_style_sheets(document, shadow_root)
+		}
+	}
+	for child in node.children_as_vector() {
+		sync_shadow_style_sheets_in_subtree(document, child)
+	}
+}
+
+// Synchronize the document's CSS-owned author-sheet list with its <style>
+// elements. The HTML module cannot construct CSSStyleSheet objects without an
+// import cycle, so this is the module boundary corresponding to
+// HTMLStyleElement::update_a_style_block in LibWeb.
+pub fn sync_document_style_elements(document &dom.Document) {
+	root := unsafe { &dom.Node(document) }
+	sync_shadow_style_sheets_in_subtree(document, root)
+	base_url := document.base_url().to_string()
+	mut style_sources := []DocumentStyleSource{}
+	for element in query_selector_all(root, '*') {
+		if element.local_name() == 'style' {
+			type_ := element.get_attribute_value('type').trim_space().to_lower()
+			if type_.len > 0 && type_ != 'text/css' {
+				continue
+			}
+			css_text := element.as_node().text_content() or { '' }
+			style_sources << DocumentStyleSource{
+				cache_key: 'style:${css_text}'
+				css_text:  css_text
+				location:  base_url
+				media:     element.get_attribute_value('media')
+			}
+		} else if element.local_name() == 'link' {
+			relations := element.get_attribute_value('rel').to_lower().fields()
+			if 'stylesheet' !in relations || element.has_attribute('disabled') {
+				continue
+			}
+			href := element.get_attribute_value('href')
+			css_text, resolved_url := read_local_stylesheet(href, base_url) or { continue }
+			style_sources << DocumentStyleSource{
+				cache_key: 'link:${resolved_url}:${css_text}'
+				css_text:  css_text
+				location:  resolved_url
+				media:     element.get_attribute_value('media')
+			}
+		}
+	}
+	sources := style_sources.map(it.cache_key)
+
+	holder := css_author_style_sheets_for(document)
+	if holder.embedded_sources == sources {
+		mut media_changed := false
+		for sheet in holder.embedded_sheets {
+			mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
+			if mutable_sheet.evaluate_media_queries(document) {
+				media_changed = true
+			}
+		}
+		if media_changed {
+			mut scope := css_style_scope_for_document(document)
+			scope.invalidate_rule_cache()
+		}
+		return
+	}
+	mut parsed := []&CSSStyleSheet{cap: style_sources.len}
+	for source in style_sources {
+		mut sheet := parse_css_stylesheet_with_parser(source.css_text, source.location)
+		if source.media.trim_space().len > 0 {
+			sheet.set_media(source.media)
+		}
+		mut active_urls := map[string]bool{}
+		active_urls[source.location] = true
+		load_local_imported_stylesheets(document, mut sheet, source.location, mut active_urls)
+		sheet.evaluate_media_queries(document)
+		if os.getenv('LIBWEB_V_CSS_DUMP') == '1' {
+			for rule in sheet.css_rules().rules {
+				eprintln(rule.dump(0))
+			}
+		}
+		parsed << sheet
+	}
+	unsafe {
+		holder.embedded_sources = sources.clone()
+		holder.embedded_sheets = parsed
+	}
+	mut scope := css_style_scope_for_document(document)
+	scope.invalidate_rule_cache()
+}
+
+// Return the concrete computed style stored on an element by the document
+// style pass. Layout consumes that single canonical result instead of running
+// a second, inheritance-blind computation while building its tree.
+pub fn computed_properties_for_element(element &dom.Element) ?&ComputedProperties {
+	placeholder := dom.AbstractElement.new(element, none).computed_properties() or { return none }
+	return computed_properties_from_dom(placeholder)
+}
+
+// Return the concrete computed style installed for a generated pseudo-element
+// during the top-down style pass.
+pub fn computed_properties_for_pseudo_element(element &dom.Element, pseudo_element dom.PseudoElement) ?&ComputedProperties {
+	abstract_element := dom.AbstractElement.new(element, pseudo_element)
+	placeholder := abstract_element.computed_properties() or { return none }
+	return computed_properties_from_dom(placeholder)
 }
 
 // Parse and attach an author sheet to a shadow-root style scope. Keeping the

@@ -12,15 +12,38 @@ pub:
 	timeout ?u32 = u32(0)
 }
 
-pub struct IdleDeadline {
+pub struct IdleDeadlineHost {
 pub:
-	did_timeout bool
+	now                 f64
+	event_loop_deadline f64
+}
+
+pub struct IdleDeadline {
+mut:
+	did_timeout_ bool
+	host         IdleDeadlineHost
 }
 
 pub fn IdleDeadline.create(did_timeout bool) IdleDeadline {
 	return IdleDeadline{
-		did_timeout: did_timeout
+		did_timeout_: did_timeout
 	}
+}
+
+pub fn IdleDeadline.create_with_host(did_timeout bool, host IdleDeadlineHost) IdleDeadline {
+	return IdleDeadline{
+		did_timeout_: did_timeout
+		host:         host
+	}
+}
+
+// https://w3c.github.io/requestidlecallback/#dom-idledeadline-timeremaining
+pub fn (deadline IdleDeadline) time_remaining() f64 {
+	return deadline.time_remaining_at(deadline.host.now, deadline.host.event_loop_deadline)
+}
+
+pub fn (deadline IdleDeadline) did_timeout() bool {
+	return deadline.did_timeout_
 }
 
 // The upstream object obtains both values from the relevant global's event

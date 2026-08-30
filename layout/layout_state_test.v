@@ -46,6 +46,8 @@ fn test_cumulative_offset() {
 	style := css.ComputedProperties.new()
 	mut containing_block := NodeWithStyle.new(doc, none, style)
 	mut child := NodeWithStyle.new(doc, none, style)
+	containing_block.set_layout_index(0)
+	child.set_layout_index(1)
 
 	mut state := LayoutState.new()
 	mut cb_uv := state.get_mutable(containing_block)
@@ -64,6 +66,35 @@ fn test_cumulative_offset() {
 	assert !child_uv.has_definite_height()
 	child_uv.set_has_definite_height(true)
 	assert child_uv.has_definite_height()
+}
+
+fn test_layout_state_paged_store_and_layout_indices() {
+	doc := dom.Document.create(dom.url_about_blank())
+	style := css.ComputedProperties.new()
+	mut root := NodeWithStyle.new(doc, none, style)
+	mut child := NodeWithStyle.new(doc, none, style)
+	mut page_two_child := NodeWithStyle.new(doc, none, style)
+	root.append_child(unsafe { &Node(child) })
+	child.append_child(unsafe { &Node(page_two_child) })
+
+	assert assign_layout_indexes(unsafe { &Node(root) }) == 3
+	assert root.layout_index() == 0
+	assert child.layout_index() == 1
+	assert page_two_child.layout_index() == 2
+
+	// Exercise lazy allocation across the 16-entry page boundary.
+	page_two_child.set_layout_index(16)
+	mut state := LayoutState.new()
+	state.ensure_capacity(17)
+	mut root_values := state.get_mutable(root)
+	mut distant_values := state.get_mutable(page_two_child)
+	root_values.set_content_width(CSSPixels.new(10))
+	distant_values.set_content_width(CSSPixels.new(20))
+	if _ := state.try_get(child) {
+		panic('unwritten index 1 unexpectedly present')
+	}
+	assert (state.try_get(root) or { panic('index 0 absent') }).content_width().to_double() == 10
+	assert (state.try_get(page_two_child) or { panic('index 16 absent') }).content_width().to_double() == 20
 }
 
 fn test_used_values_clamp_sizes_and_propagate_intrinsic_constraints() {
@@ -102,4 +133,85 @@ fn test_used_values_static_position_uses_margin_box_size() {
 	position := values.static_position()
 	assert position.x().to_double() == 45
 	assert position.y().to_double() == 90
+}
+
+fn test_used_values_resolve_definite_percentage_from_containing_block() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	child.set_attribute_value('style',
+		'width: 50%; min-width: 0; max-width: none; height: 25%; min-height: 0; max-height: none')
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(html.as_node()) or { panic('${err}') }
+	mut html_node := html.as_node()
+	html_node.append_child(child.as_node()) or { panic('${err}') }
+
+	root := build_layout_tree(doc) or { panic('no layout tree') }
+	viewport := root.as_node_with_style() or { panic('viewport has no style') }
+	html_box := root.first_child() or { panic('no html box') }
+	child_box := html_box.first_child() or { panic('no child box') }
+	html_styled := html_box.as_node_with_style() or { panic('html has no style') }
+	child_styled := child_box.as_node_with_style() or { panic('child has no style') }
+	assert viewport.layout_index() == 0
+	assert html_styled.layout_index() == 1
+	assert child_styled.layout_index() == 2
+	assert child_styled.computed_values().size_value(.width).is_percentage()
+	child_containing_block := child_box.containing_block() or {
+		panic('child has no containing block')
+	}
+	assert voidptr(child_containing_block) == voidptr(html_box)
+
+	mut state := LayoutState.new()
+	mut viewport_values := state.get_mutable(viewport)
+	viewport_values.set_content_width(CSSPixels.new(800))
+	viewport_values.set_content_height(CSSPixels.new(600))
+	viewport_values.set_has_definite_height(true)
+	mut html_values := state.get_mutable(html_styled)
+	assert html_values.has_definite_width()
+	assert html_values.content_width().to_double() == 800
+	// Give the percentage-height containing block a definite height, as a
+	// formatting context does after resolving its own auto height.
+	html_values.set_content_height(CSSPixels.new(400))
+	html_values.set_has_definite_height(true)
+	child_values := state.get_mutable(child_styled)
+	assert voidptr(child_values.node()) == voidptr(child_styled)
+	assert child_values.has_definite_width()
+	assert child_values.has_definite_height()
+	assert child_values.content_width().to_double() == 400
+	assert child_values.content_height().to_double() == 100
+}
+
+fn test_layout_state_populate_node_from_copies_values_without_ancestor_chain() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	computed := css.ComputedProperties.new()
+	mut root := BlockContainer.new(document, none, computed)
+	mut child := BlockContainer.new(document, none, computed)
+	mut root_node := unsafe { &Node(root) }
+	child_node := unsafe { &Node(child) }
+	root_node.append_child(child_node)
+	assign_layout_indexes(unsafe { &Node(root) })
+	recompute_containing_blocks(unsafe { &Node(root) })
+
+	mut source := LayoutState.new()
+	mut root_values := source.get_mutable(unsafe { &NodeWithStyle(root) })
+	root_values.set_content_width(CSSPixels.new(321))
+	root_values.set_content_height(CSSPixels.new(123))
+	root_values.margin_left = CSSPixels.new(7)
+	root_values.line_boxes << LineBox.new(.ltr, .horizontal_tb)
+
+	mut subtree := LayoutState.new_for_subtree(unsafe { &NodeWithStyle(child) })
+	copied := subtree.populate_node_from(mut source, unsafe { &NodeWithStyle(root) })
+	assert copied.content_width().to_double() == 321
+	assert copied.content_height().to_double() == 123
+	assert copied.margin_left.to_double() == 7
+	assert copied.line_boxes.len == 1
+	assert copied.containing_block_used_values() == none
+
+	mut child_values := subtree.get_mutable(unsafe { &NodeWithStyle(child) })
+	containing := child_values.containing_block_used_values() or {
+		assert false
+		return
+	}
+	assert voidptr(containing) == voidptr(copied)
+	assert containing.content_width().to_double() == 321
 }

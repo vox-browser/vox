@@ -36,6 +36,14 @@ fn test_item_out_of_range() {
 	assert list.item(100) == none
 }
 
+fn test_item_value_exact_entry_point() {
+	mut list := FileList.create()
+	file := make_file('value.txt')
+	list.add_file(file)
+	assert list.item_value(0) or { panic('missing item') } == file
+	assert list.item_value(1) == none
+}
+
 fn test_item_returns_the_same_file() {
 	f := make_file('doc.txt')
 	mut list := FileList.create()

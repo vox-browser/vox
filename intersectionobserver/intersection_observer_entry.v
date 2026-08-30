@@ -30,6 +30,10 @@ pub struct IntersectionObserverEntry {
 }
 
 pub fn IntersectionObserverEntry.construct(options IntersectionObserverEntryInit) !&IntersectionObserverEntry {
+	return IntersectionObserverEntry.construct_impl(options)
+}
+
+pub fn IntersectionObserverEntry.construct_impl(options IntersectionObserverEntryInit) !&IntersectionObserverEntry {
 	if options.target == unsafe { nil } {
 		return error('IntersectionObserverEntry target is required')
 	}
@@ -38,13 +42,13 @@ pub fn IntersectionObserverEntry.construct(options IntersectionObserverEntryInit
 		root_bounds = geometry.DOMRectReadOnly.from_rect(bounds)
 	}
 	return &IntersectionObserverEntry{
-		time_:                 options.time
-		root_bounds_:          root_bounds
+		time_: options.time
+		root_bounds_: root_bounds
 		bounding_client_rect_: geometry.DOMRectReadOnly.from_rect(options.bounding_client_rect)
-		intersection_rect_:    geometry.DOMRectReadOnly.from_rect(options.intersection_rect)
-		is_intersecting_:      options.is_intersecting
-		intersection_ratio_:   options.intersection_ratio
-		target_:               options.target
+		intersection_rect_: geometry.DOMRectReadOnly.from_rect(options.intersection_rect)
+		is_intersecting_: options.is_intersecting
+		intersection_ratio_: options.intersection_ratio
+		target_: options.target
 	}
 }
 

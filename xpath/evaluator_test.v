@@ -2,6 +2,10 @@ module xpath
 
 import dom
 
+fn exact_xpath_namespace_callback(prefix string) ?string {
+	return if prefix == 'x' { 'urn:test' } else { none }
+}
+
 fn xpath_document() &dom.Document {
 	document := dom.Document.create(dom.url_about_blank())
 	mut root := document.create_element('root') or { panic(err) }
@@ -30,14 +34,14 @@ fn test_evaluator_path_predicates_functions_and_scalars() {
 	assert (all.snapshot_item(1) or { panic('missing') }).text_content()? == '20'
 	assert (all.iterate_next() or { panic('missing') }).text_content()? == '10'
 	count := evaluator.evaluate('count(//item)', unsafe { &dom.Node(document) }, none, .any, none)!
-	assert count.result_type == .number
-	assert count.number_value == 2
+	assert count.result_type() == .number
+	assert count.number_value() == 2
 	filtered := evaluator.evaluate("//item[@id='b']", unsafe { &dom.Node(document) }, none,
 		.first_ordered_node, none)!
 	assert (filtered.single_node_value() or { panic('missing') }).text_content()? == '20'
 	attribute := evaluator.evaluate('string(//item[1]/@id)', unsafe { &dom.Node(document) }, none,
 		.any, none)!
-	assert attribute.string_value == 'a'
+	assert attribute.string_value() == 'a'
 }
 
 fn test_expression_reuse_types_and_syntax_errors() {
@@ -69,7 +73,7 @@ fn test_mirrored_context_root_result_flavor_and_prefix_behavior() {
 	context_root := evaluator.evaluate('/item', first_item, none, .first_ordered_node, none)!
 	assert context_root.single_node_value()? == first_item
 	requested_number := evaluator.evaluate('//item', document_node, none, .number, none)!
-	assert requested_number.result_type == .unordered_node_iterator
+	assert requested_number.result_type() == .unordered_node_iterator
 	assert requested_number.snapshot_length() == 2
 	prefixed := evaluator.evaluate('//x:item', document_node, fn (prefix string) ?string {
 		_ = prefix
@@ -77,7 +81,48 @@ fn test_mirrored_context_root_result_flavor_and_prefix_behavior() {
 	}, .ordered_node_snapshot, none)!
 	assert prefixed.snapshot_length() == 0
 	quoted_parenthesis := evaluator.evaluate("'('", document_node, none, .any, none)!
-	assert quoted_parenthesis.string_value == '('
+	assert quoted_parenthesis.string_value() == '('
 	last := evaluator.evaluate('//item[last()]', document_node, none, .first_ordered_node, none)!
 	assert last.single_node_value()?.text_content()? == '20'
+}
+
+fn test_exact_xpath_mirroring_resolver_conversion_and_result_entry_points() {
+	document := xpath_document()
+	evaluator := XPathEvaluator.construct_impl()
+	assert evaluator != unsafe { nil }
+	resolver := XPathNSResolver.create(exact_xpath_namespace_callback)
+	assert resolver.callback()('x')? == 'urn:test'
+
+	mirrored := mirror_node(unsafe { &dom.Node(document) }) or { panic('mirror failed') }
+	assert mirrored.name == 'root'
+	assert mirrored.children.len == 2
+	assert mirrored.children[0].attributes['id'] == 'a'
+	assert mirrored.children[0].children[0].data == '10'
+
+	mut result := &XPathResult{}
+	result.set_number(42)
+	assert result.result_type() == .number
+	assert result.number_value() == 42
+	result.set_string('value')
+	assert result.string_value() == 'value'
+	result.set_boolean(true)
+	assert result.boolean_value()
+	assert !result.invalid_iterator_state()
+	root := document.document_element() or { panic('missing root') }
+	result.set_node_set([root.as_node()], .first_ordered_node)
+	assert result.result_type() == .first_ordered_node
+	assert result.single_node_value()? == root.as_node()
+
+	convert_xpath_result(XPathNativeResult{
+		kind:         .string
+		string_value: 'converted'
+	}, .any, mut result)
+	assert result.result_type() == .string
+	assert result.string_value() == 'converted'
+	convert_xpath_result(XPathNativeResult{
+		kind:  .node_set
+		nodes: [root.as_node()]
+	}, .ordered_node_snapshot, mut result)
+	assert result.result_type() == .ordered_node_snapshot
+	assert result.snapshot_length() == 1
 }

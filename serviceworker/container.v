@@ -67,6 +67,10 @@ fn rejected(message string) &WorkerPromise {
 }
 
 pub fn (mut container ServiceWorkerContainer) register_(script_url string, options RegistrationOptions) &WorkerPromise {
+	return container.start_register(script_url, options)
+}
+
+pub fn (mut container ServiceWorkerContainer) start_register(script_url string, options RegistrationOptions) &WorkerPromise {
 	if has_forbidden_path_escape(script_url) {
 		return rejected("TypeError: scriptURL path must not contain '%2f' or '%5c'")
 	}

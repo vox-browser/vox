@@ -139,9 +139,7 @@ pub:
 }
 
 pub fn (configuration VideoConfiguration) is_valid_video_configuration() bool {
-	return is_valid_video_mime_type(configuration.content_type)
-		&& !math.is_nan(configuration.framerate) && !math.is_inf(configuration.framerate, 0)
-		&& configuration.framerate > 0
+	return is_valid_video_mime_type(configuration.content_type) && !math.is_nan(configuration.framerate) && !math.is_inf(configuration.framerate, 0) && configuration.framerate > 0
 }
 
 pub struct AudioConfiguration {
@@ -229,6 +227,23 @@ pub:
 	// keySystemAccess is marked FIXME in the upstream IDL and is not exposed.
 }
 
+// Current Ladybird's to_object() intentionally omits configuration (upstream
+// FIXME) and exposes only these three properties.
+pub struct MediaCapabilitiesDecodingInfoObject {
+pub:
+	supported       bool
+	smooth          bool
+	power_efficient bool
+}
+
+pub fn (info MediaCapabilitiesDecodingInfo) to_object() MediaCapabilitiesDecodingInfoObject {
+	return MediaCapabilitiesDecodingInfoObject{
+		supported: info.supported
+		smooth: info.smooth
+		power_efficient: info.power_efficient
+	}
+}
+
 pub struct MediaCapabilitiesEncodingInfo {
 	MediaCapabilitiesInfo
 pub:
@@ -244,16 +259,14 @@ fn clone_key_system_configuration(configuration MediaCapabilitiesKeySystemConfig
 
 pub fn (configuration MediaDecodingConfiguration) clone() MediaDecodingConfiguration {
 	return MediaDecodingConfiguration{
-		MediaConfiguration:       MediaConfiguration{
+		MediaConfiguration: MediaConfiguration{
 			video: configuration.video
 			audio: configuration.audio
 		}
-		type_:                    configuration.type_
+		type_: configuration.type_
 		key_system_configuration: if value := configuration.key_system_configuration {
-			clone_key_system_configuration(value)
-		} else {
-			none
-		}
+			clone_key_system_configuration(value)} else {
+			none}
 	}
 }
 
@@ -290,11 +303,11 @@ pub fn create_a_media_capabilities_decoding_info(configuration MediaDecodingConf
 	cloned := configuration.clone()
 	return MediaCapabilitiesDecodingInfo{
 		MediaCapabilitiesInfo: MediaCapabilitiesInfo{
-			supported:       is_able_to_decode_media(cloned)
-			smooth:          false
+			supported: is_able_to_decode_media(cloned)
+			smooth: false
 			power_efficient: false
 		}
-		configuration:         cloned
+		configuration: cloned
 	}
 }
 
@@ -302,7 +315,7 @@ pub fn create_a_media_capabilities_decoding_info(configuration MediaDecodingConf
 pub struct MediaCapabilitiesDecodingInfoPromise {
 mut:
 	state_  dom.PromiseState
-	value_  ?MediaCapabilitiesDecodingInfo
+	value_  ?MediaCapabilitiesDecodingInfoObject
 	reason_ string
 }
 
@@ -317,7 +330,7 @@ pub fn (promise &MediaCapabilitiesDecodingInfoPromise) state() dom.PromiseState 
 	return promise.state_
 }
 
-pub fn (promise &MediaCapabilitiesDecodingInfoPromise) value() ?MediaCapabilitiesDecodingInfo {
+pub fn (promise &MediaCapabilitiesDecodingInfoPromise) value() ?MediaCapabilitiesDecodingInfoObject {
 	return promise.value_
 }
 
@@ -325,7 +338,7 @@ pub fn (promise &MediaCapabilitiesDecodingInfoPromise) reason() string {
 	return promise.reason_
 }
 
-fn (mut promise MediaCapabilitiesDecodingInfoPromise) resolve(value MediaCapabilitiesDecodingInfo) {
+fn (mut promise MediaCapabilitiesDecodingInfoPromise) resolve(value MediaCapabilitiesDecodingInfoObject) {
 	if promise.state_ != .pending {
 		return
 	}
@@ -352,6 +365,13 @@ pub fn MediaCapabilities.create(event_loop ?&html.EventLoop) &MediaCapabilities 
 	}
 }
 
+pub type MediaCapabilitiesTaskSteps = fn()
+
+// https://w3c.github.io/media-capabilities/#queue-a-media-capabilities-task
+pub fn queue_a_media_capabilities_task(event_loop ?&html.EventLoop, steps MediaCapabilitiesTaskSteps) {
+	html.queue_a_task(.media_capabilities, event_loop, none, steps)
+}
+
 // https://w3c.github.io/media-capabilities/#dom-mediacapabilities-decodinginfo
 pub fn (capabilities &MediaCapabilities) decoding_info(configuration MediaDecodingConfiguration) &MediaCapabilitiesDecodingInfoPromise {
 	mut promise := MediaCapabilitiesDecodingInfoPromise.pending()
@@ -360,8 +380,8 @@ pub fn (capabilities &MediaCapabilities) decoding_info(configuration MediaDecodi
 		return promise
 	}
 	cloned := configuration.clone()
-	html.queue_a_task(.media_capabilities, capabilities.event_loop, none, fn [cloned, promise] () {
-		result := create_a_media_capabilities_decoding_info(cloned)
+	queue_a_media_capabilities_task(capabilities.event_loop, fn [cloned, promise] () {
+		result := create_a_media_capabilities_decoding_info(cloned).to_object()
 		mut mutable_promise := unsafe { &MediaCapabilitiesDecodingInfoPromise(promise) }
 		mutable_promise.resolve(result)
 	})

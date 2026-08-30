@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Crypto`
 
 Translation workspace: `~/code/libweb_v/webcrypto`
-Audited: 2026-08-16
+Audited: 2026-08-29
 
 All six upstream Crypto `.cpp` implementation units have an audited V
 implementation mapping. The V package is named `webcrypto` so that it can
@@ -17,10 +17,17 @@ import V's standard `crypto.*` primitives without shadowing that namespace.
 | `CryptoKey.cpp` | `crypto_key.v` |
 | `KeyAlgorithms.cpp` | `key_algorithms.v` |
 | `SubtleCrypto.cpp` | `subtle_crypto.v` |
+| concrete `AlgorithmMethods` subclasses | `upstream_algorithm_classes.v` |
+| parameter parsing, DER/JWK helpers, registry and shared entry points | `upstream_protocol_entry_points.v` |
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Crypto/` | 6 | 13,297 | 2,303 | 879 | Complete |
+| `Crypto/` | 6 | 13,297 | 3,077 | 955 | Complete |
+
+The symbol-level audit accounts for all 338 implementations: 272 direct V
+owner/name matches, one documented V spelling adaptation, 18 GC/binding
+runtime hooks, and 47 constructors/destructors supplied by V construction.
+There are no unmatched Crypto symbols.
 
 The port covers secure random values and UUIDv4 generation, the WebCrypto IDL
 enums and JWK conversion, key metadata and structured serialization, algorithm
@@ -45,6 +52,6 @@ boundary.
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v test webcrypto
-Summary for all V _test.v files: 4 passed, 4 total.
+$ /Users/alex/code/v/v_old -enable-globals test webcrypto
+Summary for all V _test.v files: 5 passed, 5 total.
 ```

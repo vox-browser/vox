@@ -49,11 +49,22 @@ pub fn Memory.construct(descriptor MemoryDescriptor) !&Memory {
 	} else if descriptor.shared {
 		return error('TypeError: Maximum has to be specified for shared memory')
 	}
-	return &Memory{
+	memory := &Memory{
 		maximum: descriptor.maximum
 		shared:  descriptor.shared
 		data:    []u8{len: int(descriptor.initial) * page_size}
 	}
+	mut cache := get_cache()
+	cache.add_memory_instance(memory.address(), memory)
+	return memory
+}
+
+pub fn Memory.construct_impl(descriptor MemoryDescriptor) !&Memory {
+	return Memory.construct(descriptor)
+}
+
+pub fn (memory &Memory) address() u64 {
+	return u64(voidptr(memory))
 }
 
 pub fn (memory &Memory) size_pages() u32 {
@@ -68,12 +79,16 @@ pub fn (mut memory Memory) grow(delta u32) !u32 {
 		return error('RangeError: Memory.grow() grows past the stated limit of the memory instance')
 	}
 	memory.data << []u8{len: int(delta) * page_size}
-	memory.generation++
+	memory.refresh_the_memory_buffer()
 	return previous
 }
 
 pub fn (memory &Memory) buffer() MemoryBuffer {
 	return memory.make_buffer(memory.resizable_buffer)
+}
+
+pub fn (memory &Memory) buffer_object() MemoryBuffer {
+	return memory.buffer()
 }
 
 pub fn (mut memory Memory) to_fixed_length_buffer() MemoryBuffer {
@@ -94,5 +109,27 @@ fn (memory &Memory) make_buffer(resizable bool) MemoryBuffer {
 		resizable:           resizable
 		max_byte_length:     u64(max_pages) * page_size
 		detached_generation: memory.generation
+	}
+}
+
+pub fn (mut memory Memory) refresh_the_memory_buffer() {
+	// MemoryBuffer values are views identified by their generation. Growing the
+	// backing memory advances that generation, which detaches old non-shared
+	// views and causes buffer() to expose the refreshed block.
+	memory.generation++
+}
+
+pub fn (memory &Memory) create_a_fixed_length_memory_buffer() MemoryBuffer {
+	return memory.make_buffer(false)
+}
+
+pub fn (memory &Memory) create_a_resizable_memory_buffer(max_size u64) !MemoryBuffer {
+	if max_size > u64(maximum_pages) * page_size {
+		return error('RangeError: Maximum memory length exceeds 65536 * 65536 bytes')
+	}
+	mut buffer := memory.make_buffer(true)
+	return MemoryBuffer{
+		...buffer
+		max_byte_length: max_size
 	}
 }

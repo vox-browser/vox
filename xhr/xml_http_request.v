@@ -8,6 +8,7 @@
 module xhr
 
 import fileapi
+import encoding
 import mimesniff
 import net.urllib
 import x.json2
@@ -94,7 +95,7 @@ pub mut:
 	timed_out                bool
 	upload_complete          bool
 	upload_listener          bool
-	onreadystatechange       bool
+	onreadystatechange_      bool
 }
 
 pub fn XMLHttpRequest.construct(global_kind GlobalKind, base_url string) &XMLHttpRequest {
@@ -104,6 +105,10 @@ pub fn XMLHttpRequest.construct(global_kind GlobalKind, base_url string) &XMLHtt
 		base_url:      base_url
 		response_:     MockResponse{}
 	}
+}
+
+pub fn XMLHttpRequest.construct_impl(global_kind GlobalKind, base_url string) &XMLHttpRequest {
+	return XMLHttpRequest.construct(global_kind, base_url)
 }
 
 pub fn (request &XMLHttpRequest) ready_state() u16 {
@@ -391,19 +396,18 @@ pub fn (mut request XMLHttpRequest) complete_response() ! {
 	if !request.send_flag {
 		return
 	}
-	if request.response_.network_error != none {
-		message := request.response_.network_error or { 'Unknown error' }
-		request.request_error_steps('error', 'NetworkError: ${message}')!
-		return
-	}
-	if request.response_.aborted {
-		request.request_error_steps('abort', 'AbortError: Aborted')!
-		return
-	}
-	request.complete_upload()
 	if request.response_.body.len > request.received_bytes.len {
 		request.received_bytes = request.response_.body.clone()
 	}
+	request.handle_response_end_of_body()!
+}
+
+pub fn (mut request XMLHttpRequest) handle_response_end_of_body() ! {
+	request.handle_errors()!
+	if request.response_.network_error != none || request.response_.aborted || request.timed_out {
+		return
+	}
+	request.complete_upload()
 	transmitted := u64(request.received_bytes.len)
 	length := request.content_length()
 	if !request.synchronous {
@@ -414,6 +418,24 @@ pub fn (mut request XMLHttpRequest) complete_response() ! {
 	request.dispatch_state_change()
 	request.dispatch('load', transmitted, length)
 	request.dispatch('loadend', transmitted, length)
+}
+
+pub fn (mut request XMLHttpRequest) handle_errors() ! {
+	if !request.send_flag {
+		return
+	}
+	if request.timed_out {
+		request.request_error_steps('timeout', 'TimeoutError: Timed out')!
+		return
+	}
+	if request.response_.aborted {
+		request.request_error_steps('abort', 'AbortError: Aborted')!
+		return
+	}
+	if request.response_.network_error != none {
+		message := request.response_.network_error or { 'Unknown error' }
+		request.request_error_steps('error', 'NetworkError: ${message}')!
+	}
 }
 
 fn (request &XMLHttpRequest) content_length() u64 {
@@ -511,7 +533,13 @@ pub fn (request &XMLHttpRequest) get_all_response_headers() string {
 	}
 	mut names := combined.keys()
 	names.sort_with_compare(fn (a &string, b &string) int {
-		return compare_strings(a.to_upper(), b.to_upper())
+		return if is_legacy_uppercased_byte_less_than(*a, *b) {
+			-1
+		} else if is_legacy_uppercased_byte_less_than(*b, *a) {
+			1
+		} else {
+			0
+		}
 	})
 	mut output := ''
 	for name in names {
@@ -564,7 +592,37 @@ pub fn (request &XMLHttpRequest) response_text() !string {
 	if request.response_.network_error != none {
 		return ''
 	}
-	return request.received_bytes.bytestr()
+	return request.get_text_response()
+}
+
+pub fn (request &XMLHttpRequest) get_text_response() string {
+	if request.received_bytes.len == 0 {
+		return ''
+	}
+	charset := request.get_final_encoding() or { 'UTF-8' }
+	decoder := encoding.TextDecoder.construct_impl(charset, encoding.TextDecoderOptions{}) or {
+		panic('Unsupported XHR response encoding ${charset}')
+	}
+	return decoder.decode(request.received_bytes, encoding.TextDecodeOptions{}) or {
+		panic('Failed to decode XHR response with ${charset}')
+	}
+}
+
+pub fn (mut request XMLHttpRequest) set_document_response() {
+	if request.received_bytes.len == 0 {
+		return
+	}
+	final_mime := request.get_final_mime_type()
+	if !final_mime.is_html() && !final_mime.is_xml() {
+		return
+	}
+	if request.response_type_ == .empty && final_mime.is_html() {
+		return
+	}
+	request.response_cache = XHRResponse{
+		type_:         .document
+		document_text: request.get_text_response()
+	}
 }
 
 pub fn (mut request XMLHttpRequest) response_xml() !XHRDocumentResult {
@@ -614,16 +672,9 @@ pub fn (mut request XMLHttpRequest) response() XHRResponse {
 				}
 			}
 			.document {
-				mime := request.final_mime_type_record()
-				if parsed := mime {
-					if !parsed.is_html() && !parsed.is_xml() {
-						request.response_cache = result
-						return result
-					}
-					result = XHRResponse{
-						type_:         .document
-						document_text: request.received_bytes.bytestr()
-					}
+				request.set_document_response()
+				if document := request.response_cache {
+					return document
 				}
 			}
 			.json {
@@ -645,16 +696,14 @@ pub fn (mut request XMLHttpRequest) response() XHRResponse {
 }
 
 fn (request &XMLHttpRequest) final_mime_type() string {
-	if override := request.override_mime_type_ {
-		return override
-	}
-	if parsed := request.response_mime_type_record() {
-		return parsed.serialized()
-	}
-	return 'text/xml'
+	return request.get_final_mime_type().serialized()
 }
 
 fn (request &XMLHttpRequest) response_mime_type_record() ?mimesniff.MimeType {
+	return request.get_response_mime_type()
+}
+
+pub fn (request &XMLHttpRequest) get_response_mime_type() mimesniff.MimeType {
 	mut result := ?mimesniff.MimeType(none)
 	for header in request.response_.headers {
 		if header.name.to_lower() == 'content-type' {
@@ -663,21 +712,51 @@ fn (request &XMLHttpRequest) response_mime_type_record() ?mimesniff.MimeType {
 			}
 		}
 	}
-	return result
+	return result or { mimesniff.MimeType.parse('text/xml') or { panic(err) } }
 }
 
 fn (request &XMLHttpRequest) final_mime_type_record() ?mimesniff.MimeType {
+	return request.get_final_mime_type()
+}
+
+pub fn (request &XMLHttpRequest) get_final_mime_type() mimesniff.MimeType {
 	if override := request.override_mime_type_ {
-		return mimesniff.MimeType.parse(override)
+		return mimesniff.MimeType.parse(override) or { panic(err) }
 	}
-	if parsed := request.response_mime_type_record() {
-		return parsed
+	return request.get_response_mime_type()
+}
+
+pub fn (request &XMLHttpRequest) get_final_encoding() ?string {
+	mut label := ?string(none)
+	response_mime := request.get_response_mime_type()
+	if charset := response_mime.parameters()['charset'] {
+		label = charset
 	}
-	return mimesniff.MimeType.parse('text/xml')
+	if override := request.override_mime_type_ {
+		if parsed := mimesniff.MimeType.parse(override) {
+			if charset := parsed.parameters()['charset'] {
+				label = charset
+			}
+		}
+	}
+	encoding_label := label or { return none }
+	return encoding.get_an_encoding(encoding_label)
+}
+
+pub fn (request &XMLHttpRequest) onreadystatechange() bool {
+	return request.onreadystatechange_
+}
+
+pub fn (mut request XMLHttpRequest) set_onreadystatechange(value bool) {
+	request.onreadystatechange_ = value
 }
 
 pub fn (request &XMLHttpRequest) must_survive_garbage_collection() bool {
 	active := (request.state == .opened && request.send_flag)
 		|| request.state in [.headers_received, .loading]
-	return active && (request.onreadystatechange || request.has_relevant_listener())
+	return active && (request.onreadystatechange() || request.has_relevant_listener())
+}
+
+pub fn is_legacy_uppercased_byte_less_than(a string, b string) bool {
+	return a.to_upper() < b.to_upper()
 }

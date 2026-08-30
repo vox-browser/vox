@@ -29,6 +29,10 @@ pub fn (_ &OptionConstructor) metadata() ConstructorMetadata {
 	}
 }
 
+pub fn (_ &OptionConstructor) has_constructor() bool {
+	return true
+}
+
 pub fn (_ &OptionConstructor) call() !dom.JSValue {
 	return error("TypeError: Constructor Option requires 'new'")
 }

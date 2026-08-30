@@ -7,17 +7,25 @@ module infra
 import x.json2
 import encoding
 
-pub const ascii_whitespace = '\t\n\x0c\r '
+pub const ascii_whitespace = '\t\n\f\r '
 pub const ascii_whitespace_code_points = [u32(`\t`), u32(`\n`), u32(`\x0c`), u32(`\r`), u32(` `)]!
 
 pub type Boolean = bool
+
 pub type Signed16BitInteger = i16
+
 pub type Signed32BitInteger = i32
+
 pub type Signed64BitInteger = i64
+
 pub type Signed8BitInteger = i8
+
 pub type Unsigned16BitInteger = u16
+
 pub type Unsigned32BitInteger = u32
+
 pub type Unsigned64BitInteger = u64
+
 pub type Unsigned8BitInteger = u8
 
 // V 0.5 does not expose a native u128 on every backend. This exact two-limb
@@ -30,14 +38,16 @@ pub:
 
 // V's dynamic JSON value is the direct equivalent of Infra's JSONTopLevel.
 pub type JSONBaseValue = json2.Any
+
 pub type JSONObject = map[string]json2.Any
+
 pub type JSONTopLevel = json2.Any
+
 pub type JSONValue = json2.Any
 
 // https://infra.spec.whatwg.org/#ascii-whitespace
 pub fn is_ascii_whitespace(code_point u32) bool {
-	return code_point == `\t` || code_point == `\n` || code_point == `\x0c` || code_point == `\r`
-		|| code_point == ` `
+	return code_point == `\t` || code_point == `\n` || code_point == `\x0c` || code_point == `\r` || code_point == ` `
 }
 
 // https://infra.spec.whatwg.org/#byte-lowercase
@@ -184,8 +194,12 @@ pub fn serialize_javascript_value_to_json_bytes(value json2.Any) ![]u8 {
 
 // V's json2.Any is already a JSON-compatible representation, so the Infra-value
 // conversion is identity-preserving.
+pub fn convert_an_infra_value_to_a_json_compatible_javascript_value(value JSONTopLevel) json2.Any {
+	return value
+}
+
 pub fn serialize_an_infra_value_to_a_json_string(value JSONTopLevel) string {
-	return value.json_str()
+	return convert_an_infra_value_to_a_json_compatible_javascript_value(value).json_str()
 }
 
 pub fn serialize_an_infra_value_to_json_bytes(value JSONTopLevel) []u8 {

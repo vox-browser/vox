@@ -269,3 +269,9 @@ pub fn (highlighter &HTMLSyntaxHighlighter) rehighlight(text string) SyntaxHighl
 		matching_pairs:  matching_pairs
 	}
 }
+
+// The translated type keeps its HTML prefix to avoid collisions with other
+// module highlighters; this wrapper is the literal SyntaxHighlighter method.
+pub fn syntax_highlighter_rehighlight(highlighter &HTMLSyntaxHighlighter, text string) SyntaxHighlightResult {
+	return highlighter.rehighlight(text)
+}

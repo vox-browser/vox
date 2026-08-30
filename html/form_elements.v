@@ -9,15 +9,46 @@ module html
 
 import dom
 
+fn form_control_selected_text_callback(element &dom.Element) ?string {
+	if !element.is_html_element() {
+		return none
+	}
+	if element.local_name() == 'input' {
+		input := unsafe { &dom.HTMLInputElement(element) }
+		model := HTMLInputElementModel.create(input)
+		if !model.selection_or_range_applies() {
+			return none
+		}
+		return model.selected_text_for_stringifier()
+	}
+	if element.local_name() == 'textarea' {
+		textarea := unsafe { &dom.HTMLTextAreaElement(element) }
+		return html_text_area_element_model_for_dom_element(textarea).text.selected_text_for_stringifier()
+	}
+	return none
+}
+
+fn install_form_control_selected_text_callback(document &dom.Document) {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_form_control_selected_text_callback(form_control_selected_text_callback)
+}
+
 @[heap]
 pub struct HTMLTextAreaElementModel {
 pub:
 	element &dom.HTMLTextAreaElement
 pub mut:
-	control       &FormAssociatedElement
-	text          &FormAssociatedTextControlElement
-	dirty_value   bool
-	user_validity bool
+	control                  &FormAssociatedElement
+	text                     &FormAssociatedTextControlElement
+	dirty_value              bool
+	user_validity            bool
+	placeholder_element_     ?&dom.Element
+	placeholder_text_node_   ?&dom.Text
+	inner_text_element_      ?&dom.Element
+	text_node_               ?&dom.Text
+	pending_input_event_type string
+	pending_input_event_data ?string
+	input_event_task_queued_ bool
 }
 
 fn textarea_element(model &HTMLTextAreaElementModel) &dom.Element {
@@ -25,17 +56,29 @@ fn textarea_element(model &HTMLTextAreaElementModel) &dom.Element {
 }
 
 pub fn HTMLTextAreaElementModel.create(element &dom.HTMLTextAreaElement) &HTMLTextAreaElementModel {
+	if element.text_area_element_model_ != unsafe { nil } {
+		return unsafe { &HTMLTextAreaElementModel(element.text_area_element_model_) }
+	}
 	dom_element := unsafe { &dom.Element(element) }
 	default_value := dom_element.as_node().child_text_content()
 	control := FormAssociatedElement.create(dom_element)
 	mut text := FormAssociatedTextControlElement.create(control, default_value)
-	text.set_the_selection_range(u32(form_string_to_utf16(default_value).len),
-		u32(form_string_to_utf16(default_value).len), .none, .dom)
-	return &HTMLTextAreaElementModel{
+	text.set_the_selection_range(u32(form_string_to_utf16(default_value).len), u32(form_string_to_utf16(default_value).len), .none, .dom)
+	mut model := &HTMLTextAreaElementModel{
 		element: element
 		control: control
-		text:    text
+		text: text
 	}
+	model.text.did_edit_target_ = voidptr(model)
+	model.text.did_edit_callback_ = html_text_area_element_did_edit_callback
+	mut mutable_element := unsafe { &dom.HTMLTextAreaElement(element) }
+	mutable_element.text_area_element_model_ = voidptr(model)
+	install_form_control_selected_text_callback(dom_element.document())
+	return model
+}
+
+pub fn html_text_area_element_model_for_dom_element(element &dom.HTMLTextAreaElement) &HTMLTextAreaElementModel {
+	return HTMLTextAreaElementModel.create(element)
 }
 
 fn normalize_textarea_api_newlines(value string) string {
@@ -50,7 +93,8 @@ pub fn (mut model HTMLTextAreaElementModel) set_default_value(value string) {
 	mut node := textarea_element(&model).as_node()
 	node.string_replace_all(value)
 	if !model.dirty_value {
-		model.text.set_relevant_value(normalize_textarea_api_newlines(value))
+		model.set_raw_value(value)
+		model.sync_text_node_to_raw_value()
 	}
 }
 
@@ -60,14 +104,15 @@ pub fn (model &HTMLTextAreaElementModel) value() string {
 
 pub fn (mut model HTMLTextAreaElementModel) set_value(value string) {
 	old_value := model.value()
-	normalized := normalize_textarea_api_newlines(value)
-	model.text.set_relevant_value(normalized)
+	model.set_raw_value(value)
 	model.text.dirty_value_flag = true
 	model.dirty_value = true
-	if normalized != old_value {
-		length := u32(form_string_to_utf16(normalized).len)
+	if model.value() != old_value {
+		model.sync_text_node_to_raw_value()
+		length := u32(form_string_to_utf16(model.value()).len)
 		model.text.set_the_selection_range(length, length, .none, .dom)
 	}
+	model.update_placeholder_visibility()
 	model.update_validity()
 }
 
@@ -133,8 +178,11 @@ pub fn (mut model HTMLTextAreaElementModel) set_rows(value u64) {
 }
 
 pub fn (model &HTMLTextAreaElementModel) placeholder_value() ?string {
-	value := textarea_element(model).get_attribute('placeholder') or { return none }
-	return value.replace('\r\n', '\n').replace('\r', '\n').split('\n')[0]
+	text_node := model.text_node_ or { return none }
+	if text_node.data() != '' {
+		return none
+	}
+	return textarea_element(model).get_attribute('placeholder')
 }
 
 pub fn (model &HTMLTextAreaElementModel) placeholder_visible() bool {
@@ -143,28 +191,19 @@ pub fn (model &HTMLTextAreaElementModel) placeholder_visible() bool {
 
 pub fn (mut model HTMLTextAreaElementModel) update_validity() {
 	length := i32(model.text_length())
-	model.control.missing_ = textarea_element(&model).has_attribute('required')
-		&& model.value() == ''
+	model.control.missing_ = model.suffering_from_being_missing()
 	max_length := model.max_length()
 	min_length := model.min_length()
 	model.control.too_long_ = model.dirty_value && max_length >= 0 && length > max_length
-	model.control.too_short_ = model.dirty_value && model.value() != '' && min_length >= 0
-		&& length < min_length
+	model.control.too_short_ = model.dirty_value && model.value() != '' && min_length >= 0 && length < min_length
 }
 
 pub fn (mut model HTMLTextAreaElementModel) reset() {
-	model.dirty_value = false
-	model.text.dirty_value_flag = false
-	model.text.set_relevant_value(normalize_textarea_api_newlines(model.default_value()))
-	model.user_validity = false
-	model.update_validity()
+	model.reset_algorithm()
 }
 
 pub fn (mut model HTMLTextAreaElementModel) clear() {
-	model.dirty_value = false
-	model.text.dirty_value_flag = false
-	model.text.set_relevant_value('')
-	model.update_validity()
+	model.clear_algorithm()
 }
 
 pub enum HTMLButtonTypeState {
@@ -194,8 +233,7 @@ pub fn html_button_element_is_submit_button(button &dom.HTMLButtonElement) bool 
 		return true
 	}
 	element := button_element(button)
-	return state == .auto && !element.has_attribute('command')
-		&& !element.has_attribute('commandfor')
+	return state == .auto && !element.has_attribute('command') && !element.has_attribute('commandfor')
 }
 
 pub fn html_button_element_type(button &dom.HTMLButtonElement) string {
@@ -208,9 +246,17 @@ pub fn html_button_element_type(button &dom.HTMLButtonElement) string {
 	}
 }
 
+pub fn html_button_element_type_for_bindings(button &dom.HTMLButtonElement) string {
+	return html_button_element_type(button)
+}
+
 pub fn set_html_button_element_type(button &dom.HTMLButtonElement, value string) {
 	mut element := button_element(button)
 	element.set_attribute_value('type', value)
+}
+
+pub fn set_html_button_element_type_for_bindings(button &dom.HTMLButtonElement, value string) {
+	set_html_button_element_type(button, value)
 }
 
 pub fn html_button_element_value(button &dom.HTMLButtonElement) string {
@@ -240,6 +286,158 @@ pub fn set_html_button_element_command(button &dom.HTMLButtonElement, value stri
 	element.set_attribute_value('command', value)
 }
 
+@[heap]
+pub struct HTMLButtonElementModel {
+pub:
+	element &dom.HTMLButtonElement
+	control &FormAssociatedElement
+pub mut:
+	command_for_element_ ?&dom.Element
+}
+
+pub fn HTMLButtonElementModel.create(element &dom.HTMLButtonElement) &HTMLButtonElementModel {
+	mut control := FormAssociatedElement.create(button_element(element))
+	control.reset_form_owner()
+	model := &HTMLButtonElementModel{
+		element: element
+		control: control
+	}
+	if form := control.form() {
+		if form_model := html_form_element_model_for(form) {
+			mut mutable_form_model := unsafe { &HTMLFormElementModel(form_model) }
+			mutable_form_model.add_control(mut control)
+		}
+	}
+	return model
+}
+
+pub fn (model &HTMLButtonElementModel) type_for_bindings() string {
+	return html_button_element_type_for_bindings(model.element)
+}
+
+pub fn (mut model HTMLButtonElementModel) form_associated_element_attribute_changed(name string, _ ?string, _ ?string, namespace_ ?string) {
+	mut attributes := PopoverTargetAttributes.create(button_element(model.element))
+	attributes.associated_attribute_changed(name, namespace_)
+}
+
+pub fn (model &HTMLButtonElementModel) default_tab_index_value() i32 {
+	return 0
+}
+
+pub fn (model &HTMLButtonElementModel) has_activation_behavior() bool {
+	return true
+}
+
+fn (mut model HTMLButtonElementModel) command_for_element() ?&dom.Element {
+	if target := model.command_for_element_ {
+		return target
+	}
+	if target := model.element.command_for_element_ {
+		model.command_for_element_ = target
+		return target
+	}
+	target_id := button_element(model.element).get_attribute('commandfor') or { return none }
+	target := find_html_element_by_id(button_element(model.element).as_node().root(), target_id) or {
+		return none
+	}
+	element := unsafe { &dom.Element(target) }
+	model.command_for_element_ = element
+	return element
+}
+
+pub fn (mut model HTMLButtonElementModel) activation_behavior(event &dom.Event) {
+	if !model.control.enabled() || !button_element(model.element).document().is_fully_active() {
+		return
+	}
+	if form := model.control.form() {
+		if form_model := html_form_element_model_for(form) {
+			mut mutable_form_model := unsafe { &HTMLFormElementModel(form_model) }
+			if html_button_element_is_submit_button(model.element) {
+				mutable_form_model.submit_form(model.control, SubmitFormOptions{
+					user_involvement: user_navigation_involvement(event)
+				}) or {}
+				return
+			}
+			if html_button_element_type_state(model.element) == .reset {
+				mutable_form_model.reset_form()
+				return
+			}
+			if html_button_element_type_state(model.element) == .auto {
+				return
+			}
+		}
+	}
+	target_element := model.command_for_element() or {
+		PopoverTargetAttributes.popover_target_activation_behaviour(button_element(model.element).as_node(), button_element(model.element).as_node())
+		return
+	}
+	if !target_element.is_html_element() {
+		return
+	}
+	command := html_button_element_command(model.element)
+	if command == '' {
+		return
+	}
+	target := unsafe { &dom.HTMLElement(target_element) }
+	is_popover := html_element_popover(target) != none
+	is_custom := command.starts_with('--')
+	if !is_popover && !is_custom {
+		if target_element.local_name() != 'dialog' || !html_dialog_element_is_valid_command(command) {
+			return
+		}
+	}
+	command_event := dom.CommandEvent.create('command', dom.CommandEventInit{
+		cancelable: true
+		command: command
+		source: button_element(model.element)
+	})
+	base_event := unsafe { &dom.Event(command_event) }
+	if !unsafe { &dom.EventTarget(target_element.as_node()) }.dispatch_event(base_event) {
+		return
+	}
+	if !target_element.as_node().is_connected() || is_custom {
+		return
+	}
+	match command {
+		'hide-popover' {
+			if html_element_check_popover_validity(target, .yes, .no, none, .no) or { false } {
+				html_element_hide_popover(target, .yes, .yes, .no, .no, unsafe {
+					&dom.HTMLElement(button_element(model.element))
+				}) or {}
+			}
+		}
+		'toggle-popover' {
+			if html_element_check_popover_validity(target, .no, .no, none, .no) or { false } {
+				html_element_show_popover(target, .no, unsafe {
+					&dom.HTMLElement(button_element(model.element))
+				}) or {}
+			} else if html_element_check_popover_validity(target, .yes, .no, none, .no) or {
+				false} {
+				html_element_hide_popover(target, .yes, .yes, .no, .no, unsafe {
+					&dom.HTMLElement(button_element(model.element))
+				}) or {}
+			}
+		}
+		'show-popover' {
+			if html_element_check_popover_validity(target, .no, .no, none, .no) or { false } {
+				html_element_show_popover(target, .no, unsafe {
+					&dom.HTMLElement(button_element(model.element))
+				}) or {}
+			}
+		}
+		else {
+			if target_element.local_name() == 'dialog' {
+				mut dialog := unsafe { &dom.HTMLDialogElement(target_element) }
+				run_html_dialog_element_command(mut dialog, command, button_element(model.element)) or {}
+			}
+		}
+	}
+}
+
+pub fn (model &HTMLButtonElementModel) is_focusable() bool {
+	return model.control.enabled()
+}
+
 pub enum FormMethodState {
 	get
 	post
@@ -254,15 +452,17 @@ pub enum FormEncodingType {
 
 pub struct FormSubmission {
 pub:
-	url          dom.URL
-	method       FormMethodState
-	encoding     FormEncodingType
-	entries      []FormDataEntry
-	body         []u8
-	content_type string
+	url              dom.URL
+	method           FormMethodState
+	encoding         FormEncodingType
+	entries          []FormDataEntry
+	body             []u8
+	content_type     string
+	referrer_policy  string
+	user_involvement UserNavigationInvolvement
 }
 
-pub type FormSubmissionHook = fn (FormSubmission) !
+pub type FormSubmissionHook = fn(FormSubmission) !
 
 @[heap]
 pub struct HTMLFormElementModel {
@@ -272,17 +472,41 @@ mut:
 	controls_                 []&FormAssociatedElement
 	event_target_             &dom.EventTarget = unsafe { nil }
 	submission_hook_          ?FormSubmissionHook
+	elements_                 ?&HTMLFormControlsCollection
+	rel_list_                 ?&dom.DOMTokenList
+	past_names_map_           map[string]&dom.Element
 	constructing_entry_list_  bool
 	firing_submission_events_ bool
 	locked_for_reset_         bool
 	last_submission_          ?FormSubmission
 }
 
+__global html_form_element_models []&HTMLFormElementModel
+
 pub fn HTMLFormElementModel.create(element &dom.HTMLFormElement) &HTMLFormElementModel {
-	return &HTMLFormElementModel{
-		element:       element
-		event_target_: dom.EventTarget.new()
+	model := &HTMLFormElementModel{
+		element: element
+		event_target_: unsafe { &dom.EventTarget(element) }
 	}
+	html_form_element_models << model
+	return model
+}
+
+pub fn (form &HTMLFormElementModel) constructing_entry_list() bool {
+	return form.constructing_entry_list_
+}
+
+pub fn (mut form HTMLFormElementModel) set_constructing_entry_list(value bool) {
+	form.constructing_entry_list_ = value
+}
+
+fn html_form_element_model_for(element &dom.HTMLFormElement) ?&HTMLFormElementModel {
+	for model in html_form_element_models {
+		if voidptr(model.element) == voidptr(element) {
+			return model
+		}
+	}
+	return none
 }
 
 fn form_model_element(form &HTMLFormElementModel) &dom.Element {
@@ -309,8 +533,7 @@ pub fn (form &HTMLFormElementModel) controls() []&FormAssociatedElement {
 pub fn (form &HTMLFormElementModel) length() u32 {
 	mut count := 0
 	for control in form.controls_ {
-		if control.is_listed() && !(control.element.local_name() == 'input'
-			&& form_element_input_type(control.element) == 'image') {
+		if control.is_listed() && !(control.element.local_name() == 'input' && form_element_input_type(control.element) == 'image') {
 			count++
 		}
 	}
@@ -353,7 +576,7 @@ pub fn (form &HTMLFormElementModel) encoding_type(submitter ?&FormAssociatedElem
 	}
 }
 
-pub fn (form &HTMLFormElementModel) action(submitter ?&FormAssociatedElement) dom.URL {
+fn (form &HTMLFormElementModel) parsed_action_from_form_element(submitter ?&FormAssociatedElement) dom.URL {
 	mut value := form_model_element(form).get_attribute_value('action')
 	if control := submitter {
 		if control.is_submit_button() && control.element.has_attribute('formaction') {
@@ -375,8 +598,12 @@ pub fn (form &HTMLFormElementModel) action(submitter ?&FormAssociatedElement) do
 fn form_url_encode_component(value string) string {
 	mut output := ''
 	for byte in value.bytes() {
-		if (byte >= `a` && byte <= `z`) || (byte >= `A` && byte <= `Z`)
-			|| (byte >= `0` && byte <= `9`) || byte in [`-`, `_`, `.`, `*`] {
+		if (byte >= `a` && byte <= `z`) || (byte >= `A` && byte <= `Z`) || (byte >= `0` && byte <= `9`) || byte in [
+			`-`,
+			`_`,
+			`.`,
+			`*`,
+		] {
 			output += byte.ascii_str()
 		} else if byte == ` ` {
 			output += '+'
@@ -390,27 +617,19 @@ fn form_url_encode_component(value string) string {
 pub fn (form &HTMLFormElementModel) construct_entry_list(submitter ?&FormAssociatedElement) []FormDataEntry {
 	mut entries := []FormDataEntry{}
 	for control in form.controls_ {
-		if !control.enabled() || !control.is_submittable()
-			|| control.element.get_attribute_value('name') == '' {
+		if !control.enabled() || !control.is_submittable() || control.element.get_attribute_value('name') == '' {
 			continue
 		}
 		if control.is_button() && (submitter == none || submitter or { continue } != control) {
 			continue
 		}
-		entries << create_form_data_string_entry(control.element.get_attribute_value('name'),
-			control.value())
+		entries << create_form_data_string_entry(control.element.get_attribute_value('name'), control.value())
 	}
 	return entries
 }
 
 pub fn (form &HTMLFormElementModel) check_validity() bool {
-	mut valid := true
-	for control in form.controls_ {
-		if !control.check_validity() {
-			valid = false
-		}
-	}
-	return valid
+	return form.statically_validate_constraints().result
 }
 
 pub fn (mut form HTMLFormElementModel) reset() {
@@ -418,6 +637,11 @@ pub fn (mut form HTMLFormElementModel) reset() {
 		return
 	}
 	form.locked_for_reset_ = true
+	form.reset_form()
+	form.locked_for_reset_ = false
+}
+
+pub fn (mut form HTMLFormElementModel) reset_form() {
 	event := dom.Event.create('reset', dom.EventInit{ bubbles: true, cancelable: true })
 	if form.event_target_.dispatch_event(event) {
 		for control in form.controls_ {
@@ -427,86 +651,88 @@ pub fn (mut form HTMLFormElementModel) reset() {
 			}
 		}
 	}
-	form.locked_for_reset_ = false
 }
 
-pub fn (mut form HTMLFormElementModel) submit(submitter ?&FormAssociatedElement, from_submit_binding bool) ! {
-	if form.firing_submission_events_ {
+pub fn (mut form HTMLFormElementModel) submit_form(submitter ?&FormAssociatedElement, options SubmitFormOptions) ! {
+	element := form_model_element(&form)
+	if element.cannot_navigate() || form.constructing_entry_list_ {
 		return
 	}
-	if !from_submit_binding {
-		if !form.check_validity() {
-			return error('InvalidStateError: form constraints are not satisfied')
+	if element.document().active_sandboxing_flag_set().sandboxed_forms {
+		return
+	}
+	if !options.from_submit_binding {
+		if form.firing_submission_events_ {
+			return
 		}
 		form.firing_submission_events_ = true
+		for control in form.get_submittable_elements() {
+			mut mutable_control := unsafe { &FormAssociatedElement(control) }
+			mutable_control.user_validity_ = true
+		}
+		should_validate := if control := submitter { !control.novalidate_state() } else { true }
+		if should_validate && !form.interactively_validate_constraints() {
+			form.firing_submission_events_ = false
+			return
+		}
 		event := dom.Event.create('submit', dom.EventInit{ bubbles: true, cancelable: true })
 		continue_ := form.event_target_.dispatch_event(event)
 		form.firing_submission_events_ = false
-		if !continue_ {
+		if !continue_ || element.cannot_navigate() {
 			return
 		}
 	}
+	encoding_name := form.pick_an_encoding()
+	form.constructing_entry_list_ = true
 	entries := form.construct_entry_list(submitter)
-	method := form.method_state(submitter)
-	encoding := form.encoding_type(submitter)
-	mut url := form.action(submitter)
-	mut body := []u8{}
-	mut content_type := ''
-	if method == .get {
-		mut fields := []string{}
-		for entry in entries {
-			if entry.value is string {
-				fields << '${form_url_encode_component(entry.name)}=${form_url_encode_component(entry.value as string)}'
-			}
-		}
-		separator := if url.serialize().contains('?') { '&' } else { '?' }
-		url = dom.URL{
-			value: '${url.serialize()}${if fields.len > 0 {
-				separator + fields.join('&')
+	form.constructing_entry_list_ = false
+	if element.cannot_navigate() {
+		return
+	}
+	method := form.method_state_from_form_element(submitter)
+	if method == .dialog {
+		if dialog_element := form_element_nearest_ancestor(element, 'dialog') {
+			mut dialog := unsafe { &dom.HTMLDialogElement(dialog_element) }
+			result := if control := submitter {
+				if control.is_submit_button() { control.value() } else { '' }
 			} else {
 				''
-			}}'
+			}
+			close_html_dialog_element(mut dialog, result, if control := submitter {
+				control.element
+			} else {
+				none
+			})
 		}
-	} else if method == .post {
-		match encoding {
-			.multipart {
-				serialized := serialize_to_multipart_form_data(entries)
-				body = serialized.serialized_data.clone()
-				content_type = 'multipart/form-data; boundary=${serialized.boundary}'
-			}
-			.plain_text {
-				mut lines := []string{}
-				for entry in entries {
-					if entry.value is string {
-						lines << '${entry.name}=${entry.value as string}'
-					}
-				}
-				body = '${lines.join('\r\n')}\r\n'.bytes()
-				content_type = 'text/plain'
-			}
-			.url_encoded {
-				mut fields := []string{}
-				for entry in entries {
-					if entry.value is string {
-						fields << '${form_url_encode_component(entry.name)}=${form_url_encode_component(entry.value as string)}'
-					}
-				}
-				body = fields.join('&').bytes()
-				content_type = 'application/x-www-form-urlencoded'
-			}
+		return
+	}
+	mut action := form.action_from_form_element(submitter)
+	if action == '' {
+		action = element.document().url_string()
+	}
+	parsed_action := element.document().encoding_parse_url(action) or { return }
+	encoding_type := form.encoding_type_state_from_form_element(submitter)
+	scheme := parsed_action.scheme()
+	if scheme in ['http', 'https'] {
+		if method == .get {
+			form.mutate_action_url(parsed_action, entries, encoding_name, options.user_involvement)!
+		} else {
+			form.submit_as_entity_body(parsed_action, entries, encoding_type, encoding_name, options.user_involvement)!
 		}
-	}
-	submission := FormSubmission{
-		url:          url
-		method:       method
-		encoding:     encoding
-		entries:      entries
-		body:         body
-		content_type: content_type
-	}
-	form.last_submission_ = submission
-	if hook := form.submission_hook_ {
-		hook(submission)!
+	} else if scheme in ['ftp', 'javascript'] {
+		form.get_action_url(parsed_action, entries, options.user_involvement)!
+	} else if scheme in ['data', 'file'] {
+		if method == .get {
+			form.mutate_action_url(parsed_action, entries, encoding_name, options.user_involvement)!
+		} else {
+			form.get_action_url(parsed_action, entries, options.user_involvement)!
+		}
+	} else if scheme == 'mailto' {
+		if method == .get {
+			form.mail_with_headers(parsed_action, entries, encoding_name, options.user_involvement)!
+		} else {
+			form.mail_as_body(parsed_action, entries, encoding_type, encoding_name, options.user_involvement)!
+		}
 	}
 }
 

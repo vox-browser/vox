@@ -111,6 +111,10 @@ mut:
 }
 
 pub fn SpeechSynthesisUtterance.new(text string) &SpeechSynthesisUtterance {
+	return SpeechSynthesisUtterance.construct_impl(text)
+}
+
+pub fn SpeechSynthesisUtterance.construct_impl(text string) &SpeechSynthesisUtterance {
 	return &SpeechSynthesisUtterance{
 		EventTarget: dom.EventTarget{}
 		text_:       text

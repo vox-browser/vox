@@ -6,10 +6,21 @@
 // Translation of TraversableNavigable.{h,cpp}. The V representation owns the
 // session-history graph directly and exposes host hooks for browsing-context,
 // page-client, and beforeunload operations.
+@[has_globals]
 module html
 
 import dom
 import rand
+
+__global html_user_agent_top_level_traversables = []&TraversableNavigable{}
+
+pub fn user_agent_top_level_traversable_set() []&TraversableNavigable {
+	return html_user_agent_top_level_traversables.clone()
+}
+
+pub fn create_a_new_top_level_browsing_context_and_document(page &dom.Page) !BrowsingContextGroupAndDocument {
+	return BrowsingContextGroup.create_a_new_browsing_context_group_and_document(page)
+}
 
 pub enum HistoryStepResult {
 	initiator_disallowed
@@ -50,18 +61,18 @@ mut:
 }
 
 pub fn (mut shed TraversableStorageShed) set(storage_key string, key string, value string) {
-	shed.values['${storage_key}\x00${key}'] = value
+	shed.values['${storage_key}\0${key}'] = value
 }
 
 pub fn (shed &TraversableStorageShed) get(storage_key string, key string) ?string {
-	return shed.values['${storage_key}\x00${key}']
+	return shed.values['${storage_key}\0${key}']
 }
 
-pub type TraversableBeforeUnloadHook = fn ([]&dom.Document) CheckIfUnloadingIsCanceledResult
+pub type TraversableBeforeUnloadHook = fn([]&dom.Document) CheckIfUnloadingIsCanceledResult
 
-pub type TraversableAppliedHook = fn (int, dom.NavigationType)
+pub type TraversableAppliedHook = fn(int, dom.NavigationType)
 
-pub type TraversableScreenshotHook = fn (?u64)
+pub type TraversableScreenshotHook = fn(?u64)
 
 @[heap]
 pub struct TraversableNavigable {
@@ -80,7 +91,7 @@ mut:
 	navigation_                   ?&Navigation
 	host_navigable_               ?&dom.Navigable
 	traversal_queue_              &SessionHistoryTraversalQueue = unsafe { nil }
-	storage_shed_                 &TraversableStorageShed       = unsafe { nil }
+	storage_shed_                 &TraversableStorageShed = unsafe { nil }
 	emulated_position_data_       EmulatedPositionData
 	before_unload_hook_           ?TraversableBeforeUnloadHook
 	applied_hook_                 ?TraversableAppliedHook
@@ -88,12 +99,19 @@ mut:
 	screenshot_tasks_             []?u64
 }
 
+pub fn (traversable &TraversableNavigable) is_traversable() bool {
+	_ = traversable
+	return true
+}
+
 fn TraversableNavigable.new() &TraversableNavigable {
-	return &TraversableNavigable{
-		window_handle_:   rand.uuid_v4()
+	traversable := &TraversableNavigable{
+		window_handle_: rand.uuid_v4()
 		traversal_queue_: &SessionHistoryTraversalQueue{}
-		storage_shed_:    &TraversableStorageShed{}
+		storage_shed_: &TraversableStorageShed{}
 	}
+	html_user_agent_top_level_traversables << traversable
+	return traversable
 }
 
 pub fn TraversableNavigable.create_a_new_top_level_traversable(target_name string) !&TraversableNavigable {
@@ -103,17 +121,24 @@ pub fn TraversableNavigable.create_a_new_top_level_traversable(target_name strin
 	document.set_origin(dom.origin_create_opaque())
 	state := &DocumentState{
 		document: document
-		origin:   document.origin()
+		origin: document.origin()
 	}
 	entry := &SessionHistoryEntry{
-		step:           0
-		url:            dom.url_about_blank()
+		step: 0
+		url: dom.url_about_blank()
 		document_state: state
 	}
 	mut traversable := TraversableNavigable.new()
 	traversable.session_history_entries_ = [entry]
 	traversable.active_session_history_entry_ = entry
 	traversable.active_document_ = document
+	mut host_navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	}
+	host_navigable.traversable_navigable_ = host_navigable
+	traversable.host_navigable_ = host_navigable
+	document.set_cached_navigable(host_navigable)
 	return traversable
 }
 
@@ -123,19 +148,26 @@ pub fn TraversableNavigable.create_a_fresh_top_level_traversable(initial_navigat
 	document.set_url(initial_navigation_url)
 	document.set_origin(initial_navigation_url.origin())
 	state := &DocumentState{
-		document:       document
-		origin:         document.origin()
-		resource:       initial_resource
+		document: document
+		origin: document.origin()
+		resource: initial_resource
 		ever_populated: true
 	}
 	entry := &SessionHistoryEntry{
-		step:           0
-		url:            initial_navigation_url
+		step: 0
+		url: initial_navigation_url
 		document_state: state
 	}
 	traversable.session_history_entries_ = [entry]
 	traversable.active_session_history_entry_ = entry
 	traversable.active_document_ = document
+	mut host_navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	}
+	host_navigable.traversable_navigable_ = host_navigable
+	traversable.host_navigable_ = host_navigable
+	document.set_cached_navigable(host_navigable)
 	return traversable
 }
 
@@ -236,7 +268,7 @@ pub fn (traversable &TraversableNavigable) get_the_history_object_length_and_ind
 	}
 	return HistoryObjectLengthAndIndex{
 		script_history_length: u64(steps.len)
-		script_history_index:  u64(index)
+		script_history_index: u64(index)
 	}
 }
 
@@ -263,6 +295,95 @@ fn target_history_entry(entries []&SessionHistoryEntry, target_step int) ?&Sessi
 		}
 	}
 	return target
+}
+
+pub fn (traversable &TraversableNavigable) get_all_navigables_whose_current_session_history_entry_will_change_or_reload(target_step int) []&dom.Navigable {
+	host := traversable.host_navigable_ or { return []&dom.Navigable{} }
+	target := target_history_entry(traversable.session_history_entries_, target_step) or {
+		return []&dom.Navigable{}
+	}
+	current := traversable.active_session_history_entry_ or { target }
+	reload_pending := if state := target.document_state { state.reload_pending } else { false }
+	if voidptr(target) != voidptr(current) || reload_pending {
+		return [host]
+	}
+	return []&dom.Navigable{}
+}
+
+pub fn (traversable &TraversableNavigable) get_all_navigables_that_only_need_history_object_length_index_update(target_step int) []&dom.Navigable {
+	host := traversable.host_navigable_ or { return []&dom.Navigable{} }
+	target := target_history_entry(traversable.session_history_entries_, target_step) or {
+		return []&dom.Navigable{}
+	}
+	current := traversable.active_session_history_entry_ or { target }
+	reload_pending := if state := target.document_state { state.reload_pending } else { false }
+	if voidptr(target) == voidptr(current) && !reload_pending {
+		return [host]
+	}
+	return []&dom.Navigable{}
+}
+
+pub fn (traversable &TraversableNavigable) get_all_navigables_that_might_experience_a_cross_document_traversal(target_step int) []&dom.Navigable {
+	host := traversable.host_navigable_ or { return []&dom.Navigable{} }
+	target := target_history_entry(traversable.session_history_entries_, target_step) or {
+		return []&dom.Navigable{}
+	}
+	reload_pending := if state := target.document_state { state.reload_pending } else { false }
+	if target.document() != traversable.active_document_ || reload_pending {
+		return [host]
+	}
+	return []&dom.Navigable{}
+}
+
+pub fn (traversable &TraversableNavigable) get_session_history_entries_for_the_navigation_api(navigable &dom.Navigable, target_step int) []&SessionHistoryEntry {
+	host := traversable.host_navigable_ or { return []&SessionHistoryEntry{} }
+	if voidptr(host) != voidptr(navigable) || traversable.session_history_entries_.len == 0 {
+		return []&SessionHistoryEntry{}
+	}
+	raw_entries := traversable.session_history_entries_
+	mut starting_index := 0
+	mut max_step := 0
+	for index, entry in raw_entries {
+		if step := session_history_entry_step(entry) {
+			if step <= target_step && step > max_step {
+				starting_index = index
+				max_step = step
+			}
+		}
+	}
+	starting_state := raw_entries[starting_index].document_state or {
+		return [raw_entries[starting_index]]
+	}
+	starting_origin := starting_state.origin
+	mut result := [raw_entries[starting_index]]
+	mut index := starting_index - 1
+	for index > 0 {
+		state := raw_entries[index].document_state or { break }
+		if history_origins_differ(starting_origin, state.origin) {
+			break
+		}
+		result.prepend(raw_entries[index])
+		index--
+	}
+	index = starting_index + 1
+	for index < raw_entries.len {
+		state := raw_entries[index].document_state or { break }
+		if history_origins_differ(starting_origin, state.origin) {
+			break
+		}
+		result << raw_entries[index]
+		index++
+	}
+	return result
+}
+
+fn history_origins_differ(first ?dom.Origin, second ?dom.Origin) bool {
+	if left := first {
+		if right := second {
+			return !left.is_same_origin(right)
+		}
+	}
+	return false
 }
 
 fn collect_documents_that_will_unload(entries []&SessionHistoryEntry, active &SessionHistoryEntry, target &SessionHistoryEntry) []&dom.Document {
@@ -299,11 +420,14 @@ fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check
 	}
 	active := traversable.active_session_history_entry_ or { target }
 	if check_for_cancellation {
-		documents := collect_documents_that_will_unload(traversable.session_history_entries_,
-			active, target)
+		documents := collect_documents_that_will_unload(traversable.session_history_entries_, active, target)
 		match traversable.check_if_unloading_is_canceled(documents) {
-			.canceled_by_before_unload { return .canceled_by_before_unload }
-			.canceled_by_navigate { return .canceled_by_navigate }
+			.canceled_by_before_unload {
+				return .canceled_by_before_unload
+			}
+			.canceled_by_navigate {
+				return .canceled_by_navigate
+			}
 			.continue_ {}
 		}
 	}
@@ -337,8 +461,7 @@ pub fn (mut traversable TraversableNavigable) apply_the_traverse_history_step(st
 }
 
 pub fn (mut traversable TraversableNavigable) apply_the_reload_history_step(user_involvement UserNavigationInvolvement) HistoryStepResult {
-	return traversable.apply_the_history_step(traversable.current_session_history_step_, true,
-		user_involvement, .reload)
+	return traversable.apply_the_history_step(traversable.current_session_history_step_, true, user_involvement, .reload)
 }
 
 pub fn (mut traversable TraversableNavigable) apply_the_push_or_replace_history_step(step int, history_handling HistoryHandlingBehavior, user_involvement UserNavigationInvolvement, synchronous_navigation SynchronousNavigation) HistoryStepResult {
@@ -352,8 +475,7 @@ pub fn (mut traversable TraversableNavigable) apply_the_push_or_replace_history_
 }
 
 pub fn (mut traversable TraversableNavigable) update_for_navigable_creation_or_destruction() HistoryStepResult {
-	return traversable.apply_the_history_step(traversable.current_session_history_step_, false,
-		.none_, .traverse)
+	return traversable.apply_the_history_step(traversable.current_session_history_step_, false, .none_, .traverse)
 }
 
 fn clear_forward_in_entries(entries []&SessionHistoryEntry, current_step int) []&SessionHistoryEntry {
@@ -368,7 +490,7 @@ fn clear_forward_in_entries(entries []&SessionHistoryEntry, current_step int) []
 			mut nested_histories := []NestedHistory{cap: state.nested_histories.len}
 			for nested in state.nested_histories {
 				nested_histories << NestedHistory{
-					id:      nested.id
+					id: nested.id
 					entries: clear_forward_in_entries(nested.entries, current_step)
 				}
 			}
@@ -380,8 +502,7 @@ fn clear_forward_in_entries(entries []&SessionHistoryEntry, current_step int) []
 }
 
 pub fn (mut traversable TraversableNavigable) clear_the_forward_session_history() {
-	traversable.session_history_entries_ = clear_forward_in_entries(traversable.session_history_entries_,
-		traversable.current_session_history_step_)
+	traversable.session_history_entries_ = clear_forward_in_entries(traversable.session_history_entries_, traversable.current_session_history_step_)
 }
 
 pub fn (traversable &TraversableNavigable) can_go_forward() bool {
@@ -436,8 +557,12 @@ pub fn (mut traversable TraversableNavigable) definitely_close_top_level_travers
 }
 
 pub fn (mut traversable TraversableNavigable) destroy_top_level_traversable() {
+	if traversable.has_been_destroyed_ {
+		return
+	}
 	traversable.has_been_destroyed_ = true
 	traversable.active_document_ = none
+	html_user_agent_top_level_traversables = html_user_agent_top_level_traversables.filter(voidptr(it) != voidptr(&traversable))
 }
 
 pub fn (traversable &TraversableNavigable) has_been_destroyed() bool {
@@ -501,6 +626,19 @@ pub fn (mut traversable TraversableNavigable) append_session_history_entry(entry
 	traversable.session_history_entries_ << entry
 }
 
+fn deactivate_a_document_for_cross_document_navigation(displayed_document &dom.Document, user_navigation_involvement ?UserNavigationInvolvement, target_entry &SessionHistoryEntry, after_potential_unloads fn()) {
+	_ = user_navigation_involvement
+	if host := displayed_document.navigable() {
+		if model := navigable_model_for_host(host) {
+			mut mutable_model := unsafe { &NavigableModel(model) }
+			mutable_model.set_ongoing_navigation(NavigableOngoingNavigation{})
+		}
+	}
+	mut mutable_document := unsafe { &dom.Document(displayed_document) }
+	mutable_document.unload_a_document_and_its_descendants(target_entry.document())
+	after_potential_unloads()
+}
+
 pub fn finalize_a_same_document_navigation(mut traversable TraversableNavigable, target_entry &SessionHistoryEntry, entry_to_replace ?&SessionHistoryEntry, history_handling HistoryHandlingBehavior, user_involvement UserNavigationInvolvement) {
 	if traversable.has_been_destroyed_ {
 		return
@@ -527,6 +665,5 @@ pub fn finalize_a_same_document_navigation(mut traversable TraversableNavigable,
 		mutable_target.step = target_step
 		traversable.session_history_entries_ << target_entry
 	}
-	_ = traversable.apply_the_push_or_replace_history_step(target_step, history_handling,
-		user_involvement, .yes)
+	_ = traversable.apply_the_push_or_replace_history_step(target_step, history_handling, user_involvement, .yes)
 }

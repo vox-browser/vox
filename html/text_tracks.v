@@ -40,7 +40,6 @@ pub enum TextTrackReadinessState {
 }
 
 // --- TextTrack (HTML/TextTrack.h) ---
-
 @[heap]
 pub struct TextTrack {
 	dom.EventTarget
@@ -49,16 +48,17 @@ mut:
 	label_           string
 	language_        string
 	id_              string
-	mode_            TextTrackMode           = .disabled
+	mode_            TextTrackMode = .disabled
 	readiness_state_ TextTrackReadinessState = .not_loaded
 	observers_       []&TextTrackObserver
 	cues_            &TextTrackCueList = unsafe { nil }
+	media_element_   ?&HTMLMediaElement
 }
 
 pub fn TextTrack.create() &TextTrack {
 	return &TextTrack{
 		EventTarget: dom.EventTarget{}
-		cues_:       &TextTrackCueList{
+		cues_: &TextTrackCueList{
 			EventTarget: dom.EventTarget{}
 		}
 	}
@@ -149,6 +149,14 @@ pub fn (mut t TextTrack) add_cue(mut cue TextTrackCue) {
 	t.cues_.add_cue(cue)
 }
 
+pub fn (mut t TextTrack) set_media_element(media_element &HTMLMediaElement) {
+	t.media_element_ = media_element
+}
+
+fn (t &TextTrack) media_element() ?&HTMLMediaElement {
+	return t.media_element_
+}
+
 // https://html.spec.whatwg.org/multipage/media.html#attr-track-kind
 pub fn text_track_kind_from_string(value string) TextTrackKind {
 	if value.len == 0 || value.to_lower() == 'subtitles' {
@@ -170,8 +178,7 @@ pub fn text_track_kind_from_string(value string) TextTrackKind {
 }
 
 // --- TextTrackObserver (HTML/TextTrackObserver.h) ---
-
-pub type TrackReadinessObserver = fn (TextTrackReadinessState)
+pub type TrackReadinessObserver = fn(TextTrackReadinessState)
 
 @[heap]
 pub struct TextTrackObserver {
@@ -203,7 +210,6 @@ pub fn (mut o TextTrackObserver) finalize() {
 }
 
 // --- TextTrackCue (HTML/TextTrackCue.h) ---
-
 @[heap]
 pub struct TextTrackCue {
 	dom.EventTarget
@@ -223,8 +229,8 @@ pub fn TextTrackCue.create(start_time f64, end_time f64, text string) !&TextTrac
 	return &TextTrackCue{
 		EventTarget: dom.EventTarget{}
 		start_time_: start_time
-		end_time_:   end_time
-		text_:       text
+		end_time_: end_time
+		text_: text
 	}
 }
 
@@ -249,8 +255,7 @@ pub fn (c &TextTrackCue) start_time() f64 {
 pub fn (mut c TextTrackCue) set_start_time(start_time f64) {
 	// On setting, the text track cue start time must be set to the new value, interpreted in seconds;
 	c.start_time_ = start_time
-	// FIXME: if the cue is in a text track's list of cues that is in a media element's list of text
-	//        tracks, and show poster is not set, run the time marches on steps for that media element.
+	c.run_time_marches_on_if_needed()
 }
 
 pub fn (c &TextTrackCue) end_time() f64 {
@@ -265,7 +270,17 @@ pub fn (mut c TextTrackCue) set_end_time(end_time f64) ! {
 	}
 	// Otherwise, the text track cue end time must be set to the new value.
 	c.end_time_ = end_time
-	// FIXME: time marches on steps, as for set_start_time.
+	c.run_time_marches_on_if_needed()
+}
+
+fn (c &TextTrackCue) run_time_marches_on_if_needed() {
+	track := c.track_ or { return }
+	media_element := track.media_element() or { return }
+	if media_element.show_poster() {
+		return
+	}
+	mut mutable_media_element := unsafe { &HTMLMediaElement(media_element) }
+	mutable_media_element.time_marches_on(.other)
 }
 
 pub fn (c &TextTrackCue) pause_on_exit() bool {
@@ -303,7 +318,6 @@ pub fn (mut c TextTrackCue) set_onexit(event_handler ?&dom.CallbackType) {
 }
 
 // --- TextTrackCueList (HTML/TextTrackCueList.h) ---
-
 @[heap]
 pub struct TextTrackCueList {
 	dom.EventTarget
@@ -322,6 +336,14 @@ pub fn (l &TextTrackCueList) item(index int) ?&TextTrackCue {
 		return l.cues_[index]
 	}
 	return none
+}
+
+pub fn (list &TextTrackCueList) internal_get_own_property(property_name dom.JSValue) ?&TextTrackCue {
+	if property_name.kind != .number || property_name.number_data < 0
+		|| property_name.number_data != f64(i64(property_name.number_data)) {
+		return none
+	}
+	return list.item(int(property_name.number_data))
 }
 
 // https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcuelist-length
@@ -345,7 +367,6 @@ pub fn (l &TextTrackCueList) get_cue_by_id(id string) ?&TextTrackCue {
 }
 
 // --- TextTrackList (HTML/TextTrackList.h) ---
-
 @[heap]
 pub struct TextTrackList {
 	dom.EventTarget
@@ -364,6 +385,14 @@ pub fn (l &TextTrackList) item(index int) ?&TextTrack {
 		return l.text_tracks_[index]
 	}
 	return none
+}
+
+pub fn (list &TextTrackList) internal_get_own_property(property_name dom.JSValue) ?&TextTrack {
+	if property_name.kind != .number || property_name.number_data < 0
+		|| property_name.number_data != f64(i64(property_name.number_data)) {
+		return none
+	}
+	return list.item(int(property_name.number_data))
 }
 
 // https://html.spec.whatwg.org/multipage/media.html#dom-texttracklist-length

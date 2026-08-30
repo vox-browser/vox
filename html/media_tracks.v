@@ -9,6 +9,8 @@
 // callbacks.
 module html
 
+import dom
+
 pub struct MediaTrackMetadata {
 pub:
 	identifier            i64
@@ -24,7 +26,8 @@ pub:
 	label                 string
 	language              string
 pub mut:
-	kind string
+	kind           string
+	media_element_ ?&HTMLMediaElement
 }
 
 pub fn MediaTrackBase.create(metadata MediaTrackMetadata) MediaTrackBase {
@@ -35,33 +38,70 @@ pub fn MediaTrackBase.create(metadata MediaTrackMetadata) MediaTrackBase {
 	}
 	return MediaTrackBase{
 		playback_track_handle: metadata.playback_track_handle
-		id:                    metadata.identifier.str()
-		label:                 metadata.name
-		language:              language
+		id: metadata.identifier.str()
+		label: metadata.name
+		language: language
 	}
 }
 
-pub type QueueMediaTrackChangeTask = fn ()
+pub fn (base &MediaTrackBase) media_element() ?&HTMLMediaElement {
+	return base.media_element_
+}
 
-pub type SetAudioTrackEnabled = fn (&AudioTrack, bool)
+pub fn (mut base MediaTrackBase) set_media_element(element ?&HTMLMediaElement) {
+	base.media_element_ = element
+}
 
-pub type SetSelectedVideoTrack = fn (?&VideoTrack)
+pub fn (base &MediaTrackBase) track_in_playback_manager() voidptr {
+	return base.playback_track_handle
+}
+
+pub fn (base &MediaTrackBase) id() string {
+	return base.id
+}
+
+pub fn (base &MediaTrackBase) kind() string {
+	return base.kind
+}
+
+pub fn (mut base MediaTrackBase) set_kind(value string) {
+	base.kind = value
+}
+
+pub fn (base &MediaTrackBase) label() string {
+	return base.label
+}
+
+pub fn (base &MediaTrackBase) language() string {
+	return base.language
+}
+
+pub type QueueMediaTrackChangeTask = fn()
+
+pub type SetAudioTrackEnabled = fn(&AudioTrack, bool)
+
+pub type SetSelectedVideoTrack = fn(?&VideoTrack)
+
+pub enum MediaTrackIterationDecision {
+	continue_
+	break_
+}
 
 @[heap]
 pub struct AudioTrack {
 pub:
-	base                         MediaTrackBase
 	queue_change_task            QueueMediaTrackChangeTask @[required]
-	set_playback_manager_enabled SetAudioTrackEnabled      @[required]
+	set_playback_manager_enabled SetAudioTrackEnabled @[required]
 pub mut:
+	base             MediaTrackBase
 	enabled          bool
 	audio_track_list ?&AudioTrackList
 }
 
 pub fn AudioTrack.create(metadata MediaTrackMetadata, queue_change_task QueueMediaTrackChangeTask, set_playback_manager_enabled SetAudioTrackEnabled) &AudioTrack {
 	return &AudioTrack{
-		base:                         MediaTrackBase.create(metadata)
-		queue_change_task:            queue_change_task
+		base: MediaTrackBase.create(metadata)
+		queue_change_task: queue_change_task
 		set_playback_manager_enabled: set_playback_manager_enabled
 	}
 }
@@ -78,10 +118,47 @@ pub fn (mut track AudioTrack) set_enabled(enabled bool) {
 	track.set_playback_manager_enabled(track, enabled)
 }
 
+pub fn (mut track AudioTrack) set_audio_track_list(list ?&AudioTrackList) {
+	track.audio_track_list = list
+}
+
 @[heap]
 pub struct AudioTrackList {
+	dom.EventTarget
 mut:
 	audio_tracks []&AudioTrack
+}
+
+pub fn (list &AudioTrackList) internal_get_own_property(property_name dom.JSValue) ?&AudioTrack {
+	if property_name.kind != .number || property_name.number_data < 0
+		|| property_name.number_data != f64(i64(property_name.number_data)) {
+		return none
+	}
+	return list.item(u32(property_name.number_data))
+}
+
+pub fn (mut list AudioTrackList) set_onchange(event_handler ?&dom.CallbackType) {
+	list.set_event_handler_attribute('change', event_handler)
+}
+
+pub fn (list &AudioTrackList) onchange() ?&dom.CallbackType {
+	return list.event_handler_attribute('change')
+}
+
+pub fn (mut list AudioTrackList) set_onaddtrack(event_handler ?&dom.CallbackType) {
+	list.set_event_handler_attribute('addtrack', event_handler)
+}
+
+pub fn (list &AudioTrackList) onaddtrack() ?&dom.CallbackType {
+	return list.event_handler_attribute('addtrack')
+}
+
+pub fn (mut list AudioTrackList) set_onremovetrack(event_handler ?&dom.CallbackType) {
+	list.set_event_handler_attribute('removetrack', event_handler)
+}
+
+pub fn (list &AudioTrackList) onremovetrack() ?&dom.CallbackType {
+	return list.event_handler_attribute('removetrack')
 }
 
 pub fn (list &AudioTrackList) length() int {
@@ -132,21 +209,29 @@ pub fn (list &AudioTrackList) tracks() []&AudioTrack {
 	return list.audio_tracks.clone()
 }
 
+pub fn (list &AudioTrackList) for_each_track(callback fn (&AudioTrack) MediaTrackIterationDecision) {
+	for track in list.audio_tracks {
+		if callback(track) == .break_ {
+			break
+		}
+	}
+}
+
 @[heap]
 pub struct VideoTrack {
 pub:
-	base                        MediaTrackBase
 	queue_change_task           QueueMediaTrackChangeTask @[required]
-	set_selected_playback_track SetSelectedVideoTrack     @[required]
+	set_selected_playback_track SetSelectedVideoTrack @[required]
 pub mut:
+	base             MediaTrackBase
 	selected         bool
 	video_track_list ?&VideoTrackList
 }
 
 pub fn VideoTrack.create(metadata MediaTrackMetadata, queue_change_task QueueMediaTrackChangeTask, set_selected_playback_track SetSelectedVideoTrack) &VideoTrack {
 	return &VideoTrack{
-		base:                        MediaTrackBase.create(metadata)
-		queue_change_task:           queue_change_task
+		base: MediaTrackBase.create(metadata)
+		queue_change_task: queue_change_task
 		set_selected_playback_track: set_selected_playback_track
 	}
 }
@@ -166,8 +251,7 @@ pub fn (mut track VideoTrack) set_selected(selected bool) {
 
 		previously_unselected_track_is_selected := !track.selected && selected
 		selected_track_was_unselected_without_another_selection := track.selected && !selected
-		if previously_unselected_track_is_selected
-			|| selected_track_was_unselected_without_another_selection {
+		if previously_unselected_track_is_selected || selected_track_was_unselected_without_another_selection {
 			track.queue_change_task()
 		}
 	}
@@ -180,14 +264,63 @@ pub fn (mut track VideoTrack) set_selected(selected bool) {
 	}
 }
 
+pub fn (mut track VideoTrack) set_video_track_list(list ?&VideoTrackList) {
+	track.video_track_list = list
+}
+
 @[heap]
 pub struct VideoTrackList {
+	dom.EventTarget
 mut:
 	video_tracks []&VideoTrack
 }
 
+pub fn (list &VideoTrackList) internal_get_own_property(property_name dom.JSValue) ?&VideoTrack {
+	if property_name.kind != .number || property_name.number_data < 0
+		|| property_name.number_data != f64(i64(property_name.number_data)) {
+		return none
+	}
+	return list.item(u32(property_name.number_data))
+}
+
+pub fn (mut list VideoTrackList) set_onchange(event_handler ?&dom.CallbackType) {
+	list.set_event_handler_attribute('change', event_handler)
+}
+
+pub fn (list &VideoTrackList) onchange() ?&dom.CallbackType {
+	return list.event_handler_attribute('change')
+}
+
+pub fn (mut list VideoTrackList) set_onaddtrack(event_handler ?&dom.CallbackType) {
+	list.set_event_handler_attribute('addtrack', event_handler)
+}
+
+pub fn (list &VideoTrackList) onaddtrack() ?&dom.CallbackType {
+	return list.event_handler_attribute('addtrack')
+}
+
+pub fn (mut list VideoTrackList) set_onremovetrack(event_handler ?&dom.CallbackType) {
+	list.set_event_handler_attribute('removetrack', event_handler)
+}
+
+pub fn (list &VideoTrackList) onremovetrack() ?&dom.CallbackType {
+	return list.event_handler_attribute('removetrack')
+}
+
 pub fn (list &VideoTrackList) length() int {
 	return list.video_tracks.len
+}
+
+pub fn (list &VideoTrackList) video_tracks() []&VideoTrack {
+	return list.video_tracks.clone()
+}
+
+pub fn (list &VideoTrackList) for_each_track(callback fn (&VideoTrack) MediaTrackIterationDecision) {
+	for track in list.video_tracks {
+		if callback(track) == .break_ {
+			break
+		}
+	}
 }
 
 pub fn (list &VideoTrackList) item(index u32) ?&VideoTrack {

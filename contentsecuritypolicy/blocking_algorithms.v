@@ -9,7 +9,7 @@ import url
 
 pub fn does_resource_hint_request_violate_policy(request &Request, policy &Policy) ?Directive {
 	default_directive := policy.get_directive_by_name(default_src) or { return none }
-	for directive in policy.directives {
+	for directive in policy.directives() {
 		if directive.pre_request_check(request, policy) == .allowed {
 			return none
 		}
@@ -22,7 +22,7 @@ pub fn does_request_violate_policy(request &Request, policy &Policy) ?Directive 
 		return does_resource_hint_request_violate_policy(request, policy)
 	}
 	mut violates := ?Directive(none)
-	for directive in policy.directives {
+	for directive in policy.directives() {
 		if directive.pre_request_check(request, policy) == .blocked {
 			violates = directive
 		}
@@ -35,7 +35,7 @@ pub fn report_content_security_policy_violations_for_request(mut global GlobalCo
 		return
 	}
 	for policy in request.policy_list.policies {
-		if policy.disposition == .enforce {
+		if policy.disposition() == .enforce {
 			continue
 		}
 		if does_request_violate_policy(request, policy) != none {
@@ -51,7 +51,7 @@ pub fn should_request_be_blocked_by_content_security_policy(mut global GlobalCon
 	}
 	mut result := Result.allowed
 	for policy in request.policy_list.policies {
-		if policy.disposition == .report {
+		if policy.disposition() == .report {
 			continue
 		}
 		if does_request_violate_policy(request, policy) != none {
@@ -90,12 +90,12 @@ pub fn should_response_to_request_be_blocked_by_content_security_policy(mut glob
 	}
 	mut result := Result.allowed
 	for policy in request.policy_list.policies {
-		for directive in policy.directives {
+		for directive in policy.directives() {
 			if directive.post_request_check(request, response, policy) == .blocked {
 				violation := create_a_violation_object_for_request_and_policy(global, request,
 					policy)
 				violation.report_a_violation(mut global)
-				if policy.disposition == .enforce {
+				if policy.disposition() == .enforce {
 					result = .blocked
 				}
 			}
@@ -110,13 +110,13 @@ pub fn should_navigation_request_of_type_be_blocked_by_content_security_policy(m
 	}
 	mut result := Result.allowed
 	for policy in request.policy_list.policies {
-		for directive in policy.directives {
+		for directive in policy.directives() {
 			if directive.pre_navigation_check(request, navigation_type, policy) == .blocked {
 				mut violation := create_a_violation_object_for_global_policy_and_directive(global,
-					policy, directive.name)
-				violation.resource = ViolationResource(request.url)
+					policy, directive.name())
+				violation.set_resource(ViolationResource(request.url))
 				violation.report_a_violation(mut global)
-				if policy.disposition == .enforce {
+				if policy.disposition() == .enforce {
 					result = .blocked
 				}
 			}
@@ -124,14 +124,14 @@ pub fn should_navigation_request_of_type_be_blocked_by_content_security_policy(m
 	}
 	if result == .allowed && request.current_url.scheme == 'javascript' {
 		for policy in request.policy_list.policies {
-			for directive in policy.directives {
+			for directive in policy.directives() {
 				if directive.inline_check(none, .navigation, policy,
 					request.current_url.serialize(false)) == .blocked {
 					mut violation := create_a_violation_object_for_global_policy_and_directive(global,
 						policy, get_the_effective_directive_for_inline_checks(.navigation))
-					violation.resource = ViolationResource(request.url)
+					violation.set_resource(ViolationResource(request.url))
 					violation.report_a_violation(mut global)
-					if policy.disposition == .enforce {
+					if policy.disposition() == .enforce {
 						result = .blocked
 					}
 				}
@@ -145,17 +145,17 @@ pub fn should_navigation_response_to_navigation_request_of_type_in_target_be_blo
 	navigation_request := request or { return .allowed }
 	mut result := Result.allowed
 	for policy in response_csp_list.policies {
-		for directive in policy.directives {
+		for directive in policy.directives() {
 			if directive.navigation_response_check(response, target, .response, policy) == .blocked {
 				mut violation := create_a_violation_object_for_global_policy_and_directive(global,
-					policy, directive.name)
-				violation.resource = if response_url := response.url {
+					policy, directive.name())
+				violation.set_resource(if response_url := response.url {
 					ViolationResource(response_url)
 				} else {
 					ViolationResource(EmptyResource{})
-				}
+				})
 				violation.report_a_violation(mut global)
-				if policy.disposition == .enforce {
+				if policy.disposition() == .enforce {
 					result = .blocked
 				}
 			}
@@ -163,13 +163,13 @@ pub fn should_navigation_response_to_navigation_request_of_type_in_target_be_blo
 	}
 	if !isnil(navigation_request.policy_list) {
 		for policy in navigation_request.policy_list.policies {
-			for directive in policy.directives {
+			for directive in policy.directives() {
 				if directive.navigation_response_check(response, target, .source, policy) == .blocked {
 					mut violation := create_a_violation_object_for_global_policy_and_directive(global,
-						policy, directive.name)
-					violation.resource = ViolationResource(navigation_request.url)
+						policy, directive.name())
+					violation.set_resource(ViolationResource(navigation_request.url))
 					violation.report_a_violation(mut global)
-					if policy.disposition == .enforce {
+					if policy.disposition() == .enforce {
 						result = .blocked
 					}
 				}
@@ -186,18 +186,18 @@ pub fn should_elements_inline_type_behavior_be_blocked_by_content_security_polic
 	}
 	mut result := Result.allowed
 	for policy in global.policy_list.policies {
-		for directive in policy.directives {
+		for directive in policy.directives() {
 			if directive.inline_check(element, type_, policy, source) == .blocked {
 				mut violation := create_a_violation_object_for_global_policy_and_directive(global,
 					policy, get_the_effective_directive_for_inline_checks(type_))
-				violation.resource = ViolationResource(ViolationResourceKind.inline)
-				violation.element = element
-				if contains_ascii_case_insensitive(directive.value, report_sample) {
+				violation.set_resource(ViolationResource(ViolationResourceKind.inline))
+				violation.set_element(element)
+				if contains_ascii_case_insensitive(directive.value(), report_sample) {
 					runes := source.runes()
-					violation.sample = runes[..if runes.len < 40 { runes.len } else { 40 }].string()
+					violation.set_sample(runes[..if runes.len < 40 { runes.len } else { 40 }].string())
 				}
 				violation.report_a_violation(mut global)
-				if policy.disposition == .enforce {
+				if policy.disposition() == .enforce {
 					result = .blocked
 				}
 			}
@@ -208,10 +208,10 @@ pub fn should_elements_inline_type_behavior_be_blocked_by_content_security_polic
 
 fn script_source_list(policy &Policy) ?[]string {
 	if directive := policy.get_directive_by_name(script_src) {
-		return directive.value
+		return directive.value()
 	}
 	if directive := policy.get_directive_by_name(default_src) {
-		return directive.value
+		return directive.value()
 	}
 	return none
 }
@@ -259,13 +259,13 @@ pub fn ensure_csp_does_not_block_string_compilation(mut global GlobalContext, in
 			if !contains_ascii_case_insensitive(source_list, unsafe_eval) {
 				mut violation := create_a_violation_object_for_global_policy_and_directive(global,
 					policy, script_src)
-				violation.resource = ViolationResource(ViolationResourceKind.eval)
+				violation.set_resource(ViolationResource(ViolationResourceKind.eval))
 				if contains_ascii_case_insensitive(source_list, report_sample) {
 					runes := source_string.runes()
-					violation.sample = runes[..if runes.len < 40 { runes.len } else { 40 }].string()
+					violation.set_sample(runes[..if runes.len < 40 { runes.len } else { 40 }].string())
 				}
 				violation.report_a_violation(mut global)
-				if policy.disposition == .enforce {
+				if policy.disposition() == .enforce {
 					blocked = true
 				}
 			}
@@ -287,9 +287,9 @@ pub fn ensure_csp_does_not_block_wasm_byte_compilation(mut global GlobalContext)
 				&& !contains_ascii_case_insensitive(source_list, wasm_unsafe_eval) {
 				mut violation := create_a_violation_object_for_global_policy_and_directive(global,
 					policy, script_src)
-				violation.resource = ViolationResource(ViolationResourceKind.wasm_eval)
+				violation.set_resource(ViolationResource(ViolationResourceKind.wasm_eval))
 				violation.report_a_violation(mut global)
-				if policy.disposition == .enforce {
+				if policy.disposition() == .enforce {
 					blocked = true
 				}
 			}
@@ -306,13 +306,13 @@ pub fn is_base_allowed_for_document(mut global GlobalContext, base url.URL) Resu
 	}
 	for policy in global.policy_list.policies {
 		if directive := policy.get_directive_by_name(base_uri) {
-			if does_url_match_source_list_in_origin_with_redirect_count(base, directive.value,
+			if does_url_match_source_list_in_origin_with_redirect_count(base, directive.value(),
 				policy.self_origin_value(), 0) == .does_not_match {
 				mut violation := create_a_violation_object_for_global_policy_and_directive(global,
 					policy, base_uri)
-				violation.resource = ViolationResource(ViolationResourceKind.inline)
+				violation.set_resource(ViolationResource(ViolationResourceKind.inline))
 				violation.report_a_violation(mut global)
-				if policy.disposition == .enforce {
+				if policy.disposition() == .enforce {
 					return .blocked
 				}
 			}

@@ -39,6 +39,21 @@ fn test_newest_worker_priority_and_staleness_are_exact() {
 	assert registration.is_stale(86500.01)
 }
 
+fn test_registration_exact_static_map_entry_points() {
+	mut store := RegistrationStore.create()
+	registration := Registration.set(mut store, 'key', 'https://example.test/app/#fragment',
+		.imports)
+	assert voidptr(Registration.get(store, 'key', 'https://example.test/app/#other') or {
+		panic('missing exact registration')
+	}) == voidptr(registration)
+	assert voidptr(Registration.match_(store, 'key', 'https://example.test/app/page') or {
+		panic('missing exact registration match')
+	}) == voidptr(registration)
+	assert !registration.is_unregistered(store)
+	Registration.remove(mut store, 'key', 'https://example.test/app/')
+	assert registration.is_unregistered(store)
+}
+
 fn test_platform_objects_snapshot_records_and_handler_identity() {
 	mut record := &ServiceWorkerRecord{
 		script_url: 'https://example.test/sw.js'
@@ -55,7 +70,14 @@ fn test_platform_objects_snapshot_records_and_handler_identity() {
 	mut registration := store.set('key', 'https://example.test/', .none)
 	registration.set_active_worker(record)
 	object := ServiceWorkerRegistration.create(registration)
+	assert voidptr(object.registration()) == voidptr(registration)
 	assert object.scope() == 'https://example.test/'
 	assert object.update_via_cache() == .none
 	assert (object.active() or { panic('missing') }).script_url() == record.script_url
+	mut object_mut := object
+	replacement := ServiceWorker.create(record)
+	object_mut.set_installing(replacement)
+	object_mut.set_waiting(replacement)
+	object_mut.set_active(replacement)
+	assert voidptr(object.installing() or { panic('missing') }) == voidptr(replacement)
 }

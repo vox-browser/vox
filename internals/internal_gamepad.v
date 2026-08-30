@@ -81,6 +81,26 @@ pub fn (internal &InternalGamepad) get_received_rumble_trigger_effects() []gamep
 	return internal.device.received_trigger_rumble.clone()
 }
 
+pub fn rumble(mut internal InternalGamepad, low_frequency_rumble u16, high_frequency_rumble u16) bool {
+	internal.received_rumble(low_frequency_rumble, high_frequency_rumble)
+	return true
+}
+
+pub fn rumble_triggers(mut internal InternalGamepad, left_rumble u16, right_rumble u16) bool {
+	internal.received_rumble_triggers(left_rumble, right_rumble)
+	return true
+}
+
+pub fn (mut internal InternalGamepad) received_rumble(low_frequency_rumble u16, high_frequency_rumble u16) {
+	mut device := unsafe { &gamepad.Device(internal.device) }
+	device.issue_dual_rumble(low_frequency_rumble, high_frequency_rumble)
+}
+
+pub fn (mut internal InternalGamepad) received_rumble_triggers(left_rumble u16, right_rumble u16) {
+	mut device := unsafe { &gamepad.Device(internal.device) }
+	device.issue_trigger_rumble(left_rumble, right_rumble)
+}
+
 pub fn (mut internal InternalGamepad) disconnect() {
 	if internal.disconnected_ { return }
 	mut device := unsafe { &gamepad.Device(internal.device) }

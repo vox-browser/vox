@@ -1,5 +1,7 @@
 module html
 
+import dom
+
 fn density_of(source ImageSource) f64 {
 	return (source.descriptor as PixelDensityDescriptorValue).value
 }
@@ -32,4 +34,10 @@ fn test_create_and_select_source_set() {
 	widths.normalize_source_densities(100.0)
 	assert density_of(widths.sources[0]) == 1.0
 	assert density_of(widths.sources[1]) == 2.0
+
+	document := dom.Document.create(dom.url_about_blank())
+	element := document.create_element('img')!
+	created := SourceSet.create(element, 'fallback.png', 'wide.png 200w', '100px', none)
+	assert created.source_size == 100
+	assert density_of(created.sources[0]) == 2
 }

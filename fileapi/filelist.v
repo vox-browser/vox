@@ -38,6 +38,10 @@ pub fn (list &FileList) item(index int) ?&File {
 	return list.files[index]
 }
 
+pub fn (list &FileList) item_value(index int) ?&File {
+	return list.item(index)
+}
+
 pub fn (list &FileList) files() []&File {
 	return list.files.clone()
 }

@@ -204,6 +204,14 @@ pub:
 	sample   string
 }
 
+// The V embedding passes the request global's policy factory and serialized
+// request URL explicitly instead of retaining JS/Fetch graph objects here.
+pub struct RequireTrustedTypesForDirective {}
+
+pub fn (directive &RequireTrustedTypesForDirective) pre_navigation_check(mut factory TrustedTypePolicyFactory, url string) !string {
+	return factory.pre_navigation_check(url)
+}
+
 @[heap]
 pub struct TrustedTypePolicyFactory {
 pub mut:
@@ -225,7 +233,13 @@ pub fn (factory &TrustedTypePolicyFactory) default_policy() ?&TrustedTypePolicy 
 }
 
 pub fn (mut factory TrustedTypePolicyFactory) create_policy(name string, options TrustedTypePolicyOptions) !&TrustedTypePolicy {
-	if factory.policy_creation_blocked(name) {
+	return factory.create_a_trusted_type_policy(name, options)
+}
+
+// https://w3c.github.io/trusted-types/dist/spec/#create-trusted-type-policy-algorithm
+pub fn (mut factory TrustedTypePolicyFactory) create_a_trusted_type_policy(name string, options TrustedTypePolicyOptions) !&TrustedTypePolicy {
+	if factory.should_trusted_type_policy_be_blocked_by_content_security_policy(name,
+		factory.created_policy_names.clone()) {
 		return error('TypeError: Content Security Policy blocked the creation of the policy ${name}')
 	}
 	if name == 'default' && factory.default_policy_ != none {
@@ -239,13 +253,14 @@ pub fn (mut factory TrustedTypePolicyFactory) create_policy(name string, options
 	return policy
 }
 
-fn (mut factory TrustedTypePolicyFactory) policy_creation_blocked(name string) bool {
+// https://www.w3.org/TR/trusted-types/#should-block-create-policy
+pub fn (mut factory TrustedTypePolicyFactory) should_trusted_type_policy_be_blocked_by_content_security_policy(name string, created_policy_names []string) bool {
 	mut blocked := false
 	for policy in factory.csp_policies {
 		values := policy.trusted_types or { continue }
 		lower := values.map(it.to_lower())
 		mut violation := lower == ["'none'"]
-		if name in factory.created_policy_names && "'allow-duplicates'" !in lower {
+		if name in created_policy_names && "'allow-duplicates'" !in lower {
 			violation = true
 		}
 		if name !in values && '*' !in values {
@@ -313,6 +328,12 @@ pub fn (factory &TrustedTypePolicyFactory) does_sink_require_trusted_types(sink_
 }
 
 pub fn (mut factory TrustedTypePolicyFactory) should_sink_type_mismatch_violation_be_blocked(sink InjectionSink, sink_group string, source string) bool {
+	return should_sink_type_mismatch_violation_be_blocked_by_content_security_policy(mut factory,
+		sink, sink_group, source)
+}
+
+// https://w3c.github.io/trusted-types/dist/spec/#should-block-sink-type-mismatch
+pub fn should_sink_type_mismatch_violation_be_blocked_by_content_security_policy(mut factory TrustedTypePolicyFactory, sink InjectionSink, sink_group string, source string) bool {
 	mut sample := source
 	if sink == .function_ {
 		for prefix in ['function anonymous', 'async function anonymous', 'function* anonymous',

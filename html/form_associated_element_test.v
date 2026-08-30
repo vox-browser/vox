@@ -49,6 +49,8 @@ fn test_form_associated_text_control_selection_and_utf16_ranges() {
 	input := document.create_element_ns(form_associated_html_namespace, 'input')!
 	mut control := FormAssociatedElement.create(input)
 	mut text := FormAssociatedTextControlElement.create(control, 'A😀BC')
+	text_node := dom.Text.new(document, 'A😀BC')
+	text.text_node_ = text_node
 	text.set_selection_range(1, 3, 'forward')!
 	assert text.selection_start_binding()? == 1
 	assert text.selection_end_binding()? == 3
@@ -57,9 +59,9 @@ fn test_form_associated_text_control_selection_and_utf16_ranges() {
 	assert text.relevant_value() == 'AxyBC'
 	assert text.selection_start() == 1
 	assert text.selection_end() == 3
-	text.handle_insert('Z')!
+	text.handle_insert('insertText', 'Z')!
 	assert text.relevant_value() == 'AZBC'
 	assert text.selection_start() == 2
-	text.handle_delete(true)!
+	text.handle_delete('deleteContentBackward')!
 	assert text.relevant_value() == 'ABC'
 }

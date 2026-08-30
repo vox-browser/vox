@@ -23,6 +23,11 @@ fn radio_node_list_radio_element(node &dom.Node) ?&dom.Element {
 	return element
 }
 
+fn radio_button(node &dom.Node) ?&dom.HTMLInputElement {
+	element := radio_node_list_radio_element(node) or { return none }
+	return unsafe { &dom.HTMLInputElement(element) }
+}
+
 pub fn html_input_element_checked(element &dom.HTMLInputElement) bool {
 	if element.checkedness_initialized_ {
 		return element.checkedness_
@@ -52,7 +57,7 @@ mut:
 	list &dom.NodeList
 }
 
-pub fn RadioNodeList.create(root &dom.Node, scope dom.LiveNodeListScope, filter fn (&dom.Node) bool) &RadioNodeList {
+pub fn RadioNodeList.create(root &dom.Node, scope dom.LiveNodeListScope, filter fn(&dom.Node) bool) &RadioNodeList {
 	return &RadioNodeList{
 		list: dom.LiveNodeList.create(root, scope, filter)
 	}
@@ -126,7 +131,7 @@ mut:
 	collection &dom.HTMLCollection
 }
 
-pub fn HTMLFormControlsCollection.create(root &dom.ParentNode, scope dom.HTMLCollectionScope, filter fn (&dom.Element) bool) &HTMLFormControlsCollection {
+pub fn HTMLFormControlsCollection.create(root &dom.ParentNode, scope dom.HTMLCollectionScope, filter fn(&dom.Element) bool) &HTMLFormControlsCollection {
 	return &HTMLFormControlsCollection{
 		collection: dom.HTMLCollection.create(root, scope, filter, form_collection_never_sort)
 	}
@@ -167,10 +172,12 @@ pub fn (collection &HTMLFormControlsCollection) named_item_or_radio_node_list(na
 	base_filter := collection.collection.filter
 	return HTMLFormControlsCollectionRadioNodeList{
 		list: RadioNodeList.create(root, scope, fn [name, base_filter] (node &dom.Node) bool {
-			element := node.as_element() or { return false }
-			return base_filter(element) && (element.id() or { '' } == name || element.get_attribute('name') or {
-				''
-			} == name)
+			element := node.as_element() or { return false }return base_filter(element) && (element.id() or { '' } == name || element.get_attribute('name') or {
+				''} == name)
 		})
 	}
+}
+
+pub fn (collection &HTMLFormControlsCollection) named_item_value(name string) HTMLFormControlsNamedItem {
+	return collection.named_item_or_radio_node_list(name)
 }

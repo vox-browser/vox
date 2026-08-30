@@ -70,7 +70,7 @@ pub fn PopoverTargetAttributes.get_the_popover_target_element(node &dom.Node) ?&
 		popover = find_html_element_by_id(node.root(), target_id)
 	}
 	popover_element := popover or { return none }
-	if popover_element.popover() == none {
+	if html_element_popover(popover_element) == none {
 		return none
 	}
 	return popover_element
@@ -79,22 +79,21 @@ pub fn PopoverTargetAttributes.get_the_popover_target_element(node &dom.Node) ?&
 pub fn PopoverTargetAttributes.popover_target_activation_behaviour(node &dom.Node, event_target &dom.Node) {
 	popover := PopoverTargetAttributes.get_the_popover_target_element(node) or { return }
 	popover_node := unsafe { &dom.Element(popover) }.as_node()
-	if event_target.is_shadow_including_inclusive_descendant_of(popover_node)
-		&& popover_node.is_shadow_including_descendant_of(node) {
+	if event_target.is_shadow_including_inclusive_descendant_of(popover_node) && popover_node.is_shadow_including_descendant_of(node) {
 		return
 	}
 	element := node.as_element() or { return }
-	action := ascii_lowercase_string(element.get_attribute('popovertargetaction') or { 'toggle' })
+	action := ascii_lowercase_string(element.get_attribute_value('popovertargetaction'))
 	if action == 'show' && popover.popover_visibility_state() == .showing {
 		return
 	}
 	if action == 'hide' && popover.popover_visibility_state() == .hidden {
 		return
 	}
-	mut mutable_popover := unsafe { &dom.HTMLElement(popover) }
 	if popover.popover_visibility_state() == .showing {
-		mutable_popover.hide_popover()
-	} else {
-		mutable_popover.show_popover() or {}
+		html_element_hide_popover(popover, .yes, .yes, .no, .no, unsafe { &dom.HTMLElement(element) }) or {}
+	} else if html_element_check_popover_validity(popover, .no, .no, none, .no) or {
+		false} {
+		html_element_show_popover(popover, .no, unsafe { &dom.HTMLElement(element) }) or {}
 	}
 }

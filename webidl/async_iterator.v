@@ -44,10 +44,22 @@ pub fn (mut iterator AsyncIterator) next() &Promise {
 	return create_resolved_promise(iterator_result(result, false))
 }
 
+pub fn (mut iterator AsyncIterator) iterator_next_impl() &Promise {
+	return iterator.next()
+}
+
 pub fn (mut iterator AsyncIterator) return_(value Value) &Promise {
 	iterator.is_finished = true
 	iterator.next_index = iterator.values.len
 	return create_resolved_promise(iterator_result(value, true))
+}
+
+pub fn (mut iterator AsyncIterator) iterator_return_impl(value Value) &Promise {
+	return iterator.return_(value)
+}
+
+pub fn (mut iterator AsyncIterator) iterator_return(value Value) &Promise {
+	return iterator.return_(value)
 }
 
 pub fn (mut iterator AsyncIterator) throw_(reason Value) &Promise {

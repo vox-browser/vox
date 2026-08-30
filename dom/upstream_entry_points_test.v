@@ -1,0 +1,121 @@
+module dom
+
+fn test_upstream_node_type_predicates_preserve_dynamic_interface_identity() {
+	document := Document.create(url_about_blank())
+	anchor := document.create_element_ns(namespace_html_uri, 'a') or { panic(err) }
+	anchor_node := anchor.as_node()
+	assert anchor_node.is_dom_node()
+	assert anchor_node.is_html_element()
+	assert anchor_node.is_html_anchor_element()
+	assert !anchor_node.is_html_area_element()
+	assert !anchor_node.is_svg_element()
+
+	foreign_object := document.create_element_ns(namespace_svg_uri, 'foreignObject') or {
+		panic(err)
+	}
+	foreign_object_node := foreign_object.as_node()
+	assert foreign_object_node.is_svg_element()
+	assert foreign_object_node.is_svg_graphics_element()
+	assert foreign_object_node.is_svg_foreign_object_element()
+	assert foreign_object_node.requires_svg_container()
+
+	svg := document.create_element_ns(namespace_svg_uri, 'svg') or { panic(err) }
+	assert svg.as_node().is_svg_container()
+	assert !svg.as_node().requires_svg_container()
+}
+
+fn test_upstream_slottable_and_tree_mixin_state() {
+	document := Document.create(url_about_blank())
+	mut parent := document.create_element_ns(namespace_html_uri, 'div') or { panic(err) }
+	mut first := document.create_element_ns(namespace_html_uri, 'span') or { panic(err) }
+	mut text := document.create_text_node('between')
+	mut last := document.create_element_ns(namespace_html_uri, 'strong') or { panic(err) }
+	mut parent_node := parent.as_node()
+	parent_node.append_child(first.as_node()) or { panic(err) }
+	parent_node.append_child(text.as_node()) or { panic(err) }
+	parent_node.append_child(last.as_node()) or { panic(err) }
+
+	assert text.as_node().previous_element_sibling() or { panic('previous element') } == first
+	assert text.as_node().next_element_sibling() or { panic('next element') } == last
+	assert last.as_node().previous_element_in_pre_order() or { panic('previous in preorder') } == first
+	assert first.as_node().next_element_in_pre_order() or { panic('next in preorder') } == last
+
+	first.set_attribute_value('slot', 'leading')
+	assert first.as_node().slottable_name() == 'leading'
+	first.remove_attribute('slot')
+	assert first.as_node().slottable_name() == ''
+}
+
+fn test_upstream_inline_state_accessors() {
+	document := Document.create(url_about_blank())
+	mut node := Node.new(document, .text_node)
+	mut range_ := Range{
+		start_container_: node
+		end_container_: node
+	}
+	range_.set_start_offset(3)
+	range_.increase_start_offset(4)
+	range_.decrease_start_offset(2)
+	range_.set_end_offset(9)
+	range_.decrease_end_offset(1)
+	assert range_.start_offset_ == 5
+	assert range_.end_offset_ == 8
+
+	record := &MutationRecord{
+		target: node
+		added_nodes: [node]
+		attribute_name: 'class'
+		old_value: 'before'
+	}
+	assert record.mutation_record_target() or { panic('missing target') } == node
+	assert record.mutation_record_added_nodes() == [node]
+	assert record.mutation_record_attribute_name() or { '' } == 'class'
+	assert record.mutation_record_old_value() or { '' } == 'before'
+
+	mut element := document.create_element_ns(namespace_html_uri, 'div') or { panic(err) }
+	element.set_affected_by_direct_sibling_combinator(true)
+	element.set_sibling_invalidation_distance(7)
+	assert element.element_affected_by_direct_sibling_combinator()
+	assert element.element_sibling_invalidation_distance() == 7
+}
+
+fn test_upstream_document_and_named_element_algorithms() {
+	mut document := Document.create(url_about_blank())
+	document.set_ready_for_post_load_tasks(true)
+	document.set_ready_to_run_scripts()
+	document.set_parser_cannot_change_the_mode(true)
+	document.set_needs_accumulated_visual_contexts_update(true)
+	assert document.document_ready_for_post_load_tasks()
+	assert document.document_ready_to_run_scripts()
+	assert document.document_parser_cannot_change_the_mode()
+	assert document.document_needs_accumulated_visual_contexts_update()
+
+	mut image := document.create_element_ns(namespace_html_uri, 'img') or { panic(err) }
+	image.set_attribute_value('name', 'hero')
+	image.set_attribute_value('id', 'hero-id')
+	assert is_potentially_named_element(image)
+	assert is_potentially_named_element_by_id(image)
+	document.potentially_named_elements << image
+	assert named_elements_with_name(document, 'hero') == [image]
+	assert named_elements_with_name(document, 'hero-id') == [image]
+
+	mut sheet := CSSStyleSheet{
+		url: 'outer.css'
+		imported_style_sheets: [&CSSStyleSheet{
+			url: 'inner.css'
+		}]
+	}
+	assert find_style_sheet_with_url('outer.css', sheet) or { panic('outer sheet') } == sheet
+	assert (find_style_sheet_with_url('inner.css', sheet) or { panic('inner sheet') }).url == 'inner.css'
+}
+
+fn test_upstream_fullscreen_and_selectionchange_boundaries() {
+	assert request_fullscreen_error_to_string(.unsupported_element) == 'Not supported element'
+	assert request_fullscreen_error_to_string(.element_node_doc_is_not_pending_doc) == "Element's node document is not pending doc"
+
+	mut document := Document.create(url_about_blank())
+	schedule_a_selectionchange_event(mut document, document)
+	assert document.has_scheduled_selectionchange_event()
+	fire_a_selectionchange_event(mut document, document)
+	assert !document.has_scheduled_selectionchange_event()
+}

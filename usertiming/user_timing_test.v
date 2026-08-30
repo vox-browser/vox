@@ -1,10 +1,15 @@
 module usertiming
 
 fn test_mark_validation_and_values() {
-	mark := PerformanceMark.new('ready', PerformanceMarkOptions{}, 12.5, true)!
+	mark := PerformanceMark.construct_impl('ready', PerformanceMarkOptions{
+		detail: 'cloned detail'
+		detail_set: true
+	}, 12.5, true)!
 	assert mark.entry.entry_type == 'mark'
+	assert mark.entry_type() == 'mark'
 	assert mark.entry.start_time == 12.5
 	assert mark.entry.duration == 0
+	assert mark.detail()? == 'cloned detail'
 	assert mark.available_from_timeline() == .yes
 	assert mark.should_add_entry() == .yes
 	assert mark.max_buffer_size() == none
@@ -18,10 +23,11 @@ fn test_mark_validation_and_values() {
 fn test_negative_start_rejected_and_measure_created() {
 	PerformanceMark.new('bad', PerformanceMarkOptions{ start_time: -0.1 }, 1, false) or {
 		assert err.msg().starts_with('TypeError')
-		measure := PerformanceMeasure.new('work', 2, 5, 'payload')
+		measure := PerformanceMeasure.create('work', 2, 5, 'payload')
 		assert measure.entry.entry_type == 'measure'
+		assert measure.entry_type() == 'measure'
 		assert measure.entry.duration == 5
-		assert measure.detail? == 'payload'
+		assert measure.detail()? == 'payload'
 		assert measure.should_add_entry() == .yes
 		return
 	}

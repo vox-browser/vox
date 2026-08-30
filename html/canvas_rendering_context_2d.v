@@ -14,12 +14,23 @@ import encoding.base64
 const maximum_canvas_area = u64(16384 * 16384)
 
 @[heap]
+pub struct CanvasExternalContentSource {
+pub mut:
+	cleared bool
+}
+
+pub fn (mut source CanvasExternalContentSource) clear() {
+	source.cleared = true
+}
+
+@[heap]
 struct HTMLCanvasElementState {
 pub:
 	element &dom.HTMLCanvasElement
 pub mut:
 	surface     &OffscreenCanvas = unsafe { nil }
 	context     ?&CanvasRenderingContext2D
+	external_content_source ?&CanvasExternalContentSource
 	transferred bool
 	dirty       bool
 }
@@ -67,12 +78,13 @@ pub fn html_canvas_element_height(element &dom.HTMLCanvasElement) u32 {
 
 fn ensure_html_canvas_element_state(element &dom.HTMLCanvasElement) !&HTMLCanvasElementState {
 	key := html_canvas_element_key(element)
-	if mut state := html_canvas_element_states[key] {
+	if state := html_canvas_element_states[key] {
+		mut mutable_state := unsafe { &HTMLCanvasElementState(state) }
 		width, height := html_canvas_element_dimensions(element)
 		if state.surface.width() != width || state.surface.height() != height {
 			mut surface := state.surface
 			surface.set_new_bitmap_size(width, height)!
-			state.dirty = true
+			mutable_state.dirty = true
 		}
 		return state
 	}
@@ -89,19 +101,91 @@ fn ensure_html_canvas_element_state(element &dom.HTMLCanvasElement) !&HTMLCanvas
 pub fn html_canvas_element_set_width(mut element dom.HTMLCanvasElement, value u32) ! {
 	actual := if value > u32(max_int) { u32(300) } else { value }
 	mut base := unsafe { &dom.Element(&element) }
+	old_value := base.get_attribute('width')
 	base.set_attribute_value('width', actual.str())
-	state := ensure_html_canvas_element_state(&element)!
-	mut surface := state.surface
-	surface.set_new_bitmap_size(actual, html_canvas_element_height(&element))!
+	html_canvas_element_attribute_changed(&element, 'width', old_value, actual.str(), none)
+	html_canvas_element_notify_context_about_canvas_size_change(&element)!
+	html_canvas_element_reset_context_to_default_state(&element)!
 }
 
 pub fn html_canvas_element_set_height(mut element dom.HTMLCanvasElement, value u32) ! {
 	actual := if value > u32(max_int) { u32(150) } else { value }
 	mut base := unsafe { &dom.Element(&element) }
+	old_value := base.get_attribute('height')
 	base.set_attribute_value('height', actual.str())
-	state := ensure_html_canvas_element_state(&element)!
+	html_canvas_element_attribute_changed(&element, 'height', old_value, actual.str(), none)
+	html_canvas_element_notify_context_about_canvas_size_change(&element)!
+	html_canvas_element_reset_context_to_default_state(&element)!
+}
+
+pub fn html_canvas_element_reset_context_to_default_state(element &dom.HTMLCanvasElement) ! {
+	mut state := ensure_html_canvas_element_state(element)!
+	if source := state.external_content_source {
+		mut mutable_source := unsafe { &CanvasExternalContentSource(source) }
+		mutable_source.clear()
+	}
+	if context := state.context {
+		mut mutable_context := unsafe { &CanvasRenderingContext2D(context) }
+		mutable_context.reset_to_default_state()
+	}
+}
+
+pub fn html_canvas_element_ensure_external_content_source(element &dom.HTMLCanvasElement) &CanvasExternalContentSource {
+	mut state := ensure_html_canvas_element_state(element) or {
+		panic('failed to allocate canvas state: ${err}')
+	}
+	if source := state.external_content_source {
+		return source
+	}
+	source := &CanvasExternalContentSource{}
+	state.external_content_source = source
+	return source
+}
+
+pub fn html_canvas_element_attribute_changed(element &dom.HTMLCanvasElement, local_name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut dom_element := unsafe { &dom.Element(element) }
+	dom_element.attribute_changed(local_name, old_value, value, namespace_)
+	if local_name in ['width', 'height'] {
+		html_canvas_element_notify_context_about_canvas_size_change(element) or { return }
+		html_canvas_element_reset_context_to_default_state(element) or { return }
+		mut node := unsafe { &dom.Node(dom_element.as_node()) }
+		node.set_needs_layout_update(.html_canvas_element_width_or_height_change)
+	}
+}
+
+pub fn html_canvas_element_notify_context_about_canvas_size_change(element &dom.HTMLCanvasElement) ! {
+	mut state := ensure_html_canvas_element_state(element)!
+	width, height := html_canvas_element_dimensions(element)
 	mut surface := state.surface
-	surface.set_new_bitmap_size(html_canvas_element_width(&element), actual)!
+	surface.set_new_bitmap_size(width, height)!
+	state.dirty = true
+}
+
+pub fn html_canvas_element_create_2d_context(element &dom.HTMLCanvasElement, options ?map[string]dom.JSValue) !&CanvasRenderingContext2D {
+	return html_canvas_element_get_context(element, '2d', options)
+}
+
+pub fn html_canvas_element_create_webgl_context(element &dom.HTMLCanvasElement, options ?map[string]dom.JSValue) !voidptr {
+	_ = element
+	_ = options
+	return error('NotSupportedError: WebGL context is not available in the V host')
+}
+
+pub fn html_canvas_element_bitmap_size_for_canvas(element &dom.HTMLCanvasElement) (u32, u32) {
+	return html_canvas_element_dimensions(element)
+}
+
+pub fn html_canvas_element_get_bitmap_from_surface(element &dom.HTMLCanvasElement) ?&dom.ImmutableBitmap_ {
+	state := ensure_html_canvas_element_state(element) or { return none }
+	return state.surface.bitmap()
+}
+
+pub fn html_canvas_element_surface(element &dom.HTMLCanvasElement) ?&dom.ImmutableBitmap_ {
+	return html_canvas_element_get_bitmap_from_surface(element)
+}
+
+pub fn html_canvas_element_allocate_painting_surface_if_needed(element &dom.HTMLCanvasElement) ! {
+	_ = ensure_html_canvas_element_state(element)!
 }
 
 @[heap]
@@ -115,7 +199,7 @@ pub fn CanvasRenderingContext2D.create(element &dom.HTMLCanvasElement, surface &
 	inner := OffscreenCanvasRenderingContext2D.create(surface, settings)
 	mut context := &CanvasRenderingContext2D{
 		OffscreenCanvasRenderingContext2D: *inner
-		element:                           element
+		element: element
 	}
 	mut mutable_surface := unsafe { &OffscreenCanvas(surface) }
 	mutable_surface.context_ = &context.OffscreenCanvasRenderingContext2D
@@ -124,6 +208,28 @@ pub fn CanvasRenderingContext2D.create(element &dom.HTMLCanvasElement, surface &
 
 pub fn (context &CanvasRenderingContext2D) canvas_for_binding() &dom.HTMLCanvasElement {
 	return context.element
+}
+
+pub fn (context &CanvasRenderingContext2D) get_context_attributes() CanvasRenderingContext2DSettings {
+	return context.OffscreenCanvasRenderingContext2D.get_context_attributes()
+}
+
+pub fn (context &CanvasRenderingContext2D) surface() ?&dom.ImmutableBitmap_ {
+	return context.OffscreenCanvasRenderingContext2D.canvas_.bitmap()
+}
+
+pub fn (context &CanvasRenderingContext2D) is_canvas_rendering_context_2d() bool {
+	_ = context
+	return true
+}
+
+pub fn (context &CanvasRenderingContext2D) painter_for_canvas_state() voidptr {
+	_ = context
+	return unsafe { nil }
+}
+
+pub fn (mut context CanvasRenderingContext2D) path_for_canvas_state() &CanvasGfxPath {
+	return context.OffscreenCanvasRenderingContext2D.CanvasPath.mutable_path_storage()
 }
 
 pub fn html_canvas_element_get_context(element &dom.HTMLCanvasElement, type_ string, options ?map[string]dom.JSValue) !&CanvasRenderingContext2D {
@@ -159,8 +265,9 @@ pub fn html_canvas_element_is_dirty(element &dom.HTMLCanvasElement) bool {
 }
 
 pub fn html_canvas_element_present(element &dom.HTMLCanvasElement) {
-	if mut state := html_canvas_element_states[html_canvas_element_key(element)] {
-		state.dirty = false
+	if state := html_canvas_element_states[html_canvas_element_key(element)] {
+		mut mutable_state := unsafe { &HTMLCanvasElementState(state) }
+		mutable_state.dirty = false
 	}
 }
 

@@ -26,6 +26,9 @@ pub mut:
 	document_active_       ?bool
 	origin_time_           f64
 	associated_animations_ []&Animation
+	scroll_source_         ?&dom.Element
+	scroll_axis_           ScrollAxis
+	scroll_metrics_        ?ScrollMetrics
 }
 
 pub fn AnimationTimeline.new() &AnimationTimeline {
@@ -50,8 +53,24 @@ pub fn (timeline &AnimationTimeline) current_time() ?TimeValue {
 	return timeline.current_time_
 }
 
+pub fn (timeline &AnimationTimeline) current_time_for_bindings() NullableCSSNumberish {
+	return NullableCSSNumberish.from_optional_css_numberish_time(timeline.current_time())
+}
+
 pub fn (timeline &AnimationTimeline) duration() ?TimeValue {
 	return timeline.duration_
+}
+
+pub fn (timeline &AnimationTimeline) duration_for_bindings() NullableCSSNumberish {
+	return NullableCSSNumberish.from_optional_css_numberish_time(timeline.duration())
+}
+
+pub fn (timeline &AnimationTimeline) associated_document() ?&dom.Document {
+	return timeline.document_
+}
+
+pub fn (mut timeline AnimationTimeline) set_associated_document(document ?&dom.Document) {
+	timeline.document_ = document
 }
 
 pub fn (timeline &AnimationTimeline) is_progress_based() bool {
@@ -104,6 +123,9 @@ pub fn (mut timeline AnimationTimeline) update_current_time(timestamp f64) {
 				timeline.monotonic_ = true
 			}
 		}
+		.scroll {
+			timeline.update_from_scroll_metrics(timeline.scroll_axis_, timeline.scroll_metrics_)
+		}
 		else {
 			timeline.set_current_time(TimeValue.milliseconds(timestamp))
 		}
@@ -112,6 +134,10 @@ pub fn (mut timeline AnimationTimeline) update_current_time(timestamp f64) {
 
 pub fn (timeline &AnimationTimeline) can_convert_to_origin_relative_time() bool {
 	return timeline.kind_ == .document
+}
+
+pub fn (timeline &AnimationTimeline) can_convert_a_timeline_time_to_an_origin_relative_time() bool {
+	return timeline.can_convert_to_origin_relative_time()
 }
 
 pub fn (timeline &AnimationTimeline) convert_to_origin_relative_time(value ?TimeValue) ?f64 {
@@ -123,6 +149,10 @@ pub fn (timeline &AnimationTimeline) convert_to_origin_relative_time(value ?Time
 		return none
 	}
 	return timeline_time.value + timeline.origin_time_
+}
+
+pub fn (timeline &AnimationTimeline) convert_a_timeline_time_to_an_origin_relative_time(value ?TimeValue) ?f64 {
+	return timeline.convert_to_origin_relative_time(value)
 }
 
 pub fn (mut timeline AnimationTimeline) associate_with_animation(animation &Animation) {

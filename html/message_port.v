@@ -51,6 +51,42 @@ pub:
 	transferred_images []&ImageBitmap
 }
 
+struct StructuredTransferredValue {
+	port   ?&MessagePort
+	bitmap ?&ImageBitmap
+}
+
+fn is_transferable_interface_exposed_on_target_realm(name TransferType, target_realm &ScriptingRealm) bool {
+	_ = target_realm
+	return name in [.message_port, .image_bitmap]
+}
+
+fn create_transferred_value(name TransferType, target_realm &ScriptingRealm, item SerializedTransferItem) !StructuredTransferredValue {
+	_ = target_realm
+	return match name {
+		.message_port {
+			mut port := MessagePort.create()
+			port.transfer_receiving_steps(item)!
+			StructuredTransferredValue{ port: port }
+		}
+		.image_bitmap {
+			StructuredTransferredValue{
+				bitmap: image_bitmap_transfer_receiving_steps(item.data)!
+			}
+		}
+		else {
+			return error('DataCloneError: unsupported transfer type')
+		}
+	}
+}
+
+fn structured_deserialize_with_transfer_internal(item SerializedTransferItem, target_realm &ScriptingRealm) !StructuredTransferredValue {
+	if !is_transferable_interface_exposed_on_target_realm(item.type_, target_realm) {
+		return error('DataCloneError: unknown type transferred')
+	}
+	return create_transferred_value(item.type_, target_realm, item)
+}
+
 fn structured_transfer_identity(item StructuredTransfer) u64 {
 	return match item {
 		ImageBitmapTransfer { u64(voidptr((item as ImageBitmapTransfer).value)) }
@@ -89,7 +125,7 @@ pub fn structured_serialize_with_transfer(message dom.JSValue, transfer []Struct
 				mut bitmap := (item as ImageBitmapTransfer).value
 				transfers << SerializedTransferItem{
 					type_: .image_bitmap
-					data:  bitmap.transfer_steps()
+					data: bitmap.transfer_steps()
 				}
 			}
 			MessagePortTransfer {
@@ -100,7 +136,7 @@ pub fn structured_serialize_with_transfer(message dom.JSValue, transfer []Struct
 	}
 	return SerializedTransferRecord{
 		serialized: serialized
-		transfers:  transfers
+		transfers: transfers
 	}
 }
 
@@ -108,24 +144,19 @@ pub fn structured_deserialize_with_transfer(record SerializedTransferRecord) !De
 	data := structured_deserialize(record.serialized)!
 	mut ports := []&MessagePort{}
 	mut images := []&ImageBitmap{}
+	target_realm := &ScriptingRealm{}
 	for item in record.transfers {
-		match item.type_ {
-			.message_port {
-				mut port := MessagePort.create()
-				port.transfer_receiving_steps(item)!
-				ports << port
-			}
-			.image_bitmap {
-				images << image_bitmap_transfer_receiving_steps(item.data)!
-			}
-			else {
-				return error('DataCloneError: unsupported transfer type')
-			}
+		transferred := structured_deserialize_with_transfer_internal(item, target_realm)!
+		if port := transferred.port {
+			ports << port
+		}
+		if bitmap := transferred.bitmap {
+			images << bitmap
 		}
 	}
 	return DeserializedTransferRecord{
-		deserialized:       data
-		transferred_ports:  ports
+		deserialized: data
+		transferred_ports: ports
 		transferred_images: images
 	}
 }
@@ -152,7 +183,11 @@ pub fn MessagePort.create() &MessagePort {
 	return port
 }
 
-pub fn for_each_message_port(callback fn (&MessagePort)) {
+pub fn for_each_message_port(callback fn(&MessagePort)) {
+	MessagePort.for_each_message_port(callback)
+}
+
+pub fn MessagePort.for_each_message_port(callback fn(&MessagePort)) {
 	for port in html_all_message_ports {
 		callback(port)
 	}
@@ -220,8 +255,8 @@ pub fn (mut port MessagePort) transfer_steps() !SerializedTransferItem {
 	messages := port.pending_messages_.clone()
 	port.pending_messages_.clear()
 	return SerializedTransferItem{
-		type_:         .message_port
-		port_remote:   remote
+		type_: .message_port
+		port_remote: remote
 		port_messages: messages
 	}
 }
@@ -248,8 +283,7 @@ pub fn (port &MessagePort) post_message_without_transfer(message dom.JSValue) ! 
 
 fn transfer_contains_port(transfer []StructuredTransfer, needle &MessagePort) bool {
 	for item in transfer {
-		if item is MessagePortTransfer
-			&& voidptr((item as MessagePortTransfer).value) == voidptr(needle) {
+		if item is MessagePortTransfer && voidptr((item as MessagePortTransfer).value) == voidptr(needle) {
 			return true
 		}
 	}
@@ -271,11 +305,32 @@ fn (mut port MessagePort) message_port_post_message_steps(message dom.JSValue, o
 	if doomed {
 		return
 	}
-	mut mutable_target := unsafe { &MessagePort(target) }
-	mutable_target.pending_messages_ << record
-	if mutable_target.enabled_ {
-		mutable_target.schedule_pending_messages()
+	port.post_port_message(record)
+}
+
+pub fn (mut port MessagePort) send_message_on_transport(record SerializedTransferRecord) ! {
+	remote := port.remote_port_ or { return error('MessagePort transport is not open') }
+	mut mutable_remote := unsafe { &MessagePort(remote) }
+	mutable_remote.pending_messages_ << record
+	if mutable_remote.enabled_ {
+		mutable_remote.read_from_transport()
 	}
+}
+
+pub fn (mut port MessagePort) post_port_message(record SerializedTransferRecord) {
+	if !port.is_entangled() {
+		return
+	}
+	port.send_message_on_transport(record) or {
+		port.disentangle()
+	}
+}
+
+pub fn (mut port MessagePort) read_from_transport() {
+	if !port.enabled_ || !port.is_entangled() {
+		return
+	}
+	port.schedule_pending_messages()
 }
 
 fn (mut port MessagePort) schedule_pending_messages() {
@@ -302,7 +357,7 @@ fn (mut port MessagePort) post_message_task_steps(record SerializedTransferRecor
 		return
 	}
 	mut event := MessageEvent.create('message', MessageEventInit{
-		data:  deserialized.deserialized
+		data: deserialized.deserialized
 		ports: deserialized.transferred_ports
 	})
 	event.set_is_trusted(true)
@@ -314,7 +369,7 @@ pub fn (mut port MessagePort) enable() {
 		return
 	}
 	port.enabled_ = true
-	port.schedule_pending_messages()
+	port.read_from_transport()
 }
 
 pub fn (mut port MessagePort) start() {
@@ -330,7 +385,8 @@ pub fn (mut port MessagePort) close() {
 }
 
 pub fn (port &MessagePort) set_onmessageerror(handler ?&dom.CallbackType) {
-	unsafe { &dom.EventTarget(port) }.set_event_handler_attribute('messageerror', handler)
+	unsafe { &dom.EventTarget(port) }
+	.set_event_handler_attribute('messageerror', handler)
 }
 
 pub fn (port &MessagePort) onmessageerror() ?&dom.CallbackType {
@@ -338,7 +394,8 @@ pub fn (port &MessagePort) onmessageerror() ?&dom.CallbackType {
 }
 
 pub fn (port &MessagePort) set_onmessage(handler ?&dom.CallbackType) {
-	unsafe { &dom.EventTarget(port) }.set_event_handler_attribute('message', handler)
+	unsafe { &dom.EventTarget(port) }
+	.set_event_handler_attribute('message', handler)
 	mut mutable_port := unsafe { &MessagePort(port) }
 	mutable_port.start()
 }

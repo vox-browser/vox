@@ -36,6 +36,26 @@ pub fn DragDataStore.create() &DragDataStore {
 	return &DragDataStore{}
 }
 
+pub fn (store &DragDataStore) item_list() []DragDataStoreItem {
+	return store.item_list.clone()
+}
+
+pub fn (store &DragDataStore) mode() DragDataStoreMode {
+	return store.mode
+}
+
+pub fn (mut store DragDataStore) set_mode(value DragDataStoreMode) {
+	store.mode = value
+}
+
+pub fn (store &DragDataStore) allowed_effects_state() string {
+	return store.allowed_effects_state
+}
+
+pub fn (mut store DragDataStore) set_allowed_effects_state(value string) {
+	store.allowed_effects_state = value
+}
+
 pub fn (mut store DragDataStore) add_item(item DragDataStoreItem) {
 	store.item_list << item
 }

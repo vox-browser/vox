@@ -11,7 +11,7 @@ fn notification_settings() NotificationSettings {
 }
 
 fn test_create_notification_resolves_urls_serializes_data_and_defaults_timestamp() {
-	concept := create_a_notification_with_a_settings_object('Title', NotificationOptions{
+	concept := Notification.create_a_notification_with_a_settings_object('Title', NotificationOptions{
 		dir:                 .rtl
 		lang:                'ar'
 		body:                'Body'
@@ -40,7 +40,7 @@ fn test_create_notification_resolves_urls_serializes_data_and_defaults_timestamp
 }
 
 fn test_constructor_restrictions_getters_and_structured_data() {
-	Notification.construct('x', NotificationOptions{}, notification_settings(), true) or {
+	Notification.construct_impl('x', NotificationOptions{}, notification_settings(), true) or {
 		assert err.msg().starts_with('TypeError:')
 	}
 	Notification.construct('x', NotificationOptions{

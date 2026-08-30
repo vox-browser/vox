@@ -5,7 +5,6 @@ import dom
 // The insertion-mode handlers for HTMLParser (see html_parser.v). Each mirrors a section of
 // https://html.spec.whatwg.org/multipage/parsing.html. Cases that "act as the anything-else entry"
 // are factored into an *_anything_else helper (V has no goto).
-
 const head_element_start_tags = ['base', 'basefont', 'bgsound', 'link', 'meta', 'noframes', 'script',
 	'style', 'template', 'title']
 
@@ -19,14 +18,14 @@ const block_end_tags = ['address', 'article', 'aside', 'blockquote', 'button', '
 
 const heading_tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
 
-const formatting_start_tags = ['b', 'big', 'code', 'em', 'font', 'i', 's', 'small', 'strike',
-	'strong', 'tt', 'u']
+const formatting_start_tags = ['b', 'big', 'code', 'em', 'font', 'i', 's', 'small', 'strike', 'strong',
+	'tt', 'u']
 
 const formatting_end_tags = ['a', 'b', 'big', 'code', 'em', 'font', 'i', 'nobr', 's', 'small',
 	'strike', 'strong', 'tt', 'u']
 
 fn (mut p HTMLParser) document_as_node() &dom.Node {
-	return unsafe { &dom.Node(p.document) }
+	return unsafe { &dom.Node(p.document_) }
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#the-initial-insertion-mode
@@ -36,22 +35,22 @@ fn (mut p HTMLParser) handle_initial(mut token HTMLToken) {
 	}
 	if token.is_comment() {
 		mut doc_node := p.document_as_node()
-		comment := p.document.create_comment(token.comment())
+		comment := p.document_.create_comment(token.comment())
 		doc_node.append_child(comment.as_node()) or {}
 		return
 	}
 	if token.is_doctype() {
-		mut doctype := dom.DocumentType.create(p.document)
+		mut doctype := dom.DocumentType.create(p.document_)
 		doctype.set_name(token.doctype.name)
 		doctype.set_public_id(token.doctype.public_identifier)
 		doctype.set_system_id(token.doctype.system_identifier)
 		mut doc_node := p.document_as_node()
 		doc_node.append_child(doctype.as_node()) or {}
-		p.document.set_quirks_mode(p.which_quirks_mode(token))
+		p.document_.set_quirks_mode(p.which_quirks_mode(token))
 		p.insertion_mode = .before_html
 		return
 	}
-	p.document.set_quirks_mode(.yes)
+	p.document_.set_quirks_mode(.yes)
 	p.insertion_mode = .before_html
 	p.process_using_the_rules_for(.before_html, mut token)
 }
@@ -63,7 +62,7 @@ fn (mut p HTMLParser) handle_before_html(mut token HTMLToken) {
 	}
 	if token.is_comment() {
 		mut doc_node := p.document_as_node()
-		comment := p.document.create_comment(token.comment())
+		comment := p.document_.create_comment(token.comment())
 		doc_node.append_child(comment.as_node()) or {}
 		return
 	}
@@ -155,8 +154,10 @@ fn (mut p HTMLParser) handle_in_head(mut token HTMLToken) {
 		p.insertion_mode = .text
 		return
 	}
-	if token.is_start_tag() && ((token.tag_name == 'noscript' && p.scripting_enabled)
-		|| token.tag_name in ['noframes', 'style']) {
+	if token.is_start_tag() && ((token.tag_name == 'noscript' && p.scripting_enabled) || token.tag_name in [
+		'noframes',
+		'style',
+	]) {
 		p.parse_generic_raw_text_element(token)
 		return
 	}
@@ -166,12 +167,11 @@ fn (mut p HTMLParser) handle_in_head(mut token HTMLToken) {
 		return
 	}
 	if token.is_start_tag() && token.tag_name == 'script' {
-		// FIXME: no scripting. Insert the element and treat its content as raw text via the
-		// script-data tokenizer state, without preparing/executing the script.
 		location := p.find_appropriate_place_for_inserting_node()
 		mut parent := location.parent or { return }
 		element := p.create_element_for(token, ns_html, parent)
 		parent.insert_before(element.as_node(), location.insert_before_sibling, false)
+		p.register_parser_inserted_script(element, token)
 		p.stack_of_open_elements.push(element)
 		p.tokenizer.switch_to(.script_data)
 		p.original_insertion_mode = p.insertion_mode
@@ -188,7 +188,6 @@ fn (mut p HTMLParser) handle_in_head(mut token HTMLToken) {
 		return
 	}
 	if token.is_start_tag() && token.tag_name == 'template' {
-		// FIXME: declarative shadow roots (shadowrootmode) are not handled.
 		p.list_of_active_formatting_elements.add_marker()
 		p.frameset_ok = false
 		p.insertion_mode = .in_template
@@ -228,8 +227,7 @@ fn (mut p HTMLParser) handle_in_template(mut token HTMLToken) {
 		p.handle_in_body(mut token)
 		return
 	}
-	if (token.is_start_tag() && token.tag_name in head_element_start_tags)
-		|| (token.is_end_tag() && token.tag_name == 'template') {
+	if (token.is_start_tag() && token.tag_name in head_element_start_tags) || (token.is_end_tag() && token.tag_name == 'template') {
 		p.handle_in_head(mut token)
 		return
 	}
@@ -302,8 +300,14 @@ fn (mut p HTMLParser) handle_in_head_noscript(mut token HTMLToken) {
 		p.insertion_mode = .in_head
 		return
 	}
-	if token.is_parser_whitespace() || token.is_comment() || (token.is_start_tag()
-		&& token.tag_name in ['basefont', 'bgsound', 'link', 'meta', 'noframes', 'style']) {
+	if token.is_parser_whitespace() || token.is_comment() || (token.is_start_tag() && token.tag_name in [
+		'basefont',
+		'bgsound',
+		'link',
+		'meta',
+		'noframes',
+		'style',
+	]) {
 		p.handle_in_head(mut token)
 		return
 	}
@@ -413,15 +417,12 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		}
 		return
 	}
-	if (token.is_start_tag() && token.tag_name in head_element_start_tags)
-		|| (token.is_end_tag() && token.tag_name == 'template') {
+	if (token.is_start_tag() && token.tag_name in head_element_start_tags) || (token.is_end_tag() && token.tag_name == 'template') {
 		p.handle_in_head(mut token)
 		return
 	}
 	if token.is_start_tag() && token.tag_name == 'body' {
-		if p.stack_of_open_elements.elements.len == 1
-			|| p.stack_of_open_elements.elements[1].local_name() != 'body'
-			|| p.stack_of_open_elements.contains_template_element() {
+		if p.stack_of_open_elements.elements.len == 1 || p.stack_of_open_elements.elements[1].local_name() != 'body' || p.stack_of_open_elements.contains_template_element() {
 			return
 		}
 		p.frameset_ok = false
@@ -434,8 +435,7 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		return
 	}
 	if token.is_start_tag() && token.tag_name == 'frameset' {
-		if p.stack_of_open_elements.elements.len == 1
-			|| p.stack_of_open_elements.elements[1].local_name() != 'body' {
+		if p.stack_of_open_elements.elements.len == 1 || p.stack_of_open_elements.elements[1].local_name() != 'body' {
 			return
 		}
 		if !p.frameset_ok {
@@ -526,8 +526,11 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 				p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('li')
 				break
 			}
-			if is_special_tag(node.local_name(), node.namespace_uri())
-				&& node.local_name() !in ['address', 'div', 'p'] {
+			if is_special_tag(node.local_name(), node.namespace_uri()) && node.local_name() !in [
+				'address',
+				'div',
+				'p',
+			] {
 				break
 			}
 		}
@@ -551,8 +554,11 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 				p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('dt')
 				break
 			}
-			if is_special_tag(node.local_name(), node.namespace_uri())
-				&& node.local_name() !in ['address', 'div', 'p'] {
+			if is_special_tag(node.local_name(), node.namespace_uri()) && node.local_name() !in [
+				'address',
+				'div',
+				'p',
+			] {
 				break
 			}
 		}
@@ -709,8 +715,7 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		p.parse_generic_raw_text_element(token)
 		return
 	}
-	if token.is_start_tag()
-		&& (token.tag_name == 'noembed' || (token.tag_name == 'noscript' && p.scripting_enabled)) {
+	if token.is_start_tag() && (token.tag_name == 'noembed' || (token.tag_name == 'noscript' && p.scripting_enabled)) {
 		p.parse_generic_raw_text_element(token)
 		return
 	}
@@ -772,7 +777,7 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		return
 	}
 	if token.is_start_tag() && token.tag_name == 'table' {
-		if !p.document.in_quirks_mode() && p.stack_of_open_elements.has_in_button_scope('p') {
+		if !p.document_.in_quirks_mode() && p.stack_of_open_elements.has_in_button_scope('p') {
 			p.close_a_p_element()
 		}
 		p.insert_html_element(token)
@@ -782,8 +787,8 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 	}
 	if token.is_start_tag() && token.tag_name == 'math' {
 		p.reconstruct_the_active_formatting_elements()
-		adjust_mathml_attributes(mut token)
-		adjust_foreign_attributes(mut token)
+		p.adjust_mathml_attributes(mut token)
+		HTMLParser.adjust_foreign_attributes(mut token)
 		p.insert_foreign_element(token, ns_mathml, false)
 		if token.is_self_closing() {
 			p.stack_of_open_elements.pop()
@@ -793,8 +798,8 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 	}
 	if token.is_start_tag() && token.tag_name == 'svg' {
 		p.reconstruct_the_active_formatting_elements()
-		adjust_svg_attributes(mut token)
-		adjust_foreign_attributes(mut token)
+		p.adjust_svg_attributes(mut token)
+		HTMLParser.adjust_foreign_attributes(mut token)
 		p.insert_foreign_element(token, ns_svg, false)
 		if token.is_self_closing() {
 			p.stack_of_open_elements.pop()
@@ -864,8 +869,8 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		return
 	}
 	// Stray table-structure start tags outside a table are ignored.
-	if token.is_start_tag()
-		&& token.tag_name in ['caption', 'col', 'colgroup', 'frame', 'head', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr'] {
+	if token.is_start_tag() && token.tag_name in ['caption', 'col', 'colgroup', 'frame', 'head',
+		'tbody', 'td', 'tfoot', 'th', 'thead', 'tr'] {
 		return
 	}
 	if token.is_start_tag() {
@@ -908,16 +913,29 @@ fn (mut p HTMLParser) handle_text(mut token HTMLToken) {
 		return
 	}
 	if token.is_end_of_file() {
-		// FIXME: no script "already started" handling.
+		if current := p.current_node() {
+			if current.local_name() == 'script' {
+				if script_model := p.script_models[current.as_node().unique_id().value()] {
+					mut script := unsafe { &HTMLScriptElementModel(script_model) }
+					script.already_started_ = true
+				}
+			}
+		}
 		p.stack_of_open_elements.pop()
 		p.insertion_mode = p.original_insertion_mode
 		p.process_using_the_rules_for(p.insertion_mode, mut token)
 		return
 	}
 	if token.is_end_tag() {
-		// FIXME: <script> end tag does not prepare/execute the script.
+		p.flush_character_insertions()
+		current := p.current_node()
 		p.stack_of_open_elements.pop()
 		p.insertion_mode = p.original_insertion_mode
+		if element := current {
+			if token.tag_name == 'script' && element.local_name() == 'script' {
+				p.prepare_and_execute_parser_inserted_script(element)
+			}
+		}
 		return
 	}
 }
@@ -931,7 +949,7 @@ fn (mut p HTMLParser) handle_after_body(mut token HTMLToken) {
 	if token.is_comment() {
 		mut first := p.stack_of_open_elements.first()
 		mut first_node := first.as_node()
-		comment := p.document.create_comment(token.comment())
+		comment := p.document_.create_comment(token.comment())
 		first_node.append_child(comment.as_node()) or {}
 		return
 	}
@@ -962,12 +980,11 @@ fn (mut p HTMLParser) handle_after_body(mut token HTMLToken) {
 fn (mut p HTMLParser) handle_after_after_body(mut token HTMLToken) {
 	if token.is_comment() {
 		mut doc_node := p.document_as_node()
-		comment := p.document.create_comment(token.comment())
+		comment := p.document_.create_comment(token.comment())
 		doc_node.append_child(comment.as_node()) or {}
 		return
 	}
-	if token.is_doctype() || token.is_parser_whitespace()
-		|| (token.is_start_tag() && token.tag_name == 'html') {
+	if token.is_doctype() || token.is_parser_whitespace() || (token.is_start_tag() && token.tag_name == 'html') {
 		p.handle_in_body(mut token)
 		return
 	}
@@ -1064,12 +1081,11 @@ fn (mut p HTMLParser) handle_after_frameset(mut token HTMLToken) {
 fn (mut p HTMLParser) handle_after_after_frameset(mut token HTMLToken) {
 	if token.is_comment() {
 		mut document_node := p.document_as_node()
-		comment := p.document.create_comment(token.comment())
+		comment := p.document_.create_comment(token.comment())
 		document_node.append_child(comment.as_node()) or {}
 		return
 	}
-	if token.is_doctype() || token.is_parser_whitespace()
-		|| (token.is_start_tag() && token.tag_name == 'html') {
+	if token.is_doctype() || token.is_parser_whitespace() || (token.is_start_tag() && token.tag_name == 'html') {
 		p.process_using_the_rules_for(.in_body, mut token)
 		return
 	}

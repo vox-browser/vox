@@ -42,9 +42,10 @@ pub:
 
 pub struct Directive {
 pub:
-	name  string
-	value []string
-	kind  DirectiveKind
+	kind DirectiveKind
+mut:
+	name_  string
+	value_ []string
 }
 
 pub fn create_directive(name string, value []string) Directive {
@@ -77,20 +78,28 @@ pub fn create_directive(name string, value []string) Directive {
 		else { .unknown }
 	}
 	return Directive{
-		name:  name
-		value: value.clone()
-		kind:  kind
+		name_:  name
+		value_: value.clone()
+		kind:   kind
 	}
 }
 
+pub fn (directive &Directive) name() string {
+	return directive.name_
+}
+
+pub fn (directive &Directive) value() []string {
+	return directive.value_.clone()
+}
+
 pub fn (directive Directive) clone() Directive {
-	return create_directive(directive.name, directive.value)
+	return create_directive(directive.name_, directive.value_)
 }
 
 pub fn (directive Directive) serialize() SerializedDirective {
 	return SerializedDirective{
-		name:  directive.name
-		value: directive.value.clone()
+		name:  directive.name_
+		value: directive.value_.clone()
 	}
 }
 
@@ -102,36 +111,36 @@ fn (directive Directive) uses_plain_fetch_check() bool {
 pub fn (directive Directive) pre_request_check(request &Request, policy &Policy) Result {
 	effective := get_the_effective_directive_for_request(request)
 	if directive.kind == .default_source || directive.kind == .child_source {
-		if should_fetch_directive_execute(effective, directive.name, policy) == .no {
+		if should_fetch_directive_execute(effective, directive.name_, policy) == .no {
 			return .allowed
 		}
 		name := effective or { return .allowed }
-		return create_directive(name, directive.value).pre_request_check(request, policy)
+		return create_directive(name, directive.value_).pre_request_check(request, policy)
 	}
 	if directive.kind in [.script_source, .script_source_element] {
-		if should_fetch_directive_execute(effective, directive.name, policy) == .no {
+		if should_fetch_directive_execute(effective, directive.name_, policy) == .no {
 			return .allowed
 		}
 		return script_directives_pre_request_check(request, directive, policy)
 	}
 	if directive.kind in [.style_source, .style_source_element] {
-		if should_fetch_directive_execute(effective, directive.name, policy) == .no {
+		if should_fetch_directive_execute(effective, directive.name_, policy) == .no {
 			return .allowed
 		}
-		if does_nonce_match_source_list(request.cryptographic_nonce_metadata, directive.value) == .matches {
+		if does_nonce_match_source_list(request.cryptographic_nonce_metadata, directive.value_) == .matches {
 			return .allowed
 		}
-		return if does_request_match_source_list(request, directive.value, policy) == .matches {
+		return if does_request_match_source_list(request, directive.value_, policy) == .matches {
 			Result.allowed
 		} else {
 			Result.blocked
 		}
 	}
 	if directive.uses_plain_fetch_check() {
-		if should_fetch_directive_execute(effective, directive.name, policy) == .no {
+		if should_fetch_directive_execute(effective, directive.name_, policy) == .no {
 			return .allowed
 		}
-		return if does_request_match_source_list(request, directive.value, policy) == .matches {
+		return if does_request_match_source_list(request, directive.value_, policy) == .matches {
 			Result.allowed
 		} else {
 			Result.blocked
@@ -143,36 +152,36 @@ pub fn (directive Directive) pre_request_check(request &Request, policy &Policy)
 pub fn (directive Directive) post_request_check(request &Request, response &Response, policy &Policy) Result {
 	effective := get_the_effective_directive_for_request(request)
 	if directive.kind == .default_source || directive.kind == .child_source {
-		if should_fetch_directive_execute(effective, directive.name, policy) == .no {
+		if should_fetch_directive_execute(effective, directive.name_, policy) == .no {
 			return .allowed
 		}
 		name := effective or { return .allowed }
-		return create_directive(name, directive.value).post_request_check(request, response, policy)
+		return create_directive(name, directive.value_).post_request_check(request, response, policy)
 	}
 	if directive.kind in [.script_source, .script_source_element] {
-		if should_fetch_directive_execute(effective, directive.name, policy) == .no {
+		if should_fetch_directive_execute(effective, directive.name_, policy) == .no {
 			return .allowed
 		}
 		return script_directives_post_request_check(request, response, directive, policy)
 	}
 	if directive.kind in [.style_source, .style_source_element] {
-		if should_fetch_directive_execute(effective, directive.name, policy) == .no {
+		if should_fetch_directive_execute(effective, directive.name_, policy) == .no {
 			return .allowed
 		}
-		if does_nonce_match_source_list(request.cryptographic_nonce_metadata, directive.value) == .matches {
+		if does_nonce_match_source_list(request.cryptographic_nonce_metadata, directive.value_) == .matches {
 			return .allowed
 		}
-		return if does_response_match_source_list(response, request, directive.value, policy) == .matches {
+		return if does_response_match_source_list(response, request, directive.value_, policy) == .matches {
 			Result.allowed
 		} else {
 			Result.blocked
 		}
 	}
 	if directive.uses_plain_fetch_check() {
-		if should_fetch_directive_execute(effective, directive.name, policy) == .no {
+		if should_fetch_directive_execute(effective, directive.name_, policy) == .no {
 			return .allowed
 		}
-		return if does_response_match_source_list(response, request, directive.value, policy) == .matches {
+		return if does_response_match_source_list(response, request, directive.value_, policy) == .matches {
 			Result.allowed
 		} else {
 			Result.blocked
@@ -191,13 +200,13 @@ pub fn (directive Directive) inline_check(element ?ElementContext, type_ InlineT
 		if should_fetch_directive_execute(effective, default_src, policy) == .no {
 			return .allowed
 		}
-		return create_directive(effective, directive.value).inline_check(element, type_, policy,
+		return create_directive(effective, directive.value_).inline_check(element, type_, policy,
 			source)
 	}
-	if should_fetch_directive_execute(effective, directive.name, policy) == .no {
+	if should_fetch_directive_execute(effective, directive.name_, policy) == .no {
 		return .allowed
 	}
-	return if does_element_match_source_list_for_type_and_source(element, directive.value, type_,
+	return if does_element_match_source_list_for_type_and_source(element, directive.value_, type_,
 		source) == .matches {
 		Result.allowed
 	} else {
@@ -206,10 +215,10 @@ pub fn (directive Directive) inline_check(element ?ElementContext, type_ InlineT
 }
 
 pub fn (directive Directive) initialization(is_worker bool, policy &Policy) Result {
-	if directive.kind != .sandbox || policy.disposition != .enforce || !is_worker {
+	if directive.kind != .sandbox || policy.disposition() != .enforce || !is_worker {
 		return .allowed
 	}
-	flags := parse_a_sandboxing_directive(directive.value)
+	flags := parse_a_sandboxing_directive(directive.value_)
 	if flags.contains(.sandboxed_scripts) || flags.contains(.sandboxed_origin) {
 		return .blocked
 	}
@@ -218,7 +227,7 @@ pub fn (directive Directive) initialization(is_worker bool, policy &Policy) Resu
 
 pub fn (directive Directive) pre_navigation_check(request &Request, navigation_type NavigationType, policy &Policy) Result {
 	if directive.kind == .form_action && navigation_type == .form_submission
-		&& does_request_match_source_list(request, directive.value, policy) == .does_not_match {
+		&& does_request_match_source_list(request, directive.value_, policy) == .does_not_match {
 		return .blocked
 	}
 	return .allowed
@@ -234,7 +243,7 @@ pub fn (directive Directive) navigation_response_check(response &Response, targe
 			return .blocked
 		}
 		ancestor_url := url_from_origin(ancestor_origin) or { return .blocked }
-		if does_url_match_source_list_in_origin_with_redirect_count(ancestor_url, directive.value,
+		if does_url_match_source_list_in_origin_with_redirect_count(ancestor_url, directive.value_,
 			policy.self_origin_value(), 0) == .does_not_match {
 			return .blocked
 		}
@@ -246,7 +255,7 @@ pub fn (directive Directive) webrtc_pre_connect_check() Result {
 	if directive.kind != .webrtc {
 		return .allowed
 	}
-	return if directive.value.len == 1 && directive.value[0].to_lower() == "'allow'" {
+	return if directive.value_.len == 1 && directive.value_[0].to_lower() == "'allow'" {
 		Result.allowed
 	} else {
 		Result.blocked

@@ -42,16 +42,28 @@ pub fn (mut array ObservableArray) set(index int, value Value) ! {
 	array.values[index] = value
 }
 
+pub fn (mut array ObservableArray) internal_set(index int, value Value) !bool {
+	array.set(index, value)!
+	return true
+}
+
 pub fn (mut array ObservableArray) delete(index int) !bool {
-	if index < 0 || index >= array.values.len {
+	if index < 0 {
 		return true
 	}
-	value := array.values[index]
+	value := if index < array.values.len { array.values[index] } else { undefined_value() }
 	if callback := array.on_delete {
 		callback(value)!
 	}
+	if index >= array.values.len {
+		return true
+	}
 	array.values.delete(index)
 	return true
+}
+
+pub fn (mut array ObservableArray) internal_delete(index int) !bool {
+	return array.delete(index)
 }
 
 pub fn (mut array ObservableArray) append(value Value) ! {
@@ -67,5 +79,11 @@ pub fn (mut array ObservableArray) clear() ! {
 			callback(value)!
 		}
 		array.values.delete(0)
+	}
+}
+
+pub fn (array &ObservableArray) for_each(callback fn (Value)) {
+	for value in array.values {
+		callback(value)
 	}
 }

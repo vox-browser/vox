@@ -24,7 +24,7 @@ fn test_directive_and_policy_serialization_round_trip() {
 	assert decoded.self_origin.serialize() == 'https://example.test:8443'
 	assert decoded.pre_parsed_policy_string == policy.pre_parsed_policy_string
 	recreated := Policy.create_from_serialized_policy(decoded)
-	assert recreated.directives[0].kind == .script_source
+	assert recreated.directives()[0].kind == .script_source
 }
 
 fn test_opaque_origin_serialization_and_trailing_data_rejection() {

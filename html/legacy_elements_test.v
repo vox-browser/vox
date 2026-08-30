@@ -21,8 +21,9 @@ fn test_legacy_font_dimension_and_presentation_hint_parsing() {
 	assert parse_legacy_font_size('-9')? == 'x-small'
 	assert parse_legacy_font_size('9')? == 'xxx-large'
 	assert parse_legacy_font_size('+') == none
+	assert html_font_element_parse_legacy_font_size('  +2 trailing')? == 'x-large'
 	assert parse_legacy_dimension_value('  12.5%junk')? == LegacyDimension{
-		value:      12.5
+		value: 12.5
 		percentage: true
 	}
 	font := legacy_element_presentational_hints('font', {
@@ -82,8 +83,7 @@ fn test_legacy_list_alignment_clear_and_caption_hints() {
 }
 
 fn test_marquee_table_col_legend_and_display_algorithms() {
-	document :=
-		parse_document('<form><fieldset><legend>x</legend></fieldset></form><marquee></marquee><table><colgroup><col></colgroup></table>')
+	document := parse_document('<form><fieldset><legend>x</legend></fieldset></form><marquee></marquee><table><colgroup><col></colgroup></table>')
 	root := unsafe { &dom.Node(document) }
 	marquee_element := legacy_test_find_element(root, 'marquee')?
 	marquee := unsafe { &dom.HTMLMarqueeElement(marquee_element) }
@@ -118,4 +118,49 @@ fn test_frame_element_lifecycle_and_about_blank_load() {
 	assert frame.container.content_navigable()?.active_document.url.serialize() == 'https://example.test/base/next.html'
 	frame.removed_from_document()
 	assert frame.container.content_navigable() == none
+}
+
+fn test_concrete_frame_element_lifecycle_and_src_attribute_change() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/base/' })
+	document.set_origin(dom.Origin{ value: 'https://example.test' })
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut html_root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic(err)
+	}
+	mut frame_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'frame') or {
+		panic(err)
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(html_root.as_node()) or { panic(err) }
+	mut html_node := html_root.as_node()
+	html_node.append_child(frame_element.as_node()) or { panic(err) }
+	frame := unsafe { &dom.HTMLFrameElement(frame_element) }
+	assert html_frame_element_default_tab_index_value(frame) == 0
+	html_frame_element_inserted(frame)!
+	model := html_frame_element_model_for_testing(frame)
+	assert model.event_count('load') == 1
+	assert model.container.content_navigable() != none
+	html_frame_element_attribute_changed(frame, 'src', none, 'next.html', none)
+	assert model.container.content_navigable()?.active_document.url.serialize() == 'https://example.test/base/next.html'
+	html_frame_element_removed_from(frame, html_root.as_node(), document_node)
+	assert model.container.content_navigable() == none
+}
+
+fn test_frameset_window_event_targets() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut frameset_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'frameset') or {
+		panic(err)
+	}
+	frameset := unsafe { &dom.HTMLFrameSetElement(frameset_element) }
+	mut window := &dom.Window{}
+	document.set_window(window)
+	load_target := html_frame_set_element_global_event_handlers_to_event_target(frameset,
+		'load') or { panic('missing load target') }
+	click_target := html_frame_set_element_global_event_handlers_to_event_target(frameset,
+		'click') or { panic('missing click target') }
+	assert voidptr(load_target) == voidptr(unsafe { &dom.EventTarget(window) })
+	assert voidptr(click_target) == voidptr(unsafe { &dom.EventTarget(frameset_element.as_node()) })
+	assert voidptr(html_frame_set_element_window_event_handlers_to_event_target(frameset)?) ==
+		voidptr(unsafe { &dom.EventTarget(window) })
+	html_frame_set_element_attribute_changed(frameset, 'onpageshow', none, 'handler()', none)
 }

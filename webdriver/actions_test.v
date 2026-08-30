@@ -1,5 +1,7 @@
 module webdriver
 
+import x.json2
+
 fn test_extract_action_sequence_transposes_sources_into_ticks() {
 	payload :=
 		json_value_from_text('{"actions":[{"type":"key","id":"keyboard","actions":[{"type":"keyDown","value":"a"},{"type":"keyUp","value":"a"}]},{"type":"pointer","id":"mouse","parameters":{"pointerType":"mouse"},"actions":[{"type":"pointerMove","x":4,"y":8,"duration":25},{"type":"pointerDown","button":0}]}]}')
@@ -153,4 +155,23 @@ fn test_host_can_resolve_element_origin_before_pointer_dispatch() {
 	assert action.origin == 'viewport'
 	assert action.x == 22
 	assert action.y == 29
+}
+
+fn test_upstream_action_entry_points_share_parser_and_dispatcher() {
+	assert action_object_subtype_from_string('pointerMove')? == .pointer_move
+	assert fields_from_subtype(.key_down) == .key
+	assert process_pointer_parameters(json2.Any({
+		'pointerType': json2.Any('pen')
+	}))! == .pen
+	mut state := InputState{}
+	state.get_or_create_input_source(.key, 'keyboard', none)!
+	action := process_key_action('keyboard', {
+		'type':  json2.Any('keyDown')
+		'value': json2.Any('A')
+	})!
+	events := dispatch_key_down_action(mut state, action)!
+	assert events.len == 1
+	assert events[0].kind == 'keyDown'
+	assert normalized_key_value('\ue008') == 'Shift'
+	assert is_shifted_character('A')
 }

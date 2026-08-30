@@ -3,15 +3,18 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/libweb_v`
-Audited: 2026-08-17
+Audited: 2026-08-30
 
-Every upstream module now has a complete audited V translation. No partially
-translated or wholly untranslated module remains.
+The earlier inventory mapped every upstream implementation filename to V code,
+but filename coverage alone did not establish literal behavioral parity. Layout
+has now been re-audited against the upstream implementation and its complete
+904-case regression corpus; all comparable snapshots pass exactly.
 
 `Complete` means every upstream `.cpp` unit has an audited V implementation
 mapping. `Present` means translated module code exists but its full upstream
 coverage has not yet been audited. `Untranslated` means no module translation
-was found. There are no `Present` or `Untranslated` modules.
+was found. The remaining module rows retain their earlier inventory status
+until their own behavioral re-audits are performed.
 
 LOC is physical line count (`wc -l`), including comments and blank lines.
 Implementation and test V counts are disjoint. `Selection` includes its shared
@@ -33,14 +36,14 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `ARIA` | 6 | 1,876 | 2,523 | 354 | Complete |
 | `Animations` | 10 | 4,381 | 2,217 | 389 | Complete |
 | `Bindings` | 9 | 1,718 | 1,639 | 488 | Complete |
-| `CSS` | 212 | 66,305 | 86,672 | 3,018 | Complete |
+| `CSS` | 212 | 66,305 | 90,675 | 3,594 | Complete |
 | `Clipboard` | 4 | 892 | 948 | 332 | Complete |
 | `Compression` | 2 | 359 | 322 | 135 | Complete |
 | `ContentSecurityPolicy` | 37 | 4,653 | 2,404 | 389 | Complete |
 | `CookieStore` | 2 | 900 | 997 | 392 | Complete |
 | `CredentialManagement` | 6 | 369 | 400 | 293 | Complete |
 | `Crypto` | 6 | 13,297 | 2,303 | 879 | Complete |
-| `DOM` | 57 | 26,465 | 32,110 | 1,494 | Complete |
+| `DOM` | 57 | 26,465 | 32,188 | 1,494 | Complete |
 | `DOMURL` | 4 | 1,016 | 932 | 270 | Complete |
 | `Editing` | 4 | 7,980 | 2,019 | 660 | Complete |
 | `Encoding` | 4 | 438 | 668 | 235 | Complete |
@@ -54,13 +57,13 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Gamepad` | 6 | 1,382 | 681 | 210 | Complete |
 | `Geolocation` | 4 | 511 | 391 | 174 | Complete |
 | `Geometry` | 8 | 2,157 | 1,962 | 952 | Complete |
-| `HTML` | 261 | 73,434 | 36,891 | 7,611 | Complete |
+| `HTML` | 261 | 73,434 | 54,896 | 10,966 | Complete |
 | `HighResolutionTime` | 2 | 521 | 362 | 181 | Complete |
 | `IndexedDB` | 18 | 6,449 | 2,362 | 523 | Complete |
 | `Infra` | 3 | 405 | 193 | 61 | Complete |
 | `Internals` | 7 | 951 | 826 | 220 | Complete |
 | `IntersectionObserver` | 2 | 445 | 376 | 186 | Complete |
-| `Layout` | 50 | 19,592 | 5,418 | 3,971 | Complete |
+| `Layout` | 50 | 19,592 | 27,672 | 8,384 | Complete |
 | `Loader` | 5 | 887 | 830 | 292 | Complete |
 | `MathML` | 5 | 292 | 361 | 75 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 369 | 99 | Complete |
@@ -70,23 +73,23 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `NavigationTiming` | 3 | 104 | 264 | 42 | Complete |
 | `NotificationsAPI` | 1 | 249 | 278 | 68 | Complete |
 | `Page` | 7 | 4,298 | 1,533 | 317 | Complete |
-| `Painting` | 48 | 10,038 | 3,472 | 741 | Complete |
+| `Painting` | 48 | 10,038 | 4,265 | 825 | Complete |
 | `PerformanceTimeline` | 5 | 391 | 417 | 130 | Complete |
 | `PermissionsPolicy` | 1 | 98 | 79 | 21 | Complete |
-| `Platform` | 4 | 415 | 394 | 61 | Complete |
+| `Platform` | 4 | 415 | 1,014 | 61 | Complete |
 | `ReferrerPolicy` | 2 | 298 | 239 | 123 | Complete |
 | `RequestIdleCallback` | 1 | 55 | 36 | 10 | Complete |
 | `ResizeObserver` | 4 | 376 | 238 | 89 | Complete |
 | `ResourceTiming` | 1 | 340 | 317 | 71 | Complete |
 | `SRI` | 1 | 191 | 147 | 95 | Complete |
-| `SVG` | 80 | 9,570 | 2,543 | 632 | Complete |
+| `SVG` | 80 | 9,570 | 3,561 | 726 | Complete |
 | `SecureContexts` | 1 | 88 | 63 | 13 | Complete |
 | `Selection` | 1 | 744 | 569 | 96 | Complete |
 | `Serial` | 2 | 381 | 231 | 33 | Complete |
 | `ServiceWorker` | 9 | 1,365 | 842 | 248 | Complete |
 | `Speech` | 11 | 504 | 596 | 111 | Complete |
 | `StorageAPI` | 7 | 381 | 342 | 146 | Complete |
-| `Streams` | 25 | 8,784 | 2,640 | 822 | Complete |
+| `Streams` | 25 | 8,784 | 4,683 | 918 | Complete |
 | `TrustedTypes` | 7 | 1,108 | 722 | 168 | Complete |
 | `UIEvents` | 12 | 1,557 | 1,270 | 252 | Complete |
 | `URLPattern` | 1 | 148 | 300 | 41 | Complete |
@@ -95,7 +98,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `WebAssembly` | 6 | 2,157 | 740 | 245 | Complete |
 | `WebAudio` | 26 | 3,649 | 1,660 | 298 | Complete |
 | `WebDriver` | 17 | 5,013 | 2,091 | 423 | Complete |
-| `WebGL` | 39 | 7,163 | 1,982 | 194 | Complete |
+| `WebGL` | 39 | 7,163 | 3,006 | 288 | Complete |
 | `WebIDL` | 10 | 2,110 | 1,139 | 279 | Complete |
 | `WebSockets` | 1 | 429 | 285 | 100 | Complete |
 | `WebVTT` | 2 | 326 | 445 | 221 | Complete |
@@ -105,15 +108,50 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 244 | 83 | Complete |
 | `XPath` | 5 | 438 | 407 | 83 | Complete |
-| **Total** | **1,147** | **316,400** | **222,164** | **33,297** | **75 complete, 0 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **272,002** | **42,009** | **75 complete, 0 present, 0 untranslated** |
 
 ## Verification
 
-```text
-$ /Users/alex/code/v/v test .
-Summary for all V _test.v files: 324 passed, 324 total.
+The current repository-wide implementation-symbol audit is clean, and the
+focused CSS and Layout verification suites pass:
 
-$ cd /Users/alex/code/3rd/ladybird
-$ PATH="/opt/homebrew/opt/rustup/bin:$PATH" ./Meta/ladybird.py build --jobs 8 Ladybird
-[3722/3722] Linking CXX executable bin/Ladybird.app/Contents/MacOS/Ladybird
+```text
+$ python3 tools/libweb_translation_audit.py
+upstream modules: 74
+upstream .cpp files: 1147
+upstream implementations: 18658
+unmatched implementations by module:
+
+$ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
+Layout corpus: 904 passed, 0 failed, 904 total
+
+$ /Users/alex/code/v/v_old -enable-globals test layout
+Summary for all V _test.v files: 17 passed, 17 total.
+
+$ /Users/alex/code/v/v_old -enable-globals test css
+Summary for all V _test.v files: 19 passed, 19 total.
+
+$ /Users/alex/code/v/v_old -enable-globals test integration
+Summary for all V _test.v files: 2 passed, 2 total.
+
+$ /Users/alex/code/v/v_old -enable-globals test .
+Summary for all V _test.v files: 357 passed, 357 total.
 ```
+
+## Native browser rendering
+
+The translated browser builds as `Build/v/Ladybird.app` and passes its
+JavaScript/DOM headless smoke check. Its 800x600 `https://example.com` document
+capture was compared with an upstream Ladybird capture from the same checkout:
+
+```text
+different pixels: 11888 / 480000 (2.4767%)
+pixels with channel error over 10: 6767 (1.4098%)
+mean absolute error: 0.6846
+RMSE: 7.8784
+```
+
+The page geometry and content coincide visually; the remaining pixel delta is
+concentrated on glyph edges rendered by the two native text backends. The
+layout-test comparison path selects Ladybird's Serenity Sans test face and also
+exercises native polygon decorations and clipped outer box shadows.

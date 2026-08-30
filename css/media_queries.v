@@ -389,7 +389,7 @@ pub fn parse_media_query(context ParsingParams, text string) ?&MediaQuery {
 	return queries[0]
 }
 
-pub fn (media_query &MediaQuery) evaluate(doc &dom.Document) bool {
+pub fn (media_query &MediaQuery) evaluate(doc ?&dom.Document) bool {
 	mut result := media_query_matches_media_type(media_query.media_type)
 	if result != .false_ {
 		if condition := media_query.media_condition {
@@ -844,7 +844,7 @@ pub fn parse_media_query_from_text(text string) ?&MediaQuery {
 				media_type:      MediaQueryType.all()
 				media_condition: unsafe { &BooleanExpression(condition) }
 			}
-			query.matches = query.evaluate(unsafe { nil })
+			query.matches = query.evaluate(none)
 			return &query
 		}
 	}
@@ -902,7 +902,7 @@ pub fn parse_media_query_from_text(text string) ?&MediaQuery {
 		media_type:      media_type
 		media_condition: condition
 	}
-	query.matches = query.evaluate(unsafe { nil })
+	query.matches = query.evaluate(none)
 	return &query
 }
 
@@ -1125,8 +1125,7 @@ fn parse_media_feature_boolean(mut tokens SupportsTokenStream) ?&BooleanExpressi
 	}
 	tokens = transaction
 	text := '(${name.name})'
-	return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(name.name,
-		.is_true, none, none, none, none))
+	return BooleanExpression.create_media_feature(text, name.name, .is_true, none, none, none, none)
 }
 
 fn parse_media_feature_plain(mut tokens SupportsTokenStream) ?&BooleanExpression {
@@ -1147,18 +1146,18 @@ fn parse_media_feature_plain(mut tokens SupportsTokenStream) ?&BooleanExpression
 	match name.prefix {
 		.normal {
 			text := '(${name.name}: ${value.text})'
-			return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(name.name,
-				.exact_value, value, none, none, none))
+			return BooleanExpression.create_media_feature(text, name.name, .exact_value, value,
+				none, none, none)
 		}
 		.min {
 			text := '(min-${name.name}: ${value.text})'
-			return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(name.name,
-				.min_value, value, none, none, none))
+			return BooleanExpression.create_media_feature(text, name.name, .min_value, value, none,
+				none, none)
 		}
 		.max {
 			text := '(max-${name.name}: ${value.text})'
-			return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(name.name,
-				.max_value, value, none, none, none))
+			return BooleanExpression.create_media_feature(text, name.name, .max_value, value, none,
+				none, none)
 		}
 	}
 }
@@ -1176,8 +1175,8 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 				if !transaction.has_next_token() && value.kind != .ident {
 					tokens = transaction
 					text := '(${name.name} ${media_feature_comparison_to_string(comparison)} ${value.text})'
-					return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(name.name,
-						.half_range_query_left, value, comparison, none, none))
+					return BooleanExpression.create_media_feature(text, name.name,
+						.half_range_query_left, value, comparison, none, none)
 				}
 			}
 		}
@@ -1203,8 +1202,8 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 	if !transaction.has_next_token() {
 		tokens = transaction
 		text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name})'
-		return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(maybe_name.name,
-			.half_range_query_right, left_value, left_comparison, none, none))
+		return BooleanExpression.create_media_feature(text, maybe_name.name,
+			.half_range_query_right, left_value, left_comparison, none, none)
 	}
 
 	right_comparison := parse_media_feature_comparison(mut transaction) or { return none }
@@ -1219,8 +1218,8 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 
 	tokens = transaction
 	text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name} ${media_feature_comparison_to_string(right_comparison)} ${right_value.text})'
-	return BooleanExpression.create_general_enclosed(text, evaluate_media_feature_without_window(maybe_name.name,
-		.range, left_value, left_comparison, right_comparison, right_value))
+	return BooleanExpression.create_media_feature(text, maybe_name.name, .range, left_value,
+		left_comparison, right_comparison, right_value)
 }
 
 fn find_media_feature_name_after_comparison(tokens SupportsTokenStream) ?MediaFeatureName {
@@ -1520,8 +1519,8 @@ enum MediaFeatureEvalKind {
 	range
 }
 
-fn evaluate_media_feature_without_window(feature_name string, kind MediaFeatureEvalKind, value ?MediaFeatureValueLocal, comparison ?MediaFeatureComparison, right_comparison ?MediaFeatureComparison, right_value ?MediaFeatureValueLocal) MatchResult {
-	queried_value := query_media_feature_without_window(feature_name) or { return .unknown }
+fn evaluate_media_feature(feature_name string, kind MediaFeatureEvalKind, value ?MediaFeatureValueLocal, comparison ?MediaFeatureComparison, right_comparison ?MediaFeatureComparison, right_value ?MediaFeatureValueLocal, document ?&dom.Document) MatchResult {
+	queried_value := query_media_feature(feature_name, document) or { return .unknown }
 	match kind {
 		.is_true {
 			return evaluate_media_feature_value_as_boolean(feature_name, queried_value)
@@ -1562,7 +1561,9 @@ fn evaluate_media_feature_without_window(feature_name string, kind MediaFeatureE
 	}
 }
 
-fn query_media_feature_without_window(feature_name string) ?MediaFeatureValueLocal {
+fn query_media_feature(feature_name string, document ?&dom.Document) ?MediaFeatureValueLocal {
+	viewport_width := if doc := document { doc.viewport_rect().width } else { 800.0 }
+	viewport_height := if doc := document { doc.viewport_rect().height } else { 600.0 }
 	return match feature_name {
 		'any-hover', 'hover' {
 			media_feature_ident_value('hover')
@@ -1592,7 +1593,7 @@ fn query_media_feature_without_window(feature_name string) ?MediaFeatureValueLoc
 			media_feature_ident_value('none')
 		}
 		'height', 'device-height' {
-			media_feature_length_value(600)
+			media_feature_length_value(viewport_height)
 		}
 		'horizontal-viewport-segments', 'vertical-viewport-segments' {
 			media_feature_integer_value(1)
@@ -1601,7 +1602,11 @@ fn query_media_feature_without_window(feature_name string) ?MediaFeatureValueLoc
 			media_feature_ident_value('back')
 		}
 		'orientation' {
-			media_feature_ident_value('landscape')
+			media_feature_ident_value(if viewport_width >= viewport_height {
+				'landscape'
+			} else {
+				'portrait'
+			})
 		}
 		'overflow-block', 'overflow-inline' {
 			media_feature_ident_value('scroll')
@@ -1623,10 +1628,14 @@ fn query_media_feature_without_window(feature_name string) ?MediaFeatureValueLoc
 			media_feature_ident_value('fast')
 		}
 		'width', 'device-width' {
-			media_feature_length_value(800)
+			media_feature_length_value(viewport_width)
 		}
 		'aspect-ratio', 'device-aspect-ratio' {
-			media_feature_ratio_value(800.0 / 600.0)
+			media_feature_ratio_value(if viewport_height != 0 {
+				viewport_width / viewport_height
+			} else {
+				0.0
+			})
 		}
 		else {
 			none

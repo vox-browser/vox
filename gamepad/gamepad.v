@@ -77,6 +77,27 @@ pub fn (pad &Gamepad) vibration_actuator() &GamepadHapticActuator {
 	return pad.vibration_actuator_
 }
 
+pub fn (pad &Gamepad) sdl_joystick_id() int {
+	return pad.device.id
+}
+
+// Device is the translated platform boundary corresponding to SDL_Gamepad.
+pub fn (pad &Gamepad) sdl_gamepad() &Device {
+	return pad.device
+}
+
+pub fn (mut pad Gamepad) set_connected(value bool) {
+	pad.connected_ = value
+}
+
+pub fn (mut pad Gamepad) set_exposed(value bool) {
+	pad.exposed_ = value
+}
+
+pub fn (mut pad Gamepad) set_timestamp(value f64) {
+	pad.timestamp_ = value
+}
+
 fn (mut pad Gamepad) initialize_axes() {
 	mut maximum_index := -1
 	for input in pad.device.axes {
@@ -121,36 +142,46 @@ fn (mut pad Gamepad) select_a_mapping() {
 }
 
 fn normalize_axis(value i16, minimum i16, maximum i16) f64 {
-	if maximum == minimum { return 0.0 }
-	return math.max(-1.0, math.min(1.0,
-		2.0 * (f64(value) - f64(minimum)) / (f64(maximum) - f64(minimum)) - 1.0))
+	return 2.0 * (f64(value) - f64(minimum)) / (f64(maximum) - f64(minimum)) - 1.0
 }
 
 fn normalize_button(value i16, minimum i16, maximum i16) f64 {
-	if maximum == minimum { return 0.0 }
-	return math.max(0.0, math.min(1.0, (f64(value) - f64(minimum)) / (f64(maximum) - f64(minimum))))
+	return (f64(value) - f64(minimum)) / (f64(maximum) - f64(minimum))
 }
 
-pub fn (mut pad Gamepad) update_input_state(timestamp f64) {
-	pad.timestamp_ = timestamp
+pub fn (mut pad Gamepad) map_and_normalize_axes() {
 	for input in pad.device.axes {
 		if input.canonical_index >= 0 && input.canonical_index < pad.axes_.len {
 			pad.axes_[input.canonical_index] = normalize_axis(input.value, input.minimum,
 				input.maximum)
 		}
 	}
+}
+
+pub fn (mut pad Gamepad) map_and_normalize_buttons() {
 	for input in pad.device.buttons {
 		if input.canonical_index < 0 || input.canonical_index >= pad.buttons_.len { continue
 		 }
 		mut button := pad.buttons_[input.canonical_index]
-		button.value_ = normalize_button(input.value, input.minimum, input.maximum)
-		button.pressed_ = if input.analog {
-			button.value_ > analog_button_press_threshold
-		} else {
+		value := normalize_button(input.value, input.minimum, input.maximum)
+		button.set_value(value)
+		button.set_pressed(if input.maximum == 1 {
 			input.value == input.maximum
-		}
-		button.touched_ = button.pressed_
+		} else {
+			value > analog_button_press_threshold
+		})
+		button.set_touched(button.pressed())
 	}
+}
+
+pub fn (mut pad Gamepad) update_gamepad_state(timestamp f64) {
+	pad.set_timestamp(timestamp)
+	pad.map_and_normalize_axes()
+	pad.map_and_normalize_buttons()
+}
+
+pub fn (mut pad Gamepad) update_input_state(timestamp f64) {
+	pad.update_gamepad_state(timestamp)
 }
 
 pub fn (pad &Gamepad) contains_gamepad_user_gesture() bool {

@@ -7,14 +7,14 @@ module html
 
 import dom
 
-pub struct AvailableImageKey {
+pub struct Key {
 pub:
 	url    string
 	mode   CORSSettingAttribute
 	origin ?dom.Origin
 }
 
-pub fn (key &AvailableImageKey) equals(other &AvailableImageKey) bool {
+pub fn (key &Key) equals(other &Key) bool {
 	if key.url != other.url || key.mode != other.mode {
 		return false
 	}
@@ -30,6 +30,22 @@ pub fn (key &AvailableImageKey) equals(other &AvailableImageKey) bool {
 	return true
 }
 
+pub fn (key &Key) hash() u32 {
+	// FNV-1a over the same three value components used by equality. The native
+	// implementation memoizes this value; caching is not observable.
+	mut value := u32(2_166_136_261)
+	for byte in key.url.bytes() {
+		value = (value ^ u32(byte)) * u32(16_777_619)
+	}
+	value = (value ^ u32(key.mode)) * u32(16_777_619)
+	if origin := key.origin {
+		for byte in origin.serialize().bytes() {
+			value = (value ^ u32(byte)) * u32(16_777_619)
+		}
+	}
+	return value
+}
+
 @[heap]
 pub struct AvailableImageEntry {
 pub:
@@ -38,7 +54,7 @@ pub:
 }
 
 struct StoredAvailableImage {
-	key   AvailableImageKey
+	key   Key
 	entry &AvailableImageEntry
 }
 
@@ -47,7 +63,7 @@ mut:
 	images []StoredAvailableImage
 }
 
-pub fn (mut images ListOfAvailableImages) add(key AvailableImageKey, image_data DecodedImageData, ignore_higher_layer_caching bool) {
+pub fn (mut images ListOfAvailableImages) add(key Key, image_data DecodedImageData, ignore_higher_layer_caching bool) {
 	entry := &AvailableImageEntry{
 		image_data:                  image_data
 		ignore_higher_layer_caching: ignore_higher_layer_caching
@@ -67,7 +83,7 @@ pub fn (mut images ListOfAvailableImages) add(key AvailableImageKey, image_data 
 	}
 }
 
-pub fn (mut images ListOfAvailableImages) remove(key AvailableImageKey) {
+pub fn (mut images ListOfAvailableImages) remove(key Key) {
 	for index, stored in images.images {
 		if stored.key.equals(&key) {
 			images.images.delete(index)
@@ -76,7 +92,7 @@ pub fn (mut images ListOfAvailableImages) remove(key AvailableImageKey) {
 	}
 }
 
-pub fn (images &ListOfAvailableImages) get(key AvailableImageKey) ?&AvailableImageEntry {
+pub fn (images &ListOfAvailableImages) get(key Key) ?&AvailableImageEntry {
 	for stored in images.images {
 		if stored.key.equals(&key) {
 			return stored.entry

@@ -5,6 +5,8 @@
 // Translation of Platform/ImageCodecPlugin.{h,cpp}.
 module platform
 
+__global platform_image_codec_plugin &ImageCodecPlugin
+
 pub struct Frame {
 pub:
 	bitmap   []u8
@@ -44,6 +46,24 @@ pub:
 	stop_animation_decode_hook    ?StopAnimationHook
 	on_animation_frames_decoded   ?AnimationFramesDecodedHook
 	on_animation_decode_failed    ?AnimationDecodeFailedHook
+}
+
+pub fn ImageCodecPlugin.the() &ImageCodecPlugin {
+	if platform_image_codec_plugin == unsafe { nil } {
+		panic('ImageCodecPlugin is not installed')
+	}
+	return platform_image_codec_plugin
+}
+
+pub fn ImageCodecPlugin.is_initialized() bool {
+	return platform_image_codec_plugin != unsafe { nil }
+}
+
+pub fn ImageCodecPlugin.install(plugin &ImageCodecPlugin) {
+	if platform_image_codec_plugin != unsafe { nil } {
+		panic('ImageCodecPlugin already installed')
+	}
+	platform_image_codec_plugin = plugin
 }
 
 pub fn (plugin &ImageCodecPlugin) decode_image(bytes []u8) !DecodedImage {

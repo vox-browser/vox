@@ -5,6 +5,8 @@
 // Translation of Platform/EventLoopPlugin.{h,cpp}.
 module platform
 
+__global platform_event_loop_plugin &EventLoopPlugin
+
 pub type GoalCondition = fn () bool
 
 pub type DeferredFunction = fn ()
@@ -18,6 +20,20 @@ mut:
 
 pub fn EventLoopPlugin.new() &EventLoopPlugin {
 	return &EventLoopPlugin{}
+}
+
+pub fn EventLoopPlugin.the() &EventLoopPlugin {
+	if platform_event_loop_plugin == unsafe { nil } {
+		panic('EventLoopPlugin is not installed')
+	}
+	return platform_event_loop_plugin
+}
+
+pub fn EventLoopPlugin.install(plugin &EventLoopPlugin) {
+	if platform_event_loop_plugin != unsafe { nil } {
+		panic('EventLoopPlugin already installed')
+	}
+	platform_event_loop_plugin = plugin
 }
 
 pub fn (mut plugin EventLoopPlugin) spin_until(goal GoalCondition) {

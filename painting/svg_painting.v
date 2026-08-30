@@ -33,14 +33,14 @@ pub fn (mut style SVGGradientPaintStyle) add_color_stop(stop ColorStop, should_s
 }
 
 pub struct SVGLinearGradientPaintStyle {
-pub:
+pub mut:
 	gradient    SVGGradientPaintStyle
 	start_point Point
 	end_point   Point
 }
 
 pub struct SVGRadialGradientPaintStyle {
-pub:
+pub mut:
 	gradient     SVGGradientPaintStyle
 	start_center Point
 	start_radius f64
@@ -84,6 +84,11 @@ pub:
 	clip_rule      WindingRule = .nonzero
 	children       []SVGPaintable
 }
+
+pub fn (paintable SVGPaintable) compute_absolute_rect() Rect { return paintable.transform.map_rect(paintable.absolute_rect) }
+pub fn (paintable SVGPaintable) is_svg_paintable() bool { return true }
+pub fn (paintable SVGPaintable) layout_box() string { return paintable.id }
+pub fn (paintable SVGPaintable) should_anti_alias() bool { return paintable.anti_alias }
 
 fn distance_to_segment(point Point, start Point, end Point) f64 {
 	dx := end.x - start.x

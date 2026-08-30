@@ -8,7 +8,9 @@
 // represented by explicit properties and host hooks.
 module html
 
+import css
 import dom
+import speech
 
 pub struct LocationNavigation {
 pub:
@@ -16,24 +18,221 @@ pub:
 	history_behavior HistoryHandlingBehavior
 }
 
-pub type LocationNavigateHook = fn (dom.URL, HistoryHandlingBehavior) !
+pub type LocationNavigateHook = fn(dom.URL, HistoryHandlingBehavior) !
 
-pub type LocationReloadHook = fn ()
+pub type LocationReloadHook = fn()
 
 @[heap]
 pub struct LocationModel {
 mut:
-	document_      ?&dom.Document
-	entry_origin_  dom.Origin
-	navigate_hook_ ?LocationNavigateHook
-	reload_hook_   ?LocationReloadHook
-	navigations_   []LocationNavigation
-	reload_count_  u32
+	document_                   ?&dom.Document
+	entry_origin_               dom.Origin
+	prototype_                  dom.JSValue = dom.JSValue{ kind: .null_ }
+	properties_                 map[string]dom.JSValue
+	deleted_default_properties_ map[string]bool
+	navigate_hook_              ?LocationNavigateHook
+	reload_hook_                ?LocationReloadHook
+	navigations_                []LocationNavigation
+	reload_count_               u32
+}
+
+pub fn (location &LocationModel) cross_origin_property_descriptor_map() []CrossOriginProperty {
+	_ = location
+	return cross_origin_properties(.location)
+}
+
+pub fn (location &LocationModel) is_html_location() bool {
+	_ = location
+	return true
+}
+
+const location_default_property_names = [
+	'href',
+	'origin',
+	'protocol',
+	'host',
+	'hostname',
+	'port',
+	'pathname',
+	'search',
+	'hash',
+	'assign',
+	'replace',
+	'reload',
+	'toString',
+]
+
+fn js_values_are_same(left dom.JSValue, right dom.JSValue) bool {
+	if left.kind != right.kind {
+		return false
+	}
+	return match left.kind {
+		.undefined, .null_ { true }
+		.boolean { left.boolean_data == right.boolean_data }
+		.number { left.number_data == right.number_data }
+		.string { left.string_data == right.string_data }
+		.object { left.object_data == right.object_data }
+	}
+}
+
+fn (location &LocationModel) is_same_origin_with(caller_origin dom.Origin) bool {
+	document := location.document_ or { return true }
+	return document.origin().is_same_origin(caller_origin)
+}
+
+fn (location &LocationModel) default_property_value(name string) !dom.JSValue {
+	return match name {
+		'href', 'toString' { dom.js_string(location.href()!) }
+		'origin' { dom.js_string(location.origin()!) }
+		'protocol' { dom.js_string(location.protocol()!) }
+		'host' { dom.js_string(location.host()!) }
+		'hostname' { dom.js_string(location.hostname()!) }
+		'port' { dom.js_string(location.port()!) }
+		'pathname' { dom.js_string(location.pathname()!) }
+		'search' { dom.js_string(location.search()!) }
+		'hash' { dom.js_string(location.hash()!) }
+		'assign', 'replace', 'reload' { dom.js_string('[host function ${name}]') }
+		else { dom.js_undefined() }
+	}
+}
+
+// 7.10.5.1 [[GetPrototypeOf]]. The caller origin is explicit in the V model
+// because there is no ambient JavaScript current realm.
+pub fn (location &LocationModel) internal_get_prototype_of(caller_origin dom.Origin) dom.JSValue {
+	if location.is_same_origin_with(caller_origin) {
+		return location.prototype_
+	}
+	return dom.js_null()
+}
+
+// 7.10.5.2 [[SetPrototypeOf]].
+pub fn (mut location LocationModel) internal_set_prototype_of(prototype dom.JSValue) bool {
+	return js_values_are_same(location.prototype_, prototype)
+}
+
+// 7.10.5.3 [[IsExtensible]].
+pub fn (location &LocationModel) internal_is_extensible() bool {
+	return true
+}
+
+// 7.10.5.4 [[PreventExtensions]].
+pub fn (mut location LocationModel) internal_prevent_extensions() bool {
+	return false
+}
+
+// 7.10.5.5 [[GetOwnProperty]].
+pub fn (location &LocationModel) internal_get_own_property(caller_origin dom.Origin, key string) !WindowProxyPropertyResult {
+	if location.is_same_origin_with(caller_origin) {
+		if value := location.properties_[key] {
+			return WindowProxyPropertyResult{
+				found: true
+				descriptor: WindowProxyProperty{
+					value: value
+					writable: true
+					enumerable: true
+					configurable: true
+				}
+			}
+		}
+		if key in location_default_property_names && key !in location.deleted_default_properties_ {
+			return WindowProxyPropertyResult{
+				found: true
+				descriptor: WindowProxyProperty{
+					value: location.default_property_value(key)!
+					writable: key in ['href', 'protocol', 'host', 'hostname', 'port', 'pathname',
+						'search', 'hash']
+					enumerable: true
+					configurable: true
+				}
+			}
+		}
+		return WindowProxyPropertyResult{}
+	}
+	if key == 'href' || key == 'replace' {
+		return WindowProxyPropertyResult{
+			found: true
+			descriptor: WindowProxyProperty{
+				value: if key == 'replace' {
+					dom.js_string('[host function replace]')} else {
+					dom.js_undefined()}
+				writable: key == 'href'
+				configurable: true
+			}
+		}
+	}
+	fallback := cross_origin_property_fallback(key)!
+	return WindowProxyPropertyResult{
+		found: true
+		descriptor: fallback
+	}
+}
+
+// 7.10.5.6 [[DefineOwnProperty]].
+pub fn (mut location LocationModel) internal_define_own_property(caller_origin dom.Origin, key string, value dom.JSValue) !bool {
+	if !location.is_same_origin_with(caller_origin) {
+		return error("SecurityError: cannot define property '${key}' on cross-origin Location")
+	}
+	location.properties_[key] = value
+	location.deleted_default_properties_.delete(key)
+	return true
+}
+
+// 7.10.5.7 [[Get]].
+pub fn (location &LocationModel) internal_get(caller_origin dom.Origin, key string) !dom.JSValue {
+	descriptor := location.internal_get_own_property(caller_origin, key)!
+	if !descriptor.found {
+		return dom.js_undefined()
+	}
+	return descriptor.descriptor.value
+}
+
+// 7.10.5.8 [[Set]].
+pub fn (mut location LocationModel) internal_set(caller_origin dom.Origin, key string, value dom.JSValue) !bool {
+	if location.is_same_origin_with(caller_origin) {
+		if key == 'href' && value.kind == .string {
+			location.set_href(value.string_data)!
+			return true
+		}
+		location.properties_[key] = value
+		location.deleted_default_properties_.delete(key)
+		return true
+	}
+	if key == 'href' && value.kind == .string {
+		location.set_href(value.string_data)!
+		return true
+	}
+	return error("SecurityError: cannot set property '${key}' on cross-origin Location")
+}
+
+// 7.10.5.9 [[Delete]].
+pub fn (mut location LocationModel) internal_delete(caller_origin dom.Origin, key string) !bool {
+	if !location.is_same_origin_with(caller_origin) {
+		return error("SecurityError: cannot delete property '${key}' on cross-origin Location")
+	}
+	location.properties_.delete(key)
+	if key in location_default_property_names {
+		location.deleted_default_properties_[key] = true
+	}
+	return true
+}
+
+// 7.10.5.10 [[OwnPropertyKeys]].
+pub fn (location &LocationModel) internal_own_property_keys(caller_origin dom.Origin) []string {
+	if !location.is_same_origin_with(caller_origin) {
+		return ['href', 'replace']
+	}
+	mut keys := location.properties_.keys()
+	for key in location_default_property_names {
+		if key !in location.deleted_default_properties_ && key !in keys {
+			keys << key
+		}
+	}
+	return keys
 }
 
 pub fn LocationModel.create(document ?&dom.Document, entry_origin dom.Origin) &LocationModel {
 	return &LocationModel{
-		document_:     document
+		document_: document
 		entry_origin_: entry_origin
 	}
 }
@@ -75,7 +274,7 @@ fn (mut location LocationModel) navigate(url dom.URL, behavior HistoryHandlingBe
 		return
 	}
 	location.navigations_ << LocationNavigation{
-		url:              url
+		url: url
 		history_behavior: behavior
 	}
 	if hook := location.navigate_hook_ {
@@ -285,30 +484,121 @@ pub fn (location &LocationModel) reload_count() u32 {
 @[heap]
 pub struct BrowsingContextModel {
 mut:
-	document_                ?&dom.Document
-	window_                  ?&WindowModel
-	window_proxy_            ?&WindowProxyModel
-	group_                   ?&BrowsingContextGroup
-	parent_                  ?&BrowsingContextModel
-	opener_browsing_context_ ?&BrowsingContextModel
-	children_                []&BrowsingContextModel
-	target_name_             string
-	is_auxiliary_            bool
-	is_popup_                bool
-	discarded_               bool
-	fully_active_override_   bool = true
+	document_                  ?&dom.Document
+	window_                    ?&WindowModel
+	window_proxy_              ?&WindowProxyModel
+	group_                     ?&BrowsingContextGroup
+	parent_                    ?&BrowsingContextModel
+	opener_browsing_context_   ?&BrowsingContextModel
+	children_                  []&BrowsingContextModel
+	target_name_               string
+	is_auxiliary_              bool
+	is_popup_                  bool
+	popup_sandboxing_flag_set_ SandboxingFlagSet
+	discarded_                 bool
+	fully_active_override_     bool = true
+	top_level_traversable_     ?&TraversableNavigable
+	container_                 ?&dom.Element
+}
+
+pub struct BrowsingContextAndDocument {
+pub:
+	browsing_context &BrowsingContextModel
+	document         &dom.Document
+}
+
+// https://html.spec.whatwg.org/multipage/document-sequences.html#determining-the-origin
+pub fn determine_the_origin(url ?dom.URL, sandbox_flags SandboxingFlagSet, source_origin ?dom.Origin) dom.Origin {
+	if sandbox_flags.contains(.sandboxed_origin) {
+		return dom.origin_create_opaque()
+	}
+	url_value := url or { return dom.origin_create_opaque() }
+	if url_matches_about_srcdoc(url_value) {
+		return source_origin or {
+			panic('source origin must be present when determining the origin of about:srcdoc')
+		}
+	}
+	if url_matches_about_blank(url_value) {
+		if inherited_origin := source_origin {
+			return inherited_origin
+		}
+	}
+	return url_value.origin()
+}
+
+// https://html.spec.whatwg.org/multipage/browsers.html#determining-the-creation-sandboxing-flags
+pub fn determine_the_creation_sandboxing_flags(context &BrowsingContextModel, embedder ?&dom.Element) SandboxingFlagSet {
+	if element := embedder {
+		mut flags := SandboxingFlagSet{}
+		if element.local_name() == 'iframe' && (element.namespace_uri() or { '' }) == namespace_html {
+			iframe := unsafe { &dom.HTMLIFrameElement(element) }
+			flags = flags.union(html_iframe_element_model_for_dom_element(iframe).iframe_sandboxing_flag_set())
+		}
+		document_flags := element.document().active_sandboxing_flag_set()
+		if document_flags.sandboxed_document_domain {
+			flags = flags.union(SandboxingFlagSet{ bits: u32(SandboxingFlag.sandboxed_document_domain) })
+		}
+		if document_flags.sandboxed_forms {
+			flags = flags.union(SandboxingFlagSet{ bits: u32(SandboxingFlag.sandboxed_forms) })
+		}
+		return flags
+	}
+	return context.popup_sandboxing_flag_set()
 }
 
 pub fn BrowsingContextModel.create(document ?&dom.Document, parent ?&BrowsingContextModel, target_name string) &BrowsingContextModel {
 	context := &BrowsingContextModel{
-		document_:    document
-		parent_:      parent
+		document_: document
+		parent_: parent
 		target_name_: target_name
 	}
 	if mut parent_context := parent {
 		parent_context.children_ << context
 	}
 	return context
+}
+
+pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(_ &dom.Page, creator ?&dom.Document, embedder ?&dom.Element, group &BrowsingContextGroup) !BrowsingContextAndDocument {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.html)
+	document.set_content_type('text/html')
+	document.set_quirks_mode(.yes)
+	document.set_origin(if creator_document := creator {
+		creator_document.origin()
+	} else {
+		dom.origin_create_opaque()
+	})
+	document.set_is_initial_about_blank(true)
+	document.set_allow_declarative_shadow_roots(true)
+	if creator_document := creator {
+		document.set_referrer(creator_document.url_string())
+	}
+	document.populate_with_html_head_and_body()!
+	context := BrowsingContextModel.create(document, none, '')
+	mut mutable_context := unsafe { &BrowsingContextModel(context) }
+	mutable_context.set_container(embedder)
+	mut mutable_group := unsafe { &BrowsingContextGroup(group) }
+	mutable_group.append_model(context)
+	_ = WindowModel.create(document, context)!
+	return BrowsingContextAndDocument{
+		browsing_context: context
+		document: document
+	}
+}
+
+pub fn BrowsingContextModel.create_a_new_auxiliary_browsing_context_and_document(page &dom.Page, opener &BrowsingContextModel) !BrowsingContextAndDocument {
+	top := opener.top_level_browsing_context() or {
+		return error('InvalidStateError: opener has no active top-level browsing context')
+	}
+	group := top.group_ or {
+		return error('InvalidStateError: opener top-level browsing context has no group')
+	}
+	result := BrowsingContextModel.create_a_new_browsing_context_and_document(page, opener.active_document(), none, group)!
+	mut context := result.browsing_context
+	context.set_opener(opener)
+	context.is_auxiliary_ = true
+	context.top_level_traversable_ = top.top_level_traversable_
+	return result
 }
 
 pub fn (context &BrowsingContextModel) active_document() ?&dom.Document {
@@ -339,6 +629,16 @@ pub fn (context &BrowsingContextModel) group() ?&BrowsingContextGroup {
 	return context.group_
 }
 
+pub fn (context &BrowsingContextModel) page() ?&dom.Page {
+	group := context.group_ or { return none }
+	return group.page()
+}
+
+pub fn (context &BrowsingContextModel) virtual_browsing_context_group_id() string {
+	group := context.group_ or { return '' }
+	return '${u64(voidptr(group))}'
+}
+
 pub fn (mut context BrowsingContextModel) set_group(group ?&BrowsingContextGroup) {
 	context.group_ = group
 }
@@ -364,6 +664,14 @@ pub fn (mut context BrowsingContextModel) set_opener(opener ?&BrowsingContextMod
 	context.is_auxiliary_ = opener != none
 }
 
+pub fn (context &BrowsingContextModel) opener_browsing_context() ?&BrowsingContextModel {
+	return context.opener_browsing_context_
+}
+
+pub fn (mut context BrowsingContextModel) set_opener_browsing_context(opener ?&BrowsingContextModel) {
+	context.set_opener(opener)
+}
+
 pub fn (context &BrowsingContextModel) opener() ?&BrowsingContextModel {
 	return context.opener_browsing_context_
 }
@@ -374,6 +682,22 @@ pub fn (mut context BrowsingContextModel) set_popup(value bool) {
 
 pub fn (context &BrowsingContextModel) is_popup() bool {
 	return context.is_popup_
+}
+
+pub fn (context &BrowsingContextModel) is_auxiliary() bool {
+	return context.is_auxiliary_
+}
+
+pub fn (mut context BrowsingContextModel) set_is_popup(value bool) {
+	context.set_popup(value)
+}
+
+pub fn (context &BrowsingContextModel) popup_sandboxing_flag_set() SandboxingFlagSet {
+	return context.popup_sandboxing_flag_set_
+}
+
+pub fn (mut context BrowsingContextModel) set_popup_sandboxing_flag_set(value SandboxingFlagSet) {
+	context.popup_sandboxing_flag_set_ = value
 }
 
 pub fn (context &BrowsingContextModel) is_top_level() bool {
@@ -390,6 +714,47 @@ pub fn (context &BrowsingContextModel) top_level_browsing_context() ?&BrowsingCo
 		current = parent
 	}
 	return none
+}
+
+pub fn (mut context BrowsingContextModel) set_top_level_traversable(traversable ?&TraversableNavigable) {
+	context.top_level_traversable_ = traversable
+}
+
+pub fn (context &BrowsingContextModel) container() ?&dom.Element {
+	return context.container_
+}
+
+pub fn (mut context BrowsingContextModel) set_container(container ?&dom.Element) {
+	context.container_ = container
+	document := context.document_ or { return }
+	mut navigable := document.cached_navigable() or { return }
+	if element := container {
+		navigable.container_ = unsafe { &dom.Node(element) }
+		navigable.container_document_ = element.document()
+	} else {
+		navigable.container_ = none
+		navigable.container_document_ = none
+	}
+}
+
+pub fn (context &BrowsingContextModel) top_level_traversable() ?&TraversableNavigable {
+	mut current := context
+	for {
+		if traversable := current.top_level_traversable_ {
+			return traversable
+		}
+		current = current.parent_ or { return none }
+	}
+	return none
+}
+
+pub fn (_ &BrowsingContextModel) the_one_permitted_sandboxed_navigator() ?&BrowsingContextModel {
+	// Upstream intentionally leaves this origin-model hook unimplemented.
+	return none
+}
+
+pub fn (_ &BrowsingContextModel) set_the_one_permitted_sandboxed_navigator(_ ?&BrowsingContextModel) {
+	// The corresponding upstream hook is intentionally a FIXME/no-op.
 }
 
 pub fn (context &BrowsingContextModel) is_ancestor_of(descendant &BrowsingContextModel) bool {
@@ -561,6 +926,16 @@ pub fn (proxy &WindowProxyModel) window() &WindowModel {
 	return proxy.window_
 }
 
+pub fn (proxy &WindowProxyModel) is_universal_global_scope_mixin() bool {
+	_ = proxy
+	return true
+}
+
+pub fn (proxy &WindowProxyModel) is_html_window_proxy() bool {
+	_ = proxy
+	return true
+}
+
 pub fn (mut proxy WindowProxyModel) set_window(window &WindowModel) {
 	proxy.window_ = window
 }
@@ -577,16 +952,39 @@ pub fn (proxy &WindowProxyModel) prevent_extensions() bool {
 	return false
 }
 
+// 7.4.1 [[GetPrototypeOf]]. The caller origin is explicit in the V model.
+pub fn (proxy &WindowProxyModel) internal_get_prototype_of(caller_origin dom.Origin) dom.JSValue {
+	if proxy.window_.same_origin(caller_origin) {
+		return proxy.window_.prototype()
+	}
+	return dom.js_null()
+}
+
+// 7.4.2 [[SetPrototypeOf]].
+pub fn (mut proxy WindowProxyModel) internal_set_prototype_of(prototype dom.JSValue) bool {
+	return js_values_are_same(proxy.window_.prototype(), prototype)
+}
+
+// 7.4.3 [[IsExtensible]].
+pub fn (proxy &WindowProxyModel) internal_is_extensible() bool {
+	return true
+}
+
+// 7.4.4 [[PreventExtensions]].
+pub fn (mut proxy WindowProxyModel) internal_prevent_extensions() bool {
+	return false
+}
+
 pub fn (proxy &WindowProxyModel) get_own_property(caller_origin dom.Origin, key string) !WindowProxyPropertyResult {
 	if index := window_property_array_index(key) {
 		children := proxy.window_.browsing_context().children()
 		if index < children.len {
 			child_proxy := children[index].window_proxy() or { return WindowProxyPropertyResult{} }
 			return WindowProxyPropertyResult{
-				found:      true
+				found: true
 				descriptor: WindowProxyProperty{
-					value:        dom.js_object(voidptr(child_proxy))
-					enumerable:   true
+					value: dom.js_object(voidptr(child_proxy))
+					enumerable: true
 					configurable: true
 				}
 			}
@@ -602,20 +1000,20 @@ pub fn (proxy &WindowProxyModel) get_own_property(caller_origin dom.Origin, key 
 			return WindowProxyPropertyResult{}
 		}
 		return WindowProxyPropertyResult{
-			found:      true
+			found: true
 			descriptor: WindowProxyProperty{
-				value:        value
-				writable:     true
-				enumerable:   true
+				value: value
+				writable: true
+				enumerable: true
 				configurable: true
 			}
 		}
 	}
 	if key in window_cross_origin_property_names {
 		return WindowProxyPropertyResult{
-			found:      true
+			found: true
 			descriptor: WindowProxyProperty{
-				value:        proxy.window_.named_property(key)
+				value: proxy.window_.named_property(key)
 				configurable: true
 			}
 		}
@@ -623,9 +1021,9 @@ pub fn (proxy &WindowProxyModel) get_own_property(caller_origin dom.Origin, key 
 	if child := proxy.window_.named_child(key) {
 		child_proxy := child.window_proxy() or { return WindowProxyPropertyResult{} }
 		return WindowProxyPropertyResult{
-			found:      true
+			found: true
 			descriptor: WindowProxyProperty{
-				value:        dom.js_object(voidptr(child_proxy))
+				value: dom.js_object(voidptr(child_proxy))
 				configurable: true
 			}
 		}
@@ -680,10 +1078,45 @@ pub fn (proxy &WindowProxyModel) own_property_keys(caller_origin dom.Origin) []s
 	}
 	if proxy.window_.same_origin(caller_origin) {
 		keys << proxy.window_.supported_property_names()
+		keys << proxy.window_.ordinary_property_names()
 	} else {
 		keys << window_cross_origin_property_names
 	}
 	return deduplicated_strings(keys)
+}
+
+// 7.4.5 [[GetOwnProperty]].
+pub fn (proxy &WindowProxyModel) internal_get_own_property(caller_origin dom.Origin, key string) !WindowProxyPropertyResult {
+	return proxy.get_own_property(caller_origin, key)
+}
+
+// 7.4.6 [[DefineOwnProperty]].
+pub fn (proxy &WindowProxyModel) internal_define_own_property(caller_origin dom.Origin, key string, value dom.JSValue) !bool {
+	return proxy.define_own_property(caller_origin, key, value)
+}
+
+// 7.4.7 [[Get]].
+pub fn (proxy &WindowProxyModel) internal_get(caller_origin dom.Origin, key string) !dom.JSValue {
+	result := proxy.get_own_property(caller_origin, key)!
+	if !result.found {
+		return dom.js_undefined()
+	}
+	return result.descriptor.value
+}
+
+// 7.4.8 [[Set]].
+pub fn (proxy &WindowProxyModel) internal_set(caller_origin dom.Origin, key string, value dom.JSValue) !bool {
+	return proxy.set(caller_origin, key, value)
+}
+
+// 7.4.9 [[Delete]].
+pub fn (proxy &WindowProxyModel) internal_delete(caller_origin dom.Origin, key string) !bool {
+	return proxy.delete(caller_origin, key)
+}
+
+// 7.4.10 [[OwnPropertyKeys]].
+pub fn (proxy &WindowProxyModel) internal_own_property_keys(caller_origin dom.Origin) []string {
+	return proxy.own_property_keys(caller_origin)
 }
 
 fn deduplicated_strings(values []string) []string {
@@ -713,38 +1146,101 @@ pub:
 pub struct WindowModel {
 	dom.EventTarget
 mut:
-	document_              &dom.Document                 = unsafe { nil }
-	browsing_context_      &BrowsingContextModel         = unsafe { nil }
-	window_proxy_          &WindowProxyModel             = unsafe { nil }
-	location_              &LocationModel                = unsafe { nil }
-	history_               &History                      = unsafe { nil }
-	navigation_            &Navigation                   = unsafe { nil }
-	navigator_             &Navigator                    = unsafe { nil }
-	custom_elements_       &CustomElementRegistry        = unsafe { nil }
-	animation_driver_      &AnimationFrameCallbackDriver = unsafe { nil }
-	close_watcher_manager_ &CloseWatcherManager          = unsafe { nil }
-	name_                  string
-	status_                string
-	closed_                bool
-	opener_disowned_       bool
-	named_properties_      map[string]dom.JSValue
-	posted_messages_       []PostedWindowMessage
-	stop_count_            u32
-	focus_count_           u32
+	document_                                 &dom.Document = unsafe { nil }
+	browsing_context_                         &BrowsingContextModel = unsafe { nil }
+	window_proxy_                             &WindowProxyModel = unsafe { nil }
+	location_                                 &LocationModel = unsafe { nil }
+	history_                                  &History = unsafe { nil }
+	navigation_                               &Navigation = unsafe { nil }
+	navigator_                                &Navigator = unsafe { nil }
+	custom_elements_                          &CustomElementRegistry = unsafe { nil }
+	animation_driver_                         &AnimationFrameCallbackDriver = unsafe { nil }
+	close_watcher_manager_                    &CloseWatcherManager = unsafe { nil }
+	screen_                                   ?&css.Screen
+	visual_viewport_                          ?&css.VisualViewport
+	speech_synthesis_                         ?&speech.SpeechSynthesis
+	external_                                 ?&External
+	local_storage_                            ?&Storage
+	session_storage_                          ?&Storage
+	local_storage_bottle_                     ?&StorageBottle
+	session_storage_bottle_                   ?&StorageBottle
+	storage_hub_                              ?&StorageHub
+	cookie_store_                             voidptr = unsafe { nil }
+	cookie_store_created_                     bool
+	current_event_                            ?&dom.Event
+	idle_request_callbacks_                   []WindowIdleCallback
+	runnable_idle_callbacks_                  []WindowIdleCallback
+	idle_callback_identifier_                 u32
+	pdf_viewer_plugin_objects_                []&Plugin
+	pdf_viewer_mime_type_objects_             []&MimeType
+	host_configuration_                       WindowHostConfiguration
+	interfaces_initialized_                   bool
+	resolved_module_set_                      []SpecifierResolution
+	window_x_                                 int
+	window_y_                                 int
+	outer_width_                              int = 800
+	outer_height_                             int = 600
+	device_pixel_ratio_                       f64 = 1.0
+	name_                                     string
+	status_                                   string
+	closed_                                   bool
+	opener_disowned_                          bool
+	prototype_                                dom.JSValue = dom.JSValue{ kind: .null_ }
+	named_properties_                         map[string]dom.JSValue
+	named_collections_                        []&WindowNamedCollection
+	posted_messages_                          []PostedWindowMessage
+	stop_count_                               u32
+	focus_count_                              u32
+	last_find_query_                          string
+	find_match_index_                         int = -1
+	last_activation_timestamp_                dom.DOMHighResTimeStamp = 1e308
+	last_history_action_activation_timestamp_ dom.DOMHighResTimeStamp = 1e308
+}
+
+pub fn (window &WindowModel) prototype() dom.JSValue {
+	return window.prototype_
 }
 
 pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel) !&WindowModel {
+	if document.get_browsing_context() == none {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.set_browsing_context(&dom.BrowsingContext{
+			active_document_: document
+		})
+	}
+	if document.cached_navigable() == none {
+		mut node_navigable := &dom.Navigable{
+			active_document_: document
+			is_top_level_traversable_: context.is_top_level()
+		}
+		if parent_context := context.parent() {
+			if parent_document := parent_context.active_document() {
+				node_navigable.parent_ = parent_document.cached_navigable()
+			}
+		}
+		if context.is_top_level() {
+			node_navigable.traversable_navigable_ = node_navigable
+		} else if parent := node_navigable.parent_ {
+			node_navigable.traversable_navigable_ = parent.traversable_navigable()
+		}
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.set_cached_navigable(node_navigable)
+	}
+	host_navigable := document.cached_navigable() or {
+		return error('WindowModel.create failed to establish a navigable')
+	}
+	_ = NavigableModel.create(host_navigable, context)!
 	mut history := History.create(document.url, dom.js_null())!
 	mut navigation := Navigation.create(document)
 	history.set_navigation(navigation)
 	mut window := &WindowModel{
-		document_:              document
-		browsing_context_:      context
-		history_:               history
-		navigation_:            navigation
-		navigator_:             Navigator.create(NavigatorHostConfiguration{})
-		custom_elements_:       CustomElementRegistry.create(document)
-		animation_driver_:      &AnimationFrameCallbackDriver{}
+		document_: document
+		browsing_context_: context
+		history_: history
+		navigation_: navigation
+		navigator_: Navigator.create(NavigatorHostConfiguration{})
+		custom_elements_: CustomElementRegistry.create(document)
+		animation_driver_: &AnimationFrameCallbackDriver{}
 		close_watcher_manager_: CloseWatcherManager.create()
 	}
 	proxy := WindowProxyModel.create(window)
@@ -755,6 +1251,7 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 	mutable_context.set_active_document(document)
 	mutable_context.set_active_window(window)
 	mutable_context.set_window_proxy(proxy)
+	register_window_model(window)
 	return window
 }
 
@@ -768,6 +1265,46 @@ pub fn WindowModel.create_top_level(document &dom.Document, group ?&BrowsingCont
 
 pub fn (window &WindowModel) associated_document() &dom.Document {
 	return window.document_
+}
+
+pub fn (window &WindowModel) this_impl() &dom.EventTarget {
+	return unsafe { &dom.EventTarget(window) }
+}
+
+pub fn (window &WindowModel) extract_an_origin() ?dom.Origin {
+	origin := window.document_.origin()
+	return if origin.serialize() == 'opaque' { none } else { origin }
+}
+
+pub fn (mut window WindowModel) append_resolved_module(resolution SpecifierResolution) {
+	window.resolved_module_set_ << resolution
+}
+
+pub fn (window &WindowModel) resolved_module_set() []SpecifierResolution {
+	return window.resolved_module_set_.clone()
+}
+
+pub fn (window &WindowModel) cross_origin_property_descriptor_map() []CrossOriginProperty {
+	_ = window
+	return cross_origin_properties(.window)
+}
+
+pub fn (window &WindowModel) is_universal_global_scope_mixin() bool {
+	_ = window
+	return true
+}
+
+pub fn (window &WindowModel) is_html_window() bool {
+	_ = window
+	return true
+}
+
+pub fn (window &WindowModel) global_event_handlers_to_event_target(_ string) &dom.EventTarget {
+	return unsafe { &dom.EventTarget(window) }
+}
+
+pub fn (window &WindowModel) window_event_handlers_to_event_target() &dom.EventTarget {
+	return unsafe { &dom.EventTarget(window) }
 }
 
 pub fn (window &WindowModel) browsing_context() &BrowsingContextModel {
@@ -808,6 +1345,43 @@ pub fn (window &WindowModel) custom_elements() &CustomElementRegistry {
 
 pub fn (window &WindowModel) close_watcher_manager() &CloseWatcherManager {
 	return window.close_watcher_manager_
+}
+
+// https://html.spec.whatwg.org/multipage/interaction.html#history-action-activation
+pub fn (window &WindowModel) has_history_action_activation() bool {
+	return window.last_history_action_activation_timestamp_ != window.last_activation_timestamp_
+}
+
+pub fn (mut window WindowModel) set_last_activation_timestamp(timestamp dom.DOMHighResTimeStamp) {
+	window.last_activation_timestamp_ = timestamp
+}
+
+pub fn (window &WindowModel) last_activation_timestamp() dom.DOMHighResTimeStamp {
+	return window.last_activation_timestamp_
+}
+
+pub fn (mut window WindowModel) set_last_history_action_activation_timestamp(timestamp dom.DOMHighResTimeStamp) {
+	window.last_history_action_activation_timestamp_ = timestamp
+}
+
+pub fn (window &WindowModel) last_history_action_activation_timestamp() dom.DOMHighResTimeStamp {
+	return window.last_history_action_activation_timestamp_
+}
+
+fn consume_history_action_activation_in_context(context &BrowsingContextModel) {
+	if active_window := context.active_window() {
+		mut mutable_window := unsafe { &WindowModel(active_window) }
+		mutable_window.set_last_history_action_activation_timestamp(active_window.last_activation_timestamp())
+	}
+	for child in context.children() {
+		consume_history_action_activation_in_context(child)
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/interaction.html#consume-history-action-user-activation
+pub fn (mut window WindowModel) consume_history_action_user_activation() {
+	top := window.browsing_context_.top_level_browsing_context() or { return }
+	consume_history_action_activation_in_context(top)
 }
 
 pub fn (window &WindowModel) name() string {
@@ -940,7 +1514,7 @@ pub fn (window &WindowModel) has_animation_frame_callbacks() bool {
 	return window.animation_driver_.has_callbacks()
 }
 
-pub fn (mut window WindowModel) post_message(message dom.JSValue, source_origin dom.Origin, options WindowPostMessageOptions) ! {
+pub fn (mut window WindowModel) window_post_message_steps(message dom.JSValue, source_origin dom.Origin, options WindowPostMessageOptions) ! {
 	mut target_origin := options.target_origin
 	if target_origin == '/' {
 		target_origin = source_origin.serialize()
@@ -963,15 +1537,19 @@ pub fn (mut window WindowModel) post_message(message dom.JSValue, source_origin 
 	deserialized := structured_deserialize_with_transfer(record)!
 	data := deserialized.deserialized
 	window.posted_messages_ << PostedWindowMessage{
-		data:          data
-		origin:        source_origin.serialize()
+		data: data
+		origin: source_origin.serialize()
 		target_origin: target_origin
 	}
 	mut event := MessageEvent.create('message', MessageEventInit{
-		data:   data
+		data: data
 		origin: source_origin
 	})
 	window.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
+}
+
+pub fn (mut window WindowModel) post_message(message dom.JSValue, source_origin dom.Origin, options WindowPostMessageOptions) ! {
+	window.window_post_message_steps(message, source_origin, options)!
 }
 
 fn source_origin_url(origin dom.Origin) dom.URL {
@@ -1053,17 +1631,37 @@ pub fn (window &WindowModel) named_property(name string) dom.JSValue {
 			dom.js_string('[host function ${name}]')
 		}
 		else {
-			dom.js_undefined()
+			if name in window.supported_property_names() {
+				window.named_item_value(name)
+			} else {
+				dom.js_undefined()
+			}
 		}
 	}
 }
 
 pub fn (window &WindowModel) supported_property_names() []string {
-	mut names := window.named_properties_.keys()
-	for child in window.browsing_context_.children() {
-		if child.target_name() != '' && child.target_name() !in names {
-			names << child.target_name()
+	mut names := []string{}
+	for name, _ in window.document_tree_child_navigable_target_name_property_set() {
+		if name !in names {
+			names << name
+		}
+	}
+	for element in window.associated_document().potentially_named_elements() {
+		if element_name := element.get_name() {
+			if element_name != '' && element_name !in names {
+				names << element_name
+			}
+		}
+		if id := element.id() {
+			if id != '' && id !in names {
+				names << id
+			}
 		}
 	}
 	return names
+}
+
+fn (window &WindowModel) ordinary_property_names() []string {
+	return window.named_properties_.keys()
 }

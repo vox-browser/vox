@@ -31,6 +31,8 @@ fn test_custom_element_registry_define_get_when_defined_and_upgrade() {
 	}, ElementDefinitionOptions{})!
 	assert registry.get('x-widget')? == 42
 	assert registry.get_name(42)? == 'x-widget'
+	assert registry.get_definition_from_new_target(42)?.name() == 'x-widget'
+	assert registry.get_definition_from_new_target(999) == none
 	assert pending.state() == .fulfilled
 	definition := registry.get_definition_with_name_and_local_name('x-widget', 'x-widget')?
 	assert definition.form_associated()

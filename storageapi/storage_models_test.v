@@ -95,3 +95,88 @@ fn test_navigator_storage_is_same_object() {
 	navigator := NavigatorStorage.create()
 	assert navigator.storage() == navigator.storage()
 }
+
+struct ExactStorageHostState {
+mut:
+	map_ map[string]string
+}
+
+__global exact_storage_host_state = &ExactStorageHostState{}
+
+fn exact_storage_keys(_ StorageEndpointType, _ string) []string {
+	return exact_storage_host_state.map_.keys()
+}
+
+fn exact_storage_get(_ StorageEndpointType, _ string, key string) ?string {
+	return exact_storage_host_state.map_[key] or { none }
+}
+
+fn exact_storage_set(_ StorageEndpointType, _ string, key string, value string) StorageSetResult {
+	old := exact_storage_host_state.map_[key] or { '' }
+	had_old := key in exact_storage_host_state.map_
+	exact_storage_host_state.map_[key] = value
+	return StorageSetResult{
+		old_value: if had_old { old } else { none }
+	}
+}
+
+fn exact_storage_clear(_ StorageEndpointType, _ string) {
+	exact_storage_host_state.map_.clear()
+}
+
+fn exact_storage_remove(_ StorageEndpointType, _ string, key string) {
+	exact_storage_host_state.map_.delete(key)
+}
+
+fn test_exact_storage_bottle_bucket_shelf_and_shed_entry_points() {
+	key := StorageKey{
+		origin: StorageOrigin{
+			serialized: 'https://exact.test'
+		}
+	}
+	base := StorageBottle.create(.session, .session_storage, key, u64(10), none)
+	assert voidptr(base.proxy()) == voidptr(base)
+	assert base.quota()? == 10
+
+	mut session := SessionStorageBottle.create(u64(8))
+	assert session.size() == 0
+	assert session.set('a', '1').error == .none
+	assert session.keys() == ['a']
+	assert session.get('a')? == '1'
+	session.remove('a')
+	assert session.size() == 0
+	session.set('b', '2')
+	session.clear()
+	assert session.keys().len == 0
+
+	exact_storage_host_state.map_.clear()
+	host := &StorageHost{
+		keys:   exact_storage_keys
+		get:    exact_storage_get
+		set:    exact_storage_set
+		clear:  exact_storage_clear
+		remove: exact_storage_remove
+	}
+	mut local := LocalStorageBottle.create(key, local_storage_quota, host)
+	assert local.set('a', 'one').old_value == none
+	assert local.size() == 1
+	assert local.keys() == ['a']
+	assert local.get('a')? == 'one'
+	local.remove('a')
+	assert local.size() == 0
+	local.set('b', 'two')
+	local.clear()
+	assert local.size() == 0
+
+	bucket := StorageBucket.create(.session, key, none)
+	assert int(StorageEndpointType.session_storage) in bucket.bottle_map()
+	shelf := StorageShelf.create(.session, key, none)
+	assert 'default' in shelf.bucket_map()
+	mut shed := StorageShed.create()
+	environment := session_environment('https://exact.test')
+	first := obtain_a_session_storage_bottle_map(mut shed, environment, .session_storage,
+		none) or { panic('missing session bottle') }
+	second := obtain_a_session_storage_bottle_map(mut shed, environment, .session_storage,
+		none) or { panic('missing repeated session bottle') }
+	assert voidptr(first) == voidptr(second)
+}

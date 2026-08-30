@@ -198,6 +198,9 @@ pub mut:
 	client_creation_url            ?dom.URL
 	client_present                 bool
 	embedder_policy_credentialless bool
+	// The reserved client is an Environment in upstream. It remains opaque at
+	// this platform boundary, just like client.
+	reserved_client                voidptr = unsafe { nil }
 	replaces_client_id             string
 	traversable_for_user_prompts   TraversableForUserPrompts = .client
 	keepalive                      bool
@@ -244,6 +247,7 @@ pub mut:
 	done                                               bool
 	timing_allow_failed                                bool
 	// Pending responses are represented by Fetching::PendingResponse in runtime.v.
+	pending_responses  []&PendingResponse
 	request_time i64
 }
 
@@ -363,6 +367,7 @@ pub fn (request &Request) clone() &Request {
 		client_creation_url:                                request.client_creation_url
 		client_present:                                     request.client_present
 		embedder_policy_credentialless:                     request.embedder_policy_credentialless
+		reserved_client:                                    request.reserved_client
 		replaces_client_id:                                 request.replaces_client_id
 		traversable_for_user_prompts:                       request.traversable_for_user_prompts
 		keepalive:                                          request.keepalive
@@ -395,6 +400,7 @@ pub fn (request &Request) clone() &Request {
 		prevent_no_cache_cache_control_header_modification: request.prevent_no_cache_cache_control_header_modification
 		done:                                               request.done
 		timing_allow_failed:                                request.timing_allow_failed
+		pending_responses:                                  request.pending_responses.clone()
 		request_time:                                       request.request_time
 	}
 }

@@ -55,6 +55,30 @@ fn test_location_enforces_same_origin_for_sensitive_operations() {
 	assert document.url.serialize() == 'https://new.example/path'
 }
 
+fn test_location_exact_exotic_internal_methods() {
+	document := window_test_document('https://example.test/a')
+	mut location := LocationModel.create(document, document.origin())
+	assert location.internal_is_extensible()
+	assert !location.internal_prevent_extensions()
+	assert location.internal_get_prototype_of(document.origin()).kind == .null_
+	assert location.internal_set_prototype_of(dom.js_null())
+	assert !location.internal_set_prototype_of(dom.js_object(voidptr(1)))
+	href := location.internal_get_own_property(document.origin(), 'href')!
+	assert href.found
+	assert href.descriptor.value.string_data == 'https://example.test/a'
+	assert location.internal_define_own_property(document.origin(), 'answer', dom.js_number(42))!
+	assert location.internal_get(document.origin(), 'answer')!.number_data == 42
+	assert location.internal_delete(document.origin(), 'answer')!
+	assert location.internal_get(document.origin(), 'answer')!.is_undefined()
+	assert 'href' in location.internal_own_property_keys(document.origin())
+	cross_origin := dom.Origin{'https://other.test'}
+	assert location.internal_get_prototype_of(cross_origin).kind == .null_
+	assert location.internal_get_own_property(cross_origin, 'replace')!.found
+	assert location.internal_set(cross_origin, 'href', dom.js_string('/next'))!
+	assert document.url.serialize() == 'https://example.test/next'
+	assert location.internal_own_property_keys(cross_origin) == ['href', 'replace']
+}
+
 fn test_browsing_context_ancestry_familiarity_and_target_choice() {
 	page := &dom.Page{}
 	mut group := BrowsingContextGroup.create(page)
@@ -75,6 +99,30 @@ fn test_browsing_context_ancestry_familiarity_and_target_choice() {
 	assert grandchild.choose_a_browsing_context('_parent') or { panic('missing parent') } == child
 	assert grandchild.choose_a_browsing_context('frame') or { panic('missing named target') } == child
 	assert grandchild.choose_a_browsing_context('_blank') == none
+}
+
+fn test_browsing_context_exact_creation_and_traversable_access() {
+	page := &dom.Page{}
+	mut group := BrowsingContextGroup.create(page)
+	creator := dom.Document.create(dom.URL{ value: 'https://example.test/creator' })
+	created := BrowsingContextModel.create_a_new_browsing_context_and_document(page, creator,
+		none, group)!
+	assert created.document.is_html_document()
+	assert created.document.origin().is_same_origin(creator.origin())
+	assert created.document.document_element() != none
+	traversable := TraversableNavigable.create_a_new_top_level_traversable('')!
+	mut created_context := created.browsing_context
+	created_context.set_top_level_traversable(traversable)
+	assert created_context.top_level_traversable()? == traversable
+	assert created_context.the_one_permitted_sandboxed_navigator() == none
+	auxiliary := BrowsingContextModel.create_a_new_auxiliary_browsing_context_and_document(page,
+		created_context)!
+	assert auxiliary.browsing_context.opener()? == created_context
+	assert auxiliary.browsing_context.top_level_traversable()? == traversable
+	mut auxiliary_context := auxiliary.browsing_context
+	auxiliary_context.remove()
+	created_context.remove()
+	group.finalize()
 }
 
 fn test_window_proxy_indexed_and_cross_origin_access() {
@@ -103,6 +151,17 @@ fn test_window_proxy_indexed_and_cross_origin_access() {
 	answer := proxy.get_own_property(top_document.origin(), 'answer')!
 	assert answer.found
 	assert answer.descriptor.value.number_data == 42
+	assert proxy.internal_is_extensible()
+	mut mutable_proxy := unsafe { &WindowProxyModel(proxy) }
+	assert !mutable_proxy.internal_prevent_extensions()
+	assert mutable_proxy.internal_set_prototype_of(dom.js_null())
+	assert proxy.internal_get_prototype_of(dom.Origin{'https://elsewhere.test'}).kind == .null_
+	assert proxy.internal_get_own_property(top_document.origin(), 'answer')!.found
+	assert proxy.internal_get(top_document.origin(), 'answer')!.number_data == 42
+	assert proxy.internal_define_own_property(top_document.origin(), 'second', dom.js_number(2))!
+	assert proxy.internal_set(top_document.origin(), 'third', dom.js_number(3))!
+	assert proxy.internal_delete(top_document.origin(), 'third')!
+	assert 'second' in proxy.internal_own_property_keys(top_document.origin())
 }
 
 fn test_window_core_relations_close_animation_and_post_message() {

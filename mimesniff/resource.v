@@ -5,9 +5,8 @@
 // Translation of the content-sniffing core of Libraries/LibWeb/MimeSniff/Resource.cpp — the
 // WHATWG MIME Sniffing standard's byte pattern-matching algorithms (image/audio-or-video/font/
 // archive) and the "rules for identifying an unknown MIME type". These are pure byte→MimeType
-// functions over the MimeType record in mime_type.v; the Resource state-machine wrapper (supplied
-// type, scheme handling, context-specific sniffing) is Fetch/config plumbing and is out of scope,
-// so rules_for_identifying_an_unknown_mime_type takes the resource header directly.
+// functions over the MimeType record in mime_type.v, followed by the Resource
+// state machine for supplied types, headers, and context-specific sniffing.
 // https://mimesniff.spec.whatwg.org/#reading-the-resource-header
 module mimesniff
 
@@ -440,10 +439,10 @@ pub fn Resource.create(data []u8, configuration SniffingConfiguration) Resource 
 	mut resource := Resource{
 		no_sniff:            configuration.no_sniff
 		computed_mime_type_: MimeType.create('application', 'octet-stream')
-		resource_header_:    data[..if data.len < 1445 { data.len } else { 1445 }].clone()
 	}
-	resource.detect_supplied_type(configuration.scheme, configuration.supplied_type)
-	resource.run_context(configuration.sniffing_context)
+	resource.read_the_resource_header(data)
+	resource.supplied_mime_type_detection_algorithm(configuration.scheme, configuration.supplied_type)
+	resource.context_specific_sniffing_algorithm(configuration.sniffing_context)
 	return resource
 }
 
@@ -459,7 +458,7 @@ pub fn (resource &Resource) resource_header() []u8 {
 	return resource.resource_header_.clone()
 }
 
-fn (mut resource Resource) detect_supplied_type(scheme string, supplied ?MimeType) {
+fn (mut resource Resource) supplied_mime_type_detection_algorithm(scheme string, supplied ?MimeType) {
 	if mime := supplied {
 		if scheme == 'http' || scheme == 'https' {
 			serialized := mime.serialized()
@@ -469,6 +468,10 @@ fn (mut resource Resource) detect_supplied_type(scheme string, supplied ?MimeTyp
 		}
 	}
 	resource.supplied_mime_type = supplied
+}
+
+fn (mut resource Resource) read_the_resource_header(data []u8) {
+	resource.resource_header_ = data[..if data.len < 1445 { data.len } else { 1445 }].clone()
 }
 
 fn (mut resource Resource) mime_type_sniffing_algorithm() {
@@ -494,13 +497,13 @@ fn (mut resource Resource) mime_type_sniffing_algorithm() {
 		return
 	}
 	if resource.check_for_apache_bug_flag {
-		resource.distinguish_text_or_binary()
+		resource.rules_for_distinguishing_if_a_resource_is_text_or_binary()
 		return
 	}
 	resource.computed_mime_type_ = resource.supplied_mime_type or { return }
 }
 
-fn (mut resource Resource) distinguish_text_or_binary() {
+fn (mut resource Resource) rules_for_distinguishing_if_a_resource_is_text_or_binary() {
 	header := resource.resource_header_
 	if (header.len >= 2 && ((header[0] == 0xfe && header[1] == 0xff)
 		|| (header[0] == 0xff && header[1] == 0xfe)))
@@ -532,7 +535,19 @@ fn (mut resource Resource) context_match(context SniffingContext) {
 	}
 }
 
-fn (mut resource Resource) run_context(context SniffingContext) {
+fn (mut resource Resource) rules_for_sniffing_images_specifically() {
+	resource.context_match(.image)
+}
+
+fn (mut resource Resource) rules_for_sniffing_audio_or_video_specifically() {
+	resource.context_match(.audio_or_video)
+}
+
+fn (mut resource Resource) rules_for_sniffing_fonts_specifically() {
+	resource.context_match(.font)
+}
+
+fn (mut resource Resource) context_specific_sniffing_algorithm(context SniffingContext) {
 	if context == .none || context == .browsing {
 		resource.mime_type_sniffing_algorithm()
 		return
@@ -544,8 +559,13 @@ fn (mut resource Resource) run_context(context SniffingContext) {
 		}
 	}
 	if context == .text_or_binary {
-		resource.distinguish_text_or_binary()
+		resource.rules_for_distinguishing_if_a_resource_is_text_or_binary()
 		return
 	}
-	resource.context_match(context)
+	match context {
+		.image { resource.rules_for_sniffing_images_specifically() }
+		.audio_or_video { resource.rules_for_sniffing_audio_or_video_specifically() }
+		.font { resource.rules_for_sniffing_fonts_specifically() }
+		else {}
+	}
 }

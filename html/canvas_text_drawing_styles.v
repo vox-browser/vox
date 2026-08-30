@@ -21,6 +21,10 @@ pub fn CanvasTextDrawingStyles.create(state &CanvasState) &CanvasTextDrawingStyl
 	}
 }
 
+fn (styles &CanvasTextDrawingStyles) my_drawing_state() &DrawingState {
+	return &styles.state.drawing_state
+}
+
 pub fn (styles &CanvasTextDrawingStyles) font() string {
 	return styles.state.drawing_state.font_string
 }

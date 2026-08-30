@@ -48,34 +48,115 @@ pub:
 @[heap]
 pub struct Violation {
 pub mut:
-	global_url          url.URL
-	status              u16
-	resource            ?ViolationResource
-	referrer            ?url.URL
-	policy              &Policy = unsafe { nil }
-	effective_directive string
-	source_file         ?url.URL
-	line_number         u32
-	column_number       u32
-	element             ?ElementContext
-	sample              string
+	global_url url.URL
+mut:
+	status_              u16
+	resource_            ?ViolationResource
+	referrer_            ?url.URL
+	policy_              &Policy = unsafe { nil }
+	effective_directive_ string
+	source_file_         ?url.URL
+	line_number_         u32
+	column_number_       u32
+	element_             ?ElementContext
+	sample_              string
 }
 
 pub fn create_a_violation_object_for_global_policy_and_directive(global &GlobalContext, policy &Policy, directive string) &Violation {
 	return &Violation{
 		global_url:          global.url
-		referrer:            global.referrer
-		policy:              policy
-		effective_directive: directive
+		referrer_:            global.referrer
+		policy_:              policy
+		effective_directive_: directive
 	}
+}
+
+pub fn Violation.create_a_violation_object_for_global_policy_and_directive(global &GlobalContext, policy &Policy, directive string) &Violation {
+	return create_a_violation_object_for_global_policy_and_directive(global, policy, directive)
 }
 
 pub fn create_a_violation_object_for_request_and_policy(global &GlobalContext, request &Request, policy &Policy) &Violation {
 	directive := get_the_effective_directive_for_request(request) or { default_src }
 	mut violation := create_a_violation_object_for_global_policy_and_directive(global, policy,
 		directive)
-	violation.resource = ViolationResource(request.url)
+	violation.set_resource(ViolationResource(request.url))
 	return violation
+}
+
+pub fn Violation.create_a_violation_object_for_request_and_policy(global &GlobalContext, request &Request, policy &Policy) &Violation {
+	return create_a_violation_object_for_request_and_policy(global, request, policy)
+}
+
+pub fn (violation &Violation) status() u16 {
+	return violation.status_
+}
+
+pub fn (mut violation Violation) set_status(status u16) {
+	violation.status_ = status
+}
+
+pub fn (violation &Violation) resource() ?ViolationResource {
+	return violation.resource_
+}
+
+pub fn (mut violation Violation) set_resource(resource ViolationResource) {
+	violation.resource_ = resource
+}
+
+pub fn (violation &Violation) referrer() ?url.URL {
+	return violation.referrer_
+}
+
+pub fn (violation &Violation) policy() &Policy {
+	return violation.policy_
+}
+
+pub fn (violation &Violation) disposition() Disposition {
+	return violation.policy_.disposition()
+}
+
+pub fn (violation &Violation) effective_directive() string {
+	return violation.effective_directive_
+}
+
+pub fn (violation &Violation) source_file() ?url.URL {
+	return violation.source_file_
+}
+
+pub fn (mut violation Violation) set_source_file(source_file url.URL) {
+	violation.source_file_ = source_file
+}
+
+pub fn (violation &Violation) line_number() u32 {
+	return violation.line_number_
+}
+
+pub fn (mut violation Violation) set_line_number(line_number u32) {
+	violation.line_number_ = line_number
+}
+
+pub fn (violation &Violation) column_number() u32 {
+	return violation.column_number_
+}
+
+pub fn (mut violation Violation) set_column_number(column_number u32) {
+	violation.column_number_ = column_number
+}
+
+pub fn (violation &Violation) element() ?ElementContext {
+	return violation.element_
+}
+
+pub fn (mut violation Violation) set_element(element ElementContext) {
+	violation.element_ = element
+}
+
+pub fn (violation &Violation) sample() string {
+	return violation.sample_
+}
+
+pub fn (mut violation Violation) set_sample(sample string) {
+	violation.sample_ = sample
 }
 
 pub fn (violation &Violation) url() url.URL {
@@ -93,8 +174,19 @@ pub fn strip_url_for_use_in_reports(record url.URL) string {
 	return stripped.serialize(false)
 }
 
+pub fn original_disposition_to_string(disposition Disposition) string {
+	return match disposition {
+		.enforce { 'enforce' }
+		.report { 'report' }
+	}
+}
+
+pub fn original_disposition_to_bindings_disposition(disposition Disposition) Disposition {
+	return disposition
+}
+
 pub fn (violation &Violation) obtain_the_blocked_uri_of_resource() string {
-	resource := violation.resource or { return '' }
+	resource := violation.resource_ or { return '' }
 	return match resource {
 		url.URL {
 			strip_url_for_use_in_reports(resource)
@@ -130,28 +222,28 @@ fn json_escape(value string) string {
 }
 
 pub fn (violation &Violation) obtain_the_deprecated_serialization() string {
-	referrer := if value := violation.referrer { strip_url_for_use_in_reports(value) } else { '' }
-	source_file := if value := violation.source_file {
+	referrer := if value := violation.referrer_ { strip_url_for_use_in_reports(value) } else { '' }
+	source_file := if value := violation.source_file_ {
 		strip_url_for_use_in_reports(value)
 	} else {
 		''
 	}
-	disposition := if violation.policy.disposition == .enforce { 'enforce' } else { 'report' }
+	disposition := original_disposition_to_string(violation.policy_.disposition())
 	mut fields := [
 		'"document-uri":"${json_escape(strip_url_for_use_in_reports(violation.url()))}"',
 		'"referrer":"${json_escape(referrer)}"',
 		'"blocked-uri":"${json_escape(violation.obtain_the_blocked_uri_of_resource())}"',
-		'"effective-directive":"${json_escape(violation.effective_directive)}"',
-		'"violated-directive":"${json_escape(violation.effective_directive)}"',
-		'"original-policy":"${json_escape(violation.policy.pre_parsed_policy_string)}"',
+		'"effective-directive":"${json_escape(violation.effective_directive_)}"',
+		'"violated-directive":"${json_escape(violation.effective_directive_)}"',
+		'"original-policy":"${json_escape(violation.policy_.pre_parsed_policy_string())}"',
 		'"disposition":"${disposition}"',
-		'"status-code":${violation.status}',
-		'"script-sample":"${json_escape(violation.sample)}"',
+		'"status-code":${violation.status_}',
+		'"script-sample":"${json_escape(violation.sample_)}"',
 	]
 	if source_file != '' {
 		fields << '"source-file":"${json_escape(source_file)}"'
-		fields << '"line-number":${violation.line_number}'
-		fields << '"column-number":${violation.column_number}'
+		fields << '"line-number":${violation.line_number_}'
+		fields << '"column-number":${violation.column_number_}'
 	}
 	return '{"csp-report":{${fields.join(',')}}}'
 }
@@ -174,25 +266,25 @@ fn resolve_report_endpoint(token string, base url.URL) ?string {
 pub fn (violation &Violation) as_report() ViolationReport {
 	return ViolationReport{
 		document_uri:        strip_url_for_use_in_reports(violation.url())
-		referrer:            if value := violation.referrer {
+		referrer:            if value := violation.referrer_ {
 			strip_url_for_use_in_reports(value)
 		} else {
 			''
 		}
 		blocked_uri:         violation.obtain_the_blocked_uri_of_resource()
-		effective_directive: violation.effective_directive
-		violated_directive:  violation.effective_directive
-		original_policy:     violation.policy.pre_parsed_policy_string
-		disposition:         violation.policy.disposition
-		status_code:         violation.status
-		source_file:         if value := violation.source_file {
+		effective_directive: violation.effective_directive_
+		violated_directive:  violation.effective_directive_
+		original_policy:     violation.policy_.pre_parsed_policy_string()
+		disposition:         violation.policy_.disposition()
+		status_code:         violation.status_
+		source_file:         if value := violation.source_file_ {
 			strip_url_for_use_in_reports(value)
 		} else {
 			''
 		}
-		line_number:         violation.line_number
-		column_number:       violation.column_number
-		sample:              violation.sample
+		line_number:         violation.line_number_
+		column_number:       violation.column_number_
+		sample:              violation.sample_
 	}
 }
 
@@ -220,9 +312,9 @@ pub fn (violation &Violation) report_a_violation(mut global GlobalContext) {
 	mut event := SecurityPolicyViolationEvent.create('securitypolicyviolation', init)
 	event.set_is_trusted(true)
 	global.events << *event
-	if report_uris := violation.policy.get_directive_by_name(report_uri) {
-		if !violation.policy.contains_directive_with_name(report_to) {
-			for token in report_uris.value {
+	if report_uris := violation.policy_.get_directive_by_name(report_uri) {
+		if !violation.policy_.contains_directive_with_name(report_to) {
+			for token in report_uris.value() {
 				if endpoint := resolve_report_endpoint(token, violation.url()) {
 					global.report_requests << CSPReportRequest{
 						endpoint: endpoint

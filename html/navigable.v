@@ -1,0 +1,1683 @@
+// Copyright (c) 2022-2026, Ladybird contributors
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Literal translation of Libraries/LibWeb/HTML/Navigable.{h,cpp}. The DOM
+// Navigable remains the cross-module identity object; NavigableModel owns the
+// HTML session-history, browsing-context, navigation, and viewport state.
+@[has_globals]
+module html
+
+import css
+import dom
+import fetch
+import http
+import math
+import page
+import painting
+import rand
+
+__global (
+	html_all_navigable_models = []&NavigableModel{}
+	html_next_navigable_id    u64
+)
+
+pub enum NavigableOngoingNavigationKind {
+	empty
+	traversal
+	navigation
+}
+
+pub struct NavigableOngoingNavigation {
+pub:
+	kind NavigableOngoingNavigationKind
+	id   string
+}
+
+pub struct TargetSnapshotParams {
+pub:
+	sandboxing_flags SandboxingFlagSet
+}
+
+pub struct ChosenNavigable {
+pub:
+	navigable   ?&NavigableModel
+	window_type WindowType
+}
+
+pub struct NavigableNavigateParams {
+pub:
+	url                  dom.URL
+	source_document      &dom.Document
+	document_resource    DocumentResource = EmptyDocumentResource{}
+	history_handling     NavigationHistoryBehavior = .auto
+	navigation_api_state ?SerializationRecord
+	user_involvement     dom.UserNavigationInvolvement = .none
+	source_element       ?&dom.Element
+	initial_insertion    InitialInsertion = .no
+}
+
+pub type NavigableJavaScriptURLHook = fn(string, &dom.Document) ?string
+
+pub type NavigablePasteHook = fn(string)
+
+pub type NavigablePaintHook = fn()
+
+pub type NavigableScreenshotHook = fn(dom.Rect)
+
+pub type NavigableNavigationFetchHook = fn(&fetch.Request) !&fetch.Response
+
+@[heap]
+pub struct NavigationParams {
+pub:
+	id                     ?string
+	navigable              &NavigableModel
+	request                ?&fetch.Request
+	response               &fetch.Response
+	origin                 dom.Origin
+	policy_container       &PolicyContainer
+	final_sandboxing_flags SandboxingFlagSet
+	opener_policy          dom.OpenerPolicy
+	about_base_url         ?dom.URL
+	user_involvement       dom.UserNavigationInvolvement
+}
+
+@[heap]
+pub struct NonFetchSchemeNavigationParams {
+pub:
+	id                               ?string
+	navigable                        &NavigableModel
+	url                              dom.URL
+	target_snapshot_sandboxing_flags SandboxingFlagSet
+	source_has_transient_activation  bool
+	initiator_origin                 dom.Origin
+	user_involvement                 dom.UserNavigationInvolvement
+}
+
+pub struct NavigableNavigationParamsResult {
+pub:
+	navigation_params ?&NavigationParams
+	non_fetch_params  ?&NonFetchSchemeNavigationParams
+	network_error     ?string
+}
+
+fn navigable_noop_presentation_callback(_ RenderingRect, _ int) {}
+
+@[heap]
+pub struct NavigableModel {
+mut:
+	host_                                &dom.Navigable
+	id_                                  string
+	parent_                              ?&NavigableModel
+	context_                             ?&BrowsingContextModel
+	current_session_history_entry_       ?&SessionHistoryEntry
+	active_session_history_entry_        ?&SessionHistoryEntry
+	session_history_entries_             []&SessionHistoryEntry
+	ongoing_navigation_                  NavigableOngoingNavigation
+	pending_navigations_                 []NavigableNavigateParams
+	delaying_load_events_                bool
+	is_closing_                          bool
+	is_created_by_web_content_           bool
+	has_been_destroyed_                  bool
+	has_session_history_entry_and_ready_ bool
+	focused_                             bool
+	needs_repaint_                       bool = true
+	ready_to_paint_                      bool
+	pending_set_browser_zoom_request_    bool
+	should_show_line_box_borders_        bool
+	last_pasted_text_                    string
+	paint_count_                         u64
+	screenshot_count_                    u64
+	javascript_url_hook_                 ?NavigableJavaScriptURLHook
+	paste_hook_                          ?NavigablePasteHook
+	paint_hook_                          ?NavigablePaintHook
+	screenshot_hook_                     ?NavigableScreenshotHook
+	navigation_fetch_hook_               ?NavigableNavigationFetchHook
+	backing_store_manager_               &painting.BackingStoreManager = unsafe { nil }
+	event_handler_                       &page.EventHandler = unsafe { nil }
+	rendering_thread_                    &RenderingThread = unsafe { nil }
+	is_svg_page_                         bool
+}
+
+fn same_navigable_model(a &NavigableModel, b &NavigableModel) bool {
+	return voidptr(a) == voidptr(b)
+}
+
+fn same_dom_navigable(a &dom.Navigable, b &dom.Navigable) bool {
+	return voidptr(a) == voidptr(b)
+}
+
+pub fn navigable_model_for_host(host &dom.Navigable) ?&NavigableModel {
+	for model in html_all_navigable_models {
+		if same_dom_navigable(model.host_, host) {
+			return model
+		}
+	}
+	return none
+}
+
+fn navigable_model_for_context(context &BrowsingContextModel) ?&NavigableModel {
+	for model in html_all_navigable_models {
+		if model_context := model.context_ {
+			if voidptr(model_context) == voidptr(context) {
+				return model
+			}
+		}
+	}
+	return none
+}
+
+pub fn all_navigable_models() []&NavigableModel {
+	return html_all_navigable_models.clone()
+}
+
+// Binds the DOM identity created by Document/Window to the translated HTML
+// state. Repeated calls preserve history and only refresh the context link.
+pub fn NavigableModel.create(host &dom.Navigable, context ?&BrowsingContextModel) !&NavigableModel {
+	if existing := navigable_model_for_host(host) {
+		mut mutable_existing := unsafe { &NavigableModel(existing) }
+		if value := context {
+			mutable_existing.context_ = value
+			mutable_existing.synchronize_host_container(value)
+		}
+		return existing
+	}
+	mut model := &NavigableModel{
+		host_: host
+		backing_store_manager_: &painting.BackingStoreManager{}
+		event_handler_: &page.EventHandler{}
+		rendering_thread_: RenderingThread.create(navigable_noop_presentation_callback)
+	}
+	html_all_navigable_models << model
+	if value := context {
+		model.context_ = value
+		model.synchronize_host_container(value)
+	}
+	mut parent_model := ?&NavigableModel(none)
+	if parent_host := host.parent() {
+		if existing_parent := navigable_model_for_host(parent_host) {
+			parent_model = existing_parent
+		} else if value := context {
+			if parent_context := value.parent() {
+				parent_model = NavigableModel.create(parent_host, parent_context)!
+			}
+		}
+	}
+	document := host.active_document() or {
+		return error('NavigableModel.create requires an active document')
+	}
+	model.is_svg_page_ = document.get_content_type() == 'image/svg+xml'
+	state := &DocumentState{
+		document: document
+		origin: document.origin()
+		navigable_target_name: if value := context { value.target_name() } else { '' }
+		ever_populated: true
+	}
+	model.initialize_navigable(state, parent_model)!
+	return model
+}
+
+fn (mut model NavigableModel) synchronize_host_container(context &BrowsingContextModel) {
+	mut host := unsafe { &dom.Navigable(model.host_) }
+	if container := context.container() {
+		host.container_ = unsafe { &dom.Node(container) }
+		host.container_document_ = container.document()
+	} else {
+		host.container_ = none
+		host.container_document_ = none
+	}
+}
+
+pub fn (model &NavigableModel) host_navigable() &dom.Navigable {
+	return model.host_
+}
+
+pub fn (model &NavigableModel) id() string {
+	return model.id_
+}
+
+pub fn (model &NavigableModel) backing_store_manager() &painting.BackingStoreManager {
+	return model.backing_store_manager_
+}
+
+pub fn (model &NavigableModel) page() ?&dom.Page {
+	if context := model.context_ {
+		if page_ := context.page() {
+			return page_
+		}
+	}
+	document := model.active_document() or { return none }
+	page_ := document.page()
+	if page_ == unsafe { nil } {
+		return none
+	}
+	return page_
+}
+
+pub fn (model &NavigableModel) event_handler() &page.EventHandler {
+	return model.event_handler_
+}
+
+pub fn (model &NavigableModel) rendering_thread() &RenderingThread {
+	return model.rendering_thread_
+}
+
+pub fn (model &NavigableModel) is_svg_page() bool {
+	return model.is_svg_page_
+}
+
+// https://html.spec.whatwg.org/multipage/document-sequences.html#initialize-the-navigable
+pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentState, parent ?&NavigableModel) ! {
+	document := document_state.document or {
+		return error('initialize_navigable requires a document state with a document')
+	}
+	model.id_ = '${html_next_navigable_id}'
+	html_next_navigable_id++
+	mut entry := &SessionHistoryEntry{
+		url: document.url
+		document_state: document_state
+	}
+	if parent == none {
+		entry.step = 0
+	}
+	model.current_session_history_entry_ = entry
+	model.active_session_history_entry_ = entry
+	model.session_history_entries_ = [entry]
+	model.parent_ = parent
+	model.has_session_history_entry_and_ready_ = parent == none
+	mut host := unsafe { &dom.Navigable(model.host_) }
+	host.active_document_ = document
+	if parent_model := parent {
+		host.parent_ = parent_model.host_
+		host.traversable_navigable_ = parent_model.host_.traversable_navigable()
+		host.is_top_level_traversable_ = false
+	} else {
+		host.parent_ = none
+		host.traversable_navigable_ = model.host_
+		host.is_top_level_traversable_ = true
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_cached_navigable(model.host_)
+}
+
+// https://html.spec.whatwg.org/multipage/document-sequences.html#child-navigable
+pub fn (model &NavigableModel) child_navigables() []&NavigableModel {
+	mut children := []&NavigableModel{}
+	for candidate in html_all_navigable_models {
+		parent := candidate.parent_ or { continue }
+		if !same_navigable_model(parent, model) {
+			continue
+		}
+		entry := candidate.current_session_history_entry_ or { continue }
+		if entry.step is SessionHistoryEntryPending {
+			continue
+		}
+		children << candidate
+	}
+	return children
+}
+
+pub fn (model &NavigableModel) parent() ?&NavigableModel {
+	return model.parent_
+}
+
+pub fn (model &NavigableModel) is_ancestor_of(other &NavigableModel) bool {
+	mut ancestor := other.parent_
+	for ancestor != none {
+		candidate := ancestor or { break }
+		if same_navigable_model(model, candidate) {
+			return true
+		}
+		ancestor = candidate.parent_
+	}
+	return false
+}
+
+pub fn (model &NavigableModel) is_top_level_traversable() bool {
+	return model.parent_ == none
+}
+
+pub fn (model &NavigableModel) is_traversable() bool {
+	return model.is_top_level_traversable()
+}
+
+pub fn (model &NavigableModel) traversable_navigable() &NavigableModel {
+	mut current := model
+	for {
+		current = current.parent_ or { return current }
+	}
+	return current
+}
+
+pub fn (model &NavigableModel) top_level_traversable() &NavigableModel {
+	return model.traversable_navigable()
+}
+
+pub fn (model &NavigableModel) is_script_closable() bool {
+	return model.is_top_level_traversable() && (model.is_created_by_web_content_ || model.get_session_history_entries().len == 1)
+}
+
+pub fn (mut model NavigableModel) set_is_created_by_web_content(value bool) {
+	model.is_created_by_web_content_ = value
+}
+
+pub fn (mut model NavigableModel) set_closing(value bool) {
+	model.is_closing_ = value
+}
+
+pub fn (model &NavigableModel) is_closing() bool {
+	return model.is_closing_
+}
+
+pub fn (mut model NavigableModel) set_delaying_load_events(value bool) {
+	// The upstream DocumentLoadEventDelayer is represented by this owned mode;
+	// container_document() identifies the document whose counter it guards.
+	if value && model.container_document() == none {
+		return
+	}
+	model.delaying_load_events_ = value
+}
+
+pub fn (model &NavigableModel) is_delaying_load_events() bool {
+	return model.delaying_load_events_
+}
+
+pub fn NavigableModel.navigable_with_active_document(document &dom.Document) ?&NavigableModel {
+	for model in html_all_navigable_models {
+		if active := model.active_document() {
+			if voidptr(active) == voidptr(document) {
+				return model
+			}
+		}
+	}
+	return none
+}
+
+pub fn (model &NavigableModel) current_session_history_entry() ?&SessionHistoryEntry {
+	return model.current_session_history_entry_
+}
+
+pub fn (model &NavigableModel) active_session_history_entry() ?&SessionHistoryEntry {
+	return model.active_session_history_entry_
+}
+
+pub fn (mut model NavigableModel) set_current_session_history_entry(entry ?&SessionHistoryEntry) {
+	model.current_session_history_entry_ = entry
+}
+
+pub fn (mut model NavigableModel) set_active_session_history_entry(entry ?&SessionHistoryEntry) {
+	model.active_session_history_entry_ = entry
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#getting-session-history-entries
+pub fn (model &NavigableModel) get_session_history_entries() []&SessionHistoryEntry {
+	return model.session_history_entries_.clone()
+}
+
+pub fn (model &NavigableModel) get_the_target_history_entry(target_step int) ?&SessionHistoryEntry {
+	mut result := ?&SessionHistoryEntry(none)
+	mut result_step := -1
+	for entry in model.get_session_history_entries() {
+		step := match entry.step {
+			int { entry.step as int }
+			SessionHistoryEntryPending {
+				continue
+			}
+		}
+		if step <= target_step && step > result_step {
+			result = entry
+			result_step = step
+		}
+	}
+	return result
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#activate-history-entry
+pub fn (mut model NavigableModel) activate_history_entry(entry ?&SessionHistoryEntry) {
+	value := entry or { return }
+	new_document := value.document() or { return }
+	model.active_session_history_entry_ = value
+	mut host := unsafe { &dom.Navigable(model.host_) }
+	host.active_document_ = new_document
+	mut document := unsafe { &dom.Document(new_document) }
+	document.set_cached_navigable(model.host_)
+	document.make_active()
+	if mut context := model.context_ {
+		context.set_active_document(new_document)
+	}
+	if model.ongoing_navigation_.kind == .empty {
+		notify_navigation_complete(model.host_)
+	}
+}
+
+pub fn (model &NavigableModel) active_document() ?&dom.Document {
+	entry := model.active_session_history_entry_ or { return model.host_.active_document() }
+	return entry.document()
+}
+
+pub fn (model &NavigableModel) active_browsing_context() ?&BrowsingContextModel {
+	return model.context_
+}
+
+pub fn (model &NavigableModel) active_window_proxy() ?&WindowProxyModel {
+	context := model.context_ or { return none }
+	return context.window_proxy()
+}
+
+pub fn (model &NavigableModel) active_window() ?&WindowModel {
+	context := model.context_ or { return none }
+	return context.active_window()
+}
+
+pub fn (model &NavigableModel) target_name() string {
+	entry := model.active_session_history_entry_ or { return '' }
+	state := entry.document_state or { return '' }
+	return state.navigable_target_name
+}
+
+pub fn (model &NavigableModel) container() ?&dom.Element {
+	context := model.context_ or { return none }
+	return context.container()
+}
+
+pub fn (model &NavigableModel) container_document() ?&dom.Document {
+	container := model.container() or { return none }
+	return container.document()
+}
+
+pub fn (model &NavigableModel) is_focused() bool {
+	return model.focused_
+}
+
+pub fn (mut model NavigableModel) set_focused(value bool) {
+	model.focused_ = value
+}
+
+pub fn (model &NavigableModel) ongoing_navigation() NavigableOngoingNavigation {
+	return model.ongoing_navigation_
+}
+
+// https://html.spec.whatwg.org/multipage/document-sequences.html#ongoing-navigation
+pub fn (mut model NavigableModel) set_ongoing_navigation(value NavigableOngoingNavigation) {
+	if model.ongoing_navigation_ == value {
+		return
+	}
+	model.inform_the_navigation_api_about_aborting_navigation()
+	was_traversal := model.ongoing_navigation_.kind == .traversal
+	model.ongoing_navigation_ = value
+	notify_ongoing_navigation_changed(model.host_)
+	if was_traversal && value.kind != .traversal {
+		for model.pending_navigations_.len > 0 {
+			params := model.pending_navigations_[0]
+			model.pending_navigations_.delete(0)
+			model.begin_navigation(params)
+		}
+	}
+}
+
+fn (model &NavigableModel) find_a_navigable_by_target_name(name string) ?&NavigableModel {
+	current_context := model.context_ or { return none }
+	for candidate in html_all_navigable_models {
+		if candidate.target_name() != name {
+			continue
+		}
+		candidate_context := candidate.context_ or { continue }
+		if current_context.is_familiar_with(candidate_context) && model.allowed_by_sandboxing_to_navigate(candidate, SourceSnapshotParams{}) {
+			return candidate
+		}
+	}
+	return none
+}
+
+// https://html.spec.whatwg.org/multipage/document-sequences.html#the-rules-for-choosing-a-navigable
+pub fn (mut model NavigableModel) choose_a_navigable(name string, no_opener bool) !ChosenNavigable {
+	lower_name := ascii_lowercase_string(name)
+	mut chosen := ?&NavigableModel(none)
+	mut window_type := WindowType.existing_or_none
+	if lower_name == '' || lower_name == '_self' {
+		chosen = &model
+	} else if lower_name == '_parent' {
+		chosen = model.parent_ or { &model }
+	} else if lower_name == '_top' {
+		chosen = model.traversable_navigable()
+	} else if lower_name != '_blank' && !no_opener {
+		chosen = model.find_a_navigable_by_target_name(name)
+	}
+	if chosen == none {
+		current_document := model.active_document() or {
+			return ChosenNavigable{ window_type: window_type }
+		}
+		mut document := dom.Document.create(dom.url_about_blank())
+		document.set_document_type(.html)
+		document.set_content_type('text/html')
+		document.set_origin(current_document.origin())
+		document.set_is_initial_about_blank(true)
+		document.populate_with_html_head_and_body()!
+		target_name := if lower_name == '_blank' { '' } else { name }
+		context := BrowsingContextModel.create(document, none, target_name)
+		if !no_opener {
+			mut mutable_context := unsafe { &BrowsingContextModel(context) }
+			mutable_context.set_opener(model.context_)
+		}
+		if source_context := model.context_ {
+			if mut group := source_context.group() {
+				group.append_model(context)
+			}
+		}
+		_ = WindowModel.create(document, context)!
+		chosen = navigable_model_for_context(context)
+		if mut chosen_model := chosen {
+			chosen_model.is_created_by_web_content_ = true
+		}
+		window_type = if no_opener { .new_with_no_opener } else { .new_and_unrestricted }
+	}
+	return ChosenNavigable{
+		navigable: chosen
+		window_type: window_type
+	}
+}
+
+pub fn (mut model NavigableModel) set_javascript_url_hook(hook ?NavigableJavaScriptURLHook) {
+	model.javascript_url_hook_ = hook
+}
+
+pub fn (mut model NavigableModel) set_paste_hook(hook ?NavigablePasteHook) {
+	model.paste_hook_ = hook
+}
+
+pub fn (mut model NavigableModel) set_paint_hook(hook ?NavigablePaintHook) {
+	model.paint_hook_ = hook
+}
+
+pub fn (mut model NavigableModel) set_screenshot_hook(hook ?NavigableScreenshotHook) {
+	model.screenshot_hook_ = hook
+}
+
+pub fn (mut model NavigableModel) set_navigation_fetch_hook(hook ?NavigableNavigationFetchHook) {
+	model.navigation_fetch_hook_ = hook
+}
+
+fn cloned_policy_container(container &PolicyContainer) &PolicyContainer {
+	clone := container.clone()
+	return &clone
+}
+
+fn history_policy_container_value(value HistoryPolicyContainer) ?&PolicyContainer {
+	match value {
+		PolicyContainer {
+			return cloned_policy_container(&value)
+		}
+		DocumentStateClient {
+			return none
+		}
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/browsers.html#determining-navigation-params-policy-container
+fn determine_navigation_params_policy_container(response_url dom.URL, history_policy_container ?&PolicyContainer, initiator_policy_container ?&PolicyContainer, parent_policy_container ?&PolicyContainer, response_policy_container ?&PolicyContainer) &PolicyContainer {
+	if container := history_policy_container {
+		return cloned_policy_container(container)
+	}
+	if url_matches_about_srcdoc(response_url) {
+		if container := parent_policy_container {
+			return cloned_policy_container(container)
+		}
+		return &PolicyContainer{}
+	}
+	if fetch.is_local_url(response_url) {
+		if container := initiator_policy_container {
+			return cloned_policy_container(container)
+		}
+	}
+	if container := response_policy_container {
+		return cloned_policy_container(container)
+	}
+	return &PolicyContainer{}
+}
+
+// https://html.spec.whatwg.org/multipage/browsers.html#obtain-coop
+fn obtain_an_opener_policy(response &fetch.Response, reserved_client ?&EnvironmentSettingsObject) dom.OpenerPolicy {
+	client := reserved_client or { return dom.OpenerPolicy{} }
+	if is_non_secure_context(client.environment()) {
+		return dom.OpenerPolicy{}
+	}
+	value := ascii_lowercase_string(response.header_list.get('Cross-Origin-Opener-Policy') or {
+		return dom.OpenerPolicy{}
+	}).split(';')[0].trim_space()
+	return dom.OpenerPolicy{
+		value: match value {
+			'same-origin' { .same_origin }
+			'same-origin-allow-popups' { .same_origin_allow_popups }
+			'same-origin-plus-coep' { .same_origin_plus_coep }
+			else { .unsafe_none }
+		}
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#attempt-to-create-a-non-fetch-scheme-document
+fn attempt_to_create_a_non_fetch_scheme_document(params &NonFetchSchemeNavigationParams) ?&dom.Document {
+	// External protocol dispatch and inline protocol error pages are embedding
+	// responsibilities. As upstream currently does, report no created document.
+	_ = params
+	return none
+}
+
+fn csp_derived_sandboxing_flags(container &PolicyContainer) SandboxingFlagSet {
+	mut flags := SandboxingFlagSet{}
+	for policy in container.csp_list {
+		if policy.disposition != .enforce {
+			continue
+		}
+		for directive in policy.directives {
+			if ascii_lowercase_string(directive.name) == 'sandbox' {
+				flags = flags.union(parse_a_sandboxing_directive(SandboxingDirective(directive.value)))
+			}
+		}
+	}
+	return flags
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-from-a-srcdoc-resource
+fn create_navigation_params_from_a_srcdoc_resource(entry &SessionHistoryEntry, navigable &NavigableModel, target_snapshot_params TargetSnapshotParams, user_involvement dom.UserNavigationInvolvement, navigation_id ?string) !&NavigationParams {
+	state := entry.document_state or { return error('InvalidStateError: srcdoc entry has no document state') }
+	resource := match state.resource {
+		string { state.resource as string }
+		else {
+			return error('InvalidStateError: srcdoc entry resource is not a string')
+		}
+	}
+	mut response := fetch.Response.create()
+	srcdoc_url := dom.URL{ value: 'about:srcdoc' }
+	response.url_list = [srcdoc_url]
+	response.header_list.append(http.Header{
+		name: 'Content-Type'
+		value: 'text/html'
+	})
+	response.body = resource.bytes()
+	response_origin := determine_the_origin(response.url(), target_snapshot_params.sandboxing_flags, state.origin)
+	history_container := history_policy_container_value(state.history_policy_container)
+	policy_container := determine_navigation_params_policy_container(srcdoc_url, history_container, none, none, none)
+	return &NavigationParams{
+		id: navigation_id
+		navigable: navigable
+		response: response
+		origin: response_origin
+		policy_container: policy_container
+		final_sandboxing_flags: target_snapshot_params.sandboxing_flags
+		opener_policy: dom.OpenerPolicy{}
+		about_base_url: state.about_base_url
+		user_involvement: user_involvement
+	}
+}
+
+// The Fetch module is synchronous at this host boundary. This is the same
+// redirect loop as the upstream continuation-based implementation.
+fn perform_navigation_params_fetch(mut request fetch.Request, navigable &NavigableModel, navigation_id ?string, fetch_hook NavigableNavigationFetchHook) !&fetch.Response {
+	for redirect_count in 0 .. 21 {
+		if expected_id := navigation_id {
+			ongoing := navigable.ongoing_navigation()
+			if ongoing.kind != .navigation || ongoing.id != expected_id {
+				return error('AbortError: ongoing navigation changed')
+			}
+		}
+		mut response := fetch_hook(&request)!
+		if response.url_list.len == 0 {
+			response.url_list = request.url_list.clone()
+		}
+		location_result := response.location_url(request.current_url().fragment())!
+		location := location_result.url or { return response }
+		if !fetch.is_http_or_https_scheme(location.scheme()) {
+			request.url_list << location
+			return response
+		}
+		if redirect_count == 20 {
+			return error('NetworkError: too many navigation redirects')
+		}
+		request.url_list << location
+	}
+	return error('NetworkError: navigation redirect loop did not terminate')
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-by-fetching
+fn create_navigation_params_by_fetching(entry &SessionHistoryEntry, navigable &NavigableModel, source_snapshot_params SourceSnapshotParams, target_snapshot_params TargetSnapshotParams, user_involvement dom.UserNavigationInvolvement, navigation_id ?string, fetch_hook NavigableNavigationFetchHook) !NavigableNavigationParamsResult {
+	state := entry.document_state or { return error('InvalidStateError: navigation entry has no document state') }
+	if !fetch.is_fetch_scheme(entry.url.scheme()) {
+		return NavigableNavigationParamsResult{
+			non_fetch_params: &NonFetchSchemeNavigationParams{
+				id: navigation_id
+				navigable: navigable
+				url: entry.url
+				target_snapshot_sandboxing_flags: target_snapshot_params.sandboxing_flags
+				source_has_transient_activation: source_snapshot_params.has_transient_activation
+				initiator_origin: state.initiator_origin or { entry.url.origin() }
+				user_involvement: user_involvement
+			}
+		}
+	}
+	mut request := fetch.Request.create()
+	request.set_url(entry.url)
+	request.client = source_snapshot_params.fetch_client
+	request.client_present = source_snapshot_params.fetch_client != unsafe { nil }
+	request.destination = .document
+	request.credentials_mode = .include
+	request.use_url_credentials = true
+	request.redirect_mode = .manual
+	request.mode = .navigate
+	request.referrer_policy = state.request_referrer_policy.to_string()
+	request.referrer = match state.request_referrer {
+		RequestReferrerClient {
+			fetch.Referrer{
+				sentinel: if state.request_referrer == RequestReferrerClient.no_referrer {
+					fetch.ReferrerSentinel.no_referrer} else {
+					fetch.ReferrerSentinel.client}
+			}
+		}
+		dom.URL {
+			fetch.Referrer{
+				url: state.request_referrer as dom.URL
+			}
+		}
+	}
+	if navigable.is_top_level_traversable() {
+		request.top_level_navigation_initiator_origin = state.initiator_origin
+	}
+	if request.client == unsafe { nil } {
+		request.origin = fetch.RequestOrigin{
+			is_client: false
+			origin: dom.origin_create_opaque()
+		}
+		request.referrer = fetch.Referrer{ sentinel: .no_referrer }
+	}
+	match state.resource {
+		POSTResource {
+			post := state.resource as POSTResource
+			request.method = 'POST'
+			request.body = fetch.RequestBody{
+				kind: .bytes
+				bytes: post.request_body or { []u8{} }
+			}
+			mut content_type := match post.request_content_type {
+				.application_x_www_form_urlencoded { 'application/x-www-form-urlencoded' }
+				.multipart_form_data { 'multipart/form-data' }
+				.text_plain { 'text/plain' }
+			}
+			for directive in post.request_content_type_directives {
+				content_type += '; ${directive.type_}=${directive.value}'
+			}
+			request.header_list.append(http.Header{ name: 'Content-Type', value: content_type })
+		}
+		else {}
+	}
+	request.reload_navigation = state.reload_pending
+	request.history_navigation = !state.reload_pending && state.ever_populated
+	request.user_activation = source_snapshot_params.has_transient_activation
+	response := perform_navigation_params_fetch(mut request, navigable, navigation_id, fetch_hook) or {
+		return NavigableNavigationParamsResult{ network_error: err.msg() }
+	}
+	if response.is_network_error() {
+		return NavigableNavigationParamsResult{
+			network_error: response.network_error_message or { 'navigation fetch failed' }
+		}
+	}
+	current_url := request.current_url()
+	mut mutable_entry := unsafe { &SessionHistoryEntry(entry) }
+	mutable_entry.url = current_url
+	if !fetch.is_fetch_scheme(current_url.scheme()) {
+		return NavigableNavigationParamsResult{
+			non_fetch_params: &NonFetchSchemeNavigationParams{
+				id: navigation_id
+				navigable: navigable
+				url: current_url
+				target_snapshot_sandboxing_flags: target_snapshot_params.sandboxing_flags
+				source_has_transient_activation: source_snapshot_params.has_transient_activation
+				initiator_origin: current_url.origin()
+				user_involvement: user_involvement
+			}
+		}
+	}
+	response_policy_container := create_a_policy_container_from_fetch_response(response)
+	final_flags := target_snapshot_params.sandboxing_flags.union(csp_derived_sandboxing_flags(response_policy_container))
+	response_url := response.url() or { current_url }
+	response_origin := determine_the_origin(response_url, final_flags, state.initiator_origin)
+	history_container := history_policy_container_value(state.history_policy_container)
+	initiator_container := cloned_policy_container(&source_snapshot_params.source_policy_container)
+	result_policy_container := determine_navigation_params_policy_container(response_url, history_container, initiator_container, none, response_policy_container)
+	return NavigableNavigationParamsResult{
+		navigation_params: &NavigationParams{
+			id: navigation_id
+			navigable: navigable
+			request: request
+			response: response
+			origin: response_origin
+			policy_container: result_policy_container
+			final_sandboxing_flags: final_flags
+			opener_policy: obtain_an_opener_policy(response, none)
+			about_base_url: state.about_base_url
+			user_involvement: user_involvement
+		}
+	}
+}
+
+fn fetch_referrer_to_document_referrer(referrer fetch.Referrer) RequestReferrer {
+	if url := referrer.url {
+		return url
+	}
+	return if referrer.sentinel == .no_referrer {
+		RequestReferrerClient.no_referrer
+	} else {
+		RequestReferrerClient.client
+	}
+}
+
+// Helper for populate_session_history_entry_document, steps 7 and 8.
+fn finalize_session_history_entry(entry &SessionHistoryEntry, received_navigation_params NavigableNavigationParamsResult, save_extra_document_state bool, completion_steps ?fn()) {
+	if document := entry.document() {
+		if state := entry.document_state {
+			mut mutable_state := unsafe { &DocumentState(state) }
+			mutable_state.ever_populated = true
+			if save_extra_document_state {
+				mutable_state.origin = document.origin()
+				if url_requires_storing_the_policy_container_in_history(document.url) {
+					if params := received_navigation_params.navigation_params {
+						mutable_state.history_policy_container = params.policy_container.clone()
+					}
+				}
+			}
+			request_referrer_is_client := mutable_state.request_referrer is RequestReferrerClient && mutable_state.request_referrer as RequestReferrerClient == .client
+			if request_referrer_is_client {
+				if params := received_navigation_params.navigation_params {
+					if request := params.request {
+						mutable_state.request_referrer = fetch_referrer_to_document_referrer(request.referrer)
+					}
+				}
+			}
+		}
+	}
+	if callback := completion_steps {
+		callback()
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#populate-the-session-history-entry's-document
+pub fn (mut model NavigableModel) populate_session_history_entry_document(entry &SessionHistoryEntry, source_snapshot_params SourceSnapshotParams, target_snapshot_params TargetSnapshotParams, user_involvement dom.UserNavigationInvolvement, navigation_id ?string, completion_steps ?fn()) {
+	_ = source_snapshot_params
+	_ = target_snapshot_params
+	_ = user_involvement
+	mut state := entry.document_state or {
+		new_state := &DocumentState{}
+		mut mutable_entry := unsafe { &SessionHistoryEntry(entry) }
+		mutable_entry.document_state = new_state
+		new_state
+	}
+	if state.document == none {
+		mut document := dom.Document.create(entry.url)
+		document.set_document_type(.html)
+		document.set_content_type('text/html')
+		document.set_origin(state.origin or { entry.url.origin() })
+		document.set_navigation_id(navigation_id)
+		document.set_allow_declarative_shadow_roots(true)
+		match state.resource {
+			string {
+				parse_html_from_a_string(document, state.resource as string)
+			}
+			EmptyDocumentResource {
+				document.populate_with_html_head_and_body() or {}
+			}
+			POSTResource {
+				// Fetching a POST resource is a host boundary. The document is still
+				// initialized so response processing can populate it later.
+				document.populate_with_html_head_and_body() or {}
+			}
+		}
+		state.document = document
+		state.origin = document.origin()
+		state.ever_populated = true
+	}
+	document := state.document or { return }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_cached_navigable(model.host_)
+	if context := model.context_ {
+		if document.get_browsing_context() == none {
+			mutable_document.set_browsing_context(&dom.BrowsingContext{
+				active_document_: document
+			})
+		}
+		mut mutable_context := unsafe { &BrowsingContextModel(context) }
+		mutable_context.set_active_document(document)
+		// Cross-document navigation installs a fresh Window while retaining the
+		// browsing context's WindowProxy identity.
+		_ = WindowModel.create(document, context) or { unsafe { nil } }
+	}
+	if callback := completion_steps {
+		callback()
+	}
+}
+
+fn urls_differ_only_by_fragment(a dom.URL, b dom.URL) bool {
+	mut left := a
+	mut right := b
+	left.set_fragment(none)
+	right.set_fragment(none)
+	return left == right && a.serialize() != b.serialize()
+}
+
+fn resolved_history_handling(behavior NavigationHistoryBehavior, document &dom.Document) HistoryHandlingBehavior {
+	return match behavior {
+		.push { .push }
+		.replace { .replace }
+		.auto {
+			if document.get_is_initial_about_blank() {
+				HistoryHandlingBehavior.replace
+			} else {
+				HistoryHandlingBehavior.push
+			}
+		}
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#the-navigation-must-be-a-replace
+pub fn navigation_must_be_a_replace(url dom.URL, document &dom.Document) bool {
+	return url.scheme() == 'javascript' || document.get_is_initial_about_blank()
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate
+pub fn (mut model NavigableModel) navigate(params NavigableNavigateParams) ! {
+	if model.has_been_destroyed_ {
+		return
+	}
+	if !model.has_session_history_entry_and_ready_ {
+		model.pending_navigations_ << params
+		return
+	}
+	if model.ongoing_navigation_.kind == .traversal {
+		model.pending_navigations_ << params
+		return
+	}
+	active_document := model.active_document() or {
+		return error('InvalidStateError: navigable has no active document')
+	}
+	if !model.allowed_by_sandboxing_to_navigate(&model, SourceSnapshotParams{}) {
+		return error('SecurityError: source is not allowed to navigate target')
+	}
+	history_handling := resolved_history_handling(params.history_handling, active_document)
+	if urls_differ_only_by_fragment(active_document.url, params.url) {
+		model.navigate_to_a_fragment(params.url, history_handling, params.user_involvement, params.source_element, params.navigation_api_state, rand.uuid_v4())
+		return
+	}
+	model.begin_navigation(params)
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#beginning-navigation
+fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
+	if model.has_been_destroyed_ {
+		return
+	}
+	navigation_id := rand.uuid_v4()
+	model.set_ongoing_navigation(NavigableOngoingNavigation{
+		kind: .navigation
+		id: navigation_id
+	})
+	active_document := model.active_document() or {
+		model.set_ongoing_navigation(NavigableOngoingNavigation{})
+		return
+	}
+	history_handling := resolved_history_handling(params.history_handling, active_document)
+	if params.url.scheme() == 'javascript' {
+		model.navigate_to_a_javascript_url(params.url, history_handling, SourceSnapshotParams{}, params.source_document.origin(), params.user_involvement, params.initial_insertion, navigation_id)
+		return
+	}
+	mut state := &DocumentState{
+		origin: params.url.origin()
+		initiator_origin: params.source_document.origin()
+		resource: params.document_resource
+		ever_populated: false
+		navigable_target_name: model.target_name()
+	}
+	mut entry := &SessionHistoryEntry{
+		url: params.url
+		document_state: state
+	}
+	if serialized_state := params.navigation_api_state {
+		entry.navigation_api_state = serialized_state
+	}
+	mut received_navigation_params := NavigableNavigationParamsResult{}
+	if params.url.serialize() == 'about:srcdoc' && params.document_resource is string {
+		navigation_params := create_navigation_params_from_a_srcdoc_resource(entry, &model, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id) or {
+			model.set_ongoing_navigation(NavigableOngoingNavigation{})
+			return
+		}
+		received_navigation_params = NavigableNavigationParamsResult{
+			navigation_params: navigation_params
+		}
+	} else if fetch_hook := model.navigation_fetch_hook_ {
+		received_navigation_params = create_navigation_params_by_fetching(entry, &model, SourceSnapshotParams{}, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id, fetch_hook) or {
+			model.set_ongoing_navigation(NavigableOngoingNavigation{})
+			return
+		}
+		if received_navigation_params.network_error != none {
+			model.set_ongoing_navigation(NavigableOngoingNavigation{})
+			return
+		}
+		if non_fetch := received_navigation_params.non_fetch_params {
+			state.document = attempt_to_create_a_non_fetch_scheme_document(non_fetch)
+			if state.document == none {
+				model.set_ongoing_navigation(NavigableOngoingNavigation{})
+				return
+			}
+		}
+	}
+	if navigation_params := received_navigation_params.navigation_params {
+		state.origin = navigation_params.origin
+		state.about_base_url = navigation_params.about_base_url
+		if body := navigation_params.response.body {
+			state.resource = body.bytestr()
+		}
+	}
+	model.populate_session_history_entry_document(entry, SourceSnapshotParams{}, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id, none)
+	finalize_session_history_entry(entry, received_navigation_params, true, none)
+	finalize_a_cross_document_navigation(&model, history_handling, params.user_involvement, entry)
+}
+
+fn (mut model NavigableModel) commit_navigation_entry(entry &SessionHistoryEntry, history_handling HistoryHandlingBehavior) {
+	if entry.document() == none {
+		model.set_ongoing_navigation(NavigableOngoingNavigation{})
+		return
+	}
+	mut next_step := 0
+	for existing in model.session_history_entries_ {
+		if existing.step is int {
+			next_step = math.max(next_step, (existing.step as int) + 1)
+		}
+	}
+	mut mutable_entry := unsafe { &SessionHistoryEntry(entry) }
+	match history_handling {
+		.push {
+			mutable_entry.step = next_step
+			model.session_history_entries_ << entry
+		}
+		.replace {
+			if current := model.current_session_history_entry_ {
+				mutable_entry.step = current.step
+				for index, candidate in model.session_history_entries_ {
+					if voidptr(candidate) == voidptr(current) {
+						model.session_history_entries_[index] = entry
+						break
+					}
+				}
+			} else {
+				mutable_entry.step = next_step
+				model.session_history_entries_ << entry
+			}
+		}
+	}
+	model.current_session_history_entry_ = entry
+	model.set_ongoing_navigation(NavigableOngoingNavigation{})
+	model.activate_history_entry(entry)
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#finalize-a-cross-document-navigation
+pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_handling HistoryHandlingBehavior, user_involvement dom.UserNavigationInvolvement, history_entry &SessionHistoryEntry) {
+	_ = user_involvement
+	if navigable.has_been_destroyed_ || history_entry.document() == none {
+		return
+	}
+	mut model := unsafe { &NavigableModel(navigable) }
+	model.set_delaying_load_events(false)
+	new_document := history_entry.document() or { return }
+	active_document := model.active_document() or { return }
+	if model.parent_ == none {
+		is_auxiliary_with_opener := if context := model.context_ {
+			context.is_auxiliary() && context.opener_browsing_context() != none
+		} else {
+			false
+		}
+		if !is_auxiliary_with_opener && !new_document.origin().is_same_origin(active_document.origin()) {
+			if state := history_entry.document_state {
+				mut mutable_state := unsafe { &DocumentState(state) }
+				mutable_state.navigable_target_name = ''
+			}
+		}
+	}
+	if history_handling == .push {
+		if active := model.active_session_history_entry_ {
+			if active.step is int {
+				active_step := active.step as int
+				mut retained := []&SessionHistoryEntry{}
+				for candidate in model.session_history_entries_ {
+					match candidate.step {
+						int {
+							if candidate.step as int <= active_step {
+								retained << candidate
+							}
+						}
+						SessionHistoryEntryPending { retained << candidate }
+					}
+				}
+				model.session_history_entries_ = retained
+			}
+		}
+	} else if current := model.active_session_history_entry_ {
+		if new_state := history_entry.document_state {
+			if old_state := current.document_state {
+				if new_origin := new_state.origin {
+					if old_origin := old_state.origin {
+						if new_origin.is_same_origin(old_origin) {
+							mut mutable_entry := unsafe { &SessionHistoryEntry(history_entry) }
+							mutable_entry.navigation_api_key = current.navigation_api_key
+						}
+					}
+				}
+			}
+		}
+	}
+	model.commit_navigation_entry(history_entry, history_handling)
+	if container := model.container() {
+		mut node := unsafe { &dom.Node(container.as_node()) }
+		node.set_needs_layout_update(.finalize_a_cross_document_navigation)
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#url-and-history-update-steps
+pub fn perform_url_and_history_update_steps(document &dom.Document, new_url dom.URL, serialized_data ?SerializationRecord, history_handling_ HistoryHandlingBehavior) ! {
+	model_pointer := NavigableModel.navigable_with_active_document(document) or {
+		return error('InvalidStateError: document has no navigable')
+	}
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	active_entry := model.active_session_history_entry() or {
+		return error('InvalidStateError: navigable has no active history entry')
+	}
+	new_entry := &SessionHistoryEntry{
+		url: new_url
+		classic_history_api_state: serialized_data or { active_entry.classic_history_api_state }
+		document_state: active_entry.document_state
+		scroll_restoration_mode: active_entry.scroll_restoration_mode
+	}
+	history_handling := if document.get_is_initial_about_blank() {
+		HistoryHandlingBehavior.replace
+	} else {
+		history_handling_
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	if history_handling == .push {
+		mut history := mutable_document.history()
+		history.index++
+		history.length = history.index + 1
+	}
+	mutable_document.set_url(new_url)
+	mutable_document.set_latest_entry(&dom.SessionHistoryEntry{ url: new_url })
+	model.commit_navigation_entry(new_entry, history_handling)
+	if mut window := model.active_window() {
+		mut navigation := unsafe { &Navigation(window.navigation()) }
+		navigation.update_the_navigation_api_entries_for_a_same_document_navigation(new_entry, if history_handling == .push {
+			.push
+		} else {
+			.replace
+		})
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#scroll-to-fragid
+fn (mut model NavigableModel) navigate_to_a_fragment(url dom.URL, history_handling HistoryHandlingBehavior, user_involvement dom.UserNavigationInvolvement, source_element ?&dom.Element, navigation_api_state ?SerializationRecord, navigation_id string) {
+	_ = user_involvement
+	_ = source_element
+	model.set_ongoing_navigation(NavigableOngoingNavigation{
+		kind: .navigation
+		id: navigation_id
+	})
+	current := model.current_session_history_entry_ or {
+		model.set_ongoing_navigation(NavigableOngoingNavigation{})
+		return
+	}
+	mut entry := current.clone()
+	entry.url = url
+	if state := entry.document_state {
+		mut mutable_state := unsafe { &DocumentState(state) }
+		mutable_state.document = model.active_document()
+	}
+	if value := navigation_api_state {
+		entry.navigation_api_state = value
+	}
+	model.commit_navigation_entry(entry, history_handling)
+	if mut document := model.active_document() {
+		document.set_url(url)
+		document.try_to_scroll_to_the_fragment()
+	}
+}
+
+// `javascript:` execution is supplied by the embedding script runtime. A
+// string result becomes a replacement HTML document, as required by HTML.
+pub fn (mut model NavigableModel) evaluate_javascript_url(url dom.URL, new_document_origin dom.Origin, user_involvement dom.UserNavigationInvolvement, navigation_id string) ?&dom.Document {
+	_ = user_involvement
+	active_document := model.active_document() or { return none }
+	hook := model.javascript_url_hook_ or { return none }
+	source := url.serialize().all_after('javascript:')
+	result := hook(source, active_document) or { return none }
+	mut document := dom.Document.create(active_document.url)
+	document.set_document_type(.html)
+	document.set_content_type('text/html')
+	document.set_origin(new_document_origin)
+	document.set_navigation_id(navigation_id)
+	document.set_allow_declarative_shadow_roots(true)
+	parse_html_from_a_string(document, result)
+	return document
+}
+
+fn (mut model NavigableModel) navigate_to_a_javascript_url(url dom.URL, history_handling HistoryHandlingBehavior, source_snapshot_params SourceSnapshotParams, initiator_origin dom.Origin, user_involvement dom.UserNavigationInvolvement, initial_insertion InitialInsertion, navigation_id string) {
+	_ = source_snapshot_params
+	_ = initial_insertion
+	document := model.evaluate_javascript_url(url, initiator_origin, user_involvement, navigation_id) or {
+		model.set_ongoing_navigation(NavigableOngoingNavigation{})
+		return
+	}
+	state := &DocumentState{
+		document: document
+		origin: initiator_origin
+		ever_populated: true
+		navigable_target_name: model.target_name()
+	}
+	entry := &SessionHistoryEntry{
+		url: document.url
+		document_state: state
+	}
+	model.commit_navigation_entry(entry, history_handling)
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#reload
+pub fn (mut model NavigableModel) reload(navigation_api_state ?SerializationRecord, user_involvement dom.UserNavigationInvolvement) {
+	current := model.current_session_history_entry_ or { return }
+	mut entry := current.clone()
+	if state := entry.document_state {
+		mut mutable_state := unsafe { &DocumentState(state) }
+		mutable_state.reload_pending = true
+		mutable_state.document = none
+	}
+	if value := navigation_api_state {
+		entry.navigation_api_state = value
+	}
+	model.set_ongoing_navigation(NavigableOngoingNavigation{
+		kind: .navigation
+		id: rand.uuid_v4()
+	})
+	model.populate_session_history_entry_document(entry, SourceSnapshotParams{}, model.snapshot_target_snapshot_params(), user_involvement, model.ongoing_navigation_.id, none)
+	model.commit_navigation_entry(entry, .replace)
+}
+
+pub fn (model &NavigableModel) allowed_by_sandboxing_to_navigate(target &NavigableModel, source_snapshot_params SourceSnapshotParams) bool {
+	if same_navigable_model(model, target) || model.is_ancestor_of(target) {
+		return true
+	}
+	if target.is_ancestor_of(model) {
+		if !target.is_top_level_traversable() {
+			return true
+		}
+		if source_snapshot_params.has_transient_activation && source_snapshot_params.sandboxing_flags.contains(.sandboxed_top_level_navigation_with_user_activation) {
+			return false
+		}
+		if !source_snapshot_params.has_transient_activation && source_snapshot_params.sandboxing_flags.contains(.sandboxed_top_level_navigation_without_user_activation) {
+			return false
+		}
+		return true
+	}
+	if source_snapshot_params.sandboxing_flags.contains(.sandboxed_navigation) {
+		return false
+	}
+	return true
+}
+
+pub fn (model &NavigableModel) snapshot_target_snapshot_params() TargetSnapshotParams {
+	// Creation flags contributed by iframe sandbox attributes are represented
+	// by the source snapshot flag set until NavigableContainerModel is linked
+	// directly to DOM elements.
+	_ = model
+	return TargetSnapshotParams{}
+}
+
+pub fn (model &NavigableModel) viewport_scroll_offset() css.CSSPixelPoint {
+	document := model.active_document() or { return css.CSSPixelPoint.from_values(0, 0) }
+	rect := document.viewport_rect()
+	return css.CSSPixelPoint.from_values(rect.x, rect.y)
+}
+
+pub fn (model &NavigableModel) viewport_size() css.CSSPixelSize {
+	document := model.active_document() or { return css.CSSPixelSize.from_values(0, 0) }
+	rect := document.viewport_rect()
+	return css.CSSPixelSize.from_values(rect.width, rect.height)
+}
+
+pub fn (model &NavigableModel) viewport_rect() css.CSSPixelRect {
+	document := model.active_document() or { return css.CSSPixelRect.new(0, 0, 0, 0) }
+	rect := document.viewport_rect()
+	return css.CSSPixelRect.new(rect.x, rect.y, rect.width, rect.height)
+}
+
+fn (mut model NavigableModel) scroll_offset_did_change() {
+	if mut document := model.active_document() {
+		// DOM currently exposes dispatch rather than the pending-scroll-event
+		// list; dispatching here preserves observable scrolling behavior.
+		document.dispatch_event_simple('scroll', false)
+	}
+}
+
+pub fn (model &NavigableModel) to_top_level_rect(input css.CSSPixelRect) css.CSSPixelRect {
+	position := model.to_top_level_position(input.location())
+	return css.CSSPixelRect.new(position.x().to_double(), position.y().to_double(), input.width.to_double(), input.height.to_double())
+}
+
+pub fn (model &NavigableModel) to_top_level_position(input css.CSSPixelPoint) css.CSSPixelPoint {
+	mut x := input.x().to_double()
+	mut y := input.y().to_double()
+	mut current := model
+	for !current.is_top_level_traversable() {
+		container := current.container() or { return css.CSSPixelPoint.from_values(0, 0) }
+		rect := container.get_bounding_client_rect()
+		x += rect.x
+		y += rect.y
+		current = current.parent_ or { break }
+	}
+	return css.CSSPixelPoint.from_values(x, y)
+}
+
+// https://drafts.csswg.org/cssom-view/#resizing-viewports
+pub fn (mut model NavigableModel) set_viewport_size(size css.CSSPixelSize) {
+	document := model.active_document() or { return }
+	old_rect := document.viewport_rect()
+	width := size.width().to_double()
+	height := size.height().to_double()
+	if old_rect.width == width && old_rect.height == height {
+		return
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_viewport_rect(dom.Rect{old_rect.x, old_rect.y, width, height})
+	mutable_document.set_needs_repaint()
+	mutable_document.inform_all_viewport_clients_about_the_current_viewport_rect()
+	model.pending_set_browser_zoom_request_ = false
+	model.needs_repaint_ = true
+}
+
+pub fn (mut model NavigableModel) clamp_viewport_scroll_offset() {
+	document := model.active_document() or { return }
+	viewport := document.viewport_rect()
+	mut maximum_x := 0.0
+	mut maximum_y := 0.0
+	if root := document.document_element() {
+		mut mutable_root := unsafe { &dom.Element(root) }
+		maximum_x = math.max(0.0, f64(mutable_root.scroll_width()) - viewport.width)
+		maximum_y = math.max(0.0, f64(mutable_root.scroll_height()) - viewport.height)
+	}
+	model.perform_scroll_of_viewport_scrolling_box(css.CSSPixelPoint.from_values(math.max(0.0, math.min(viewport.x, maximum_x)), math.max(0.0, math.min(viewport.y, maximum_y))))
+}
+
+pub fn (mut model NavigableModel) perform_scroll_of_viewport_scrolling_box(position css.CSSPixelPoint) {
+	document := model.active_document() or { return }
+	viewport := document.viewport_rect()
+	x := position.x().to_double()
+	y := position.y().to_double()
+	if x == viewport.x && y == viewport.y {
+		return
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_viewport_rect(dom.Rect{x, y, viewport.width, viewport.height})
+	model.scroll_offset_did_change()
+	mutable_document.set_needs_repaint()
+	mutable_document.inform_all_viewport_clients_about_the_current_viewport_rect()
+	model.needs_repaint_ = true
+}
+
+pub fn (model &NavigableModel) has_a_rendering_opportunity() bool {
+	return !model.has_been_destroyed_ && model.active_document() != none
+}
+
+pub fn (mut model NavigableModel) inform_the_navigation_api_about_child_navigable_destruction() {
+	model.inform_the_navigation_api_about_aborting_navigation()
+	model.set_ongoing_navigation(NavigableOngoingNavigation{})
+}
+
+fn (mut model NavigableModel) inform_the_navigation_api_about_aborting_navigation() {
+	if mut window := model.active_window() {
+		mut navigation := unsafe { &Navigation(window.navigation()) }
+		navigation.abort_the_ongoing_navigation(dom.js_string('AbortError: navigation aborted'))
+	}
+}
+
+pub fn (model &NavigableModel) selected_text() string {
+	mut document := model.active_document() or { return '' }
+	document.update_layout(.navigable_selected_text)
+	selection := document.get_selection() or { return '' }
+	range := selection.range() or { return '' }
+	return visible_text_in_range(range)
+}
+
+// This is Range stringification with DOM text nodes that have no corresponding
+// layout node omitted, matching what can actually be selected on screen.
+fn visible_text_in_range(range &dom.Range) string {
+	start_container := range.start_container()
+	end_container := range.end_container()
+	if start_container == end_container && start_container.is_text() {
+		if start_container.layout_node() == none {
+			return ''
+		}
+		text := start_container.character_data() or { return '' }
+		return text.substring_data(range.start_offset(), range.end_offset() - range.start_offset()) or {
+			''
+		}
+	}
+
+	mut result := ''
+	if start_container.is_text() && start_container.layout_node() != none {
+		text := start_container.character_data() or { return '' }
+		result += text.substring_data(range.start_offset(), text.length_in_utf16_code_units() - range.start_offset()) or {
+			''
+		}
+	}
+	for node in range.contained_nodes() {
+		if node.is_text() && node.layout_node() != none {
+			if text := node.character_data() {
+				result += text.data()
+			}
+		}
+	}
+	if end_container.is_text() && end_container.layout_node() != none {
+		text := end_container.character_data() or { return result }
+		result += text.substring_data(0, range.end_offset()) or { '' }
+	}
+	return result
+}
+
+pub fn (mut model NavigableModel) select_all() {
+	document := model.active_document() or { return }
+	selection := document.get_selection() or { return }
+	body := document.body() or { return }
+	mut mutable_selection := unsafe { &dom.Selection(selection) }
+	mutable_selection.select_all_children(unsafe { &dom.Node(body) }) or {}
+}
+
+pub fn (mut model NavigableModel) paste(text string) {
+	if model.active_document() == none {
+		return
+	}
+	model.last_pasted_text_ = text
+	if hook := model.paste_hook_ {
+		hook(text)
+	}
+}
+
+pub fn (model &NavigableModel) last_pasted_text() string {
+	return model.last_pasted_text_
+}
+
+pub fn (model &NavigableModel) snapshot_containing_block() css.CSSPixelRect {
+	return model.viewport_rect()
+}
+
+pub fn (model &NavigableModel) snapshot_containing_block_size() css.CSSPixelSize {
+	return model.snapshot_containing_block().size()
+}
+
+pub fn (model &NavigableModel) register_navigation_observer(observer &NavigationObserver) {
+	mut host := unsafe { &dom.Navigable(model.host_) }
+	handle := voidptr(observer)
+	if handle !in host.navigation_observer_handles {
+		host.navigation_observer_handles << handle
+	}
+}
+
+pub fn (model &NavigableModel) unregister_navigation_observer(observer &NavigationObserver) {
+	mut host := unsafe { &dom.Navigable(model.host_) }
+	handle := voidptr(observer)
+	host.navigation_observer_handles = host.navigation_observer_handles.filter(it != handle)
+}
+
+pub fn (mut model NavigableModel) stop_loading() {
+	if mut document := model.active_document() {
+		if document.get_unload_counter() == 0 && model.ongoing_navigation_.kind == .navigation {
+			model.set_ongoing_navigation(NavigableOngoingNavigation{})
+		}
+		document.abort_a_document_and_its_descendants()
+	}
+}
+
+pub fn (model &NavigableModel) has_session_history_entry_and_ready_for_navigation() bool {
+	return model.has_session_history_entry_and_ready_
+}
+
+pub fn (mut model NavigableModel) set_has_session_history_entry_and_ready_for_navigation() {
+	model.has_session_history_entry_and_ready_ = true
+	if current := model.current_session_history_entry_ {
+		if current.step is SessionHistoryEntryPending {
+			mut mutable_current := unsafe { &SessionHistoryEntry(current) }
+			parent_step := if parent := model.parent_ {
+				if parent_entry := parent.current_session_history_entry_ {
+					match parent_entry.step {
+						int { parent_entry.step as int }
+						SessionHistoryEntryPending { 0 }
+					}
+				} else {
+					0
+				}
+			} else {
+				0
+			}
+			mutable_current.step = parent_step
+		}
+	}
+	for model.pending_navigations_.len > 0 {
+		params := model.pending_navigations_[0]
+		model.pending_navigations_.delete(0)
+		model.begin_navigation(params)
+	}
+}
+
+pub fn (mut model NavigableModel) ready_to_paint() {
+	model.ready_to_paint_ = true
+}
+
+pub fn (mut model NavigableModel) record_display_list_and_scroll_state(_ dom.PaintConfig) {
+	model.needs_repaint_ = false
+	model.paint_count_++
+	if hook := model.paint_hook_ {
+		hook()
+	}
+}
+
+pub fn (mut model NavigableModel) paint_next_frame() {
+	if !model.is_top_level_traversable() || !model.ready_to_paint_ {
+		return
+	}
+	model.record_display_list_and_scroll_state(dom.PaintConfig{})
+}
+
+pub fn (mut model NavigableModel) render_screenshot(_ dom.PaintConfig) {
+	model.record_display_list_and_scroll_state(dom.PaintConfig{})
+	model.screenshot_count_++
+	if hook := model.screenshot_hook_ {
+		rect := model.viewport_rect()
+		hook(dom.Rect{rect.x.to_double(), rect.y.to_double(), rect.width.to_double(), rect.height.to_double()})
+	}
+}
+
+pub fn (model &NavigableModel) paint_count() u64 {
+	return model.paint_count_
+}
+
+pub fn (model &NavigableModel) screenshot_count() u64 {
+	return model.screenshot_count_
+}
+
+pub fn (model &NavigableModel) needs_repaint() bool {
+	return model.needs_repaint_
+}
+
+pub fn (mut model NavigableModel) set_needs_repaint() {
+	model.needs_repaint_ = true
+}
+
+pub fn (mut model NavigableModel) scroll_viewport_by_delta(delta css.CSSPixelPoint) &dom.Promise {
+	current := model.viewport_scroll_offset()
+	return model.perform_a_scroll_of_the_viewport(current.plus(delta))
+}
+
+// https://drafts.csswg.org/cssom-view/#viewport-perform-a-scroll
+pub fn (mut model NavigableModel) perform_a_scroll_of_the_viewport(position css.CSSPixelPoint) &dom.Promise {
+	document := model.active_document() or {
+		return dom.Promise.resolved(dom.js_undefined())
+	}
+	viewport := document.viewport_rect()
+	mut maximum_x := 0.0
+	mut maximum_y := 0.0
+	if root := document.document_element() {
+		mut mutable_root := unsafe { &dom.Element(root) }
+		maximum_x = math.max(0.0, f64(mutable_root.scroll_width()) - viewport.width)
+		maximum_y = math.max(0.0, f64(mutable_root.scroll_height()) - viewport.height)
+	}
+	new_position := css.CSSPixelPoint.from_values(math.max(0.0, math.min(position.x().to_double(), maximum_x)), math.max(0.0, math.min(position.y().to_double(), maximum_y)))
+	model.perform_scroll_of_viewport_scrolling_box(new_position)
+	return dom.Promise.resolved(dom.js_undefined())
+}
+
+pub fn (mut model NavigableModel) reset_zoom() {
+	if mut window := model.active_window() {
+		if mut viewport := window.visual_viewport() {
+			viewport.reset()
+		}
+	}
+}
+
+pub fn (model &NavigableModel) has_inclusive_ancestor_with_visibility_hidden() bool {
+	mut current := model
+	for {
+		if container := current.container() {
+			if computed := container.el_computed_properties() {
+				if computed.visibility() == .hidden {
+					return true
+				}
+			}
+		}
+		current = current.parent_ or { break }
+	}
+	return false
+}
+
+pub fn (model &NavigableModel) has_pending_navigations() bool {
+	return model.pending_navigations_.len > 0
+}
+
+pub fn (mut model NavigableModel) set_has_been_destroyed() {
+	model.has_been_destroyed_ = true
+	model.inform_the_navigation_api_about_child_navigable_destruction()
+}
+
+pub fn (model &NavigableModel) has_been_destroyed() bool {
+	return model.has_been_destroyed_
+}
+
+pub fn (mut model NavigableModel) set_pending_set_browser_zoom_request(value bool) {
+	model.pending_set_browser_zoom_request_ = value
+}
+
+pub fn (model &NavigableModel) pending_set_browser_zoom_request() bool {
+	return model.pending_set_browser_zoom_request_
+}
+
+pub fn (mut model NavigableModel) set_should_show_line_box_borders(value bool) {
+	model.should_show_line_box_borders_ = value
+}

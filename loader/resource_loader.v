@@ -14,6 +14,8 @@ import os
 
 __global (
 	loader_global_resource_loader          &ResourceLoader
+	loader_global_content_filter           &ContentFilter
+	loader_global_proxy_mappings           &ProxyMappings
 	loader_browser_process_command_line    string
 	loader_browser_process_executable_path string
 )
@@ -54,28 +56,42 @@ pub:
 	proxy         ?ProxyData
 }
 
+pub struct StoredResponseCookie {
+pub:
+	page_id u64
+	url     dom.URL
+	value   string
+}
+
+struct StartedNetworkRequest {
+	id       u64
+	response NetworkResponse
+	proxy    ?ProxyData
+}
+
 pub struct ResourceLoader {
-pub mut:
-	user_agent                    string
-	platform                      string
-	preferred_languages           []string                   = ['en-US']
-	navigator_compatibility_mode  NavigatorCompatibilityMode = .chrome
-	enable_global_privacy_control bool
 mut:
-	content_filter    &ContentFilter
-	proxy_mappings    &ProxyMappings
-	resources         map[string]StoredResource
-	about_pages       map[string][]u8
-	network_responses map[string]NetworkResponse
-	pending_loads_    int
-	active_requests   map[u64]string
-	next_request_id   u64 = 1
+	request_client_                voidptr
+	user_agent_                   string
+	platform_                     string
+	preferred_languages_          []string                   = ['en-US']
+	navigator_compatibility_mode_ NavigatorCompatibilityMode = .chrome
+	enable_global_privacy_control_ bool
+	content_filter                 &ContentFilter
+	proxy_mappings                 &ProxyMappings
+	resources                      map[string]StoredResource
+	about_pages                    map[string][]u8
+	network_responses              map[string]NetworkResponse
+	response_cookies_              []StoredResponseCookie
+	pending_loads_                 int
+	active_requests                map[u64]string
+	next_request_id                u64 = 1
 }
 
 pub fn ResourceLoader.create() &ResourceLoader {
 	return &ResourceLoader{
-		user_agent:        default_user_agent()
-		platform:          default_platform()
+		user_agent_:       default_user_agent()
+		platform_:         default_platform()
 		content_filter:    ContentFilter.create()
 		proxy_mappings:    ProxyMappings.create()
 		resources:         map[string]StoredResource{}
@@ -94,11 +110,29 @@ pub fn is_initialized() bool {
 	return loader_global_resource_loader != unsafe { nil }
 }
 
+pub fn ResourceLoader.is_initialized() bool {
+	return is_initialized()
+}
+
 pub fn the() &ResourceLoader {
 	if !is_initialized() {
 		panic('Web::ResourceLoader was not initialized')
 	}
 	return loader_global_resource_loader
+}
+
+pub fn ResourceLoader.the() &ResourceLoader {
+	return the()
+}
+
+// Requests::RequestClient belongs to the embedder. Its opaque identity is
+// retained here without importing the browser process into this library.
+pub fn (mut resource_loader ResourceLoader) set_client(request_client voidptr) {
+	resource_loader.request_client_ = request_client
+}
+
+pub fn (resource_loader &ResourceLoader) request_client() voidptr {
+	return resource_loader.request_client_
 }
 
 pub fn (resource_loader &ResourceLoader) pending_loads() int {
@@ -113,11 +147,51 @@ pub fn (resource_loader &ResourceLoader) proxy_mappings() &ProxyMappings {
 	return resource_loader.proxy_mappings
 }
 
+pub fn (resource_loader &ResourceLoader) user_agent() string {
+	return resource_loader.user_agent_
+}
+
+pub fn (mut resource_loader ResourceLoader) set_user_agent(user_agent string) {
+	resource_loader.user_agent_ = user_agent
+}
+
+pub fn (resource_loader &ResourceLoader) platform() string {
+	return resource_loader.platform_
+}
+
+pub fn (mut resource_loader ResourceLoader) set_platform(platform string) {
+	resource_loader.platform_ = platform
+}
+
+pub fn (resource_loader &ResourceLoader) preferred_languages() []string {
+	return resource_loader.preferred_languages_.clone()
+}
+
 pub fn (mut resource_loader ResourceLoader) set_preferred_languages(languages []string) ! {
 	if languages.len == 0 {
 		return error('preferred languages must not be empty')
 	}
-	resource_loader.preferred_languages = languages.clone()
+	resource_loader.preferred_languages_ = languages.clone()
+}
+
+pub fn (resource_loader &ResourceLoader) navigator_compatibility_mode() NavigatorCompatibilityMode {
+	return resource_loader.navigator_compatibility_mode_
+}
+
+pub fn (mut resource_loader ResourceLoader) set_navigator_compatibility_mode(mode NavigatorCompatibilityMode) {
+	resource_loader.navigator_compatibility_mode_ = mode
+}
+
+pub fn (resource_loader &ResourceLoader) enable_global_privacy_control() bool {
+	return resource_loader.enable_global_privacy_control_
+}
+
+pub fn (mut resource_loader ResourceLoader) set_enable_global_privacy_control(enable bool) {
+	resource_loader.enable_global_privacy_control_ = enable
+}
+
+pub fn (resource_loader &ResourceLoader) response_cookies() []StoredResponseCookie {
+	return resource_loader.response_cookies_.clone()
 }
 
 pub fn (mut resource_loader ResourceLoader) register_resource(url string, resource StoredResource) {
@@ -139,6 +213,14 @@ pub fn (resource_loader &ResourceLoader) prepare_connection(url dom.URL, preconn
 	return if preconnect { .create_connection } else { .resolve_only }
 }
 
+pub fn (resource_loader &ResourceLoader) prefetch_dns(url dom.URL) ConnectionPreparation {
+	return resource_loader.prepare_connection(url, false)
+}
+
+pub fn (resource_loader &ResourceLoader) preconnect(url dom.URL) ConnectionPreparation {
+	return resource_loader.prepare_connection(url, true)
+}
+
 const blocked_loader_ports = [u16(1), 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43,
 	53, 77, 79, 87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 139, 143,
 	179, 389, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 556, 563, 587, 601, 636, 993, 995,
@@ -156,9 +238,52 @@ fn port_or_default(url dom.URL) u16 {
 }
 
 pub fn (resource_loader &ResourceLoader) should_block_request(request &LoadRequest) bool {
-	url := request.url or { return true }
+	url := request.url() or { return true }
 	return port_or_default(url) in blocked_loader_ports
 		|| resource_loader.content_filter.is_filtered(url)
+}
+
+pub fn sanitized_url_for_logging(url dom.URL) string {
+	if url.scheme() == 'data' {
+		return '[data URL]'
+	}
+	return url.to_string()
+}
+
+fn log_request_start(request &LoadRequest) string {
+	url := request.url() or { return '' }
+	return 'ResourceLoader: Starting load of: "${sanitized_url_for_logging(url)}"'
+}
+
+fn log_success(request &LoadRequest) string {
+	url := request.url() or { return '' }
+	return 'ResourceLoader: Finished load of: "${sanitized_url_for_logging(url)}", Duration: ${request.load_time().milliseconds()}ms'
+}
+
+fn log_failure(request &LoadRequest, message string) string {
+	url := request.url() or { return message }
+	return 'ResourceLoader: Failed load of: "${sanitized_url_for_logging(url)}", Error: ${message}, Duration: ${request.load_time().milliseconds()}ms'
+}
+
+fn log_filtered_request(request &LoadRequest) string {
+	url := request.url() or { return '' }
+	return 'ResourceLoader: Filtered request to: "${sanitized_url_for_logging(url)}"'
+}
+
+fn store_response_cookies(mut resource_loader ResourceLoader, request &LoadRequest, set_cookie_entry string) {
+	page_id := request.page() or { return }
+	url := request.url() or { return }
+	// Cookie::parse_cookie rejects entries without a name/value pair. The full
+	// cookie jar is an embedder boundary; retain each accepted HTTP cookie so
+	// the page client can consume the same response-side effect.
+	if !set_cookie_entry.contains('=') {
+		return
+	}
+	resource_loader.response_cookies_ << StoredResponseCookie{
+		page_id: page_id
+		url:     url
+		value:   set_cookie_entry
+	}
 }
 
 fn response_headers_for_file(path string, content_type string, modified ?string) []http.Header {
@@ -193,110 +318,179 @@ fn failure(message string, protocol string) LoadResult {
 }
 
 pub fn (mut resource_loader ResourceLoader) load(mut request LoadRequest) LoadResult {
-	url := request.url or { return failure('Request has no URL', '') }
+	url := request.url() or { return failure('Request has no URL', '') }
+	_ := log_request_start(request)
 	request.start_timer()
 	if resource_loader.should_block_request(request) {
+		_ := log_filtered_request(request)
 		return failure('Request was blocked', url.scheme())
 	}
 	match url.scheme() {
 		'about' {
-			serialized_path := url.serialize_path()
-			encoded_path := if serialized_path != '' {
-				serialized_path
-			} else {
-				url.serialize().all_after('about:').all_before('?').all_before('#')
-			}
-			// The upstream about loader percent-decodes the serialized path before
-			// selecting the generated or embedded page.
-			path := urllib.query_unescape(encoded_path) or { encoded_path }
-			data := if path == 'version' {
-				load_about_version_page().bytes()
-			} else {
-				resource_loader.about_pages[path] or { []u8{} }
-			}
-			return LoadResult{
-				success:  true
-				data:     data.clone()
-				headers:  [http.Header{'Content-Type', 'text/html; charset=UTF-8'}]
-				protocol: 'about'
-			}
+			return resource_loader.handle_about_load_request(request)
 		}
 		'resource' {
-			resource := resource_loader.resources[url.serialize()] or {
-				return failure('Resource not found: ${url.serialize()}', 'resource')
-			}
-			if resource.is_directory {
-				directory_url := resource.file_url or {
-					return failure('Resource directory has no file URL', 'resource')
-				}
-
-				page := load_file_directory_page(directory_url) or {
-					return failure(err.msg(), 'resource')
-				}
-				return LoadResult{
-					success:  true
-					data:     page.bytes()
-					headers:  [http.Header{'Content-Type', 'text/html'}]
-					protocol: 'resource'
-				}
-			}
-			return LoadResult{
-				success:  true
-				data:     resource.data.clone()
-				headers:  response_headers_for_file(url.serialize_path(), resource.content_type,
-					resource.last_modified)
-				protocol: 'resource'
-			}
+			return resource_loader.handle_resource_load_request(request)
 		}
 		'file' {
-			path := file_path_from_url(url) or { return failure(err.msg(), 'file') }
-			if os.is_dir(path) {
-				page := load_file_directory_page(url) or { return failure(err.msg(), 'file') }
-				return LoadResult{
-					success:  true
-					data:     page.bytes()
-					headers:  [http.Header{'Content-Type', 'text/html'}]
-					protocol: 'file'
-				}
-			}
-			data := os.read_bytes(path) or { return failure(err.msg(), 'file') }
-			return LoadResult{
-				success:  true
-				data:     data
-				headers:  response_headers_for_file(path, '', none)
-				protocol: 'file'
-			}
+			return resource_loader.handle_file_load_request(mut request)
 		}
 		'http', 'https' {
-			response := resource_loader.network_responses[url.serialize()] or {
+			protocol_request := resource_loader.start_network_request(request) or {
 				return failure('Failed to start network request', url.scheme())
 			}
-			request_id := resource_loader.next_request_id
-			resource_loader.next_request_id++
-			resource_loader.pending_loads_++
-			resource_loader.active_requests[request_id] = url.serialize()
-			proxy := resource_loader.proxy_mappings.proxy_for_url(url)
-			resource_loader.pending_loads_--
-			resource_loader.active_requests.delete(request_id)
-			if message := response.error_message {
+			resource_loader.handle_network_response_headers(request, protocol_request.response.headers)
+			resource_loader.finish_network_request(protocol_request)
+			if message := protocol_request.response.error_message {
+				_ := log_failure(request, message)
 				return LoadResult{
 					error_message: 'Request finished with error: ${message}'
 					protocol:      url.scheme()
-					proxy:         proxy
+					proxy:         protocol_request.proxy
 				}
 			}
+			_ := log_success(request)
 			return LoadResult{
 				success:       true
-				data:          response.data.clone()
-				headers:       response.headers.clone()
-				status_code:   response.status_code
-				reason_phrase: response.reason_phrase
+				data:          protocol_request.response.data.clone()
+				headers:       protocol_request.response.headers.clone()
+				status_code:   protocol_request.response.status_code
+				reason_phrase: protocol_request.response.reason_phrase
 				protocol:      url.scheme()
-				proxy:         proxy
+				proxy:         protocol_request.proxy
 			}
 		}
 		else {
-			return failure('Protocol not implemented: ${url.scheme()}', url.scheme())
+			message := 'Protocol not implemented: ${url.scheme()}'
+			_ := log_failure(request, message)
+			return failure(message, url.scheme())
 		}
 	}
+}
+
+pub fn (mut resource_loader ResourceLoader) handle_about_load_request(request &LoadRequest) LoadResult {
+	url := request.url() or { return failure('Request has no URL', 'about') }
+	serialized_path := url.serialize_path()
+	encoded_path := if serialized_path != '' {
+		serialized_path
+	} else {
+		url.serialize().all_after('about:').all_before('?').all_before('#')
+	}
+	path := urllib.query_unescape(encoded_path) or { encoded_path }
+	data := if path == 'version' {
+		load_about_version_page().bytes()
+	} else {
+		resource_loader.about_pages[path] or { []u8{} }
+	}
+	_ := log_success(request)
+	return LoadResult{
+		success:  true
+		data:     data.clone()
+		headers:  [http.Header{'Content-Type', 'text/html; charset=UTF-8'}]
+		protocol: 'about'
+	}
+}
+
+pub fn (mut resource_loader ResourceLoader) handle_resource_load_request(request &LoadRequest) LoadResult {
+	url := request.url() or { return failure('Request has no URL', 'resource') }
+	resource := resource_loader.resources[url.serialize()] or {
+		message := 'Resource not found: ${url.serialize()}'
+		_ := log_failure(request, message)
+		return failure(message, 'resource')
+	}
+	if resource.is_directory {
+		directory_url := resource.file_url or {
+			return failure('Resource directory has no file URL', 'resource')
+		}
+		page := load_file_directory_page(directory_url) or {
+			_ := log_failure(request, err.msg())
+			return failure(err.msg(), 'resource')
+		}
+		return LoadResult{
+			success:  true
+			data:     page.bytes()
+			headers:  [http.Header{'Content-Type', 'text/html'}]
+			protocol: 'resource'
+		}
+	}
+	return LoadResult{
+		success:  true
+		data:     resource.data.clone()
+		headers:  response_headers_for_file(url.serialize_path(), resource.content_type,
+			resource.last_modified)
+		protocol: 'resource'
+	}
+}
+
+pub fn (mut resource_loader ResourceLoader) handle_file_load_request(mut request LoadRequest) LoadResult {
+	url := request.url() or { return failure('Request has no URL', 'file') }
+	if request.page() == none {
+		// Host-backed tests do not have a Page object. File access itself remains
+		// the explicit stand-in for PageClient::request_file.
+	}
+	path := file_path_from_url(url) or {
+		_ := log_failure(request, err.msg())
+		return failure(err.msg(), 'file')
+	}
+	resource_loader.pending_loads_++
+	defer {
+		resource_loader.pending_loads_--
+	}
+	if os.is_dir(path) {
+		page := load_file_directory_page(url) or {
+			_ := log_failure(request, err.msg())
+			return failure(err.msg(), 'file')
+		}
+		_ := log_success(request)
+		return LoadResult{
+			success:  true
+			data:     page.bytes()
+			headers:  [http.Header{'Content-Type', 'text/html'}]
+			protocol: 'file'
+		}
+	}
+	data := os.read_bytes(path) or {
+		_ := log_failure(request, err.msg())
+		return failure(err.msg(), 'file')
+	}
+	_ := log_success(request)
+	return LoadResult{
+		success:  true
+		data:     data
+		headers:  response_headers_for_file(path, '', none)
+		protocol: 'file'
+	}
+}
+
+fn (mut resource_loader ResourceLoader) start_network_request(request &LoadRequest) ?StartedNetworkRequest {
+	url := request.url() or { return none }
+	response := resource_loader.network_responses[url.serialize()] or {
+		_ := log_failure(request, 'Failed to initiate load')
+		return none
+	}
+	request_id := resource_loader.next_request_id
+	resource_loader.next_request_id++
+	resource_loader.pending_loads_++
+	resource_loader.active_requests[request_id] = url.serialize()
+	return StartedNetworkRequest{
+		id:       request_id
+		response: response
+		proxy:    resource_loader.proxy_mappings.proxy_for_url(url)
+	}
+}
+
+fn (mut resource_loader ResourceLoader) handle_network_response_headers(request &LoadRequest, response_headers []http.Header) {
+	if request.page() == none || !request.include_credentials() {
+		return
+	}
+	for header in response_headers {
+		if header.name.to_lower() == 'set-cookie' {
+			store_response_cookies(mut resource_loader, request, header.value)
+		}
+	}
+}
+
+fn (mut resource_loader ResourceLoader) finish_network_request(protocol_request StartedNetworkRequest) {
+	resource_loader.pending_loads_--
+	resource_loader.active_requests.delete(protocol_request.id)
 }

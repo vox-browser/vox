@@ -137,3 +137,66 @@ fn test_effective_values_ignore_non_formattable_replaced_items() {
 	assert effective_command_values(document, command_bold) == ['bold']
 	assert record_the_values_of_selection(document, command_bold).len == 1
 }
+
+fn test_upstream_range_and_node_entry_points() {
+	mut document := new_document('abc\ndef')
+	document.set_selection(Boundary{0, 1}, Boundary{1, 2})!
+	range := active_range(document) or { panic('expected active range') }
+	extended := block_extend_a_range(document, range)
+	assert extended == EditingRange{
+		start: Boundary{0, 0}
+		end:   Boundary{1, 3}
+	}
+	item := EditingNode{0, 1}
+	assert (block_node_of_node(document, item) or { EditingNode{-1, none} }) == EditingNode{0, none}
+	assert is_effectively_contained_in_range(document, item, range)
+	assert is_formattable_node(document, item)
+	assert is_visible_node(document, item)
+	assert follows_a_line_break(document, EditingNode{1, 0})
+	assert precedes_a_line_break(document, EditingNode{0, 2})
+}
+
+fn test_upstream_whitespace_autolink_and_value_algorithms() {
+	mut whitespace := new_document('  x  ')
+	canonicalize_whitespace(mut whitespace, Boundary{0, 1}, true)
+	assert whitespace.plain_text().runes().len == 5
+	assert whitespace.plain_text().starts_with('\u00a0 ')
+
+	mut link := new_document('https://example.test')
+	autolink(mut link, Boundary{0, link.blocks[0].items.len})
+	assert link.blocks[0].items.all(it.style.link == 'https://example.test')
+
+	node := EditingNode{0, 0}
+	force_the_value(mut link, node, command_bold, 'bold')
+	assert effective_command_value(link, node, command_bold)? == 'bold'
+	recorded := record_the_values_of_nodes(link, [node], command_bold)
+	clear_the_value(mut link, command_bold, [node])
+	assert effective_command_value(link, node, command_bold)? == 'normal'
+	restore_the_values_of_nodes(mut link, recorded)
+	assert effective_command_value(link, node, command_bold)? == 'bold'
+}
+
+fn test_move_node_preserves_logical_range_boundaries() {
+	mut document := new_document('abc')
+	document.set_selection(Boundary{0, 1}, Boundary{0, 3})!
+	move_node_preserving_ranges(mut document, EditingNode{0, 0}, EditingNode{0, none}, 3)
+	assert document.plain_text() == 'bca'
+	assert document.selection == EditingRange{
+		start: Boundary{0, 0}
+		end:   Boundary{0, 2}
+	}
+}
+
+fn is_blockquote_block(block Block) bool {
+	return block.tag == 'blockquote'
+}
+
+fn test_wrap_moves_items_into_requested_parent() {
+	mut document := new_document('ab')
+	parent := wrap(mut document, [EditingNode{0, 0}, EditingNode{0, 1}],
+		is_blockquote_block, Block{tag: 'blockquote'}) or { panic('expected wrapper') }
+	assert parent == EditingNode{0, none}
+	assert document.blocks.len == 1
+	assert document.blocks[0].tag == 'blockquote'
+	assert document.plain_text() == 'ab'
+}

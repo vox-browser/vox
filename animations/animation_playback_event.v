@@ -41,6 +41,16 @@ pub fn AnimationPlaybackEvent.construct_impl(event_name string, init AnimationPl
 	return AnimationPlaybackEvent.create(event_name, init)
 }
 
+pub fn AnimationPlaybackEvent.to_numberish_internal(value ?CSSNumberish) ?CSSNumberish {
+	return value
+}
+
+pub fn AnimationPlaybackEvent.to_nullable_numberish(value ?CSSNumberish) NullableCSSNumberish {
+	return NullableCSSNumberish{
+		value: value
+	}
+}
+
 pub fn (event &AnimationPlaybackEvent) current_time() ?CSSNumberish {
 	return event.current_time_
 }

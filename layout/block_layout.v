@@ -2,13 +2,9 @@ module layout
 
 import css
 
-// First slices of the block layout algorithm (Layout/BlockFormattingContext.cpp + FormattingContext.cpp):
-// resolve a box's used box-model edges from its computed style, and compute the used width of a
-// normal-flow block-level box per CSS 2.1 §10.3.3 (including auto width / auto margins).
-//
-// DEFERRED: min/max-width clamping, replaced/inline/float/abspos width, over-constrained resolution
-// direction (assumes LTR, drops margin-right), border-width vs border-style interaction, and vertical
-// layout (heights + child stacking) — later slices.
+// Block layout algorithms shared by BlockFormattingContext and independent
+// formatting contexts: used box-model edges, the CSS 2.1 width equation,
+// intrinsic constraints, vertical sizing, and inside-context dispatch.
 
 fn css_px(value f64) CSSPixels {
 	return CSSPixels.nearest_value_for(value)
@@ -67,11 +63,16 @@ fn resolve_box_model_edges(computed &css.ComputedProperties, mut used_values Use
 // CSS 2.1 §10.3.3: compute the used content width (and resolve auto margins) of a normal-flow block-level
 // box, given its containing block's width. Assumes resolve_box_model_edges already ran.
 fn compute_block_used_width(computed &css.ComputedProperties, mut used_values UsedValues, containing_block_width f64) {
+	compute_block_used_width_with_override(computed, mut used_values, containing_block_width, none,
+		computed.direction())
+}
+
+fn compute_block_used_width_with_override(computed &css.ComputedProperties, mut used_values UsedValues, containing_block_width f64, intrinsic_width ?CSSPixels, containing_block_direction css.Direction) {
 	// Non-content horizontal edges (border + padding).
 	edges := used_values.border_left.to_double() + used_values.padding_left.to_double() +
 		used_values.padding_right.to_double() + used_values.border_right.to_double()
 
-	width_is_auto := property_is_auto(computed, .width)
+	width_is_auto := property_is_auto(computed, .width) && intrinsic_width == none
 	margin_left_auto := property_is_auto(computed, .margin_left)
 	margin_right_auto := property_is_auto(computed, .margin_right)
 
@@ -92,30 +93,154 @@ fn compute_block_used_width(computed &css.ComputedProperties, mut used_values Us
 			used_values.margin_right = css_px(0.0)
 		}
 	} else {
-		width = computed.length_percentage_to_px(.width, containing_block_width) or { 0.0 }
+		width = if resolved_intrinsic := intrinsic_width {
+			resolved_intrinsic.to_double()
+		} else {
+			computed.length_percentage_to_px(.width, containing_block_width) or { 0.0 }
+		}
+		// Intrinsic sizing algorithms return a content-box size already. Only a
+		// specified width still needs the border-box adjustment here.
+		if intrinsic_width == none && computed.box_sizing() == .border_box {
+			width -= edges
+			if width < 0 {
+				width = 0
+			}
+		}
 	}
 
 	// §10.4: clamp to [min-width, max-width].
-	clamped := clamp_to_min_max(computed, .min_width, .max_width, width, containing_block_width)
+	clamped := clamp_box_content_to_min_max(computed, .min_width, .max_width, width,
+		containing_block_width, edges)
 	used_values.set_content_width(css_px(clamped))
 
 	// Resolve auto margins against the used (now definite) width — for an explicit width, or an auto width
 	// that clamping shrank below the fill.
 	if !width_is_auto || clamped != width {
-		resolve_auto_margins(computed, mut used_values, containing_block_width, clamped)
+		resolve_auto_margins(computed, mut used_values, containing_block_width, clamped,
+			containing_block_direction)
 	}
+}
+
+fn compute_block_used_width_for_node(mut state LayoutState, box &NodeWithStyle, mut used_values UsedValues, available_width AvailableSize) {
+	box_node := unsafe { &Node(box) }
+	box_as_box := box_node.as_box() or {
+		compute_block_used_width(box.computed_values(), mut used_values,
+			available_width.to_px_or_zero().to_double())
+		return
+	}
+	computed_width := box.computed_values().size_value(.width)
+	mut intrinsic_width := ?CSSPixels(none)
+	// HTML button layout: an auto inline size is fit-content instead of the
+	// normal fill-available size of a block-level box.
+	if computed_width.is_auto() && node_uses_button_layout(box_node) {
+		intrinsic_width = calculate_fit_content_width(mut state, box_as_box, available_width)
+	} else if computed_width.is_auto() {
+		if auto_width := box_as_box.auto_content_box_size().width {
+			intrinsic_width = auto_width
+		}
+	} else if computed_width.is_min_content() {
+		intrinsic_width = calculate_min_content_width(mut state, box_as_box)
+	} else if computed_width.is_max_content() {
+		intrinsic_width = calculate_max_content_width(mut state, box_as_box)
+	} else if computed_width.is_fit_content() {
+		intrinsic_width = calculate_fit_content_width(mut state, box_as_box, available_width)
+	}
+	containing_block_direction := if containing := used_values.containing_block_used_values() {
+		containing.node().computed_values().direction()
+	} else {
+		box.computed_values().direction()
+	}
+	compute_block_used_width_with_override(box.computed_values(), mut used_values,
+		available_width.to_px_or_zero().to_double(), intrinsic_width, containing_block_direction)
+
+	// calculate_inner_width() also accepts intrinsic sizing keywords for the
+	// min/max constraints. Length-percentage constraints were applied by the
+	// CSS 2.1 width equation above; apply keyword constraints in max-then-min
+	// order, matching FormattingContext::compute_width().
+	mut clamped := used_values.content_width()
+	max_size := box.computed_values().size_value(.max_width)
+	if max_size.is_intrinsic_sizing_constraint() {
+		maximum := intrinsic_width_for_size(mut state, box_as_box, max_size, available_width)
+		clamped = css_pixels_min(clamped, maximum)
+	}
+	min_size := box.computed_values().size_value(.min_width)
+	if min_size.is_intrinsic_sizing_constraint() {
+		minimum := intrinsic_width_for_size(mut state, box_as_box, min_size, available_width)
+		clamped = css_pixels_max(clamped, minimum)
+	}
+	if clamped.raw_value() != used_values.content_width().raw_value() {
+		used_values.set_content_width(clamped)
+		resolve_auto_margins(box.computed_values(), mut used_values,
+			available_width.to_px_or_zero().to_double(), clamped.to_double(),
+			containing_block_direction)
+	}
+}
+
+fn intrinsic_width_for_size(mut state LayoutState, box &Box, size css.Size, available_width AvailableSize) CSSPixels {
+	if size.is_min_content() {
+		return calculate_min_content_width(mut state, box)
+	}
+	if size.is_max_content() {
+		return calculate_max_content_width(mut state, box)
+	}
+	if size.is_fit_content() {
+		return calculate_fit_content_width(mut state, box, available_width)
+	}
+	return CSSPixels.new(0)
+}
+
+fn clamp_box_content_to_min_max(computed &css.ComputedProperties, min_property css.PropertyID, max_property css.PropertyID, value f64, percentage_basis f64, border_padding_edges f64) f64 {
+	adjustment := if computed.box_sizing() == .border_box { border_padding_edges } else { 0.0 }
+	mut result := value
+	if specified_max := computed.length_percentage_to_px(max_property, percentage_basis) {
+		max := if specified_max > adjustment { specified_max - adjustment } else { 0.0 }
+		if result > max {
+			result = max
+		}
+	}
+	specified_min := computed.length_percentage_to_px(min_property, percentage_basis) or { 0.0 }
+	min := if specified_min > adjustment { specified_min - adjustment } else { 0.0 }
+	if result < min {
+		result = min
+	}
+	return result
+}
+
+fn content_height_for_box_sizing(computed &css.ComputedProperties, used_values &UsedValues, specified_height f64) f64 {
+	if computed.box_sizing() != .border_box {
+		return specified_height
+	}
+	edges := used_values.border_top.to_double() + used_values.padding_top.to_double() +
+		used_values.padding_bottom.to_double() + used_values.border_bottom.to_double()
+	return if specified_height > edges { specified_height - edges } else { 0.0 }
 }
 
 // Resolve auto left/right margins to absorb the remaining inline space (centering when both are auto),
 // given a definite content `width` (CSS 2.1 §10.3.3).
-fn resolve_auto_margins(computed &css.ComputedProperties, mut used_values UsedValues, containing_block_width f64, width f64) {
+fn resolve_auto_margins(computed &css.ComputedProperties, mut used_values UsedValues, containing_block_width f64, width f64, containing_block_direction css.Direction) {
 	edges := used_values.border_left.to_double() + used_values.padding_left.to_double() +
 		used_values.padding_right.to_double() + used_values.border_right.to_double()
-	margin_left_auto := property_is_auto(computed, .margin_left)
-	margin_right_auto := property_is_auto(computed, .margin_right)
+	mut margin_left_auto := property_is_auto(computed, .margin_left)
+	mut margin_right_auto := property_is_auto(computed, .margin_right)
 	fixed_margin_left := if margin_left_auto { 0.0 } else { used_values.margin_left.to_double() }
 	fixed_margin_right := if margin_right_auto { 0.0 } else { used_values.margin_right.to_double() }
-	remaining := containing_block_width - width - edges - fixed_margin_left - fixed_margin_right
+	mut remaining := containing_block_width - width - edges - fixed_margin_left - fixed_margin_right
+
+	// CSS 2.1 10.3.3: when a definite width plus the non-auto box edges is
+	// already wider than the containing block, auto inline margins are treated
+	// as zero before the width equation is solved. They therefore do not split a
+	// negative remainder; the over-constrained end margin absorbs it below.
+	if width + edges + fixed_margin_left + fixed_margin_right > containing_block_width {
+		if margin_left_auto {
+			used_values.margin_left = css_px(0)
+			margin_left_auto = false
+		}
+		if margin_right_auto {
+			used_values.margin_right = css_px(0)
+			margin_right_auto = false
+		}
+		remaining = containing_block_width - width - edges - fixed_margin_left - fixed_margin_right
+	}
 
 	if margin_left_auto && margin_right_auto {
 		half := remaining / 2.0
@@ -125,8 +250,14 @@ fn resolve_auto_margins(computed &css.ComputedProperties, mut used_values UsedVa
 		used_values.margin_left = css_px(remaining)
 	} else if margin_right_auto {
 		used_values.margin_right = css_px(remaining)
+	} else if containing_block_direction == .rtl {
+		// CSS 2.1 §10.3.3: when over-constrained, ignore the value for
+		// the start side (left in RTL).
+		used_values.margin_left = css_px(fixed_margin_left + remaining)
+	} else {
+		// In LTR the end side is margin-right.
+		used_values.margin_right = css_px(fixed_margin_right + remaining)
 	}
-	// FIXME: over-constrained (no auto) — CSS 2.1 ignores margin-right in LTR; not adjusted here.
 }
 
 // Clamp `value` to [min, max] resolved from `min_property`/`max_property` (CSS 2.1 §10.4/§10.7). A `none`
@@ -152,29 +283,49 @@ fn clamp_to_min_max(computed &css.ComputedProperties, min_property css.PropertyI
 // §8.3.1); child stacking and margin collapsing happen inside the context (layout_block_level_box). Used as
 // a standalone entry point (e.g. by tests); the document path goes through layout_viewport.
 //
-// DEFERRED: inline/flex/grid/table/replaced/float/abspos content, and writing modes.
+// The document path enters through layout_viewport; this standalone helper is
+// retained for direct algorithm tests.
 pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_block_width f64, containing_block_height ?f64) {
+	// This is a port-only standalone entry point. The document path assigns
+	// indices after tree construction, just like DOM::Document::update_layout.
+	assign_layout_indexes(unsafe { &Node(box) })
 	computed := box.computed_values()
 	mut used_values := state.get_mutable(box)
 	resolve_box_model_edges(computed, mut used_values, containing_block_width)
-	compute_block_used_width(computed, mut used_values, containing_block_width)
+	compute_block_used_width_for_node(mut state, box, mut used_values,
+		AvailableSize.make_definite(css_px(containing_block_width)))
 	content_width := used_values.content_width().to_double()
 
 	// This box's definite content height, if any (an explicit length, or a percentage resolved against the
 	// containing block's definite height). Children resolve their own percentage heights against it.
-	definite_content_height := resolve_definite_content_height(computed, containing_block_height)
+	definite_content_height := resolve_content_height_for_node(mut state, box, used_values,
+		containing_block_height)
 
 	box_as_node := unsafe { &Node(box) }
 
-	// Establish the content height from the box's children. FIXME: mixed block+inline content (which needs
-	// anonymous block boxes) is not handled — a box with any inline (text) child is laid out as an inline
-	// formatting context, otherwise as a block formatting context.
+	// DOM-built trees already contain the anonymous blocks required to separate
+	// mixed block and inline content. Direct synthetic trees use the node's
+	// children_are_inline classification.
 	mut content_height_from_children := 0.0
 	if box_has_inline_content(box_as_node) {
-		// Inline formatting context (first slice): lay the inline content out as a single line box of the
-		// computed line-height. FIXME: no text measurement, line breaking/wrapping, multiple lines,
-		// baselines, or per-fragment positioning yet.
-		content_height_from_children = computed_line_height_px(computed)
+		if block_container := box_as_node.as_block_container() {
+			available_height := if resolved_height := definite_content_height {
+				AvailableSize.make_definite(css_px(resolved_height))
+			} else {
+				AvailableSize.make_indefinite()
+			}
+			inline_result := run_inline_formatting_context(mut state, block_container, mut
+				used_values, .normal, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)),
+				available_height))
+			_ = inline_result
+			content_height_from_children = if used_values.line_boxes.len > 0 {
+				used_values.line_boxes.last().bottom().to_double()
+			} else {
+				0.0
+			}
+		} else {
+			content_height_from_children = computed_line_height_px(computed)
+		}
 	} else {
 		// Block formatting context: lay out the block children, collapsing adjacent-sibling and parent-child
 		// vertical margins (CSS 2.1 §8.3.1). `box` is treated as the BFC root, whose own margins (per §8.3.1)
@@ -188,9 +339,8 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 	// its children (auto).
 	mut height := definite_content_height or { content_height_from_children }
 	// §10.7: clamp to [min-height, max-height] (a percentage min/max against the containing block height).
-	height = clamp_to_min_max(computed, .min_height, .max_height, height, containing_block_height or {
-		0.0
-	})
+	height = clamp_content_height_for_node(mut state, box, used_values, css_px(height),
+		containing_block_height).to_double()
 	used_values.set_content_height(css_px(height))
 	// Like BlockFormattingContext::resolve_used_height_if_not_treated_as_auto,
 	// definiteness is established by resolving the computed height, not by the
@@ -221,20 +371,117 @@ fn property_is_percentage(computed &css.ComputedProperties, property_id css.Prop
 }
 
 // Whether `box_node` has inline-level (text) content that establishes an inline formatting context.
-// FIXME: also detect inline-level element boxes, not just text nodes.
 fn box_has_inline_content(box_node &Node) bool {
-	for child in box_node.children() {
-		if child.is_text_node() {
-			return true
-		}
-	}
-	return false
+	return box_node.children_are_inline()
 }
 
-// The computed line-height in px. FIXME: read the line-height property (normal / <number> / <length>);
-// currently approximates `normal` as 1.2 * font-size.
 fn computed_line_height_px(computed &css.ComputedProperties) f64 {
-	return computed.resolved_font_size_px() * 1.2
+	return computed.line_height().to_double()
+}
+
+// FormattingContext::layout_inside() for boxes which establish an independent
+// formatting context. The concrete context is selected from the box's inner
+// display type, exactly once, and returns its automatic content dimensions to
+// the parent context.
+fn layout_inside_independent_formatting_context(mut state LayoutState, box &Node, mut box_state UsedValues, available_space AvailableSpace) FormattingContextResult {
+	return layout_inside_independent_formatting_context_with_mode(mut state, box, mut box_state,
+		.normal, available_space)
+}
+
+// FormattingContext::layout_inside() carries the parent's layout mode into
+// every nested independent context. In intrinsic mode this is observable for
+// flex/grid containers: they compute their intrinsic size without performing
+// the final normal-layout pass over their items.
+fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState, box &Node, mut box_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
+	if box.is_svg_svg_box() {
+		return run_root_svg_formatting_context(mut state, box, mut box_state, available_space)
+	}
+	if box.is_fieldset_box() {
+		return run_fieldset_formatting_context(mut state, unsafe { &FieldSetBox(box) }, mut
+			box_state, available_space)
+	}
+	if box.display().is_flex_inside() {
+		return run_flex_formatting_context_with_mode(mut state, box, mut box_state, layout_mode,
+			available_space)
+	}
+	if box.display().is_grid_inside() {
+		return run_grid_formatting_context(mut state, box, mut box_state, available_space)
+	}
+	if box.display().is_table_inside() {
+		return run_table_formatting_context(mut state, box, mut box_state, available_space)
+	}
+	if box.is_replaced_box_with_children() {
+		return run_replaced_with_children_formatting_context(mut state, box, mut box_state,
+			available_space)
+	}
+	if column_count := determine_used_multicol_column_count(box, box_state.content_width()) {
+		// Upstream currently computes these used values before normal block/inline
+		// layout; column fragmentation is not performed by that pass yet.
+		_ = determine_used_multicol_column_width(box, box_state.content_width(), column_count)
+	}
+	if box_has_inline_content(box) {
+		if block_container := box.as_block_container() {
+			mut inline_block_context := BlockFormattingContext{
+				layout_mode: layout_mode
+			}
+			inline_result := inline_block_context.run_inline_formatting_context_with_floats(mut state,
+				block_container, mut box_state, layout_mode, available_space)
+			mut automatic_height := if box_state.line_boxes.len > 0 {
+				box_state.line_boxes.last().bottom()
+			} else {
+				CSSPixels.new(0)
+			}
+			root_origin_y := box_state.cumulative_offset().y()
+			for floating in inline_block_context.floating_boxes {
+				automatic_height = css_pixels_max(automatic_height,
+					floating.bottom.minus(root_origin_y))
+			}
+			return FormattingContextResult{
+				automatic_content_width:  inline_result.automatic_content_width
+				automatic_content_height: automatic_height
+			}
+		}
+	}
+	styled := box.as_node_with_style() or { return FormattingContextResult{} }
+	mut child_context := BlockFormattingContext{
+		layout_mode: layout_mode
+	}
+	child_context.layout_block_level_children(mut state, styled,
+		box_state.content_width().to_double(), if box_state.has_definite_height()
+		&& available_space.height.is_definite() {
+		available_space.height.to_px_or_zero().to_double()
+	} else {
+		none
+	})
+	child_context.assign_collapsed_margin_to_last_child(mut state, box)
+	// FormattingContext::compute_auto_height_for_block_formatting_context_root.
+	// This is evaluated after BlockFormattingContext::run assigns the final
+	// collapsed margin to the last in-flow child.
+	mut height := CSSPixels.new(0)
+	for child in box.children() {
+		if child.is_absolutely_positioned() {
+			continue
+		}
+		if styled.computed_values().overflow_y() == .visible && child.is_floating() {
+			continue
+		}
+		child_styled := child.as_node_with_style() or { continue }
+		child_state := state.get(child_styled)
+		child_bottom :=
+			child_state.offset.y().plus(child_state.content_height()).plus(child_state.margin_box_bottom())
+		height = css_pixels_max(height, child_bottom)
+	}
+	// Include every floating descendant whose bottom margin edge extends below
+	// the in-flow content bottom. Float records are in root coordinates.
+	root_origin_y := box_state.cumulative_offset().y()
+	for floating in child_context.floating_boxes {
+		local_bottom := floating.bottom.minus(root_origin_y)
+		height = css_pixels_max(height, local_bottom)
+	}
+	return FormattingContextResult{
+		automatic_content_width:  box_state.content_width()
+		automatic_content_height: height
+	}
 }
 
 // Lay out the Viewport — the layout tree's root and the initial containing block. Its content box is pinned
@@ -250,6 +497,42 @@ pub fn layout_viewport(mut state LayoutState, viewport &Viewport, viewport_width
 	viewport_used_values.set_content_width(css_px(viewport_width))
 	viewport_used_values.set_content_height(css_px(viewport_height))
 	viewport_used_values.set_has_definite_height(true)
+
+	// BlockFormattingContext::layout_viewport gives a standalone SVG document
+	// special treatment.  The root SVG's missing dimensions are supplied by the
+	// viewport and its SVG formatting context is entered directly; it does not
+	// participate in the normal block width equation (and therefore does not get
+	// a synthetic trailing margin for the unused viewport width).
+	if svg_root := unsafe { &Node(viewport) }.first_child() {
+		if svg_root.is_svg_svg_box() {
+			if svg_styled := svg_root.as_node_with_style() {
+				mut svg_state := state.get_mutable(svg_styled)
+				natural_size := svg_root.as_box() or { return }.natural_size()
+				is_svg_image_document := svg_root.document().is_svg_image_document()
+				if is_svg_image_document {
+					svg_state.set_content_width(css_px(viewport_width))
+				} else if natural_width := natural_size.width {
+					svg_state.set_content_width(natural_width)
+				} else if !svg_state.has_definite_width()
+					|| svg_styled.computed_values().size_value(.width).is_auto() {
+					svg_state.set_content_width(css_px(viewport_width))
+				}
+				if is_svg_image_document {
+					svg_state.set_content_height(css_px(viewport_height))
+					svg_state.set_has_definite_height(true)
+				} else if natural_height := natural_size.height {
+					svg_state.set_content_height(natural_height)
+					svg_state.set_has_definite_height(true)
+				} else if !svg_state.has_definite_height() {
+					svg_state.set_content_height(css_px(viewport_height))
+					svg_state.set_has_definite_height(true)
+				}
+				run_root_svg_formatting_context(mut state, svg_root, mut svg_state, AvailableSpace.new(AvailableSize.make_definite(css_px(viewport_width)),
+					AvailableSize.make_definite(css_px(viewport_height))))
+				return
+			}
+		}
+	}
 
 	mut block_formatting_context := BlockFormattingContext{}
 	block_formatting_context.layout_block_level_children(mut state, viewport_node_with_style,

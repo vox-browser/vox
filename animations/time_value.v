@@ -17,6 +17,25 @@ pub:
 
 pub type CSSNumberish = PercentageValue | f64
 
+// Web IDL represents the nullable CSSNumberish used by animation binding
+// attributes as either null or a number/CSS numeric value. Keeping the
+// nullable value in a small wrapper avoids losing the distinction when the
+// value crosses the translated binding boundary.
+pub struct NullableCSSNumberish {
+pub:
+	value ?CSSNumberish
+}
+
+pub fn NullableCSSNumberish.from_optional_css_numberish_time(time ?TimeValue) NullableCSSNumberish {
+	return NullableCSSNumberish{
+		value: if resolved := time { resolved.as_css_numberish() } else { none }
+	}
+}
+
+struct NullableTimeValue {
+	value ?TimeValue
+}
+
 pub struct TimeValue {
 pub:
 	type_ TimeValueType
@@ -45,6 +64,11 @@ pub fn TimeValue.zero_for_timeline(timeline ?&AnimationTimeline) TimeValue {
 		}
 	}
 	return TimeValue.milliseconds(0)
+}
+
+// Translation of TimeValue::create_zero().
+pub fn TimeValue.create_zero(timeline ?&AnimationTimeline) TimeValue {
+	return TimeValue.zero_for_timeline(timeline)
 }
 
 pub fn (time TimeValue) as_css_numberish() CSSNumberish {

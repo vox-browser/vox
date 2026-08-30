@@ -2,9 +2,21 @@ module html
 
 import dom
 
+fn ascii_alphabetic_to_index(character u8) u8 {
+	assert character.is_letter()
+	return if character <= `Z` { character - `A` } else { character - `a` + 26 }
+}
+
+fn is_whitespace_or_slash(character u8) bool {
+	return is_number_ascii_whitespace(character) || character == `/`
+}
+
+fn is_whitespace_or_end_chevron(character u8) bool {
+	return is_number_ascii_whitespace(character) || character == `>`
+}
+
 // Shared helpers for the HTML tree-construction machinery (stack of open elements, list of active
 // formatting elements, and eventually the parser itself).
-
 const ns_html = 'http://www.w3.org/1999/xhtml'
 const ns_svg = 'http://www.w3.org/2000/svg'
 const ns_mathml = 'http://www.w3.org/1998/Math/MathML'
@@ -26,9 +38,9 @@ const special_html_tags = ['address', 'applet', 'area', 'article', 'aside', 'bas
 	'form', 'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hgroup',
 	'hr', 'html', 'iframe', 'img', 'input', 'keygen', 'li', 'link', 'listing', 'main', 'marquee',
 	'menu', 'meta', 'nav', 'noembed', 'noframes', 'noscript', 'object', 'ol', 'p', 'param',
-	'plaintext', 'pre', 'script', 'search', 'section', 'select', 'source', 'style', 'summary',
-	'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'title', 'tr', 'track',
-	'ul', 'wbr', 'xmp']
+	'plaintext', 'pre', 'script', 'search', 'section', 'select', 'source', 'style', 'summary', 'table',
+	'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'title', 'tr', 'track', 'ul',
+	'wbr', 'xmp']
 
 const special_svg_tags = ['desc', 'foreignObject', 'title']
 
@@ -45,4 +57,10 @@ pub fn is_special_tag(tag_name string, namespace_ ?string) bool {
 		return tag_name in special_mathml_tags
 	}
 	return false
+}
+
+// HTMLParser::is_special_tag(). Keep the free helper for translated stack
+// code whose upstream C++ calls this static method.
+pub fn HTMLParser.is_special_tag(tag_name string, namespace_ ?string) bool {
+	return is_special_tag(tag_name, namespace_)
 }

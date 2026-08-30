@@ -39,3 +39,9 @@ fn test_dom_parser_returns_parsererror_for_malformed_xml() {
 	assert root.local_name() == 'parsererror'
 	assert root.namespace_uri() or { '' } == parser_error_namespace_uri
 }
+
+fn test_dom_parser_construct_impl() {
+	associated := dom.Document.create(dom.url_about_blank())
+	parser := DOMParser.construct_impl(associated) or { panic(err) }
+	assert parser.associated_document == associated
+}

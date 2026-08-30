@@ -123,14 +123,91 @@ pub:
 }
 
 pub fn (left AffineTransform) multiply(right AffineTransform) AffineTransform {
+	// Gfx::AffineTransform stores and operates on floats. Keep the public V
+	// representation as f64 for the rest of the translated SVG code, but round
+	// every matrix operation exactly where the upstream implementation does.
+	left_a := f32(left.a)
+	left_b := f32(left.b)
+	left_c := f32(left.c)
+	left_d := f32(left.d)
+	left_e := f32(left.e)
+	left_f := f32(left.f)
+	right_a := f32(right.a)
+	right_b := f32(right.b)
+	right_c := f32(right.c)
+	right_d := f32(right.d)
+	right_e := f32(right.e)
+	right_f := f32(right.f)
 	return AffineTransform{
-		a: left.a * right.a + left.c * right.b
-		b: left.b * right.a + left.d * right.b
-		c: left.a * right.c + left.c * right.d
-		d: left.b * right.c + left.d * right.d
-		e: left.a * right.e + left.c * right.f + left.e
-		f: left.b * right.e + left.d * right.f + left.f
+		a: f64(right_a * left_a + right_b * left_c)
+		b: f64(right_a * left_b + right_b * left_d)
+		c: f64(right_c * left_a + right_d * left_c)
+		d: f64(right_c * left_b + right_d * left_d)
+		e: f64(right_e * left_a + right_f * left_c + left_e)
+		f: f64(right_e * left_b + right_f * left_d + left_f)
 	}
+}
+
+// Gfx::AffineTransform::map(). SVG layout composes transforms in document
+// order, then maps geometry into CSS-pixel space through these helpers.
+pub fn (transform AffineTransform) map_point(point Point) Point {
+	x := f32(point.x)
+	y := f32(point.y)
+	return Point{
+		x: f64(f32(transform.a) * x + f32(transform.c) * y + f32(transform.e))
+		y: f64(f32(transform.b) * x + f32(transform.d) * y + f32(transform.f))
+	}
+}
+
+// Map all four corners and return the axis-aligned bounds. Mapping only the
+// top-left and bottom-right is incorrect for rotations and negative scales.
+pub fn (transform AffineTransform) map_rect(rect Rect) Rect {
+	x := f32(rect.x)
+	y := f32(rect.y)
+	right := x + f32(rect.width)
+	bottom := y + f32(rect.height)
+	points := [
+		transform.map_point(Point{ x: f64(x), y: f64(y) }),
+		transform.map_point(Point{ x: f64(right), y: f64(y) }),
+		transform.map_point(Point{ x: f64(x), y: f64(bottom) }),
+		transform.map_point(Point{ x: f64(right), y: f64(bottom) }),
+	]
+	mut min_x := points[0].x
+	mut max_x := points[0].x
+	mut min_y := points[0].y
+	mut max_y := points[0].y
+	for point in points[1..] {
+		min_x = math.min(min_x, point.x)
+		max_x = math.max(max_x, point.x)
+		min_y = math.min(min_y, point.y)
+		max_y = math.max(max_y, point.y)
+	}
+	return Rect{
+		x:      min_x
+		y:      min_y
+		width:  max_x - min_x
+		height: max_y - min_y
+	}
+}
+
+pub fn (transform AffineTransform) translated(x f64, y f64) AffineTransform {
+	return transform.multiply(AffineTransform{
+		e: x
+		f: y
+	})
+}
+
+pub fn (transform AffineTransform) scaled(x f64, y f64) AffineTransform {
+	return transform.multiply(AffineTransform{
+		a: x
+		d: y
+	})
+}
+
+pub fn (transform AffineTransform) x_scale() f64 {
+	a := f32(transform.a)
+	b := f32(transform.b)
+	return f64(math.sqrtf(a * a + b * b))
 }
 
 pub fn (transform Transform) matrix() AffineTransform {
@@ -148,9 +225,9 @@ pub fn (transform Transform) matrix() AffineTransform {
 			}
 		}
 		.rotate {
-			angle := transform.values[0] * math.pi / 180.0
-			cosine := math.cos(angle)
-			sine := math.sin(angle)
+			angle := f32(transform.values[0]) * f32(math.pi) / f32(180.0)
+			cosine := math.cosf(angle)
+			sine := math.sinf(angle)
 			rotation := AffineTransform{
 				a: cosine
 				b: sine
@@ -169,12 +246,12 @@ pub fn (transform Transform) matrix() AffineTransform {
 		}
 		.skew_x {
 			return AffineTransform{
-				c: math.tan(transform.values[0] * math.pi / 180.0)
+				c: f64(math.tanf(f32(transform.values[0]) * f32(math.pi) / f32(180.0)))
 			}
 		}
 		.skew_y {
 			return AffineTransform{
-				b: math.tan(transform.values[0] * math.pi / 180.0)
+				b: f64(math.tanf(f32(transform.values[0]) * f32(math.pi) / f32(180.0)))
 			}
 		}
 		.matrix {

@@ -102,3 +102,12 @@ fn test_overload_distinguishing_precedence_beats_any_fallback() {
 	]
 	assert resolve_overload(candidates, [number_value(1)])!.callable_id == 2
 }
+
+fn test_observable_internal_operations_use_index_callbacks() {
+	mut array := ObservableArray.create()
+	array.set_on_set_an_indexed_value_callback(observe_set)
+	assert array.internal_set(0, string_value('value'))!
+	assert array.values[0].string_value == 'value'
+	assert array.internal_delete(0)!
+	assert array.values.len == 0
+}

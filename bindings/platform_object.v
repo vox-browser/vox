@@ -141,9 +141,8 @@ pub:
 
 @[heap]
 pub struct PlatformObject {
-pub:
-	realm &html.ScriptingRealm
 mut:
+	realm_                   &html.ScriptingRealm
 	prototype_               ?&PlatformObject
 	interface_name_          string
 	implemented_interfaces_  []string
@@ -157,15 +156,19 @@ mut:
 
 pub fn PlatformObject.create(realm &html.ScriptingRealm) &PlatformObject {
 	return &PlatformObject{
-		realm: realm
+		realm_: realm
 	}
 }
 
 pub fn PlatformObject.create_with_prototype(prototype &PlatformObject) &PlatformObject {
 	return &PlatformObject{
-		realm:      prototype.realm
+		realm_:     prototype.realm_
 		prototype_: prototype
 	}
+}
+
+pub fn (object &PlatformObject) realm() &html.ScriptingRealm {
+	return object.realm_
 }
 
 pub fn (mut object PlatformObject) set_prototype(prototype ?&PlatformObject) {
@@ -355,25 +358,13 @@ fn (object &PlatformObject) invoke_indexed_property_setter(key PropertyKey, valu
 	creating := !object.is_supported_property_index(index)
 	if !flags.indexed_property_setter_has_identifier {
 		if creating {
-			setter := object.hooks_.set_value_of_new_indexed_property or {
-				return error('TypeError: indexed property setter hook is missing')
-			}
-
-			setter(index, value)!
+			object.set_value_of_new_indexed_property(index, value)!
 			return
 		}
-		setter := object.hooks_.set_value_of_existing_indexed_property or {
-			return error('TypeError: indexed property setter hook is missing')
-		}
-
-		setter(index, value)!
+		object.set_value_of_existing_indexed_property(index, value)!
 		return
 	}
-	setter := object.hooks_.set_value_of_indexed_property or {
-		return error('TypeError: indexed property setter hook is missing')
-	}
-
-	setter(index, value)!
+	object.set_value_of_indexed_property(index, value)!
 }
 
 fn (object &PlatformObject) invoke_named_property_setter(name string, value dom.JSValue) ! {
@@ -384,25 +375,62 @@ fn (object &PlatformObject) invoke_named_property_setter(name string, value dom.
 	creating := !object.is_supported_property_name(name)
 	if !flags.named_property_setter_has_identifier {
 		if creating {
-			setter := object.hooks_.set_value_of_new_named_property or {
-				return error('TypeError: named property setter hook is missing')
-			}
-
-			setter(name, value)!
+			object.set_value_of_new_named_property(name, value)!
 			return
 		}
-		setter := object.hooks_.set_value_of_existing_named_property or {
-			return error('TypeError: named property setter hook is missing')
-		}
-
-		setter(name, value)!
+		object.set_value_of_existing_named_property(name, value)!
 		return
 	}
+	object.set_value_of_named_property(name, value)!
+}
+
+pub fn (object &PlatformObject) set_value_of_new_named_property(name string, value dom.JSValue) ! {
+	setter := object.hooks_.set_value_of_new_named_property or {
+		return error('TypeError: named property setter hook is missing')
+	}
+	setter(name, value)!
+}
+
+pub fn (object &PlatformObject) set_value_of_existing_named_property(name string, value dom.JSValue) ! {
+	setter := object.hooks_.set_value_of_existing_named_property or {
+		return error('TypeError: named property setter hook is missing')
+	}
+	setter(name, value)!
+}
+
+pub fn (object &PlatformObject) set_value_of_named_property(name string, value dom.JSValue) ! {
 	setter := object.hooks_.set_value_of_named_property or {
 		return error('TypeError: named property setter hook is missing')
 	}
-
 	setter(name, value)!
+}
+
+pub fn (object &PlatformObject) set_value_of_new_indexed_property(index u32, value dom.JSValue) ! {
+	setter := object.hooks_.set_value_of_new_indexed_property or {
+		return error('TypeError: indexed property setter hook is missing')
+	}
+	setter(index, value)!
+}
+
+pub fn (object &PlatformObject) set_value_of_existing_indexed_property(index u32, value dom.JSValue) ! {
+	setter := object.hooks_.set_value_of_existing_indexed_property or {
+		return error('TypeError: indexed property setter hook is missing')
+	}
+	setter(index, value)!
+}
+
+pub fn (object &PlatformObject) set_value_of_indexed_property(index u32, value dom.JSValue) ! {
+	setter := object.hooks_.set_value_of_indexed_property or {
+		return error('TypeError: indexed property setter hook is missing')
+	}
+	setter(index, value)!
+}
+
+pub fn (object &PlatformObject) delete_value(name string) !DidDeletionFail {
+	deleter := object.hooks_.delete_value or {
+		return error('TypeError: named property deleter hook is missing')
+	}
+	return deleter(name)
 }
 
 fn (mut object PlatformObject) ordinary_set(key PropertyKey, value dom.JSValue) bool {
@@ -487,11 +515,7 @@ pub fn (mut object PlatformObject) internal_delete(key PropertyKey) !bool {
 		if !flags.has_named_property_deleter {
 			return false
 		}
-		deleter := object.hooks_.delete_value or {
-			return error('TypeError: named property deleter hook is missing')
-		}
-
-		result := deleter(key.name)!
+		result := object.delete_value(key.name)!
 		if !flags.named_property_deleter_has_identifier && result == .not_relevant {
 			return error('TypeError: unnamed deleter must report whether deletion failed')
 		}
@@ -528,6 +552,10 @@ pub fn (mut object PlatformObject) internal_prevent_extensions() bool {
 
 pub fn (object &PlatformObject) is_extensible() bool {
 	return object.extensible_
+}
+
+pub fn (_ &PlatformObject) eligible_for_own_property_enumeration_fast_path() bool {
+	return false
 }
 
 fn append_unique_key(mut keys []PropertyKey, key PropertyKey) {

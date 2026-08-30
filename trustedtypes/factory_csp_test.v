@@ -14,7 +14,7 @@ fn test_csp_policy_creation_name_duplicate_and_report_only() {
 		disposition:   .enforce
 		trusted_types: ['safe']
 	}
-	factory.create_policy('safe', TrustedTypePolicyOptions{})!
+	factory.create_a_trusted_type_policy('safe', TrustedTypePolicyOptions{})!
 	if _ := factory.create_policy('safe', TrustedTypePolicyOptions{}) {
 		assert false
 	} else {
@@ -34,6 +34,22 @@ fn test_csp_policy_creation_name_duplicate_and_report_only() {
 	}
 	report_factory.create_policy('allowed', TrustedTypePolicyOptions{})!
 	assert report_factory.violations.len == 1
+}
+
+fn test_exact_csp_algorithm_entry_points() {
+	mut factory := TrustedTypePolicyFactory.create()
+	factory.csp_policies << TrustedTypesCSPPolicy{
+		disposition:               .enforce
+		trusted_types:             ['safe']
+		require_trusted_types_for: ["'script'"]
+	}
+	assert factory.should_trusted_type_policy_be_blocked_by_content_security_policy('other',
+		[]string{})
+	assert should_sink_type_mismatch_violation_be_blocked_by_content_security_policy(mut factory,
+		.eval, "'script'", 'source')
+	directive := &RequireTrustedTypesForDirective{}
+	assert directive.pre_navigation_check(mut factory, 'https://example.test/')! ==
+		'https://example.test/'
 }
 
 fn test_sink_requirement_violation_sample_and_blocking() {

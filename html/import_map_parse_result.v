@@ -38,6 +38,14 @@ pub fn (result &ImportMapParseResult) error_to_rethrow() ?string {
 	return result.error_to_rethrow_
 }
 
+pub fn (mut result ImportMapParseResult) set_import_map(import_map ?&ImportMap) {
+	result.import_map_ = import_map
+}
+
+pub fn (mut result ImportMapParseResult) set_error_to_rethrow(error_to_rethrow ?string) {
+	result.error_to_rethrow_ = error_to_rethrow
+}
+
 // https://html.spec.whatwg.org/multipage/webappapis.html#register-an-import-map
 // Reporting a WebIDL/JS exception is represented by returning it as a V error;
 // callers at a realm boundary can report it through their host runtime.

@@ -40,6 +40,10 @@ pub fn DOMQuad.construct(p1 DOMPointInit, p2 DOMPointInit, p3 DOMPointInit, p4 D
 	}
 }
 
+pub fn DOMQuad.construct_impl(p1 DOMPointInit, p2 DOMPointInit, p3 DOMPointInit, p4 DOMPointInit) &DOMQuad {
+	return DOMQuad.construct(p1, p2, p3, p4)
+}
+
 // DOMQuad::create(realm) — the empty quad (four default-initialized points).
 pub fn DOMQuad.create() &DOMQuad {
 	return &DOMQuad{

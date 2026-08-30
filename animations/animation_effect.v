@@ -6,6 +6,7 @@
 module animations
 
 import css
+import dom
 import math
 
 pub enum FillMode {
@@ -61,6 +62,37 @@ pub:
 	easing          string
 }
 
+pub fn (timing EffectTiming) to_optional_effect_timing() OptionalEffectTiming {
+	return OptionalEffectTiming{
+		delay:           timing.delay
+		end_delay:       timing.end_delay
+		fill:            timing.fill
+		iteration_start: timing.iteration_start
+		iterations:      timing.iterations
+		duration:        timing.duration
+		direction:       timing.direction
+		easing:          timing.easing
+	}
+}
+
+pub fn css_fill_mode_to_bindings_fill_mode(mode css.AnimationFillMode) FillMode {
+	return match mode {
+		.none_ { .none_ }
+		.forwards { .forwards }
+		.backwards { .backwards }
+		.both { .both }
+	}
+}
+
+pub fn css_animation_direction_to_bindings_playback_direction(direction css.AnimationDirection) PlaybackDirection {
+	return match direction {
+		.normal { .normal }
+		.reverse { .reverse }
+		.alternate { .alternate }
+		.alternate_reverse { .alternate_reverse }
+	}
+}
+
 pub struct ComputedEffectTiming {
 	EffectTiming
 pub:
@@ -100,6 +132,10 @@ pub fn AnimationEffect.new() &AnimationEffect {
 
 pub fn parse_easing_string(value string) ?css.EasingFunction {
 	return css.parse_easing_function(value)
+}
+
+pub fn AnimationEffect.parse_easing_string(value string) ?css.EasingFunction {
+	return parse_easing_string(value)
 }
 
 pub fn (effect &AnimationEffect) get_timing() EffectTiming {
@@ -231,9 +267,13 @@ fn (mut effect AnimationEffect) convert_to_proportional_animation() {
 	effect.end_delay_ = timeline_duration.multiply(effect.specified_end_delay_ / total_time)
 }
 
+pub fn (mut effect AnimationEffect) convert_a_time_based_animation_to_a_proportional_animation() {
+	effect.convert_to_proportional_animation()
+}
+
 pub fn (mut effect AnimationEffect) normalize_specified_timing() {
 	if effect.timeline_duration() != none {
-		effect.convert_to_proportional_animation()
+		effect.convert_a_time_based_animation_to_a_proportional_animation()
 		return
 	}
 	effect.start_delay_ = TimeValue.milliseconds(effect.specified_start_delay_)
@@ -242,6 +282,94 @@ pub fn (mut effect AnimationEffect) normalize_specified_timing() {
 		f64 { TimeValue.milliseconds(effect.specified_iteration_duration_) }
 		string { effect.intrinsic_iteration_duration() }
 	}
+}
+
+pub fn (effect &AnimationEffect) start_delay() TimeValue {
+	return effect.start_delay_
+}
+
+pub fn (mut effect AnimationEffect) set_specified_start_delay(value f64) {
+	effect.specified_start_delay_ = value
+}
+
+pub fn (effect &AnimationEffect) end_delay() TimeValue {
+	return effect.end_delay_
+}
+
+pub fn (mut effect AnimationEffect) set_specified_end_delay(value f64) {
+	effect.specified_end_delay_ = value
+}
+
+pub fn (effect &AnimationEffect) fill_mode() FillMode {
+	return effect.fill_mode_
+}
+
+pub fn (mut effect AnimationEffect) set_fill_mode(value FillMode) {
+	effect.fill_mode_ = value
+}
+
+pub fn (effect &AnimationEffect) iteration_start() f64 {
+	return effect.iteration_start_
+}
+
+pub fn (mut effect AnimationEffect) set_iteration_start(value f64) {
+	effect.iteration_start_ = value
+}
+
+pub fn (effect &AnimationEffect) iteration_count() f64 {
+	return effect.iteration_count_
+}
+
+pub fn (mut effect AnimationEffect) set_iteration_count(value f64) {
+	effect.iteration_count_ = value
+}
+
+pub fn (effect &AnimationEffect) iteration_duration() TimeValue {
+	return effect.iteration_duration_
+}
+
+pub fn (mut effect AnimationEffect) set_specified_iteration_duration(value IterationDuration) {
+	effect.specified_iteration_duration_ = value
+}
+
+pub fn (effect &AnimationEffect) playback_direction() PlaybackDirection {
+	return effect.playback_direction_
+}
+
+pub fn (mut effect AnimationEffect) set_playback_direction(value PlaybackDirection) {
+	effect.playback_direction_ = value
+}
+
+pub fn (effect &AnimationEffect) timing_function() css.EasingFunction {
+	return effect.timing_function_
+}
+
+pub fn (mut effect AnimationEffect) set_timing_function(value css.EasingFunction) {
+	effect.timing_function_ = value
+}
+
+pub fn (effect &AnimationEffect) previous_phase() EffectPhase {
+	return effect.previous_phase_
+}
+
+pub fn (mut effect AnimationEffect) set_previous_phase(value EffectPhase) {
+	effect.previous_phase_ = value
+}
+
+pub fn (effect &AnimationEffect) previous_current_iteration() f64 {
+	return effect.previous_current_iteration_
+}
+
+pub fn (mut effect AnimationEffect) set_previous_current_iteration(value f64) {
+	effect.previous_current_iteration_ = value
+}
+
+pub fn (effect &AnimationEffect) target_properties() map[css.PropertyID]bool {
+	return effect.target_properties_.clone()
+}
+
+pub fn (effect &AnimationEffect) is_keyframe_effect() bool {
+	return effect.is_keyframe_effect_
 }
 
 pub fn (mut effect AnimationEffect) set_associated_animation(animation ?&Animation) {
@@ -428,4 +556,33 @@ pub fn (effect &AnimationEffect) transformed_progress() ?f64 {
 	before_flag := (effect.is_in_the_before_phase() && forwards)
 		|| (effect.is_in_the_after_phase() && !forwards)
 	return effect.timing_function_.evaluate_at(directed, before_flag)
+}
+
+pub fn compute_required_invalidation_for_animated_properties(old_properties map[css.PropertyID]&dom.StyleValue, new_properties map[css.PropertyID]&dom.StyleValue) css.RequiredInvalidationAfterStyleChange {
+	mut all_properties := map[css.PropertyID]bool{}
+	for property_id, _ in old_properties {
+		all_properties[property_id] = true
+	}
+	for property_id, _ in new_properties {
+		all_properties[property_id] = true
+	}
+	mut invalidation := css.RequiredInvalidationAfterStyleChange{}
+	for property_id, _ in all_properties {
+		mut old_value := ?&dom.StyleValue(none)
+		mut new_value := ?&dom.StyleValue(none)
+		if value := old_properties[property_id] {
+			old_value = value
+		}
+		if value := new_properties[property_id] {
+			new_value = value
+		}
+		if old_value == none && new_value == none {
+			continue
+		}
+		property_invalidation := css.compute_property_invalidation(property_id, old_value,
+			new_value)
+		invalidation = css.required_invalidation_after_style_change_or(invalidation,
+			property_invalidation)
+	}
+	return invalidation
 }

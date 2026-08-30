@@ -88,3 +88,23 @@ fn test_set_username_password() {
 	set_hyperlink_password(mut a, 'secret')
 	assert hyperlink_password(a) == 'secret'
 }
+
+fn test_exact_hyperlink_mixin_entry_points_and_cached_url_record() {
+	mut a := anchor('https://user:pass@example.com:8443/a?x=1#old')
+	html_hyperlink_element_utils_set_the_url(a)
+	assert html_hyperlink_element_utils_extract_an_origin(a)?.serialize() == 'https://example.com:8443'
+	assert html_hyperlink_element_utils_origin(a) == 'https://example.com:8443'
+	assert html_hyperlink_element_utils_href(a).ends_with('/a?x=1#old')
+	html_hyperlink_element_utils_set_host(a, 'other.example:9000')
+	assert html_hyperlink_element_utils_host(a) == 'other.example:9000'
+	html_hyperlink_element_utils_set_pathname(a, '/next')
+	assert html_hyperlink_element_utils_pathname(a) == '/next'
+	html_hyperlink_element_utils_set_search(a, '?q=translated')
+	html_hyperlink_element_utils_set_hash(a, '#done')
+	assert html_hyperlink_element_utils_search(a) == '?q=translated'
+	assert html_hyperlink_element_utils_hash(a) == '#done'
+	html_hyperlink_element_utils_set_href(a, '/relative')
+	html_hyperlink_element_utils_reinitialize_url(a)
+	assert html_hyperlink_element_utils_href(a) == 'https://base.example/relative'
+	assert a.get_attribute_value('href') == '/relative'
+}

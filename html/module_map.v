@@ -13,6 +13,24 @@ pub enum ModuleMapEntryType {
 	module_script
 }
 
+pub struct ModuleLocationTuple {
+pub:
+	url_  dom.URL
+	type_ string
+}
+
+pub fn ModuleLocationTuple.create(url dom.URL, type_ string) ModuleLocationTuple {
+	return ModuleLocationTuple{url_: url, type_: type_}
+}
+
+pub fn (tuple &ModuleLocationTuple) url() dom.URL {
+	return tuple.url_
+}
+
+pub fn (tuple &ModuleLocationTuple) type_() string {
+	return tuple.type_
+}
+
 pub struct ModuleMapEntry {
 pub:
 	type_         ModuleMapEntryType
@@ -51,6 +69,12 @@ pub fn (module_map &ModuleMap) is_failed(url dom.URL, type_ string) bool {
 pub fn (module_map &ModuleMap) is_(url dom.URL, type_ string, entry_type ModuleMapEntryType) bool {
 	entry := module_map.values_[module_map_key(url, type_)] or { return false }
 	return entry.type_ == entry_type
+}
+
+// `is` is a V keyword, so this is the literal class-qualified translation of
+// ModuleMap::is.
+pub fn module_map_is(module_map &ModuleMap, url dom.URL, type_ string, entry_type ModuleMapEntryType) bool {
+	return module_map.is_(url, type_, entry_type)
 }
 
 pub fn (module_map &ModuleMap) get(url dom.URL, type_ string) ?ModuleMapEntry {

@@ -176,8 +176,9 @@ fn test_adjacent_margin_collapse() {
 	assert div2_uv.offset.y().to_double() == 40.0
 }
 
-// A block container's top margin collapses with its first in-flow child's top margin (CSS 2.1 §8.3.1): the
-// collapsed margin moves out to the parent and the child sits flush against the parent's content top.
+// A normal block container's top margin can collapse with its first in-flow
+// child's top margin. The root element is the exception: it establishes a BFC,
+// so its child's margin remains inside it.
 fn test_parent_child_margin_collapse() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
@@ -205,11 +206,11 @@ fn test_parent_child_margin_collapse() {
 		panic('child uv')
 	}
 
-	// The child's 40px top margin collapses through <html> (which has no top margin/border/padding): <html> is
-	// pushed down to y=40, and the child sits flush at <html>'s content top (its own margin absorbed).
-	assert html_uv.offset.y().to_double() == 40.0
-	assert child_uv.offset.y().to_double() == 0.0
-	// The child's absolute (cumulative) top is still 40 — the margin collapsed, it did not stack twice.
+	// FormattingContext::creates_block_formatting_context() explicitly includes
+	// the document root. The root remains at the ICB origin and the child's
+	// margin positions the child 40px inside it.
+	assert html_uv.offset.y().to_double() == 0.0
+	assert child_uv.offset.y().to_double() == 40.0
 	assert child_uv.cumulative_offset().y().to_double() == 40.0
 }
 

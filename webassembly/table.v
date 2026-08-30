@@ -12,6 +12,13 @@ pub enum TableKind {
 	anyfunc
 }
 
+pub fn table_kind_to_value_type(kind TableKind) ValueType {
+	return match kind {
+		.externref { .externref }
+		.anyfunc { .anyfunc }
+	}
+}
+
 pub struct TableDescriptor {
 pub:
 	element TableKind
@@ -45,6 +52,14 @@ pub fn Table.construct(descriptor TableDescriptor, initial ?webidl.Value) !&Tabl
 		maximum:  descriptor.maximum
 		elements: []webidl.Value{len: int(descriptor.initial), init: value}
 	}
+}
+
+pub fn Table.construct_impl(descriptor TableDescriptor, initial ?webidl.Value) !&Table {
+	return Table.construct(descriptor, initial)
+}
+
+pub fn (table &Table) address() u64 {
+	return u64(voidptr(table))
 }
 
 fn validate_table_value(kind TableKind, value webidl.Value) !webidl.Value {

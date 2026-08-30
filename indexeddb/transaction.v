@@ -40,6 +40,14 @@ pub mut:
 	requests         []&IDBRequest
 	snapshot         map[string]ObjectStoreData
 	original_version u64
+	associated_request_ ?&IDBRequest
+	aborted_             bool
+	cleanup_event_loop_  string
+	object_store_handles map[string]IDBObjectStore
+	index_handles_       []IDBIndex
+	onabort_             ?IDBEventHandler
+	oncomplete_          ?IDBEventHandler
+	onerror_             ?IDBEventHandler
 }
 
 pub fn IDBTransaction.create(database &IDBDatabase, mode IDBTransactionMode, durability IDBTransactionDurability, scope []string) &IDBTransaction {
@@ -103,6 +111,9 @@ pub fn (mut transaction IDBTransaction) commit() ! {
 	transaction.state = .committing
 	transaction.state = .finished
 	transaction.events << 'complete'
+	if callback := transaction.oncomplete_ {
+		callback()
+	}
 	transaction.finish_connection_if_needed()
 }
 
@@ -115,8 +126,12 @@ pub fn (mut transaction IDBTransaction) abort(reason string) ! {
 		transaction.database.data.version = transaction.original_version
 	}
 	transaction.error_message = reason
+	transaction.aborted_ = true
 	transaction.state = .aborted
 	transaction.events << 'abort'
+	if callback := transaction.onabort_ {
+		callback()
+	}
 	for mut request in transaction.requests {
 		if request.ready_state == .pending {
 			request.aborted = true

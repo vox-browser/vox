@@ -50,10 +50,10 @@ fn test_html_form_controls_collection_named_item_result() {
 	second := form_controls_create_input(document, 'choice', 'two')!
 	form.append_child(first)
 	form.append_child(second)
-	collection := HTMLFormControlsCollection.create(unsafe { &dom.ParentNode(form) }, .descendants,
-		form_controls_accept_input)
+	collection := HTMLFormControlsCollection.create(unsafe { &dom.ParentNode(form) }, .descendants, form_controls_accept_input)
 	assert collection.length() == 2
 	assert collection.named_item_or_radio_node_list('missing') is HTMLFormControlsCollectionEmpty
+	assert collection.named_item_value('missing') is HTMLFormControlsCollectionEmpty
 	single := collection.named_item_or_radio_node_list('only-id')
 	assert single is HTMLFormControlsCollectionElement
 	assert voidptr((single as HTMLFormControlsCollectionElement).element) == voidptr(first)

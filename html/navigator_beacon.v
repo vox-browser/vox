@@ -95,3 +95,7 @@ pub fn (mut navigator Navigator) send_beacon(url string, data ?BeaconBody) !bool
 
 	return context.send_beacon(url, data)
 }
+
+pub fn navigator_beacon_partial_send_beacon(mut navigator Navigator, url string, data ?BeaconBody) !bool {
+	return navigator.send_beacon(url, data)
+}

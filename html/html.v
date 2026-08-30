@@ -3,6 +3,7 @@
 module html
 
 import dom
+import math
 
 pub fn url_matches_about_blank(url dom.URL) bool {
 	return url.value == 'about:blank'
@@ -53,6 +54,24 @@ pub enum DocumentReadyState {
 	loading
 	interactive
 	complete
+}
+
+pub fn idl_enum_to_string(value dom.NavigationType) string {
+	return match value {
+		.push { 'push' }
+		.replace { 'replace' }
+		.reload { 'reload' }
+		.traverse { 'traverse' }
+	}
+}
+
+// https://drafts.csswg.org/cssom-view/#normalize-non-finite-values
+pub fn normalize_non_finite_values(value f64) f64 {
+	return if math.is_inf(value, 0) || math.is_nan(value) { 0.0 } else { value }
+}
+
+pub fn normalize_optional_non_finite_values(value ?f64) f64 {
+	return normalize_non_finite_values(value or { 0.0 })
 }
 
 // --- VisibilityState (HTML version) ---

@@ -23,7 +23,7 @@ mkdir -p "$binary_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
 # The translated LibWeb image plus Cocoa needs more static-root ranges than Boehm's default
 # configuration. LARGE_CONFIG raises that supported table limit while retaining normal GC.
-"$v_compiler" -prod -gc boehm_full_opt -cflags -DLARGE_CONFIG \
+"$v_compiler" -enable-globals -prod -gc boehm_full_opt -cflags -DLARGE_CONFIG \
     -o "$binary_dir/Ladybird" "$repo_dir/main.v"
 
 if command -v codesign >/dev/null 2>&1; then

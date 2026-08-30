@@ -272,6 +272,10 @@ pub fn is_live_region_role(role Role) bool {
 }
 
 pub fn is_window_role(role Role) bool {
+	return is_windows_role(role)
+}
+
+pub fn is_windows_role(role Role) bool {
 	return role in [.alertdialog, .dialog]
 }
 

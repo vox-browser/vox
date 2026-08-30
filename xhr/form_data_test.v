@@ -56,5 +56,32 @@ fn test_progress_event_inherits_event_init_members() {
 		total:             4
 	})
 	assert event.bubbles && event.cancelable && event.composed
-	assert event.length_computable && event.loaded == 2 && event.total == 4
+	assert event.length_computable() && event.loaded() == 2 && event.total() == 4
+}
+
+fn test_exact_form_data_progress_and_iterator_entry_points() {
+	mut data := FormData.construct_impl([FormDataEntry{ name: 'a', value: 'one' }])
+	data.append_impl('a', FormDataAppendValue('two'), none)
+	assert data.entry_list().len == 2
+	data.set_impl('a', FormDataAppendValue('three'), none)
+	assert data.entry_list().len == 1
+	data.delete_('a')
+	assert data.entry_list().len == 0
+	mut iterator := FormDataIterator.create(data, .key)
+	assert iterator.next().done
+
+	event := ProgressEvent.construct_impl('progress', ProgressEventInit{
+		length_computable: true
+		loaded:            3
+		total:             5
+	})
+	assert event.length_computable()
+	assert event.loaded() == 3
+	assert event.total() == 5
+
+	mut target := XMLHttpRequestEventTarget{}
+	target.set_onprogress(true)
+	assert target.onprogress()
+	target.dispatch('progress', 3, 5)
+	assert target.events[0].loaded() == 3
 }

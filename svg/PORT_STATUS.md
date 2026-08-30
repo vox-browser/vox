@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/SVG`
 
 Translation workspace: `~/code/libweb_v/svg`
-Audited: 2026-08-16
+Audited: 2026-08-29
 
 All 80 upstream SVG `.cpp` implementation units have audited V mappings. All 82
 headers and 76 IDL files were also cross-audited; their implemented surface is
@@ -15,17 +15,17 @@ header/IDL-only mixins, `SVGURIReference` and `SVGUnitTypes`, map to `Element.hr
 | Upstream implementation units | V implementation |
 | --- | --- |
 | `AttributeNames.cpp`, `TagNames.cpp` | `names.v` |
-| `AttributeParser.cpp` | `attribute_parser.v` |
+| `AttributeParser.cpp` | `attribute_parser.v`, `upstream_attribute_parser_entry_points.v` |
 | `Path.cpp` | `path.v` |
-| `SVGAnimatedEnumeration.cpp`, `SVGAnimatedInteger.cpp`, `SVGAnimatedLength.cpp`, `SVGAnimatedLengthList.cpp`, `SVGAnimatedNumber.cpp`, `SVGAnimatedNumberList.cpp`, `SVGAnimatedRect.cpp`, `SVGAnimatedString.cpp`, `SVGAnimatedTransformList.cpp` | `types.v` |
-| `SVGLength.cpp`, `SVGLengthList.cpp`, `SVGList.cpp`, `SVGNumber.cpp`, `SVGNumberList.cpp`, `SVGTransform.cpp`, `SVGTransformList.cpp` | `types.v` |
+| `SVGAnimatedEnumeration.cpp`, `SVGAnimatedInteger.cpp`, `SVGAnimatedLength.cpp`, `SVGAnimatedLengthList.cpp`, `SVGAnimatedNumber.cpp`, `SVGAnimatedNumberList.cpp`, `SVGAnimatedRect.cpp`, `SVGAnimatedString.cpp`, `SVGAnimatedTransformList.cpp` | `types.v`, `upstream_value_entry_points.v` |
+| `SVGLength.cpp`, `SVGLengthList.cpp`, `SVGList.cpp`, `SVGNumber.cpp`, `SVGNumberList.cpp`, `SVGTransform.cpp`, `SVGTransformList.cpp` | `types.v`, `upstream_value_entry_points.v` |
 | `SVGFitToViewBox.cpp` | `elements.v`, `types.v` |
-| `SVGAElement.cpp`, `SVGAnimationElement.cpp`, `SVGElement.cpp`, `SVGGraphicsElement.cpp`, `SVGGeometryElement.cpp` | `elements.v` |
+| `SVGAElement.cpp`, `SVGAnimationElement.cpp`, `SVGElement.cpp`, `SVGGraphicsElement.cpp`, `SVGGeometryElement.cpp` | `elements.v`, `upstream_element_entry_points.v` |
 | `SVGCircleElement.cpp`, `SVGEllipseElement.cpp`, `SVGLineElement.cpp`, `SVGPathElement.cpp`, `SVGPolygonElement.cpp`, `SVGPolylineElement.cpp`, `SVGRectElement.cpp` | `elements.v`, `path.v` |
 | `SVGClipPathElement.cpp`, `SVGDefsElement.cpp`, `SVGDescElement.cpp`, `SVGForeignObjectElement.cpp`, `SVGGElement.cpp`, `SVGMaskElement.cpp`, `SVGMetadataElement.cpp` | `elements.v` |
 | `SVGSVGElement.cpp`, `SVGStyleElement.cpp`, `SVGSymbolElement.cpp`, `SVGViewElement.cpp` | `elements.v` |
 | `SVGTSpanElement.cpp`, `SVGTextContentElement.cpp`, `SVGTextElement.cpp`, `SVGTextPathElement.cpp`, `SVGTextPositioningElement.cpp`, `SVGTitleElement.cpp` | `elements.v` |
-| `SVGGradientElement.cpp`, `SVGLinearGradientElement.cpp`, `SVGRadialGradientElement.cpp`, `SVGPatternElement.cpp`, `SVGStopElement.cpp` | `paint_servers.v` |
+| `SVGGradientElement.cpp`, `SVGLinearGradientElement.cpp`, `SVGRadialGradientElement.cpp`, `SVGPatternElement.cpp`, `SVGStopElement.cpp` | `paint_servers.v`, `upstream_special_entry_points.v` |
 | `SVGComponentTransferFunctionElement.cpp`, `SVGFEComponentTransferElement.cpp`, `SVGFEFuncAElement.cpp`, `SVGFEFuncBElement.cpp`, `SVGFEFuncGElement.cpp`, `SVGFEFuncRElement.cpp` | `filters.v` |
 | `SVGFEBlendElement.cpp`, `SVGFEColorMatrixElement.cpp`, `SVGFECompositeElement.cpp`, `SVGFEDisplacementMapElement.cpp`, `SVGFEDropShadowElement.cpp`, `SVGFEFloodElement.cpp`, `SVGFEGaussianBlurElement.cpp` | `filters.v` |
 | `SVGFEMergeElement.cpp`, `SVGFEMergeNodeElement.cpp`, `SVGFEMorphologyElement.cpp`, `SVGFEOffsetElement.cpp`, `SVGFETurbulenceElement.cpp`, `SVGFilterElement.cpp`, `SVGFilterPrimitiveStandardAttributes.cpp` | `filters.v` |
@@ -33,7 +33,7 @@ header/IDL-only mixins, `SVGURIReference` and `SVGUnitTypes`, map to `Element.hr
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `SVG/` | 80 | 9,570 | 2,543 | 632 | Complete |
+| `SVG/` | 80 | 9,570 | 3,561 | 726 | Complete |
 
 The associated declarations comprise 82 headers / 4,165 LOC and 76 IDL files /
 1,022 LOC. Mapping completeness is 80/80 implementation units, 82/82 headers,
@@ -80,9 +80,9 @@ counted as a C++ implementation unit or copied into V code.
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v test svg
-Summary for all V _test.v files: 5 passed, 5 total.
+$ /Users/alex/code/v/v_old -enable-globals test svg
+Summary for all V _test.v files: 6 passed, 6 total.
 
-$ /Users/alex/code/v/v fmt -verify svg
-(no output; exit status 0)
+$ python3 tools/libweb_translation_audit.py
+SVG: 779 implementation symbols, 0 unmatched.
 ```

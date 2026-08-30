@@ -55,8 +55,10 @@ fn parse_margin_token(token string) ?LengthPercentage {
 		return LengthPercentage{number, .percent}
 	}
 	mut split := 0
-	for split < token.len && (token[split].is_digit()
-		|| token[split] in [`+`, `-`, `.`] || token[split] in [`e`, `E`]) {
+	for split < token.len && (token[split].is_digit() || token[split] in [`+`, `-`, `.`] || token[split] in [
+		`e`,
+		`E`,
+	]) {
 		// A sign after e is part of the number; atof64 performs the final grammar
 		// validation, so scanning through it is harmless.
 		split++
@@ -74,6 +76,11 @@ fn parse_margin_token(token string) ?LengthPercentage {
 
 // https://w3c.github.io/IntersectionObserver/#parse-a-margin
 pub fn parse_a_margin(input string) ?[]LengthPercentage {
+	return IntersectionObserver.parse_a_margin(input)
+}
+
+// https://w3c.github.io/IntersectionObserver/#parse-a-margin
+pub fn IntersectionObserver.parse_a_margin(input string) ?[]LengthPercentage {
 	parts := input.fields()
 	if parts.len > 4 {
 		return none
@@ -119,27 +126,31 @@ pub:
 
 pub struct IntersectionObserverInit {
 pub:
-	root             ObserverRoot
-	root_margin      string = '0px'
-	scroll_margin    string = '0px'
-	thresholds       []f64  = [0.0]
-	delay            i64
-	track_visibility bool
+	root ObserverRoot
+	// Derived from the callback realm by C++; injected by the V host for an
+	// implicit-root observer.
+	relevant_document ?&dom.Document
+	root_margin       string = '0px'
+	scroll_margin     string = '0px'
+	thresholds        []f64 = [0.0]
+	delay             i64
+	track_visibility  bool
 }
 
 // Web IDL callback: undefined (sequence<IntersectionObserverEntry> entries,
 // IntersectionObserver observer).
-pub type IntersectionObserverCallback = fn ([]&IntersectionObserverEntry, &IntersectionObserver)
+pub type IntersectionObserverCallback = fn([]&IntersectionObserverEntry, &IntersectionObserver)
 
 @[heap]
 pub struct IntersectionObserver {
-	callback_         IntersectionObserverCallback @[required]
-	root_             ObserverRoot
-	root_margin_      []LengthPercentage
-	scroll_margin_    []LengthPercentage
-	thresholds_       []f64
-	delay_            i64
-	track_visibility_ bool
+	callback_          IntersectionObserverCallback @[required]
+	root_              ObserverRoot
+	root_margin_       []LengthPercentage
+	scroll_margin_     []LengthPercentage
+	thresholds_        []f64
+	delay_             i64
+	track_visibility_  bool
+	relevant_document_ ?&dom.Document
 mut:
 	queued_entries_      []&IntersectionObserverEntry
 	observation_targets_ []&dom.Element
@@ -147,10 +158,14 @@ mut:
 
 // https://w3c.github.io/IntersectionObserver/#initialize-a-new-intersectionobserver
 pub fn IntersectionObserver.construct(callback IntersectionObserverCallback, options IntersectionObserverInit) !&IntersectionObserver {
-	root_margin := parse_a_margin(options.root_margin) or {
+	return IntersectionObserver.construct_impl(callback, options)
+}
+
+pub fn IntersectionObserver.construct_impl(callback IntersectionObserverCallback, options IntersectionObserverInit) !&IntersectionObserver {
+	root_margin := IntersectionObserver.parse_a_margin(options.root_margin) or {
 		return error('IntersectionObserver: Cannot parse root margin as a margin')
 	}
-	scroll_margin := parse_a_margin(options.scroll_margin) or {
+	scroll_margin := IntersectionObserver.parse_a_margin(options.scroll_margin) or {
 		return error('IntersectionObserver: Cannot parse scroll margin as a margin')
 	}
 	mut thresholds := options.thresholds.clone()
@@ -167,13 +182,14 @@ pub fn IntersectionObserver.construct(callback IntersectionObserverCallback, opt
 	}
 	delay := if options.track_visibility && options.delay < 100 { i64(100) } else { options.delay }
 	return &IntersectionObserver{
-		callback_:         callback
-		root_:             options.root
-		root_margin_:      root_margin
-		scroll_margin_:    scroll_margin
-		thresholds_:       thresholds
-		delay_:            delay
+		callback_: callback
+		root_: options.root
+		root_margin_: root_margin
+		scroll_margin_: scroll_margin
+		thresholds_: thresholds
+		delay_: delay
 		track_visibility_: options.track_visibility
+		relevant_document_: options.relevant_document
 	}
 }
 
@@ -207,6 +223,28 @@ pub fn (observer &IntersectionObserver) track_visibility() bool {
 
 pub fn (observer &IntersectionObserver) is_implicit_root() bool {
 	return observer.root_.kind == .implicit
+}
+
+// https://www.w3.org/TR/intersection-observer/#intersectionobserver-intersection-root
+pub fn (observer &IntersectionObserver) intersection_root() ObserverRoot {
+	if !observer.is_implicit_root() {
+		return observer.root_
+	}
+	return ObserverRoot{
+		kind: .document
+		document: observer.relevant_document_
+	}
+}
+
+pub fn (observer &IntersectionObserver) intersection_root_node() ?&dom.Node {
+	root := observer.intersection_root()
+	if element := root.element {
+		return element.as_node()
+	}
+	if document := root.document {
+		return unsafe { &dom.Node(document) }
+	}
+	return none
 }
 
 pub fn (observer &IntersectionObserver) callback() IntersectionObserverCallback {
@@ -291,9 +329,9 @@ pub fn (observer &IntersectionObserver) root_intersection_rectangle(root RootGeo
 	bottom := margin_to_px(observer.root_margin_[2], root.rect.height)
 	left := margin_to_px(observer.root_margin_[3], root.rect.width)
 	return geometry.DOMRectInit{
-		x:      root.rect.x - left
-		y:      root.rect.y - top
-		width:  root.rect.width + left + right
+		x: root.rect.x - left
+		y: root.rect.y - top
+		width: root.rect.width + left + right
 		height: root.rect.height + top + bottom
 	}
 }

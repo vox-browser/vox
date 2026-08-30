@@ -36,6 +36,10 @@ pub fn Headers.construct(init []HeaderPair) !&Headers {
 	return headers
 }
 
+pub fn Headers.construct_impl(init []HeaderPair) !&Headers {
+	return Headers.construct(init)
+}
+
 pub fn Headers.from_header_list(list &http.HeaderList, guard HeadersGuard) &Headers {
 	return &Headers{
 		header_list_: list
@@ -108,6 +112,20 @@ pub fn (mut headers Headers) delete(name string) ! {
 	if headers.guard_ == .request_no_cors {
 		headers.remove_privileged_no_cors_request_headers()
 	}
+}
+
+pub fn (mut headers Headers) delete_(name string) ! {
+	headers.delete(name)!
+}
+
+pub fn (mut headers Headers) fill(init []HeaderPair) ! {
+	for pair in init {
+		headers.append(pair.name, pair.value)!
+	}
+}
+
+pub fn (mut headers Headers) set_header_list(header_list &http.HeaderList) {
+	headers.header_list_ = header_list
 }
 
 pub fn (headers &Headers) get(name string) ?string {

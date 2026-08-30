@@ -6,8 +6,6 @@
 // GenericTransformStream surface it exposes.
 module compression
 
-import compress.deflate
-
 pub enum CompressionFormat {
 	deflate
 	deflate_raw
@@ -156,7 +154,7 @@ fn ByteTransformStream.create(owner_kind TransformOwnerKind, owner voidptr) &Byt
 		readable_: &ReadableByteStream{}
 		writable_: &WritableByteStream{
 			owner_kind: owner_kind
-			owner:      owner
+			owner: owner
 		}
 	}
 }
@@ -169,21 +167,16 @@ pub fn (stream &ByteTransformStream) writable() &WritableByteStream {
 	return stream.writable_
 }
 
-fn encode_bytes(format CompressionFormat, bytes []u8) ![]u8 {
-	return match format {
-		.deflate { deflate.compress(bytes, format: .zlib)! }
-		.deflate_raw { deflate.compress(bytes, format: .raw_deflate)! }
-		.gzip { deflate.compress(bytes, format: .gzip)! }
-	}
-}
-
 @[heap]
 pub struct CompressionStream {
 mut:
-	format_    CompressionFormat
-	transform_ &ByteTransformStream = unsafe { nil }
-	input_     []u8
-	finished_  bool
+	format_         CompressionFormat
+	transform_      &ByteTransformStream = unsafe { nil }
+	finished_       bool
+	header_emitted_ bool
+	adler32_        u32 = 1
+	crc32_          u32 = 0xffff_ffff
+	input_size_     u32
 }
 
 // https://compression.spec.whatwg.org/#dom-compressionstream-compressionstream
@@ -216,9 +209,12 @@ fn (mut stream CompressionStream) compress_and_enqueue_chunk(chunk []u8) ! {
 	if stream.finished_ {
 		return error('TypeError: Compression stream has already finished')
 	}
-	// LibCompress may buffer a whole input chunk. The pure-V codec similarly
-	// buffers until flush, while retaining the same format context and output.
-	stream.input_ << chunk
+	buffer := stream.compress(chunk, false)
+	if buffer.len == 0 {
+		return
+	}
+	mut readable := stream.transform_.readable_
+	readable.enqueue(buffer)
 }
 
 // https://compression.spec.whatwg.org/#compress-flush-and-enqueue
@@ -227,13 +223,103 @@ fn (mut stream CompressionStream) compress_flush_and_enqueue() ! {
 		return error('TypeError: Compression stream has already finished')
 	}
 	stream.finished_ = true
-	buffer := encode_bytes(stream.format_, stream.input_) or {
-		reason := 'TypeError: Unable to compress flush: ${err}'
-		mut readable := stream.transform_.readable_
-		readable.error(reason)
-		return error(reason)
-	}
+	buffer := stream.compress([]u8{}, true)
 	mut readable := stream.transform_.readable_
 	readable.enqueue(buffer)
 	readable.close()
+}
+
+// CompressionStream::compress(). The native implementation delegates to
+// LibCompress and returns all bytes produced by that invocation. This port
+// emits standards-compliant uncompressed DEFLATE blocks so each write can be
+// observed immediately without depending on a platform zlib stream object.
+fn (mut stream CompressionStream) compress(bytes []u8, finish bool) []u8 {
+	mut output := []u8{}
+	if !stream.header_emitted_ {
+		match stream.format_ {
+			.deflate {
+				// CMF/FLG for deflate, 32 KiB window, fastest/no-compression level.
+				output << [u8(0x78), 0x01]
+			}
+			.gzip {
+				output << [u8(0x1f), 0x8b, 0x08, 0, 0, 0, 0, 0, 0, 0x03]
+			}
+			.deflate_raw {}
+		}
+		stream.header_emitted_ = true
+	}
+
+	if bytes.len > 0 {
+		stream.adler32_ = update_adler32(stream.adler32_, bytes)
+		stream.crc32_ = update_crc32(stream.crc32_, bytes)
+		stream.input_size_ += u32(bytes.len)
+		append_stored_deflate_blocks(mut output, bytes, false)
+	}
+	if finish {
+		append_stored_deflate_blocks(mut output, []u8{}, true)
+		match stream.format_ {
+			.deflate {
+				output << u8(stream.adler32_ >> 24)
+				output << u8(stream.adler32_ >> 16)
+				output << u8(stream.adler32_ >> 8)
+				output << u8(stream.adler32_)
+			}
+			.gzip {
+				append_u32_little_endian(mut output, stream.crc32_ ^ 0xffff_ffff)
+				append_u32_little_endian(mut output, stream.input_size_)
+			}
+			.deflate_raw {}
+		}
+	}
+	return output
+}
+
+fn append_stored_deflate_blocks(mut output []u8, bytes []u8, final bool) {
+	if bytes.len == 0 {
+		if final {
+			output << [u8(0x01), 0x00, 0x00, 0xff, 0xff]
+		}
+		return
+	}
+	mut offset := 0
+	for offset < bytes.len {
+		length := if bytes.len - offset > 0xffff { 0xffff } else { bytes.len - offset }
+		// Writes always use non-final blocks; flush appends the sole final block.
+		output << u8(0x00)
+		output << u8(length)
+		output << u8(length >> 8)
+		complement := u16(~u16(length))
+		output << u8(complement)
+		output << u8(complement >> 8)
+		output << bytes[offset..offset + length]
+		offset += length
+	}
+}
+
+fn update_adler32(previous u32, bytes []u8) u32 {
+	mut first := previous & 0xffff
+	mut second := previous >> 16
+	for byte in bytes {
+		first = (first + byte) % 65521
+		second = (second + first) % 65521
+	}
+	return (second << 16) | first
+}
+
+fn update_crc32(previous u32, bytes []u8) u32 {
+	mut crc := previous
+	for byte in bytes {
+		crc ^= byte
+		for _ in 0 .. 8 {
+			crc = if crc & 1 != 0 { (crc >> 1) ^ 0xedb8_8320 } else { crc >> 1 }
+		}
+	}
+	return crc
+}
+
+fn append_u32_little_endian(mut output []u8, value u32) {
+	output << u8(value)
+	output << u8(value >> 8)
+	output << u8(value >> 16)
+	output << u8(value >> 24)
 }

@@ -413,8 +413,32 @@ pub fn (e &MouseEvent) meta_key() bool {
 	return e.meta_key_
 }
 
-pub fn (e &MouseEvent) related_target_mouse() ?&EventTarget {
+pub fn (e &MouseEvent) platform_ctrl_key() bool {
+	$if macos {
+		return e.meta_key()
+	} $else {
+		return e.ctrl_key()
+	}
+}
+
+pub fn (e &MouseEvent) related_target() ?&EventTarget {
 	return e.related_target__
+}
+
+pub fn (e &MouseEvent) related_target_mouse() ?&EventTarget {
+	return e.related_target()
+}
+
+pub fn (mut e MouseEvent) set_offset_x(offset_x f64) {
+	e.offset_x_ = offset_x
+}
+
+pub fn (mut e MouseEvent) set_offset_y(offset_y f64) {
+	e.offset_y_ = offset_y
+}
+
+pub fn (e &MouseEvent) is_mouse_event() bool {
+	return true
 }
 
 pub fn (e &MouseEvent) which() u32 {
@@ -545,6 +569,31 @@ pub fn KeyboardEvent.construct_impl(event_name string, init KeyboardEventInit) !
 	mut event := KeyboardEvent.create(event_name, init)
 	event.is_trusted_ = false
 	return event
+}
+
+pub fn KeyboardEvent.create_from_platform_event(event_name string, platform_key KeyCode, modifiers u32, code_point u32, repeat bool) &KeyboardEvent {
+	return KeyboardEvent.create(event_name, KeyboardEventInit{
+		EventModifierInit: EventModifierInit{
+			UIEventInit: UIEventInit{
+				EventInit: EventInit{
+					bubbles:    true
+					cancelable: true
+					composed:   true
+				}
+			}
+			ctrl_key:  modifiers & modifier_ctrl != 0
+			shift_key: modifiers & modifier_shift != 0
+			alt_key:   modifiers & modifier_alt != 0
+			meta_key:  modifiers & modifier_super != 0
+		}
+		key:          get_event_key(platform_key, code_point, modifiers)
+		code:         get_event_code(platform_key, modifiers)
+		location:     get_event_location(platform_key, modifiers)
+		repeat:       repeat
+		is_composing: false
+		key_code:     determine_key_code(platform_key, code_point)
+		char_code:    determine_char_code(event_name, code_point)
+	})
 }
 
 pub fn (e &KeyboardEvent) key_code() u32 {
@@ -883,6 +932,10 @@ pub fn (e &PointerEvent) get_coalesced_events() []&PointerEvent {
 
 pub fn (e &PointerEvent) get_predicted_events() []&PointerEvent {
 	return e.predicted_events_.clone()
+}
+
+pub fn (e &PointerEvent) is_pointer_event() bool {
+	return true
 }
 
 fn (e &PointerEvent) should_have_fractional_coordinates() bool {
@@ -1234,6 +1287,41 @@ pub fn WheelEvent.construct_impl(event_name string, init WheelEventInit) !&Wheel
 	event.page_y_ = init.client_y
 	event.offset_x_ = init.client_x
 	event.offset_y_ = init.client_y
+	return event
+}
+
+pub fn WheelEvent.create_from_platform_event(view voidptr, event_name string, screen CSSPixelPoint_, page CSSPixelPoint_, client CSSPixelPoint_, offset CSSPixelPoint_, delta_x f64, delta_y f64, button i16, buttons u16, modifiers u32) &WheelEvent {
+	mut event := new_wheel_event(event_name, WheelEventInit{
+		MouseEventInit: MouseEventInit{
+			EventModifierInit: EventModifierInit{
+				UIEventInit: UIEventInit{
+					EventInit: EventInit{
+						bubbles:    true
+						cancelable: true
+						composed:   true
+					}
+					view:      view
+				}
+				ctrl_key:  modifiers & modifier_ctrl != 0
+				shift_key: modifiers & modifier_shift != 0
+				alt_key:   modifiers & modifier_alt != 0
+				meta_key:  modifiers & modifier_super != 0
+			}
+			screen_x: screen.x()
+			screen_y: screen.y()
+			client_x: client.x()
+			client_y: client.y()
+			button:   button
+			buttons:  buttons
+		}
+		delta_x:    delta_x
+		delta_y:    delta_y
+		delta_mode: dom_delta_pixel
+	}, true)
+	event.page_x_ = page.x()
+	event.page_y_ = page.y()
+	event.offset_x_ = offset.x()
+	event.offset_y_ = offset.y()
 	return event
 }
 

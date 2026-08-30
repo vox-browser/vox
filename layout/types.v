@@ -39,6 +39,11 @@ pub mut:
 }
 
 pub fn AvailableSize.make_definite(value css.CSSPixels) AvailableSize {
+	// AvailableSpace.cpp: a saturated CSSPixels value is reserved for the
+	// indefinite/max-content sentinel and must never be a definite size.
+	if value.might_be_saturated() {
+		panic('VERIFY(!value.might_be_saturated())')
+	}
 	return AvailableSize{
 		type_: .definite
 		value: value
@@ -48,18 +53,21 @@ pub fn AvailableSize.make_definite(value css.CSSPixels) AvailableSize {
 pub fn AvailableSize.make_indefinite() AvailableSize {
 	return AvailableSize{
 		type_: .indefinite
+		value: css.CSSPixels.max()
 	}
 }
 
 pub fn AvailableSize.make_min_content() AvailableSize {
 	return AvailableSize{
 		type_: .min_content
+		value: css.CSSPixels.new(0)
 	}
 }
 
 pub fn AvailableSize.make_max_content() AvailableSize {
 	return AvailableSize{
 		type_: .max_content
+		value: css.CSSPixels.max()
 	}
 }
 
@@ -97,6 +105,13 @@ pub fn (size AvailableSize) to_string() string {
 		.min_content { 'min-content' }
 		.max_content { 'max-content' }
 	}
+}
+
+// AvailableSize::operator< compares the stored value. The constructor
+// sentinels therefore make min-content sort below max-content/indefinite,
+// exactly as in LibWeb.
+pub fn (size AvailableSize) less_than(other AvailableSize) bool {
+	return size.value.raw_value() < other.value.raw_value()
 }
 
 // Comparisons mirror the free operators in AvailableSpace.h. Min-content is
@@ -155,12 +170,7 @@ fn layout_number_string(value f64) string {
 	return value.str()
 }
 
-pub struct SizeWithAspectRatio {
-pub mut:
-	width        css.CSSPixels
-	height       css.CSSPixels
-	aspect_ratio ?css.CSSPixelFraction
-}
+pub type SizeWithAspectRatio = css.SizeWithAspectRatio
 
 pub enum StaticPositionAlignment {
 	start
@@ -223,4 +233,10 @@ pub fn formatting_context_type_name(type_ FormattingContextType) string {
 		.internal_replaced { 'Replaced' }
 		.internal_dummy { 'Dummy' }
 	}
+}
+
+pub struct FormattingContextResult {
+pub:
+	automatic_content_width  CSSPixels
+	automatic_content_height CSSPixels
 }

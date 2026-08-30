@@ -48,6 +48,18 @@ pub:
 	is_text bool
 }
 
+pub struct WebSocketBufferData {
+pub:
+	buffer webidl.BufferSource
+}
+
+pub struct WebSocketBlobData {
+pub:
+	blob &fileapi.Blob
+}
+
+pub type WebSocketSendData = WebSocketBlobData | WebSocketBufferData | string
+
 pub struct NoProtocols {}
 
 pub type Protocols = NoProtocols | []string | string
@@ -55,7 +67,6 @@ pub type Protocols = NoProtocols | []string | string
 @[heap]
 pub struct WebSocket {
 pub:
-	url       string
 	protocols []string
 pub mut:
 	state                ReadyState = .closed
@@ -68,10 +79,17 @@ pub mut:
 	has_error_listener   bool
 	has_close_listener   bool
 mut:
+	url_               string
 	connection_created bool
 }
 
 pub fn WebSocket.construct(input string, base_url string, protocols Protocols) !&WebSocket {
+	return WebSocket.construct_impl(input, base_url, protocols)
+}
+
+// The V host supplies the relevant settings object's API base URL explicitly.
+// https://websockets.spec.whatwg.org/#dom-websocket-websocket
+pub fn WebSocket.construct_impl(input string, base_url string, protocols Protocols) !&WebSocket {
 	url := normalize_websocket_url(input, base_url)!
 	sequence := match protocols {
 		NoProtocols { []string{} }
@@ -93,8 +111,8 @@ pub fn WebSocket.construct(input string, base_url string, protocols Protocols) !
 		}
 	}
 	return &WebSocket{
-		url:       url
 		protocols: sequence
+		url_:      url
 	}
 }
 
@@ -132,11 +150,26 @@ fn normalize_websocket_url(input string, base_url string) !string {
 
 // Models the deferred establish_web_socket_connection callback.
 pub fn (mut socket WebSocket) establish() {
+	socket.establish_web_socket_connection() or { return }
+}
+
+// Network creation is the explicit host boundary in the V translation. Once
+// invoked, it has the same observable ready-state effect as installing the
+// upstream Requests::WebSocket backend.
+pub fn (mut socket WebSocket) establish_web_socket_connection() ! {
 	if socket.connection_created {
 		return
 	}
 	socket.connection_created = true
 	socket.state = .connecting
+}
+
+pub fn (socket &WebSocket) url() string {
+	return socket.url_
+}
+
+pub fn (mut socket WebSocket) set_url(value string) {
+	socket.url_ = value
 }
 
 pub fn (socket &WebSocket) ready_state() u16 {
@@ -174,27 +207,34 @@ pub fn (mut socket WebSocket) close(code ?u16, reason ?string) ! {
 }
 
 pub fn (mut socket WebSocket) send_text(data string) ! {
-	socket.send_bytes(data.bytes(), true)!
+	socket.send(WebSocketSendData(data))!
 }
 
 pub fn (mut socket WebSocket) send_buffer(source webidl.BufferSource) ! {
-	// This mirrors the current C++ implementation: views send their viewed
-	// ArrayBuffer rather than only the view's byte range.
-	bytes := if source.detached { []u8{} } else { source.bytes.clone() }
-	socket.send_bytes(bytes, false)!
+	socket.send(WebSocketSendData(WebSocketBufferData{source}))!
 }
 
 pub fn (mut socket WebSocket) send_blob(blob &fileapi.Blob) ! {
-	socket.send_bytes(blob.raw_bytes(), false)!
+	socket.send(WebSocketSendData(WebSocketBlobData{blob}))!
 }
 
-fn (mut socket WebSocket) send_bytes(data []u8, is_text bool) ! {
+// https://websockets.spec.whatwg.org/#dom-websocket-send
+pub fn (mut socket WebSocket) send(data WebSocketSendData) ! {
 	if socket.state == .connecting {
 		return error('InvalidStateError: Websocket is still CONNECTING')
 	}
 	if socket.state == .open {
+		bytes, is_text := match data {
+			string { data.bytes(), true }
+			WebSocketBufferData {
+				// Match current upstream: views send their viewed ArrayBuffer,
+				// rather than only the view's byte range.
+				if data.buffer.detached { []u8{}, false } else { data.buffer.bytes.clone(), false }
+			}
+			WebSocketBlobData { data.blob.raw_bytes(), false }
+		}
 		socket.sent_frames << SentFrame{
-			data:    data.clone()
+			data:    bytes
 			is_text: is_text
 		}
 	}
@@ -232,10 +272,10 @@ pub fn (mut socket WebSocket) on_message(message []u8, is_text bool) {
 		return
 	}
 	if is_text {
-		socket.events << WebSocketEvent{
-			kind:   .message
-			text:   message.bytestr()
-			origin: socket.url
+			socket.events << WebSocketEvent{
+				kind:   .message
+				text:   message.bytestr()
+				origin: socket.url()
 		}
 		return
 	}
@@ -243,13 +283,13 @@ pub fn (mut socket WebSocket) on_message(message []u8, is_text bool) {
 		socket.events << WebSocketEvent{
 			kind:   .message
 			blob:   fileapi.Blob.create(message.clone(), 'text/plain;charset=utf-8')
-			origin: socket.url
+			origin: socket.url()
 		}
 	} else if socket.binary_type == 'arraybuffer' {
 		socket.events << WebSocketEvent{
 			kind:   .message
 			bytes:  message.clone()
-			origin: socket.url
+			origin: socket.url()
 		}
 	}
 }

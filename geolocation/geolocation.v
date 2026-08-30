@@ -8,6 +8,8 @@ module geolocation
 
 const visibility_state_timeout_ms = EpochTimeStamp(5_000)
 
+__global geolocation_next_watch_id int
+
 pub struct PositionOptions {
 pub:
 	enable_high_accuracy bool
@@ -20,6 +22,12 @@ pub type PositionCallback = fn (&GeolocationPosition)
 pub type PositionErrorCallback = fn (&GeolocationPositionError)
 
 pub type PositionProvider = fn (enable_high_accuracy bool) !CoordinatesData
+
+pub struct EmulatedPositionData {
+pub:
+	coordinates ?&GeolocationCoordinates
+	error       ?GeolocationPositionErrorCode
+}
 
 pub struct GeolocationHost {
 pub mut:
@@ -59,7 +67,6 @@ pub struct Geolocation {
 pub mut:
 	host            GeolocationHost
 	cached_position ?&GeolocationPosition
-	next_watch_id   int
 mut:
 	watch_ids       map[int]bool
 	pending_visible []GeolocationRequest
@@ -94,8 +101,8 @@ pub fn (mut geo Geolocation) watch_position(success PositionCallback, error_call
 		geo.call_back_with_error(error_callback, .position_unavailable)
 		return 0
 	}
-	geo.next_watch_id++
-	watch_id := geo.next_watch_id
+	geolocation_next_watch_id++
+	watch_id := geolocation_next_watch_id
 	geo.watch_ids[watch_id] = true
 	geo.request_a_position(GeolocationRequest{
 		success:  success
@@ -118,17 +125,7 @@ fn (mut geo Geolocation) request_a_position(request GeolocationRequest) {
 		geo.call_back_with_error(request.error, .permission_denied)
 		return
 	}
-	if !geo.host.visible {
-		geo.pending_visible << GeolocationRequest{
-			success:             request.success
-			error:               request.error
-			options:             request.options
-			watch_id:            request.watch_id
-			visibility_deadline: geo.host.now_ms + visibility_state_timeout_ms
-		}
-		return
-	}
-	geo.acquire_a_position(request)
+	geo.run_in_parallel_when_document_is_visible(request)
 }
 
 fn (mut geo Geolocation) acquire_a_position(request GeolocationRequest) {
@@ -137,12 +134,13 @@ fn (mut geo Geolocation) acquire_a_position(request GeolocationRequest) {
 			return
 		}
 	}
-	if code := geo.host.emulated_error {
+	emulated := geo.get_emulated_position_data()
+	if code := emulated.error {
 		geo.call_back_with_error(request.error, code)
 		return
 	}
-	if data := geo.host.emulated_data {
-		geo.queue_success(request.success, GeolocationPosition.create(GeolocationCoordinates.create(data),
+	if coordinates := emulated.coordinates {
+		geo.queue_success(request.success, GeolocationPosition.create(coordinates,
 			geo.host.now_ms, request.options.enable_high_accuracy))
 		return
 	}
@@ -169,6 +167,33 @@ fn (mut geo Geolocation) acquire_a_position(request GeolocationRequest) {
 		request.options.enable_high_accuracy)
 	geo.cached_position = position
 	geo.queue_success(request.success, position)
+}
+
+// https://w3c.github.io/geolocation/#dfn-get-emulated-position-data
+pub fn (geo &Geolocation) get_emulated_position_data() EmulatedPositionData {
+	if code := geo.host.emulated_error {
+		return EmulatedPositionData{ error: code }
+	}
+	if data := geo.host.emulated_data {
+		return EmulatedPositionData{
+			coordinates: GeolocationCoordinates.create(data)
+		}
+	}
+	return EmulatedPositionData{}
+}
+
+fn (mut geo Geolocation) run_in_parallel_when_document_is_visible(request GeolocationRequest) {
+	if geo.host.visible {
+		geo.acquire_a_position(request)
+		return
+	}
+	geo.pending_visible << GeolocationRequest{
+		success:             request.success
+		error:               request.error
+		options:             request.options
+		watch_id:            request.watch_id
+		visibility_deadline: geo.host.now_ms + visibility_state_timeout_ms
+	}
 }
 
 fn (mut geo Geolocation) queue_success(callback PositionCallback, position &GeolocationPosition) {

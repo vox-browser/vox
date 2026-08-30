@@ -17,6 +17,7 @@ pub mut:
 	available_           map[int]bool
 	events_              []&GamepadEvent
 	now_                 f64
+	connected_devices_   []&Device
 }
 
 pub fn NavigatorGamepadPartial.new() &NavigatorGamepadPartial {
@@ -30,8 +31,8 @@ pub fn (mut navigator NavigatorGamepadPartial) get_gamepads() ![]?&Gamepad {
 	for slot in navigator.gamepads_ {
 		if mut pad := slot {
 			if !pad.exposed_ {
-				pad.exposed_ = true
-				pad.timestamp_ = navigator.now_
+				pad.set_exposed(true)
+				pad.set_timestamp(navigator.now_)
 			}
 		}
 	}
@@ -54,7 +55,7 @@ pub fn (mut navigator NavigatorGamepadPartial) handle_gamepad_connected(device &
 	mut pad := Gamepad.create(device, index, timestamp)
 	navigator.gamepads_[index] = pad
 	if navigator.has_gamepad_gesture_ {
-		pad.exposed_ = true
+		pad.set_exposed(true)
 		if navigator.active_ {
 			navigator.events_ << GamepadEvent.create(event_gamepad_connected, pad)
 		}
@@ -67,13 +68,13 @@ pub fn (mut navigator NavigatorGamepadPartial) handle_gamepad_updated(device_id 
 		if mut pad := slot {
 			if pad.device.id != device_id { continue
 			 }
-			pad.update_input_state(timestamp)
+			pad.update_gamepad_state(timestamp)
 			if !navigator.has_gamepad_gesture_ && pad.contains_gamepad_user_gesture() {
-				navigator.has_gamepad_gesture_ = true
+				navigator.set_has_gamepad_gesture(true)
 				for connected_slot in navigator.gamepads_ {
 					if mut connected := connected_slot {
-						connected.exposed_ = true
-						connected.timestamp_ = timestamp
+						connected.set_exposed(true)
+						connected.set_timestamp(timestamp)
 						if navigator.active_ {
 							navigator.events_ << GamepadEvent.create(event_gamepad_connected,
 								connected)
@@ -92,7 +93,7 @@ pub fn (mut navigator NavigatorGamepadPartial) handle_gamepad_disconnected(devic
 		if mut pad := slot {
 			if pad.device.id != device_id { continue
 			 }
-			pad.connected_ = false
+			pad.set_connected(false)
 			if pad.exposed_ && navigator.active_ {
 				navigator.events_ << GamepadEvent.create(event_gamepad_disconnected, pad)
 			}
@@ -107,4 +108,20 @@ pub fn (mut navigator NavigatorGamepadPartial) handle_gamepad_disconnected(devic
 
 pub fn (navigator &NavigatorGamepadPartial) events() []&GamepadEvent {
 	return navigator.events_.clone()
+}
+
+pub fn (navigator &NavigatorGamepadPartial) has_gamepad_gesture() bool {
+	return navigator.has_gamepad_gesture_
+}
+
+pub fn (mut navigator NavigatorGamepadPartial) set_has_gamepad_gesture(value bool) {
+	navigator.has_gamepad_gesture_ = value
+}
+
+// connected_devices_ is the embedder-owned snapshot corresponding to
+// SDL_GetGamepads().
+pub fn (mut navigator NavigatorGamepadPartial) check_for_connected_gamepads() {
+	for device in navigator.connected_devices_ {
+		navigator.handle_gamepad_connected(device, navigator.now_)
+	}
 }

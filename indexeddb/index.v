@@ -17,7 +17,10 @@ fn (index &IDBIndex) load() !(ObjectStoreData, IndexData) {
 	if index.store_name !in index.transaction.database.data.stores {
 		return error('InvalidStateError: object store was deleted')
 	}
-	store := index.transaction.database.data.stores[index.store_name].clone()
+	stored := index.transaction.database.data.stores[index.store_name] or {
+		return error('InvalidStateError: object store was deleted')
+	}
+	store := stored.clone()
 	if index.name_ !in store.indexes {
 		return error('InvalidStateError: index was deleted')
 	}

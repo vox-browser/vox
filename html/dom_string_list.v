@@ -26,6 +26,13 @@ pub fn (list &DOMStringList) item(index u32) ?string {
 	return list.list[index]
 }
 
+pub fn (list &DOMStringList) item_value(index int) ?string {
+	if index < 0 || index >= list.list.len {
+		return none
+	}
+	return list.list[index]
+}
+
 pub fn (list &DOMStringList) contains(value string) bool {
 	return value in list.list
 }

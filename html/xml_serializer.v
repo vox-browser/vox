@@ -253,7 +253,11 @@ fn xml_record_namespace_information(element &dom.Element, mut prefix_map map[str
 
 // https://w3c.github.io/DOM-Parsing/#dfn-serializing-an-attribute-value
 fn xml_serialize_an_attribute_value(attribute_value OptName, require_well_formed RequireWellFormed) !string {
-	// FIXME: 1. well-formed + XML Char production check.
+	// 1. Well-formed attribute values must match the XML Char production.
+	if require_well_formed == .yes && attribute_value.present
+		&& !is_valid_xml_string(attribute_value.value) {
+		return error('Attribute value contains characters not allowed in XML')
+	}
 	// 2. If attribute value is null, return the empty string.
 	if !attribute_value.present {
 		return ''
@@ -373,7 +377,9 @@ fn xml_serialize_element_attributes(element &dom.Element, mut prefix_map map[str
 			if attribute_local_name.contains(':') {
 				return error("Attribute's local name contains a colon")
 			}
-			// FIXME: Check localName against the XML Name production.
+			if !matches_xml_name(attribute_local_name) {
+				return error("Attribute's local name does not match the XML Name production")
+			}
 			if attribute_local_name == 'xmlns' && !attribute_namespace.present {
 				return error("Attribute's local name is 'xmlns' and the attribute has no namespace")
 			}
@@ -395,8 +401,13 @@ const xml_void_elements = ['area', 'base', 'basefont', 'bgsound', 'br', 'col', '
 // https://w3c.github.io/DOM-Parsing/#xml-serializing-an-element-node
 fn xml_serialize_element(element &dom.Element, namespace_value OptName, prefix_map map[string][]OptName, mut counter PrefixIndexCounter, require_well_formed RequireWellFormed) !string {
 	// 1. Well-formed: element's localName cannot contain ":" or fail the XML Name production.
-	if require_well_formed == .yes && element.local_name().contains(':') {
-		return error("Element's local name contains a colon")
+	if require_well_formed == .yes {
+		if element.local_name().contains(':') {
+			return error("Element's local name contains a colon")
+		}
+		if !matches_xml_name(element.local_name()) {
+			return error("Element's local name does not match the XML Name production")
+		}
 	}
 	// 2. Let markup be "<".
 	mut markup := '<'
@@ -578,7 +589,9 @@ fn xml_serialize_document(document &dom.Document, namespace_value OptName, prefi
 fn xml_serialize_comment(data string, require_well_formed RequireWellFormed) !string {
 	// Well-formed: comment data cannot contain "--" or end with "-".
 	if require_well_formed == .yes {
-		// FIXME: Check comment data against the XML Char production.
+		if !is_valid_xml_string(data) {
+			return error('Comment data contains characters not allowed in XML')
+		}
 		if data.contains('--') {
 			return error('Comment data contains two adjacent hyphens')
 		}
@@ -596,6 +609,75 @@ fn is_valid_xml_char(code_point u32) bool {
 		|| (code_point >= 0x20 && code_point <= 0xD7FF)
 		|| (code_point >= 0xE000 && code_point <= 0xFFFD)
 		|| (code_point >= 0x10000 && code_point <= 0x10FFFF)
+}
+
+fn is_valid_xml_string(value string) bool {
+	for code_point in value.runes() {
+		if !is_valid_xml_char(u32(code_point)) {
+			return false
+		}
+	}
+	return true
+}
+
+// XML 1.0 (Fifth Edition) NameStartChar and NameChar productions.
+fn is_xml_name_start_char(code_point u32) bool {
+	return code_point == `:` || code_point == `_`
+		|| (code_point >= `A` && code_point <= `Z`)
+		|| (code_point >= `a` && code_point <= `z`)
+		|| (code_point >= 0xC0 && code_point <= 0xD6)
+		|| (code_point >= 0xD8 && code_point <= 0xF6)
+		|| (code_point >= 0xF8 && code_point <= 0x2FF)
+		|| (code_point >= 0x370 && code_point <= 0x37D)
+		|| (code_point >= 0x37F && code_point <= 0x1FFF)
+		|| (code_point >= 0x200C && code_point <= 0x200D)
+		|| (code_point >= 0x2070 && code_point <= 0x218F)
+		|| (code_point >= 0x2C00 && code_point <= 0x2FEF)
+		|| (code_point >= 0x3001 && code_point <= 0xD7FF)
+		|| (code_point >= 0xF900 && code_point <= 0xFDCF)
+		|| (code_point >= 0xFDF0 && code_point <= 0xFFFD)
+		|| (code_point >= 0x10000 && code_point <= 0xEFFFF)
+}
+
+fn is_xml_name_char(code_point u32) bool {
+	return is_xml_name_start_char(code_point) || code_point == `-`
+		|| code_point == `.` || (code_point >= `0` && code_point <= `9`)
+		|| code_point == 0xB7 || (code_point >= 0x0300 && code_point <= 0x036F)
+		|| (code_point >= 0x203F && code_point <= 0x2040)
+}
+
+fn matches_xml_name(value string) bool {
+	code_points := value.runes()
+	if code_points.len == 0 || !is_xml_name_start_char(u32(code_points[0])) {
+		return false
+	}
+	for code_point in code_points[1..] {
+		if !is_xml_name_char(u32(code_point)) {
+			return false
+		}
+	}
+	return true
+}
+
+// XML 1.0 PubidChar production.
+fn is_xml_pubid_char(code_point u32) bool {
+	if code_point == 0x20 || code_point == 0xD || code_point == 0xA
+		|| (code_point >= `a` && code_point <= `z`)
+		|| (code_point >= `A` && code_point <= `Z`)
+		|| (code_point >= `0` && code_point <= `9`) {
+		return true
+	}
+	return code_point in [`-`, `'`, `(`, `)`, `+`, `,`, `.`, `/`, `:`, `=`, `?`, `;`, `!`, `*`,
+		`#`, `@`, `$`, `_`, `%`]
+}
+
+fn is_valid_xml_public_id(value string) bool {
+	for code_point in value.runes() {
+		if !is_xml_pubid_char(u32(code_point)) {
+			return false
+		}
+	}
+	return true
 }
 
 // https://w3c.github.io/DOM-Parsing/#xml-serializing-a-text-node
@@ -635,7 +717,12 @@ fn xml_serialize_document_fragment(document_fragment &dom.Node, namespace_value 
 // https://w3c.github.io/DOM-Parsing/#xml-serializing-a-documenttype-node
 fn xml_serialize_document_type(name string, public_id string, system_id string, require_well_formed RequireWellFormed) !string {
 	if require_well_formed == .yes {
-		// FIXME: publicId against the XML PubidChar production; systemId against the XML Char production.
+		if !is_valid_xml_public_id(public_id) {
+			return error('Document type public ID contains characters not allowed by XML PubidChar')
+		}
+		if !is_valid_xml_string(system_id) {
+			return error('Document type system ID contains characters not allowed in XML')
+		}
 		if system_id.contains('"') && system_id.contains("'") {
 			return error('Document type system ID contains both a quotation mark and an apostrophe')
 		}
@@ -674,7 +761,10 @@ fn xml_serialize_processing_instruction(target string, data string, require_well
 		if target.to_lower() == 'xml' {
 			return error("Processing instruction target is equal to 'xml'")
 		}
-		// 2. data cannot contain "?>" (XML Char production check is FIXME).
+		// 2. data must match XML Char and cannot contain "?>".
+		if !is_valid_xml_string(data) {
+			return error('Processing instruction data contains characters not allowed in XML')
+		}
 		if data.contains('?>') {
 			return error('Processing instruction data contains a terminator')
 		}
@@ -683,10 +773,16 @@ fn xml_serialize_processing_instruction(target string, data string, require_well
 	return '<?${target} ${data}?>'
 }
 
-// FIXME: This is ad-hoc (CDATA serialization is not in the spec).
+// CDATA nodes are a DOM extension to the standard node-type dispatch used by
+// this serializer.
 fn xml_serialize_cdata_section(data string, require_well_formed RequireWellFormed) !string {
-	if require_well_formed == .yes && data.contains(']]>') {
-		return error('CDATA section data contains a CDATA section end delimiter')
+	if require_well_formed == .yes {
+		if !is_valid_xml_string(data) {
+			return error('CDATA section data contains characters not allowed in XML')
+		}
+		if data.contains(']]>') {
+			return error('CDATA section data contains a CDATA section end delimiter')
+		}
 	}
 	return '<![CDATA[${data}]]>'
 }

@@ -8,6 +8,7 @@ fn test_track_event_empty_by_default() {
 	assert e.track().kind == .empty
 	// Base Event fields are threaded through.
 	assert e.type_ == 'addtrack'
+	assert track_event_to_track_type_internal(TrackEventTrack{}).kind == .empty
 }
 
 fn test_track_event_holds_text_track() {

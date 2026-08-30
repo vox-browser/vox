@@ -18,6 +18,7 @@ fn test_trusted_values_policy_callbacks_and_missing_callback() {
 		create_html:       prefix_callback
 		create_script_url: null_callback
 	})
+	assert policy.name() == 'p'
 	html := policy.create_html('<b>x</b>', [webidl.number_value(1)])!
 	assert html.to_string() == 'safe:<b>x</b>'
 	assert html.to_json() == html.to_string()

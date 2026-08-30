@@ -27,17 +27,31 @@ pub:
 }
 
 pub fn PerformanceMark.new(name string, options PerformanceMarkOptions, now f64, window_context bool) !&PerformanceMark {
-	if window_context && name in navigation_timing_entry_names {
-		return error("SyntaxError: '${name}' is part of PerformanceTiming")
+	return PerformanceMark.construct_impl(name, options, now, window_context)
+}
+
+// The current time and principal-global kind are supplied by the translated
+// host boundary; the remaining steps mirror PerformanceMark::construct_impl.
+pub fn PerformanceMark.construct_impl(mark_name string, mark_options PerformanceMarkOptions, now f64, window_context bool) !&PerformanceMark {
+	if window_context && mark_name in navigation_timing_entry_names {
+		return error("SyntaxError: '${mark_name}' is part of PerformanceTiming")
 	}
-	start_time := options.start_time or { now }
+	start_time := mark_options.start_time or { now }
 	if start_time < 0 {
 		return error('TypeError: startTime cannot be negative')
 	}
 	return &PerformanceMark{
-		entry:  performancetimeline.PerformanceEntry.new(name, 'mark', start_time, 0)
-		detail: if options.detail_set { options.detail } else { none }
+		entry: performancetimeline.PerformanceEntry.new(mark_name, 'mark', start_time, 0)
+		detail: if mark_options.detail_set { mark_options.detail } else { none }
 	}
+}
+
+pub fn (_ &PerformanceMark) entry_type() string {
+	return 'mark'
+}
+
+pub fn (mark &PerformanceMark) detail() ?string {
+	return mark.detail
 }
 
 pub fn (_ &PerformanceMark) available_from_timeline() performancetimeline.AvailableFromTimeline {
@@ -70,10 +84,22 @@ pub:
 }
 
 pub fn PerformanceMeasure.new(name string, start_time f64, duration f64, detail ?string) &PerformanceMeasure {
+	return PerformanceMeasure.create(name, start_time, duration, detail)
+}
+
+pub fn PerformanceMeasure.create(measure_name string, start_time f64, duration f64, detail ?string) &PerformanceMeasure {
 	return &PerformanceMeasure{
-		entry:  performancetimeline.PerformanceEntry.new(name, 'measure', start_time, duration)
+		entry: performancetimeline.PerformanceEntry.new(measure_name, 'measure', start_time, duration)
 		detail: detail
 	}
+}
+
+pub fn (_ &PerformanceMeasure) entry_type() string {
+	return 'measure'
+}
+
+pub fn (measure &PerformanceMeasure) detail() ?string {
+	return measure.detail
 }
 
 pub fn (_ &PerformanceMeasure) available_from_timeline() performancetimeline.AvailableFromTimeline {

@@ -93,8 +93,9 @@ fn test_instance_import_linking_and_export_shape() {
 		}
 	}
 	instance := Instance.construct(compiled, imports)!
-	assert instance.exports['f'].kind == .function_
-	assert instance.exports['f'].value.kind == .callback
+	exports := instance.exports()
+	assert exports['f'].kind == .function_
+	assert exports['f'].value.kind == .callback
 }
 
 fn test_data_count_section_precedes_code_despite_numeric_identifier() {

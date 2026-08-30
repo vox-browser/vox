@@ -63,8 +63,7 @@ fn form_element_nearest_ancestor(element &dom.Element, local_name string) ?&dom.
 fn form_element_find_form_by_id(root &dom.Node, id string) ?&dom.HTMLFormElement {
 	if candidate := root.as_element() {
 		if candidate.is_html_element() && candidate.local_name() == 'form' && candidate.id() or {
-			''
-		} == id {
+			''} == id {
 			return unsafe { &dom.HTMLFormElement(candidate) }
 		}
 	}
@@ -116,6 +115,7 @@ pub mut:
 	too_short_                    bool
 	mutable_                      bool = true
 	custom_element_               bool
+	user_validity_                bool
 }
 
 pub fn FormAssociatedElement.create(element &dom.Element) &FormAssociatedElement {
@@ -126,7 +126,7 @@ pub fn FormAssociatedElement.create(element &dom.Element) &FormAssociatedElement
 
 pub fn FormAssociatedElement.create_custom(element &dom.Element) &FormAssociatedElement {
 	return &FormAssociatedElement{
-		element:         element
+		element: element
 		custom_element_: true
 	}
 }
@@ -134,6 +134,22 @@ pub fn FormAssociatedElement.create_custom(element &dom.Element) &FormAssociated
 pub fn (control &FormAssociatedElement) form() ?&dom.HTMLFormElement {
 	return control.form_
 }
+
+pub fn (control &FormAssociatedElement) optional_value() ?string {
+	return control.value_
+}
+
+pub fn (control &FormAssociatedElement) form_associated_element_to_html_element() &dom.HTMLElement {
+	return unsafe { &dom.HTMLElement(control.element) }
+}
+
+pub fn (_ &FormAssociatedElement) form_associated_element_was_inserted() {}
+
+pub fn (_ &FormAssociatedElement) form_associated_element_was_removed(_old_parent ?&dom.Node) {}
+
+pub fn (_ &FormAssociatedElement) form_associated_element_was_moved(_old_parent ?&dom.Node) {}
+
+pub fn (_ &FormAssociatedElement) form_associated_element_attribute_changed(_name string, _old_value ?string, _value ?string, _namespace ?string) {}
 
 pub fn (mut control FormAssociatedElement) set_form(form ?&dom.HTMLFormElement) {
 	if old_form := control.form_ {
@@ -143,6 +159,11 @@ pub fn (mut control FormAssociatedElement) set_form(form ?&dom.HTMLFormElement) 
 	if new_form := form {
 		add_associated_element_to_form(new_form, control.element)
 	}
+	// Form controls collections are live and their membership can change even
+	// when the DOM tree itself does not. Invalidate the document's collection
+	// generation for the form-owner transition.
+	mut document := control.element.document()
+	document.bump_dom_tree_version()
 }
 
 pub fn (control &FormAssociatedElement) enabled() bool {
@@ -238,8 +259,7 @@ pub fn (mut control FormAssociatedElement) reset_form_owner() {
 		}
 	}
 	control.set_form(none)
-	if control.is_listed() && control.element.has_attribute('form')
-		&& control.element.is_connected() {
+	if control.is_listed() && control.element.has_attribute('form') && control.element.is_connected() {
 		form_id := control.element.get_attribute('form') or { return }
 		if form := form_element_find_form_by_id(control.element.as_node().root(), form_id) {
 			control.set_form(form)
@@ -322,8 +342,7 @@ pub fn (control &FormAssociatedElement) is_candidate_for_constraint_validation()
 		return false
 	}
 	if control.element.local_name() == 'input' {
-		if form_element_input_type(control.element) in ['hidden', 'reset', 'button']
-			|| control.element.has_attribute('readonly') {
+		if form_element_input_type(control.element) in ['hidden', 'reset', 'button'] || control.element.has_attribute('readonly') {
 			return false
 		}
 	}
@@ -337,11 +356,7 @@ pub fn (control &FormAssociatedElement) is_candidate_for_constraint_validation()
 }
 
 pub fn (control &FormAssociatedElement) satisfies_its_constraints() bool {
-	return !(control.suffering_from_being_missing() || control.suffering_from_a_type_mismatch()
-		|| control.suffering_from_a_pattern_mismatch() || control.suffering_from_being_too_long()
-		|| control.suffering_from_being_too_short() || control.suffering_from_an_underflow()
-		|| control.suffering_from_an_overflow() || control.suffering_from_a_step_mismatch()
-		|| control.suffering_from_bad_input() || control.suffering_from_a_custom_error())
+	return !(control.suffering_from_being_missing() || control.suffering_from_a_type_mismatch() || control.suffering_from_a_pattern_mismatch() || control.suffering_from_being_too_long() || control.suffering_from_being_too_short() || control.suffering_from_an_underflow() || control.suffering_from_an_overflow() || control.suffering_from_a_step_mismatch() || control.suffering_from_bad_input() || control.suffering_from_a_custom_error())
 }
 
 pub fn (control &FormAssociatedElement) novalidate_state() bool {
@@ -510,17 +525,36 @@ pub mut:
 	selection_end_                      u32
 	selection_direction_                SelectionDirection
 	has_scheduled_selectionchange_event bool
+	text_node_                          ?&dom.Text
+	did_edit_target_                    voidptr
+	did_edit_callback_                  ?fn(voidptr, string, ?string)
 }
 
 pub fn FormAssociatedTextControlElement.create(control &FormAssociatedElement, value string) &FormAssociatedTextControlElement {
 	return &FormAssociatedTextControlElement{
-		control:         control
+		control: control
 		relevant_value_: value
 	}
 }
 
 pub fn (text &FormAssociatedTextControlElement) relevant_value() string {
 	return text.relevant_value_
+}
+
+pub fn (text &FormAssociatedTextControlElement) selection_direction_state() SelectionDirection {
+	return text.selection_direction_
+}
+
+pub fn (text &FormAssociatedTextControlElement) has_scheduled_selectionchange_event() bool {
+	return text.has_scheduled_selectionchange_event
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_scheduled_selectionchange_event(value bool) {
+	text.has_scheduled_selectionchange_event = value
+}
+
+pub fn (text &FormAssociatedTextControlElement) form_associated_element_to_text_node() ?&dom.Text {
+	return text.text_node_
 }
 
 pub fn (mut text FormAssociatedTextControlElement) set_relevant_value(value string) {
@@ -541,18 +575,24 @@ pub fn (mut text FormAssociatedTextControlElement) relevant_value_was_changed() 
 }
 
 fn (text &FormAssociatedTextControlElement) selection_or_range_applies() bool {
-	if text.control.element.local_name() != 'input' { return true }
+	if text.control.element.local_name() != 'input' {
+		return true
+	}
 	return form_element_input_type(text.control.element) in ['text', 'search', 'tel', 'url',
 		'password']
 }
 
 pub fn (mut text FormAssociatedTextControlElement) select() {
-	if !text.selection_or_range_applies() { return }
+	if !text.selection_or_range_applies() {
+		return
+	}
 	text.set_the_selection_range(0, max_u32, .none, .dom)
 }
 
 pub fn (text &FormAssociatedTextControlElement) selection_start_binding() ?u32 {
-	if !text.selection_or_range_applies() { return none }
+	if !text.selection_or_range_applies() {
+		return none
+	}
 	return text.selection_start()
 }
 
@@ -570,13 +610,17 @@ pub fn (mut text FormAssociatedTextControlElement) set_selection_start_binding(v
 	}
 	mut end := text.selection_end_
 	if actual := value {
-		if end < actual { end = actual }
+		if end < actual {
+			end = actual
+		}
 	}
 	text.set_the_selection_range(value or { 0 }, end, text.selection_direction_, .dom)
 }
 
 pub fn (text &FormAssociatedTextControlElement) selection_end_binding() ?u32 {
-	if !text.selection_or_range_applies() { return none }
+	if !text.selection_or_range_applies() {
+		return none
+	}
 	return text.selection_end()
 }
 
@@ -592,12 +636,13 @@ pub fn (mut text FormAssociatedTextControlElement) set_selection_end_binding(val
 	if !text.selection_or_range_applies() {
 		return error('InvalidStateError: selectionEnd does not apply')
 	}
-	text.set_the_selection_range(text.selection_start_, value or { 0 }, text.selection_direction_,
-		.dom)
+	text.set_the_selection_range(text.selection_start_, value or { 0 }, text.selection_direction_, .dom)
 }
 
 pub fn (text &FormAssociatedTextControlElement) selection_direction() ?string {
-	if !text.selection_or_range_applies() { return none }
+	if !text.selection_or_range_applies() {
+		return none
+	}
 	return match text.selection_direction_ {
 		.forward { 'forward' }
 		.backward { 'backward' }
@@ -613,15 +658,16 @@ pub fn (mut text FormAssociatedTextControlElement) set_selection_direction_bindi
 	if !text.selection_or_range_applies() {
 		return error('InvalidStateError: selectionDirection does not apply')
 	}
-	text.set_the_selection_range(text.selection_start_, text.selection_end_,
-		selection_direction_from_string(direction), .dom)
+	text.set_the_selection_range(text.selection_start_, text.selection_end_, selection_direction_from_string(direction), .dom)
 }
 
 pub fn (mut text FormAssociatedTextControlElement) set_range_text(replacement string, start u32, end u32, selection_mode SelectionMode) ! {
 	if !text.selection_or_range_applies() {
 		return error('InvalidStateError: setRangeText does not apply')
 	}
-	if start > end { return error('IndexSizeError: start must be less than or equal to end') }
+	if start > end {
+		return error('IndexSizeError: start must be less than or equal to end')
+	}
 	text.dirty_value_flag = true
 	mut value_units := form_string_to_utf16(text.relevant_value_)
 	replacement_units := form_string_to_utf16(replacement)
@@ -672,50 +718,312 @@ pub fn (mut text FormAssociatedTextControlElement) set_range_text_at_selection(r
 	text.set_range_text(replacement, text.selection_start_, text.selection_end_, .preserve)!
 }
 
+// The two upstream WebIDL overloads converge on the explicit-range overload
+// in V; set_range_text_at_selection() carries the one-argument overload.
+pub fn (mut text FormAssociatedTextControlElement) set_range_text_binding(replacement string, start u32, end u32, selection_mode SelectionMode) ! {
+	text.set_range_text(replacement, start, end, selection_mode)!
+}
+
 pub fn (mut text FormAssociatedTextControlElement) set_selection_range(start ?u32, end ?u32, direction ?string) ! {
 	if !text.selection_or_range_applies() {
 		return error('InvalidStateError: setSelectionRange does not apply')
 	}
-	text.set_the_selection_range(start or { 0 }, end or { 0 },
-		selection_direction_from_string(direction), .dom)
+	text.set_the_selection_range(start or { 0 }, end or { 0 }, selection_direction_from_string(direction), .dom)
 }
 
-pub fn (mut text FormAssociatedTextControlElement) set_the_selection_range(start u32, end u32, direction SelectionDirection, _ SelectionSource) {
+pub fn (mut text FormAssociatedTextControlElement) set_the_selection_range(start u32, end u32, direction SelectionDirection, source SelectionSource) {
 	length := u32(form_string_to_utf16(text.relevant_value_).len)
 	actual_start := if start > length { length } else { start }
 	actual_end := if end > length { length } else { end }
-	text.selection_start_ = if actual_start < actual_end { actual_start } else { actual_end }
+	new_selection_start := if actual_start < actual_end { actual_start } else { actual_end }
+	was_modified := text.selection_start_ != new_selection_start || text.selection_end_ != actual_end || text.selection_direction_ != direction
+	text.selection_start_ = new_selection_start
 	text.selection_end_ = actual_end
 	text.selection_direction_ = direction
+	if was_modified {
+		if source == .dom || text.selection_start_ != text.selection_end_ {
+			element := text.control.element
+			document := element.document()
+			queue_a_task(.user_interaction, main_thread_event_loop(), document, fn [element] () {
+				select_event := dom.Event.create('select', dom.EventInit{ bubbles: true })
+				unsafe { &dom.EventTarget(element.as_node()) }
+				.dispatch_event(select_event)
+			})
+		}
+		text.selection_was_changed(source)
+	}
 }
 
 pub fn (text &FormAssociatedTextControlElement) selected_text_for_stringifier() ?string {
 	start := int(text.selection_start())
 	end := int(text.selection_end())
-	if start >= end { return none }
+	if start >= end {
+		return none
+	}
 	units := form_string_to_utf16(text.relevant_value_)
 	return form_utf16_to_string(units[start..end])
 }
 
-pub fn (mut text FormAssociatedTextControlElement) handle_insert(data string) ! {
-	if !text.control.is_mutable() { return }
-	text.set_range_text(data, text.selection_start(), text.selection_end(), .end)!
+pub fn (mut text FormAssociatedTextControlElement) handle_insert(input_type string, data string) ! {
+	if !text.control.is_mutable() {
+		return
+	}
+	mut text_node := text.text_node_ or { return }
+	mut data_for_insertion := data
+	if max_length := text_node.max_length() {
+		remaining_length := max_length - text_node.length()
+		units := form_string_to_utf16(data)
+		if remaining_length < units.len {
+			data_for_insertion = if remaining_length <= 0 {
+				''
+			} else {
+				form_utf16_to_string(units[..remaining_length])
+			}
+		}
+	}
+	text.set_range_text(data_for_insertion, text.selection_start(), text.selection_end(), .end)!
+	text_node.set_data(text.relevant_value_)
+	mut node := text_node.as_node()
+	node.invalidate_style(.style_change)
+	input_data := if input_type in ['insertText', 'insertFromPaste'] {
+		?string(data_for_insertion)
+	} else {
+		none
+	}
+	text.did_edit_text_node(input_type, input_data)
+	text.scroll_cursor_into_view()
 }
 
-pub fn (mut text FormAssociatedTextControlElement) handle_delete(backward bool) ! {
-	if !text.control.is_mutable() { return }
+pub fn (mut text FormAssociatedTextControlElement) handle_delete(input_type string) ! {
+	if !text.control.is_mutable() {
+		return
+	}
+	mut text_node := text.text_node_ or { return }
 	mut start := text.selection_start()
 	mut end := text.selection_end()
 	if start == end {
-		if backward && start > 0 {
-			start--
-		} else if !backward {
-			end++
+		if input_type == 'deleteContentBackward' {
+			start = u32(text_node.grapheme_segmenter().previous_boundary(int(text.selection_end_)) or {
+				int(start)
+			})
+		} else {
+			end = u32(text_node.grapheme_segmenter().next_boundary(int(text.selection_end_)) or {
+				int(end)
+			})
 		}
 	}
 	text.set_range_text('', start, end, .end)!
+	text_node.set_data(text.relevant_value_)
+	mut node := text_node.as_node()
+	node.invalidate_style(.style_change)
+	text.did_edit_text_node(input_type, none)
+	text.scroll_cursor_into_view()
 }
 
 pub fn (mut text FormAssociatedTextControlElement) select_all() {
-	text.set_the_selection_range(0, max_u32, .none, .ui)
+	text_node := text.text_node_ or { return }
+	text.set_the_selection_range(0, u32(text_node.length()), .none, .dom)
+	text.selection_was_changed(.ui)
+}
+
+fn (mut text FormAssociatedTextControlElement) did_edit_text_node(input_type string, data ?string) {
+	callback := text.did_edit_callback_ or { return }
+	callback(text.did_edit_target_, input_type, data)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) collapse_selection_to_offset(position usize) {
+	text.selection_start_ = u32(position)
+	text.selection_end_ = u32(position)
+}
+
+pub fn (text &FormAssociatedTextControlElement) scroll_cursor_into_view() {
+	if text.text_node_ == none {
+		return
+	}
+	mut document := text.control.element.document()
+	document.update_layout(.scroll_cursor_into_view)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) selection_was_changed(source SelectionSource) {
+	if !text.has_scheduled_selectionchange_event {
+		text.has_scheduled_selectionchange_event = true
+		text_pointer := voidptr(&text)
+		element := text.control.element
+		document := element.document()
+		queue_a_task(.user_interaction, main_thread_event_loop(), document, fn [text_pointer, element] () {
+			mut mutable_text := unsafe { &FormAssociatedTextControlElement(text_pointer) }
+			mutable_text.has_scheduled_selectionchange_event = false
+			event := dom.Event.create('selectionchange', dom.EventInit{ bubbles: true })
+			unsafe { &dom.EventTarget(element.as_node()) }
+			.dispatch_event(event)
+		})
+	}
+	if text_node := text.text_node_ {
+		mut node := text_node.as_node()
+		node.set_needs_repaint(.yes)
+		if text.selection_start_ == text.selection_end_ {
+			mut document := text.control.element.document()
+			document.reset_cursor_blink_cycle()
+		}
+	}
+	if source == .ui {
+		text.scroll_cursor_into_view()
+	}
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_selection_anchor(anchor_node &dom.Node, anchor_offset usize) {
+	mut manager := text.control.element.document().editing_host_manager()
+	manager.set_selection_anchor(anchor_node, int(anchor_offset))
+	text_node := text.text_node_ or { return }
+	if voidptr(anchor_node) != voidptr(text_node.as_node()) {
+		return
+	}
+	text.collapse_selection_to_offset(anchor_offset)
+	text.selection_was_changed(.ui)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_selection_focus(focus_node &dom.Node, focus_offset usize) {
+	mut manager := text.control.element.document().editing_host_manager()
+	manager.set_selection_focus(focus_node, int(focus_offset))
+	text_node := text.text_node_ or { return }
+	if voidptr(focus_node) != voidptr(text_node.as_node()) {
+		return
+	}
+	text.selection_end_ = u32(focus_offset)
+	text.selection_was_changed(.ui)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) move_cursor_to_start(collapse dom.CollapseSelection) {
+	if text.text_node_ == none {
+		return
+	}
+	if collapse == .yes {
+		text.collapse_selection_to_offset(0)
+	} else {
+		text.selection_end_ = 0
+	}
+	text.selection_was_changed(.ui)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) move_cursor_to_end(collapse dom.CollapseSelection) {
+	text_node := text.text_node_ or { return }
+	end := usize(text_node.length())
+	if collapse == .yes {
+		text.collapse_selection_to_offset(end)
+	} else {
+		text.selection_end_ = u32(end)
+	}
+	text.selection_was_changed(.ui)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) increment_cursor_position_offset(collapse dom.CollapseSelection) {
+	text_node := text.text_node_ or { return }
+	if collapse == .yes && text.selection_start_ != text.selection_end_ {
+		end := if text.selection_start_ > text.selection_end_ {
+			text.selection_start_
+		} else {
+			text.selection_end_
+		}
+		text.collapse_selection_to_offset(usize(end))
+	} else if offset := text_node.grapheme_segmenter().next_boundary(int(text.selection_end_)) {
+		if collapse == .yes {
+			text.collapse_selection_to_offset(usize(offset))
+		} else {
+			text.selection_end_ = u32(offset)
+		}
+	}
+	text.selection_was_changed(.ui)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) decrement_cursor_position_offset(collapse dom.CollapseSelection) {
+	text_node := text.text_node_ or { return }
+	if collapse == .yes && text.selection_start_ != text.selection_end_ {
+		start := if text.selection_start_ < text.selection_end_ {
+			text.selection_start_
+		} else {
+			text.selection_end_
+		}
+		text.collapse_selection_to_offset(usize(start))
+	} else if offset := text_node.grapheme_segmenter().previous_boundary(int(text.selection_end_)) {
+		if collapse == .yes {
+			text.collapse_selection_to_offset(usize(offset))
+		} else {
+			text.selection_end_ = u32(offset)
+		}
+	}
+	text.selection_was_changed(.ui)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) increment_cursor_position_to_next_word(collapse dom.CollapseSelection) {
+	text_node := text.text_node_ or { return }
+	for {
+		offset := text_node.word_segmenter().next_boundary(int(text.selection_end_)) or { break }
+		units := form_string_to_utf16(text_node.data())
+		word := form_utf16_to_string(units[int(text.selection_end_)..offset])
+		if collapse == .yes {
+			text.collapse_selection_to_offset(usize(offset))
+		} else {
+			text.selection_end_ = u32(offset)
+		}
+		if !dom.segmenter_should_continue_beyond_word(word) {
+			break
+		}
+	}
+	text.selection_was_changed(.ui)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) decrement_cursor_position_to_previous_word(collapse dom.CollapseSelection) {
+	text_node := text.text_node_ or { return }
+	for {
+		offset := text_node.word_segmenter().previous_boundary(int(text.selection_end_)) or { break }
+		units := form_string_to_utf16(text_node.data())
+		word := form_utf16_to_string(units[offset..int(text.selection_end_)])
+		if collapse == .yes {
+			text.collapse_selection_to_offset(usize(offset))
+		} else {
+			text.selection_end_ = u32(offset)
+		}
+		if !dom.segmenter_should_continue_beyond_word(word) {
+			break
+		}
+	}
+	text.selection_was_changed(.ui)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) increment_cursor_position_to_next_line(collapse dom.CollapseSelection) {
+	text_node := text.text_node_ or { return }
+	offset := dom.compute_cursor_position_on_next_line(text_node.data(), int(text.selection_end_)) or {
+		return
+	}
+	if collapse == .yes {
+		text.collapse_selection_to_offset(usize(offset))
+	} else {
+		text.selection_end_ = u32(offset)
+	}
+	text.selection_was_changed(.ui)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) decrement_cursor_position_to_previous_line(collapse dom.CollapseSelection) {
+	text_node := text.text_node_ or { return }
+	offset := dom.compute_cursor_position_on_previous_line(text_node.data(), int(text.selection_end_)) or {
+		return
+	}
+	if collapse == .yes {
+		text.collapse_selection_to_offset(usize(offset))
+	} else {
+		text.selection_end_ = u32(offset)
+	}
+	text.selection_was_changed(.ui)
+}
+
+pub fn (text &FormAssociatedTextControlElement) cursor_position() ?&dom.Position {
+	text_node := text.text_node_ or { return none }
+	if text.selection_start_ != text.selection_end_ {
+		return none
+	}
+	return dom.Position.create(text_node.as_node(), int(text.selection_start_))
+}
+
+pub fn (text &FormAssociatedTextControlElement) as_cell() &dom.Element {
+	return text.control.element
 }

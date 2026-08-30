@@ -94,8 +94,7 @@ fn days_in_month(year u64, month u32) u32 {
 // https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#week-number-of-the-last-day
 pub fn week_number_of_the_last_day(year u64) u32 {
 	day_of_week := (1 + 5 * ((year - 1) % 4) + 4 * ((year - 1) % 100) + 6 * ((year - 1) % 400)) % 7
-	if day_of_week == 4
-		|| (day_of_week == 3 && (year % 400 == 0 || (year % 4 == 0 && year % 100 != 0))) {
+	if day_of_week == 4 || (day_of_week == 3 && (year % 400 == 0 || (year % 4 == 0 && year % 100 != 0))) {
 		return 53
 	}
 	return 52
@@ -108,8 +107,7 @@ pub fn is_valid_week_string(value string) bool {
 		return false
 	}
 	year := strconv.parse_uint(parts[0], 10, 64) or { return false }
-	if year == 0 || parts[1][0] != `W` || !is_number_ascii_digit(parts[1][1])
-		|| !is_number_ascii_digit(parts[1][2]) {
+	if year == 0 || parts[1][0] != `W` || !is_number_ascii_digit(parts[1][1]) || !is_number_ascii_digit(parts[1][2]) {
 		return false
 	}
 	week := u32(parts[1][1] - `0`) * 10 + u32(parts[1][2] - `0`)
@@ -136,8 +134,7 @@ pub fn is_valid_date_string(value string) bool {
 	if parts.len != 3 {
 		return false
 	}
-	if !is_valid_month_string('${parts[0]}-${parts[1]}') || parts[2].len != 2
-		|| !is_number_ascii_digit(parts[2][0]) || !is_number_ascii_digit(parts[2][1]) {
+	if !is_valid_month_string('${parts[0]}-${parts[1]}') || parts[2].len != 2 || !is_number_ascii_digit(parts[2][0]) || !is_number_ascii_digit(parts[2][1]) {
 		return false
 	}
 	year := strconv.parse_uint(parts[0], 10, 64) or { return false }
@@ -204,8 +201,7 @@ pub fn is_valid_time_string(value string) bool {
 		return false
 	}
 	if parts.len == 3 {
-		if parts[2].len < 2 || !is_number_ascii_digit(parts[2][0])
-			|| !is_number_ascii_digit(parts[2][1]) {
+		if parts[2].len < 2 || !is_number_ascii_digit(parts[2][0]) || !is_number_ascii_digit(parts[2][1]) {
 			return false
 		}
 		second := int(parts[2][0] - `0`) * 10 + int(parts[2][1] - `0`)
@@ -332,25 +328,20 @@ fn parse_a_time_component(mut input DateLexer) ?HourMinuteSecond {
 		return none
 	}
 	minute := i32(strconv.parse_int(minute_string, 10, 32) or { return none })
-	if minute < 0 || hour > 59 {
+	if minute < 0 || minute > 59 {
 		return none
 	}
 	mut second := f32(0)
 	if input.consume_specific(`:`) {
-		if input.is_eof() || input.remaining() == 1
-			|| (!is_number_ascii_digit(input.input[input.position])
-			&& !is_number_ascii_digit(input.input[input.position + 1])) {
+		if input.is_eof() || input.remaining() == 1 || (!is_number_ascii_digit(input.input[input.position]) && !is_number_ascii_digit(input.input[input.position + 1])) {
 			return none
 		}
 		start := input.position
-		for !input.is_eof() && (is_number_ascii_digit(input.input[input.position])
-			|| input.input[input.position] == `.`) {
+		for !input.is_eof() && (is_number_ascii_digit(input.input[input.position]) || input.input[input.position] == `.`) {
 			input.position++
 		}
 		second_string := input.input[start..input.position]
-		if second_string.len == 3
-			|| (second_string.len > 3 && second_string[2] != `.`)
-			|| second_string.count('.') > 1 {
+		if second_string.len == 3 || (second_string.len > 3 && second_string[2] != `.`) || second_string.count('.') > 1 {
 			return none
 		}
 		second = f32(strconv.atof64(second_string) or { return none })

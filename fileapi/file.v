@@ -66,6 +66,10 @@ pub fn File.construct(file_bits []BlobPart, file_name string, options ?FilePrope
 	return File.create(bytes, name, type_, last_modified)
 }
 
+pub fn File.construct_impl(file_bits []BlobPart, file_name string, options ?FilePropertyBag) &File {
+	return File.construct(file_bits, file_name, options)
+}
+
 // https://w3c.github.io/FileAPI/#dfn-name
 pub fn (file &File) name() string {
 	return file.name_

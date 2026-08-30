@@ -1,6 +1,8 @@
 module html
 
 import dom
+import fetch
+import http
 
 fn test_referrer_and_policy_container_algorithms() {
 	assert referrer_policy_from_string('STRICT-ORIGIN')? == .strict_origin
@@ -46,6 +48,23 @@ fn test_referrer_and_policy_container_algorithms() {
 	restored := create_a_policy_container_from_serialized_policy_container(serialized)
 	assert restored.referrer_policy == .strict_origin_when_cross_origin
 	assert restored.csp_list.len == 1
+}
+
+fn test_create_policy_container_from_fetch_response() {
+	mut realm := &ScriptingRealm{}
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	window := WindowModel.create_top_level(document, none, 'policy-test')!
+	settings := WindowEnvironmentSettingsObject.setup(window, document.url, mut realm, none,
+		document.url, document.origin()).settings
+	mut response := fetch.Response.create()
+	response.url_list = [dom.URL{ value: 'https://example.test/resource' }]
+	response.header_list.append(http.Header{'Content-Security-Policy', "default-src 'self'; sandbox"})
+	response.header_list.append(http.Header{'Referrer-Policy', 'bogus, origin'})
+	container := create_a_policy_container_from_a_fetch_response(response, settings)
+	assert container.csp_list.len == 1
+	assert container.csp_list[0].directives.len == 2
+	assert container.csp_list[0].self_origin.serialize() == 'https://example.test'
+	assert container.referrer_policy == .origin
 }
 
 fn test_document_state_and_session_history_entry_clone() {

@@ -2,23 +2,36 @@ module css
 
 import dom
 
+fn test_abstract_element_equality_uses_dom_identity() {
+	document := dom.Document.create(dom.url_about_blank())
+	first := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	second := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	assert abstract_elements_equal(dom.AbstractElement.new(first, none), dom.AbstractElement.new(first, none))
+	assert !abstract_elements_equal(dom.AbstractElement.new(first, none), dom.AbstractElement.new(second, none))
+	assert !abstract_elements_equal(dom.AbstractElement.new(first, .before), dom.AbstractElement.new(first, .after))
+}
+
 // declaration_style_properties re-types a serialized CSSStyleProperties declaration into the typed
 // StyleProperty list the cascade iterates over, mirroring Ladybird's CSSStyleProperties::properties().
 fn test_declaration_style_properties() {
 	mut declaration := CSSStyleProperties.create()
 	declaration.properties << CSSStyleProperty{
-		name:      'color'
-		value:     'red'
+		name: 'color'
+		value: 'red'
 		important: true
 	}
 	declaration.properties << CSSStyleProperty{
-		name:      'width'
-		value:     '10px'
+		name: 'width'
+		value: '10px'
 		important: false
 	}
 	declaration.properties << CSSStyleProperty{
-		name:      'not-a-real-property'
-		value:     'x'
+		name: 'not-a-real-property'
+		value: 'x'
 		important: false
 	}
 
@@ -46,8 +59,7 @@ fn test_cascade_declarations_inline_style() {
 
 	s := StyleComputer.new(doc)
 	mut cascaded := CascadedProperties.new()
-	s.cascade_declarations(mut cascaded, abstract_element, []MatchingRule{}, CascadeOrigin.author,
-		Important.no, none, none, []PropertyID{})
+	s.cascade_declarations(mut cascaded, abstract_element, []MatchingRule{}, CascadeOrigin.author, Important.no, none, none, []PropertyID{})
 
 	// The direct `color` declaration is cascaded.
 	color_id := property_id_from_string('color') or { panic('no color id') }
@@ -73,13 +85,59 @@ fn test_compute_properties_resolves_effective_overflow() {
 
 	s := StyleComputer.new(doc)
 	mut cascaded := CascadedProperties.new()
-	s.cascade_declarations(mut cascaded, abstract_element, []MatchingRule{}, CascadeOrigin.author,
-		Important.no, none, none, []PropertyID{})
+	s.cascade_declarations(mut cascaded, abstract_element, []MatchingRule{}, CascadeOrigin.author, Important.no, none, none, []PropertyID{})
 
 	mut computed := s.compute_properties(abstract_element, mut cascaded)
 	assert computed.overflow_y() == .scroll
 	// overflow-x: visible computes to auto because overflow-y is neither visible nor clip.
 	assert computed.overflow_x() == .auto_
+}
+
+fn test_button_adjusts_computed_display_after_generic_box_transformation() {
+	doc := dom.Document.create(dom.url_about_blank())
+	s := StyleComputer.new(doc)
+
+	mut inline_button := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'button') or {
+		panic('${err}')
+	}
+	inline_button.set_attribute_value('style', 'display: inline')
+	inline_computed := s.compute_style(dom.AbstractElement.new(inline_button, none))
+	assert inline_computed.display_before_box_type_transformation() == Display.from_short(.inline_)
+	assert inline_computed.display() == Display.from_short(.inline_block)
+
+	mut block_button := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'button') or {
+		panic('${err}')
+	}
+	block_button.set_attribute_value('style', 'display: block')
+	block_computed := s.compute_style(dom.AbstractElement.new(block_button, none))
+	assert block_computed.display_before_box_type_transformation() == Display.from_short(.block)
+	assert block_computed.display() == Display.from_short(.flow_root)
+
+	mut flex_button := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'button') or {
+		panic('${err}')
+	}
+	flex_button.set_attribute_value('style', 'display: flex')
+	flex_computed := s.compute_style(dom.AbstractElement.new(flex_button, none))
+	assert flex_computed.display() == Display.from_short(.flex)
+}
+
+fn test_textarea_adjusts_computed_display_for_internal_shadow_tree() {
+	doc := dom.Document.create(dom.url_about_blank())
+	s := StyleComputer.new(doc)
+
+	mut inline_textarea := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'textarea') or {
+		panic('${err}')
+	}
+	inline_textarea.set_attribute_value('style', 'display: inline')
+	inline_computed := s.compute_style(dom.AbstractElement.new(inline_textarea, none))
+	assert inline_computed.display() == Display.from_short(.inline_block)
+
+	mut contents_textarea := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'textarea') or {
+		panic('${err}')
+	}
+	contents_textarea.set_attribute_value('style', 'display: contents')
+	contents_computed := s.compute_style(dom.AbstractElement.new(contents_textarea, none))
+	assert contents_computed.display() == Display.from_short(.none_)
 }
 
 // compute_logical_alias_mapping_context cascades only writing-mode + direction and maps them to the
@@ -96,8 +154,7 @@ fn test_compute_logical_alias_mapping_context() {
 	matching_rule_set := MatchingRuleSet{
 		author_rules: [LayerMatchingRules{}]
 	}
-	context := s.compute_logical_alias_mapping_context(abstract_element, ComputeStyleMode.normal,
-		matching_rule_set)
+	context := s.compute_logical_alias_mapping_context(abstract_element, ComputeStyleMode.normal, matching_rule_set)
 	assert context.writing_mode == .vertical_rl
 	assert context.direction == .rtl
 }
@@ -340,6 +397,287 @@ fn test_css_style_computer_for_caches_and_autowires() {
 	}
 }
 
+fn test_computed_lengths_retain_viewport_resolution_context_for_layout() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut mutable_doc := unsafe { &dom.Document(doc) }
+	mutable_doc.set_viewport_rect(dom.Rect{0, 0, 500, 300})
+	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	element.set_attribute_value('style', 'width: 10vw; height: 20vh; margin-left: 2rem')
+	mut computer := StyleComputer.new(doc)
+	computed := computer.compute_style(dom.AbstractElement.new(element, none))
+	assert computed.length_percentage_to_px(.width, 0) or { -1 } == 50
+	assert computed.length_percentage_to_px(.height, 0) or { -1 } == 60
+	assert computed.length_percentage_to_px(.margin_left, 0) or { -1 } == 32
+}
+
+fn test_media_feature_evaluation_uses_document_viewport() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut mutable_doc := unsafe { &dom.Document(doc) }
+	query := parse_media_query_from_text('(min-width: 600px)') or { panic('query') }
+	mutable_doc.set_viewport_rect(dom.Rect{0, 0, 500, 700})
+	assert !query.evaluate(doc)
+	portrait := parse_media_query_from_text('(orientation: portrait)') or { panic('query') }
+	assert portrait.evaluate(doc)
+	mutable_doc.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+	assert query.evaluate(doc)
+	assert !portrait.evaluate(doc)
+}
+
+fn test_comma_only_media_query_list_does_not_match() {
+	mut media := MediaList.create_empty()
+	media.set_media_text(',,')
+	assert media.media.len == 3
+	assert !media.matches()
+	doc := dom.Document.create(dom.url_about_blank())
+	assert !media.evaluate(doc)
+}
+
+fn test_concrete_html_element_presentational_hint_entry_points() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/root/' })
+
+	mut hr_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'hr') or {
+		panic(err)
+	}
+	hr_element.set_attribute_value('color', 'red')
+	hr_element.set_attribute_value('size', '10')
+	hr_element.set_attribute_value('align', 'center')
+	hr_element.set_attribute_value('width', '50%')
+	hr := unsafe { &dom.HTMLHRElement(hr_element) }
+	assert html_hr_element_is_presentational_hint(hr, 'noshade')
+	mut hr_properties := CascadedProperties.new()
+	html_hr_element_apply_presentational_hints(hr, mut hr_properties)
+	assert hr_properties.property(.border_top_style)?.css_text == 'solid'
+	assert hr_properties.property(.border_left_width)?.css_text == '5px'
+	assert hr_properties.property(.margin_left)?.css_text == 'auto'
+	assert hr_properties.property(.width)?.css_text == '50%'
+
+	mut marquee_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'marquee') or {
+		panic(err)
+	}
+	marquee_element.set_attribute_value('bgcolor', '#123456')
+	marquee_element.set_attribute_value('hspace', '4')
+	marquee := unsafe { &dom.HTMLMarqueeElement(marquee_element) }
+	assert html_marquee_element_is_presentational_hint(marquee, 'hspace')
+	mut marquee_properties := CascadedProperties.new()
+	html_marquee_element_apply_presentational_hints(marquee, mut marquee_properties)
+	assert marquee_properties.property(.margin_left)?.css_text == '4px'
+	assert marquee_properties.property(.margin_right)?.css_text == '4px'
+
+	mut pre_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'pre') or {
+		panic(err)
+	}
+	pre_element.set_attribute_value('wrap', '')
+	pre := unsafe { &dom.HTMLPreElement(pre_element) }
+	mut pre_properties := CascadedProperties.new()
+	html_pre_element_apply_presentational_hints(pre, mut pre_properties)
+	assert pre_properties.property(.text_wrap_mode)?.css_text == 'wrap'
+
+	mut caption_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'caption') or {
+		panic(err)
+	}
+	caption_element.set_attribute_value('align', 'bottom')
+	caption := unsafe { &dom.HTMLTableCaptionElement(caption_element) }
+	mut caption_properties := CascadedProperties.new()
+	html_table_caption_element_apply_presentational_hints(caption, mut caption_properties)
+	assert caption_properties.property(.caption_side)?.css_text == 'bottom'
+
+	mut list_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'ul') or {
+		panic(err)
+	}
+	list_element.set_attribute_value('type', 'circle')
+	list := unsafe { &dom.HTMLUListElement(list_element) }
+	mut list_properties := CascadedProperties.new()
+	html_ulist_element_apply_presentational_hints(list, mut list_properties)
+	assert list_properties.property(.list_style_type)?.css_text == 'circle'
+
+	mut row_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'tr') or {
+		panic(err)
+	}
+	row_element.set_attribute_value('background', 'tile.png')
+	row_element.set_attribute_value('height', '12')
+	row := unsafe { &dom.HTMLTableRowElement(row_element) }
+	mut row_properties := CascadedProperties.new()
+	html_table_row_element_apply_presentational_hints(row, mut row_properties)
+	assert row_properties.property(.background_image)?.css_text.contains('tile.png')
+	assert row_properties.property(.height)?.css_text == '12px'
+
+	assert html_div_element_is_presentational_hint(unsafe { &dom.HTMLDivElement(hr_element) }, 'align')
+	assert html_paragraph_element_is_presentational_hint(unsafe {
+		&dom.HTMLParagraphElement(hr_element)}, 'align')
+	assert html_table_col_element_is_presentational_hint(unsafe {
+		&dom.HTMLTableColElement(hr_element)}, 'width')
+	assert html_table_section_element_is_presentational_hint(unsafe {
+		&dom.HTMLTableSectionElement(hr_element)}, 'background')
+	assert html_heading_element_is_presentational_hint(unsafe {
+		&dom.HTMLHeadingElement(hr_element)}, 'align')
+	assert html_table_cell_element_is_presentational_hint(unsafe {
+		&dom.HTMLTableCellElement(hr_element)}, 'nowrap')
+
+	mut body_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'body') or {
+		panic(err)
+	}
+	body_element.set_attribute_value('bgcolor', '#123456')
+	body_element.set_attribute_value('text', 'red')
+	body_element.set_attribute_value('background', 'tile.png')
+	body_element.set_attribute_value('marginheight', '8junk')
+	body_element.set_attribute_value('leftmargin', '9')
+	body := unsafe { &dom.HTMLBodyElement(body_element) }
+	assert html_body_element_is_presentational_hint(body, 'marginheight')
+	mut body_properties := CascadedProperties.new()
+	html_body_element_apply_presentational_hints(body, mut body_properties)
+	assert body_properties.property(.background_image)?.css_text.contains('tile.png')
+	assert body_properties.property(.margin_top)?.css_text == '8px'
+	assert body_properties.property(.margin_bottom)?.css_text == '8px'
+	assert body_properties.property(.margin_left)?.css_text == '9px'
+
+	mut li_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'li') or {
+		panic(err)
+	}
+	li_element.set_attribute_value('type', 'I')
+	li := unsafe { &dom.HTMLLIElement(li_element) }
+	mut li_properties := CascadedProperties.new()
+	html_li_element_apply_presentational_hints(li, mut li_properties)
+	assert html_li_element_is_presentational_hint(li, 'type')
+	assert li_properties.property(.list_style_type)?.css_text == 'upper-roman'
+
+	mut ol_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'ol') or {
+		panic(err)
+	}
+	ol_element.set_attribute_value('type', 'A')
+	ol := unsafe { &dom.HTMLOListElement(ol_element) }
+	mut ol_properties := CascadedProperties.new()
+	htmlol_list_element_apply_presentational_hints(ol, mut ol_properties)
+	assert htmlol_list_element_is_presentational_hint(ol, 'type')
+	assert ol_properties.property(.list_style_type)?.css_text == 'upper-alpha'
+
+	mut br_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'br') or {
+		panic(err)
+	}
+	br_element.set_attribute_value('clear', 'all')
+	br := unsafe { &dom.HTMLBRElement(br_element) }
+	mut br_properties := CascadedProperties.new()
+	htmlbr_element_apply_presentational_hints(br, mut br_properties)
+	assert htmlbr_element_is_presentational_hint(br, 'clear')
+	assert br_properties.property(.clear)?.css_text == 'both'
+
+	mut embed_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'embed') or {
+		panic(err)
+	}
+	embed_element.set_attribute_value('align', 'middle')
+	embed_element.set_attribute_value('hspace', '6')
+	embed_element.set_attribute_value('vspace', '7')
+	embed := unsafe { &dom.HTMLEmbedElement(embed_element) }
+	assert html_embed_element_is_presentational_hint(embed, 'align')
+	mut embed_properties := CascadedProperties.new()
+	html_embed_element_apply_presentational_hints(embed, mut embed_properties)
+	assert embed_properties.property(.text_align)?.css_text == 'middle'
+	assert embed_properties.property(.margin_left)?.css_text == '6px'
+	assert embed_properties.property(.margin_right)?.css_text == '6px'
+	assert embed_properties.property(.margin_top)?.css_text == '7px'
+	assert embed_properties.property(.margin_bottom)?.css_text == '7px'
+
+	mut iframe_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'iframe') or {
+		panic(err)
+	}
+	iframe_element.set_attribute_value('frameborder', 'not-an-integer')
+	iframe := unsafe { &dom.HTMLIFrameElement(iframe_element) }
+	assert html_iframe_element_is_presentational_hint(iframe, 'frameborder')
+	mut iframe_properties := CascadedProperties.new()
+	html_iframe_element_apply_presentational_hints(iframe, mut iframe_properties)
+	assert iframe_properties.property(.border_top_width)?.css_text == '0px'
+	assert iframe_properties.property(.border_right_width)?.css_text == '0px'
+	assert iframe_properties.property(.border_bottom_width)?.css_text == '0px'
+	assert iframe_properties.property(.border_left_width)?.css_text == '0px'
+
+	mut canvas_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'canvas') or {
+		panic(err)
+	}
+	canvas_element.set_attribute_value('width', '320')
+	canvas_element.set_attribute_value('height', '200')
+	canvas := unsafe { &dom.HTMLCanvasElement(canvas_element) }
+	assert html_canvas_element_is_presentational_hint(canvas, 'width')
+	mut canvas_properties := CascadedProperties.new()
+	html_canvas_element_apply_presentational_hints(canvas, mut canvas_properties)
+	assert canvas_properties.property(.aspect_ratio)?.css_text == 'auto 320 / 200'
+
+	mut font_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'font') or {
+		panic(err)
+	}
+	font_element.set_attribute_value('color', 'red')
+	font_element.set_attribute_value('face', 'serif')
+	font_element.set_attribute_value('size', '+2')
+	font := unsafe { &dom.HTMLFontElement(font_element) }
+	assert html_font_element_is_presentational_hint(font, 'face')
+	mut font_properties := CascadedProperties.new()
+	html_font_element_apply_presentational_hints(font, mut font_properties)
+	assert font_properties.property(.color)?.css_text == 'red'
+	assert font_properties.property(.font_family)?.css_text == 'serif'
+	assert font_properties.property(.font_size)?.css_text == 'x-large'
+
+	mut table_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'table') or {
+		panic(err)
+	}
+	table_element.set_attribute_value('align', 'center')
+	table_element.set_attribute_value('border', '2')
+	table_element.set_attribute_value('cellspacing', '3')
+	table := unsafe { &dom.HTMLTableElement(table_element) }
+	assert html_table_element_is_presentational_hint(table, 'cellpadding')
+	mut table_properties := CascadedProperties.new()
+	html_table_element_apply_presentational_hints(table, mut table_properties)
+	assert table_properties.property(.margin_left)?.css_text == 'auto'
+	assert table_properties.property(.border_left_width)?.css_text == '2px'
+	assert table_properties.property(.border_spacing)?.css_text == '3px'
+}
+
+fn test_embed_frame_iframe_and_canvas_adjust_display_contents_to_none() {
+	document := dom.Document.create(dom.url_about_blank())
+	computer := StyleComputer.new(document)
+	for local_name in ['embed', 'iframe', 'canvas', 'frame', 'frameset', 'br'] {
+		mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', local_name) or {
+			panic(err)
+		}
+		element.set_attribute_value('style', 'display: contents')
+		computed := computer.compute_style(dom.AbstractElement.new(element, none))
+		assert computed.display() == Display.from_short(.none_)
+	}
+}
+
+fn test_media_element_adjusts_inline_and_contents_display() {
+	document := dom.Document.create(dom.url_about_blank())
+	computer := StyleComputer.new(document)
+	mut video := document.create_element_ns('http://www.w3.org/1999/xhtml', 'video') or {
+		panic(err)
+	}
+	video.set_attribute_value('style', 'display: inline')
+	computed_inline := computer.compute_style(dom.AbstractElement.new(video, none))
+	assert computed_inline.display() == Display.from_short(.inline_block)
+	video.set_attribute_value('style', 'display: contents')
+	computed_contents := computer.compute_style(dom.AbstractElement.new(video, none))
+	assert computed_contents.display() == Display.from_short(.none_)
+}
+
+fn test_invalid_media_group_does_not_override_matching_style_rule() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut invalid := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	invalid.set_attribute_value('class', 'invalid')
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_element.as_node()) or { panic('${err}') }
+	mut html_node := html_element.as_node()
+	html_node.append_child(invalid.as_node()) or { panic('${err}') }
+	add_document_author_style_sheet(doc, 'div { display: none } @media ,, { div.invalid { display: block } }')
+	mut computer := css_style_computer_for(doc)
+	recompute_style_for_subtree(mut computer, html_element.as_node())
+	computed := computed_properties_for_element(invalid) or { panic('missing computed style') }
+	assert computed.display().is_none()
+}
+
 fn test_attribute_mutation_uses_css_invalidation_plan_for_descendant() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	mut html := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
@@ -532,4 +870,59 @@ fn test_display_predicates_mirrored_to_dom() {
 	assert inline_display.is_inline_outside()
 	assert inline_display.is_flow_inside()
 	assert !inline_display.is_contents()
+}
+
+fn test_svg_presentation_attributes_participate_at_the_correct_cascade_position() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut from_attribute := doc.create_element_ns('http://www.w3.org/2000/svg', 'rect') or {
+		panic('${err}')
+	}
+	from_attribute.set_attribute_value('fill', 'red')
+	computer := StyleComputer.new(doc)
+	attribute_style := computer.compute_style(dom.AbstractElement.new(from_attribute, none))
+	attribute_fill := attribute_style.property(.fill, .yes) or { panic('no computed fill') }
+	attribute_color := parse_color_string(attribute_fill.css_text) or {
+		panic('fill is not a color')
+	}
+	assert attribute_color.serialize() == 'rgb(255 0 0)'
+	from_attribute.set_attribute_value('stroke-width', '2')
+	from_attribute.set_attribute_value('x', '12')
+	from_attribute.set_attribute_value('width', '25')
+	attribute_style_with_stroke := computer.compute_style(dom.AbstractElement.new(from_attribute, none))
+	assert attribute_style_with_stroke.length_percentage_to_px(.stroke_width, 100) or { -1 } == 2
+	assert attribute_style_with_stroke.length_percentage_to_px(.x, 100) or { -1 } == 12
+	assert attribute_style_with_stroke.length_percentage_to_px(.width, 100) or { -1 } == 25
+
+	mut overridden := doc.create_element_ns('http://www.w3.org/2000/svg', 'rect') or {
+		panic('${err}')
+	}
+	overridden.set_attribute_value('fill', 'red')
+	overridden.set_attribute_value('style', 'fill: blue')
+	overridden_style := computer.compute_style(dom.AbstractElement.new(overridden, none))
+	overridden_fill := overridden_style.property(.fill, .yes) or { panic('no overridden fill') }
+	overridden_color := parse_color_string(overridden_fill.css_text) or {
+		panic('overridden fill is not a color')
+	}
+	assert overridden_color.serialize() == 'rgb(0 0 255)'
+}
+
+fn test_dir_pseudo_class_ua_direction_and_inheritance() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	html_element.set_attribute_value('dir', 'rtl')
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_element.as_node()) or { panic('${err}') }
+	mut html_node := html_element.as_node()
+	html_node.append_child(child.as_node()) or { panic('${err}') }
+	mut computer := css_style_computer_for(doc)
+	assert html_element.directionality() == .rtl
+	assert html_element.matches('[dir]:dir(rtl)') or { false }
+	recompute_style_for_subtree(mut computer, html_element.as_node())
+	html_computed := computed_properties_for_element(html_element) or { panic('html style') }
+	child_computed := computed_properties_for_element(child) or { panic('child style') }
+	assert html_computed.direction() == .rtl
+	assert child_computed.direction() == .rtl
 }

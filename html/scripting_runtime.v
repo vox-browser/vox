@@ -41,27 +41,34 @@ pub:
 	error_in_promise ErrorInPromise
 }
 
-pub type ScriptEvaluationHook = fn (string, &ScriptingRealm) !dom.JSValue
+pub type ScriptEvaluationHook = fn(string, &ScriptingRealm) !dom.JSValue
 
-pub type ScriptParseHook = fn (string, string, usize) !
+pub type ScriptParseHook = fn(string, string, usize) !
 
 @[heap]
 pub struct ScriptingRealm {
 pub mut:
-	scripting_enabled          bool = true
-	can_run                    bool = true
-	settings_handle            voidptr
-	script_execution_depth     usize
-	callback_execution_depth   usize
-	microtask_checkpoint_count usize
-	reported_exceptions        []ReportedScriptException
+	scripting_enabled                       bool = true
+	can_run                                 bool = true
+	settings_handle                         voidptr
+	script_execution_depth                  usize
+	callback_execution_depth                usize
+	microtask_checkpoint_count              usize
+	reported_exceptions                     []ReportedScriptException
+	principal_realm_                        ?&ScriptingRealm
+	module_map_                             ?&ModuleMap
+	skip_when_determining_incumbent_counter usize
 }
 
 pub fn prepare_to_run_script(mut realm ScriptingRealm) {
 	realm.script_execution_depth++
+	html_scripting_execution_context_stack << &realm
 }
 
 pub fn clean_up_after_running_script(mut realm ScriptingRealm) {
+	assert html_scripting_execution_context_stack.len > 0
+	assert voidptr(html_scripting_execution_context_stack.last()) == voidptr(&realm)
+	html_scripting_execution_context_stack.delete_last()
 	if realm.script_execution_depth > 0 {
 		realm.script_execution_depth--
 	}
@@ -72,9 +79,22 @@ pub fn clean_up_after_running_script(mut realm ScriptingRealm) {
 
 pub fn prepare_to_run_callback(mut realm ScriptingRealm) {
 	realm.callback_execution_depth++
+	mut event_loop := main_thread_event_loop()
+	event_loop.push_onto_backup_incumbent_realm_stack(&realm)
+	if mut context := top_most_script_having_execution_context() {
+		context.skip_when_determining_incumbent_counter++
+	}
 }
 
 pub fn clean_up_after_running_callback(mut realm ScriptingRealm) {
+	if mut context := top_most_script_having_execution_context() {
+		assert context.skip_when_determining_incumbent_counter > 0
+		context.skip_when_determining_incumbent_counter--
+	}
+	mut event_loop := main_thread_event_loop()
+	assert !event_loop.is_backup_incumbent_realm_stack_empty()
+	assert voidptr(event_loop.top_of_backup_incumbent_realm_stack()) == voidptr(&realm)
+	event_loop.pop_backup_incumbent_realm_stack()
 	if realm.callback_execution_depth > 0 {
 		realm.callback_execution_depth--
 	}
@@ -103,7 +123,7 @@ pub fn TemporaryExecutionContext.create(mut realm ScriptingRealm, callbacks_enab
 		prepare_to_run_callback(mut realm)
 	}
 	return &TemporaryExecutionContext{
-		realm:             &realm
+		realm: &realm
 		callbacks_enabled: callbacks_enabled
 	}
 }
@@ -113,10 +133,10 @@ pub fn (mut context TemporaryExecutionContext) close() {
 		return
 	}
 	mut realm := context.realm
-	clean_up_after_running_script(mut realm)
 	if context.callbacks_enabled == .yes {
 		clean_up_after_running_callback(mut realm)
 	}
+	clean_up_after_running_script(mut realm)
 	context.closed = true
 }
 
@@ -142,6 +162,43 @@ pub fn (script &Script) settings_object() &ScriptingRealm {
 	return script.realm
 }
 
+pub fn (script &Script) base_url() ?dom.URL {
+	return script.base_url
+}
+
+pub fn (script &Script) filename() string {
+	return script.filename
+}
+
+pub fn (script &Script) realm() &ScriptingRealm {
+	return script.realm
+}
+
+pub fn (script &Script) error_to_rethrow() ?string {
+	return script.error_to_rethrow
+}
+
+pub fn (mut script Script) set_error_to_rethrow(value ?string) {
+	script.error_to_rethrow = value
+}
+
+pub fn (script &Script) parse_error() ?string {
+	return script.parse_error
+}
+
+pub fn (mut script Script) set_parse_error(value ?string) {
+	script.parse_error = value
+}
+
+pub fn (script &Script) is_script() bool {
+	_ = script
+	return true
+}
+
+pub fn (script &Script) visit_host_defined_self(mut visitor dom.CellVisitor) {
+	visitor.visit(voidptr(script))
+}
+
 @[heap]
 pub struct ClassicScript {
 	Script
@@ -157,21 +214,29 @@ pub fn ClassicScript.create(filename string, source string, realm &ScriptingReal
 	actual_url := if muted_errors == .yes { dom.url_about_blank() } else { base_url }
 	actual_source := if realm.scripting_enabled { source } else { '' }
 	return &ClassicScript{
-		Script:             Script{
+		Script: Script{
 			base_url: actual_url
 			filename: filename
-			realm:    realm
+			realm: realm
 		}
-		source:             actual_source
+		source: actual_source
 		source_line_number: source_line_number
-		muted_errors:       muted_errors
+		muted_errors: muted_errors
 	}
 }
 
 pub fn ClassicScript.create_with_parser(filename string, source string, realm &ScriptingRealm, base_url dom.URL, source_line_number usize, muted_errors MutedErrors, parser ScriptParseHook) &ClassicScript {
-	mut script := ClassicScript.create(filename, source, realm, base_url, source_line_number,
-		muted_errors)
+	mut script := ClassicScript.create(filename, source, realm, base_url, source_line_number, muted_errors)
 	parser(script.source, filename, source_line_number) or {
+		script.parse_error = err.msg()
+		script.error_to_rethrow = err.msg()
+	}
+	return script
+}
+
+pub fn ClassicScript.create_from_pre_parsed(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, parsed ScriptParseHook, muted_errors MutedErrors) &ClassicScript {
+	mut script := ClassicScript.create(filename, source_code, realm, base_url, 1, muted_errors)
+	parsed(script.source, filename, 1) or {
 		script.parse_error = err.msg()
 		script.error_to_rethrow = err.msg()
 	}
@@ -180,6 +245,23 @@ pub fn ClassicScript.create_with_parser(filename string, source string, realm &S
 
 pub fn (mut script ClassicScript) set_evaluator(evaluator ScriptEvaluationHook) {
 	script.evaluator = evaluator
+}
+
+// LibJS script/source-text-module records are represented by successfully
+// parsed source in this runtime-neutral port.
+pub fn (script &ClassicScript) script_record() ?string {
+	if script.parse_error != none {
+		return none
+	}
+	return script.source
+}
+
+pub fn (script &ClassicScript) muted_errors() MutedErrors {
+	return script.muted_errors
+}
+
+pub fn (script &ClassicScript) is_classic_script() bool {
+	return true
 }
 
 pub fn (mut script ClassicScript) run(rethrow_errors RethrowErrors) !dom.JSValue {
@@ -235,13 +317,20 @@ pub struct ModuleScript {
 	Script
 }
 
+pub fn (script &ModuleScript) is_module_script() bool {
+	_ = script
+	return true
+}
+
 @[heap]
 pub struct JavaScriptModuleScript {
 	ModuleScript
 pub:
 	source string
 pub mut:
-	evaluator ?ScriptEvaluationHook
+	evaluator         ?ScriptEvaluationHook
+	requested_modules []ModuleRequest
+	linked            bool
 }
 
 pub fn JavaScriptModuleScript.create(filename string, source string, realm &ScriptingRealm, base_url dom.URL) &JavaScriptModuleScript {
@@ -251,15 +340,43 @@ pub fn JavaScriptModuleScript.create(filename string, source string, realm &Scri
 			Script: Script{
 				base_url: base_url
 				filename: filename
-				realm:    realm
+				realm: realm
 			}
 		}
-		source:       actual_source
+		source: actual_source
+		requested_modules: parse_module_requests(actual_source)
 	}
+}
+
+pub fn JavaScriptModuleScript.create_from_pre_parsed(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, parsed ScriptParseHook) &JavaScriptModuleScript {
+	mut script := JavaScriptModuleScript.create(filename, source_code, realm, base_url)
+	parsed(script.source, filename, 1) or {
+		script.parse_error = err.msg()
+	}
+	return script
 }
 
 pub fn (mut script JavaScriptModuleScript) set_evaluator(evaluator ScriptEvaluationHook) {
 	script.evaluator = evaluator
+}
+
+pub fn (script &JavaScriptModuleScript) record() ?string {
+	if script.parse_error != none {
+		return none
+	}
+	return script.source
+}
+
+pub fn (script &JavaScriptModuleScript) is_javascript_module_script() bool {
+	return true
+}
+
+pub fn (script &JavaScriptModuleScript) requested_modules() []ModuleRequest {
+	return script.requested_modules.clone()
+}
+
+pub fn (script &JavaScriptModuleScript) is_linked() bool {
+	return script.linked
 }
 
 pub fn (mut script JavaScriptModuleScript) run(prevent_error_reporting PreventErrorReporting) ModuleEvaluation {

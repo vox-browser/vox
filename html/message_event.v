@@ -27,6 +27,10 @@ pub:
 
 pub type MessageEventSource = PortMessageEventSource | WindowMessageEventSource
 
+pub fn message_event_to_message_event_source_internal(source ?MessageEventSource) ?MessageEventSource {
+	return source
+}
+
 pub struct MessageEventInit {
 	dom.EventInit
 pub:
@@ -64,7 +68,7 @@ pub fn MessageEvent.create(event_name string, event_init MessageEventInit) &Mess
 		data_:          event_init.data
 		origin_:        event_init.origin
 		last_event_id_: event_init.last_event_id
-		source_:        event_init.source
+		source_:        message_event_to_message_event_source_internal(event_init.source)
 		ports_:         event_init.ports.clone()
 	}
 }
@@ -112,6 +116,6 @@ pub fn (mut event MessageEvent) init_message_event(type_ string, bubbles bool, c
 	event.data_ = data
 	event.origin_ = origin
 	event.last_event_id_ = last_event_id
-	event.source_ = source
+	event.source_ = message_event_to_message_event_source_internal(source)
 	event.ports_ = ports.clone()
 }

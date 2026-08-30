@@ -11,7 +11,7 @@ import infra
 import net.urllib
 import x.json2
 
-pub type ImportMapWarningHandler = fn (string)
+pub type ImportMapWarningHandler = fn(string)
 
 pub struct ModuleSpecifierResolution {
 pub:
@@ -37,11 +37,40 @@ pub:
 	integrity string
 }
 
+fn value_is_ordered_map(value json2.Any) bool {
+	return value is map[string]json2.Any
+}
+
+@[heap]
 pub struct ImportMap {
 pub mut:
 	imports   ModuleSpecifierMap
 	scopes    []ImportMapScope
 	integrity []ModuleIntegrityEntry
+}
+
+pub fn (import_map &ImportMap) imports() ModuleSpecifierMap {
+	return import_map.imports
+}
+
+pub fn (mut import_map ImportMap) set_imports(value ModuleSpecifierMap) {
+	import_map.imports = value
+}
+
+pub fn (import_map &ImportMap) scopes() []ImportMapScope {
+	return import_map.scopes.clone()
+}
+
+pub fn (mut import_map ImportMap) set_scopes(value []ImportMapScope) {
+	import_map.scopes = value.clone()
+}
+
+pub fn (import_map &ImportMap) integrity() []ModuleIntegrityEntry {
+	return import_map.integrity.clone()
+}
+
+pub fn (mut import_map ImportMap) set_integrity(value []ModuleIntegrityEntry) {
+	import_map.integrity = value.clone()
 }
 
 pub struct ImportsMatchResult {
@@ -189,7 +218,7 @@ pub fn sort_and_normalise_scopes(original_map map[string]json2.Any, base_url dom
 			continue
 		}
 		normalized << ImportMapScope{
-			prefix:  scope_prefix_url.serialize()
+			prefix: scope_prefix_url.serialize()
 			imports: sort_and_normalise_module_specifier_map(specifier_object, base_url, warn)
 		}
 	}
@@ -272,8 +301,7 @@ pub fn resolve_imports_match(normalized_specifier string, as_url ?dom.URL, speci
 			return ImportsMatchResult{true, resolution_result}
 		}
 		if entry.specifier.ends_with('/') && normalized_specifier.starts_with(entry.specifier) && (as_url == none || url_is_special(as_url or {
-			dom.URL{}
-		})) {
+			dom.URL{}})) {
 			resolution_result := entry.url or {
 				return error("Import resolution of '${entry.specifier}' was blocked by a null entry.")
 			}
@@ -298,8 +326,7 @@ pub fn resolve_module_specifier(import_map &ImportMap, base_url dom.URL, specifi
 	as_url := resolve_url_like_module_specifier(specifier, base_url)
 	normalized_specifier := if url := as_url { url.serialize() } else { specifier }
 	for scope in import_map.scopes {
-		if scope.prefix == serialized_base_url
-			|| (scope.prefix.ends_with('/') && serialized_base_url.starts_with(scope.prefix)) {
+		if scope.prefix == serialized_base_url || (scope.prefix.ends_with('/') && serialized_base_url.starts_with(scope.prefix)) {
 			matched := resolve_imports_match(normalized_specifier, as_url, &scope.imports)!
 			if matched.matched {
 				return matched.url or { return error('Import map produced a null URL') }
@@ -333,8 +360,7 @@ fn merge_module_specifier_maps(new_map &ModuleSpecifierMap, old_map &ModuleSpeci
 
 fn record_matches_scope(record ResolvedModuleRecord, scope_prefix string) bool {
 	serialized_base_url := record.serialized_base_url or { return false }
-	return scope_prefix == serialized_base_url
-		|| (scope_prefix.ends_with('/') && serialized_base_url.starts_with(scope_prefix))
+	return scope_prefix == serialized_base_url || (scope_prefix.ends_with('/') && serialized_base_url.starts_with(scope_prefix))
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#merge-existing-and-new-import-maps
@@ -349,9 +375,7 @@ pub fn merge_existing_and_new_import_maps(mut old_import_map ImportMap, new_impo
 			}
 			for index := scope_imports.entries.len - 1; index >= 0; index-- {
 				specifier_key := scope_imports.entries[index].specifier
-				if specifier_key == record.specifier
-					|| (specifier_key.ends_with('/') && record.specifier.starts_with(specifier_key)
-					&& record.specifier_is_null_or_url_like_that_is_special) {
+				if specifier_key == record.specifier || (specifier_key.ends_with('/') && record.specifier.starts_with(specifier_key) && record.specifier_is_null_or_url_like_that_is_special) {
 					warn("An import map rule for specifier '${specifier_key}' was ignored as one was already present in the existing import map")
 					scope_imports.entries.delete(index)
 				}
@@ -360,8 +384,7 @@ pub fn merge_existing_and_new_import_maps(mut old_import_map ImportMap, new_impo
 		mut found_scope := false
 		for index, old_scope in old_import_map.scopes {
 			if old_scope.prefix == new_scope.prefix {
-				old_import_map.scopes[index].imports = merge_module_specifier_maps(&scope_imports,
-					&old_scope.imports, warn)
+				old_import_map.scopes[index].imports = merge_module_specifier_maps(&scope_imports, &old_scope.imports, warn)
 				found_scope = true
 				break
 			}
@@ -389,6 +412,5 @@ pub fn merge_existing_and_new_import_maps(mut old_import_map ImportMap, new_impo
 			}
 		}
 	}
-	old_import_map.imports =
-		merge_module_specifier_maps(&new_imports, &old_import_map.imports, warn)
+	old_import_map.imports = merge_module_specifier_maps(&new_imports, &old_import_map.imports, warn)
 }

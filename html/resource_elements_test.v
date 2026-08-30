@@ -6,6 +6,20 @@ import dom
 __global executed_scripts []string
 __global connection_urls []string
 
+fn resource_test_element(node &dom.Node, local_name string) ?&dom.Element {
+	if element := node.as_element() {
+		if element.local_name() == local_name {
+			return element
+		}
+	}
+	for child in node.children_as_vector() {
+		if element := resource_test_element(child, local_name) {
+			return element
+		}
+	}
+	return none
+}
+
 fn script_test_fetch(url dom.URL, kind ScriptElementType) !string {
 	assert kind == .module
 	return 'from:${url.serialize()}'
@@ -22,19 +36,19 @@ fn link_test_fetch(url dom.URL, kind LinkResourceKind, cors CORSSettingAttribute
 		.stylesheet {
 			LinkResourceResponse{
 				content_type: 'text/css'
-				body:         'a { color: red; }'.bytes()
+				body: 'a { color: red; }'.bytes()
 			}
 		}
 		.icon {
 			LinkResourceResponse{
 				content_type: 'image/png'
-				body:         [u8(1), 2, 3]
+				body: [u8(1), 2, 3]
 			}
 		}
 		.preload {
 			LinkResourceResponse{
 				content_type: 'application/octet-stream'
-				body:         [u8(9)]
+				body: [u8(9)]
 			}
 		}
 		else {
@@ -93,6 +107,78 @@ fn test_script_failures_and_supports() {
 	assert script.event_count('error') == 1
 }
 
+fn test_parser_inserted_inline_script_is_prepared_and_executed() {
+	executed_scripts = []
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	mut parser := HTMLParser.create(document, '<script>parser_inline()</script><p>after</p>')
+	parser.scripting_enabled = true
+	parser.set_script_hooks(none, script_test_execute)
+	parser.run()
+	assert executed_scripts == ['classic:parser_inline():https://example.test/page']
+	assert parser.current_script_nesting_level() == 0
+}
+
+fn test_script_dom_receiver_lifecycle_and_text_idl_algorithms() {
+	executed_scripts = []
+	document := parse_document('<body><script></script></body>')
+	script_element := resource_test_element(unsafe { &dom.Node(document) }, 'script') or {
+		panic('missing script')
+	}
+	script := unsafe { &dom.HTMLScriptElement(script_element) }
+	model := html_script_element_model_for_dom_element(script)
+
+	html_script_element_set_text_content(script, 'first')
+	assert html_script_element_text_content(script) == 'first'
+	assert html_script_element_text(script) == 'first'
+	html_script_element_prepare_script_text(script)
+	assert model.text_ == 'first'
+	html_script_element_set_inner_text(script, 'a\nb')
+	assert html_script_element_inner_text(script).contains('a')
+	assert model.text_ == 'a\nb'
+	set_html_script_element_async(script, true)
+	assert html_script_element_async(script)
+	set_html_script_element_async(script, false)
+	assert !html_script_element_async(script)
+	html_script_element_begin_delaying_document_load_event(script, document)
+	assert model.document_load_event_delaying_
+
+	copy_node := script_element.as_node().clone_single_node(document)!
+	html_script_element_cloned(script, copy_node, false)!
+	copy_element := copy_node.as_element() or { panic('missing script clone element') }
+	copy_model := html_script_element_model_for_dom_element(unsafe {
+		&dom.HTMLScriptElement(copy_element)
+	})
+	assert copy_model.already_started_ == model.already_started_
+
+	mut dynamic_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'script')!
+	body := document.body() or { panic('missing body') }
+	mut body_node := body.as_node()
+	body_node.append_child(dynamic_element.as_node())!
+	dynamic_script := unsafe { &dom.HTMLScriptElement(dynamic_element) }
+	mut dynamic_model := unsafe {
+		&HTMLScriptElementModel(html_script_element_model_for_dom_element(dynamic_script))
+	}
+	dynamic_model.set_execute_hook(script_test_execute)
+	set_html_script_element_text(dynamic_script, 'dynamic()')
+	html_script_element_post_connection(dynamic_script)
+	assert executed_scripts.last().contains('dynamic()')
+}
+
+fn test_contextual_fragment_resets_script_parser_state() {
+	document := parse_document('<body><div id="context"></div></body>')
+	context := document.get_element_by_id('context') or { panic('missing context') }
+	mut range := dom.Range.create(document)
+	range.set_start(context.as_node(), 0)!
+	fragment := range.create_contextual_fragment('<script>contextual()</script>')!
+	script_element := fragment.as_node().first_child()?.as_element() or {
+		panic('missing contextual script')
+	}
+	script := unsafe { &dom.HTMLScriptElement(script_element) }
+	model := html_script_element_model_for_dom_element(script)
+	assert !model.already_started_
+	assert !model.is_parser_inserted()
+}
+
 fn test_link_stylesheet_icon_preload_and_connections() {
 	connection_urls = []
 	mut stylesheet := HTMLLinkElementModel.create(dom.URL{ value: 'https://example.test/' })
@@ -112,13 +198,35 @@ fn test_link_stylesheet_icon_preload_and_connections() {
 	icon.fetch_and_process_linked_resource()
 	assert icon.has_loaded_icon()
 	assert icon.loaded_icon()? == [u8(1), 2, 3]
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	assert decode_favicon(icon.loaded_icon()?, icon.loaded_icon_url()?, document)!
+	if _ := decode_favicon([], dom.URL{ value: 'https://example.test/empty.ico' }, document) {
+		assert false
+	} else {
+		assert err.msg().contains('empty favicon')
+	}
 
 	mut preload := HTMLLinkElementModel.create(dom.URL{ value: 'https://example.test/' })
 	preload.set_rel('dns-prefetch preconnect preload')
 	preload.set_href('/asset.bin')
+	preload.set_as('fetch')
 	preload.set_fetch_hook(link_test_fetch)
 	preload.set_connection_hooks(link_connection_hook, link_connection_hook)
 	preload.fetch_and_process_linked_resource()
-	assert connection_urls.len == 2
+	// The literal relationship dispatch gives preload precedence over the
+	// speculative preconnect and DNS-prefetch relations.
+	assert connection_urls.len == 0
 	assert preload.preloaded_response()?.body == [u8(9)]
+
+	mut dns_prefetch := HTMLLinkElementModel.create(dom.URL{ value: 'https://example.test/' })
+	dns_prefetch.set_rel('dns-prefetch')
+	dns_prefetch.set_href('/asset.bin')
+	dns_prefetch.set_connection_hooks(link_connection_hook, link_connection_hook)
+	dns_prefetch.fetch_and_process_linked_resource()
+	mut preconnect := HTMLLinkElementModel.create(dom.URL{ value: 'https://example.test/' })
+	preconnect.set_rel('preconnect')
+	preconnect.set_href('/asset.bin')
+	preconnect.set_connection_hooks(link_connection_hook, link_connection_hook)
+	preconnect.fetch_and_process_linked_resource()
+	assert connection_urls.len == 2
 }

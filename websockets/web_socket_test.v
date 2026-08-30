@@ -4,17 +4,17 @@ import fileapi
 import webidl
 
 fn test_constructor_url_protocol_normalization_and_validation() {
-	socket := WebSocket.construct('https://example.test/chat', '', Protocols(['chat', 'super']))!
-	assert socket.url == 'wss://example.test/chat'
+	socket := WebSocket.construct_impl('https://example.test/chat', '', Protocols(['chat', 'super']))!
+	assert socket.url() == 'wss://example.test/chat'
 	assert socket.protocols == ['chat', 'super']
 	relative := WebSocket.construct('/socket', 'http://example.test/base', NoProtocols{})!
-	assert relative.url == 'ws://example.test/socket'
+	assert relative.url() == 'ws://example.test/socket'
 	directory_relative :=
 		WebSocket.construct('socket', 'https://example.test/a/base', NoProtocols{})!
-	assert directory_relative.url == 'wss://example.test/a/socket'
+	assert directory_relative.url() == 'wss://example.test/a/socket'
 	dot_segments :=
 		WebSocket.construct('../socket?mode=1', 'http://example.test/a/b/', NoProtocols{})!
-	assert dot_segments.url == 'ws://example.test/a/socket?mode=1'
+	assert dot_segments.url() == 'ws://example.test/a/socket?mode=1'
 	// Match the checked current implementation: empty protocol is accepted.
 	assert WebSocket.construct('ws://example.test/', '', Protocols(''))!.protocols == [
 		'',
@@ -33,6 +33,20 @@ fn test_constructor_url_protocol_normalization_and_validation() {
 			assert err.msg().starts_with('SyntaxError:')
 		}
 	}
+}
+
+fn test_url_setter_and_generic_send_entry_point() {
+	mut socket := WebSocket.construct('ws://example.test/', '', NoProtocols{})!
+	socket.set_url('wss://other.example/socket')
+	assert socket.url() == 'wss://other.example/socket'
+	socket.establish_web_socket_connection()!
+	socket.on_open('')
+	socket.send(WebSocketSendData('text'))!
+	socket.send(WebSocketSendData(WebSocketBufferData{
+		buffer: webidl.BufferSource.array_buffer([u8(1), 2])
+	}))!
+	assert socket.sent_frames[0].is_text
+	assert socket.sent_frames[1].data == [u8(1), 2]
 }
 
 fn test_state_send_close_and_payload_conversion() {

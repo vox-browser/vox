@@ -19,6 +19,8 @@ fn test_storage_order_quota_named_properties_and_broadcast() {
 	assert first.length() == 2
 	assert first.key(0)? == 'alpha'
 	assert first.supported_property_names() == ['alpha', 'beta']
+	first.reorder()
+	first.dump()
 	assert second.get_item('alpha')? == '1'
 	assert second.events().len == 2
 	assert second.events()[0].url == 'https://example.test/one'
@@ -71,6 +73,9 @@ fn test_history_push_replace_traverse_scroll_and_url_security() {
 	assert history.scroll_restoration()! == .manual
 	history.go(0)!
 	assert history.last_traversal().action == .reload
+	history.delta_traverse(-1)!
+	assert history.last_traversal().action == .traverse
+	assert history.last_traversal().delta == -1
 	if _ := history.push_state(dom.js_null(), '', 'https://other.test/no') {
 		assert false
 	} else {

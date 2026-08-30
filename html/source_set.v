@@ -5,6 +5,7 @@
 // Translation of the source-selection algorithms in Libraries/LibWeb/HTML/SourceSet.cpp.
 module html
 
+import dom
 import strconv
 
 pub struct PixelDensityDescriptorValue {
@@ -312,4 +313,17 @@ pub fn create_source_set(default_source string, srcset string, source_size f64) 
 	}
 	source_set.normalize_source_densities(source_size)
 	return source_set
+}
+
+pub fn parse_a_sizes_attribute(element &dom.Element, sizes string, image ?&dom.HTMLImageElement) f64 {
+	// CSS size parsing currently enters this compact port through the numeric
+	// source-size representation used by SourceSet.
+	_ = element
+	_ = image
+	return image_source_size_from_sizes(if sizes == '' { none } else { sizes })
+}
+
+pub fn SourceSet.create(element &dom.Element, default_source string, srcset string, sizes string, image ?&dom.HTMLImageElement) SourceSet {
+	return create_source_set(default_source, srcset, parse_a_sizes_attribute(element, sizes,
+		image))
 }

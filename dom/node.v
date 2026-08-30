@@ -7,7 +7,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 //
 // Translated from Libraries/LibWeb/DOM/Node.cpp
-
 module dom
 
 import strings
@@ -64,7 +63,9 @@ pub fn set_needs_layout_reason_to_string(reason SetNeedsLayoutReason) string {
 		.finalize_a_cross_document_navigation { 'FinalizeACrossDocumentNavigation' }
 		.generated_content_image_finished_loading { 'GeneratedContentImageFinishedLoading' }
 		.html_canvas_element_width_or_height_change { 'HTMLCanvasElementWidthOrHeightChange' }
-		.html_image_element_react_to_changes_in_the_environment { 'HTMLImageElementReactToChangesInTheEnvironment' }
+		.html_image_element_react_to_changes_in_the_environment {
+			'HTMLImageElementReactToChangesInTheEnvironment'
+		}
 		.html_image_element_update_the_image_data { 'HTMLImageElementUpdateTheImageData' }
 		.html_video_element_set_video_track { 'HTMLVideoElementSetVideoTrack' }
 		.keyframe_effect { 'KeyframeEffect' }
@@ -101,7 +102,9 @@ pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUp
 		.details_element_opened_or_closed { 'DetailsElementOpenedOrClosed' }
 		.html_input_element_src_attribute { 'HTMLInputElementSrcAttribute' }
 		.html_ol_list_element_ordinal_values { 'HTMLOListElementOrdinalValues' }
-		.html_object_element_update_layout_and_child_objects { 'HTMLObjectElementUpdateLayoutAndChildObjects' }
+		.html_object_element_update_layout_and_child_objects {
+			'HTMLObjectElementUpdateLayoutAndChildObjects'
+		}
 		.keyframe_effect { 'KeyframeEffect' }
 		.node_insert_before { 'NodeInsertBefore' }
 		.node_insert_before_with_display_contents { 'NodeInsertBeforeWithDisplayContents' }
@@ -119,8 +122,11 @@ pub enum StyleInvalidationReason {
 	custom_state_set_change
 	element_set_active
 	element_set_shadow_root
+	html_details_or_dialog_open_attribute_change
+	html_dialog_element_set_is_modal
 	html_iframe_element_geometry_change
 	html_object_element_update_layout_and_child_objects
+	html_option_element_selected_change
 	navigable_set_viewport_size
 	node_insert_before
 	node_remove
@@ -137,8 +143,13 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 		.custom_state_set_change { 'CustomStateSetChange' }
 		.element_set_active { 'ElementSetActive' }
 		.element_set_shadow_root { 'ElementSetShadowRoot' }
+		.html_details_or_dialog_open_attribute_change { 'HTMLDetailsOrDialogOpenAttributeChange' }
+		.html_dialog_element_set_is_modal { 'HTMLDialogElementSetIsModal' }
 		.html_iframe_element_geometry_change { 'HTMLIFrameElementGeometryChange' }
-		.html_object_element_update_layout_and_child_objects { 'HTMLObjectElementUpdateLayoutAndChildObjects' }
+		.html_object_element_update_layout_and_child_objects {
+			'HTMLObjectElementUpdateLayoutAndChildObjects'
+		}
+		.html_option_element_selected_change { 'HTMLOptionElementSelectedChange' }
 		.navigable_set_viewport_size { 'NavigableSetViewportSize' }
 		.node_insert_before { 'NodeInsertBefore' }
 		.node_remove { 'NodeRemove' }
@@ -326,6 +337,7 @@ pub struct HTMLAnchorElement {
 pub struct HTMLSlotElement {
 	HTMLElement
 pub mut:
+	name_                    string
 	assigned_nodes_          []&Node
 	manually_assigned_nodes_ []&Node
 }
@@ -346,17 +358,21 @@ pub mut:
 @[heap]
 pub struct HTMLImageElement {
 	HTMLElement
+pub mut:
+	image_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
 pub struct HTMLInputElement {
 	HTMLElement
-pub mut:
+
 	// HTMLInputElement's checkedness is state, not merely the reflected content
 	// attribute. These fields are used by RadioNodeList and the input algorithms.
+pub mut:
 	checkedness_             bool
 	checkedness_initialized_ bool
 	dirty_checkedness_       bool
+	input_element_model_     voidptr = unsafe { nil }
 }
 
 @[heap]
@@ -367,6 +383,8 @@ pub struct HTMLSelectElement {
 @[heap]
 pub struct HTMLTableElement {
 	HTMLElement
+pub mut:
+	cellpadding_ ?u32
 }
 
 @[heap]
@@ -391,7 +409,7 @@ fn allocate_unique_id(node &Node) UniqueNodeID {
 // recurse through parent/child cycles. Every `n == other` in the DOM means "is the same
 // node", so compare the process-local unique id (the node's address) instead. Requires each
 // node to have been assigned its id at creation via assign_unique_node_id.
-pub fn (a Node) == (b Node) bool {
+pub fn (a Node) ==(b Node) bool {
 	return a.unique_id_ == b.unique_id_
 }
 
@@ -487,8 +505,7 @@ pub fn (n &Node) is_comment() bool {
 }
 
 pub fn (n &Node) is_character_data() bool {
-	return n.node_type == .text_node || n.node_type == .comment_node
-		|| n.node_type == .cdata_section_node || n.node_type == .processing_instruction_node
+	return n.node_type == .text_node || n.node_type == .comment_node || n.node_type == .cdata_section_node || n.node_type == .processing_instruction_node
 }
 
 pub fn (n &Node) is_document_fragment() bool {
@@ -647,7 +664,6 @@ pub fn (n &Node) next_element_sibling() ?&Element {
 }
 
 // ===== ChildNode mixin (https://dom.spec.whatwg.org/#childnode) =====
-
 fn node_or_string_list_contains(nodes []NodeOrString, target &Node) bool {
 	for node_or_string in nodes {
 		if node_or_string.is_text {
@@ -727,7 +743,7 @@ pub fn (mut n Node) replace_with(nodes []NodeOrString) ! {
 }
 
 pub fn (n &Node) is_descendant_of(other &Node) bool {
-	for ancestor := n.parent(); ancestor != none; {
+	for ancestor := n.parent(); ancestor != none;  {
 		current := ancestor or { break }
 		if current == other {
 			return true
@@ -793,11 +809,11 @@ pub fn (n &Node) as_shadow_root() ?&ShadowRoot {
 	if !n.is_document_fragment() {
 		return none
 	}
-	shadow := unsafe { &ShadowRoot(n) }
-	if shadow.host_ == unsafe { nil } && !shadow.declarative && shadow.style_scope_.str() == '' {
+	fragment := unsafe { &DocumentFragment(n) }
+	if !fragment.is_shadow_root_ {
 		return none
 	}
-	return shadow
+	return unsafe { &ShadowRoot(n) }
 }
 
 pub fn (n &Node) as_character_data() ?&CharacterData {
@@ -840,7 +856,7 @@ pub fn (n &Node) base_uri() string {
 }
 
 pub fn (n &Node) enclosing_link_element() ?&HTMLAnchorElement {
-	for current := ?&Node(n); current != none; {
+	for current := ?&Node(n); current != none;  {
 		node := current or { break }
 		if element := node.as_element() {
 			if element.local_name() == 'a' && element.has_attribute('href') {
@@ -853,7 +869,7 @@ pub fn (n &Node) enclosing_link_element() ?&HTMLAnchorElement {
 }
 
 pub fn (n &Node) enclosing_html_element() ?&HTMLElement {
-	for current := ?&Node(n); current != none; {
+	for current := ?&Node(n); current != none;  {
 		node := current or { break }
 		if element := node.as_element() {
 			if element.is_html_element() {
@@ -866,7 +882,7 @@ pub fn (n &Node) enclosing_html_element() ?&HTMLElement {
 }
 
 pub fn (n &Node) enclosing_html_element_with_attribute(attribute string) ?&HTMLElement {
-	for current := ?&Node(n); current != none; {
+	for current := ?&Node(n); current != none;  {
 		node := current or { break }
 		if element := node.as_element() {
 			if element.is_html_element() && element.has_attribute(attribute) {
@@ -1008,13 +1024,11 @@ pub fn (mut n Node) normalize() ! {
 							range.end_container_ = node
 						}
 						if parent := current.parent() {
-							if range.start_container_ == parent
-								&& range.start_offset_ == current.index() {
+							if range.start_container_ == parent && range.start_offset_ == current.index() {
 								range.start_container_ = node
 								range.start_offset_ = length
 							}
-							if range.end_container_ == parent
-								&& range.end_offset_ == current.index() {
+							if range.end_container_ == parent && range.end_offset_ == current.index() {
 								range.end_container_ = node
 								range.end_offset_ = length
 							}
@@ -1044,7 +1058,7 @@ fn contiguous_exclusive_text_nodes_excluding_self(node &Node) []&Node {
 	// and its contiguous exclusive Text nodes, avoiding any duplicates.
 	// NOTE: The callers of this method require node itself to be excluded.
 	mut nodes := []&Node{}
-	for sibling := node.previous_sibling(); sibling != none; {
+	for sibling := node.previous_sibling(); sibling != none;  {
 		current := sibling or { break }
 		if !current.is_exclusive_text() {
 			break
@@ -1052,7 +1066,7 @@ fn contiguous_exclusive_text_nodes_excluding_self(node &Node) []&Node {
 		nodes.prepend(current)
 		sibling = current.previous_sibling()
 	}
-	for sibling := node.next_sibling(); sibling != none; {
+	for sibling := node.next_sibling(); sibling != none;  {
 		current := sibling or { break }
 		if !current.is_exclusive_text() {
 			break
@@ -1158,7 +1172,7 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	if doc.needs_full_style_update() {
 		return
 	}
-	for ancestor := n.parent_or_shadow_host(); ancestor != none; {
+	for ancestor := n.parent_or_shadow_host(); ancestor != none;  {
 		current := ancestor or { break }
 		if current.entire_subtree_needs_style_update() {
 			return
@@ -1173,7 +1187,7 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	// FIXME: This is a lot of invalidation and we should implement more sophisticated invalidation to do less work!
 	n.set_entire_subtree_needs_style_update(true)
 	if reason == .node_insert_before || reason == .node_remove {
-		for sibling := n.previous_sibling(); sibling != none; {
+		for sibling := n.previous_sibling(); sibling != none;  {
 			current := sibling or { break }
 			if element := current.as_element() {
 				if element.affected_by_backward_structural_changes() {
@@ -1185,21 +1199,15 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 		}
 	}
 	mut current_sibling_distance := 1
-	for sibling := n.next_sibling(); sibling != none; {
+	for sibling := n.next_sibling(); sibling != none;  {
 		current := sibling or { break }
 		if element := current.as_element() {
 			mut needs_to_invalidate := false
 			if reason == .node_insert_before || reason == .node_remove {
-				needs_to_invalidate = element.affected_by_indirect_sibling_combinator
-					|| element.affected_by_first_child_pseudo_class
-					|| element.affected_by_forward_positional_pseudo_class
-					|| (element.affected_by_direct_sibling_combinator
-					&& current_sibling_distance <= element.sibling_invalidation_distance)
-			} else if element.affected_by_indirect_sibling_combinator
-				|| element.affected_by_forward_positional_pseudo_class {
+				needs_to_invalidate = element.affected_by_indirect_sibling_combinator || element.affected_by_first_child_pseudo_class || element.affected_by_forward_positional_pseudo_class || (element.affected_by_direct_sibling_combinator && current_sibling_distance <= element.sibling_invalidation_distance)
+			} else if element.affected_by_indirect_sibling_combinator || element.affected_by_forward_positional_pseudo_class {
 				needs_to_invalidate = true
-			} else if element.affected_by_direct_sibling_combinator
-				&& current_sibling_distance <= element.sibling_invalidation_distance {
+			} else if element.affected_by_direct_sibling_combinator && current_sibling_distance <= element.sibling_invalidation_distance {
 				needs_to_invalidate = true
 			}
 			if needs_to_invalidate {
@@ -1210,7 +1218,7 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 		}
 		sibling = current.next_sibling()
 	}
-	for ancestor := n.parent_or_shadow_host(); ancestor != none; {
+	for ancestor := n.parent_or_shadow_host(); ancestor != none;  {
 		mut current := unsafe { &Node(ancestor or { break }) }
 		current.child_needs_style_update_ = true
 		ancestor = current.parent_or_shadow_host()
@@ -1265,7 +1273,6 @@ pub fn (d CSSDisplay_) is_flow_inside() bool {
 
 // The following read the fields populated by the layout module (layout/dom_layout_bridge.v) when it
 // attaches the real layout tree onto the DOM; before attachment they return the empty/none defaults.
-
 pub fn (ln &LayoutNode) display() CSSDisplay_ {
 	return ln.display_
 }
@@ -1284,6 +1291,10 @@ pub fn (ln &LayoutNode) dom_node() ?&Node {
 
 pub fn (ln &LayoutNode) is_text_node() bool {
 	return ln.is_text_node_
+}
+
+pub fn (ln &LayoutNode) real_layout_handle() voidptr {
+	return ln.layout_handle
 }
 
 fn element_allows_accessible_name_from_content_stub(element &Element) bool {
@@ -1351,17 +1362,40 @@ fn aria_role_allows_name_from_content(role string) bool {
 	]
 }
 
-fn generated_content_text_stub(element &Element, pseudo_element PseudoElement) string {
-	_ = element
-	_ = pseudo_element
-	// Stub for CSS generated content serialization until pseudo computed content is ported.
-	return ''
+fn append_layout_rendered_text(node &LayoutNode, mut builder strings.Builder) {
+	if node.rendered_text_.len > 0 {
+		builder.write_string(node.rendered_text_)
+	}
+	for child in node.children_ {
+		append_layout_rendered_text(child, mut builder)
+	}
 }
 
-fn rendered_text_for_accessibility_stub(node &Node) ?string {
-	_ = node
-	// Stub for Layout::TextNode::text_for_rendering() until text layout nodes are ported.
-	return none
+fn append_generated_content_text(node &LayoutNode, pseudo_element PseudoElement, mut builder strings.Builder) {
+	if generated_for := node.generated_for_ {
+		if generated_for == pseudo_element {
+			append_layout_rendered_text(node, mut builder)
+			return
+		}
+	}
+	for child in node.children_ {
+		append_generated_content_text(child, pseudo_element, mut builder)
+	}
+}
+
+fn generated_content_text(element &Element, pseudo_element PseudoElement) string {
+	layout_node := element.as_node().layout_node() or { return '' }
+	mut builder := strings.new_builder(0)
+	append_generated_content_text(layout_node, pseudo_element, mut builder)
+	return builder.str()
+}
+
+fn rendered_text_for_accessibility(node &Node) ?string {
+	layout_node := node.layout_node() or { return none }
+	if !layout_node.is_text_node_ {
+		return none
+	}
+	return layout_node.rendered_text_
 }
 
 fn element_is_referenced_for_accessibility_stub(element &Element) bool {
@@ -1394,11 +1428,9 @@ pub fn (mut n Node) invalidate_style_with_properties(reason StyleInvalidationRea
 	shadow_style_scope := shadow_style_scope_for_node(&n)
 	mut properties_used_in_has_selectors := false
 	for property in properties {
-		properties_used_in_has_selectors = properties_used_in_has_selectors
-			|| doc.style_computer().invalidation_property_used_in_has_selector(property, style_scope)
+		properties_used_in_has_selectors = properties_used_in_has_selectors || doc.style_computer().invalidation_property_used_in_has_selector(property, style_scope)
 		if shadow_scope := shadow_style_scope {
-			properties_used_in_has_selectors = properties_used_in_has_selectors
-				|| doc.style_computer().invalidation_property_used_in_has_selector(property, shadow_scope)
+			properties_used_in_has_selectors = properties_used_in_has_selectors || doc.style_computer().invalidation_property_used_in_has_selector(property, shadow_scope)
 		}
 	}
 	if properties_used_in_has_selectors {
@@ -1419,8 +1451,7 @@ pub fn (mut n Node) invalidate_style_with_properties(reason StyleInvalidationRea
 		return
 	}
 	if shadow_scope := shadow_style_scope {
-		shadow_plan := doc.style_computer().invalidation_plan_for_properties(properties,
-			shadow_scope)
+		shadow_plan := doc.style_computer().invalidation_plan_for_properties(properties, shadow_scope)
 		invalidator.enqueue_invalidation_plan(&n, reason, *shadow_plan)
 	}
 }
@@ -1504,9 +1535,7 @@ pub fn (n &Node) ensure_pre_insertion_validity(realm voidptr, node &Node, child 
 		}
 	}
 	// FIXME: All the following "Invalid node type for insertion" messages could be more descriptive.
-	if !(node.is_document_fragment() || node.is_document_type() || node.is_element()
-		|| node.is_text() || node.is_comment() || node.node_type == .processing_instruction_node
-		|| node.is_cdata_section()) {
+	if !(node.is_document_fragment() || node.is_document_type() || node.is_element() || node.is_text() || node.is_comment() || node.node_type == .processing_instruction_node || node.is_cdata_section()) {
 		return error('HierarchyRequestError: Invalid node type for insertion')
 	}
 	if (node.is_text() && n.is_document()) || (node.is_document_type() && !n.is_document()) {
@@ -1520,19 +1549,15 @@ pub fn (n &Node) ensure_pre_insertion_validity(realm voidptr, node &Node, child 
 			if node_element_child_count > 1 || node_has_child_text(node) {
 				return error('HierarchyRequestError: Invalid node type for insertion')
 			}
-			if node_element_child_count == 1
-				&& (node_has_child_element(n) || node_child_is_document_type(child)
-				|| node_has_following_doctype(child)) {
+			if node_element_child_count == 1 && (node_has_child_element(n) || node_child_is_document_type(child) || node_has_following_doctype(child)) {
 				return error('HierarchyRequestError: Invalid node type for insertion')
 			}
 		} else if node.is_element() {
-			if node_has_child_element(n) || node_child_is_document_type(child)
-				|| node_has_following_doctype(child) {
+			if node_has_child_element(n) || node_child_is_document_type(child) || node_has_following_doctype(child) {
 				return error('HierarchyRequestError: Invalid node type for insertion')
 			}
 		} else if node.is_document_type() {
-			if node_has_child_document_type(n) || node_has_preceding_element(child)
-				|| (child == none && node_has_child_element(n)) {
+			if node_has_child_document_type(n) || node_has_preceding_element(child) || (child == none && node_has_child_element(n)) {
 				return error('HierarchyRequestError: Invalid node type for insertion')
 			}
 		}
@@ -1549,9 +1574,7 @@ fn (n &Node) ensure_replacement_validity(node &Node, child &Node) ! {
 	if child.parent_ != n {
 		return error('NotFoundError: This node is not the parent of the given child')
 	}
-	if !(node.is_document_fragment() || node.is_document_type() || node.is_element()
-		|| node.is_text() || node.is_comment() || node.node_type == .processing_instruction_node
-		|| node.is_cdata_section()) {
+	if !(node.is_document_fragment() || node.is_document_type() || node.is_element() || node.is_text() || node.is_comment() || node.node_type == .processing_instruction_node || node.is_cdata_section()) {
 		return error('HierarchyRequestError: Invalid node type for insertion')
 	}
 	if (node.is_text() && n.is_document()) || (node.is_document_type() && !n.is_document()) {
@@ -1563,8 +1586,7 @@ fn (n &Node) ensure_replacement_validity(node &Node, child &Node) ! {
 			if node_element_child_count > 1 || node_has_child_text(node) {
 				return error('HierarchyRequestError: Invalid node type for insertion')
 			}
-			if node_element_child_count == 1 && (node_first_child_element_is_not(n, child)
-				|| node_has_following_doctype(child)) {
+			if node_element_child_count == 1 && (node_first_child_element_is_not(n, child) || node_has_following_doctype(child)) {
 				return error('HierarchyRequestError: Invalid node type for insertion')
 			}
 		} else if node.is_element() {
@@ -1808,7 +1830,7 @@ pub fn (mut n Node) insert_before(node &Node, child ?&Node, suppress_observers b
 	}
 	n.children_changed(ChildrenChangedMetadata{
 		type_: .inserted
-		node:  node
+		node: node
 	})
 	// Let staticNodeList be a list of nodes, initially << >>. We collect before running post-connection steps, because
 	// those steps can modify the tree and make live traversal unsafe.
@@ -1832,8 +1854,7 @@ pub fn (mut n Node) insert_before(node &Node, child ?&Node, suppress_observers b
 			if layout_node.display().is_contents() {
 				if parent_element := n.parent_element() {
 					mut parent_node := unsafe { &Node(parent_element.as_node()) }
-					parent_node.set_needs_layout_tree_update(true,
-						.node_insert_before_with_display_contents)
+					parent_node.set_needs_layout_tree_update(true, .node_insert_before_with_display_contents)
 				}
 			}
 		}
@@ -1987,12 +2008,11 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 		return .@continue
 	})
 	// For each inclusive ancestor of parent, copy subtree observers into transient observers on the removed node.
-	for ancestor := ?&Node(parent); ancestor != none; {
+	for ancestor := ?&Node(parent); ancestor != none;  {
 		inclusive_ancestor := ancestor or { break }
 		for registered in inclusive_ancestor.registered_observer_list_ {
 			if registered.options().subtree {
-				transient_observer := TransientRegisteredObserver.create(registered.observer(),
-					registered.options(), registered)
+				transient_observer := TransientRegisteredObserver.create(registered.observer(), registered.options(), registered)
 				n.add_registered_observer(unsafe { &RegisteredObserver(transient_observer) })
 			}
 		}
@@ -2001,12 +2021,11 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 	if !suppress_observers {
 		mut removed := []&Node{}
 		removed << &n
-		mutable_parent.queue_tree_mutation_record([]&Node{}, removed, old_previous_sibling,
-			old_next_sibling)
+		mutable_parent.queue_tree_mutation_record([]&Node{}, removed, old_previous_sibling, old_next_sibling)
 	}
 	mutable_parent.children_changed(ChildrenChangedMetadata{
 		type_: .removal
-		node:  n
+		node: n
 	})
 	if doc != unsafe { nil } {
 		mut mutable_doc := unsafe { &Document(doc) }
@@ -2036,8 +2055,7 @@ pub fn (mut n Node) replace_child(node &Node, child &Node) !&Node {
 	} else {
 		nodes << node
 	}
-	if reference_child == none
-		|| (reference_child or { unsafe { nil } }.parent_ == n && child.parent() == none) {
+	if reference_child == none || (reference_child or { unsafe { nil } }.parent_ == n && child.parent() == none) {
 		n.insert_before(node, reference_child, true)
 	}
 	n.queue_tree_mutation_record(nodes, removed_nodes, previous_sibling, reference_child or {
@@ -2068,9 +2086,7 @@ pub fn (n &Node) clone_node(document ?&Document, subtree bool, parent ?&Node) !&
 				mut copy_element := copy.as_element() or {
 					return error('InvalidStateError: Element clone did not produce an element')
 				}
-				copy_element.attach_a_shadow_root(shadow_root.mode_(), true,
-					shadow_root.serializable(), shadow_root.delegates_focus(),
-					shadow_root.slot_assignment())!
+				copy_element.attach_a_shadow_root(shadow_root.mode_(), true, shadow_root.serializable(), shadow_root.delegates_focus(), shadow_root.slot_assignment())!
 				mut copy_shadow_root := copy_element.shadow_root() or {
 					return error('InvalidStateError: Cloned shadow root was not attached')
 				}
@@ -2105,8 +2121,7 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 		return error('HierarchyRequestError: Invalid node type for insertion')
 	}
 	if new_parent.is_document() && n.is_element() {
-		if node_has_child_element(&new_parent) || node_child_is_document_type(child)
-			|| node_has_following_doctype(child) {
+		if node_has_child_element(&new_parent) || node_child_is_document_type(child) || node_has_following_doctype(child) {
 			return error('HierarchyRequestError: Invalid node type for insertion')
 		}
 	}
@@ -2183,8 +2198,7 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 	})
 	mut removed_from_old_parent := []&Node{}
 	removed_from_old_parent << &n
-	mutable_old_parent.queue_tree_mutation_record([]&Node{}, removed_from_old_parent,
-		old_previous_sibling, old_next_sibling)
+	mutable_old_parent.queue_tree_mutation_record([]&Node{}, removed_from_old_parent, old_previous_sibling, old_next_sibling)
 	mut added_to_new_parent := []&Node{}
 	added_to_new_parent << &n
 	new_parent.queue_tree_mutation_record(added_to_new_parent, []&Node{}, new_previous_sibling, child or {
@@ -2202,15 +2216,14 @@ pub fn (n &Node) clone_single_node(document &Document) !&Node {
 	mut copy := unsafe { &Node(nil) }
 	if element := n.as_element() {
 		// 2. If node is an element, create an element with the same local name, namespace, prefix, and is value.
-		mut element_copy := create_element(document, element.local_name(), element.namespace_uri(),
-			element.prefix(), element.is_value, false)!
+		mut element_copy := create_element(document, element.local_name(), element.namespace_uri(), element.prefix(), element.is_value, false)!
 		if attrs := element.attributes_ {
 			for attr in attrs.attrs {
 				element_copy.append_attribute(&Attr_{
-					name_:          attr.name_
-					value_:         attr.value_
-					local_name_:    attr.local_name_
-					prefix__:       attr.prefix__
+					name_: attr.name_
+					value_: attr.value_
+					local_name_: attr.local_name_
+					prefix__: attr.prefix__
 					namespace_uri_: attr.namespace_uri_
 				})
 			}
@@ -2250,8 +2263,7 @@ pub fn (n &Node) clone_single_node(document &Document) !&Node {
 		}
 		copy = Comment.new(document, data.data_).as_node()
 	} else if processing_instruction := n.as_processing_instruction() {
-		copy = ProcessingInstruction.new(document, processing_instruction.data(),
-			processing_instruction.target()).as_node()
+		copy = ProcessingInstruction.new(document, processing_instruction.data(), processing_instruction.target()).as_node()
 	} else if n.is_document_fragment() {
 		copy = DocumentFragment.new(document).as_node()
 	} else {
@@ -2404,7 +2416,7 @@ pub fn (n &Node) editing_host() ?&Node {
 	}
 	// or the nearest ancestor of node that is an editing host, if node is editable.
 	if n.is_editable() {
-		for ancestor := n.parent(); ancestor != none; {
+		for ancestor := n.parent(); ancestor != none;  {
 			current := ancestor or { break }
 			if current.is_editing_host() {
 				return current
@@ -2460,7 +2472,7 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 		}
 	}
 	if n.needs_layout_tree_update {
-		for ancestor := n.flat_tree_parent(); ancestor != none; {
+		for ancestor := n.flat_tree_parent(); ancestor != none;  {
 			mut current := unsafe { &Node(ancestor or { break }) }
 			if current.child_needs_layout_tree_update {
 				break
@@ -2528,7 +2540,7 @@ pub fn (mut n Node) set_needs_style_update(value bool) {
 	}
 	n.needs_style_update_ = value
 	if n.needs_style_update_ {
-		for ancestor := n.parent_or_shadow_host(); ancestor != none; {
+		for ancestor := n.parent_or_shadow_host(); ancestor != none;  {
 			mut current := unsafe { &Node(ancestor or { break }) }
 			if current.child_needs_style_update_ {
 				break
@@ -2644,7 +2656,7 @@ pub fn (n &Node) flat_tree_parent() ?&Node {
 }
 
 pub fn (n &Node) flat_tree_parent_element() ?&Element {
-	for parent := n.flat_tree_parent(); parent != none; {
+	for parent := n.flat_tree_parent(); parent != none;  {
 		current := parent or { break }
 		if element := current.as_element() {
 			return element
@@ -2661,9 +2673,9 @@ pub fn (n &Node) as_slottable() &Node {
 pub fn (mut n Node) child_nodes() &NodeList {
 	if n.child_nodes_ == unsafe { nil } {
 		n.child_nodes_ = &NodeList{
-			node_root:   n
-			is_live:     true
-			live_scope:  .children
+			node_root: n
+			is_live: true
+			live_scope: .children
 			live_filter: always_accept_node
 		}
 	}
@@ -2713,13 +2725,13 @@ pub fn (n &Node) compare_document_position(other ?&Node) u16 {
 		return document_position_disconnected | document_position_implementation_specific | document_position_following
 	}
 	mut node1_ancestors := []&Node{}
-	for current := ?&Node(node1); current != none; {
+	for current := ?&Node(node1); current != none;  {
 		node := current or { break }
 		node1_ancestors << node
 		current = node.parent()
 	}
 	mut node2_ancestors := []&Node{}
-	for current := ?&Node(node2); current != none; {
+	for current := ?&Node(node2); current != none;  {
 		node := current or { break }
 		node2_ancestors << node
 		current = node.parent()
@@ -2730,7 +2742,7 @@ pub fn (n &Node) compare_document_position(other ?&Node) u16 {
 		ancestor1 := node1_ancestors[i]
 		ancestor2 := node2_ancestors[j]
 		if ancestor1 != ancestor2 {
-			for sibling := ?&Node(ancestor1); sibling != none; {
+			for sibling := ?&Node(ancestor1); sibling != none;  {
 				node := sibling or { break }
 				if node == ancestor2 {
 					return document_position_preceding
@@ -2994,8 +3006,7 @@ pub fn (n &Node) serialize_fragment(require_well_formed RequireWellFormed, fragm
 
 	// 2. If context document is an HTML document, return the result of HTML fragment serialization algorithm with node, false, and << >>.
 	if context_document != unsafe { nil } && context_document.is_html_document() {
-		return html_parser_serialize_html_fragment(n, .no, []&ShadowRoot{},
-			fragment_serialization_mode)
+		return html_parser_serialize_html_fragment(n, .no, []&ShadowRoot{}, fragment_serialization_mode)
 	}
 
 	// 3. Return the XML serialization of node given require well-formed.
@@ -3058,23 +3069,17 @@ pub fn (n &Node) is_equal_node(other_node ?&Node) bool {
 	// The following are equal, switching on the interface A implements:
 	if document_type := n.as_document_type() {
 		other_document_type := other.as_document_type() or { return false }
-		if document_type.name() != other_document_type.name()
-			|| document_type.public_id() != other_document_type.public_id()
-			|| document_type.system_id() != other_document_type.system_id() {
+		if document_type.name() != other_document_type.name() || document_type.public_id() != other_document_type.public_id() || document_type.system_id() != other_document_type.system_id() {
 			return false
 		}
 	} else if element := n.as_element() {
 		other_element := other.as_element() or { return false }
-		if !option_string_equal(element.namespace_uri(), other_element.namespace_uri())
-			|| !option_string_equal(element.prefix(), other_element.prefix())
-			|| element.local_name() != other_element.local_name()
-			|| element.attribute_list_size() != other_element.attribute_list_size() {
+		if !option_string_equal(element.namespace_uri(), other_element.namespace_uri()) || !option_string_equal(element.prefix(), other_element.prefix()) || element.local_name() != other_element.local_name() || element.attribute_list_size() != other_element.attribute_list_size() {
 			return false
 		}
 		if attrs := element.attributes_ {
 			for attribute in attrs.attrs {
-				other_attribute := other_element.get_attribute_node_ns(attribute.namespace_uri_,
-					attribute.local_name_) or { return false }
+				other_attribute := other_element.get_attribute_node_ns(attribute.namespace_uri_, attribute.local_name_) or { return false }
 				if other_attribute.value() != attribute.value() {
 					return false
 				}
@@ -3087,14 +3092,12 @@ pub fn (n &Node) is_equal_node(other_node ?&Node) bool {
 		}
 	} else if attr := n.as_attr() {
 		other_attr := other.as_attr() or { return false }
-		if !option_string_equal(attr.namespace_uri(), other_attr.namespace_uri())
-			|| attr.local_name() != other_attr.local_name() || attr.value() != other_attr.value() {
+		if !option_string_equal(attr.namespace_uri(), other_attr.namespace_uri()) || attr.local_name() != other_attr.local_name() || attr.value() != other_attr.value() {
 			return false
 		}
 	} else if processing_instruction := n.as_processing_instruction() {
 		other_processing_instruction := other.as_processing_instruction() or { return false }
-		if processing_instruction.target() != other_processing_instruction.target()
-			|| processing_instruction.data() != other_processing_instruction.data() {
+		if processing_instruction.target() != other_processing_instruction.target() || processing_instruction.data() != other_processing_instruction.data() {
 			return false
 		}
 	}
@@ -3194,8 +3197,7 @@ pub fn (n &Node) locate_a_namespace(prefix ?string) ?string {
 			for attr in attrs.attrs {
 				if attr.namespace_uri_ or { '' } == namespace_xmlns_uri {
 					if (attr.prefix__ or { '' }) == 'xmlns' && prefix != none && attr.local_name_ == prefix or {
-						''
-					} {
+						''} {
 						if attr.value().len > 0 {
 							return attr.value()
 						}
@@ -3296,12 +3298,12 @@ pub fn (n &Node) is_default_namespace(namespace_ ?string) bool {
 
 pub fn (n &Node) is_inert() bool {
 	if element := n.as_element() {
-		if element.has_attribute('inert') {
+		if element.has_attribute('inert') || (element.is_html_element() && unsafe { &HTMLElement(element) }.inert()) {
 			return true
 		}
 	}
 	if enclosing := n.enclosing_html_element() {
-		return enclosing.has_attribute('inert')
+		return enclosing.inert() || enclosing.has_attribute('inert')
 	}
 	return false
 }
@@ -3505,9 +3507,7 @@ pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?st
 	for i, observer in interested_observers {
 		// 1. Let record be a new MutationRecord object with its type set to type, target set to target, attributeName set to name, attributeNamespace set to namespace, oldValue set to mappedOldValue,
 		//    addedNodes set to addedNodes, removedNodes set to removedNodes, previousSibling set to previousSibling, and nextSibling set to nextSibling.
-		record := MutationRecord.create(mutation_type_to_string(type_), target, added_nodes,
-			removed_nodes, previous_sibling, next_sibling, attribute_name, attribute_namespace,
-			mapped_old_values[i])
+		record := MutationRecord.create(mutation_type_to_string(type_), target, added_nodes, removed_nodes, previous_sibling, next_sibling, attribute_name, attribute_namespace, mapped_old_values[i])
 
 		// 2. Enqueue record to observer's record queue.
 		mut mutable_observer := unsafe { &MutationObserver(observer) }
@@ -3532,8 +3532,7 @@ pub fn (mut n Node) queue_tree_mutation_record(added_nodes []&Node, removed_node
 		return
 	}
 	// 2. Queue a mutation record of "childList" for target with null, null, null, addedNodes, removedNodes, previousSibling, and nextSibling.
-	n.queue_mutation_record(.child_list, none, none, none, added_nodes, removed_nodes,
-		previous_sibling, next_sibling)
+	n.queue_mutation_record(.child_list, none, none, none, added_nodes, removed_nodes, previous_sibling, next_sibling)
 }
 
 pub fn (mut n Node) append_child_impl(node &Node) {
@@ -3586,8 +3585,11 @@ pub fn (mut n Node) children_changed(metadata ChildrenChangedMetadata) {
 }
 
 pub fn (n &Node) cloned(copy &Node, subtree bool) ! {
-	_ = copy
-	_ = subtree
+	if element := n.as_element() {
+		if element.is_html_element() && element.local_name() == 'template' {
+			html_template_element_cloned(unsafe { &HTMLTemplateElement(element) }, copy, subtree)!
+		}
+	}
 }
 
 pub fn (n &Node) build_accessibility_tree(mut parent AccessibilityTreeNode) {
@@ -3677,8 +3679,7 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 					if visited_nodes[referenced_node.unique_id()] {
 						continue
 					}
-					result := referenced_node.name_or_description(target, document, mut
-						visited_nodes, .no, should_compute_role)!
+					result := referenced_node.name_or_description(target, document, mut visited_nodes, .no, should_compute_role)!
 					append_accessible_text(mut accumulated_text, result)
 				}
 				if accumulated_text.str().trim_space().len == 0 && target == .name {
@@ -3755,10 +3756,9 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 		// F. Name From Content: Otherwise, if the current node's role allows name from content, or if the current node
 		//    is referenced by aria-labelledby, aria-describedby, or is a native host language text alternative element
 		//    (e.g. label in HTML), or is a descendant of a native host language text alternative element:
-		if element_allows_accessible_name_from_content_stub(element)
-			|| element_is_referenced_for_accessibility_stub(element) || is_descendant == .yes {
+		if element_allows_accessible_name_from_content_stub(element) || element_is_referenced_for_accessibility_stub(element) || is_descendant == .yes {
 			mut accumulated_text := strings.new_builder(0)
-			accumulated_text.write_string(generated_content_text_stub(element, .before))
+			accumulated_text.write_string(generated_content_text(element, .before))
 			mut child_nodes := n.children.clone()
 			if element.is_shadow_host() {
 				if shadow_root := element.shadow_root() {
@@ -3788,15 +3788,14 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 				if visited_nodes[child_node.unique_id()] {
 					continue
 				}
-				result := child_node.name_or_description(target, document, mut visited_nodes, .yes,
-					should_compute_role)!
+				result := child_node.name_or_description(target, document, mut visited_nodes, .yes, should_compute_role)!
 				if should_add_space {
 					append_accessible_text(mut accumulated_text, result)
 				} else {
 					accumulated_text.write_string(result)
 				}
 			}
-			accumulated_text.write_string(generated_content_text_stub(element, .after))
+			accumulated_text.write_string(generated_content_text(element, .after))
 			if accumulated_text.len > 0 {
 				return accumulated_text.str()
 			}
@@ -3806,13 +3805,11 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 	// G. Text Node: Otherwise, if the current node is a Text Node, return its textual contents.
 	if n.is_text() {
 		if parent_element := n.parent_element() {
-			if !element_is_referenced_for_accessibility_stub(parent_element)
-				&& parent_element.is_hidden() && parent_element.has_hidden_ancestor()
-				&& !element_has_referenced_and_hidden_ancestor_stub(parent_element) {
+			if !element_is_referenced_for_accessibility_stub(parent_element) && parent_element.is_hidden() && parent_element.has_hidden_ancestor() && !element_has_referenced_and_hidden_ancestor_stub(parent_element) {
 				return ''
 			}
 		}
-		if text := rendered_text_for_accessibility_stub(n) {
+		if text := rendered_text_for_accessibility(n) {
 			return text
 		}
 		return n.text_content() or { '' }
@@ -3850,8 +3847,7 @@ pub fn (n &Node) accessible_description(document &Document) !string {
 	mut builder := strings.new_builder(0)
 	for id in described_by.fields() {
 		description_element := document.get_element_by_id(id) or { continue }
-		description := description_element.as_node().name_or_description(.description, document, mut
-			visited_nodes, .no, .yes)!
+		description := description_element.as_node().name_or_description(.description, document, mut visited_nodes, .no, .yes)!
 		append_accessible_text(mut builder, description)
 	}
 	return builder.str()
@@ -3871,7 +3867,7 @@ pub fn (mut n Node) add_registered_observer(registered_observer &RegisteredObser
 }
 
 pub fn (n &Node) has_inclusive_ancestor_with_display_none() bool {
-	for ancestor := ?&Node(n); ancestor != none; {
+	for ancestor := ?&Node(n); ancestor != none;  {
 		current := ancestor or { break }
 		if element := current.as_element() {
 			if props := element.el_computed_properties() {
@@ -3886,7 +3882,7 @@ pub fn (n &Node) has_inclusive_ancestor_with_display_none() bool {
 }
 
 pub fn (n &Node) has_inclusive_ancestor_with_event_listener(type_ string) bool {
-	for ancestor := ?&Node(n); ancestor != none; {
+	for ancestor := ?&Node(n); ancestor != none;  {
 		current := ancestor or { break }
 		if current.has_event_listener(type_) {
 			return true
@@ -3989,8 +3985,7 @@ pub fn (n &Node) parent_element() ?&Element {
 
 pub fn (n &Node) is_link_element() bool {
 	if element := n.as_element() {
-		return (element.local_name() == 'a' || element.local_name() == 'area')
-			&& element.has_attribute('href')
+		return (element.local_name() == 'a' || element.local_name() == 'area') && element.has_attribute('href')
 	}
 	return false
 }
@@ -4010,7 +4005,7 @@ pub fn (n &Node) in_editable_subtree() bool {
 	return n.in_editable_subtree_
 }
 
-pub fn (n &Node) for_each_child(callback fn (&Node) TraversalDecision) TraversalDecision {
+pub fn (n &Node) for_each_child(callback fn(&Node) TraversalDecision) TraversalDecision {
 	for child in n.children {
 		if callback(child) == .@break {
 			return .@break
@@ -4019,7 +4014,7 @@ pub fn (n &Node) for_each_child(callback fn (&Node) TraversalDecision) Traversal
 	return .@continue
 }
 
-pub fn (n &Node) for_each_in_subtree(callback fn (&Node) TraversalDecision) TraversalDecision {
+pub fn (n &Node) for_each_in_subtree(callback fn(&Node) TraversalDecision) TraversalDecision {
 	for child in n.children {
 		decision := callback(child)
 		if decision == .@break {
@@ -4035,7 +4030,7 @@ pub fn (n &Node) for_each_in_subtree(callback fn (&Node) TraversalDecision) Trav
 	return .@continue
 }
 
-pub fn (n &Node) for_each_in_inclusive_subtree(callback fn (&Node) TraversalDecision) TraversalDecision {
+pub fn (n &Node) for_each_in_inclusive_subtree(callback fn(&Node) TraversalDecision) TraversalDecision {
 	decision := callback(n)
 	if decision == .@break {
 		return .@break
@@ -4047,7 +4042,7 @@ pub fn (n &Node) for_each_in_inclusive_subtree(callback fn (&Node) TraversalDeci
 }
 
 // https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-descendant
-pub fn (n &Node) for_each_shadow_including_inclusive_descendant(callback fn (&Node) TraversalDecision) TraversalDecision {
+pub fn (n &Node) for_each_shadow_including_inclusive_descendant(callback fn(&Node) TraversalDecision) TraversalDecision {
 	decision := callback(n)
 	if decision == .@break {
 		return .@break
@@ -4059,7 +4054,7 @@ pub fn (n &Node) for_each_shadow_including_inclusive_descendant(callback fn (&No
 }
 
 // https://dom.spec.whatwg.org/#concept-shadow-including-descendant
-pub fn (n &Node) for_each_shadow_including_descendant(callback fn (&Node) TraversalDecision) TraversalDecision {
+pub fn (n &Node) for_each_shadow_including_descendant(callback fn(&Node) TraversalDecision) TraversalDecision {
 	if element := n.as_element() {
 		if shadow_root := element.shadow_root() {
 			shadow_root_node := unsafe { &Node(shadow_root) }
@@ -4114,9 +4109,9 @@ pub fn (n &Node) as_processing_instruction() ?&ProcessingInstruction {
 pub fn new_text_node(document &Document, data string) &Text {
 	return assign_unique_node_id(&Text{
 		CharacterData: CharacterData{
-			Node:  Node{
-				node_type:  .text_node
-				document_:  document
+			Node: Node{
+				node_type: .text_node
+				document_: document
 				unique_id_: UniqueNodeID(0)
 			}
 			data_: data
@@ -4128,8 +4123,8 @@ pub fn new_document_fragment(document &Document) &DocumentFragment {
 	return assign_unique_node_id(&DocumentFragment{
 		ParentNode: ParentNode{
 			Node: Node{
-				node_type:  .document_fragment_node
-				document_:  document
+				node_type: .document_fragment_node
+				document_: document
 				unique_id_: UniqueNodeID(0)
 			}
 		}
@@ -4316,8 +4311,7 @@ pub fn (mut ss StyleScope) schedule_ancestors_style_invalidation_due_to_presence
 }
 
 pub fn (sc &StyleComputer) invalidation_property_used_in_has_selector(property InvalidationProperty, style_scope &StyleScope) bool {
-	if sc.invalidation_property_used_in_has_callback != unsafe { nil }
-		&& sc.css_handle != unsafe { nil } {
+	if sc.invalidation_property_used_in_has_callback != unsafe { nil } && sc.css_handle != unsafe { nil } {
 		return sc.invalidation_property_used_in_has_callback(sc.css_handle, property, style_scope)
 	}
 	return false

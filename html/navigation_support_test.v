@@ -91,4 +91,7 @@ fn test_session_history_traversal_queue_extracts_sync_entry() {
 	]) or { panic('missing entry') }
 	assert voidptr(entry.target_navigable?) == voidptr(second)
 	assert queue.queue.len == 1
+	created := SessionHistoryTraversalQueueEntry.create(navigation_test_first_steps, first)
+	assert created.target_navigable? == first
+	assert created.execute_steps() == navigation_test_first_promise
 }

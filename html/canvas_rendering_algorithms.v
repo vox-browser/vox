@@ -1,0 +1,792 @@
+// Copyright (c) 2020-2026, Ladybird contributors
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Concrete translations of CanvasRenderingContext2D.cpp and the corresponding
+// OffscreenCanvasRenderingContext2D entry points. The backing painter in this
+// port is the RGBA bitmap owned by OffscreenCanvas.
+module html
+
+import css
+import dom
+import math
+
+pub struct CanvasFloatRect {
+pub:
+	x      f64
+	y      f64
+	width  f64
+	height f64
+}
+
+pub struct PreparedCanvasText {
+pub:
+	text         string
+	physical_x   f64
+	physical_y   f64
+	bounding_box CanvasFloatRect
+	font_size    f64
+}
+
+fn resolved_letter_spacing(drawing_state DrawingState) f64 {
+	return drawing_state.letter_spacing_px
+}
+
+// The compact bitmap renderer uses the binding enums as its native cap and join values.
+fn to_gfx_cap(cap_style CanvasLineCap) CanvasLineCap {
+	return cap_style
+}
+
+fn to_gfx_join(join_style CanvasLineJoin) CanvasLineJoin {
+	return join_style
+}
+
+fn parse_fill_rule(fill_rule string) string {
+	return if fill_rule == 'evenodd' { 'evenodd' } else { 'nonzero' }
+}
+
+// This follows the current upstream implementation: all represented sources are
+// treated as origin-clean until their CORS state is wired into the image models.
+pub fn image_is_not_origin_clean(_ CanvasImageSource) bool {
+	return false
+}
+
+fn canvas_path_polygons(path CanvasGfxPath) [][]FloatPoint {
+	mut polygons := [][]FloatPoint{}
+	mut points := []FloatPoint{}
+	mut current := FloatPoint{}
+	mut subpath_start := FloatPoint{}
+	for segment in path.segments() {
+		match segment.kind {
+			.move_to {
+				if points.len > 0 {
+					polygons << points
+				}
+				points = [segment.point]
+				current = segment.point
+				subpath_start = segment.point
+			}
+			.line_to {
+				if points.len == 0 {
+					points << current
+				}
+				points << segment.point
+				current = segment.point
+			}
+			.quadratic_bezier_curve_to {
+				start := current
+				for step := 1; step <= 24; step++ {
+					t := f64(step) / 24.0
+					one_minus_t := 1.0 - t
+					points << FloatPoint{
+						x: one_minus_t * one_minus_t * start.x + 2.0 * one_minus_t * t * segment.control_point_0.x + t * t * segment.point.x
+						y: one_minus_t * one_minus_t * start.y + 2.0 * one_minus_t * t * segment.control_point_0.y + t * t * segment.point.y
+					}
+				}
+				current = segment.point
+			}
+			.cubic_bezier_curve_to {
+				start := current
+				for step := 1; step <= 32; step++ {
+					t := f64(step) / 32.0
+					u := 1.0 - t
+					points << FloatPoint{
+						x: u * u * u * start.x + 3.0 * u * u * t * segment.control_point_0.x + 3.0 * u * t * t * segment.control_point_1.x + t * t * t * segment.point.x
+						y: u * u * u * start.y + 3.0 * u * u * t * segment.control_point_0.y + 3.0 * u * t * t * segment.control_point_1.y + t * t * t * segment.point.y
+					}
+				}
+				current = segment.point
+			}
+			.elliptical_arc_to {
+				// CanvasGfxPath stores the endpoint form used by Gfx::Path. The
+				// raster boundary conservatively retains the chord; the exact arc
+				// remains in the path model for a platform painter.
+				points << segment.point
+				current = segment.point
+			}
+			.close_path {
+				if points.len > 0 && points.last() != subpath_start {
+					points << subpath_start
+				}
+				current = subpath_start
+			}
+		}
+	}
+	if points.len > 0 {
+		polygons << points
+	}
+	return polygons
+}
+
+fn canvas_path_bounds(path CanvasGfxPath) ?CanvasFloatRect {
+	polygons := canvas_path_polygons(path)
+	mut has_point := false
+	mut min_x := 0.0
+	mut min_y := 0.0
+	mut max_x := 0.0
+	mut max_y := 0.0
+	for polygon in polygons {
+		for point in polygon {
+			if !has_point {
+				min_x, max_x = point.x, point.x
+				min_y, max_y = point.y, point.y
+				has_point = true
+			} else {
+				min_x = math.min(min_x, point.x)
+				min_y = math.min(min_y, point.y)
+				max_x = math.max(max_x, point.x)
+				max_y = math.max(max_y, point.y)
+			}
+		}
+	}
+	if !has_point {
+		return none
+	}
+	return CanvasFloatRect{min_x, min_y, max_x - min_x, max_y - min_y}
+}
+
+fn canvas_point_in_polygon(points []FloatPoint, point FloatPoint) bool {
+	if points.len < 3 {
+		return false
+	}
+	mut inside := false
+	mut previous := points[points.len - 1]
+	for current in points {
+		if (current.y > point.y) != (previous.y > point.y) {
+			intersection_x := (previous.x - current.x) * (point.y - current.y) / (previous.y - current.y) + current.x
+			if point.x < intersection_x {
+				inside = !inside
+			}
+		}
+		previous = current
+	}
+	return inside
+}
+
+fn canvas_winding_number(points []FloatPoint, point FloatPoint) int {
+	if points.len < 3 {
+		return 0
+	}
+	mut winding_number := 0
+	mut previous := points[points.len - 1]
+	for current in points {
+		cross_product := (current.x - previous.x) * (point.y - previous.y) - (point.x - previous.x) * (current.y - previous.y)
+		if previous.y <= point.y {
+			if current.y > point.y && cross_product > 0 {
+				winding_number++
+			}
+		} else if current.y <= point.y && cross_product < 0 {
+			winding_number--
+		}
+		previous = current
+	}
+	return winding_number
+}
+
+fn canvas_point_in_path_internal(path CanvasGfxPath, transform CanvasAffineTransform, x f64, y f64, fill_rule string) bool {
+	mut point := FloatPoint{x, y}
+	if inverse := transform.inverse() {
+		point = inverse.map(point)
+	}
+	polygons := canvas_path_polygons(path)
+	if fill_rule == 'evenodd' {
+		mut matches := 0
+		for polygon in polygons {
+			if canvas_point_in_polygon(polygon, point) {
+				matches++
+			}
+		}
+		return matches % 2 == 1
+	}
+	mut winding_number := 0
+	for polygon in polygons {
+		winding_number += canvas_winding_number(polygon, point)
+	}
+	return winding_number != 0
+}
+
+fn canvas_point_is_inside_clip(state DrawingState, point FloatPoint) bool {
+	for clip_path in state.clip_paths {
+		if !canvas_point_in_path_internal(clip_path.path, CanvasAffineTransform{}, point.x, point.y, clip_path.fill_rule) {
+			return false
+		}
+	}
+	return true
+}
+
+fn canvas_composite_operation_to_string(operation CompositingAndBlendingOperator) string {
+	return match operation {
+		.source_over { 'source-over' }
+		.source_in { 'source-in' }
+		.source_out { 'source-out' }
+		.source_atop { 'source-atop' }
+		.destination_over { 'destination-over' }
+		.destination_in { 'destination-in' }
+		.destination_out { 'destination-out' }
+		.destination_atop { 'destination-atop' }
+		.lighter { 'lighter' }
+		.copy { 'copy' }
+		.xor { 'xor' }
+		.multiply { 'multiply' }
+		.screen { 'screen' }
+		.overlay { 'overlay' }
+		.darken { 'darken' }
+		.lighten { 'lighten' }
+		.color_dodge { 'color-dodge' }
+		.color_burn { 'color-burn' }
+		.hard_light { 'hard-light' }
+		.soft_light { 'soft-light' }
+		.difference { 'difference' }
+		.exclusion { 'exclusion' }
+		.hue { 'hue' }
+		.saturation { 'saturation' }
+		.color { 'color' }
+		.luminosity { 'luminosity' }
+		.plus_darker { 'plus-darker' }
+		.plus_lighter { 'plus-lighter' }
+	}
+}
+
+fn canvas_composite_operation_from_string(value string) ?CompositingAndBlendingOperator {
+	return match value {
+		'normal', 'source-over' { .source_over }
+		'source-in' { .source_in }
+		'source-out' { .source_out }
+		'source-atop' { .source_atop }
+		'destination-over' { .destination_over }
+		'destination-in' { .destination_in }
+		'destination-out' { .destination_out }
+		'destination-atop' { .destination_atop }
+		'lighter' { .lighter }
+		'copy' { .copy }
+		'xor' { .xor }
+		'multiply' { .multiply }
+		'screen' { .screen }
+		'overlay' { .overlay }
+		'darken' { .darken }
+		'lighten' { .lighten }
+		'color-dodge' { .color_dodge }
+		'color-burn' { .color_burn }
+		'hard-light' { .hard_light }
+		'soft-light' { .soft_light }
+		'difference' { .difference }
+		'exclusion' { .exclusion }
+		'hue' { .hue }
+		'saturation' { .saturation }
+		'color' { .color }
+		'luminosity' { .luminosity }
+		'plus-darker' { .plus_darker }
+		'plus-lighter' { .plus_lighter }
+		else { none }
+	}
+}
+
+fn canvas_color_to_string(color dom.Color) string {
+	if color.a == 255 {
+		return '#${color.r:02x}${color.g:02x}${color.b:02x}'
+	}
+	return 'rgba(${color.r}, ${color.g}, ${color.b}, ${f64(color.a) / 255.0})'
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) canvas_element() &OffscreenCanvas {
+	return context.canvas_
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) painter() ?&dom.ImmutableBitmap_ {
+	return context.canvas_.bitmap()
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) global_composite_operation() string {
+	return canvas_composite_operation_to_string(context.drawing_state.current_compositing_and_blending_operator)
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) set_global_composite_operation(value string) {
+	operation := canvas_composite_operation_from_string(value) or { return }
+	context.drawing_state.current_compositing_and_blending_operator = operation
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) shadow_color() string {
+	return canvas_color_to_string(context.drawing_state.shadow_color)
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) set_shadow_color(value string) {
+	color := css.parse_color_string(value) or { return }
+	context.drawing_state.shadow_color = dom.Color{color.r, color.g, color.b, color.a}
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) filter() string {
+	return context.drawing_state.filter_string or { 'none' }
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) set_filter(value string) {
+	if value == 'none' {
+		context.drawing_state.filter_string = none
+		return
+	}
+	parsed := css.parse_css_value_logic(.filter, value) or { return }
+	if parsed is css.FilterValueListStyleValue {
+		context.drawing_state.filter_string = value
+	}
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) rect_path(x f64, y f64, width f64, height f64) CanvasGfxPath {
+	mut path := CanvasGfxPath{}
+	path.move_to(FloatPoint{x, y})
+	path.line_to(FloatPoint{x + width, y})
+	path.line_to(FloatPoint{x + width, y + height})
+	path.line_to(FloatPoint{x, y + height})
+	path.close()
+	return path
+}
+
+fn (mut context OffscreenCanvasRenderingContext2D) paint_path_fill(path CanvasGfxPath, color dom.Color, fill_rule string) {
+	bitmap := context.canvas_.bitmap() or { return }
+	transformed_path := path.copy_transformed(context.drawing_state.transform)
+	bounds := canvas_path_bounds(transformed_path) or { return }
+	mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+	left := int(math.max(0.0, math.floor(bounds.x)))
+	top := int(math.max(0.0, math.floor(bounds.y)))
+	right := int(math.min(f64(bitmap.width), math.ceil(bounds.x + bounds.width)))
+	bottom := int(math.min(f64(bitmap.height), math.ceil(bounds.y + bounds.height)))
+	for y := top; y < bottom; y++ {
+		for x := left; x < right; x++ {
+			point := FloatPoint{f64(x) + 0.5, f64(y) + 0.5}
+			if canvas_point_is_inside_clip(context.drawing_state, point) && canvas_point_in_path_internal(transformed_path, CanvasAffineTransform{}, point.x, point.y, fill_rule) {
+				canvas_composite_pixel(mut mutable_bitmap.data, y * mutable_bitmap.pitch + x * 4, color, context.drawing_state.global_alpha, context.drawing_state.current_compositing_and_blending_operator)
+			}
+		}
+	}
+}
+
+fn canvas_distance_to_segment(point FloatPoint, start FloatPoint, end FloatPoint) f64 {
+	dx := end.x - start.x
+	dy := end.y - start.y
+	if dx == 0 && dy == 0 {
+		return math.sqrt((point.x - start.x) * (point.x - start.x) + (point.y - start.y) * (point.y - start.y))
+	}
+	t := math.max(0.0, math.min(1.0, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)))
+	nearest := FloatPoint{start.x + t * dx, start.y + t * dy}
+	return math.sqrt((point.x - nearest.x) * (point.x - nearest.x) + (point.y - nearest.y) * (point.y - nearest.y))
+}
+
+fn (mut context OffscreenCanvasRenderingContext2D) paint_path_stroke(path CanvasGfxPath, color dom.Color) {
+	bitmap := context.canvas_.bitmap() or { return }
+	mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+	half_width := context.drawing_state.line_width / 2.0
+	if half_width <= 0 {
+		return
+	}
+	for polygon in canvas_path_polygons(path) {
+		for index := 1; index < polygon.len; index++ {
+			start := context.drawing_state.transform.map(polygon[index - 1])
+			end := context.drawing_state.transform.map(polygon[index])
+			left := int(math.max(0.0, math.floor(math.min(start.x, end.x) - half_width)))
+			top := int(math.max(0.0, math.floor(math.min(start.y, end.y) - half_width)))
+			right := int(math.min(f64(bitmap.width), math.ceil(math.max(start.x, end.x) + half_width)))
+			bottom := int(math.min(f64(bitmap.height), math.ceil(math.max(start.y, end.y) + half_width)))
+			for y := top; y < bottom; y++ {
+				for x := left; x < right; x++ {
+					point := FloatPoint{f64(x) + 0.5, f64(y) + 0.5}
+					if canvas_point_is_inside_clip(context.drawing_state, point) && canvas_distance_to_segment(point, start, end) <= half_width {
+						canvas_composite_pixel(mut mutable_bitmap.data, y * mutable_bitmap.pitch + x * 4, color, context.drawing_state.global_alpha, context.drawing_state.current_compositing_and_blending_operator)
+					}
+				}
+			}
+		}
+	}
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) fill_internal(path CanvasGfxPath, fill_rule string) {
+	context.paint_shadow_for_fill_internal(path, fill_rule)
+	context.paint_path_fill(path, context.drawing_state.fill_style.to_color_but_fixme_should_accept_any_paint_style(), fill_rule)
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) stroke_internal(path CanvasGfxPath) {
+	context.paint_shadow_for_stroke_internal(path)
+	context.paint_path_stroke(path, context.drawing_state.stroke_style.to_color_but_fixme_should_accept_any_paint_style())
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) paint_shadow_for_fill_internal(path CanvasGfxPath, fill_rule string) {
+	state := context.drawing_state
+	if (state.shadow_blur == 0 && state.shadow_offset_x == 0 && state.shadow_offset_y == 0) || state.shadow_color.a == 0 || state.current_compositing_and_blending_operator == .copy {
+		return
+	}
+	translated := path.copy_transformed(CanvasAffineTransform{ e: state.shadow_offset_x, f: state.shadow_offset_y })
+	context.paint_path_fill(translated, state.shadow_color, fill_rule)
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) paint_shadow_for_stroke_internal(path CanvasGfxPath) {
+	state := context.drawing_state
+	if (state.shadow_blur == 0 && state.shadow_offset_x == 0 && state.shadow_offset_y == 0) || state.shadow_color.a == 0 || state.current_compositing_and_blending_operator == .copy {
+		return
+	}
+	translated := path.copy_transformed(CanvasAffineTransform{ e: state.shadow_offset_x, f: state.shadow_offset_y })
+	context.paint_path_stroke(translated, state.shadow_color)
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) stroke() {
+	context.stroke_internal(context.CanvasPath.path())
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) stroke_path(path &Path2D) {
+	context.stroke_internal(path.path())
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) fill(fill_rule string) {
+	context.fill_internal(context.CanvasPath.path(), fill_rule)
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) fill_path(path &Path2D, fill_rule string) {
+	context.fill_internal(path.path(), fill_rule)
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) clip_internal(path CanvasGfxPath, fill_rule string) {
+	context.drawing_state.clip_paths << CanvasClipPath{
+		path: path.copy_transformed(context.drawing_state.transform)
+		fill_rule: if fill_rule == 'evenodd' { 'evenodd' } else { 'nonzero' }
+	}
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) clip(fill_rule string) {
+	context.clip_internal(context.CanvasPath.path(), fill_rule)
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) clip_path(path &Path2D, fill_rule string) {
+	context.clip_internal(path.path(), fill_rule)
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) is_point_in_path(x f64, y f64, fill_rule string) bool {
+	return canvas_point_in_path_internal(context.CanvasPath.path(), context.drawing_state.transform, x, y, fill_rule)
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) is_point_in_path_with_path(path &Path2D, x f64, y f64, fill_rule string) bool {
+	return canvas_point_in_path_internal(path.path(), context.drawing_state.transform, x, y, fill_rule)
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) prepare_text(text string, max_width f64) PreparedCanvasText {
+	if max_width <= 0 || math.is_nan(max_width) {
+		return PreparedCanvasText{}
+	}
+	replaced := text.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
+	mut font_size := 10.0
+	parts := context.drawing_state.font_string.split('px')
+	if parts.len > 0 && parts[0].f64() > 0 {
+		font_size = parts[0].f64()
+	}
+	mut width := f64(replaced.runes().len) * font_size * 0.5
+	if width > max_width {
+		width = max_width
+	}
+	mut x := 0.0
+	match context.drawing_state.text_align {
+		.center {
+			x = -width / 2.0
+		}
+		.right, .end {
+			x = -width
+		}
+		.start {
+			if context.drawing_state.direction == .rtl {
+				x = -width
+			}
+		}
+		else {}
+	}
+	return PreparedCanvasText{
+		text: replaced
+		physical_x: x
+		bounding_box: CanvasFloatRect{x, -font_size * 0.8, width, font_size}
+		font_size: font_size
+	}
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) font_cascade_list() string {
+	return if context.drawing_state.font_string == '' {
+		'10px sans-serif'
+	} else {
+		context.drawing_state.font_string
+	}
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) text_path(text string, x f64, y f64, max_width ?f64) CanvasGfxPath {
+	prepared := context.prepare_text(text, max_width or { math.inf(1) })
+	mut path := CanvasGfxPath{}
+	path.move_to(FloatPoint{x + prepared.bounding_box.x, y + prepared.bounding_box.y})
+	path.line_to(FloatPoint{x + prepared.bounding_box.x + prepared.bounding_box.width, y + prepared.bounding_box.y})
+	path.line_to(FloatPoint{x + prepared.bounding_box.x + prepared.bounding_box.width, y + prepared.bounding_box.y + prepared.bounding_box.height})
+	path.line_to(FloatPoint{x + prepared.bounding_box.x, y + prepared.bounding_box.y + prepared.bounding_box.height})
+	path.close()
+	return path
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) fill_text(text string, x f64, y f64, max_width ?f64) {
+	if max_width_value := max_width {
+		if max_width_value <= 0 {
+			return
+		}
+	}
+	context.fill_internal(context.text_path(text, x, y, max_width), 'nonzero')
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) stroke_text(text string, x f64, y f64, max_width ?f64) {
+	if max_width_value := max_width {
+		if max_width_value <= 0 {
+			return
+		}
+	}
+	context.stroke_internal(context.text_path(text, x, y, max_width))
+}
+
+pub fn (context &OffscreenCanvasRenderingContext2D) clear_color() dom.Color {
+	return if context.context_attributes.alpha {
+		canvas_color_transparent()
+	} else {
+		canvas_color_black()
+	}
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) put_pixels_from_an_image_data_onto_a_bitmap(image_data &ImageData, dx int, dy int, dirty_x int, dirty_y int, dirty_width int, dirty_height int) {
+	context.put_image_data_dirty(image_data, dx, dy, dirty_x, dirty_y, dirty_width, dirty_height)
+}
+
+// HTML canvas-specific boundaries. Rendering itself is shared with the
+// offscreen implementation, while invalidation remains element-owned.
+pub fn (context &CanvasRenderingContext2D) canvas_element() &dom.HTMLCanvasElement {
+	return context.element
+}
+
+pub fn (mut context CanvasRenderingContext2D) set_size(width u32, height u32) {
+	context.OffscreenCanvasRenderingContext2D.set_size(width, height)
+}
+
+pub fn (mut context CanvasRenderingContext2D) did_draw(rect CanvasFloatRect) {
+	_ = rect
+	html_canvas_element_set_canvas_content_dirty(context.element) or {}
+}
+
+pub fn (context &CanvasRenderingContext2D) painter() ?&dom.ImmutableBitmap_ {
+	return context.OffscreenCanvasRenderingContext2D.painter()
+}
+
+pub fn (context &CanvasRenderingContext2D) allocate_painting_surface_if_needed() {
+	_ = context.OffscreenCanvasRenderingContext2D.painter()
+}
+
+pub fn (mut context CanvasRenderingContext2D) reset_to_default_state() {
+	context.OffscreenCanvasRenderingContext2D.reset_to_default_state()
+}
+
+pub fn (context &CanvasRenderingContext2D) create_image_data(width int, height int, settings ?ImageDataSettings) !&ImageData {
+	return context.OffscreenCanvasRenderingContext2D.create_image_data(width, height, settings)
+}
+
+pub fn (context &CanvasRenderingContext2D) create_image_data_from(source &ImageData) !&ImageData {
+	return context.OffscreenCanvasRenderingContext2D.create_image_data_from(source)
+}
+
+pub fn (context &CanvasRenderingContext2D) get_image_data(x int, y int, width int, height int, settings ?ImageDataSettings) !&ImageData {
+	return context.OffscreenCanvasRenderingContext2D.get_image_data(x, y, width, height, settings)
+}
+
+pub fn (mut context CanvasRenderingContext2D) put_image_data(image_data &ImageData, x int, y int) {
+	context.OffscreenCanvasRenderingContext2D.put_image_data(image_data, x, y)
+	context.did_draw(CanvasFloatRect{f64(x), f64(y), f64(image_data.width()), f64(image_data.height())})
+}
+
+pub fn (mut context CanvasRenderingContext2D) put_image_data_dirty(image_data &ImageData, x int, y int, dirty_x int, dirty_y int, dirty_width int, dirty_height int) {
+	context.OffscreenCanvasRenderingContext2D.put_image_data_dirty(image_data, x, y, dirty_x, dirty_y, dirty_width, dirty_height)
+	context.did_draw(CanvasFloatRect{f64(x + dirty_x), f64(y + dirty_y), f64(dirty_width), f64(dirty_height)})
+}
+
+pub fn (context &CanvasRenderingContext2D) measure_text(value string) &TextMetrics {
+	return context.OffscreenCanvasRenderingContext2D.measure_text(value)
+}
+
+pub fn (context &CanvasRenderingContext2D) image_smoothing_enabled() bool {
+	return context.OffscreenCanvasRenderingContext2D.image_smoothing_enabled()
+}
+
+pub fn (mut context CanvasRenderingContext2D) set_image_smoothing_enabled(value bool) {
+	context.OffscreenCanvasRenderingContext2D.set_image_smoothing_enabled(value)
+}
+
+pub fn (context &CanvasRenderingContext2D) image_smoothing_quality() ImageSmoothingQuality {
+	return context.OffscreenCanvasRenderingContext2D.image_smoothing_quality()
+}
+
+pub fn (mut context CanvasRenderingContext2D) set_image_smoothing_quality(value ImageSmoothingQuality) {
+	context.OffscreenCanvasRenderingContext2D.set_image_smoothing_quality(value)
+}
+
+pub fn (context &CanvasRenderingContext2D) global_alpha() f64 {
+	return context.OffscreenCanvasRenderingContext2D.global_alpha()
+}
+
+pub fn (mut context CanvasRenderingContext2D) set_global_alpha(value f64) {
+	context.OffscreenCanvasRenderingContext2D.set_global_alpha(value)
+}
+
+pub fn (context &CanvasRenderingContext2D) shadow_offset_x() f64 {
+	return context.OffscreenCanvasRenderingContext2D.shadow_offset_x()
+}
+
+pub fn (mut context CanvasRenderingContext2D) set_shadow_offset_x(value f64) {
+	context.OffscreenCanvasRenderingContext2D.set_shadow_offset_x(value)
+}
+
+pub fn (context &CanvasRenderingContext2D) shadow_offset_y() f64 {
+	return context.OffscreenCanvasRenderingContext2D.shadow_offset_y()
+}
+
+pub fn (mut context CanvasRenderingContext2D) set_shadow_offset_y(value f64) {
+	context.OffscreenCanvasRenderingContext2D.set_shadow_offset_y(value)
+}
+
+pub fn (context &CanvasRenderingContext2D) shadow_blur() f64 {
+	return context.OffscreenCanvasRenderingContext2D.shadow_blur()
+}
+
+pub fn (mut context CanvasRenderingContext2D) set_shadow_blur(value f64) {
+	context.OffscreenCanvasRenderingContext2D.set_shadow_blur(value)
+}
+
+pub fn (context &CanvasRenderingContext2D) rect_path(x f64, y f64, width f64, height f64) CanvasGfxPath {
+	return context.OffscreenCanvasRenderingContext2D.rect_path(x, y, width, height)
+}
+
+pub fn (context &CanvasRenderingContext2D) clear_color() dom.Color {
+	return context.OffscreenCanvasRenderingContext2D.clear_color()
+}
+
+pub fn (context &CanvasRenderingContext2D) font_cascade_list() string {
+	return context.OffscreenCanvasRenderingContext2D.font_cascade_list()
+}
+
+pub fn (context &CanvasRenderingContext2D) prepare_text(text string, max_width f64) PreparedCanvasText {
+	return context.OffscreenCanvasRenderingContext2D.prepare_text(text, max_width)
+}
+
+pub fn (context &CanvasRenderingContext2D) text_path(text string, x f64, y f64, max_width ?f64) CanvasGfxPath {
+	return context.OffscreenCanvasRenderingContext2D.text_path(text, x, y, max_width)
+}
+
+pub fn (mut context CanvasRenderingContext2D) stroke_internal(path CanvasGfxPath) {
+	context.OffscreenCanvasRenderingContext2D.stroke_internal(path)
+	if bounds := canvas_path_bounds(path) {
+		context.did_draw(bounds)
+	}
+}
+
+pub fn (mut context CanvasRenderingContext2D) fill_internal(path CanvasGfxPath, fill_rule string) {
+	context.OffscreenCanvasRenderingContext2D.fill_internal(path, fill_rule)
+	if bounds := canvas_path_bounds(path) {
+		context.did_draw(bounds)
+	}
+}
+
+pub fn (mut context CanvasRenderingContext2D) clip_internal(path CanvasGfxPath, fill_rule string) {
+	context.OffscreenCanvasRenderingContext2D.clip_internal(path, fill_rule)
+}
+
+pub fn (context &CanvasRenderingContext2D) is_point_in_path(x f64, y f64, fill_rule string) bool {
+	return context.OffscreenCanvasRenderingContext2D.is_point_in_path(x, y, fill_rule)
+}
+
+pub fn (mut context CanvasRenderingContext2D) paint_shadow_for_fill_internal(path CanvasGfxPath, fill_rule string) {
+	context.OffscreenCanvasRenderingContext2D.paint_shadow_for_fill_internal(path, fill_rule)
+}
+
+pub fn (mut context CanvasRenderingContext2D) paint_shadow_for_stroke_internal(path CanvasGfxPath) {
+	context.OffscreenCanvasRenderingContext2D.paint_shadow_for_stroke_internal(path)
+}
+
+pub fn (mut context CanvasRenderingContext2D) fill_rect(x f64, y f64, width f64, height f64) {
+	path := context.rect_path(x, y, width, height)
+	context.fill_internal(path, 'evenodd')
+}
+
+pub fn (mut context CanvasRenderingContext2D) clear_rect(x f64, y f64, width f64, height f64) {
+	context.OffscreenCanvasRenderingContext2D.clear_rect(x, y, width, height)
+	context.did_draw(CanvasFloatRect{x, y, width, height})
+}
+
+pub fn (mut context CanvasRenderingContext2D) stroke_rect(x f64, y f64, width f64, height f64) {
+	context.stroke_internal(context.rect_path(x, y, width, height))
+}
+
+pub fn (mut context CanvasRenderingContext2D) begin_path() {
+	context.OffscreenCanvasRenderingContext2D.begin_path()
+}
+
+pub fn (mut context CanvasRenderingContext2D) stroke() {
+	context.stroke_internal(context.OffscreenCanvasRenderingContext2D.CanvasPath.path())
+}
+
+pub fn (mut context CanvasRenderingContext2D) stroke_path(path &Path2D) {
+	context.stroke_internal(path.path())
+}
+
+pub fn (mut context CanvasRenderingContext2D) fill(fill_rule string) {
+	context.fill_internal(context.OffscreenCanvasRenderingContext2D.CanvasPath.path(), fill_rule)
+}
+
+pub fn (mut context CanvasRenderingContext2D) fill_path(path &Path2D, fill_rule string) {
+	context.fill_internal(path.path(), fill_rule)
+}
+
+pub fn (mut context CanvasRenderingContext2D) fill_text(text string, x f64, y f64, max_width ?f64) {
+	path := context.text_path(text, x, y, max_width)
+	context.fill_internal(path, 'nonzero')
+}
+
+pub fn (mut context CanvasRenderingContext2D) stroke_text(text string, x f64, y f64, max_width ?f64) {
+	path := context.text_path(text, x, y, max_width)
+	context.stroke_internal(path)
+}
+
+pub fn (mut context CanvasRenderingContext2D) clip(fill_rule string) {
+	context.clip_internal(context.OffscreenCanvasRenderingContext2D.CanvasPath.path(), fill_rule)
+}
+
+pub fn (mut context CanvasRenderingContext2D) clip_path(path &Path2D, fill_rule string) {
+	context.clip_internal(path.path(), fill_rule)
+}
+
+pub fn (context &CanvasRenderingContext2D) global_composite_operation() string {
+	return context.OffscreenCanvasRenderingContext2D.global_composite_operation()
+}
+
+pub fn (mut context CanvasRenderingContext2D) set_global_composite_operation(value string) {
+	context.OffscreenCanvasRenderingContext2D.set_global_composite_operation(value)
+}
+
+pub fn (context &CanvasRenderingContext2D) shadow_color() string {
+	return context.OffscreenCanvasRenderingContext2D.shadow_color()
+}
+
+pub fn (mut context CanvasRenderingContext2D) set_shadow_color(value string) {
+	context.OffscreenCanvasRenderingContext2D.set_shadow_color(value)
+}
+
+pub fn (context &CanvasRenderingContext2D) filter() string {
+	return context.OffscreenCanvasRenderingContext2D.filter()
+}
+
+pub fn (mut context CanvasRenderingContext2D) set_filter(value string) {
+	context.OffscreenCanvasRenderingContext2D.set_filter(value)
+}
+
+pub fn (mut context CanvasRenderingContext2D) draw_image_internal(request CanvasDrawImageRequest) ! {
+	context.OffscreenCanvasRenderingContext2D.draw_image_internal(request)!
+	context.did_draw(CanvasFloatRect{
+		x: request.destination_x
+		y: request.destination_y
+		width: request.destination_width
+		height: request.destination_height
+	})
+}
+
+pub fn (mut context CanvasRenderingContext2D) put_pixels_from_an_image_data_onto_a_bitmap(image_data &ImageData, dx int, dy int, dirty_x int, dirty_y int, dirty_width int, dirty_height int) {
+	context.OffscreenCanvasRenderingContext2D.put_pixels_from_an_image_data_onto_a_bitmap(image_data, dx, dy, dirty_x, dirty_y, dirty_width, dirty_height)
+	context.did_draw(CanvasFloatRect{f64(dx + dirty_x), f64(dy + dirty_y), f64(dirty_width), f64(dirty_height)})
+}

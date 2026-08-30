@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 //
 // Translated from Libraries/LibWeb/Selection/Selection.{h,cpp}.
-
 module dom
 
 fn selection_same_node(a &Node, b &Node) bool {
@@ -70,8 +69,7 @@ pub fn (selection &Selection) is_collapsed() bool {
 	}
 	anchor := selection.anchor_node() or { return true }
 	focus := selection.focus_node() or { return true }
-	return selection_same_node(anchor, focus)
-		&& selection.range_.start_offset() == selection.range_.end_offset()
+	return selection_same_node(anchor, focus) && selection.range_.start_offset() == selection.range_.end_offset()
 }
 
 pub fn (selection &Selection) range_count() int {
@@ -102,18 +100,14 @@ pub fn (selection &Selection) get_range_at(index int) !&Range {
 	focus := selection.focus_node() or {
 		return error('IndexSizeError: Selection.getRangeAt() on empty Selection')
 	}
-	if index != 0 || selection.is_empty()
-		|| voidptr(anchor.document()) != voidptr(selection.document_)
-		|| voidptr(focus.document()) != voidptr(selection.document_) {
+	if index != 0 || selection.is_empty() || voidptr(anchor.document()) != voidptr(selection.document_) || voidptr(focus.document()) != voidptr(selection.document_) {
 		return error('IndexSizeError: Selection.getRangeAt() on empty Selection or with invalid argument')
 	}
 	return selection.range_
 }
 
 pub fn (mut selection Selection) add_range(range &Range) {
-	if selection.document_ == unsafe { nil }
-		|| !selection_same_node(range.start_container().root(), unsafe { &Node(selection.document_) })
-		|| selection.range_count() != 0 {
+	if selection.document_ == unsafe { nil } || !selection_same_node(range.start_container().root(), unsafe { &Node(selection.document_) }) || selection.range_count() != 0 {
 		return
 	}
 	selection.set_range(range)
@@ -147,9 +141,7 @@ pub fn (mut selection Selection) collapse(node_ ?&Node, offset int) ! {
 	if offset < 0 || offset > node.length() {
 		return error('IndexSizeError: Selection.collapse() offset is out of range')
 	}
-	if selection.document_ == unsafe { nil }
-		|| voidptr(node.document()) != voidptr(selection.document_)
-		|| !unsafe { &Node(selection.document_) }.is_shadow_including_inclusive_ancestor_of(node) {
+	if selection.document_ == unsafe { nil } || voidptr(node.document()) != voidptr(selection.document_) || !unsafe { &Node(selection.document_) }.is_shadow_including_inclusive_ancestor_of(node) {
 		return
 	}
 	mut new_range := Range.create(selection.document_)
@@ -186,9 +178,7 @@ pub fn (mut selection Selection) collapse_to_end() ! {
 }
 
 pub fn (mut selection Selection) extend(node &Node, offset int) ! {
-	if selection.document_ == unsafe { nil }
-		|| voidptr(node.document()) != voidptr(selection.document_)
-		|| !unsafe { &Node(selection.document_) }.is_shadow_including_inclusive_ancestor_of(node) {
+	if selection.document_ == unsafe { nil } || voidptr(node.document()) != voidptr(selection.document_) || !unsafe { &Node(selection.document_) }.is_shadow_including_inclusive_ancestor_of(node) {
 		return
 	}
 	if selection.range_ == unsafe { nil } {
@@ -207,10 +197,10 @@ pub fn (mut selection Selection) extend(node &Node, offset int) ! {
 		new_range.set_end(node, offset)!
 	} else {
 		position := position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-			node:   old_anchor_node
+			node: old_anchor_node
 			offset: old_anchor_offset
 		}, BoundaryPoint{
-			node:   node
+			node: node
 			offset: offset
 		})
 		if position != .after {
@@ -223,10 +213,10 @@ pub fn (mut selection Selection) extend(node &Node, offset int) ! {
 	}
 	selection.set_range(new_range)
 	new_focus_position := position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-		node:   node
+		node: node
 		offset: offset
 	}, BoundaryPoint{
-		node:   old_anchor_node
+		node: old_anchor_node
 		offset: old_anchor_offset
 	})
 	selection.direction_ = if new_focus_position == .before { .backwards } else { .forwards }
@@ -243,17 +233,14 @@ pub fn (mut selection Selection) set_base_and_extent(anchor_node &Node, anchor_o
 		return
 	}
 	document_node := unsafe { &Node(selection.document_) }
-	if voidptr(anchor_node.document()) != voidptr(selection.document_)
-		|| voidptr(focus_node.document()) != voidptr(selection.document_)
-		|| !document_node.is_shadow_including_inclusive_ancestor_of(anchor_node)
-		|| !document_node.is_shadow_including_inclusive_ancestor_of(focus_node) {
+	if voidptr(anchor_node.document()) != voidptr(selection.document_) || voidptr(focus_node.document()) != voidptr(selection.document_) || !document_node.is_shadow_including_inclusive_ancestor_of(anchor_node) || !document_node.is_shadow_including_inclusive_ancestor_of(focus_node) {
 		return
 	}
 	position := position_of_boundary_point_relative_to_other_boundary_point(BoundaryPoint{
-		node:   anchor_node
+		node: anchor_node
 		offset: anchor_offset
 	}, BoundaryPoint{
-		node:   focus_node
+		node: focus_node
 		offset: focus_offset
 	})
 	mut new_range := Range.create(selection.document_)
@@ -272,8 +259,7 @@ pub fn (mut selection Selection) select_all_children(node &Node) ! {
 	if node.is_document_type() {
 		return error('InvalidNodeTypeError: Selection.selectAllChildren() with DocumentType node')
 	}
-	if selection.document_ == unsafe { nil }
-		|| !selection_same_node(node.root(), unsafe { &Node(selection.document_) }) {
+	if selection.document_ == unsafe { nil } || !selection_same_node(node.root(), unsafe { &Node(selection.document_) }) {
 		return
 	}
 	mut new_range := Range.create(selection.document_)
@@ -337,33 +323,44 @@ pub fn (mut selection Selection) delete_from_document() ! {
 }
 
 pub fn (selection &Selection) contains_node(node &Node, allow_partial_containment bool) bool {
-	if selection.range_ == unsafe { nil } || selection.document_ == unsafe { nil }
-		|| !selection_same_node(node.root(), unsafe { &Node(selection.document_) }) {
+	if selection.range_ == unsafe { nil } || selection.document_ == unsafe { nil } || !selection_same_node(node.root(), unsafe { &Node(selection.document_) }) {
 		return false
 	}
 	if !allow_partial_containment {
 		start_position := position_of_boundary_point_relative_to_other_boundary_point(selection.range_.start(), BoundaryPoint{
-			node:   node
+			node: node
 			offset: 0
 		})
 		end_position := position_of_boundary_point_relative_to_other_boundary_point(selection.range_.end(), BoundaryPoint{
-			node:   node
+			node: node
 			offset: node.length()
 		})
 		return start_position in [.before, .equal] && end_position in [.equal, .after]
 	}
 	start_position := position_of_boundary_point_relative_to_other_boundary_point(selection.range_.start(), BoundaryPoint{
-		node:   node
+		node: node
 		offset: node.length()
 	})
 	end_position := position_of_boundary_point_relative_to_other_boundary_point(selection.range_.end(), BoundaryPoint{
-		node:   node
+		node: node
 		offset: 0
 	})
 	return start_position in [.before, .equal] && end_position in [.equal, .after]
 }
 
+pub fn (selection &Selection) try_form_control_selected_text_for_stringifier() ?string {
+	if selection.document_ != unsafe { nil } {
+		if selected_text := selection.document_.selected_text_for_active_form_control() {
+			return selected_text
+		}
+	}
+	return none
+}
+
 pub fn (selection &Selection) to_string() string {
+	if selected_text := selection.try_form_control_selected_text_for_stringifier() {
+		return selected_text
+	}
 	if selection.range_ == unsafe { nil } {
 		return ''
 	}
@@ -383,9 +380,7 @@ pub fn (selection &Selection) range() ?&Range {
 
 pub fn (mut selection Selection) set_range(range ?&Range) {
 	new_range := range or { unsafe { &Range(nil) } }
-	if (selection.range_ == unsafe { nil } && new_range == unsafe { nil })
-		|| (selection.range_ != unsafe { nil } && new_range != unsafe { nil }
-		&& selection_same_range(selection.range_, new_range)) {
+	if (selection.range_ == unsafe { nil } && new_range == unsafe { nil }) || (selection.range_ != unsafe { nil } && new_range != unsafe { nil } && selection_same_range(selection.range_, new_range)) {
 		return
 	}
 	if selection.range_ != unsafe { nil } {
@@ -527,8 +522,7 @@ pub fn (mut selection Selection) move_offset_to_previous_line(collapse_selection
 		return
 	}
 	text_node := unsafe { &Text(anchor) }
-	new_offset := compute_cursor_position_on_previous_line(text_node.data(),
-		selection.focus_offset()) or { return }
+	new_offset := compute_cursor_position_on_previous_line(text_node.data(), selection.focus_offset()) or { return }
 	selection.move_focus_with_optional_collapse(anchor, new_offset, collapse_selection)
 	selection.scroll_focus_into_view()
 }

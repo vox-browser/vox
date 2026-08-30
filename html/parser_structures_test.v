@@ -208,6 +208,20 @@ fn test_stack_contains_template_element() {
 	assert stack.contains_template_element()
 }
 
+fn test_stack_exact_has_in_scope_impl_overloads() {
+	doc := dom.Document.create(dom.url_about_blank())
+	html_element := el(doc, 'html')
+	body := el(doc, 'body')
+	mut stack := StackOfOpenElements{}
+	stack.push(html_element)
+	stack.push(body)
+	assert stack.has_in_scope_impl(StackOfOpenElementsScopeTarget('body'), scope_base_list,
+		true)
+	assert stack.has_in_scope_impl(StackOfOpenElementsScopeTarget(StackOfOpenElementsElementTarget{
+		element: body
+	}), scope_base_list)
+}
+
 // ===== ListOfActiveFormattingElements =====
 
 fn test_afe_add_contains_remove() {
@@ -216,7 +230,15 @@ fn test_afe_add_contains_remove() {
 	assert list.is_empty()
 
 	b := el(doc, 'b')
-	token := HTMLToken.make_start_tag('b')
+	mut token := HTMLToken.make_start_tag('b')
+	token.add_attribute(Attribute{
+		local_name: 'class'
+		value:      'strong'
+	})
+	owned_token := list.create_own_token(&token)
+	assert owned_token != &token
+	assert owned_token.tag_name == token.tag_name
+	assert owned_token.attribute('class')? == 'strong'
 	list.add(b, &token)
 	assert !list.is_empty()
 	assert list.contains(b)
@@ -225,6 +247,14 @@ fn test_afe_add_contains_remove() {
 	list.remove(b)
 	assert !list.contains(b)
 	assert list.is_empty()
+}
+
+fn test_parser_source_location_current() {
+	empty := SourceLocation.current()
+	assert empty.file == ''
+	explicit := SourceLocation.current_at('parser.v', 42)
+	assert explicit.file == 'parser.v'
+	assert explicit.line == 42
 }
 
 fn test_afe_marker_and_clear() {

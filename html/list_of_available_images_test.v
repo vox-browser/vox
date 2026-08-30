@@ -3,14 +3,14 @@ module html
 import dom
 
 fn test_list_of_available_images_key_and_storage_algorithms() {
-	key := AvailableImageKey{
+	key := Key{
 		url:    'https://example.com/image.png'
 		mode:   .anonymous
 		origin: dom.Origin{
 			value: 'https://example.com'
 		}
 	}
-	other_origin := AvailableImageKey{
+	other_origin := Key{
 		url:    key.url
 		mode:   key.mode
 		origin: dom.Origin{
@@ -19,6 +19,8 @@ fn test_list_of_available_images_key_and_storage_algorithms() {
 	}
 	assert key.equals(&key)
 	assert !key.equals(&other_origin)
+	assert key.hash() == key.hash()
+	assert key.hash() != other_origin.hash()
 
 	first_image := BitmapDecodedImageData.create([
 		BitmapDecodedImageFrame{

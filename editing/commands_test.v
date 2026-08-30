@@ -230,3 +230,21 @@ fn test_insert_replaced_content_and_remove_format() {
 	document.exec_command('removeFormat', false, '')!
 	assert document.blocks[0].items.all(!it.style.underline)
 }
+
+fn test_upstream_named_command_entry_points_share_dispatch_logic() {
+	mut document := new_document('one\ntwo')
+	document.select_all()
+	assert command_bold_action(mut document, '')
+	assert document.blocks[0].items.all(it.style.bold)
+	assert command_format_block_action(mut document, '<H2>')
+	assert command_format_block_value(document) == 'h2'
+	assert command_insert_ordered_list_action(mut document, '')
+	assert command_insert_ordered_list_state(document)
+	assert command_justify_center_action(mut document, '')
+	assert command_justify_center_state(document)
+	assert command_justify_center_value(document) == 'center'
+	assert command_style_with_css_action(mut document, 'false')
+	assert !command_style_with_css_state(document)
+	assert command_use_css_action(mut document, 'false')
+	assert command_style_with_css_state(document)
+}

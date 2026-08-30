@@ -22,13 +22,11 @@ fn test_doctype_quirks_mode_classification() {
 	assert quirks_mode_for_doctype('-//W3C//DTD XHTML 1.0 Transitional//EN', '', true) == .limited
 	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01 Frameset//EN', 'example.dtd', false) == .limited
 	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01//EN', '', true) == .no
-	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01//EN',
-		'HTTP://WWW.IBM.COM/data/dtd/v11/ibmxhtml1-transitional.dtd', false) == .yes
+	assert quirks_mode_for_doctype('-//W3C//DTD HTML 4.01//EN', 'HTTP://WWW.IBM.COM/data/dtd/v11/ibmxhtml1-transitional.dtd', false) == .yes
 }
 
 // Runtime tests for the tree-construction parser: parse HTML source into a DOM tree and check the
 // resulting structure with a compact serializer (element(children...), "text", <!--comment-->).
-
 fn parse(input string) &dom.Document {
 	// Exercise the public top-level entry point.
 	return parse_document(input)
@@ -82,13 +80,13 @@ fn nth_child(node &dom.Node, index int) &dom.Node {
 }
 
 fn test_basic_document() {
-	doc :=
-		parse('<!DOCTYPE html><html><head><title>Hi</title></head><body><p>Hello</p></body></html>')
+	doc := parse('<!DOCTYPE html><html><head><title>Hi</title></head><body><p>Hello</p></body></html>')
 	// The document has a doctype then the html element.
 	mut doc_node := unsafe { &dom.Node(doc) }
 	kids := doc_node.children_as_vector()
 	assert kids.len == 2
 	assert kids[0].node_name() == 'html' // doctype name
+
 	assert tree_repr(html_element(doc)) == 'html(head(title("Hi")),body(p("Hello")))'
 }
 
@@ -146,8 +144,7 @@ fn test_comment_in_body() {
 }
 
 fn test_frameset_document() {
-	doc :=
-		parse('<html><head></head><frameset><frame src="a"><frameset><frame src="b"></frameset></frameset></html>')
+	doc := parse('<html><head></head><frameset><frame src="a"><frameset><frame src="b"></frameset></frameset></html>')
 	assert tree_repr(html_element(doc)) == 'html(head,frameset(frame,frameset(frame)))'
 }
 
@@ -202,8 +199,7 @@ fn test_table_cells_auto_close() {
 }
 
 fn test_table_thead_and_tbody() {
-	doc :=
-		parse('<table><thead><tr><th>H</th></tr></thead><tbody><tr><td>D</td></tr></tbody></table>')
+	doc := parse('<table><thead><tr><th>H</th></tr></thead><tbody><tr><td>D</td></tr></tbody></table>')
 	body := nth_child(html_element(doc), 1)
 	assert tree_repr(body) == 'body(table(thead(tr(th("H"))),tbody(tr(td("D")))))'
 }
@@ -328,6 +324,15 @@ fn test_template_contents() {
 	assert template.as_node().children_as_vector().len == 0
 	tmpl := unsafe { &dom.HTMLTemplateElement(template) }
 	assert children_repr(tmpl.content().as_node()) == 'div("x"),span("y")'
+	assert tmpl.content().host()?.as_node().is_same_node(template.as_node())
+	assert tmpl.content().as_node().as_shadow_root() == none
+	assert tmpl.content().as_node().document().created_for_appropriate_template_contents()
+
+	cloned_node := template.as_node().clone_node(none, true, none) or { panic('${err}') }
+	cloned_element := cloned_node.as_element() or { panic('template clone is not an element') }
+	cloned_template := unsafe { &dom.HTMLTemplateElement(cloned_element) }
+	assert cloned_element.as_node().children_as_vector().len == 0
+	assert children_repr(cloned_template.content().as_node()) == 'div("x"),span("y")'
 }
 
 fn test_content_after_template() {
@@ -389,6 +394,7 @@ fn test_parse_document_end_to_end() {
 	assert tree_repr(html_el.as_node()) == 'html(head(title("T")),body(p("hi")))'
 	mut doc_node := unsafe { &dom.Node(doc) }
 	assert doc_node.children_as_vector()[0].node_name() == 'html' // the doctype
+
 }
 
 fn test_standard_document_parse_entry_point_uses_html_parser() {
@@ -397,6 +403,74 @@ fn test_standard_document_parse_entry_point_uses_html_parser() {
 	doc.parse_html_from_a_string('<!DOCTYPE html><title>DOM parser</title><main>x</main>')
 	html_el := doc.document_element() or { panic('no document element') }
 	assert tree_repr(html_el.as_node()) == 'html(head(title("DOM parser")),body(main("x")))'
+}
+
+fn test_dom_xml_fragment_entry_point_uses_xml_parser() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.xml)
+	install_document_fragment_parsing_hook(document)
+	mut context := document.create_element_ns('urn:default', 'context')!
+	context.set_attribute_ns_for_bindings('http://www.w3.org/2000/xmlns/', 'xmlns:q', 'urn:child')!
+	fragment := context.parse_fragment('<q:item>ok</q:item>')!
+	item := fragment.as_node().first_child()?.as_element() or { panic('missing XML item') }
+	assert item.local_name() == 'item'
+	assert item.namespace_uri()? == 'urn:child'
+	assert item.as_node().text_content()? == 'ok'
+	if _ := context.parse_fragment('<a></b>') {
+		assert false
+	} else {
+		assert err.str().contains('SyntaxError')
+	}
+}
+
+fn test_parser_creation_with_uncertain_encoding_decodes_sniffed_bytes() {
+	mut bytes := '<meta charset="windows-1252"><p>'.bytes()
+	bytes << u8(0x80)
+	bytes << '</p>'.bytes()
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parser := HTMLParser.create_with_uncertain_encoding(doc, bytes, none) or { panic('${err}') }
+	parser.run()
+	assert doc.get_encoding()? == 'windows-1252'
+	assert doc.body()?.as_node().descendant_text_content() == '€'
+}
+
+fn test_option_pop_updates_selectedcontent_after_buffered_text_flush() {
+	mut doc := parse('<select><button><selectedcontent></selectedcontent></button><option selected><b>Chosen</b></option></select>')
+	selectedcontent := doc.get_elements_by_tag_name('selectedcontent').item(0) or {
+		panic('missing selectedcontent')
+	}
+	assert selectedcontent.as_node().descendant_text_content() == 'Chosen'
+}
+
+fn test_document_open_write_writeln_and_close_use_live_html_parser() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_document_type(.html)
+	install_document_fragment_parsing_hook(doc)
+	doc.open_document() or { panic('${err}') }
+	doc.write(['<title>Written</title><main>one']) or { panic('${err}') }
+	doc.writeln([' + two</main>']) or { panic('${err}') }
+
+	// Each write runs only as far as the tokenizer insertion point. Closing the
+	// stream inserts explicit EOF and finishes tree construction.
+	doc.close() or { panic('${err}') }
+	html_el := doc.document_element() or { panic('no document element') }
+	assert tree_repr(html_el.as_node()) == 'html(head(title("Written")),body(main("one + two"),"\n"))'
+}
+
+fn test_declarative_shadow_roots_respect_parser_permission() {
+	disallowed_document := dom.Document.create(dom.url_about_blank())
+	parse_html_from_a_string(disallowed_document, '<div id="host"><template shadowrootmode="open"><span>shadow</span></template></div>')
+	disallowed_host := disallowed_document.get_element_by_id('host') or { panic('missing host') }
+	assert disallowed_host.shadow_root() == none
+	assert disallowed_host.as_node().first_child()?.as_element()?.local_name() == 'template'
+
+	allowed_document := parse_document('<div id="host"><template shadowrootmode="open"><span>shadow</span></template></div>')
+	allowed_host := allowed_document.get_element_by_id('host') or { panic('missing host') }
+	shadow := allowed_host.shadow_root() or { panic('missing declarative shadow root') }
+	assert shadow.declarative()
+	assert shadow.as_node().as_shadow_root()? == shadow
+	assert shadow.as_node().descendant_text_content() == 'shadow'
+	assert allowed_host.as_node().first_child() == none
 }
 
 fn test_set_inner_html_replaces_children() {

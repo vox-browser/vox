@@ -67,11 +67,18 @@ files.
 
 - Upstream inventory: **57 `.cpp` / 26,465 LOC**, **67 `.h` / 6,636 LOC**,
   **37 `.idl` / 1,076 LOC**; **34,177 LOC total**.
-- Physical V implementation assigned only here: **29,394 LOC** across 7
-  implementation files.
-- Physical focused tests assigned only here: **1,156 LOC** across 7 `_test.v`
-  files (67 tests). `v test dom` also runs the separately counted Selection and
-  UIEvents tests, for 9 test files total.
+- Physical V implementation assigned only here: **34,455 LOC** across 16
+  implementation files. `upstream_node_entry_points.v`,
+  `upstream_inline_entry_points.v`, and `upstream_algorithm_entry_points.v`
+  cover the adjacent inline headers, mixins, and file-local algorithms that do
+  not have their own `.cpp` mapping row.
+- Physical focused tests assigned only here: **1,277 LOC** across 8 `_test.v`
+  files (72 tests). `v test dom` also runs the separately counted Selection and
+  UIEvents tests, for 10 test files / 86 tests total.
+- The implementation-symbol audit inventories **1,819** upstream definitions:
+  **1,631** direct matches, **38** checked consolidated-owner matches, and
+  **150** constructors/runtime/language-only definitions. There are **zero
+  unmatched definitions**.
 - The independent audit replaced EventTarget's unsafe memory-shape probing with
   an authoritative Node discriminator, tags every Node/Document allocation,
   and verifies generic EventTarget dispatch plus distinct Document identity.

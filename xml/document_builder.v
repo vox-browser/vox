@@ -21,13 +21,53 @@ pub fn resolve_named_html_entity(name string) ?string {
 }
 
 @[heap]
-pub struct DocumentBuilder {
+pub struct XMLDocumentBuilder {
 pub:
 	document          &dom.Document
 	scripting_support ScriptingSupport
-pub mut:
-	has_error bool
-	source    string
+mut:
+	has_error_     bool
+	source         string
+	current_node   &dom.Node
+	namespace_stack []XMLNamespaceStackEntry
+}
+
+pub type DocumentBuilder = XMLDocumentBuilder
+
+pub struct XMLExternalID {
+pub:
+	system_id string
+	public_id ?string
+}
+
+pub struct XMLDoctype {
+pub:
+	type_       string
+	external_id ?XMLExternalID
+}
+
+struct XMLNamespaceAndPrefix {
+	namespace_ string
+	prefix     ?string
+}
+
+struct XMLNamespaceStackEntry {
+mut:
+	namespaces []XMLNamespaceAndPrefix
+	depth      int
+}
+
+fn xml_prefixes_equal(left ?string, right ?string) bool {
+	if left_value := left {
+		if right_value := right {
+			return left_value == right_value
+		}
+		return false
+	}
+	if _ := right {
+		return false
+	}
+	return true
 }
 
 struct ParsedDoctype {
@@ -128,28 +168,206 @@ fn parse_document_doctype(source string) !ParsedDoctype {
 	}
 }
 
-pub fn DocumentBuilder.create(document &dom.Document, scripting_support ScriptingSupport) &DocumentBuilder {
-	return &DocumentBuilder{
+pub fn XMLDocumentBuilder.create(document &dom.Document, scripting_support ScriptingSupport) &XMLDocumentBuilder {
+	return &XMLDocumentBuilder{
 		document:          document
 		scripting_support: scripting_support
+		current_node:      unsafe { &dom.Node(document) }
+		namespace_stack:   [XMLNamespaceStackEntry{
+			depth: 1
+		}]
 	}
 }
 
-pub fn (mut builder DocumentBuilder) set_source(source string) ! {
+pub fn (builder &XMLDocumentBuilder) has_error() bool {
+	return builder.has_error_
+}
+
+pub fn (mut builder XMLDocumentBuilder) set_source(source string) ! {
 	builder.source = source
 	mut document := builder.document
 	document.set_source(source)
 }
 
+pub fn (mut builder XMLDocumentBuilder) set_doctype(doctype XMLDoctype) {
+	if builder.document.doctype() != none {
+		return
+	}
+	mut document_type := dom.DocumentType.create(builder.document)
+	document_type.set_name(doctype.type_)
+	if external_id := doctype.external_id {
+		document_type.set_system_id(external_id.system_id)
+		if public_id := external_id.public_id {
+			document_type.set_public_id(public_id)
+		}
+	}
+	mut document_node := unsafe { &dom.Node(builder.document) }
+	document_node.insert_before(document_type.as_node(), document_node.first_child(), false)
+}
+
+pub fn (builder &XMLDocumentBuilder) namespace_for_name(name string) ?string {
+	parts := name.split(':')
+	if parts.len > 2 || (parts.len == 2 && (parts[0] == '' || parts[1] == '')) {
+		return none
+	}
+	prefix := if parts.len == 2 { ?string(parts[0]) } else { none }
+	for index := builder.namespace_stack.len - 1; index >= 0; index-- {
+		for entry in builder.namespace_stack[index].namespaces {
+			if xml_prefixes_equal(entry.prefix, prefix) {
+				return entry.namespace_
+			}
+		}
+	}
+	return none
+}
+
+pub fn (mut builder XMLDocumentBuilder) element_start(name string, attributes map[string]string) {
+	if builder.has_error_ {
+		return
+	}
+	mut namespaces := []XMLNamespaceAndPrefix{}
+	for attribute_name, value in attributes {
+		if attribute_name == 'xmlns' || attribute_name.starts_with('xmlns:') {
+			parts := attribute_name.split_nth(':', 2)
+			prefix := if parts.len == 2 { ?string(parts[1]) } else { none }
+			if namespaces.any(xml_prefixes_equal(it.prefix, prefix)) {
+				continue
+			}
+			namespaces << XMLNamespaceAndPrefix{
+				namespace_: value
+				prefix:     prefix
+			}
+		}
+	}
+	if namespaces.len > 0 {
+		builder.namespace_stack << XMLNamespaceStackEntry{
+			namespaces: namespaces
+			depth:      1
+		}
+	} else {
+		builder.namespace_stack[builder.namespace_stack.len - 1].depth++
+	}
+
+	mut element := builder.document.create_element_ns(builder.namespace_for_name(name), name) or {
+		builder.has_error_ = true
+		return
+	}
+	if builder.current_node == unsafe { nil } {
+		builder.has_error_ = true
+		return
+	}
+	mut current_node := unsafe { &dom.Node(builder.current_node) }
+	current_node.append_child(element.as_node()) or {
+		builder.has_error_ = true
+		return
+	}
+	for attribute_name, value in attributes {
+		if attribute_name == 'xmlns' || attribute_name.starts_with('xmlns:') {
+			element.set_attribute_ns_for_bindings('http://www.w3.org/2000/xmlns/', attribute_name,
+				value) or { builder.has_error_ = true }
+		} else if attribute_name.contains(':') {
+			mut namespace_ := builder.namespace_for_name(attribute_name)
+			if attribute_name.starts_with('xml:') {
+				namespace_ = 'http://www.w3.org/XML/1998/namespace'
+			}
+			if namespace_ == none {
+				builder.has_error_ = true
+				continue
+			}
+			element.set_attribute_ns_for_bindings(namespace_, attribute_name, value) or {
+				builder.has_error_ = true
+			}
+		} else {
+			element.set_attribute_value(attribute_name, value)
+		}
+	}
+	builder.current_node = element.as_node()
+}
+
+pub fn (mut builder XMLDocumentBuilder) element_end(name string) {
+	if builder.has_error_ || builder.current_node == unsafe { nil } {
+		return
+	}
+	last_index := builder.namespace_stack.len - 1
+	builder.namespace_stack[last_index].depth--
+	if builder.namespace_stack[last_index].depth == 0 {
+		builder.namespace_stack.delete(last_index)
+	}
+	if builder.current_node.node_name().to_lower() != name.to_lower() {
+		builder.has_error_ = true
+		return
+	}
+	builder.current_node = builder.current_node.parent_node() or { unsafe { nil } }
+}
+
+pub fn (mut builder XMLDocumentBuilder) text(data string) {
+	if builder.has_error_ || builder.current_node == unsafe { nil } || data == '' {
+		return
+	}
+	if last_child := builder.current_node.last_child() {
+		if last_child.is_exclusive_text() {
+			mut text_node := unsafe { &dom.Text(last_child) }
+			text_node.append_data(data) or { builder.has_error_ = true }
+			return
+		}
+	}
+	mut current_node := unsafe { &dom.Node(builder.current_node) }
+	current_node.append_child(builder.document.create_text_node(data).as_node()) or {
+		builder.has_error_ = true
+	}
+}
+
+pub fn (mut builder XMLDocumentBuilder) comment(data string) {
+	if builder.has_error_ || builder.current_node == unsafe { nil } {
+		return
+	}
+	mut current_node := unsafe { &dom.Node(builder.current_node) }
+	current_node.append_child(builder.document.create_comment(data).as_node()) or {
+		builder.has_error_ = true
+	}
+}
+
+pub fn (mut builder XMLDocumentBuilder) cdata_section(data string) {
+	if builder.has_error_ || builder.current_node == unsafe { nil } {
+		return
+	}
+	section := builder.document.create_cdata_section(data) or {
+		builder.has_error_ = true
+		return
+	}
+	mut current_node := unsafe { &dom.Node(builder.current_node) }
+	current_node.append_child(section.as_node()) or { builder.has_error_ = true }
+}
+
+pub fn (mut builder XMLDocumentBuilder) processing_instruction(target string, data string) {
+	if builder.has_error_ || builder.current_node == unsafe { nil } {
+		return
+	}
+	instruction := builder.document.create_processing_instruction(target, data) or {
+		builder.has_error_ = true
+		return
+	}
+	mut current_node := unsafe { &dom.Node(builder.current_node) }
+	current_node.append_child(instruction.as_node()) or { builder.has_error_ = true }
+}
+
+pub fn (mut builder XMLDocumentBuilder) document_end() {
+	builder.current_node = unsafe { nil }
+	builder.namespace_stack.clear()
+	mut document := builder.document
+	document.update_readiness(.interactive)
+	document.update_readiness(.complete)
+}
+
 // parse_with_listener is the V boundary corresponding to LibXML's listener
 // callbacks. It retains the upstream builder's source/readiness behavior and
 // builds namespace-aware DOM nodes through LibWeb's shared XML tokenizer.
-pub fn (mut builder DocumentBuilder) parse_with_listener() ! {
+pub fn (mut builder XMLDocumentBuilder) parse_with_listener() ! {
 	mut document := builder.document
 	document.set_document_type(.xml)
 	document.update_readiness(.loading)
 	doctype := parse_document_doctype(builder.source) or {
-		builder.has_error = true
+		builder.has_error_ = true
 		return err
 	}
 	if doctype.found && document.doctype() == none {
@@ -159,12 +377,12 @@ pub fn (mut builder DocumentBuilder) parse_with_listener() ! {
 		document_type.set_system_id(doctype.system_id)
 		mut document_node := unsafe { &dom.Node(document) }
 		document_node.append_child(document_type.as_node()) or {
-			builder.has_error = true
+			builder.has_error_ = true
 			return err
 		}
 	}
 	html.parse_xml_document_source(document, builder.source) or {
-		builder.has_error = true
+		builder.has_error_ = true
 		return err
 	}
 	document.update_readiness(.interactive)
@@ -173,7 +391,7 @@ pub fn (mut builder DocumentBuilder) parse_with_listener() ! {
 
 pub fn build_document(source string, url dom.URL, scripting_support ScriptingSupport) !&dom.Document {
 	mut document := dom.Document.create(url)
-	mut builder := DocumentBuilder.create(document, scripting_support)
+	mut builder := XMLDocumentBuilder.create(document, scripting_support)
 	builder.set_source(source)!
 	builder.parse_with_listener()!
 	return document

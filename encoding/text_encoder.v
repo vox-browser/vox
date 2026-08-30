@@ -18,16 +18,26 @@ pub:
 	written u64
 }
 
+pub struct TextEncoderCommonMixin {}
+
+pub fn (_ &TextEncoderCommonMixin) encoding() string {
+	return 'utf-8'
+}
+
 // https://encoding.spec.whatwg.org/#textencoder
 pub struct TextEncoder {}
 
 pub fn TextEncoder.create() &TextEncoder {
+	return TextEncoder.construct_impl()
+}
+
+pub fn TextEncoder.construct_impl() &TextEncoder {
 	return &TextEncoder{}
 }
 
 // https://encoding.spec.whatwg.org/#dom-textencoder-encoding — the encoding getter returns "utf-8".
 pub fn (encoder &TextEncoder) encoding() string {
-	return 'utf-8'
+	return (&TextEncoderCommonMixin{}).encoding()
 }
 
 // https://encoding.spec.whatwg.org/#dom-textencoder-encode — the UTF-8 bytes of input. The V string

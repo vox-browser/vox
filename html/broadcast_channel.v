@@ -14,6 +14,53 @@ __global (
 )
 
 @[heap]
+pub struct BroadcastChannelRepository {
+mut:
+	channels map[string][]&BroadcastChannel
+}
+
+pub fn BroadcastChannelRepository.create() &BroadcastChannelRepository {
+	return &BroadcastChannelRepository{
+		channels: map[string][]&BroadcastChannel{}
+	}
+}
+
+pub fn (mut repository BroadcastChannelRepository) register_channel(channel &BroadcastChannel) {
+	mut channels := repository.channels[channel.storage_key_] or { []&BroadcastChannel{} }
+	for candidate in channels {
+		if voidptr(candidate) == voidptr(channel) {
+			return
+		}
+	}
+	channels << channel
+	repository.channels[channel.storage_key_] = channels
+}
+
+pub fn (mut repository BroadcastChannelRepository) unregister_channel(channel &BroadcastChannel) {
+	for key in repository.channels.keys() {
+		mut channels := repository.channels[key] or { continue }
+		for index, candidate in channels {
+			if voidptr(candidate) == voidptr(channel) {
+				channels.delete(index)
+				if channels.len == 0 {
+					repository.channels.delete(key)
+				} else {
+					repository.channels[key] = channels
+				}
+				return
+			}
+		}
+	}
+}
+
+pub fn (repository &BroadcastChannelRepository) registered_channels_for_key(key string) []&BroadcastChannel {
+	channels := repository.channels[key] or { return []&BroadcastChannel{} }
+	return channels.clone()
+}
+
+__global html_broadcast_channel_repository &BroadcastChannelRepository
+
+@[heap]
 pub struct BroadcastChannel {
 	dom.EventTarget
 mut:
@@ -33,6 +80,8 @@ pub fn BroadcastChannel.construct_impl(name string) &BroadcastChannel {
 		storage_key_:  'default'
 	}
 	html_broadcast_channels << channel
+	mut repository := html_broadcast_channel_repository
+	repository.register_channel(channel)
 	return channel
 }
 
@@ -51,9 +100,12 @@ pub fn (channel &BroadcastChannel) is_eligible_for_messaging() bool {
 // Embeddings set the storage partition and origin normally obtained from the
 // relevant environment settings object.
 pub fn (mut channel BroadcastChannel) set_messaging_environment(origin dom.Origin, storage_key string, eligible bool) {
+	mut repository := html_broadcast_channel_repository
+	repository.unregister_channel(&channel)
 	channel.origin_ = origin
 	channel.storage_key_ = storage_key
 	channel.eligible_ = eligible
+	repository.register_channel(&channel)
 }
 
 pub fn (channel &BroadcastChannel) post_message(message dom.JSValue) ! {
@@ -64,7 +116,8 @@ pub fn (channel &BroadcastChannel) post_message(message dom.JSValue) ! {
 		return error('InvalidStateError: BroadcastChannel.postMessage() on a closed channel')
 	}
 	serialized := structured_serialize(message)!
-	for candidate in html_broadcast_channels.clone() {
+	repository := html_broadcast_channel_repository
+	for candidate in repository.registered_channels_for_key(channel.storage_key_) {
 		if voidptr(candidate) == voidptr(channel) || candidate.closed_flag_
 			|| !candidate.is_eligible_for_messaging()
 			|| candidate.channel_name_ != channel.channel_name_
@@ -101,6 +154,8 @@ pub fn (channel &BroadcastChannel) post_message(message dom.JSValue) ! {
 
 pub fn (mut channel BroadcastChannel) close() {
 	channel.closed_flag_ = true
+	mut repository := html_broadcast_channel_repository
+	repository.unregister_channel(&channel)
 	for index, candidate in html_broadcast_channels {
 		if voidptr(candidate) == voidptr(channel) {
 			html_broadcast_channels.delete(index)

@@ -39,6 +39,14 @@ pub mut:
 	parsed_properties map[css.PropertyID]&dom.StyleValue
 }
 
+pub fn (keyframe &BaseKeyframe) unparsed_properties() map[string]string {
+	return keyframe.properties.clone()
+}
+
+pub fn (keyframe &BaseKeyframe) parsed_properties() map[css.PropertyID]&dom.StyleValue {
+	return keyframe.parsed_properties.clone()
+}
+
 pub struct BasePropertyIndexedKeyframe {
 pub mut:
 	offsets    []?f64
@@ -208,6 +216,10 @@ fn keyframes_loosely_sorted(keyframes []BaseKeyframe) bool {
 	return true
 }
 
+pub fn is_loosely_sorted_by_offset(keyframes []BaseKeyframe) bool {
+	return keyframes_loosely_sorted(keyframes)
+}
+
 fn animation_property_id(name string) ?css.PropertyID {
 	if name == 'cssFloat' { return .float_ }
 	if name in ['cssOffset', 'float', 'offset'] { return none }
@@ -248,6 +260,22 @@ fn process_keyframes(input []BaseKeyframe) ![]BaseKeyframe {
 	}
 	compute_missing_keyframe_offsets(mut keyframes)
 	return keyframes
+}
+
+// The JavaScript binding layer performs scalar/list conversion before values
+// enter this typed translation. This helper preserves the scalar branch of
+// the upstream generic operation; list-valued members are already []T.
+pub fn convert_value_to_maybe_list[T](value T) []T {
+	return [value]
+}
+
+pub fn process_a_keyframe_like_object(input BaseKeyframe) !BaseKeyframe {
+	processed := process_keyframes([input])!
+	return processed[0]
+}
+
+pub fn process_a_keyframes_argument(input []BaseKeyframe) ![]BaseKeyframe {
+	return process_keyframes(input)
 }
 
 pub fn process_property_indexed_keyframes(input BasePropertyIndexedKeyframe) ![]BaseKeyframe {
@@ -353,6 +381,34 @@ pub fn generate_initial_and_final_frames(mut set KeyFrameSet, properties map[css
 	set.keyframes_by_key[100_000] = final
 }
 
+pub fn KeyframeEffect.generate_initial_and_final_frames(mut set KeyFrameSet, properties map[css.PropertyID]bool) {
+	generate_initial_and_final_frames(mut set, properties)
+}
+
+pub fn (effect &KeyframeEffect) target_abstract_element() ?dom.AbstractElement {
+	target := effect.target_element_ or { return none }
+	css_pseudo := effect.pseudo_element_type() or {
+		return dom.AbstractElement.new(target, none)
+	}
+	mut pseudo := ?dom.PseudoElement(none)
+	match css_pseudo {
+		.before { pseudo = dom.PseudoElement.before }
+		.after { pseudo = dom.PseudoElement.after }
+		.first_line { pseudo = dom.PseudoElement.first_line }
+		.first_letter { pseudo = dom.PseudoElement.first_letter }
+		.marker { pseudo = dom.PseudoElement.marker }
+		.placeholder { pseudo = dom.PseudoElement.placeholder }
+		.selection { pseudo = dom.PseudoElement.selection }
+		.backdrop { pseudo = dom.PseudoElement.backdrop }
+		else {}
+	}
+	return dom.AbstractElement.new(target, pseudo)
+}
+
+pub fn (effect &KeyframeEffect) is_keyframe_effect() bool {
+	return true
+}
+
 pub fn keyframe_effect_composite_order(a &KeyframeEffect, b &KeyframeEffect) int {
 	a_animation := a.associated_animation_ or { return 0 }
 	b_animation := b.associated_animation_ or { return 0 }
@@ -435,4 +491,12 @@ pub fn composite_operation_or_auto_from_css(value css.AnimationComposition) Comp
 		.add { .add }
 		.accumulate { .accumulate }
 	}
+}
+
+pub fn css_animation_composition_to_bindings_composite_operation(value css.AnimationComposition) CompositeOperation {
+	return composite_operation_from_css(value)
+}
+
+pub fn css_animation_composition_to_bindings_composite_operation_or_auto(value css.AnimationComposition) CompositeOperationOrAuto {
+	return composite_operation_or_auto_from_css(value)
 }

@@ -57,6 +57,11 @@ pub fn (credential &PasswordCredential) origin() dom.Origin {
 	return credential.origin_
 }
 
+// `type` is a V keyword; type_ is the direct spelling used for the override.
+pub fn (_ &PasswordCredential) type_() string {
+	return 'password'
+}
+
 pub fn (credential &PasswordCredential) as_credential() &Credential {
 	return unsafe { &Credential(credential) }
 }

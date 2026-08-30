@@ -90,4 +90,21 @@ fn test_serializable_and_transferable_protocols() {
 	if _ := truncated.read(2) {
 		assert false
 	}
+	mut buffer_decoder := TransferDataDecoder{
+		data: [u8(3), 0, 0, 0, 9, 8, 7]
+	}
+	assert buffer_decoder.decode_buffer()! == [u8(9), 8, 7]
+}
+
+fn test_transfer_data_encoder_exact_buffer_operations() {
+	mut first := TransferDataEncoder{}
+	first.append([u8(1), 2])
+	assert first.buffer() == [u8(1), 2]
+	mut second := TransferDataEncoder{}
+	second.append([u8(3), 4])
+	mut combined := TransferDataEncoder{}
+	combined.extend([first, second])
+	assert combined.buffer() == [u8(1), 2, 3, 4]
+	assert combined.take_buffer() == [u8(1), 2, 3, 4]
+	assert combined.buffer().len == 0
 }

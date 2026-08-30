@@ -19,18 +19,19 @@ pub enum PolicySource {
 @[heap]
 pub struct Policy {
 pub mut:
-	directives               []Directive
-	disposition              Disposition
-	source                   PolicySource
-	self_origin              ?url.Origin
-	pre_parsed_policy_string string
+	self_origin ?url.Origin
+mut:
+	directives_               []Directive
+	disposition_              Disposition
+	source_                   PolicySource
+	pre_parsed_policy_string_ string
 }
 
 pub fn parse_a_serialized_csp(serialized string, source PolicySource, disposition Disposition) &Policy {
 	mut policy := &Policy{
-		disposition:              disposition
-		source:                   source
-		pre_parsed_policy_string: serialized
+		disposition_:              disposition
+		source_:                   source
+		pre_parsed_policy_string_: serialized
 	}
 	for raw_token in serialized.split(';') {
 		token := raw_token.trim(' \t\n\r\f')
@@ -46,9 +47,13 @@ pub fn parse_a_serialized_csp(serialized string, source PolicySource, dispositio
 			continue
 		}
 		value := if split_at < token.len { token[split_at..].fields() } else { []string{} }
-		policy.directives << create_directive(name, value)
+		policy.directives_ << create_directive(name, value)
 	}
 	return policy
+}
+
+pub fn Policy.parse_a_serialized_csp(serialized string, source PolicySource, disposition Disposition) &Policy {
+	return parse_a_serialized_csp(serialized, source, disposition)
 }
 
 pub fn parse_a_responses_content_security_policies(response &Response) &PolicyList {
@@ -57,7 +62,7 @@ pub fn parse_a_responses_content_security_policies(response &Response) &PolicyLi
 		if key.to_lower() == 'content-security-policy' {
 			for value in values {
 				policy := parse_a_serialized_csp(value, .header, .enforce)
-				if policy.directives.len > 0 {
+				if policy.directives_.len > 0 {
 					policies << policy
 				}
 			}
@@ -65,7 +70,7 @@ pub fn parse_a_responses_content_security_policies(response &Response) &PolicyLi
 		if key.to_lower() == 'content-security-policy-report-only' {
 			for value in values {
 				policy := parse_a_serialized_csp(value, .header, .report)
-				if policy.directives.len > 0 {
+				if policy.directives_.len > 0 {
 					policies << policy
 				}
 			}
@@ -80,9 +85,29 @@ pub fn parse_a_responses_content_security_policies(response &Response) &PolicyLi
 	return PolicyList.create(policies)
 }
 
+pub fn Policy.parse_a_responses_content_security_policies(response &Response) &PolicyList {
+	return parse_a_responses_content_security_policies(response)
+}
+
+pub fn (policy &Policy) directives() []Directive {
+	return policy.directives_.clone()
+}
+
+pub fn (policy &Policy) disposition() Disposition {
+	return policy.disposition_
+}
+
+pub fn (policy &Policy) source() PolicySource {
+	return policy.source_
+}
+
+pub fn (policy &Policy) pre_parsed_policy_string() string {
+	return policy.pre_parsed_policy_string_
+}
+
 pub fn (policy &Policy) contains_directive_with_name(name string) bool {
-	for directive in policy.directives {
-		if directive.name == name {
+	for directive in policy.directives_ {
+		if directive.name() == name {
 			return true
 		}
 	}
@@ -90,8 +115,8 @@ pub fn (policy &Policy) contains_directive_with_name(name string) bool {
 }
 
 pub fn (policy &Policy) get_directive_by_name(name string) ?Directive {
-	for directive in policy.directives {
-		if directive.name == name {
+	for directive in policy.directives_ {
+		if directive.name() == name {
 			return directive
 		}
 	}
@@ -104,20 +129,20 @@ pub fn (policy &Policy) self_origin_value() url.Origin {
 
 pub fn (policy &Policy) clone() &Policy {
 	mut directives := []Directive{}
-	for directive in policy.directives {
+	for directive in policy.directives_ {
 		directives << directive.clone()
 	}
 	return &Policy{
-		directives:               directives
-		disposition:              policy.disposition
-		source:                   policy.source
+		directives_:               directives
+		disposition_:              policy.disposition_
+		source_:                   policy.source_
 		self_origin:              policy.self_origin
-		pre_parsed_policy_string: policy.pre_parsed_policy_string
+		pre_parsed_policy_string_: policy.pre_parsed_policy_string_
 	}
 }
 
 pub fn (mut policy Policy) remove_directive(name string) {
-	policy.directives = policy.directives.filter(it.name != name)
+	policy.directives_ = policy.directives_.filter(it.name() != name)
 }
 
 pub fn (mut policy Policy) set_self_origin(origin url.Origin) {
@@ -136,9 +161,16 @@ pub fn PolicyList.create(policies []&Policy) &PolicyList {
 	}
 }
 
+pub fn PolicyList.from_object(global &GlobalContext) ?&PolicyList {
+	if isnil(global.policy_list) {
+		return none
+	}
+	return global.policy_list
+}
+
 pub fn (list &PolicyList) contains_header_delivered_policy() bool {
 	for policy in list.policies {
-		if policy.source == .header {
+		if policy.source() == .header {
 			return true
 		}
 	}
@@ -148,14 +180,14 @@ pub fn (list &PolicyList) contains_header_delivered_policy() bool {
 pub fn (list &PolicyList) csp_derived_sandboxing_flags() SandboxingFlagSet {
 	mut found := ?Directive(none)
 	for policy in list.policies {
-		if policy.disposition == .enforce {
+		if policy.disposition() == .enforce {
 			if directive := policy.get_directive_by_name(sandbox) {
 				found = directive
 			}
 		}
 	}
 	if directive := found {
-		return parse_a_sandboxing_directive(directive.value)
+		return parse_a_sandboxing_directive(directive.value())
 	}
 	return SandboxingFlagSet{}
 }
@@ -178,11 +210,11 @@ pub fn Policy.create_from_serialized_policy(serialized SerializedPolicy) &Policy
 		directives << create_directive(directive.name, directive.value)
 	}
 	return &Policy{
-		directives:               directives
-		disposition:              serialized.disposition
-		source:                   serialized.source
+		directives_:               directives
+		disposition_:              serialized.disposition
+		source_:                   serialized.source
 		self_origin:              serialized.self_origin
-		pre_parsed_policy_string: serialized.pre_parsed_policy_string
+		pre_parsed_policy_string_: serialized.pre_parsed_policy_string
 	}
 }
 
@@ -197,15 +229,15 @@ pub fn PolicyList.create_from_serialized_policies(serialized []SerializedPolicy)
 pub fn (policy &Policy) serialize() !SerializedPolicy {
 	origin := policy.self_origin or { return error('Policy has no self origin') }
 	mut directives := []SerializedDirective{}
-	for directive in policy.directives {
+	for directive in policy.directives_ {
 		directives << directive.serialize()
 	}
 	return SerializedPolicy{
 		directives:               directives
-		disposition:              policy.disposition
-		source:                   policy.source
+		disposition:              policy.disposition_
+		source:                   policy.source_
 		self_origin:              origin
-		pre_parsed_policy_string: policy.pre_parsed_policy_string
+		pre_parsed_policy_string: policy.pre_parsed_policy_string_
 	}
 }
 

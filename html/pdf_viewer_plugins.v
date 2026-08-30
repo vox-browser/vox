@@ -22,6 +22,14 @@ pub fn (mime_type &MimeType) type_name() string {
 	return mime_type.type_
 }
 
+pub fn (mime_type &MimeType) type_() string {
+	return mime_type.type_
+}
+
+pub fn mime_type_type(mime_type &MimeType) string {
+	return mime_type.type_
+}
+
 pub fn (mime_type &MimeType) description() string {
 	return 'Portable Document Format'
 }
@@ -77,6 +85,17 @@ pub fn (plugin &Plugin) named_item(name string, pdf_viewer_mime_type_objects []&
 	return none
 }
 
+pub fn (plugin &Plugin) item_value(index int, pdf_viewer_mime_type_objects []&MimeType) ?&MimeType {
+	if index < 0 {
+		return none
+	}
+	return plugin.item(u32(index), pdf_viewer_mime_type_objects)
+}
+
+pub fn (plugin &Plugin) named_item_value(name string, pdf_viewer_mime_type_objects []&MimeType) ?&MimeType {
+	return plugin.named_item(name, pdf_viewer_mime_type_objects)
+}
+
 pub struct PluginArray {
 pub:
 	pdf_viewer_supported      bool
@@ -109,6 +128,17 @@ pub fn (array &PluginArray) named_item(name string) ?&Plugin {
 	return none
 }
 
+pub fn (array &PluginArray) item_value(index int) ?&Plugin {
+	if index < 0 {
+		return none
+	}
+	return array.item(u32(index))
+}
+
+pub fn (array &PluginArray) named_item_value(name string) ?&Plugin {
+	return array.named_item(name)
+}
+
 pub struct MimeTypeArray {
 pub:
 	pdf_viewer_supported         bool
@@ -137,4 +167,15 @@ pub fn (array &MimeTypeArray) named_item(name string) ?&MimeType {
 		}
 	}
 	return none
+}
+
+pub fn (array &MimeTypeArray) item_value(index int) ?&MimeType {
+	if index < 0 {
+		return none
+	}
+	return array.item(u32(index))
+}
+
+pub fn (array &MimeTypeArray) named_item_value(name string) ?&MimeType {
+	return array.named_item(name)
 }

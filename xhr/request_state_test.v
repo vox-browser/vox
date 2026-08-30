@@ -114,7 +114,7 @@ fn test_response_state_events_headers_and_text() {
 	assert request.get_response_header('X-A')? == 'a, b'
 	assert request.get_all_response_headers().starts_with('content-length: 5\r\nX-A: a, b\r\n')
 	assert request.events.last().type_ == 'loadend'
-	assert request.events.last().length_computable
+	assert request.events.last().length_computable()
 }
 
 fn test_abort_timeout_credentials_and_gc_lifetime() {
@@ -151,4 +151,43 @@ fn test_network_errors_are_handled_before_headers_and_sync_errors_throw() {
 	} else {
 		assert err.msg() == 'NetworkError: offline'
 	}
+}
+
+fn test_exact_xml_http_request_entry_points() {
+	mut request := XMLHttpRequest.construct_impl(.window, 'https://example.test/')
+	request.set_onreadystatechange(true)
+	assert request.onreadystatechange()
+	request.open('GET', '/text', true, none, none)!
+	request.send()!
+	request.receive_headers(MockResponse{
+		url:     'https://example.test/text'
+		status:  200
+		headers: [ResponseHeader{
+			name:  'Content-Type'
+			value: 'text/plain;charset=windows-1252'
+		}]
+		body:    [u8(0x80)]
+	})!
+	request.complete_response()!
+	assert request.get_text_response() == '€'
+	assert request.get_response_mime_type().essence() == 'text/plain'
+	assert request.get_final_mime_type().essence() == 'text/plain'
+	assert request.get_final_encoding()? == 'windows-1252'
+	assert is_legacy_uppercased_byte_less_than('a', 'B')
+
+	mut document := XMLHttpRequest.construct_impl(.window, 'https://example.test/')
+	document.open('GET', '/document', true, none, none)!
+	document.set_response_type(.document)!
+	document.send()!
+	document.receive_headers(MockResponse{
+		headers: [ResponseHeader{ name: 'Content-Type', value: 'application/xml' }]
+		body:    '<x/>'.bytes()
+	})!
+	document.complete_response()!
+	document.set_document_response()
+	assert document.response().document_text? == '<x/>'
+
+	mut target := XMLHttpRequestEventTarget{}
+	fire_progress_event(mut target, 'progress', 2, 4)
+	assert target.events[0].loaded() == 2
 }

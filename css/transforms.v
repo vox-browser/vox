@@ -6,6 +6,7 @@
 
 module css
 
+import dom
 import math
 
 // Translated from:
@@ -2352,6 +2353,63 @@ pub fn (list TransformationStyleValueList) serialize(mode SerializationMode) str
 
 pub fn (list TransformationStyleValueList) to_string() string {
 	return list.serialize(.normal)
+}
+
+fn multiply_affine_2d(left [6]f64, right [6]f64) [6]f64 {
+	a := left[0] * right[0] + left[2] * right[1]
+	b := left[1] * right[0] + left[3] * right[1]
+	c := left[0] * right[2] + left[2] * right[3]
+	d := left[1] * right[2] + left[3] * right[3]
+	e := left[0] * right[4] + left[2] * right[5] + left[4]
+	f := left[1] * right[4] + left[3] * right[5] + left[5]
+	return [f64(a), b, c, d, e, f]!
+}
+
+// Parse the computed `transform` list through the translated CSS value machinery and resolve its
+// 2D affine matrix against the element's border-box reference dimensions. The six returned values
+// use the SVG/CSS `matrix(a, b, c, d, e, f)` convention. A genuinely 3D transform is left to the
+// 3D painting path and therefore returns none here instead of silently flattening it.
+pub fn resolve_transform_2d_matrix(element &dom.Element, text string, reference_width f64, reference_height f64, author_rules []&CSSRule) ?[6]f64 {
+	parsed := parse_css_value_logic(.transform, text) or { return none }
+	mut transformations := []TransformationStyleValue{}
+	if parsed is TransformationStyleValue {
+		transformations << parsed
+	} else if parsed is StyleValueList {
+		for item in parsed.values() {
+			if item !is TransformationStyleValue {
+				return none
+			}
+			transformations << (item as TransformationStyleValue)
+		}
+	} else {
+		return [f64(1), 0, 0, 1, 0, 0]!
+	}
+
+	mut length_context := LengthResolutionContext.for_document(element.document())
+	font_size := CSSPixels.nearest_value_for(computed_font_size_px(element, author_rules))
+	length_context.font_metrics = computed_interpolation_font_metrics_for_size(font_size)
+	length_context.font_metrics.line_height = CSSPixels.nearest_value_for(computed_line_height_px(element,
+		author_rules))
+	root_size := CSSPixels.nearest_value_for(root_font_size_px(element, author_rules))
+	length_context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_size)
+	paintable_box := TransformPaintableBox{
+		reference_box:             TransformReferenceBox{
+			width:  CSSPixels.nearest_value_for(reference_width)
+			height: CSSPixels.nearest_value_for(reference_height)
+		}
+		length_resolution_context: length_context
+	}
+	mut result := [f64(1), 0, 0, 1, 0, 0]!
+	for transformation in transformations {
+		matrix := transformation.to_matrix(paintable_box) or { return none }
+		if matrix.m13 != 0 || matrix.m23 != 0 || matrix.m31 != 0 || matrix.m32 != 0
+			|| matrix.m33 != 1 || matrix.m34 != 0 || matrix.m43 != 0 || matrix.m44 != 1 {
+			return none
+		}
+		function_matrix := [f64(matrix.m11), matrix.m21, matrix.m12, matrix.m22, matrix.m14, matrix.m24]!
+		result = multiply_affine_2d(result, function_matrix)
+	}
+	return result
 }
 
 pub fn TransformationStyleValue.identity_transformation(transform_function TransformFunction) TransformationStyleValue {

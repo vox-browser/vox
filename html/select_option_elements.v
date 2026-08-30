@@ -6,6 +6,7 @@
 // HTMLSelectElement.cpp, and HTMLOptionsCollection.cpp.
 module html
 
+import aria
 import dom
 import infra
 
@@ -53,6 +54,10 @@ pub fn html_option_element_selectedness_update_index(option &dom.HTMLOptionEleme
 pub fn html_option_element_set_selected_internal(option &dom.HTMLOptionElement, selected bool) {
 	mut mutable_option := unsafe { &dom.HTMLOptionElement(option) }
 	mutable_option.selectedness_initialized_ = true
+	if mutable_option.selected_ != selected {
+		mut node := option_node(option)
+		node.invalidate_style(.html_option_element_selected_change)
+	}
 	mutable_option.selected_ = selected
 	if selected {
 		mut document := unsafe { &dom.Document(option_dom_element(option).document()) }
@@ -79,6 +84,35 @@ pub fn html_option_element_selected_attribute_changed(option &dom.HTMLOptionElem
 		return
 	}
 	html_option_element_set_selected_internal(option, value != none)
+}
+
+pub fn html_option_element_update_selection_label(option &dom.HTMLOptionElement) {
+	if !html_option_element_selected(option) {
+		return
+	}
+	select_element := html_option_element_nearest_select(option) or { return }
+	html_select_element_update_selectedcontent(select_element) or {}
+	shadow_root := select_dom_element(select_element).shadow_root() or { return }
+	shadow_children := unsafe { &dom.Node(shadow_root) }.children_as_vector()
+	if shadow_children.len == 0 {
+		return
+	}
+	border_children := shadow_children[0].children_as_vector()
+	if border_children.len == 0 {
+		return
+	}
+	mut inner := border_children[0]
+	inner.string_replace_all(infra.strip_and_collapse_whitespace(html_option_element_label(option)))
+}
+
+pub fn html_option_element_attribute_changed(option &dom.HTMLOptionElement, name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut element := option_dom_element(option)
+	element.attribute_changed(name, old_value, value, namespace_)
+	if name == 'selected' {
+		html_option_element_selected_attribute_changed(option, value)
+	} else if name == 'label' {
+		html_option_element_update_selection_label(option)
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-value
@@ -133,6 +167,13 @@ pub fn set_html_option_element_label(option &dom.HTMLOptionElement, label string
 
 // https://html.spec.whatwg.org/multipage/form-elements.html#option-element-nearest-ancestor-select
 pub fn html_option_element_nearest_select(option &dom.HTMLOptionElement) ?&dom.HTMLSelectElement {
+	if cached := option.cached_nearest_select_element_ {
+		return cached
+	}
+	return html_option_element_compute_nearest_select_element(option)
+}
+
+pub fn html_option_element_compute_nearest_select_element(option &dom.HTMLOptionElement) ?&dom.HTMLSelectElement {
 	mut ancestor_optgroup := false
 	mut ancestor := option_node(option).parent_node()
 	for ancestor != none {
@@ -157,6 +198,27 @@ pub fn html_option_element_nearest_select(option &dom.HTMLOptionElement) ?&dom.H
 	return none
 }
 
+pub fn html_option_element_update_nearest_select_element(option &dom.HTMLOptionElement) {
+	old_select := option.cached_nearest_select_element_
+	new_select := html_option_element_compute_nearest_select_element(option)
+	mut changed := old_select == none || new_select == none
+	if old := old_select {
+		if new := new_select {
+			changed = voidptr(old) != voidptr(new)
+		}
+	}
+	if changed {
+		if old := old_select {
+			html_select_element_update_selectedness(old)
+		}
+		if new := new_select {
+			html_select_element_update_selectedness(new)
+		}
+	}
+	mut mutable_option := unsafe { &dom.HTMLOptionElement(option) }
+	mutable_option.cached_nearest_select_element_ = new_select
+}
+
 // https://html.spec.whatwg.org/multipage/form-elements.html#concept-option-index
 pub fn html_option_element_index(option &dom.HTMLOptionElement) i32 {
 	select_element := html_option_element_nearest_select(option) or { return 0 }
@@ -168,6 +230,19 @@ pub fn html_option_element_index(option &dom.HTMLOptionElement) i32 {
 	return 0
 }
 
+pub fn html_option_element_nearest_select_element(option &dom.HTMLOptionElement) ?&dom.HTMLSelectElement {
+	return html_option_element_nearest_select(option)
+}
+
+pub fn html_selected_content_element_disabled(element &dom.HTMLSelectedContentElement) bool {
+	return element.disabled_
+}
+
+pub fn html_selected_content_element_set_disabled(element &dom.HTMLSelectedContentElement, value bool) {
+	mut mutable_element := unsafe { &dom.HTMLSelectedContentElement(element) }
+	mutable_element.disabled_ = value
+}
+
 // https://html.spec.whatwg.org/multipage/form-elements.html#concept-option-disabled
 pub fn html_option_element_disabled(option &dom.HTMLOptionElement) bool {
 	element := option_dom_element(option)
@@ -176,6 +251,88 @@ pub fn html_option_element_disabled(option &dom.HTMLOptionElement) bool {
 	}
 	parent := option_node(option).parent_element() or { return false }
 	return parent.local_name() == 'optgroup' && parent.has_attribute('disabled')
+}
+
+pub fn html_option_element_ask_for_a_reset(option &dom.HTMLOptionElement) {
+	if select_element := html_option_element_nearest_select(option) {
+		html_select_element_update_selectedness(select_element)
+	}
+}
+
+pub fn html_option_element_form(option &dom.HTMLOptionElement) ?&dom.HTMLFormElement {
+	select_element := html_option_element_nearest_select(option) or { return none }
+	select_dom := select_dom_element(select_element)
+	if form_id := select_dom.get_attribute('form') {
+		return form_element_find_form_by_id(select_dom.as_node().root(), form_id)
+	}
+	ancestor := form_element_nearest_ancestor(select_dom, 'form') or { return none }
+	return unsafe { &dom.HTMLFormElement(ancestor) }
+}
+
+pub fn html_option_element_default_role(_ &dom.HTMLOptionElement) aria.Role {
+	return .option
+}
+
+pub fn html_option_element_clone_into_selectedcontent(option &dom.HTMLOptionElement, selectedcontent &dom.HTMLSelectedContentElement) ! {
+	clone_html_option_into_selectedcontent(option, selectedcontent)!
+}
+
+pub fn html_option_element_inserted(option &dom.HTMLOptionElement) {
+	initialize_option_selectedness(option)
+	html_option_element_set_selected_internal(option, html_option_element_selected(option))
+	html_option_element_update_nearest_select_element(option)
+}
+
+pub fn html_option_element_removed_from(option &dom.HTMLOptionElement, _ ?&dom.Node, _ &dom.Node) {
+	html_option_element_update_nearest_select_element(option)
+}
+
+pub fn html_option_element_children_changed(option &dom.HTMLOptionElement, metadata dom.ChildrenChangedMetadata) {
+	mut element := option_dom_element(option)
+	element.children_changed(metadata)
+	html_option_element_update_selection_label(option)
+}
+
+fn html_opt_group_element_has_option_child(optgroup &dom.HTMLOptGroupElement) bool {
+	for child in unsafe { &dom.Element(optgroup) }.as_node().children_as_vector() {
+		if element := child.as_element() {
+			if element.local_name() == 'option' {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+pub fn html_opt_group_element_inserted(optgroup &dom.HTMLOptGroupElement) {
+	parent := unsafe { &dom.Element(optgroup) }.as_node().parent_element() or { return }
+	if parent.local_name() == 'select' && html_opt_group_element_has_option_child(optgroup) {
+		html_select_element_update_selectedness(unsafe { &dom.HTMLSelectElement(parent) })
+	}
+}
+
+pub fn html_opt_group_element_removed_from(optgroup &dom.HTMLOptGroupElement, old_parent ?&dom.Node, _ &dom.Node) {
+	parent := old_parent or { return }
+	element := parent.as_element() or { return }
+	if element.local_name() == 'select' && html_opt_group_element_has_option_child(optgroup) {
+		html_select_element_update_selectedness(unsafe { &dom.HTMLSelectElement(element) })
+	}
+}
+
+pub fn html_data_list_element_options(datalist &dom.HTMLDataListElement) &dom.HTMLCollection {
+	if options := datalist.options_ {
+		return options
+	}
+	element := unsafe { &dom.Element(datalist) }
+	options := dom.HTMLCollection.create(unsafe { &dom.ParentNode(element) }, .descendants,
+		fn (candidate &dom.Element) bool {
+		return candidate.local_name() == 'option'
+	}, fn (_ &dom.Element, _ &dom.Element) bool {
+		return false
+	})
+	mut mutable_datalist := unsafe { &dom.HTMLDataListElement(datalist) }
+	mutable_datalist.options_ = options
+	return options
 }
 
 fn option_is_nested_optgroup(node &dom.Node, select_element &dom.HTMLSelectElement) bool {
@@ -631,6 +788,14 @@ pub fn html_selectedcontent_element_post_connection(selectedcontent &dom.HTMLSel
 	html_select_element_clear_non_primary_selectedcontent(select_element)
 }
 
+pub fn html_selected_content_element_clear_selectedcontent(selectedcontent &dom.HTMLSelectedContentElement) {
+	clear_html_selectedcontent_element(selectedcontent)
+}
+
+pub fn html_selected_content_element_post_connection(selectedcontent &dom.HTMLSelectedContentElement) ! {
+	html_selectedcontent_element_post_connection(selectedcontent)!
+}
+
 // The caller supplies old_parent after it removes selectedcontent from the tree.
 pub fn html_selectedcontent_element_removed(selectedcontent &dom.HTMLSelectedContentElement, old_parent ?&dom.Node) ! {
 	selectedcontent_node := unsafe { &dom.Element(selectedcontent) }.as_node()
@@ -655,4 +820,8 @@ pub fn html_selectedcontent_element_removed(selectedcontent &dom.HTMLSelectedCon
 		}
 		old_ancestor = current.parent_node()
 	}
+}
+
+pub fn html_selected_content_element_removed_from(selectedcontent &dom.HTMLSelectedContentElement, old_parent ?&dom.Node, _ &dom.Node) ! {
+	html_selectedcontent_element_removed(selectedcontent, old_parent)!
 }

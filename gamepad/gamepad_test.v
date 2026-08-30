@@ -28,7 +28,7 @@ fn test_standard_device_initializes_and_normalizes_state() {
 	assert pad.contains_gamepad_user_gesture()
 }
 
-fn test_incomplete_layout_is_not_standard_and_values_are_clamped() {
+fn test_incomplete_layout_is_not_standard_and_uses_upstream_normalization_formula() {
 	mut device := &Device{
 		id:      1
 		name:    'one axis'
@@ -38,7 +38,7 @@ fn test_incomplete_layout_is_not_standard_and_values_are_clamped() {
 	pad := Gamepad.create(device, 0, 0)
 	assert pad.mapping() == .empty
 	assert pad.axes() == [1.0]
-	assert pad.buttons()[0].value() == 1.0
+	assert pad.buttons()[0].value() == 3.0
 }
 
 fn test_gamepad_event_preserves_dom_event_init_and_gamepad() {
@@ -56,5 +56,36 @@ fn test_gamepad_event_preserves_dom_event_init_and_gamepad() {
 	assert event.event.bubbles()
 	assert event.event.cancelable()
 	assert event.event.composed()
-	assert event.gamepad? == pad
+	assert event.gamepad()? == pad
+}
+
+fn test_exact_gamepad_state_entry_points_and_platform_accessors() {
+	mut device := new_standard_virtual_device(17, 'exact methods')
+	mut pad := Gamepad.create(device, 0, 1)
+	assert pad.sdl_joystick_id() == 17
+	assert voidptr(pad.sdl_gamepad()) == voidptr(device)
+	pad.set_connected(false)
+	pad.set_exposed(true)
+	pad.set_timestamp(2)
+	assert !pad.connected()
+	assert pad.exposed()
+	assert pad.timestamp() == 2
+	device.set_axis(0, joystick_axis_max)!
+	device.set_button(0, true)!
+	pad.map_and_normalize_axes()
+	pad.map_and_normalize_buttons()
+	assert pad.axes()[0] == 1.0
+	assert pad.buttons()[0].pressed()
+	device.set_axis(0, joystick_axis_min)!
+	pad.update_gamepad_state(3)
+	assert pad.timestamp() == 3
+	assert pad.axes()[0] == -1.0
+
+	mut button := &GamepadButton{}
+	button.set_pressed(true)
+	button.set_touched(true)
+	button.set_value(0.75)
+	assert button.pressed()
+	assert button.touched()
+	assert button.value() == 0.75
 }

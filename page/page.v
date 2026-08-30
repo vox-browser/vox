@@ -116,6 +116,7 @@ pub mut:
 	media_elements map[u64]MediaElementState
 	selected_match ?FindMatch
 mut:
+	client_                        &PageClient = &PageClient{}
 	device_scale                   f64 = 1
 	top_level_traversable_         string
 	focused_navigable_             string
@@ -126,8 +127,10 @@ mut:
 	is_webdriver_active_           bool
 	is_hovering_link_              bool
 	is_in_tooltip_area_            bool
+	current_cursor_                string = 'arrow'
 	window_position_               PixelPoint
 	window_size_                   PixelSize
+	window_rect_observer_          bool
 	pending_dialog_                PendingDialog
 	pending_dialog_text_           ?string
 	pending_dialog_default_        string

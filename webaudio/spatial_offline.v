@@ -132,6 +132,7 @@ pub mut:
 	rendering_started  bool
 	rendered_buffer    ?AudioBuffer
 	oncomplete_count   u32
+	oncomplete         bool
 	fully_active       bool = true
 	detached           bool
 }
@@ -150,7 +151,7 @@ pub fn new_offline_audio_context_with_options(id u64, options OfflineAudioContex
 
 pub fn new_offline_audio_context(id u64, number_of_channels u32, length u32, sample_rate f32) !OfflineAudioContext {
 	verify_audio_options(number_of_channels, length, sample_rate)!
-	base := make_base_context(id, sample_rate, number_of_channels)!
+	base := make_base_context(id, sample_rate, number_of_channels, true)!
 	return OfflineAudioContext{
 		base:               base
 		length:             length

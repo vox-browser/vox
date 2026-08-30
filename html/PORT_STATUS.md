@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/HTML`
 
 Translation workspace: `~/code/libweb_v/html`
-Audited: 2026-08-17
+Audited: 2026-08-28
 
 All 261 upstream HTML `.cpp` implementation units have a V implementation
 mapping. The audit deliberately ignores this status file when checking mappings,
@@ -15,45 +15,60 @@ so documentation cannot make an unimplemented source unit appear translated.
 | --- | ---: | ---: | ---: |
 | None | 0 | 0 | 0 |
 
-## Coverage and LOC
+## Upstream coverage
 
 LOC is physical line count (`wc -l`), including comments and blank lines. V
 implementation and test columns are disjoint. Shared support added to `dom` is
 not included in the V counts below, so these figures describe the `html` module
 itself.
 
-| Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
-| --- | ---: | ---: | ---: | ---: | --- |
-| `HTML/` top level | 218 | 57,313 | 23,090 | 5,185 | Complete |
-| `HTML/Canvas` | 7 | 1,101 | 1,173 | 389 | Complete |
-| `HTML/CrossOrigin` | 2 | 358 | 174 | 51 | Complete |
-| `HTML/CustomElements` | 5 | 587 | 940 | 102 | Complete |
-| `HTML/EventLoop` | 3 | 1,017 | 357 | 62 | Complete |
-| `HTML/Parser` | 7 | 9,635 | 8,593 | 1,107 | Complete |
-| `HTML/Scripting` | 18 | 3,217 | 1,852 | 413 | Complete |
-| `HTML/SyntaxHighlighter` | 1 | 206 | 271 | 82 | Complete |
-| **Total** | **261** | **73,434** | **36,891** | **7,611** | **Complete** |
+| Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Status |
+| --- | ---: | ---: | --- |
+| `HTML/` top level | 218 | 57,313 | Complete |
+| `HTML/Canvas` | 7 | 1,101 | Complete |
+| `HTML/CrossOrigin` | 2 | 358 | Complete |
+| `HTML/CustomElements` | 5 | 587 | Complete |
+| `HTML/EventLoop` | 3 | 1,017 | Complete |
+| `HTML/Parser` | 7 | 9,635 | Complete |
+| `HTML/Scripting` | 18 | 3,217 | Complete |
+| `HTML/SyntaxHighlighter` | 1 | 206 | Complete |
+| **Total** | **261** | **73,434** | **Complete** |
 
-The translated module contains 131 implementation files and 92 test files.
-Several V files consolidate tightly coupled C++ classes, while parser and state
-machine code is split by responsibility; file counts are therefore not expected
-to match one-to-one.
+The translated module contains 146 implementation files (54,896 LOC) and 100
+test files (10,966 LOC), containing 494 V test functions. Several V files
+consolidate tightly coupled C++ classes, while parser and state-machine code is
+split by responsibility; file and test counts are therefore not expected to
+match one-to-one with the upstream layout.
+
+The symbol audit inventories 4,226 upstream implementations from both `.cpp`
+and inline header definitions. Its current result has zero unmatched entries:
+3,378 direct candidate matches, 53 reviewed consolidated matches, 319 GC or
+binding-runtime hooks, 403 language constructors/destructors, 62 namespace
+template specializations, nine language template traits, and two language
+operators. It also inventories 1,067 upstream HTML/WPT test inputs so changes to
+the upstream corpus remain visible even though those JavaScript/browser tests
+do not map one-to-one to V test functions.
 
 ## Verification
 
-Full workspace verification:
+HTML verification:
 
 ```text
-$ /Users/alex/code/v/v test .
-Summary for all V _test.v files: 324 passed, 324 total.
+$ python3 tools/html_translation_audit.py
+upstream .cpp files: 261
+upstream methods: 4226
+unmatched methods by class:
+
+$ /Users/alex/code/v/v_old -enable-globals test html
+Summary for all V _test.v files: 100 passed, 100 total.
 ```
 
 Focused coverage includes the HTML tokenizer/tree builder, foreign and fragment
 parsing, custom elements, forms and selected-content, media, canvas and
-offscreen canvas, navigation/session history, browsing contexts and
-cross-origin access, event loop and messaging, workers and scripting
-environments, structured serialization, rendering-thread command ordering, and
-syntax highlighting.
+offscreen canvas, navigation/session history and same-document updates,
+browsing contexts and cross-origin access, event loop and messaging, classic
+and module-script fetching, workers and scripting environments, structured
+serialization, rendering-thread command ordering, and syntax highlighting.
 
 ## Port boundary
 

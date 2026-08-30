@@ -31,6 +31,10 @@ fn test_internal_gamepad_integrates_with_public_gamepad_api() {
 	assert actuator.complete_pending_effect()
 	assert promise.result? == .complete
 	assert virtual.get_received_rumble_effects().len == 2
+	assert rumble(mut virtual, 12, 34)
+	assert virtual.get_received_rumble_effects().last() == gamepad.RumbleEffect{12, 34}
+	assert rumble_triggers(mut virtual, 56, 78)
+	assert virtual.get_received_rumble_trigger_effects().last() == gamepad.TriggerRumbleEffect{56, 78}
 	virtual.disconnect()
 	assert virtual.disconnected_
 	assert navigator.gamepads_.len == 0

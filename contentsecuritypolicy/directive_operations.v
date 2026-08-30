@@ -316,18 +316,18 @@ pub fn does_integrity_metadata_match_source_list(integrity_metadata string, sour
 
 pub fn script_directives_pre_request_check(request &Request, directive Directive, policy &Policy) Result {
 	if request.destination_is_script_like() {
-		if does_nonce_match_source_list(request.cryptographic_nonce_metadata, directive.value) == .matches
-			|| does_integrity_metadata_match_source_list(request.integrity_metadata, directive.value) == .matches {
+		if does_nonce_match_source_list(request.cryptographic_nonce_metadata, directive.value()) == .matches
+			|| does_integrity_metadata_match_source_list(request.integrity_metadata, directive.value()) == .matches {
 			return .allowed
 		}
-		if contains_ascii_case_insensitive(directive.value, strict_dynamic) {
+		if contains_ascii_case_insensitive(directive.value(), strict_dynamic) {
 			return if request.parser_metadata == .parser_inserted {
 				Result.blocked
 			} else {
 				Result.allowed
 			}
 		}
-		if does_request_match_source_list(request, directive.value, policy) == .does_not_match {
+		if does_request_match_source_list(request, directive.value(), policy) == .does_not_match {
 			return .blocked
 		}
 	}
@@ -336,18 +336,18 @@ pub fn script_directives_pre_request_check(request &Request, directive Directive
 
 pub fn script_directives_post_request_check(request &Request, response &Response, directive Directive, policy &Policy) Result {
 	if request.destination_is_script_like() {
-		if does_nonce_match_source_list(request.cryptographic_nonce_metadata, directive.value) == .matches
-			|| does_integrity_metadata_match_source_list(request.integrity_metadata, directive.value) == .matches {
+		if does_nonce_match_source_list(request.cryptographic_nonce_metadata, directive.value()) == .matches
+			|| does_integrity_metadata_match_source_list(request.integrity_metadata, directive.value()) == .matches {
 			return .allowed
 		}
-		if contains_ascii_case_insensitive(directive.value, strict_dynamic) {
+		if contains_ascii_case_insensitive(directive.value(), strict_dynamic) {
 			return if request.parser_metadata != .parser_inserted {
 				Result.allowed
 			} else {
 				Result.blocked
 			}
 		}
-		if does_response_match_source_list(response, request, directive.value, policy) == .does_not_match {
+		if does_response_match_source_list(response, request, directive.value(), policy) == .does_not_match {
 			return .blocked
 		}
 	}

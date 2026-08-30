@@ -174,9 +174,8 @@ pub fn (value ReferrerPolicyModifierValue) to_string() string {
 	}
 }
 
-// Boundary: These are the Fetch::Infrastructure::Request pieces needed by
-// RequestURLModifier::modify_request(). The full Fetch request implementation is
-// outside this V port, so keep the mutated request fields explicit here.
+// Staging projection used while applying CSS <request-url-modifier> values. It is
+// converted to Fetch::Request by fetch_a_style_resource() before dispatch.
 pub enum CSSRequestMode {
 	cors
 	no_cors
@@ -237,21 +236,21 @@ pub mut:
 
 pub fn RequestURLModifier.create_cross_origin(value CrossOriginModifierValue) RequestURLModifier {
 	return RequestURLModifier{
-		type_:  .cross_origin
+		type_: .cross_origin
 		value_: value
 	}
 }
 
 pub fn RequestURLModifier.create_integrity(value string) RequestURLModifier {
 	return RequestURLModifier{
-		type_:  .integrity
+		type_: .integrity
 		value_: value
 	}
 }
 
 pub fn RequestURLModifier.create_referrer_policy(value ReferrerPolicyModifierValue) RequestURLModifier {
 	return RequestURLModifier{
-		type_:  .referrer_policy
+		type_: .referrer_policy
 		value_: value
 	}
 }
@@ -273,9 +272,8 @@ pub fn (modifier RequestURLModifier) modify_request(mut request CSSRequest) {
 			value := modifier.value_ as CrossOriginModifierValue
 			if value == .use_credentials {
 				request.credentials_mode = .include
-			}
-			// 3. Otherwise, set req's credentials mode to "same-origin".
-			else {
+			} else {
+				// 3. Otherwise, set req's credentials mode to "same-origin".
 				request.credentials_mode = .same_origin
 			}
 		}
@@ -298,7 +296,9 @@ pub fn (modifier RequestURLModifier) modify_request(mut request CSSRequest) {
 				.origin { CSSReferrerPolicy.origin }
 				.strict_origin { CSSReferrerPolicy.strict_origin }
 				.origin_when_cross_origin { CSSReferrerPolicy.origin_when_cross_origin }
-				.strict_origin_when_cross_origin { CSSReferrerPolicy.strict_origin_when_cross_origin }
+				.strict_origin_when_cross_origin {
+					CSSReferrerPolicy.strict_origin_when_cross_origin
+				}
 				.unsafe_url { CSSReferrerPolicy.unsafe_url }
 			}
 		}
@@ -356,8 +356,8 @@ pub mut:
 
 pub fn URL.new(url string, type_ URLType, request_url_modifiers []RequestURLModifier) URL {
 	return URL{
-		type_:                 type_
-		url_:                  url
+		type_: type_
+		url_: url
 		request_url_modifiers: request_url_modifiers
 	}
 }
@@ -393,8 +393,7 @@ fn request_url_modifier_lists_equal(left []RequestURLModifier, right []RequestUR
 // URL::operator== is defaulted in C++; compare the type, URL string, and
 // request URL modifiers in order.
 pub fn (url URL) equals(other URL) bool {
-	return url.type_ == other.type_ && url.url_ == other.url_
-		&& request_url_modifier_lists_equal(url.request_url_modifiers, other.request_url_modifiers)
+	return url.type_ == other.type_ && url.url_ == other.url_ && request_url_modifier_lists_equal(url.request_url_modifiers, other.request_url_modifiers)
 }
 
 // https://drafts.csswg.org/cssom-1/#serialize-a-url

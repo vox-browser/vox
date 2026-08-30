@@ -49,6 +49,7 @@ fn test_navigator_beacon_builds_keepalive_fetch_request() {
 	assert request.credentials_mode == .include
 	assert request.current_url().serialize() == 'https://example.test/base/collect'
 	assert request.body.bytes.bytestr() == 'payload'
+	assert navigator_beacon_partial_send_beacon(mut navigator, 'collect-again', none)!
 
 	assert !(navigator.send_beacon('/too-large', BeaconBody{
 		bytes: []u8{len: int(keepalive_maximum_size)}

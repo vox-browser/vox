@@ -22,6 +22,8 @@ pub mut:
 	stores         map[string]ObjectStoreData
 	connections    int
 	delete_pending bool
+	associated_connections []&IDBDatabase
+	upgrade_transaction ?&IDBTransaction
 }
 
 fn (database &DatabaseData) clone_stores() map[string]ObjectStoreData {
@@ -40,15 +42,24 @@ pub mut:
 	upgrade_active bool
 	transactions   []&IDBTransaction
 	events         []string
+	object_store_handles map[string]IDBObjectStore
+	onabort_       ?IDBEventHandler
+	onerror_       ?IDBEventHandler
+	onclose_       ?IDBEventHandler
+	onversionchange_ ?IDBEventHandler
 }
 
 fn new_connection(data &DatabaseData) &IDBDatabase {
 	unsafe {
 		data.connections++
 	}
-	return &IDBDatabase{
+	mut connection := &IDBDatabase{
 		data: data
 	}
+	unsafe {
+		data.associated_connections << connection
+	}
+	return connection
 }
 
 pub fn (database &IDBDatabase) name() string {
@@ -83,6 +94,7 @@ fn (mut database IDBDatabase) finish_close() {
 	if database.data.connections > 0 {
 		database.data.connections--
 	}
+	database.data.associated_connections = database.data.associated_connections.filter(voidptr(it) != voidptr(&database))
 }
 
 pub struct IDBObjectStoreParameters {

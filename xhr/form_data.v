@@ -15,6 +15,13 @@ pub:
 
 pub type FormDataEntryValue = FormDataFile | string
 
+pub struct FormDataBlob {
+pub:
+	blob &fileapi.Blob
+}
+
+pub type FormDataAppendValue = FormDataBlob | string
+
 pub struct FormDataEntry {
 pub:
 	name  string
@@ -28,7 +35,13 @@ pub mut:
 }
 
 pub fn FormData.create() &FormData {
-	return &FormData{}
+	return FormData.construct_impl(none)
+}
+
+pub fn FormData.construct_impl(entries ?[]FormDataEntry) &FormData {
+	return &FormData{
+		entries: (entries or { []FormDataEntry{} }).clone()
+	}
 }
 
 pub fn FormData.from_query_entries(entries [][2]string) &FormData {
@@ -43,13 +56,23 @@ pub fn FormData.from_query_entries(entries [][2]string) &FormData {
 }
 
 pub fn (mut data FormData) append(name string, value string) {
-	data.entries << FormDataEntry{
-		name:  name
-		value: value
-	}
+	data.append_impl(name, FormDataAppendValue(value), none)
 }
 
 pub fn (mut data FormData) append_blob(name string, blob &fileapi.Blob, filename ?string) {
+	data.append_impl(name, FormDataBlob{blob}, filename)
+}
+
+pub fn (mut data FormData) append_impl(name string, value FormDataAppendValue, filename ?string) {
+	if value is string {
+		string_value := value as string
+		data.entries << FormDataEntry{
+			name:  name
+			value: FormDataEntryValue(string_value)
+		}
+		return
+	}
+	blob := (value as FormDataBlob).blob
 	file := fileapi.File.create(blob.raw_bytes().clone(), filename or { 'blob' }, blob.type_(),
 		time.now().unix_milli())
 	data.entries << FormDataEntry{
@@ -79,6 +102,14 @@ pub fn (mut data FormData) delete(name string) {
 	data.entries = data.entries.filter(it.name != name)
 }
 
+pub fn (mut data FormData) delete_(name string) {
+	data.delete(name)
+}
+
+pub fn (data &FormData) entry_list() []FormDataEntry {
+	return data.entries.clone()
+}
+
 pub fn (data &FormData) get(name string) ?FormDataEntryValue {
 	for entry in data.entries {
 		if entry.name == name {
@@ -103,10 +134,20 @@ pub fn (data &FormData) has(name string) bool {
 }
 
 pub fn (mut data FormData) set(name string, value string) {
-	data.set_entry(FormDataEntry{ name: name, value: value })
+	data.set_impl(name, FormDataAppendValue(value), none)
 }
 
 pub fn (mut data FormData) set_blob(name string, blob &fileapi.Blob, filename ?string) {
+	data.set_impl(name, FormDataBlob{blob}, filename)
+}
+
+pub fn (mut data FormData) set_impl(name string, value FormDataAppendValue, filename ?string) {
+	if value is string {
+		string_value := value as string
+		data.set_entry(FormDataEntry{ name: name, value: FormDataEntryValue(string_value) })
+		return
+	}
+	blob := (value as FormDataBlob).blob
 	file := fileapi.File.create(blob.raw_bytes().clone(), filename or { 'blob' }, blob.type_(),
 		time.now().unix_milli())
 	data.set_entry(FormDataEntry{ name: name, value: FormDataFile{file} })
@@ -177,6 +218,10 @@ mut:
 }
 
 pub fn (data &FormData) iterator(kind IteratorKind) FormDataIterator {
+	return FormDataIterator.create(data, kind)
+}
+
+pub fn FormDataIterator.create(data &FormData, kind IteratorKind) FormDataIterator {
 	return FormDataIterator{
 		data: data
 		kind: kind

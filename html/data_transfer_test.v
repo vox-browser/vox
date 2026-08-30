@@ -1,5 +1,13 @@
 module html
 
+fn test_data_transfer_construct_impl_initial_state() {
+	transfer := DataTransfer.construct_impl()
+	assert transfer.length() == 0
+	assert transfer.mode()? == .read_write
+	assert transfer.drop_effect() == 'none'
+	assert transfer.effect_allowed() == 'none'
+}
+
 fn test_data_transfer_set_get_clear_and_types() {
 	mut transfer := DataTransfer.construct()
 	assert transfer.drop_effect() == 'none'
@@ -31,11 +39,29 @@ fn test_data_transfer_item_list_modes_and_files() {
 	text_item := text_result.item or { panic('missing text item') }
 	assert text_item.kind() == 'string'
 	assert text_item.type_() == 'text/plain'
+	assert data_transfer_item_type(text_item) == 'text/plain'
+	assert items.item_value(0)? == text_item
 	items.add_string('duplicate', 'text/plain') or {
 		assert err.msg().contains('NotSupportedError')
 		return
 	}
 	assert false
+}
+
+fn test_data_transfer_item_list_exact_add_overloads_and_entry() {
+	mut transfer := DataTransfer.construct()
+	mut items := transfer.items()
+	text := items.add(DataTransferItemAddInput('payload'), 'Text/Plain')!
+	assert text.item?.type_() == 'text/plain'
+	file := items.add(DataTransferItemAddInput(FormDataFile{
+		name:      'photo.png'
+		mime_type: 'image/png'
+		bytes:     [u8(1), 2, 3]
+	}))!
+	file_item := file.item or { panic('missing file item') }
+	entry := file_item.webkit_get_as_entry() or { panic('missing entry') }
+	assert entry.is_file()
+	assert entry.name() == 'photo.png'
 }
 
 fn test_data_transfer_item_list_files_and_protected_mode() {

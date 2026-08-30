@@ -16,7 +16,7 @@ fn header_value(headers []http.Header, name string) ?string {
 
 fn load_request_for(value string) &LoadRequest {
 	mut request := LoadRequest.create(http.HeaderList.create())
-	request.url = dom.URL{value}
+	request.set_url(dom.URL{value})
 	return request
 }
 
@@ -24,11 +24,24 @@ fn test_resource_loader_initialization_and_configuration() {
 	mut resource_loader := initialize()
 	assert is_initialized()
 	assert the() == resource_loader
-	assert resource_loader.user_agent == default_user_agent()
-	assert resource_loader.platform == default_platform()
-	assert resource_loader.preferred_languages == ['en-US']
+	assert resource_loader.user_agent() == default_user_agent()
+	assert resource_loader.platform() == default_platform()
+	assert resource_loader.preferred_languages() == ['en-US']
 	resource_loader.set_preferred_languages(['fr', 'en']) or { panic(err) }
-	assert resource_loader.preferred_languages == ['fr', 'en']
+	assert resource_loader.preferred_languages() == ['fr', 'en']
+	resource_loader.set_user_agent('Test Agent')
+	resource_loader.set_platform('Test Platform')
+	resource_loader.set_navigator_compatibility_mode(.gecko)
+	resource_loader.set_enable_global_privacy_control(true)
+	assert resource_loader.user_agent() == 'Test Agent'
+	assert resource_loader.platform() == 'Test Platform'
+	assert resource_loader.navigator_compatibility_mode() == .gecko
+	assert resource_loader.enable_global_privacy_control()
+	client := voidptr(usize(42))
+	resource_loader.set_client(client)
+	assert resource_loader.request_client() == client
+	assert ResourceLoader.is_initialized()
+	assert ResourceLoader.the() == resource_loader
 	mut rejected_empty := false
 	resource_loader.set_preferred_languages([]) or { rejected_empty = true }
 	assert rejected_empty
@@ -40,6 +53,8 @@ fn test_connection_preparation_and_request_blocking() {
 	assert resource_loader.prepare_connection(dom.URL{'data:text/plain,a'}, false) == .none
 	assert resource_loader.prepare_connection(dom.URL{'https://example.test/'}, false) == .resolve_only
 	assert resource_loader.prepare_connection(dom.URL{'https://example.test/'}, true) == .create_connection
+	assert resource_loader.prefetch_dns(dom.URL{'https://example.test/'}) == .resolve_only
+	assert resource_loader.preconnect(dom.URL{'https://example.test/'}) == .create_connection
 	mut filter := resource_loader.content_filter()
 	filter.set_patterns(['blocked.test']) or { panic(err) }
 	assert resource_loader.prepare_connection(dom.URL{'https://blocked.test/'}, true) == .none
@@ -145,4 +160,28 @@ fn test_network_load_applies_proxy_and_finishes_active_counter() {
 	failed := resource_loader.load(mut failed_request)
 	assert (failed.error_message or { panic('missing network failure') }) == 'Request finished with error: connection reset'
 	assert resource_loader.pending_loads() == 0
+}
+
+fn test_network_response_headers_store_credentialed_cookies_for_page() {
+	mut resource_loader := ResourceLoader.create()
+	resource_loader.register_network_response('https://example.test/cookie', NetworkResponse{
+		headers: [
+			http.Header{'Set-Cookie', 'session=abc; Path=/'},
+			http.Header{'Set-Cookie', 'invalid-cookie'},
+		]
+	})
+	mut request := load_request_for('https://example.test/cookie')
+	request.set_page(7)
+	result := resource_loader.load(mut request)
+	assert result.success
+	cookies := resource_loader.response_cookies()
+	assert cookies.len == 1
+	assert cookies[0].page_id == 7
+	assert cookies[0].url.serialize() == 'https://example.test/cookie'
+	assert cookies[0].value == 'session=abc; Path=/'
+}
+
+fn test_sanitized_url_for_logging_hides_data_payloads() {
+	assert sanitized_url_for_logging(dom.URL{'data:text/plain,secret'}) == '[data URL]'
+	assert sanitized_url_for_logging(dom.URL{'https://example.test/a'}) == 'https://example.test/a'
 }

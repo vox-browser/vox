@@ -40,6 +40,10 @@ pub:
 
 // https://storage.spec.whatwg.org/#registered-storage-endpoints
 pub fn registered_endpoints() []StorageEndpoint {
+	return StorageEndpoint.registered_endpoints()
+}
+
+pub fn StorageEndpoint.registered_endpoints() []StorageEndpoint {
 	return [
 		StorageEndpoint{
 			identifier: .caches

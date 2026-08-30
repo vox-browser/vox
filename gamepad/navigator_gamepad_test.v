@@ -21,6 +21,24 @@ fn test_navigator_gesture_gating_events_and_index_reuse() {
 	assert second.exposed()
 }
 
+fn test_exact_navigator_gamepad_gesture_and_connection_scan_entry_points() {
+	mut navigator := NavigatorGamepadPartial.new()
+	assert !navigator.has_gamepad_gesture()
+	navigator.set_has_gamepad_gesture(true)
+	assert navigator.has_gamepad_gesture()
+	device := new_standard_virtual_device(8, 'discovered')
+	navigator.connected_devices_ = [device]
+	navigator.now_ = 9
+	navigator.check_for_connected_gamepads()
+	pads := navigator.get_gamepads()!
+	assert pads.len == 1
+	discovered := pads[0] or { panic('missing discovered gamepad') }
+	assert discovered.timestamp() == 9
+	// A second platform scan does not create a duplicate object.
+	navigator.check_for_connected_gamepads()
+	assert navigator.get_gamepads()!.len == 1
+}
+
 fn test_navigator_security_inactive_deduplication_and_test_mode() {
 	mut navigator := NavigatorGamepadPartial.new()
 	navigator.permission_allowed_ = false

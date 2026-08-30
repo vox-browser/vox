@@ -28,17 +28,20 @@ pub enum ThrowIfCallbackMissing {
 
 @[heap]
 pub struct TrustedTypePolicy {
-pub:
-	name string
 mut:
+	name_   string
 	options TrustedTypePolicyOptions
 }
 
 pub fn TrustedTypePolicy.create(name string, options TrustedTypePolicyOptions) &TrustedTypePolicy {
 	return &TrustedTypePolicy{
-		name:    name
+		name_:   name
 		options: options
 	}
+}
+
+pub fn (policy &TrustedTypePolicy) name() string {
+	return policy.name_
 }
 
 pub fn (policy &TrustedTypePolicy) get_trusted_type_policy_value(name TrustedTypeName, value string, arguments []webidl.Value, throw_if_missing ThrowIfCallbackMissing) !PolicyResult {
@@ -59,24 +62,33 @@ pub fn (policy &TrustedTypePolicy) get_trusted_type_policy_value(name TrustedTyp
 }
 
 pub fn (policy &TrustedTypePolicy) create_html(input string, arguments []webidl.Value) !TrustedHTML {
-	result := policy.get_trusted_type_policy_value(.trusted_html, input, arguments, .yes)!
-	return TrustedHTML{
-		data: result.value or { '' }
+	trusted := policy.create_a_trusted_type(.trusted_html, input, arguments)!
+	if trusted is TrustedHTML {
+		return trusted
 	}
+	return error('internal trusted type mismatch')
 }
 
 pub fn (policy &TrustedTypePolicy) create_script(input string, arguments []webidl.Value) !TrustedScript {
-	result := policy.get_trusted_type_policy_value(.trusted_script, input, arguments, .yes)!
-	return TrustedScript{
-		data: result.value or { '' }
+	trusted := policy.create_a_trusted_type(.trusted_script, input, arguments)!
+	if trusted is TrustedScript {
+		return trusted
 	}
+	return error('internal trusted type mismatch')
 }
 
 pub fn (policy &TrustedTypePolicy) create_script_url(input string, arguments []webidl.Value) !TrustedScriptURL {
-	result := policy.get_trusted_type_policy_value(.trusted_script_url, input, arguments, .yes)!
-	return TrustedScriptURL{
-		data: result.value or { '' }
+	trusted := policy.create_a_trusted_type(.trusted_script_url, input, arguments)!
+	if trusted is TrustedScriptURL {
+		return trusted
 	}
+	return error('internal trusted type mismatch')
+}
+
+// https://w3c.github.io/trusted-types/dist/spec/#create-a-trusted-type-algorithm
+pub fn (policy &TrustedTypePolicy) create_a_trusted_type(name TrustedTypeName, input string, arguments []webidl.Value) !TrustedType {
+	result := policy.get_trusted_type_policy_value(name, input, arguments, .yes)!
+	return create_trusted_type(name, result.value or { '' })
 }
 
 pub fn create_trusted_type(name TrustedTypeName, data string) TrustedType {
@@ -130,7 +142,8 @@ pub fn get_trusted_type_compliant_string(mut factory TrustedTypePolicyFactory, e
 			TrustedScriptURL { trusted.data }
 		}
 	}
-	if factory.should_sink_type_mismatch_violation_be_blocked(sink, sink_group, stringify(input)) {
+	if should_sink_type_mismatch_violation_be_blocked_by_content_security_policy(mut factory,
+		sink, sink_group, stringify(input)) {
 		return error('TypeError: Sink ${injection_sink_string(sink)} of type ${sink_group} requires a TrustedType to be used')
 	}
 	return stringify(input)

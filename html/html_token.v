@@ -45,6 +45,11 @@ pub mut:
 	force_quirks              bool
 }
 
+pub enum HTMLTokenAttributeIterationDecision {
+	continue_
+	@break
+}
+
 pub struct HTMLToken {
 pub mut:
 	type_ TokenType = .invalid
@@ -122,6 +127,30 @@ pub fn (t &HTMLToken) type_name() TokenType {
 	return t.type_
 }
 
+pub fn (t &HTMLToken) type_() TokenType {
+	return t.type_
+}
+
+pub fn (t &HTMLToken) start_position() Position {
+	return t.start_position
+}
+
+pub fn (t &HTMLToken) end_position() Position {
+	return t.end_position
+}
+
+pub fn (mut t HTMLToken) set_start_position(position Position) {
+	t.start_position = position
+}
+
+pub fn (mut t HTMLToken) set_end_position(position Position) {
+	t.end_position = position
+}
+
+pub fn (t &HTMLToken) had_duplicate_attribute() bool {
+	return t.had_duplicate_attribute
+}
+
 // https://html.spec.whatwg.org/multipage/parsing.html - the parser treats '\r' as whitespace,
 // while the tokenizer does not.
 pub fn (t &HTMLToken) is_parser_whitespace() bool {
@@ -175,6 +204,31 @@ pub fn (t &HTMLToken) attribute_count() int {
 
 pub fn (mut t HTMLToken) add_attribute(attribute Attribute) {
 	t.attributes << attribute
+}
+
+// The native class has const and mutable overloads. V consolidates them into
+// a mutable callback, which is also sufficient for read-only callbacks.
+pub fn (mut t HTMLToken) for_each_attribute(callback fn (mut Attribute) HTMLTokenAttributeIterationDecision) {
+	for index in 0 .. t.attributes.len {
+		if callback(mut t.attributes[index]) == .@break {
+			break
+		}
+	}
+}
+
+pub fn (t &HTMLToken) last_attribute() ?Attribute {
+	if t.attributes.len == 0 {
+		return none
+	}
+	return t.attributes.last()
+}
+
+pub fn (t &HTMLToken) tag_attributes() []Attribute {
+	return t.attributes.clone()
+}
+
+pub fn (mut t HTMLToken) ensure_tag_attributes() []Attribute {
+	return t.attributes
 }
 
 pub fn (mut t HTMLToken) drop_attributes() {
@@ -232,10 +286,6 @@ pub fn (mut t HTMLToken) ensure_doctype_data() &DoctypeData {
 
 pub fn (t &HTMLToken) doctype_data() &DoctypeData {
 	return &t.doctype
-}
-
-pub fn (t &HTMLToken) type_() TokenType {
-	return t.type_
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#attribute-name-state - remove duplicate

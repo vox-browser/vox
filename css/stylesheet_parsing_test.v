@@ -44,3 +44,25 @@ fn test_stylesheet_object() {
 	sheet := parse_css_stylesheet_with_parser('a { color: red } b { color: blue }', ?string(none))
 	assert sheet.css_rules().length() == 2
 }
+
+fn test_empty_and_comma_only_media_preludes() {
+	sheet := parse_css_stylesheet_with_parser('@media { .first { display: block } } @media ,, { .invalid { display: block } }',
+		?string(none))
+	rules := sheet.css_rules()
+	assert rules.length() == 2
+	empty_media := rules.item(0) or { panic('missing empty media rule') }
+	invalid_media := rules.item(1) or { panic('missing invalid media rule') }
+	assert empty_media.condition_matches()
+	assert !invalid_media.condition_matches()
+}
+
+fn test_non_overridable_counter_styles_are_only_allowed_in_ua_stylesheets() {
+	text := '@counter-style disclosure-open { system: cyclic; symbols: "x"; suffix: " "; }'
+	assert parse_rules(text).len == 0
+	ua_rules := parse_css_stylesheet_contents_with_params(ParsingParams{
+		is_ua_style_sheet: .yes
+	}, text)
+	assert ua_rules.len == 1
+	rule := ua_rules[0].counter_style_rule_value() or { panic('missing counter-style rule') }
+	assert rule.name() == 'disclosure-open'
+}

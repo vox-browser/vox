@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Page`
 
 Translation workspace: `~/code/libweb_v/page`
-Audited: 2026-08-16
+Audited: 2026-08-29
 
 All seven upstream implementation units and their headers are represented. The
 translation keeps browser-process and painting integration behind typed records:
@@ -21,10 +21,17 @@ inventing a graphics stack or IPC runtime.
 | `InputEvent.cpp`, `InputEvent.h` | `input_event.v` |
 | `AutoScrollHandler.cpp`, `AutoScrollHandler.h` | `auto_scroll.v` |
 | `EventHandler.cpp`, `EventHandler.h`, `EventResult.h` | `event_handler.v`, `drag_and_drop.v` |
+| public/inline Page and interaction entry points | `page_entry_points.v`, `event_entry_points.v` |
+| `PageClient` default browser/embedder boundary | `page_client.v` |
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Page/` | 7 | 4,298 | 1,533 | 317 | Complete |
+| `Page/` | 7 | 4,298 | 2,183 | 395 | Complete |
+
+The symbol-level audit accounts for all 306 implementations: 285 direct V
+owner/name matches, 10 namespace template specializations, 5 GC/binding
+runtime hooks, and 6 constructors/destructors supplied by V construction.
+There are no unmatched Page symbols.
 
 The port covers device/CSS geometry conversion; input-event cloning and pinch
 validation; pointer/mouse/keyboard/default-action ordering, including canceled
@@ -47,6 +54,6 @@ typed inputs/results rather than empty callbacks.
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v test page
-Summary for all V _test.v files: 4 passed, 4 total.
+$ /Users/alex/code/v/v_old -enable-globals test page
+Summary for all V _test.v files: 5 passed, 5 total.
 ```

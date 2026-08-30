@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebAudio`
 
 Translation workspace: `~/code/libweb_v/webaudio`
-Audited: 2026-08-17
+Audited: 2026-08-29
 
 All 26 upstream implementation units, all 28 headers, and all 25 IDL files were
 cross-audited and are represented. Audio device access, decoding, rendering threads, event-loop task
@@ -16,11 +16,17 @@ delivery, and media-element ownership remain explicit platform boundaries.
 | `AudioBuffer.cpp`, `AnalyserNode.cpp` | `buffer_analyser.v` |
 | `AudioBufferSourceNode.cpp`, `BiquadFilterNode.cpp`, `ChannelMergerNode.cpp`, `ChannelSplitterNode.cpp`, `ConstantSourceNode.cpp`, `DelayNode.cpp`, `DynamicsCompressorNode.cpp`, `GainNode.cpp`, `OscillatorNode.cpp`, `PeriodicWave.cpp`, `ScriptProcessorNode.cpp`, `StereoPannerNode.cpp` | `nodes.v` |
 | `PannerNode.cpp`, `OfflineAudioContext.cpp`, `OfflineAudioCompletionEvent.cpp` | `spatial_offline.v` |
+| public/inline constructor, accessor, overload, and internal algorithm surface | `upstream_entry_points.v` |
 | all 25 `*.idl` files | typed enums, option dictionaries, attributes, methods, event state, and constructors across the files above |
 
 | Upstream source area | `.cpp` files / LOC | `.h` files / LOC | `.idl` files / LOC | Implementation `.v` files / LOC | Test `.v` files / LOC | Status |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| `WebAudio/` | 26 / 3,649 | 28 / 1,656 | 25 / 570 | 5 / 1,660 | 5 / 298 | Complete |
+| `WebAudio/` | 26 / 3,649 | 28 / 1,656 | 25 / 570 | 6 / 2,330 | 6 / 392 | Complete |
+
+The symbol-level audit accounts for all 341 implementations: 266 direct V
+owner/name matches, 7 documented language or shared-base consolidations, 45
+GC/binding-runtime hooks, and 23 constructors/destructors supplied by V object
+construction. There are no unmatched WebAudio symbols.
 
 The port covers nominal sample/channel ranges, PCM buffer identity and partial
 copies, graph connection uniqueness and overload-specific disconnection,
@@ -45,6 +51,6 @@ event-loop scheduling remain typed deterministic boundaries.
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v test webaudio
-Summary for all V _test.v files: 5 passed, 5 total.
+$ /Users/alex/code/v/v_old -enable-globals test webaudio
+Summary for all V _test.v files: 6 passed, 6 total.
 ```

@@ -7,7 +7,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 //
 // Translated from Libraries/LibWeb/DOM/Document.cpp
-
+@[has_globals]
 module dom
 
 import rand
@@ -15,11 +15,12 @@ import strings
 import time as vtime
 import net.urllib
 
+__global dom_all_navigables = []&Navigable{}
+
 // --- Stub types for untranslated dependencies ---
 
 // Opaque pointer stub for types from other modules.
 // In a full translation these would be proper imports.
-
 type VoidPtr = voidptr
 
 // Simple color representation
@@ -66,7 +67,7 @@ pub fn dom_url_parse(url string, base_url URL, encoding string) ?URL {
 	return URL{resolved.str()}
 }
 
-pub fn (a URL) == (b URL) bool {
+pub fn (a URL) ==(b URL) bool {
 	return a.value == b.value
 }
 
@@ -181,7 +182,7 @@ pub fn (u URL) with_protocol(protocol string) URL {
 	mut parsed := urllib.parse(u.value) or { return u }
 	mut scheme := protocol
 	if scheme.ends_with(':') {
-		scheme = scheme#[..-1]
+		scheme = scheme[..scheme.len - 1]
 	}
 	parsed.scheme = scheme
 	return URL{
@@ -194,8 +195,8 @@ pub fn (u URL) with_username(username string) URL {
 	password := u.password()
 	password_set := if info := parsed.user { info.password_set } else { false }
 	parsed.user = urllib.Userinfo{
-		username:     username
-		password:     password
+		username: username
+		password: password
 		password_set: password_set
 	}
 	return URL{
@@ -206,8 +207,8 @@ pub fn (u URL) with_username(username string) URL {
 pub fn (u URL) with_password(password string) URL {
 	mut parsed := urllib.parse(u.value) or { return u }
 	parsed.user = urllib.Userinfo{
-		username:     u.username()
-		password:     password
+		username: u.username()
+		password: password
 		password_set: true
 	}
 	return URL{
@@ -305,7 +306,7 @@ pub fn (a Origin) is_same_site(b Origin) bool {
 	return a.value == b.value
 }
 
-pub fn (a Origin) == (b Origin) bool {
+pub fn (a Origin) ==(b Origin) bool {
 	return a.value == b.value
 }
 
@@ -342,12 +343,12 @@ pub struct Node {
 pub mut:
 	node_type NodeType
 	document_ &Document = unsafe { nil }
-	parent_   &Node     = unsafe { nil }
+	parent_   &Node = unsafe { nil }
 	children  []&Node
 
-	child_nodes_ &NodeList   = unsafe { nil }
+	child_nodes_ &NodeList = unsafe { nil }
 	layout_node_ &LayoutNode = unsafe { nil }
-	paintable_   &Paintable  = unsafe { nil }
+	paintable_   &Paintable = unsafe { nil }
 
 	needs_layout_tree_update           bool
 	child_needs_layout_tree_update     bool
@@ -358,6 +359,7 @@ pub mut:
 
 	unique_id_                UniqueNodeID
 	registered_observer_list_ []&RegisteredObserver
+	slottable_name_           string
 	event_listener_types      []string
 	assigned_slot_            ?&HTMLSlotElement
 	manual_slot_assignment_   ?&HTMLSlotElement
@@ -394,6 +396,19 @@ pub struct HTMLElement {
 	Element
 pub mut:
 	popover_visibility_state_ PopoverVisibilityState
+	popover_showing_or_hiding bool
+	popover_trigger_          ?&HTMLElement
+	opened_in_popover_mode_   ?string
+	popover_close_watcher_    voidptr = unsafe { nil }
+	popover_toggle_task_id_   u64
+	popover_toggle_old_state_ string
+	attached_internals_       voidptr = unsafe { nil }
+	click_in_progress_        bool
+	inert_                    bool
+	cryptographic_nonce_      string
+	labels_                   ?&NodeList
+	hyperlink_url_            ?URL
+	hyperlink_url_initialized bool
 }
 
 pub enum PopoverVisibilityState {
@@ -404,24 +419,38 @@ pub enum PopoverVisibilityState {
 @[heap]
 pub struct HTMLBodyElement {
 	HTMLElement
+pub mut:
+	background_url_ ?URL
 }
 
 @[heap]
 pub struct HTMLBaseElement {
 	HTMLElement
+pub mut:
+	frozen_base_url_             URL
+	frozen_base_url_initialized_ bool
 }
 
 @[heap]
 pub struct HTMLScriptElement {
 	HTMLElement
+pub mut:
+	script_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
 pub struct HTMLDialogElement {
 	HTMLElement
 pub mut:
-	return_value_ string
-	is_modal_     bool
+	return_value_                           string
+	is_modal_                               bool
+	request_close_return_value_             ?string
+	request_close_source_element_           ?&Element
+	close_watcher_                          voidptr = unsafe { nil }
+	enable_close_watcher_for_request_close_ bool
+	dialog_toggle_task_id_                  u64
+	dialog_toggle_old_state_                string
+	previously_focused_element_             ?&Node
 }
 
 @[heap]
@@ -432,11 +461,15 @@ pub struct HTMLUnknownElement {
 @[heap]
 pub struct HTMLAreaElement {
 	HTMLElement
+pub mut:
+	rel_list_ ?&DOMTokenList
 }
 
 @[heap]
 pub struct HTMLAudioElement {
 	HTMLElement
+pub mut:
+	media_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
@@ -447,6 +480,8 @@ pub struct HTMLBRElement {
 @[heap]
 pub struct HTMLButtonElement {
 	HTMLElement
+pub mut:
+	command_for_element_ ?&Element
 }
 
 @[heap]
@@ -462,11 +497,18 @@ pub struct HTMLDataElement {
 @[heap]
 pub struct HTMLDataListElement {
 	HTMLElement
+pub mut:
+	options_ ?&HTMLCollection
 }
 
 @[heap]
 pub struct HTMLDetailsElement {
 	HTMLElement
+pub mut:
+	details_toggle_task_id_   u64
+	details_toggle_old_state_ string
+	summary_slot_             ?&HTMLSlotElement
+	descendants_slot_         ?&HTMLSlotElement
 }
 
 @[heap]
@@ -504,6 +546,8 @@ pub mut:
 @[heap]
 pub struct HTMLFrameElement {
 	HTMLElement
+pub mut:
+	frame_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
@@ -524,11 +568,15 @@ pub struct HTMLHRElement {
 @[heap]
 pub struct HTMLIFrameElement {
 	HTMLElement
+pub mut:
+	iframe_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
 pub struct HTMLLabelElement {
 	HTMLElement
+pub mut:
+	click_in_progress_ bool
 }
 
 @[heap]
@@ -539,11 +587,15 @@ pub struct HTMLLIElement {
 @[heap]
 pub struct HTMLLinkElement {
 	HTMLElement
+pub mut:
+	link_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
 pub struct HTMLMapElement {
 	HTMLElement
+pub mut:
+	areas_ ?&HTMLCollection
 }
 
 @[heap]
@@ -564,6 +616,9 @@ pub struct HTMLMetaElement {
 @[heap]
 pub struct HTMLMeterElement {
 	HTMLElement
+pub mut:
+	meter_value_element_ ?&Element
+	cached_value_state_  u8
 }
 
 @[heap]
@@ -574,6 +629,8 @@ pub struct HTMLModElement {
 @[heap]
 pub struct HTMLObjectElement {
 	HTMLElement
+pub mut:
+	object_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
@@ -590,10 +647,11 @@ pub struct HTMLOptGroupElement {
 pub struct HTMLOptionElement {
 	HTMLElement
 pub mut:
-	selected_                  bool
-	dirty_                     bool
-	selectedness_update_index_ u64
-	selectedness_initialized_  bool
+	selected_                      bool
+	dirty_                         bool
+	selectedness_update_index_     u64
+	selectedness_initialized_      bool
+	cached_nearest_select_element_ ?&HTMLSelectElement
 }
 
 @[heap]
@@ -624,6 +682,8 @@ pub struct HTMLPreElement {
 @[heap]
 pub struct HTMLProgressElement {
 	HTMLElement
+pub mut:
+	progress_value_element_ ?&Element
 }
 
 @[heap]
@@ -651,6 +711,8 @@ pub struct HTMLSpanElement {
 @[heap]
 pub struct HTMLStyleElement {
 	HTMLElement
+pub mut:
+	style_element_base_ ?&StyleElementBase
 }
 
 @[heap]
@@ -693,12 +755,13 @@ mut:
 // https://html.spec.whatwg.org/multipage/scripting.html#dom-template-content
 // The template's contents: a DocumentFragment that holds the template's parsed children (the
 // template element itself stays empty in the tree). Created lazily on first access.
-// FIXME: the spec uses a separate inert "template contents owner" document; we reuse the node
-// document here, which is sufficient for parsing.
 pub fn (t &HTMLTemplateElement) content() &DocumentFragment {
 	if isnil(t.template_content) {
-		mut owner_document := t.document()
+		mut node_document := unsafe { &Document(t.document()) }
+		owner_document := node_document.appropriate_template_contents_owner_document()
 		frag := new_document_fragment(owner_document)
+		mut mutable_fragment := unsafe { &DocumentFragment(frag) }
+		mutable_fragment.set_host(unsafe { &Element(t) })
 		unsafe {
 			mut mutable_self := &HTMLTemplateElement(t)
 			mutable_self.template_content = frag
@@ -707,9 +770,45 @@ pub fn (t &HTMLTemplateElement) content() &DocumentFragment {
 	return t.template_content
 }
 
+pub fn html_template_element_adopted_from(template &HTMLTemplateElement, _ &Document) {
+	mut node_document := unsafe { &Document(template.document()) }
+	mut owner_document := node_document.appropriate_template_contents_owner_document()
+	content := template.content()
+	owner_document.adopt_node(content.as_node())
+	// Keep the concrete embedded DocumentFragment storage in sync with Node's
+	// adopting steps; this avoids losing the write through a temporary base view.
+	mut mutable_content := unsafe { &DocumentFragment(content) }
+	mutable_content.document_ = owner_document
+}
+
+pub fn html_template_element_cloned(template &HTMLTemplateElement, copy &Node, subtree bool) ! {
+	if !subtree {
+		return
+	}
+	copy_element := copy.as_element() or {
+		return error('InvalidStateError: Template clone is not an element')
+	}
+	template_copy := unsafe { &HTMLTemplateElement(copy_element) }
+	copy_content := template_copy.content()
+	for child in template.content().as_node().children_as_vector() {
+		child.clone_node(copy_content.as_node().document(), true, copy_content.as_node())!
+	}
+}
+
+pub fn html_template_element_content_for_bindings(template &HTMLTemplateElement) &DocumentFragment {
+	return template.content()
+}
+
+pub fn html_template_element_set_template_contents(template &HTMLTemplateElement, contents &DocumentFragment) {
+	mut mutable_template := unsafe { &HTMLTemplateElement(template) }
+	mutable_template.template_content = contents
+}
+
 @[heap]
 pub struct HTMLTextAreaElement {
 	HTMLElement
+pub mut:
+	text_area_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
@@ -720,6 +819,8 @@ pub struct HTMLTimeElement {
 @[heap]
 pub struct HTMLTrackElement {
 	HTMLElement
+pub mut:
+	track_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
@@ -730,6 +831,9 @@ pub struct HTMLUListElement {
 @[heap]
 pub struct HTMLVideoElement {
 	HTMLElement
+pub mut:
+	media_element_model_ voidptr = unsafe { nil }
+	video_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
@@ -1009,36 +1113,51 @@ pub mut:
 
 // Layout stubs
 @[heap]
-pub struct LayoutViewport {}
+pub struct LayoutViewport {
+pub mut:
+	scrollbar_width string = 'auto'
+}
 
 @[heap]
 pub struct LayoutNode {
 pub mut:
-	dom_node_                 ?&Node
-	parent_                   ?&LayoutNode
-	children_                 []&LayoutNode
-	is_anonymous_             bool
-	is_text_node_             bool
-	display_                  CSSDisplay_
-	pseudo_element_generator_ ?&Element
-	generated_for_            ?PseudoElement
-	has_geometry_             bool
-	border_box_               Rect
-	content_width_            f64
-	content_height_           f64
-	border_left_              f64
-	border_top_               f64
-	padding_left_             f64
-	padding_right_            f64
-	padding_top_              f64
-	padding_bottom_           f64
+	dom_node_                                       ?&Node
+	parent_                                         ?&LayoutNode
+	containing_block_                               ?&LayoutNode
+	children_                                       []&LayoutNode
+	is_anonymous_                                   bool
+	is_text_node_                                   bool
+	display_                                        CSSDisplay_
+	pseudo_element_generator_                       ?&Element
+	generated_for_                                  ?PseudoElement
+	has_geometry_                                   bool
+	is_viewport_                                    bool
+	is_positioned_                                  bool
+	is_fixed_position_                              bool
+	is_scroll_container_                            bool
+	establishes_fixed_positioning_containing_block_ bool
+	rendered_text_                                  string
+	border_box_                                     Rect
+	content_width_                                  f64
+	content_height_                                 f64
+	border_left_                                    f64
+	border_top_                                     f64
+	padding_left_                                   f64
+	padding_right_                                  f64
+	padding_top_                                    f64
+	padding_bottom_                                 f64
 	// dom<->layout bridge: opaque handle to the real layout.Node this placeholder mirrors (dom can't
 	// name the layout type). The layout module attaches these via attach_layout_nodes. See layout/dom_layout_bridge.v.
 	layout_handle voidptr = unsafe { nil }
 }
 
+pub type SVGRelayoutCallback = fn (&SVGSVGBox)
+
 @[heap]
-pub struct SVGSVGBox {}
+pub struct SVGSVGBox {
+pub mut:
+	relayout_callback SVGRelayoutCallback = unsafe { nil }
+}
 
 // Painting stubs
 @[heap]
@@ -1050,12 +1169,13 @@ pub struct DisplayList {}
 // CSS stubs
 @[heap]
 pub struct StyleComputer {
-pub mut:
+
 	// dom<->css bridge: opaque handle to the persistent css.StyleComputer for this document (Ladybird's
 	// Document owns its StyleComputer). Set/read by the css module via unsafe cast. See css/dom_css_bridge.v.
+pub mut:
 	css_handle                                 voidptr = unsafe { nil }
 	invalidation_property_used_in_has_callback StyleComputerInvalidationPropertyUsedInHasCallback = unsafe { nil }
-	invalidation_plan_callback                 StyleComputerInvalidationPlanCallback              = unsafe { nil }
+	invalidation_plan_callback                 StyleComputerInvalidationPlanCallback = unsafe { nil }
 }
 
 @[heap]
@@ -1080,10 +1200,12 @@ pub enum CSSStyleSheetLoadingState {
 @[heap]
 pub struct CSSStyleSheet {
 pub mut:
-	is_alternate  bool
-	disabled      bool
-	url           string
-	loading_state CSSStyleSheetLoadingState = .loaded
+	is_alternate          bool
+	disabled              bool
+	media                 string
+	url                   string
+	loading_state         CSSStyleSheetLoadingState = .loaded
+	imported_style_sheets []&CSSStyleSheet
 }
 
 pub fn (sheet &CSSStyleSheet) loading_state_value() CSSStyleSheetLoadingState {
@@ -1099,86 +1221,113 @@ pub struct VisualViewport {}
 @[heap]
 pub struct MediaQueryList {}
 
-pub type CSSMediaQueryListMatchesCallback = fn (voidptr) bool
+pub type CSSMediaQueryListMatchesCallback = fn(voidptr) bool
 
-pub type CSSMediaQueryListEvaluateCallback = fn (voidptr) bool
+pub type CSSMediaQueryListEvaluateCallback = fn(voidptr) bool
 
-pub type CSSMediaQueryListHasChangedStateCallback = fn (voidptr) bool
+pub type CSSMediaQueryListHasChangedStateCallback = fn(voidptr) bool
 
-pub type CSSMediaQueryListSetHasChangedStateCallback = fn (voidptr, bool)
+pub type CSSMediaQueryListSetHasChangedStateCallback = fn(voidptr, bool)
 
-pub type CSSMediaQueryListDispatchChangeEventCallback = fn (voidptr, bool)
+pub type CSSMediaQueryListDispatchChangeEventCallback = fn(voidptr, bool)
 
 pub struct CSSMediaQueryListRegistration {
 pub:
 	target                voidptr
-	matches               CSSMediaQueryListMatchesCallback             = unsafe { nil }
-	evaluate              CSSMediaQueryListEvaluateCallback            = unsafe { nil }
-	has_changed_state     CSSMediaQueryListHasChangedStateCallback     = unsafe { nil }
-	set_has_changed_state CSSMediaQueryListSetHasChangedStateCallback  = unsafe { nil }
+	matches               CSSMediaQueryListMatchesCallback = unsafe { nil }
+	evaluate              CSSMediaQueryListEvaluateCallback = unsafe { nil }
+	has_changed_state     CSSMediaQueryListHasChangedStateCallback = unsafe { nil }
+	set_has_changed_state CSSMediaQueryListSetHasChangedStateCallback = unsafe { nil }
 	dispatch_change_event CSSMediaQueryListDispatchChangeEventCallback = unsafe { nil }
 }
 
 // The DOM can't import css, so Document::update_style() runs the CSS style pass through this registered
 // callback. The css module installs it with `target` = the document pointer; update_style invokes it.
-pub type DocumentStyleUpdateCallback = fn (voidptr)
+pub type DocumentStyleUpdateCallback = fn(voidptr)
 
 pub struct DocumentStyleUpdateHook {
 pub:
-	target   voidptr                     = unsafe { nil }
+	target   voidptr = unsafe { nil }
 	callback DocumentStyleUpdateCallback = unsafe { nil }
 }
 
-pub type StyleComputerInvalidationPropertyUsedInHasCallback = fn (voidptr, InvalidationProperty, &StyleScope) bool
+pub type StyleComputerInvalidationPropertyUsedInHasCallback = fn(voidptr, InvalidationProperty, &StyleScope) bool
 
-pub type StyleComputerInvalidationPlanCallback = fn (voidptr, []InvalidationProperty, &StyleScope) InvalidationPlan
+pub type StyleComputerInvalidationPlanCallback = fn(voidptr, []InvalidationProperty, &StyleScope) InvalidationPlan
 
-pub type StyleScopeMayHaveHasSelectorsCallback = fn (voidptr) bool
+pub type StyleScopeMayHaveHasSelectorsCallback = fn(voidptr) bool
 
-pub type StyleScopeScheduleHasInvalidationCallback = fn (voidptr, &Node)
+pub type StyleScopeScheduleHasInvalidationCallback = fn(voidptr, &Node)
 
-pub type DocumentThemeColorParseCallback = fn (voidptr, string) ?string
+pub type DocumentThemeColorParseCallback = fn(voidptr, string) ?string
 
-pub type DocumentThemeColorMediaMatchesCallback = fn (voidptr, string) bool
+pub type DocumentThemeColorMediaMatchesCallback = fn(voidptr, string) bool
 
 pub struct DocumentThemeColorHook {
 pub:
-	target        voidptr                                = unsafe { nil }
-	parse_color   DocumentThemeColorParseCallback        = unsafe { nil }
+	target        voidptr = unsafe { nil }
+	parse_color   DocumentThemeColorParseCallback = unsafe { nil }
 	media_matches DocumentThemeColorMediaMatchesCallback = unsafe { nil }
 }
 
-pub type DocumentLayoutUpdateCallback = fn (voidptr, &Document, f64, f64) voidptr
+pub type DocumentLayoutUpdateCallback = fn(voidptr, &Document, f64, f64) voidptr
+
+pub type DocumentRenderedTextCallback = fn(voidptr, &Document, &Element) string
 
 pub struct DocumentLayoutUpdateHook {
 pub:
-	target   voidptr                      = unsafe { nil }
+	target   voidptr = unsafe { nil }
 	callback DocumentLayoutUpdateCallback = unsafe { nil }
+}
+
+pub struct DocumentRenderedTextHook {
+pub:
+	target   voidptr = unsafe { nil }
+	callback DocumentRenderedTextCallback = unsafe { nil }
 }
 
 // The DOM module cannot import css, so selector parsing and matching are supplied by the css module
 // through a per-document callback bridge. Keeping this on Document also gives the css side a natural
 // place to retain its parsed-selector cache.
-pub type DocumentSelectorQueryValidateCallback = fn (voidptr, string) bool
+pub type DocumentSelectorQueryValidateCallback = fn(voidptr, string) bool
 
-pub type DocumentSelectorQueryMatchCallback = fn (voidptr, string, &Element, &ParentNode) bool
+pub type DocumentSelectorQueryMatchCallback = fn(voidptr, string, &Element, &ParentNode) bool
 
 pub struct DocumentSelectorQueryHook {
 pub:
 	target   voidptr = unsafe { nil }
 	validate DocumentSelectorQueryValidateCallback = unsafe { nil }
-	matches  DocumentSelectorQueryMatchCallback    = unsafe { nil }
+	matches  DocumentSelectorQueryMatchCallback = unsafe { nil }
 }
 
-pub type DocumentHTMLFragmentParseCallback = fn (voidptr, &Element, string, AllowDeclarativeShadowRoots) []&Node
+pub type DocumentHTMLFragmentParseCallback = fn(voidptr, &Element, string, AllowDeclarativeShadowRoots) ![]&Node
 
-pub type DocumentHTMLDocumentParseCallback = fn (voidptr, &Document, string)
+pub type DocumentFragmentScriptPreparationCallback = fn(voidptr, &Node)
+
+pub type DocumentFormControlSelectedTextCallback = fn(&Element) ?string
+
+pub type DocumentHTMLDocumentParseCallback = fn(voidptr, &Document, string)
+
+pub type DocumentHTMLParserCreateForScriptingCallback = fn(voidptr, &Document) &HTMLParser
+
+pub type HTMLParserVoidCallback = fn(voidptr)
+
+pub type HTMLParserFeedCallback = fn(voidptr, string)
+
+pub type HTMLParserRunCallback = fn(voidptr, bool)
+
+pub type HTMLParserNestingLevelCallback = fn(voidptr) usize
+
+pub type HTMLParserBoolCallback = fn(voidptr) bool
 
 pub struct DocumentHTMLFragmentParsingHook {
 pub:
-	target         voidptr = unsafe { nil }
-	parse_fragment DocumentHTMLFragmentParseCallback = unsafe { nil }
-	parse_document DocumentHTMLDocumentParseCallback = unsafe { nil }
+	target                      voidptr = unsafe { nil }
+	parse_fragment              DocumentHTMLFragmentParseCallback = unsafe { nil }
+	parse_xml_fragment          DocumentHTMLFragmentParseCallback = unsafe { nil }
+	prepare_script_descendants  DocumentFragmentScriptPreparationCallback = unsafe { nil }
+	parse_document              DocumentHTMLDocumentParseCallback = unsafe { nil }
+	create_parser_for_scripting DocumentHTMLParserCreateForScriptingCallback = unsafe { nil }
 }
 
 pub struct BackgroundLayerData {}
@@ -1194,11 +1343,12 @@ pub mut:
 }
 
 pub struct StyleScope {
-pub mut:
+
 	// dom<->css bridge: opaque handle to the persistent css.StyleScope for this document/shadow root.
 	// Lazily created and cached by the CSS module. See css/dom_css_bridge.v.
+pub mut:
 	css_handle                         voidptr = unsafe { nil }
-	may_have_has_selectors_callback    StyleScopeMayHaveHasSelectorsCallback     = unsafe { nil }
+	may_have_has_selectors_callback    StyleScopeMayHaveHasSelectorsCallback = unsafe { nil }
 	schedule_has_invalidation_callback StyleScopeScheduleHasInvalidationCallback = unsafe { nil }
 }
 
@@ -1244,7 +1394,7 @@ pub mut:
 	scroll_x_                 f64
 	scroll_y_                 f64
 	current_event_            &Event = unsafe { nil }
-	last_activation_timestamp DOMHighResTimeStamp
+	last_activation_timestamp DOMHighResTimeStamp = 1e308
 	close_watcher_manager_    &CloseWatcherManager = unsafe { nil }
 }
 
@@ -1259,8 +1409,22 @@ pub mut:
 	group_handle     voidptr
 }
 
+// The concrete HTML parser lives in the html module, which imports dom. This
+// callback-backed handle preserves the DOM::Document -> HTMLParser ownership
+// and operations without introducing the reverse dom -> html import cycle.
 @[heap]
-pub struct HTMLParser {}
+pub struct HTMLParser {
+pub:
+	target                              voidptr = unsafe { nil }
+	abort_callback                      HTMLParserVoidCallback = unsafe { nil }
+	feed_callback                       HTMLParserFeedCallback = unsafe { nil }
+	run_callback                        HTMLParserRunCallback = unsafe { nil }
+	script_nesting_level_callback       HTMLParserNestingLevelCallback = unsafe { nil }
+	insertion_point_is_defined_callback HTMLParserBoolCallback = unsafe { nil }
+	update_insertion_point_callback     HTMLParserVoidCallback = unsafe { nil }
+	insert_input_callback               HTMLParserFeedCallback = unsafe { nil }
+	insert_eof_callback                 HTMLParserVoidCallback = unsafe { nil }
+}
 
 @[heap]
 pub struct History {
@@ -1279,10 +1443,14 @@ pub struct WindowProxy {}
 @[heap]
 pub struct NavigationParams {
 pub mut:
-	response_mime_type  string = 'text/html'
-	response_body       []u8
-	response_url        URL = url_about_blank()
-	request_current_url ?URL
+	response_mime_type                        string = 'text/html'
+	response_body                             []u8
+	response_url                              URL = url_about_blank()
+	request_current_url                       ?URL
+	browsing_context                          ?&BrowsingContext
+	origin                                    Origin = origin_create_opaque()
+	needs_a_browsing_context_group_switch     bool
+	would_switch_due_to_report_only           bool
 }
 
 @[heap]
@@ -1311,6 +1479,12 @@ pub struct SourceSnapshotParams {}
 pub struct Navigable {
 pub mut:
 	navigation_observer_handles []voidptr
+	active_document_            ?&Document
+	parent_                     ?&Navigable
+	traversable_navigable_      ?&Navigable
+	container_                  ?&Node
+	container_document_         ?&Document
+	is_top_level_traversable_   bool
 }
 
 @[heap]
@@ -1335,8 +1509,8 @@ pub struct PaintConfig {}
 @[heap]
 pub struct Selection {
 pub mut:
-	document_  &Document          = unsafe { nil }
-	range_     &Range             = unsafe { nil }
+	document_  &Document = unsafe { nil }
+	range_     &Range = unsafe { nil }
 	direction_ SelectionDirection = .directionless
 }
 
@@ -1363,10 +1537,10 @@ pub mut:
 @[heap]
 pub struct HTMLCollection {
 pub mut:
-	root                    &ParentNode                  = unsafe { nil }
-	scope                   HTMLCollectionScope          = .descendants
-	filter                  fn (&Element) bool           = always_accept_element
-	sort                    fn (&Element, &Element) bool = never_sort_elements
+	root                    &ParentNode = unsafe { nil }
+	scope                   HTMLCollectionScope = .descendants
+	filter                  fn(&Element) bool = always_accept_element
+	sort                    fn(&Element, &Element) bool = never_sort_elements
 	cached_elements         []&Element
 	cached_dom_tree_version u64
 	cache_initialized       bool
@@ -1388,9 +1562,9 @@ pub:
 @[heap]
 pub struct HTMLAllCollection {
 pub mut:
-	root   &ParentNode            = unsafe { nil }
+	root   &ParentNode = unsafe { nil }
 	scope  HTMLAllCollectionScope = .descendants
-	filter fn (&Element) bool     = always_accept_element
+	filter fn(&Element) bool = always_accept_element
 }
 
 @[heap]
@@ -1398,11 +1572,11 @@ pub struct NodeList {
 pub mut:
 	name_filter string
 	root        &Document = unsafe { nil }
-	node_root   &Node     = unsafe { nil }
+	node_root   &Node = unsafe { nil }
 	nodes       []&Node
 	is_live     bool
 	live_scope  LiveNodeListScope = .children
-	live_filter fn (&Node) bool   = always_accept_node
+	live_filter fn(&Node) bool = always_accept_node
 }
 
 @[heap]
@@ -1410,7 +1584,7 @@ pub struct NodeIterator {
 pub mut:
 	root                           &Node = unsafe { nil }
 	reference_node_                &Node = unsafe { nil }
-	pointer_before_reference_node_ bool  = true
+	pointer_before_reference_node_ bool = true
 	what_to_show                   u32
 	filter                         &NodeFilter = unsafe { nil }
 	active                         bool
@@ -1437,7 +1611,8 @@ pub mut:
 pub struct DocumentFragment {
 	ParentNode
 pub mut:
-	host_ &Element = unsafe { nil }
+	host_           &Element = unsafe { nil }
+	is_shadow_root_ bool
 }
 
 @[heap]
@@ -1489,9 +1664,10 @@ pub mut:
 
 @[heap]
 pub struct Event {
-pub mut:
+
 	// Which concrete event interface this is, so the base Event can be identified as a MouseEvent /
 	// KeyboardEvent / PointerEvent etc. (V has no RTTI; the subclasses set this at construction).
+pub mut:
 	interface_                  EventInterface = .event
 	type_                       string
 	target_                     ?&EventTarget
@@ -1558,12 +1734,12 @@ pub mut:
 pub struct DocumentObserver {
 pub mut:
 	document_                           &Document = unsafe { nil }
-	document_became_active_             ?fn ()
-	document_became_inactive_           ?fn ()
-	document_completely_loaded_         ?fn ()
-	document_readiness_observer_        ?fn (DocumentReadyState)
-	document_visibility_state_observer_ ?fn (VisibilityState)
-	document_page_showing_observer_     ?fn (bool)
+	document_became_active_             ?fn()
+	document_became_inactive_           ?fn()
+	document_completely_loaded_         ?fn()
+	document_readiness_observer_        ?fn(DocumentReadyState)
+	document_visibility_state_observer_ ?fn(VisibilityState)
+	document_page_showing_observer_     ?fn(bool)
 }
 
 @[heap]
@@ -1571,7 +1747,7 @@ pub struct EditingHostManager {
 	InputEventsTarget
 pub mut:
 	document_                       &Document = unsafe { nil }
-	active_contenteditable_element_ &Node     = unsafe { nil }
+	active_contenteditable_element_ &Node = unsafe { nil }
 }
 
 @[heap]
@@ -1594,16 +1770,20 @@ pub mut:
 @[heap]
 pub struct CallbackType {
 pub mut:
-	handle_event      ?fn (&Event, ?&EventTarget) JSValue
-	accept_node       ?fn (&Node) int
-	mutation_callback ?fn ([]&MutationRecord, &MutationObserver)
+	handle_event      ?fn(&Event, ?&EventTarget) JSValue
+	accept_node       ?fn(&Node) int
+	mutation_callback ?fn([]&MutationRecord, &MutationObserver)
 }
 
 @[heap]
 pub struct ViewTransition {}
 
 @[heap]
-pub struct Page {}
+pub struct Page {
+mut:
+	last_changed_title_ string
+	title_change_count_ int
+}
 
 @[heap]
 pub struct ConsoleClient {}
@@ -1641,14 +1821,14 @@ pub fn Promise.create() &Promise {
 
 pub fn Promise.resolved(value JSValue) &Promise {
 	return &Promise{
-		state_:  .fulfilled
+		state_: .fulfilled
 		result_: value
 	}
 }
 
 pub fn Promise.rejected(reason JSValue) &Promise {
 	return &Promise{
-		state_:  .rejected
+		state_: .rejected
 		result_: reason
 	}
 }
@@ -1720,7 +1900,7 @@ pub enum SegmenterGranularity {
 pub fn (s &Segmenter) clone() &Segmenter {
 	return &Segmenter{
 		segmented_text: s.segmented_text
-		granularity:    s.granularity
+		granularity: s.granularity
 	}
 }
 
@@ -1804,18 +1984,25 @@ pub fn (w &Window) dispatch_event_simple(event_name string, bubbles bool) {
 }
 
 pub fn (w &Window) fire_a_page_transition_event(event_name string, salvageable bool) {
-	// PageTransitionEvent is not ported yet; dispatch a trusted Event with the same
-	// bubbles/cancelable initialization and keep the persisted value local.
-	_ = salvageable
-	event := Event.create(event_name, EventInit{
-		bubbles:    true
-		cancelable: true
+	mut event := PageTransitionEvent.create(event_name, PageTransitionEventInit{
+		EventInit: EventInit{
+			bubbles: true
+			cancelable: true
+		}
+		persisted: salvageable
 	})
-	event_target_dispatch_event(unsafe { &EventTarget(w) }, event)
+	mut base_event := unsafe { &Event(event) }
+	base_event.set_is_trusted(true)
+	event_target_dispatch_event(unsafe { &EventTarget(w) }, base_event)
 }
 
 pub fn (w &Window) has_transient_activation() bool {
-	return false
+	current_time := current_high_resolution_time(w)
+	return current_time >= w.last_activation_timestamp && current_time < w.last_activation_timestamp + 5000
+}
+
+pub fn (w &Window) has_sticky_activation() bool {
+	return current_high_resolution_time(w) >= w.last_activation_timestamp
 }
 
 pub fn (w &Window) dispatch_popstate_event(state voidptr) {
@@ -1864,7 +2051,7 @@ pub fn (mut w Window) scroll(x f64, y f64) &Promise {
 
 // Navigable methods
 pub fn (n &Navigable) container() ?&Node {
-	return none
+	return n.container_
 }
 
 pub fn (n &Node) currently_delays_the_load_event() bool {
@@ -1874,29 +2061,51 @@ pub fn (n &Node) currently_delays_the_load_event() bool {
 }
 
 pub fn (n &Navigable) active_document() ?&Document {
-	return none
+	return n.active_document_
 }
 
 fn navigable_with_active_document(document &Document) ?&Navigable {
-	_ = document
-	// Stub for HTML::Navigable::navigable_with_active_document until navigables are ported.
+	for navigable in dom_all_navigables {
+		if active_document := navigable.active_document() {
+			if voidptr(active_document) == voidptr(document) {
+				return navigable
+			}
+		}
+	}
 	return none
+}
+
+fn register_navigable(navigable &Navigable) {
+	for registered in dom_all_navigables {
+		if voidptr(registered) == voidptr(navigable) {
+			return
+		}
+	}
+	dom_all_navigables << navigable
+}
+
+fn all_navigables() []&Navigable {
+	return dom_all_navigables.clone()
 }
 
 pub fn (n &Navigable) parent() ?&Navigable {
-	return none
+	return n.parent_
 }
 
 pub fn (n &Navigable) traversable_navigable() ?&Navigable {
-	return none
+	return n.traversable_navigable_
 }
 
 pub fn (n &Navigable) container_document() ?&Document {
-	return none
+	return n.container_document_
 }
 
 pub fn (n &Navigable) is_top_level_traversable() bool {
-	return false
+	return n.is_top_level_traversable_
+}
+
+pub fn (n &Navigable) is_traversable() bool {
+	return n.is_top_level_traversable_ || n.traversable_navigable_ != none
 }
 
 pub fn (n &Navigable) is_focused() bool {
@@ -1917,44 +2126,62 @@ pub fn (she &SessionHistoryEntry) get_classic_history_api_state() voidptr {
 	return unsafe { nil }
 }
 
-// HTMLParser methods
-pub fn (p &HTMLParser) abort() {}
+// HTMLParser bridge methods. The callbacks are supplied by html when it
+// installs the document parsing hook.
+pub fn (p &HTMLParser) abort() {
+	if p.abort_callback != unsafe { nil } {
+		p.abort_callback(p.target)
+	}
+}
 
 pub fn (p &HTMLParser) feed(text string) {
-	_ = text
+	if p.feed_callback != unsafe { nil } {
+		p.feed_callback(p.target, text)
+	}
 }
 
-pub fn (p &HTMLParser) run() {}
-
-fn html_parser_script_nesting_level_stub(parser &HTMLParser) int {
-	_ = parser
-	// Stub for HTMLParser::script_nesting_level() until the parser nesting state is ported.
-	return 0
+pub fn (p &HTMLParser) run() {
+	if p.run_callback != unsafe { nil } {
+		p.run_callback(p.target, false)
+	}
 }
 
-fn html_parser_insertion_point_is_defined_stub(parser &HTMLParser) bool {
-	_ = parser
-	// Stub for HTMLParser::tokenizer().is_insertion_point_defined().
-	return true
+pub fn (p &HTMLParser) run_until_insertion_point() {
+	if p.run_callback != unsafe { nil } {
+		p.run_callback(p.target, true)
+	}
 }
 
-fn html_parser_update_insertion_point_stub(parser &HTMLParser) {
-	_ = parser
-	// Stub for HTMLParser::tokenizer().update_insertion_point().
+pub fn (p &HTMLParser) script_nesting_level() usize {
+	if p.script_nesting_level_callback == unsafe { nil } {
+		return 0
+	}
+	return p.script_nesting_level_callback(p.target)
 }
 
-fn html_parser_insert_input_at_insertion_point_stub(parser &HTMLParser, input string) {
-	parser.feed(input)
+pub fn (p &HTMLParser) is_insertion_point_defined() bool {
+	if p.insertion_point_is_defined_callback == unsafe { nil } {
+		return false
+	}
+	return p.insertion_point_is_defined_callback(p.target)
 }
 
-fn html_parser_run_until_insertion_point_stub(parser &HTMLParser) {
-	// Stub for HTMLParser::run(HTMLTokenizer::StopAtInsertionPoint::Yes).
-	parser.run()
+pub fn (p &HTMLParser) update_insertion_point() {
+	if p.update_insertion_point_callback != unsafe { nil } {
+		p.update_insertion_point_callback(p.target)
+	}
 }
 
-fn html_parser_insert_eof_stub(parser &HTMLParser) {
-	_ = parser
-	// Stub for HTMLParser::tokenizer().insert_eof().
+pub fn (p &HTMLParser) insert_input_at_insertion_point(input string) {
+	if p.insert_input_callback != unsafe { nil } {
+		p.insert_input_callback(p.target, input)
+	}
+}
+
+pub fn (p &HTMLParser) insert_eof() {
+	if p.insert_eof_callback != unsafe { nil } {
+		p.insert_eof_callback(p.target)
+	}
 }
 
 // ViewTransition methods
@@ -2034,9 +2261,16 @@ pub:
 	element &Element = unsafe { nil }
 }
 
-fn layout_retarget_from_ua_internal_shadow_root_stub(element &Element) &Element {
-	// Stub for retarget_from_ua_internal_shadow_root().
-	return element
+pub fn retarget_from_ua_internal_shadow_root(element &Element) &Element {
+	mut result := unsafe { &Element(element) }
+	for {
+		shadow_root := result.as_node().containing_shadow_root() or { return result }
+		if !shadow_root.is_user_agent_internal() || shadow_root.host_ == unsafe { nil } {
+			return result
+		}
+		result = shadow_root.host_
+	}
+	return result
 }
 
 pub enum HitTestType {
@@ -2182,6 +2416,14 @@ pub fn (mut d Document) set_viewport_rect(rect Rect) {
 	d.viewport_rect_ = rect
 }
 
+pub fn (d &Document) is_svg_image_document() bool {
+	return d.is_svg_image_document_
+}
+
+pub fn (mut d Document) set_is_svg_image_document(value bool) {
+	d.is_svg_image_document_ = value
+}
+
 pub fn (d &Document) navigable() ?&Navigable {
 	if d.cached_navigable_ == unsafe { nil } {
 		return none
@@ -2193,7 +2435,7 @@ pub fn (d &Document) in_quirks_mode() bool {
 	return d.quirks_mode == .yes
 }
 
-pub fn (d &Document) for_each_shadow_including_descendant(callback fn (&Node) TraversalDecision) TraversalDecision {
+pub fn (d &Document) for_each_shadow_including_descendant(callback fn(&Node) TraversalDecision) TraversalDecision {
 	document_node := unsafe { &Node(d) }
 	return document_node.for_each_shadow_including_descendant(callback)
 }
@@ -2372,8 +2614,7 @@ fn url_matches_about_srcdoc(url URL) bool {
 
 fn is_html_frame_set_element(el &HTMLElement) bool {
 	element := unsafe { &Element(el) }
-	return element.namespace_uri() or { '' } == namespace_html_
-		&& element.local_name() == 'frameset'
+	return element.namespace_uri() or { '' } == namespace_html_ && element.local_name() == 'frameset'
 }
 
 fn current_high_resolution_time(global_obj &Window) f64 {
@@ -2420,22 +2661,13 @@ fn main_thread_event_loop_stub() &EventLoopStub {
 	return &EventLoopStub{}
 }
 
-fn all_navigables_stub() []&Navigable {
-	return []
-}
-
-fn message_port_for_each_stub(callback fn (voidptr)) {
+fn message_port_for_each_stub(callback fn(voidptr)) {
 	_ = callback
 }
 
 fn as_navigable_container_stub(node &Node) ?&NavigableContainer {
 	_ = node
 	return none
-}
-
-fn html_parser_create_for_scripting_stub(doc &Document) &HTMLParser {
-	_ = doc
-	return &HTMLParser{}
 }
 
 @[heap]
@@ -2472,7 +2704,7 @@ fn (el &EventLoopStub) task_queue() &TaskQueueStub {
 @[heap]
 struct TaskQueueStub {}
 
-fn (tq &TaskQueueStub) remove_tasks_matching(predicate fn (&TaskStub) bool) {
+fn (tq &TaskQueueStub) remove_tasks_matching(predicate fn(&TaskStub) bool) {
 	_ = predicate
 }
 
@@ -2515,7 +2747,6 @@ enum CssStyleInvalidationReason {
 }
 
 // --- Enums ---
-
 pub enum NodeType {
 	invalid                     = 0
 	element_node                = 1
@@ -2592,6 +2823,7 @@ pub enum PseudoElement {
 	marker
 	placeholder
 	selection
+	backdrop
 }
 
 pub enum InvalidateLayoutTreeReason {
@@ -2677,6 +2909,7 @@ pub enum PolicyControlledFeature as u8 {
 pub struct SandboxingFlagSet {
 pub mut:
 	sandboxed_document_domain bool
+	sandboxed_forms           bool
 }
 
 pub enum OpenerPolicyValue {
@@ -2727,7 +2960,6 @@ pub enum AddLineFeed {
 }
 
 // --- Supporting structs ---
-
 pub struct DocumentLoadTimingInfo {
 pub mut:
 	navigation_start_time               f64
@@ -2770,8 +3002,8 @@ pub mut:
 
 pub struct PendingAnimationEvent {
 pub mut:
-	event                &Event       = unsafe { nil }
-	animation            &Animation   = unsafe { nil }
+	event                &Event = unsafe { nil }
+	animation            &Animation = unsafe { nil }
 	target               &EventTarget = unsafe { nil }
 	scheduled_event_time ?f64
 }
@@ -2797,16 +3029,16 @@ pub mut:
 pub struct TopOfTheDocument {}
 
 // --- Main Document struct ---
-
 @[heap]
 pub struct Document {
 	ParentNode
-pub mut:
+
 	// Core identity
+pub mut:
 	type_                      DocumentType_ = .xml
-	content_type               string        = 'application/xml'
-	url                        URL           = url_about_blank()
-	origin_                    Origin        = origin_create_opaque()
+	content_type               string = 'application/xml'
+	url                        URL = url_about_blank()
+	origin_                    Origin = origin_create_opaque()
 	referrer                   string
 	live_ranges_               []&Range
 	custom_element_definitions []&CustomElementDefinition
@@ -2826,6 +3058,9 @@ pub mut:
 	encoding                    ?string
 	pragma_set_default_language ?string
 	http_content_language       ?string
+	meta_referrer_policy_       string
+	enforced_meta_csp_policies_ []string
+	last_declarative_refresh_   ?string
 
 	// Quirks mode
 	quirks_mode                   QuirksMode = .no
@@ -2839,11 +3074,11 @@ pub mut:
 
 	// Browsing context
 	browsing_context &BrowsingContext = unsafe { nil }
-	page_            &Page            = unsafe { nil }
+	page_            &Page = unsafe { nil }
 
 	// Style
-	style_computer     &StyleComputer  = unsafe { nil }
-	font_computer      &FontComputer   = unsafe { nil }
+	style_computer     &StyleComputer = unsafe { nil }
+	font_computer      &FontComputer = unsafe { nil }
 	style_sheets_      &StyleSheetList = unsafe { nil }
 	style_update_hook_ ?DocumentStyleUpdateHook
 	// dom<->css bridge: opaque handle to the css-side holder of this document's author stylesheets, which
@@ -2857,11 +3092,16 @@ pub mut:
 	needs_invalidation_of_elements_affected_by_has bool
 	should_invalidate_styles_on_attribute_changes  bool = true
 	layout_update_hook_                            ?DocumentLayoutUpdateHook
+	rendered_text_hook_                            ?DocumentRenderedTextHook
 	layout_engine_handle_                          voidptr = unsafe { nil }
 
 	// Layout
-	layout_root &LayoutViewport    = unsafe { nil }
+	layout_root &LayoutViewport = unsafe { nil }
 	paintable_  &ViewportPaintable = unsafe { nil }
+	// SVGDecodedImageData owns an isolated XML document whose root SVG uses
+	// the decoded image destination as its viewport instead of its intrinsic
+	// width/height presentation attributes.
+	is_svg_image_document_ bool
 	// Standalone documents use 800x600 until a browser host supplies its content viewport.
 	viewport_rect_ Rect = Rect{0, 0, 800, 600}
 
@@ -2873,10 +3113,10 @@ pub mut:
 	inspected_node             &Node = unsafe { nil }
 	highlighted_node           &Node = unsafe { nil }
 	highlighted_pseudo_element ?PseudoElement
-	focused_area               &Node    = unsafe { nil }
+	focused_area               &Node = unsafe { nil }
 	active_element_            &Element = unsafe { nil }
 	target_element_            &Element = unsafe { nil }
-	active_favicon             &Node    = unsafe { nil }
+	active_favicon             &Node = unsafe { nil }
 
 	// Colors
 	normal_link_color_      ?Color
@@ -2955,23 +3195,23 @@ pub mut:
 	dialog_pointerdown_target &HTMLDialogElement = unsafe { nil }
 
 	// Collections
-	applets_ &HTMLCollection    = unsafe { nil }
-	anchors_ &HTMLCollection    = unsafe { nil }
-	images_  &HTMLCollection    = unsafe { nil }
-	embeds_  &HTMLCollection    = unsafe { nil }
-	links_   &HTMLCollection    = unsafe { nil }
-	forms_   &HTMLCollection    = unsafe { nil }
-	scripts_ &HTMLCollection    = unsafe { nil }
+	applets_ &HTMLCollection = unsafe { nil }
+	anchors_ &HTMLCollection = unsafe { nil }
+	images_  &HTMLCollection = unsafe { nil }
+	embeds_  &HTMLCollection = unsafe { nil }
+	links_   &HTMLCollection = unsafe { nil }
+	forms_   &HTMLCollection = unsafe { nil }
+	scripts_ &HTMLCollection = unsafe { nil }
 	all_     &HTMLAllCollection = unsafe { nil }
-	fonts_   &FontFaceSet       = unsafe { nil }
+	fonts_   &FontFaceSet = unsafe { nil }
 
 	// Selection & Base
-	selection_                                   &Selection       = unsafe { nil }
+	selection_                                   &Selection = unsafe { nil }
 	first_base_element_with_href_in_tree_order   &HTMLBaseElement = unsafe { nil }
 	first_base_element_with_target_in_tree_order &HTMLBaseElement = unsafe { nil }
 
 	// History & Navigation
-	history_     &History             = unsafe { nil }
+	history_     &History = unsafe { nil }
 	latest_entry &SessionHistoryEntry = unsafe { nil }
 
 	// Policy & Sandboxing
@@ -2999,7 +3239,7 @@ pub mut:
 
 	// View transitions
 	active_view_transition              &ViewTransition = unsafe { nil }
-	dynamic_view_transition_style_sheet &CSSStyleSheet  = unsafe { nil }
+	dynamic_view_transition_style_sheet &CSSStyleSheet = unsafe { nil }
 	update_callback_queue               []&ViewTransition
 
 	// Visual viewport
@@ -3025,7 +3265,7 @@ pub mut:
 
 	// Editing
 	editing_host_manager_              &EditingHostManager = unsafe { nil }
-	default_single_line_container_name string              = 'div'
+	default_single_line_container_name string = 'div'
 	command_state_override             map[string]bool
 	command_value_override             map[string]string
 
@@ -3066,10 +3306,11 @@ pub mut:
 	element_shared_css_random_base_value_cache map[string]f64
 
 	// Selector query cache
-	selector_query_cache        map[string]?SelectorList
-	selector_query_hook_        ?DocumentSelectorQueryHook
-	html_fragment_parsing_hook_ ?DocumentHTMLFragmentParsingHook
-	theme_color_hook_           ?DocumentThemeColorHook
+	selector_query_cache                 map[string]?SelectorList
+	selector_query_hook_                 ?DocumentSelectorQueryHook
+	html_fragment_parsing_hook_          ?DocumentHTMLFragmentParsingHook
+	form_control_selected_text_callback_ DocumentFormControlSelectedTextCallback = unsafe { nil }
+	theme_color_hook_                    ?DocumentThemeColorHook
 
 	// SVG roots needing relayout
 	svg_roots_needing_relayout []&SVGSVGBox
@@ -3077,17 +3318,17 @@ pub mut:
 	// Misc
 	shared_resource_requests_               map[string]&SharedResourceRequest
 	adopted_style_sheets                    []&CSSStyleSheet
-	console_client_                         &ConsoleClient                      = unsafe { nil }
-	cursor_blink_timer                      &Timer                              = unsafe { nil }
-	active_refresh_timer                    &Timer                              = unsafe { nil }
-	cached_navigable_                       &Navigable                          = unsafe { nil }
+	console_client_                         &ConsoleClient = unsafe { nil }
+	cursor_blink_timer                      &Timer = unsafe { nil }
+	active_refresh_timer                    &Timer = unsafe { nil }
+	cached_navigable_                       &Navigable = unsafe { nil }
 	temporary_document_for_fragment_parsing TemporaryDocumentForFragmentParsing = .no
 	media_query_lists                       []&MediaQueryList
 	css_media_query_lists                   []CSSMediaQueryListRegistration
 	document_observers_being_notified       []&DocumentObserver
 	// Extra fields for implementations
 	implementation_            &DOMImplementation = unsafe { nil }
-	location_                  &Location          = unsafe { nil }
+	location_                  &Location = unsafe { nil }
 	completely_loaded_time     bool
 	pointer_lock_element       &Element = unsafe { nil }
 	is_svg_document            bool
@@ -3103,8 +3344,8 @@ pub mut:
 // create_and_initialize corresponds to Document::create_and_initialize
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#initialise-the-document-object
 pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, navigation_params &NavigationParams) !&Document {
-	// Stub: in full implementation would set up browsing context, window, etc.
-	_ = navigation_params
+	browsing_context := obtain_a_browsing_context_to_use_for_a_navigation_response(navigation_params)
+	creation_url := navigation_params.request_current_url or { navigation_params.response_url }
 	mut doc := &Document{}
 	doc.data.kind = .node
 	doc.unique_id_ = allocate_unique_id(unsafe { &Node(doc) })
@@ -3112,7 +3353,14 @@ pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, 
 	doc.document_ = doc
 	doc.type_ = type_
 	doc.content_type = content_type
+	doc.url = creation_url
+	doc.origin_ = navigation_params.origin
+	doc.browsing_context = browsing_context
 	doc.readiness = .loading
+	doc.allow_declarative_shadow_roots = true
+	doc.window = &Window{
+		associated_document_: doc
+	}
 	doc.initialize()
 	return doc
 }
@@ -3167,7 +3415,6 @@ pub fn (mut v CellVisitor) visit(ptr voidptr) {
 pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 	// Base::visit_edges(visitor) — would call ParentNode.visit_edges
 	// d.style_scope_.visit_edges(visitor)
-
 	visitor.visit(d.pending_css_import_rules.data)
 	visitor.visit(d.page_)
 	visitor.visit(d.window)
@@ -3189,8 +3436,8 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(d.history_)
 	visitor.visit(d.style_computer)
 	visitor.visit(d.font_computer)
-	// browsing_context visited again in C++ (intentional duplicate in original)
 
+	// browsing_context visited again in C++ (intentional duplicate in original)
 	visitor.visit(d.applets_)
 	visitor.visit(d.anchors_)
 	visitor.visit(d.images_)
@@ -3340,7 +3587,6 @@ pub fn (mut d Document) initialize() {
 }
 
 // --- Core property accessors ---
-
 pub fn (d &Document) dom_tree_version() u64 {
 	return d.dom_tree_version
 }
@@ -3426,9 +3672,12 @@ pub fn (d &Document) base_url() URL {
 		return d.fallback_base_url()
 	}
 	// 2. Return the frozen base URL of the first base element with href.
+	if base_element.frozen_base_url_initialized_ {
+		return base_element.frozen_base_url_
+	}
 	if href := unsafe { &Element(base_element) }.get_attribute('href') {
-		if href.len > 0 {
-			return URL{href}
+		return dom_url_parse(href, d.fallback_base_url(), d.encoding_or_default()) or {
+			d.fallback_base_url()
 		}
 	}
 	return d.fallback_base_url()
@@ -3464,32 +3713,23 @@ pub fn (mut d Document) respond_to_base_url_changes() {
 
 pub fn (mut d Document) update_base_element() {
 	// Scan tree for <base> elements and update cached first-with-href / first-with-target.
-	d.first_base_element_with_href_in_tree_order = unsafe { nil }
-	d.first_base_element_with_target_in_tree_order = unsafe { nil }
-	mut d_ptr := &d
 	document_node := unsafe { &Node(&d) }
-	document_node.for_each_in_subtree(fn [mut d_ptr] (node &Node) TraversalDecision {
-		element := node.as_element() or { return .@continue }
-		if !is_html_element_with_local_name(element, 'base') {
-			return .@continue
-		}
-		base_element := unsafe { &HTMLBaseElement(element) }
-		if d_ptr.first_base_element_with_href_in_tree_order == unsafe { nil }
-			&& element.has_attribute('href') {
-			d_ptr.first_base_element_with_href_in_tree_order = base_element
-			if d_ptr.first_base_element_with_target_in_tree_order != unsafe { nil } {
-				return .@break
+	d.first_base_element_with_href_in_tree_order = first_base_element_with_attribute(document_node, 'href') or { unsafe { nil } }
+	d.first_base_element_with_target_in_tree_order = first_base_element_with_attribute(document_node, 'target') or { unsafe { nil } }
+}
+
+fn first_base_element_with_attribute(root &Node, attribute_name string) ?&HTMLBaseElement {
+	for child in root.children_as_vector() {
+		if element := child.as_element() {
+			if element.local_name() == 'base' && (element.namespace_uri() or { namespace_html_ }) == namespace_html_ && element.has_attribute(attribute_name) {
+				return unsafe { &HTMLBaseElement(element) }
 			}
 		}
-		if d_ptr.first_base_element_with_target_in_tree_order == unsafe { nil }
-			&& element.has_attribute('target') {
-			d_ptr.first_base_element_with_target_in_tree_order = base_element
-			if d_ptr.first_base_element_with_href_in_tree_order != unsafe { nil } {
-				return .@break
-			}
+		if base := first_base_element_with_attribute(child, attribute_name) {
+			return base
 		}
-		return .@continue
-	})
+	}
+	return none
 }
 
 pub fn (d &Document) first_base_element_with_href_in_tree_order() ?&HTMLBaseElement {
@@ -3507,7 +3747,6 @@ pub fn (d &Document) first_base_element_with_target_in_tree_order() ?&HTMLBaseEl
 }
 
 // --- Opener policy ---
-
 pub fn (d &Document) opener_policy() OpenerPolicy {
 	return d.opener_policy
 }
@@ -3517,7 +3756,6 @@ pub fn (mut d Document) set_opener_policy(policy OpenerPolicy) {
 }
 
 // --- Document type & quirks ---
-
 pub fn (d &Document) document_type() DocumentType_ {
 	return d.type_
 }
@@ -3547,7 +3785,6 @@ pub fn (mut d Document) set_quirks_mode(mode QuirksMode) {
 }
 
 // --- Readiness ---
-
 pub fn (d &Document) ready_state() string {
 	return match d.readiness {
 		.loading { 'loading' }
@@ -3646,10 +3883,8 @@ pub fn (d &Document) is_cookie_averse() bool {
 }
 
 // --- Document element / body / head / title ---
-
 fn is_html_element_with_local_name(element &Element, local_name string) bool {
-	return element.namespace_uri() or { '' } == namespace_html_
-		&& element.local_name() == local_name
+	return element.namespace_uri() or { '' } == namespace_html_ && element.local_name() == local_name
 }
 
 fn element_as_html_element(element &Element) &HTMLElement {
@@ -3665,8 +3900,7 @@ fn strip_and_collapse_ascii_whitespace(value string) string {
 	mut wrote_non_whitespace := false
 	mut pending_space := false
 	for byte in value.bytes() {
-		is_whitespace := byte == 0x09 || byte == 0x0a || byte == 0x0c || byte == 0x0d
-			|| byte == 0x20
+		is_whitespace := byte == 0x09 || byte == 0x0a || byte == 0x0c || byte == 0x0d || byte == 0x20
 		if is_whitespace {
 			if wrote_non_whitespace {
 				pending_space = true
@@ -3740,8 +3974,7 @@ pub fn (d &Document) body() ?&HTMLElement {
 	html := d.html_element() or { return none }
 	for child in unsafe { &Element(html) }.as_node().children {
 		if element := child.as_element() {
-			if is_html_element_with_local_name(element, 'body')
-				|| is_html_element_with_local_name(element, 'frameset') {
+			if is_html_element_with_local_name(element, 'body') || is_html_element_with_local_name(element, 'frameset') {
 				return element_as_html_element(unsafe { &Element(element) })
 			}
 		}
@@ -3754,8 +3987,7 @@ pub fn (mut d Document) set_body(new_body &HTMLElement) ! {
 	// Per spec: if new_body is not body or frameset, throw HierarchyRequestError.
 	// If there's an existing body, replace it. Otherwise append to html element.
 	new_body_element := html_element_as_element(new_body)
-	if !is_html_element_with_local_name(new_body_element, 'body')
-		&& !is_html_element_with_local_name(new_body_element, 'frameset') {
+	if !is_html_element_with_local_name(new_body_element, 'body') && !is_html_element_with_local_name(new_body_element, 'frameset') {
 		return error("HierarchyRequestError: Invalid document body element, must be 'body' or 'frameset'")
 	}
 	new_body_node := new_body_element.as_node()
@@ -3787,8 +4019,7 @@ pub fn (d &Document) title() string {
 			used_svg_document_title_path = true
 			for child in document_element.as_node().children {
 				element := child.as_element() or { continue }
-				if element.namespace_uri() or { '' } == namespace_svg_uri
-					&& element.local_name() == 'title' {
+				if element.namespace_uri() or { '' } == namespace_svg_uri && element.local_name() == 'title' {
 					value = child.child_text_content()
 					break
 				}
@@ -3814,13 +4045,11 @@ pub fn (mut d Document) set_title(value string) ! {
 	// Sets the document title by creating/updating the title element.
 	// Different behavior for HTML vs SVG documents.
 	document_element := d.document_element() or { return }
-	if document_element.namespace_uri() or { '' } == namespace_svg_uri
-		&& document_element.local_name() == 'svg' {
+	if document_element.namespace_uri() or { '' } == namespace_svg_uri && document_element.local_name() == 'svg' {
 		mut title_target := ?&Element(none)
 		for child in document_element.as_node().children {
 			if element := child.as_element() {
-				if element.namespace_uri() or { '' } == namespace_svg_uri
-					&& element.local_name() == 'title' {
+				if element.namespace_uri() or { '' } == namespace_svg_uri && element.local_name() == 'title' {
 					title_target = unsafe { &Element(element) }
 					break
 				}
@@ -3831,8 +4060,7 @@ pub fn (mut d Document) set_title(value string) ! {
 		} else {
 			new_title := create_element(&d, 'title', namespace_svg_uri, none, none, true)!
 			mut document_element_node := unsafe { &Node(document_element.as_node()) }
-			document_element_node.pre_insert(new_title.as_node(),
-				document_element.as_node().first_child())!
+			document_element_node.pre_insert(new_title.as_node(), document_element.as_node().first_child())!
 			unsafe { &Element(new_title) }
 		}
 		mut target_node := unsafe { &Node(target.as_node()) }
@@ -3881,7 +4109,6 @@ pub fn (mut d Document) set_dir(dir string) {
 }
 
 // --- Browsing context ---
-
 pub fn (d &Document) get_browsing_context() ?&BrowsingContext {
 	if d.browsing_context == unsafe { nil } {
 		return none
@@ -3902,8 +4129,11 @@ pub fn (d &Document) get_page() &Page {
 	return d.page_
 }
 
-// --- Colors ---
+pub fn (mut d Document) set_page(page &Page) {
+	d.page_ = page
+}
 
+// --- Colors ---
 pub fn (d &Document) background_color() Color {
 	// CSS2: use HTML element background, fallback to body, then transparent
 	return color_transparent
@@ -4031,8 +4261,7 @@ pub fn (mut d Document) obtain_supported_color_schemes() {
 	document_node := unsafe { &Node(&d) }
 	document_node.for_each_in_subtree(fn [found_ptr] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
-		if !is_html_element_with_local_name(element, 'meta')
-			|| to_ascii_lowercase(element.get_attribute_value('name')) != 'color-scheme' {
+		if !is_html_element_with_local_name(element, 'meta') || to_ascii_lowercase(element.get_attribute_value('name')) != 'color-scheme' {
 			return .@continue
 		}
 		content := element.get_attribute('content') or { return .@continue }
@@ -4089,8 +4318,7 @@ pub fn (mut d Document) obtain_theme_color() {
 	document_node := unsafe { &Node(&d) }
 	document_node.for_each_in_subtree(fn [hook, found_ptr] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
-		if !is_html_element_with_local_name(element, 'meta')
-			|| to_ascii_lowercase(element.get_attribute_value('name')) != 'theme-color' {
+		if !is_html_element_with_local_name(element, 'meta') || to_ascii_lowercase(element.get_attribute_value('name')) != 'theme-color' {
 			return .@continue
 		}
 		content := element.get_attribute('content') or { return .@continue }
@@ -4118,8 +4346,35 @@ pub fn (mut d Document) set_theme_color_hook(hook DocumentThemeColorHook) {
 	d.theme_color_hook_ = hook
 }
 
-// --- Style ---
+pub fn (mut d Document) set_pragma_set_default_language(value ?string) {
+	d.pragma_set_default_language = value
+	if document_element := d.document_element() {
+		mut mutable_element := unsafe { &Element(document_element) }
+		mutable_element.invalidate_lang_value()
+	}
+}
 
+pub fn (d &Document) pragma_set_default_language_value() ?string {
+	return d.pragma_set_default_language
+}
+
+pub fn (mut d Document) set_meta_referrer_policy(value string) {
+	d.meta_referrer_policy_ = value
+}
+
+pub fn (d &Document) meta_referrer_policy() string {
+	return d.meta_referrer_policy_
+}
+
+pub fn (mut d Document) enforce_meta_csp(policy string) {
+	d.enforced_meta_csp_policies_ << policy
+}
+
+pub fn (d &Document) enforced_meta_csp_policies() []string {
+	return d.enforced_meta_csp_policies_.clone()
+}
+
+// --- Style ---
 pub fn (mut d Document) set_style_update_hook(hook DocumentStyleUpdateHook) {
 	d.style_update_hook_ = hook
 }
@@ -4143,16 +4398,37 @@ pub fn (d &Document) html_fragment_parsing_hook() ?DocumentHTMLFragmentParsingHo
 	return d.html_fragment_parsing_hook_
 }
 
+pub fn (mut d Document) set_form_control_selected_text_callback(callback DocumentFormControlSelectedTextCallback) {
+	d.form_control_selected_text_callback_ = callback
+}
+
+pub fn (d &Document) selected_text_for_active_form_control() ?string {
+	active_element := d.active_element() or { return none }
+	if d.form_control_selected_text_callback_ == unsafe { nil } {
+		return none
+	}
+	return d.form_control_selected_text_callback_(active_element)
+}
+
+fn (d &Document) create_html_parser_for_scripting() !&HTMLParser {
+	hook := d.html_fragment_parsing_hook_ or {
+		return error('InvalidStateError: the HTML parser hook is not installed for this document')
+	}
+
+	if hook.create_parser_for_scripting == unsafe { nil } {
+		return error('InvalidStateError: the HTML parser hook cannot create a scripting parser')
+	}
+	return hook.create_parser_for_scripting(hook.target, d)
+}
+
 pub fn (mut d Document) update_style() {
 	// In the C++ implementation, this runs style computation recursively through
 	// the DOM tree, updating computed styles for all elements that need it.
 	// It also handles style invalidation, recomputing inherited styles, and
 	// tracking whether the stacking context tree needs to be rebuilt.
 	mut document_node := unsafe { &Node(&d) }
-	has_pending_invalidations := d.style_invalidator_ != unsafe { nil }
-		&& d.style_invalidator_.has_pending_invalidations()
-	if !has_pending_invalidations && !d.needs_full_style_update && !d.needs_animated_style_update
-		&& !document_node.needs_style_update() && !document_node.child_needs_style_update() {
+	has_pending_invalidations := d.style_invalidator_ != unsafe { nil } && d.style_invalidator_.has_pending_invalidations()
+	if !has_pending_invalidations && !d.needs_full_style_update && !d.needs_animated_style_update && !document_node.needs_style_update() && !document_node.child_needs_style_update() {
 		return
 	}
 	if d.style_invalidator_ != unsafe { nil } {
@@ -4194,7 +4470,6 @@ pub fn (mut d Document) update_paint_and_hit_testing_properties_if_needed() {
 }
 
 // --- Layout ---
-
 pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 	// This is a massive function in C++ (~200 lines) that triggers full layout computation.
 	// Key steps: ensure navigable is active, update parent document layout if nested,
@@ -4215,8 +4490,7 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 	if hook := d.layout_update_hook_ {
 		if hook.callback != unsafe { nil } {
 			viewport := d.viewport_rect()
-			d.layout_engine_handle_ = hook.callback(hook.target, &d, viewport.width,
-				viewport.height)
+			d.layout_engine_handle_ = hook.callback(hook.target, &d, viewport.width, viewport.height)
 		}
 	}
 	d.needs_full_layout_tree_update = false
@@ -4229,6 +4503,18 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 
 pub fn (mut d Document) set_layout_update_hook(hook DocumentLayoutUpdateHook) {
 	d.layout_update_hook_ = hook
+}
+
+pub fn (mut d Document) set_rendered_text_hook(hook DocumentRenderedTextHook) {
+	d.rendered_text_hook_ = hook
+}
+
+pub fn (d &Document) rendered_text(element &Element) ?string {
+	hook := d.rendered_text_hook_ or { return none }
+	if hook.callback == unsafe { nil } {
+		return none
+	}
+	return hook.callback(hook.target, d, element)
 }
 
 pub fn (d &Document) layout_engine_handle() voidptr {
@@ -4299,8 +4585,7 @@ pub fn (d &Document) create_element_ns(namespace_ ?string, qualified_name string
 	// NOTE: This V binding does not expose ElementCreationOptions yet.
 
 	// 4. Return the result of creating an element given document, localName, namespace, prefix, is, and with the synchronous custom elements flag set.
-	return create_element(d, extracted_qualified_name.local_name,
-		extracted_qualified_name.namespace_, extracted_qualified_name.prefix_, none, true)!
+	return create_element(d, extracted_qualified_name.local_name, extracted_qualified_name.namespace_, extracted_qualified_name.prefix_, none, true)!
 }
 
 pub fn (d &Document) create_document_fragment() &DocumentFragment {
@@ -4323,9 +4608,9 @@ pub fn (d &Document) create_cdata_section(data string) !&CDATASection {
 	return assign_unique_node_id(&CDATASection{
 		Text: Text{
 			CharacterData: CharacterData{
-				Node:  Node{
-					node_type:  .cdata_section_node
-					document_:  d
+				Node: Node{
+					node_type: .cdata_section_node
+					document_: d
 					unique_id_: UniqueNodeID(0)
 				}
 				data_: data
@@ -4337,9 +4622,9 @@ pub fn (d &Document) create_cdata_section(data string) !&CDATASection {
 pub fn (d &Document) create_comment(data string) &Comment {
 	return assign_unique_node_id(&Comment{
 		CharacterData: CharacterData{
-			Node:  Node{
-				node_type:  .comment_node
-				document_:  d
+			Node: Node{
+				node_type: .comment_node
+				document_: d
 				unique_id_: UniqueNodeID(0)
 			}
 			data_: data
@@ -4362,14 +4647,14 @@ pub fn (d &Document) create_processing_instruction(target string, data string) !
 	// 3. Return a new ProcessingInstruction node, with target set to target, data set to data, and node document set to this.
 	return assign_unique_node_id(&ProcessingInstruction{
 		CharacterData: CharacterData{
-			Node:  Node{
-				node_type:  .processing_instruction_node
-				document_:  d
+			Node: Node{
+				node_type: .processing_instruction_node
+				document_: d
 				unique_id_: UniqueNodeID(0)
 			}
 			data_: data
 		}
-		target_:       target
+		target_: target
 	})
 }
 
@@ -4407,10 +4692,7 @@ pub fn (d &Document) create_event(iface string) !&Event {
 		'customevent' {
 			unsafe { &Event(CustomEvent.create('', CustomEventInit{})) }
 		}
-		'beforeunloadevent', 'compositionevent', 'devicemotionevent', 'deviceorientationevent',
-		'dragevent', 'event', 'events', 'focusevent', 'hashchangeevent', 'htmlevents',
-		'keyboardevent', 'messageevent', 'mouseevent', 'mouseevents', 'storageevent', 'svgevents',
-		'textevent', 'touchevent', 'uievent', 'uievents' {
+		'beforeunloadevent', 'compositionevent', 'devicemotionevent', 'deviceorientationevent', 'dragevent', 'event', 'events', 'focusevent', 'hashchangeevent', 'htmlevents', 'keyboardevent', 'messageevent', 'mouseevent', 'mouseevents', 'storageevent', 'svgevents', 'textevent', 'touchevent', 'uievent', 'uievents' {
 			Event.new('')
 		}
 		else {
@@ -4477,8 +4759,7 @@ pub fn (mut d Document) adopt_node(node &Node) {
 			if element := inclusive_descendant.as_element() {
 				if element.is_custom() {
 					mut mutable_element := unsafe { &Element(element) }
-					mutable_element.enqueue_a_custom_element_callback_reaction('adoptedCallback',
-						[])
+					mutable_element.enqueue_a_custom_element_callback_reaction('adoptedCallback', [])
 				}
 			}
 			return .@continue
@@ -4528,7 +4809,6 @@ pub fn (mut d Document) adopt_node_binding(node &Node) !&Node {
 }
 
 // --- Doctype & compat ---
-
 pub fn (d &Document) doctype() ?&DocumentType {
 	for child in unsafe { &Node(d) }.children {
 		if doctype := child.as_document_type() {
@@ -4546,7 +4826,6 @@ pub fn (d &Document) compat_mode() string {
 }
 
 // --- Focus ---
-
 pub fn (d &Document) focused_area() ?&Node {
 	if d.focused_area == unsafe { nil } {
 		return none
@@ -4566,8 +4845,7 @@ pub fn (mut d Document) set_focused_area(node ?&Node) {
 	if voidptr(old_focused) != unsafe { nil } {
 		d.invalidate_style_for_elements_affected_by_pseudo_class_change(.focus, old_focused.root())
 	}
-	if voidptr(new_focused) != unsafe { nil } && (voidptr(old_focused) == unsafe { nil }
-		|| !old_focused.root().is_same_node(new_focused.root())) {
+	if voidptr(new_focused) != unsafe { nil } && (voidptr(old_focused) == unsafe { nil } || !old_focused.root().is_same_node(new_focused.root())) {
 		d.invalidate_style_for_elements_affected_by_pseudo_class_change(.focus, new_focused.root())
 	}
 
@@ -4639,9 +4917,8 @@ pub fn (mut d Document) scroll_to_the_fragment() {
 	// 1. If document's indicated part is null, then set document's target element to null.
 	if indicated_part.type_ == .none_ {
 		d.set_target_element(none)
-	}
-	// 2. Otherwise, if document's indicated part is top of the document, then:
-	else if indicated_part.type_ == .top_of_document {
+		// 2. Otherwise, if document's indicated part is top of the document, then:
+	} else if indicated_part.type_ == .top_of_document {
 		// 1. Set document's target element to null.
 		d.set_target_element(none)
 
@@ -4650,9 +4927,8 @@ pub fn (mut d Document) scroll_to_the_fragment() {
 
 		// 3. Return.
 		return
-	}
-	// 3. Otherwise:
-	else {
+	} else {
+		// 3. Otherwise:
 		// 1. Assert: document's indicated part is an element.
 		// 2. Let target be document's indicated part.
 		target := indicated_part.element
@@ -4683,7 +4959,6 @@ pub fn (mut d Document) scroll_to_the_beginning_of_the_document() {
 }
 
 // --- Template ---
-
 pub fn (d &Document) created_for_appropriate_template_contents() bool {
 	return d.created_for_appropriate_template_contents
 }
@@ -4720,7 +4995,6 @@ pub fn (mut d Document) appropriate_template_contents_owner_document() &Document
 }
 
 // --- Window ---
-
 pub fn (d &Document) get_window() ?&Window {
 	if d.window == unsafe { nil } {
 		return none
@@ -4778,7 +5052,7 @@ pub fn (mut d Document) open_document() !&Document {
 	}
 
 	// 5. If parser and script nesting level > 0, return document.
-	if d.parser != unsafe { nil } && html_parser_script_nesting_level_stub(d.parser) > 0 {
+	if d.parser != unsafe { nil } && d.parser.script_nesting_level() > 0 {
 		return d
 	}
 
@@ -4819,10 +5093,10 @@ pub fn (mut d Document) open_document() !&Document {
 	d.set_quirks_mode(.no)
 
 	// 16. Create HTML parser for scripting.
-	d.parser = html_parser_create_for_scripting_stub(d)
+	d.parser = d.create_html_parser_for_scripting()!
 
 	// 17. Set the insertion point to point at just before the end of the input stream (which at this point will be empty).
-	html_parser_update_insertion_point_stub(d.parser)
+	d.parser.update_insertion_point()
 
 	// 18. Update readiness to loading.
 	d.update_readiness(.loading)
@@ -4857,7 +5131,7 @@ pub fn (mut d Document) close() ! {
 	}
 
 	// 4. Insert an explicit "EOF" character at the end of the parser's input stream.
-	html_parser_insert_eof_stub(d.parser)
+	d.parser.insert_eof()
 
 	// 5. If there is a pending parsing-blocking script, then return.
 	if d.pending_parsing_blocking_script != unsafe { nil } {
@@ -4885,7 +5159,6 @@ pub fn (d &Document) default_view() ?&WindowProxy {
 }
 
 // --- Content type & encoding ---
-
 pub fn (d &Document) get_content_type() string {
 	return d.content_type
 }
@@ -4923,7 +5196,6 @@ pub fn (d &Document) input_encoding() string {
 }
 
 // --- DOM Implementation ---
-
 pub fn (mut d Document) implementation() &DOMImplementation {
 	if d.implementation_ == unsafe { nil } {
 		d.implementation_ = DOMImplementation.create(d)
@@ -4932,7 +5204,6 @@ pub fn (mut d Document) implementation() &DOMImplementation {
 }
 
 // --- Scripting ---
-
 pub fn (d &Document) current_script() ?&HTMLScriptElement {
 	if d.current_script == unsafe { nil } {
 		return none
@@ -4964,13 +5235,11 @@ pub fn (mut d Document) add_script_to_execute_in_order_as_soon_as_possible(scrip
 }
 
 // --- Editable ---
-
 pub fn (mut d Document) set_editable(editable bool) {
 	d.editable = editable
 }
 
 // --- History ---
-
 pub fn (mut d Document) history() &History {
 	// Stub: lazy-init
 	if d.history_ == unsafe { nil } {
@@ -5000,7 +5269,6 @@ pub fn (d &Document) get_location() ?&Location {
 }
 
 // --- Loading ---
-
 pub fn (d &Document) anything_is_delaying_the_load_event() bool {
 	if d.number_of_things_delaying_the_load_event > 0 {
 		return true
@@ -5066,7 +5334,6 @@ pub fn (d &Document) is_completely_loaded() bool {
 }
 
 // --- Page showing / visibility ---
-
 pub fn (mut d Document) set_page_showing(page_showing bool) {
 	if d.page_showing == page_showing {
 		return
@@ -5264,7 +5531,6 @@ pub fn (d &Document) allow_focus() bool {
 }
 
 // --- Parser management ---
-
 pub fn (mut d Document) set_parser(parser &HTMLParser) {
 	d.parser = parser
 }
@@ -5310,7 +5576,6 @@ pub fn (mut d Document) unregister_node_iterator(node_iterator &NodeIterator) {
 }
 
 // --- Document observers ---
-
 pub fn (mut d Document) register_document_observer(observer &DocumentObserver) {
 	for existing in d.document_observers {
 		if existing == observer {
@@ -5325,7 +5590,6 @@ pub fn (mut d Document) unregister_document_observer(observer &DocumentObserver)
 }
 
 // --- Style update flags ---
-
 pub fn (d &Document) needs_full_style_update() bool {
 	return d.needs_full_style_update
 }
@@ -5419,9 +5683,7 @@ pub fn (mut d Document) plugins() &HTMLCollection {
 pub fn (mut d Document) links() &HTMLCollection {
 	if d.links_ == unsafe { nil } {
 		d.links_ = HTMLCollection.create(unsafe { &ParentNode(&d) }, .descendants, fn (element &Element) bool {
-			return (is_html_element_with_local_name(element, 'a')
-				|| is_html_element_with_local_name(element, 'area'))
-				&& element.has_attribute('href')
+			return (is_html_element_with_local_name(element, 'a') || is_html_element_with_local_name(element, 'area')) && element.has_attribute('href')
 		}, never_sort_elements)
 	}
 	return d.links_
@@ -5450,8 +5712,7 @@ pub fn (mut d Document) scripts() &HTMLCollection {
 // https://html.spec.whatwg.org/multipage/dom.html#dom-document-all
 pub fn (mut d Document) all() &HTMLAllCollection {
 	if d.all_ == unsafe { nil } {
-		d.all_ = HTMLAllCollection.create(unsafe { &ParentNode(&d) }, .descendants,
-			always_accept_element)
+		d.all_ = HTMLAllCollection.create(unsafe { &ParentNode(&d) }, .descendants, always_accept_element)
 	}
 	return d.all_
 }
@@ -5477,7 +5738,6 @@ pub fn (d &Document) release_events() {
 }
 
 // --- Style sheets ---
-
 pub fn (mut d Document) style_sheets() &StyleSheetList {
 	if d.style_sheets_ == unsafe { nil } {
 		d.style_sheets_ = &StyleSheetList{}
@@ -5485,7 +5745,7 @@ pub fn (mut d Document) style_sheets() &StyleSheetList {
 	return d.style_sheets_
 }
 
-pub fn (mut d Document) for_each_active_css_style_sheet(callback fn (&CSSStyleSheet)) {
+pub fn (mut d Document) for_each_active_css_style_sheet(callback fn(&CSSStyleSheet)) {
 	if d.style_sheets_ != unsafe { nil } {
 		for style_sheet in d.style_sheets_.sheets {
 			if !(style_sheet.is_alternate && style_sheet.disabled) {
@@ -5555,8 +5815,8 @@ pub fn (d &Document) has_no_style_sheet_that_is_blocking_scripts() bool {
 // https://html.spec.whatwg.org/multipage/origin.html#dom-document-domain
 pub fn (d &Document) domain() string {
 	// 1. Let effectiveDomain be this's origin's effective domain.
+	// 2. If effectiveDomain is null, return the empty string.
 	effective_domain := d.origin_.effective_domain() or {
-		// 2. If effectiveDomain is null, return the empty string.
 		return ''
 	}
 	// 3. Return effectiveDomain, serialized.
@@ -5574,8 +5834,8 @@ pub fn (mut d Document) set_domain(value string) ! {
 		return error('SecurityError: Document.domain setter is sandboxed')
 	}
 	// 3. Let effectiveDomain be this's origin's effective domain.
+	// 4. If effectiveDomain is null, throw SecurityError.
 	effective_domain := d.origin_.effective_domain() or {
-		// 4. If effectiveDomain is null, throw SecurityError.
 		return error('SecurityError: Document.domain setter called on a Document with a null effective domain')
 	}
 	// 5. If given value is not a registrable domain suffix of or equal to effectiveDomain, throw SecurityError.
@@ -5585,7 +5845,6 @@ pub fn (mut d Document) set_domain(value string) ! {
 }
 
 // --- Sandboxing & Policy ---
-
 pub fn (d &Document) active_sandboxing_flag_set() SandboxingFlagSet {
 	return d.active_sandboxing_flag_set
 }
@@ -5606,7 +5865,6 @@ pub fn (mut d Document) set_policy_container(pc &PolicyContainer) {
 }
 
 // --- Navigation ---
-
 pub fn (d &Document) get_navigation_id() ?string {
 	return d.navigation_id
 }
@@ -5686,19 +5944,26 @@ pub fn (d &Document) document_tree_child_navigables() []&Navigable {
 	// 2. Let navigables be new list.
 	mut navigables := []&Navigable{}
 	// 3-4. Iterate all registered navigables.
-	for nav in all_navigables_stub() {
+	for nav in all_navigables() {
 		container := nav.container() or { continue }
 		if !d.is_ancestor_of(container) {
 			continue
 		}
-		navigables << nav
+		mut insertion_index := navigables.len
+		for index, existing_navigable in navigables {
+			existing_container := existing_navigable.container() or { continue }
+			if (container.compare_document_position(existing_container) & document_position_following) != 0 {
+				insertion_index = index
+				break
+			}
+		}
+		navigables.insert(insertion_index, nav)
 	}
 	// 5. Return navigables.
 	return navigables
 }
 
 // --- Document lifecycle ---
-
 pub fn (d &Document) has_been_destroyed() bool {
 	return d.has_been_destroyed
 }
@@ -5846,7 +6111,6 @@ pub fn (mut d Document) make_unsalvageable(reason string) {
 }
 
 // --- Layout nodes ---
-
 pub fn (d &Document) layout_node() ?&LayoutViewport {
 	if d.layout_root == unsafe { nil } {
 		return none
@@ -5876,7 +6140,6 @@ pub fn (d &Document) unsafe_paintable() ?&ViewportPaintable {
 }
 
 // --- Inspection ---
-
 pub fn (mut d Document) set_inspected_node(node ?&Node) {
 	d.inspected_node = node or { unsafe { nil } }
 }
@@ -5961,7 +6224,6 @@ pub fn (d &Document) get_hovered_node() ?&Node {
 }
 
 // --- Exec command (stubs) ---
-
 pub fn (mut d Document) exec_command(command string, show_ui bool, value string) !bool {
 	// AD-HOC: Not supported on non-HTML documents
 	if !d.is_html_document() {
@@ -6086,7 +6348,6 @@ pub fn (d &Document) query_command_value(command string) !string {
 }
 
 // --- XPath (stubs) ---
-
 pub fn (d &Document) create_expression(expression string, resolver ?&XPathNSResolver) !&XPathExpression {
 	return xpath_create_expression(expression, resolver)
 }
@@ -6106,7 +6367,6 @@ pub fn (d &Document) create_ns_resolver(node_resolver &Node) &Node {
 }
 
 // --- Selection change ---
-
 pub fn (d &Document) has_scheduled_selectionchange_event() bool {
 	return d.has_scheduled_selectionchange_event
 }
@@ -6139,7 +6399,6 @@ pub fn (d &Document) is_allowed_to_use_feature(feature PolicyControlledFeature) 
 }
 
 // --- Accessibility ---
-
 pub fn (d &Document) dump_accessibility_tree_as_json() string {
 	// Build accessibility tree and serialize as JSON
 	mut sb := strings.new_builder(256)
@@ -6158,7 +6417,6 @@ pub fn (d &Document) dump_dom_tree_as_json() string {
 }
 
 // --- Images ---
-
 pub fn (mut d Document) list_of_available_images() &ListOfAvailableImages {
 	if d.list_of_available_images == unsafe { nil } {
 		d.list_of_available_images = &ListOfAvailableImages{}
@@ -6167,7 +6425,6 @@ pub fn (mut d Document) list_of_available_images() &ListOfAvailableImages {
 }
 
 // --- Observers ---
-
 pub fn (mut d Document) register_intersection_observer(observer &IntersectionObserver) {
 	d.intersection_observers << observer
 }
@@ -6289,7 +6546,6 @@ pub fn (d &Document) has_skipped_resize_observations() bool {
 }
 
 // --- Adopted style sheets ---
-
 pub fn (mut d Document) set_adopted_style_sheets(value VoidPtr) ! {
 	// Clear and repopulate adopted style sheets from the new value.
 	d.adopted_style_sheets.clear()
@@ -6298,7 +6554,6 @@ pub fn (mut d Document) set_adopted_style_sheets(value VoidPtr) ! {
 }
 
 // --- Visual viewport ---
-
 pub fn (mut d Document) visual_viewport() &VisualViewport {
 	if d.visual_viewport_ == unsafe { nil } {
 		d.visual_viewport_ = &VisualViewport{}
@@ -6384,9 +6639,14 @@ pub fn (mut d Document) shared_declarative_refresh_steps(input string) {
 
 	// 12. Set document's will declaratively refresh to true.
 	d.will_declaratively_refresh = true
+	d.last_declarative_refresh_ = input
 	_ = time
 	_ = url_record
 	// Would set up a timer to navigate after `time` seconds
+}
+
+pub fn (d &Document) last_declarative_refresh_input() ?string {
+	return d.last_declarative_refresh_
 }
 
 // --- Animations ---
@@ -6472,7 +6732,6 @@ pub fn (d &Document) transition_generation() int {
 }
 
 // --- Element ID/Name tracking ---
-
 pub fn (mut d Document) element_id_changed(element &Element, old_id ?string) {
 	// Notify form-associated elements
 	for fae in d.form_associated_elements_with_form_attribute {
@@ -6533,18 +6792,15 @@ pub fn (mut d Document) element_with_name_was_removed(element &Element) {
 }
 
 // --- Form elements ---
-
 pub fn (mut d Document) add_form_associated_element_with_form_attribute(element &FormAssociatedElement) {
 	d.form_associated_elements_with_form_attribute << element
 }
 
 pub fn (mut d Document) remove_form_associated_element_with_form_attribute(element &FormAssociatedElement) {
-	d.form_associated_elements_with_form_attribute =
-		d.form_associated_elements_with_form_attribute.filter(it != element)
+	d.form_associated_elements_with_form_attribute = d.form_associated_elements_with_form_attribute.filter(it != element)
 }
 
 // --- Design mode ---
-
 pub fn (d &Document) design_mode_enabled_state() bool {
 	return d.design_mode_enabled
 }
@@ -6584,7 +6840,7 @@ pub fn (mut d Document) element_from_point(x f64, y f64) ?&Element {
 	if paintable_box := d.paintable_box() {
 		if hit := paintable_box.hit_test(x, y, .exact) {
 			if hit.element != unsafe { nil } {
-				return layout_retarget_from_ua_internal_shadow_root_stub(hit.element)
+				return retarget_from_ua_internal_shadow_root(hit.element)
 			}
 		}
 	}
@@ -6610,7 +6866,7 @@ pub fn (mut d Document) elements_from_point(x f64, y f64) []&Element {
 		paintable_box.hit_test_all(x, y, mut sequence)
 	}
 	for i, element in sequence {
-		sequence[i] = layout_retarget_from_ua_internal_shadow_root_stub(element)
+		sequence[i] = retarget_from_ua_internal_shadow_root(element)
 	}
 	mut deduplicated_sequence := []&Element{}
 	for element in sequence {
@@ -6669,8 +6925,13 @@ pub fn (d &Document) supported_property_names() []string {
 	return names
 }
 
-// --- Shadow roots ---
+// The HTML Window named-properties algorithm consumes this ordered list. The
+// accessor keeps the DOM-owned cache encapsulated while preserving tree order.
+pub fn (d &Document) potentially_named_elements() []&Element {
+	return d.potentially_named_elements.clone()
+}
 
+// --- Shadow roots ---
 pub fn (mut d Document) register_shadow_root(shadow_root &ShadowRoot) {
 	d.shadow_roots << shadow_root
 }
@@ -6686,8 +6947,7 @@ pub fn (mut d Document) add_an_element_to_the_top_layer(element &Element) {
 	// Re-adding an element with a pending removal moves it to the top and cancels the removal.
 	if element_pointer_in_list(d.top_layer_elements, element) {
 		d.top_layer_elements = d.top_layer_elements.filter(voidptr(it) != voidptr(element))
-		d.top_layer_pending_removals =
-			d.top_layer_pending_removals.filter(voidptr(it) != voidptr(element))
+		d.top_layer_pending_removals = d.top_layer_pending_removals.filter(voidptr(it) != voidptr(element))
 	}
 	d.top_layer_elements << element
 	mut mutable_element := unsafe { &Element(element) }
@@ -6697,10 +6957,15 @@ pub fn (mut d Document) add_an_element_to_the_top_layer(element &Element) {
 	d.invalidate_layout_tree(.document_add_an_element_to_the_top_layer)
 }
 
+// The layout tree builder traverses the document's top layer after the normal
+// document tree, matching Layout::TreeBuilder::build().
+pub fn (d &Document) top_layer_elements_for_layout() []&Element {
+	return d.top_layer_elements.clone()
+}
+
 // https://drafts.csswg.org/css-position-4/#request-an-element-to-be-removed-from-the-top-layer
 pub fn (mut d Document) request_an_element_to_be_remove_from_the_top_layer(element &Element) {
-	if !element_pointer_in_list(d.top_layer_elements, element)
-		|| element_pointer_in_list(d.top_layer_pending_removals, element) {
+	if !element_pointer_in_list(d.top_layer_elements, element) || element_pointer_in_list(d.top_layer_pending_removals, element) {
 		return
 	}
 	mut mutable_element := unsafe { &Element(element) }
@@ -6714,8 +6979,7 @@ pub fn (mut d Document) request_an_element_to_be_remove_from_the_top_layer(eleme
 // https://drafts.csswg.org/css-position-4/#remove-an-element-from-the-top-layer-immediately
 pub fn (mut d Document) remove_an_element_from_the_top_layer_immediately(element &Element) {
 	d.top_layer_elements = d.top_layer_elements.filter(voidptr(it) != voidptr(element))
-	d.top_layer_pending_removals =
-		d.top_layer_pending_removals.filter(voidptr(it) != voidptr(element))
+	d.top_layer_pending_removals = d.top_layer_pending_removals.filter(voidptr(it) != voidptr(element))
 	mut mutable_element := unsafe { &Element(element) }
 	mutable_element.set_in_top_layer(false)
 	mutable_element.set_rendered_in_top_layer(false)
@@ -6745,6 +7009,42 @@ pub fn (mut d Document) process_top_layer_removals() {
 }
 
 // --- Popover ---
+pub fn (d &Document) showing_auto_popover_list() []&HTMLElement {
+	return d.showing_auto_popover_list.clone()
+}
+
+pub fn (d &Document) showing_hint_popover_list() []&HTMLElement {
+	return d.showing_hint_popover_list.clone()
+}
+
+pub fn (mut d Document) append_showing_auto_popover(element &HTMLElement) {
+	if !html_element_pointer_in_list(d.showing_auto_popover_list, element) {
+		d.showing_auto_popover_list << element
+	}
+}
+
+pub fn (mut d Document) append_showing_hint_popover(element &HTMLElement) {
+	if !html_element_pointer_in_list(d.showing_hint_popover_list, element) {
+		d.showing_hint_popover_list << element
+	}
+}
+
+pub fn (mut d Document) remove_showing_auto_popover(element &HTMLElement) {
+	d.showing_auto_popover_list = d.showing_auto_popover_list.filter(voidptr(it) != voidptr(element))
+}
+
+pub fn (mut d Document) remove_showing_hint_popover(element &HTMLElement) {
+	d.showing_hint_popover_list = d.showing_hint_popover_list.filter(voidptr(it) != voidptr(element))
+}
+
+fn html_element_pointer_in_list(elements []&HTMLElement, target &HTMLElement) bool {
+	for element in elements {
+		if voidptr(element) == voidptr(target) {
+			return true
+		}
+	}
+	return false
+}
 
 // https://html.spec.whatwg.org/multipage/popover.html#topmost-auto-popover
 pub fn (d &Document) topmost_auto_or_hint_popover() ?&HTMLElement {
@@ -6769,7 +7069,6 @@ pub fn (d &Document) get_popover_pointerdown_target() ?&HTMLElement {
 }
 
 // --- Text search ---
-
 pub fn (d &Document) find_matching_text(query string, case_sensitivity CaseSensitivity) []&Range {
 	if query.len == 0 {
 		return []
@@ -6792,7 +7091,7 @@ pub fn (d &Document) find_matching_text(query string, case_sensitivity CaseSensi
 		idx := search_text.index_after(search_query, offset) or { break }
 		matches << &Range{
 			start_offset_: idx
-			end_offset_:   idx + search_query.len
+			end_offset_: idx + search_query.len
 		}
 		offset = idx + search_query.len
 		if offset >= search_text.len {
@@ -6814,14 +7113,12 @@ pub fn (mut d Document) parse_html_from_a_string(markup string) {
 			return
 		}
 	}
-	// 2-4. Create an HTML parser, feed it the markup, and run it.
-	parser := html_parser_create_for_scripting_stub(d)
-	parser.feed(markup)
-	parser.run()
+	// The html module owns parser construction and installs parse_document above.
+	// Reaching this point means the module-cycle bridge was not installed.
+	panic('HTML parser hook has not been installed for Document.parse_html_from_a_string()')
 }
 
 // --- Cursor ---
-
 pub fn (d &Document) cursor_position() ?&Position {
 	focused := d.focused_area
 	if focused == unsafe { nil } {
@@ -6849,7 +7146,6 @@ pub fn (d &Document) get_cursor_blink_state() bool {
 }
 
 // --- Navigable cache ---
-
 pub fn (d &Document) cached_navigable() ?&Navigable {
 	if d.cached_navigable_ == unsafe { nil } {
 		return none
@@ -6858,11 +7154,15 @@ pub fn (d &Document) cached_navigable() ?&Navigable {
 }
 
 pub fn (mut d Document) set_cached_navigable(navigable ?&Navigable) {
-	d.cached_navigable_ = navigable or { unsafe { nil } }
+	if value := navigable {
+		register_navigable(value)
+		d.cached_navigable_ = value
+		return
+	}
+	d.cached_navigable_ = unsafe { nil }
 }
 
 // --- Repaint ---
-
 pub fn (mut d Document) notify_css_background_image_loaded() {
 	// Invalidate paint caches on all paintable boxes
 	if paintable := d.unsafe_paintable() {
@@ -6883,7 +7183,6 @@ pub fn (d &Document) cached_display_list() ?&DisplayList {
 }
 
 // --- Segmenters ---
-
 pub fn (mut d Document) grapheme_segmenter() &Segmenter {
 	if d.grapheme_segmenter_ == unsafe { nil } {
 		d.grapheme_segmenter_ = &Segmenter{
@@ -6932,8 +7231,7 @@ pub fn (mut d Document) steps_to_fire_beforeunload(unload_prompt_shown bool) Ste
 		beforeunload_event := Event.create('beforeunload', EventInit{
 			cancelable: true
 		})
-		event_firing_result = EventDispatcher.dispatch(unsafe { &EventTarget(d.window) },
-			beforeunload_event, false)
+		event_firing_result = EventDispatcher.dispatch(unsafe { &EventTarget(d.window) }, beforeunload_event, false)
 	}
 
 	// 5. Decrease document's relevant agent's event loop's termination nesting level by 1.
@@ -6948,13 +7246,12 @@ pub fn (mut d Document) steps_to_fire_beforeunload(unload_prompt_shown bool) Ste
 	// 8. Return (unloadPromptShown, unloadPromptCanceled).
 	_ = unload_prompt_canceled
 	return StepsToFireBeforeunloadResult{
-		unload_prompt_shown:    unload_prompt_shown
+		unload_prompt_shown: unload_prompt_shown
 		unload_prompt_canceled: unload_prompt_canceled
 	}
 }
 
 // --- Event handlers ---
-
 pub fn (d &Document) onreadystatechange() ?&CallbackType {
 	return d.onreadystatechange_handler
 }
@@ -6976,7 +7273,8 @@ pub fn (d &Document) onfullscreenchange() ?&CallbackType {
 }
 
 pub fn (mut d Document) set_onfullscreenchange(value ?&CallbackType) {
-	unsafe { &EventTarget(&d) }.set_event_handler_attribute('fullscreenchange', value)
+	unsafe { &EventTarget(&d) }
+	.set_event_handler_attribute('fullscreenchange', value)
 }
 
 pub fn (d &Document) onfullscreenerror() ?&CallbackType {
@@ -6984,7 +7282,8 @@ pub fn (d &Document) onfullscreenerror() ?&CallbackType {
 }
 
 pub fn (mut d Document) set_onfullscreenerror(value ?&CallbackType) {
-	unsafe { &EventTarget(&d) }.set_event_handler_attribute('fullscreenerror', value)
+	unsafe { &EventTarget(&d) }
+	.set_event_handler_attribute('fullscreenerror', value)
 }
 
 // --- View transitions ---
@@ -7070,7 +7369,7 @@ pub fn (mut d Document) run_fullscreen_steps() {
 
 pub fn (mut d Document) append_pending_fullscreen_change(type_ PendingFullscreenEventType, element &Element) {
 	d.pending_fullscreen_events << PendingFullscreenEvent{
-		type_:   type_
+		type_: type_
 		element: element
 	}
 }
@@ -7129,7 +7428,8 @@ pub fn (mut d Document) fully_exit_fullscreen() {
 		}
 	}
 	for mut el in to_unfullscreen {
-		d.unfullscreen_element(mut el)
+		mut mutable_element := unsafe { &Element(el) }
+		d.unfullscreen_element(mut mutable_element)
 	}
 	// 3. Exit fullscreen document.
 	d.exit_fullscreen()
@@ -7144,9 +7444,10 @@ pub fn (mut d Document) exit_fullscreen() &Promise {
 		return promise
 	}
 	// Unfullscreen the fullscreen element
-	if mut el := d.fullscreen_element() {
+	if el := d.fullscreen_element() {
 		d.append_pending_fullscreen_change(.change, el)
-		d.unfullscreen_element(mut el)
+		mut mutable_element := unsafe { &Element(el) }
+		d.unfullscreen_element(mut mutable_element)
 	}
 	d.run_fullscreen_steps()
 	promise.resolve(js_undefined())
@@ -7213,7 +7514,6 @@ pub fn (mut d Document) remove_render_blocking_element(element &Element) {
 }
 
 // --- CSS import rules ---
-
 pub fn (mut d Document) add_pending_css_import_rule(rule VoidPtr) {
 	d.pending_css_import_rules << rule
 }
@@ -7236,7 +7536,6 @@ pub fn (d &Document) get_registered_custom_property(name string) ?CustomProperty
 }
 
 // --- Editing ---
-
 pub fn (d &Document) get_default_single_line_container_name() string {
 	return d.default_single_line_container_name
 }
@@ -7302,7 +7601,6 @@ pub fn (d &Document) container_document() ?&Document {
 }
 
 // --- Storage ---
-
 pub fn (d &Document) session_storage_holder() ?&Storage {
 	if d.session_storage_holder == unsafe { nil } {
 		return none
@@ -7326,13 +7624,11 @@ pub fn (mut d Document) set_local_storage_holder(storage ?&Storage) {
 }
 
 // --- Decoded SVG ---
-
 pub fn (d &Document) is_decoded_svg() bool {
 	return d.is_svg_document
 }
 
 // --- Console ---
-
 pub fn (mut d Document) set_console_client(client ?&ConsoleClient) {
 	d.console_client_ = client or { unsafe { nil } }
 }
@@ -7345,7 +7641,6 @@ pub fn (d &Document) console_client() ?&ConsoleClient {
 }
 
 // --- Input events ---
-
 pub fn (d &Document) active_input_events_target(for_node ?&Node) ?&InputEventsTarget {
 	focused := d.focused_area
 	if focused == unsafe { nil } {
@@ -7375,14 +7670,12 @@ fn form_associated_text_control_input_events_target(node &Node) ?&InputEventsTar
 }
 
 // --- Pointer lock ---
-
 pub fn (mut d Document) exit_pointer_lock() {
 	// FIXME: Implement pointer lock exit
 	d.pointer_lock_element = unsafe { nil }
 }
 
 // --- Selector query cache ---
-
 pub fn (d &Document) cached_query_selector_result(selector_text string) ?SelectorList {
 	if selector_text in d.selector_query_cache {
 		return d.selector_query_cache[selector_text] or { return none }
@@ -7398,13 +7691,11 @@ pub fn (mut d Document) cache_query_selector_result(selector_text string, result
 }
 
 // --- Shared resource requests ---
-
 pub fn (mut d Document) shared_resource_requests() map[string]&SharedResourceRequest {
 	return d.shared_resource_requests_
 }
 
 // --- History ---
-
 pub fn (d &Document) get_latest_entry() ?&SessionHistoryEntry {
 	if d.latest_entry == unsafe { nil } {
 		return none
@@ -7508,7 +7799,6 @@ pub fn (mut d Document) populate_with_html_head_and_body() ! {
 }
 
 // --- Allow declarative shadow roots ---
-
 pub fn (d &Document) get_allow_declarative_shadow_roots() bool {
 	return d.allow_declarative_shadow_roots
 }
@@ -7519,7 +7809,6 @@ pub fn (mut d Document) set_allow_declarative_shadow_roots(allow bool) {
 }
 
 // --- Ignore destructive writes ---
-
 pub fn (d &Document) ignore_destructive_writes_counter() u32 {
 	return d.ignore_destructive_writes_counter
 }
@@ -7533,7 +7822,6 @@ pub fn (mut d Document) decrement_ignore_destructive_writes_counter() {
 }
 
 // --- Throw on dynamic markup insertion ---
-
 pub fn (mut d Document) increment_throw_on_dynamic_markup_insertion_counter() {
 	d.throw_on_dynamic_markup_insertion_counter++
 }
@@ -7543,13 +7831,11 @@ pub fn (mut d Document) decrement_throw_on_dynamic_markup_insertion_counter() {
 }
 
 // --- Unload counter ---
-
 pub fn (d &Document) get_unload_counter() u32 {
 	return d.unload_counter
 }
 
 // --- Display list / stacking context dump ---
-
 pub fn (mut d Document) dump_display_list() string {
 	d.update_layout(.dump_display_list)
 	paintable := d.paintable() or { return 'No paintable' }
@@ -7566,7 +7852,6 @@ pub fn (mut d Document) dump_stacking_context_tree() string {
 }
 
 // --- Style scope ---
-
 pub fn (d &Document) get_style_sheet_source(identifier &StyleSheetIdentifier) ?string {
 	return match identifier.type_ {
 		.style_element {
@@ -7608,7 +7893,6 @@ pub fn (mut d Document) ensure_element_shared_css_random_base_value(key string) 
 }
 
 // --- is_child_allowed ---
-
 pub fn (d &Document) is_child_allowed(node &Node) bool {
 	return match node.node_type {
 		.document_node, .text_node {
@@ -7632,7 +7916,6 @@ pub fn (d &Document) is_child_allowed(node &Node) bool {
 }
 
 // --- Editing host manager ---
-
 pub fn (d &Document) editing_host_manager() &EditingHostManager {
 	mut document := unsafe { &Document(d) }
 	if document.editing_host_manager_ == unsafe { nil } {
@@ -7642,7 +7925,6 @@ pub fn (d &Document) editing_host_manager() &EditingHostManager {
 }
 
 // --- is_initial_about_blank ---
-
 pub fn (d &Document) get_is_initial_about_blank() bool {
 	return d.is_initial_about_blank
 }
@@ -7652,7 +7934,6 @@ pub fn (mut d Document) set_is_initial_about_blank(b bool) {
 }
 
 // --- about_base_url ---
-
 pub fn (d &Document) get_about_base_url() ?URL {
 	return d.about_base_url
 }
@@ -7662,7 +7943,6 @@ pub fn (mut d Document) set_about_base_url(url ?URL) {
 }
 
 // --- source ---
-
 pub fn (d &Document) get_source() string {
 	return d.source
 }
@@ -7672,7 +7952,6 @@ pub fn (mut d Document) set_source(source string) {
 }
 
 // --- did_stop_being_active_document_in_navigable ---
-
 pub fn (mut d Document) did_stop_being_active_document_in_navigable() {
 	d.tear_down_layout_tree()
 	if !d.has_fired_document_became_inactive {
@@ -7682,6 +7961,9 @@ pub fn (mut d Document) did_stop_being_active_document_in_navigable() {
 }
 
 // --- check_favicon ---
+pub fn (d &Document) has_active_favicon() bool {
+	return d.active_favicon != unsafe { nil }
+}
 
 pub fn (mut d Document) check_favicon_after_loading_link_resource() {
 	// Check for favicon link elements in the head
@@ -7704,6 +7986,7 @@ pub fn (d &Document) lookup_custom_element_definition(namespace_ ?string, local_
 	if d.browsing_context == unsafe { nil } {
 		return none
 	}
+
 	// 3. Let registry be document's relevant global object's custom element registry.
 	// The V port keeps the translated definition set on Document until Window's
 	// CustomElementRegistry is available.
@@ -7749,7 +8032,6 @@ pub fn (d &Document) root_element() ?VoidPtr {
 }
 
 // --- Enum to_string helpers ---
-
 pub fn invalidate_layout_tree_reason_to_string(reason InvalidateLayoutTreeReason) string {
 	return match reason {
 		.document_add_an_element_to_the_top_layer {
@@ -8096,8 +8378,8 @@ fn (d &Document) calculate_active_element() ?&Element {
 // C++: Document::IndicatedPart Document::determine_the_indicated_part() const
 pub fn (d &Document) determine_the_indicated_part() IndicatedPart {
 	// 1. Let fragment be document's URL's fragment.
+	// 2. If fragment is the empty string, return the special value top of the document.
 	fragment := d.url.fragment() or {
-		// 2. If fragment is the empty string, return the special value top of the document.
 		return IndicatedPart{.top_of_document, unsafe { nil }}
 	}
 	if fragment.len == 0 {
@@ -8210,7 +8492,7 @@ pub fn (mut d Document) run_the_document_write_steps(text []string, add_line_fee
 	}
 
 	// 9. If the insertion point is undefined, then:
-	if d.parser == unsafe { nil } || !html_parser_insertion_point_is_defined_stub(d.parser) {
+	if d.parser == unsafe { nil } || !d.parser.is_insertion_point_defined() {
 		// 1. If document's unload counter > 0 or ignore-destructive-writes counter > 0, return.
 		if d.unload_counter > 0 || d.ignore_destructive_writes_counter > 0 {
 			return
@@ -8221,7 +8503,7 @@ pub fn (mut d Document) run_the_document_write_steps(text []string, add_line_fee
 
 	// 10. Insert string into the input stream just before the insertion point.
 	if d.parser != unsafe { nil } {
-		html_parser_insert_input_at_insertion_point_stub(d.parser, sb.str())
+		d.parser.insert_input_at_insertion_point(sb.str())
 	}
 
 	// 11. If document's pending parsing-blocking script is null, have the HTML parser
@@ -8230,7 +8512,7 @@ pub fn (mut d Document) run_the_document_write_steps(text []string, add_line_fee
 	//     construction stage (this can happen if a script end tag token is emitted by the tokenizer).
 	if d.pending_parsing_blocking_script == unsafe { nil } {
 		if d.parser != unsafe { nil } {
-			html_parser_run_until_insertion_point_stub(d.parser)
+			d.parser.run_until_insertion_point()
 		}
 	}
 }
@@ -8295,8 +8577,9 @@ pub fn (mut d Document) unload_a_document_and_its_descendants(new_document ?&Doc
 	// 4. For each childNavigable of childNavigables, queue a global task to:
 	for child_nav in child_navigables {
 		// 1-2. Unload the child's active document and its descendants, then increment counter.
-		if mut active_doc := child_nav.active_document() {
-			active_doc.unload_a_document_and_its_descendants(none)
+		if active_doc := child_nav.active_document() {
+			mut mutable_active_document := unsafe { &Document(active_doc) }
+			mutable_active_document.unload_a_document_and_its_descendants(none)
 		}
 	}
 
@@ -8320,9 +8603,10 @@ pub fn (mut d Document) destroy_a_document_and_its_descendants() {
 
 	// 4. For each childNavigable of childNavigables, queue a global task to:
 	for child_nav in child_navigables {
-		if mut active_doc := child_nav.active_document() {
+		if active_doc := child_nav.active_document() {
 			// 2. Destroy a document and its descendants given childNavigable's active document.
-			active_doc.destroy_a_document_and_its_descendants()
+			mut mutable_active_document := unsafe { &Document(active_doc) }
+			mutable_active_document.destroy_a_document_and_its_descendants()
 		}
 	}
 
@@ -8340,8 +8624,9 @@ pub fn (mut d Document) abort_a_document_and_its_descendants() {
 	// 3. For each descendantNavigable of descendantNavigables, queue a global task to:
 	for desc_nav in descendant_navigables {
 		// 1. Abort descendantNavigable's active document.
-		if mut active_doc := desc_nav.active_document() {
-			active_doc.abort()
+		if active_doc := desc_nav.active_document() {
+			mut mutable_active_document := unsafe { &Document(active_doc) }
+			mutable_active_document.abort()
 			// 2. If descendantNavigable's active document's salvageable is false,
 			//    then set document's salvageable to false.
 			if !active_doc.salvageable {
@@ -8586,8 +8871,7 @@ pub fn (d &Document) element_by_id(id string) ?&Element {
 pub fn (d &Document) environment_variable_value(variable EnvironmentVariable) ?string {
 	// Stub: Returns CSS environment variable values
 	return match variable {
-		.safe_area_inset_top, .safe_area_inset_bottom, .safe_area_inset_left,
-		.safe_area_inset_right {
+		.safe_area_inset_top, .safe_area_inset_bottom, .safe_area_inset_left, .safe_area_inset_right {
 			'0px'
 		}
 		.preferred_text_scale {
@@ -8666,7 +8950,6 @@ pub fn (mut d Document) invalidate_style_for_elements_affected_by_pseudo_class_c
 // C++: void Document::evaluate (XPath - already exists as evaluate_xpath)
 
 // --- IndicatedPart type ---
-
 enum IndicatedPartType {
 	none_
 	top_of_document
@@ -8679,13 +8962,11 @@ struct IndicatedPart {
 }
 
 // --- Stub methods on supporting types needed by new methods ---
-
 pub fn (si &StyleInvalidator) has_pending_invalidations() bool {
 	return si.pending_invalidations.len != 0
 }
 
 // Element.needs_style_update and entire_subtree_needs_style_update are in element.v
-
 pub fn (he &HTMLElement) unsafe_layout_node() ?&LayoutNode {
 	return none
 }
@@ -8703,6 +8984,19 @@ pub fn (p &Page) client_page_did_create_new_document(d &Document) {
 pub fn (p &Page) client_page_did_update_resource_count(count int) {
 	_ = p
 	_ = count
+}
+
+pub fn (mut p Page) client_page_did_change_title(title string) {
+	p.last_changed_title_ = title
+	p.title_change_count_++
+}
+
+pub fn (p &Page) last_changed_title() string {
+	return p.last_changed_title_
+}
+
+pub fn (p &Page) title_change_count() int {
+	return p.title_change_count_
 }
 
 pub fn (el &EventLoopStub) unregister_document(d &Document) {
@@ -8746,7 +9040,6 @@ fn hex_digit_value(ch u8) ?u8 {
 }
 
 // --- is_a_registrable_domain_suffix_of_or_is_equal_to (free function) ---
-
 pub fn is_a_registrable_domain_suffix_of_or_is_equal_to(host_suffix_string string, original_host string) bool {
 	host_suffix := normalize_domain_host(host_suffix_string) or { return false }
 	original := normalize_domain_host(original_host) or { return false }

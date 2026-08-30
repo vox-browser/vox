@@ -2668,9 +2668,15 @@ pub mut:
 	features   ShapeFeatures
 }
 
+pub struct FontCascadeEntry {
+pub:
+	font           PlatformFont
+	unicode_ranges []UnicodeRange
+}
+
 pub struct FontCascadeList {
 pub mut:
-	fonts            []PlatformFont
+	fonts            []FontCascadeEntry
 	last_resort_font ?PlatformFont
 }
 
@@ -2679,13 +2685,15 @@ pub fn FontCascadeList.create() FontCascadeList {
 }
 
 pub fn (mut list FontCascadeList) add(font PlatformFont, unicode_ranges []UnicodeRange) {
-	_ = unicode_ranges
-	list.fonts << font
+	list.fonts << FontCascadeEntry{
+		font:           font
+		unicode_ranges: unicode_ranges.clone()
+	}
 }
 
 pub fn (mut list FontCascadeList) extend(other FontCascadeList) {
-	for font in other.fonts {
-		list.fonts << font
+	for entry in other.fonts {
+		list.fonts << entry
 	}
 	if last_resort := other.last_resort_font {
 		list.last_resort_font = last_resort
@@ -2698,6 +2706,25 @@ pub fn (list &FontCascadeList) is_empty() bool {
 
 pub fn (mut list FontCascadeList) set_last_resort_font(font PlatformFont) {
 	list.last_resort_font = font
+}
+
+// Gfx::FontCascadeList::font_for_code_point(). An empty unicode-range means
+// that the face covers the full Unicode range for cascade selection.
+pub fn (list &FontCascadeList) font_for_code_point(code_point u32) &PlatformFont {
+	for index, entry in list.fonts {
+		if entry.unicode_ranges.len == 0 {
+			return unsafe { &list.fonts[index].font }
+		}
+		for unicode_range in entry.unicode_ranges {
+			if unicode_range.start <= code_point && code_point <= unicode_range.end {
+				return unsafe { &list.fonts[index].font }
+			}
+		}
+	}
+	if font := list.last_resort_font {
+		return &font
+	}
+	panic('FontCascadeList must contain a font or a last-resort font')
 }
 
 pub struct FontVariationSettings {

@@ -26,6 +26,7 @@ enum WritableOwnerKind {
 	regular
 	transform
 	transfer_proxy
+	message_port
 }
 
 @[heap]
@@ -48,9 +49,15 @@ mut:
 	owner_kind_           WritableOwnerKind
 	owner_                voidptr
 	transfer_destination_ &WritableStream = unsafe { nil }
+	message_port_         &MessagePort = unsafe { nil }
 	transfer_locked_      bool
 	pipe_source_          &ReadableStream = unsafe { nil }
 	written_values_       []Value
+	close_request_        &VoidPromise = unsafe { nil }
+	in_flight_write_request_ &VoidPromise = unsafe { nil }
+	in_flight_close_request_ &VoidPromise = unsafe { nil }
+	pending_abort_request_ &VoidPromise = unsafe { nil }
+	write_requests_       []&VoidPromise
 }
 
 pub fn WritableStream.construct_impl(sink UnderlyingSink, strategy QueuingStrategy) !&WritableStream {
@@ -192,6 +199,13 @@ fn (mut stream WritableStream) perform_write(value Value) ! {
 				return error(result.reason())
 			}
 		}
+		.message_port {
+			if isnil(stream.message_port_) {
+				return error('DataCloneError: Cross-realm writable endpoint is unavailable')
+			}
+			mut port := stream.message_port_
+			pack_and_post_message(mut port, 'chunk', value)!
+		}
 	}
 }
 
@@ -274,6 +288,16 @@ fn (mut stream WritableStream) finish_close() {
 				}
 			}
 		}
+		.message_port {
+			if !isnil(stream.message_port_) {
+				mut port := stream.message_port_
+				pack_and_post_message(mut port, 'close', undefined_value()) or {
+					stream.in_flight_close_ = false
+					stream.start_erroring(err.msg())
+					return
+				}
+			}
+		}
 	}
 	stream.in_flight_close_ = false
 	stream.state_ = .closed
@@ -329,6 +353,12 @@ fn (mut stream WritableStream) abort_internal(reason Value) &VoidPromise {
 			if !isnil(stream.transfer_destination_) {
 				mut destination := stream.transfer_destination_
 				return destination.abort_internal(structured_clone(reason))
+			}
+		}
+		.message_port {
+			if !isnil(stream.message_port_) {
+				mut port := stream.message_port_
+				pack_and_post_message_handling_error(mut port, 'error', reason)
 			}
 		}
 	}

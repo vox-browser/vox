@@ -5,8 +5,11 @@
 // Translation of Libraries/LibWeb/Animations/Animation.{h,cpp}.
 module animations
 
+import css
 import dom
 import math
+
+__global animation_list_order_counter u64
 
 pub enum AnimationPlayState {
 	idle
@@ -51,10 +54,18 @@ pub mut:
 	emitted_events_              []&AnimationPlaybackEvent
 	animation_class_             AnimationClass = .none_
 	class_composite_order_       int
+	owning_element_              ?dom.AbstractElement
+	saved_cancel_time_           ?TimeValue
+	last_css_animation_play_state_ ?css.AnimationPlayState
+	effect_invalidated_          bool
 }
 
 pub fn Animation.create(effect ?&AnimationEffect, timeline ?&AnimationTimeline) &Animation {
-	mut animation := &Animation{}
+	order := animation_list_order_counter
+	animation_list_order_counter++
+	mut animation := &Animation{
+		global_animation_list_order_: order
+	}
 	animation.set_effect(effect)
 	animation.set_timeline(timeline)
 	return animation
@@ -142,6 +153,47 @@ pub fn (animation &Animation) validate_css_numberish_time(value CSSNumberish) !T
 		f64 { TimeValue.milliseconds(value) }
 		PercentageValue { error('CSSNumericValue must be a time for non-progress based animations') }
 	}
+}
+
+// https://drafts.csswg.org/web-animations-2/#validating-a-css-numberish-time
+pub fn (animation &Animation) validate_a_css_numberish_time(value ?CSSNumberish) !NullableTimeValue {
+	if raw := value {
+		return NullableTimeValue{
+			value: animation.validate_css_numberish_time(raw)!
+		}
+	}
+	if timeline := animation.timeline_ {
+		if timeline.is_progress_based() {
+			return error('CSSNumberish must be a percentage for progress-based animations')
+		}
+	}
+	return NullableTimeValue{}
+}
+
+pub fn (animation &Animation) timeline_for_bindings() ?&AnimationTimeline {
+	return animation.timeline_
+}
+
+pub fn (mut animation Animation) set_timeline_for_bindings(timeline ?&AnimationTimeline) {
+	animation.set_timeline(timeline)
+}
+
+pub fn (animation &Animation) start_time_for_bindings() NullableCSSNumberish {
+	return NullableCSSNumberish.from_optional_css_numberish_time(animation.start_time())
+}
+
+pub fn (mut animation Animation) set_start_time_for_bindings(value ?CSSNumberish) ! {
+	validated := animation.validate_a_css_numberish_time(value)!
+	animation.set_start_time(validated.value)!
+}
+
+pub fn (animation &Animation) current_time_for_bindings() NullableCSSNumberish {
+	return NullableCSSNumberish.from_optional_css_numberish_time(animation.current_time())
+}
+
+pub fn (mut animation Animation) set_current_time_for_bindings(value ?CSSNumberish) ! {
+	validated := animation.validate_a_css_numberish_time(value)!
+	animation.set_current_time(validated.value)!
 }
 
 pub fn (mut animation Animation) set_start_time(value ?TimeValue) ! {
@@ -291,12 +343,56 @@ pub fn (animation &Animation) play_state() AnimationPlayState {
 	return .running
 }
 
+pub fn (animation &Animation) play_state_for_bindings() AnimationPlayState {
+	if owner := animation.owning_element_ {
+		mut document := unsafe { &dom.Document(owner.document()) }
+		document.update_style()
+	}
+	return animation.play_state()
+}
+
+pub fn (animation &Animation) is_finished() bool {
+	return animation.is_finished_
+}
+
+pub fn (animation &Animation) is_idle() bool {
+	return animation.play_state() == .idle
+}
+
+pub fn (animation &Animation) onfinish() ?&dom.CallbackType {
+	return animation.EventTarget.event_handler_attribute('finish')
+}
+
+pub fn (animation &Animation) set_onfinish(value ?&dom.CallbackType) {
+	animation.EventTarget.set_event_handler_attribute('finish', value)
+}
+
+pub fn (animation &Animation) oncancel() ?&dom.CallbackType {
+	return animation.EventTarget.event_handler_attribute('cancel')
+}
+
+pub fn (animation &Animation) set_oncancel(value ?&dom.CallbackType) {
+	animation.EventTarget.set_event_handler_attribute('cancel', value)
+}
+
+pub fn (animation &Animation) onremove() ?&dom.CallbackType {
+	return animation.EventTarget.event_handler_attribute('remove')
+}
+
+pub fn (animation &Animation) set_onremove(value ?&dom.CallbackType) {
+	animation.EventTarget.set_event_handler_attribute('remove', value)
+}
+
 pub fn (animation &Animation) is_relevant() bool {
 	effect := animation.effect_ or { return false }
 	return (effect.is_current() || effect.is_in_effect()) && animation.replace_state_ != .removed
 }
 
 pub fn (animation &Animation) is_replaceable() bool {
+	if (animation.is_css_animation() || animation.is_css_transition())
+		&& animation.owning_element_ != none {
+		return false
+	}
 	if animation.play_state() != .finished || animation.replace_state_ == .removed { return false }
 	timeline := animation.timeline_ or { return false }
 	if !timeline.is_monotonically_increasing() { return false }
@@ -480,15 +576,34 @@ pub fn (mut animation Animation) persist() {
 }
 
 pub fn (animation &Animation) convert_animation_time_to_timeline_time(value ?TimeValue) ?TimeValue {
+	return animation.convert_an_animation_time_to_timeline_time(value)
+}
+
+pub fn (animation &Animation) convert_an_animation_time_to_timeline_time(value ?TimeValue) ?TimeValue {
 	animation_time := value or { return none }
+	if math.is_inf(animation_time.value, 0) { return none }
+	if animation.playback_rate_ == 0 { return none }
 	start := animation.start_time_ or { return none }
-	if animation.playback_rate_ == 0 { return start }
 	return start.add(animation_time.divide(animation.playback_rate_)) or { none }
 }
 
 pub fn (animation &Animation) convert_timeline_time_to_origin_relative_time(value ?TimeValue) ?f64 {
+	return animation.convert_a_timeline_time_to_an_origin_relative_time(value)
+}
+
+pub fn (animation &Animation) convert_a_timeline_time_to_an_origin_relative_time(value ?TimeValue) ?f64 {
+	timeline_time := animation.convert_an_animation_time_to_timeline_time(value)
 	timeline := animation.timeline_ or { return none }
-	return timeline.convert_to_origin_relative_time(value)
+	if timeline.is_inactive()
+		|| !timeline.can_convert_a_timeline_time_to_an_origin_relative_time() {
+		return none
+	}
+	return timeline.convert_a_timeline_time_to_an_origin_relative_time(timeline_time)
+}
+
+pub fn (animation &Animation) document_for_timing() ?&dom.Document {
+	timeline := animation.timeline_ or { return none }
+	return timeline.associated_document()
 }
 
 pub fn (mut animation Animation) update() {
@@ -522,10 +637,18 @@ fn (mut animation Animation) apply_pending_playback_rate() {
 	animation.pending_playback_rate_ = none
 }
 
+pub fn (mut animation Animation) apply_any_pending_playback_rate() {
+	animation.apply_pending_playback_rate()
+}
+
 fn (animation &Animation) is_ready() bool {
 	timeline := animation.timeline_ or { return false }
 	return !timeline.is_inactive()
 		&& (animation.hold_time_ != none || animation.start_time_ != none)
+}
+
+pub fn (animation &Animation) is_ready_to_run_pending_pause_task() bool {
+	return animation.is_ready()
 }
 
 fn (mut animation Animation) run_pending_play_task() {
@@ -579,6 +702,72 @@ fn (mut animation Animation) reset_pending_tasks() {
 	animation.current_ready_promise_.reject(dom.js_string('AbortError: Animation was cancelled'))
 	animation.current_ready_promise_.mark_handled()
 	animation.current_ready_promise_ = dom.Promise.resolved(dom.js_undefined())
+}
+
+pub fn (mut animation Animation) reset_an_animations_pending_tasks() {
+	animation.reset_pending_tasks()
+}
+
+pub fn (animation &Animation) current_ready_promise() &dom.Promise {
+	return animation.current_ready_promise_
+}
+
+pub fn (animation &Animation) current_finished_promise() &dom.Promise {
+	return animation.current_finished_promise_
+}
+
+pub fn (mut animation Animation) invalidate_effect() {
+	if animation.effect_ == none {
+		return
+	}
+	animation.effect_invalidated_ = true
+	if owner := animation.owning_element_ {
+		mut document := unsafe { &dom.Document(owner.document()) }
+		document.set_needs_animated_style_update()
+	}
+}
+
+pub fn (animation &Animation) is_css_animation() bool {
+	return animation.animation_class_ in [.css_animation_with_owning_element,
+		.css_animation_without_owning_element]
+}
+
+pub fn (animation &Animation) is_css_transition() bool {
+	return animation.animation_class_ == .css_transition
+}
+
+pub fn (animation &Animation) owning_element() ?dom.AbstractElement {
+	return animation.owning_element_
+}
+
+pub fn (mut animation Animation) set_owning_element(value ?dom.AbstractElement) {
+	animation.owning_element_ = value
+}
+
+pub fn (animation &Animation) animation_class() AnimationClass {
+	return animation.animation_class_
+}
+
+pub fn (animation &Animation) class_specific_composite_order(_ &Animation) int {
+	return animation.class_composite_order_
+}
+
+pub fn (animation &Animation) global_animation_list_order() u64 {
+	return animation.global_animation_list_order_
+}
+
+pub fn (mut animation Animation) release_saved_cancel_time() ?TimeValue {
+	value := animation.saved_cancel_time_
+	animation.saved_cancel_time_ = none
+	return value
+}
+
+pub fn (animation &Animation) last_css_animation_play_state() ?css.AnimationPlayState {
+	return animation.last_css_animation_play_state_
+}
+
+pub fn (mut animation Animation) set_last_css_animation_play_state(value css.AnimationPlayState) {
+	animation.last_css_animation_play_state_ = value
 }
 
 fn (mut animation Animation) update_finished_state(did_seek bool) {

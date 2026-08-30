@@ -66,9 +66,9 @@ pub fn ResizeTarget.new(element &dom.Element, metrics ResizeTargetMetrics) &Resi
 }
 
 pub struct ResizeObserverSize {
-pub:
-	inline_size f64
-	block_size  f64
+mut:
+	inline_size_ f64
+	block_size_  f64
 }
 
 pub fn ResizeObserverSize.compute_box_size(target &ResizeTarget, observed_box ResizeObserverBoxOptions) ResizeObserverSize {
@@ -78,58 +78,97 @@ pub fn ResizeObserverSize.compute_box_size(target &ResizeTarget, observed_box Re
 	return match observed_box {
 		.border_box {
 			ResizeObserverSize{
-				inline_size: target.metrics.border_width
-				block_size:  target.metrics.border_height
+				inline_size_: target.metrics.border_width
+				block_size_:  target.metrics.border_height
 			}
 		}
 		.content_box {
 			ResizeObserverSize{
-				inline_size: target.metrics.content_width
-				block_size:  target.metrics.content_height
+				inline_size_: target.metrics.content_width
+				block_size_:  target.metrics.content_height
 			}
 		}
 		.device_pixel_content_box {
 			// Preserve current upstream: this multiplies border-box dimensions.
 			ResizeObserverSize{
-				inline_size: target.metrics.border_width * target.metrics.device_pixel_ratio
-				block_size:  target.metrics.border_height * target.metrics.device_pixel_ratio
+				inline_size_: target.metrics.border_width * target.metrics.device_pixel_ratio
+				block_size_:  target.metrics.border_height * target.metrics.device_pixel_ratio
 			}
 		}
 	}
 }
 
+pub fn ResizeObserverSize.calculate_box_size(target &ResizeTarget, observed_box ResizeObserverBoxOptions) ResizeObserverSize {
+	computed := ResizeObserverSize.compute_box_size(target, observed_box)
+	mut size := ResizeObserverSize{}
+	size.set_inline_size(computed.inline_size())
+	size.set_block_size(computed.block_size())
+	return size
+}
+
+pub fn (size &ResizeObserverSize) inline_size() f64 {
+	return size.inline_size_
+}
+
+pub fn (mut size ResizeObserverSize) set_inline_size(inline_size f64) {
+	size.inline_size_ = inline_size
+}
+
+pub fn (size &ResizeObserverSize) block_size() f64 {
+	return size.block_size_
+}
+
+pub fn (mut size ResizeObserverSize) set_block_size(block_size f64) {
+	size.block_size_ = block_size
+}
+
 pub fn (size ResizeObserverSize) equals(other ResizeObserverSize) bool {
-	return size.inline_size == other.inline_size && size.block_size == other.block_size
+	return size.inline_size_ == other.inline_size_ && size.block_size_ == other.block_size_
 }
 
 @[heap]
 pub struct ResizeObservation {
-pub:
-	target       &ResizeTarget
-	observed_box ResizeObserverBoxOptions
-pub mut:
-	last_reported_sizes []ResizeObserverSize = [ResizeObserverSize{}]
+mut:
+	target_              &ResizeTarget
+	observed_box_        ResizeObserverBoxOptions
+	last_reported_sizes_ []ResizeObserverSize = [ResizeObserverSize{}]
 }
 
 pub fn ResizeObservation.new(target &ResizeTarget, observed_box ResizeObserverBoxOptions) &ResizeObservation {
+	return ResizeObservation.create(target, observed_box)
+}
+
+pub fn ResizeObservation.create(target &ResizeTarget, observed_box ResizeObserverBoxOptions) &ResizeObservation {
 	return &ResizeObservation{
-		target:       target
-		observed_box: observed_box
+		target_:       target
+		observed_box_: observed_box
 	}
 }
 
+pub fn (observation &ResizeObservation) target() &ResizeTarget {
+	return observation.target_
+}
+
+pub fn (observation &ResizeObservation) observed_box() ResizeObserverBoxOptions {
+	return observation.observed_box_
+}
+
+pub fn (observation &ResizeObservation) last_reported_sizes() []ResizeObserverSize {
+	return observation.last_reported_sizes_.clone()
+}
+
 pub fn (observation &ResizeObservation) is_active() bool {
-	current := ResizeObserverSize.compute_box_size(observation.target, observation.observed_box)
-	return !observation.last_reported_sizes[0].equals(current)
+	current := ResizeObserverSize.compute_box_size(observation.target_, observation.observed_box_)
+	return !observation.last_reported_sizes_[0].equals(current)
 }
 
 pub struct ResizeObserverEntry {
-pub:
-	target                        &ResizeTarget
-	border_box_size               []ResizeObserverSize
-	content_box_size              []ResizeObserverSize
-	device_pixel_content_box_size []ResizeObserverSize
-	content_rect                  &geometry.DOMRectReadOnly
+mut:
+	target_                        &ResizeTarget
+	border_box_size_               []ResizeObserverSize
+	content_box_size_              []ResizeObserverSize
+	device_pixel_content_box_size_ []ResizeObserverSize
+	content_rect_                  &geometry.DOMRectReadOnly
 }
 
 pub fn ResizeObserverEntry.create_and_populate(target &ResizeTarget) &ResizeObserverEntry {
@@ -143,13 +182,49 @@ pub fn ResizeObserverEntry.create_and_populate(target &ResizeTarget) &ResizeObse
 		y = target.metrics.absolute_padding_y
 	}
 	return &ResizeObserverEntry{
-		target:                        target
-		border_box_size:               [border]
-		content_box_size:              [content]
-		device_pixel_content_box_size: [device]
-		content_rect:                  geometry.DOMRectReadOnly.construct(x, y,
-			content.inline_size, content.block_size)
+		target_:                        target
+		border_box_size_:               [border]
+		content_box_size_:              [content]
+		device_pixel_content_box_size_: [device]
+		content_rect_:                  geometry.DOMRectReadOnly.construct(x, y,
+			content.inline_size(), content.block_size())
 	}
+}
+
+pub fn to_js_array(sizes []ResizeObserverSize) []ResizeObserverSize {
+	return sizes.clone()
+}
+
+pub fn (entry &ResizeObserverEntry) border_box_size_js_array() []ResizeObserverSize {
+	return to_js_array(entry.border_box_size_)
+}
+
+pub fn (entry &ResizeObserverEntry) content_box_size_js_array() []ResizeObserverSize {
+	return to_js_array(entry.content_box_size_)
+}
+
+pub fn (entry &ResizeObserverEntry) device_pixel_content_box_size_js_array() []ResizeObserverSize {
+	return to_js_array(entry.device_pixel_content_box_size_)
+}
+
+pub fn (entry &ResizeObserverEntry) content_rect() &geometry.DOMRectReadOnly {
+	return entry.content_rect_
+}
+
+pub fn (entry &ResizeObserverEntry) target() &ResizeTarget {
+	return entry.target_
+}
+
+pub fn (entry &ResizeObserverEntry) border_box_size() []ResizeObserverSize {
+	return entry.border_box_size_.clone()
+}
+
+pub fn (entry &ResizeObserverEntry) content_box_size() []ResizeObserverSize {
+	return entry.content_box_size_.clone()
+}
+
+pub fn (entry &ResizeObserverEntry) device_pixel_content_box_size() []ResizeObserverSize {
+	return entry.device_pixel_content_box_size_.clone()
 }
 
 pub type ResizeObserverCallback = fn ([]&ResizeObserverEntry, &ResizeObserver)
@@ -169,6 +244,10 @@ pub fn ResizeObserver.new(callback ResizeObserverCallback) &ResizeObserver {
 	return &ResizeObserver{
 		callback_: callback
 	}
+}
+
+pub fn ResizeObserver.construct_impl(callback ResizeObserverCallback) &ResizeObserver {
+	return ResizeObserver.new(callback)
 }
 
 pub fn (observer &ResizeObserver) observation_targets() []&ResizeObservation {
@@ -200,18 +279,24 @@ pub fn (mut observer ResizeObserver) observe(target &ResizeTarget, options Resiz
 pub fn (mut observer ResizeObserver) unobserve(target &ResizeTarget) {
 	mut retained := []&ResizeObservation{}
 	for observation in observer.observation_targets_ {
-		if voidptr(observation.target.element) != voidptr(target.element) {
+		if voidptr(observation.target().element) != voidptr(target.element) {
 			retained << observation
 		}
 	}
 	observer.observation_targets_ = retained
-	if observer.observation_targets_.len == 0 { observer.registered_ = false }
+	observer.unregister_observer_if_needed()
 }
 
 pub fn (mut observer ResizeObserver) disconnect() {
 	observer.observation_targets_.clear()
 	observer.active_targets_.clear()
-	observer.registered_ = false
+	observer.unregister_observer_if_needed()
+}
+
+pub fn (mut observer ResizeObserver) unregister_observer_if_needed() {
+	if observer.observation_targets_.len == 0 {
+		observer.registered_ = false
+	}
 }
 
 pub fn (mut observer ResizeObserver) gather_active_observations() {
@@ -225,10 +310,10 @@ pub fn (mut observer ResizeObserver) broadcast_active_observations() {
 	mut entries := []&ResizeObserverEntry{}
 	for index in 0 .. observer.active_targets_.len {
 		mut observation := observer.active_targets_[index]
-		entries << ResizeObserverEntry.create_and_populate(observation.target)
+		entries << ResizeObserverEntry.create_and_populate(observation.target())
 		unsafe {
-			observation.last_reported_sizes = [
-				ResizeObserverSize.compute_box_size(observation.target, observation.observed_box),
+			observation.last_reported_sizes_ = [
+				ResizeObserverSize.compute_box_size(observation.target(), observation.observed_box()),
 			]
 		}
 	}

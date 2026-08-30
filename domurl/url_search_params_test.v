@@ -60,6 +60,20 @@ fn test_from_sequence_and_record() {
 	assert record.get('x')? == '9'
 }
 
+fn test_url_search_params_exact_constructor_and_delete_entry_points() {
+	mut from_string := URLSearchParams.construct_impl(URLSearchParamsInit('?a=1&a=2'))!
+	assert from_string.get_all('a') == ['1', '2']
+	from_string.delete_('a', '1')
+	assert from_string.to_string() == 'a=2'
+
+	from_sequence := URLSearchParams.construct_impl(URLSearchParamsInit([['x', '9']]))!
+	assert from_sequence.get('x')? == '9'
+	from_record := URLSearchParams.construct_impl(URLSearchParamsInit({
+		'y': '8'
+	}))!
+	assert from_record.get('y')? == '8'
+}
+
 fn test_append_get_getall_has() {
 	mut params := URLSearchParams.from_string('a=1&a=2&b=3')
 	assert params.get('a')? == '1'
@@ -267,4 +281,40 @@ fn test_dom_url_scheme_and_empty_query_setter_rules() {
 	mut opaque := DOMURL.construct_impl('custom:value', none)!
 	opaque.set_protocol('https:')
 	assert opaque.protocol() == 'custom:'
+}
+
+fn test_dom_url_internal_component_entry_points() {
+	mut url := DOMURL.construct_impl('https://example.com/a?#', none)!
+	assert url.query()? == ''
+	assert url.fragment()? == ''
+	url.set_query('x=1')
+	assert url.query()? == 'x=1'
+	url.set_query(none)
+	assert url.query() == none
+	url.set_paths(['a b', 'c?d'])
+	assert url.pathname() == '/a%20b/c%3Fd'
+
+	without_components := DOMURL.construct_impl('https://example.com/', none)!
+	assert without_components.query() == none
+	assert without_components.fragment() == none
+}
+
+fn test_dom_url_create_initialize_and_origin_from_entry_points() {
+	record := parse_api_url('https://example.com/path?x=1', none) or { panic('parse failed') }
+	mut query := URLSearchParams.from_string(record.raw_query)
+	created := DOMURL.create(record, false, query)
+	assert created.href() == 'https://example.com/path?x=1'
+	initialized := DOMURL.initialize_a_url(record, false)
+	assert initialized.search_params().get('x')? == '1'
+
+	from_string := Origin.from(OriginInput('https://example.com:443/a'))!
+	from_url := Origin.from(OriginInput(OriginDOMURLSource{
+		value: initialized
+	}))!
+	assert from_string.is_same_origin(from_url)
+	opaque := Origin.construct_impl()
+	cloned := Origin.from(OriginInput(OriginObjectSource{
+		value: opaque
+	}))!
+	assert cloned.is_same_origin(opaque)
 }

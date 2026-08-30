@@ -30,6 +30,10 @@ pub:
 	text  ?&TextTrack
 }
 
+pub fn track_event_to_track_type_internal(track TrackEventTrack) TrackEventTrack {
+	return track
+}
+
 pub fn TrackEventTrack.from_video(track &VideoTrack) TrackEventTrack {
 	return TrackEventTrack{
 		kind:  .video
@@ -75,7 +79,7 @@ pub fn TrackEvent.create(event_name string, event_init TrackEventInit) &TrackEve
 			initialized_: true
 			time_stamp_:  dom.current_event_timestamp()
 		}
-		track_: event_init.track
+		track_: track_event_to_track_type_internal(event_init.track)
 	}
 }
 

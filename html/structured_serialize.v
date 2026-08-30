@@ -26,6 +26,7 @@ pub enum StructuredObjectKind {
 	error_object
 	object
 	array_buffer
+	array_buffer_view
 }
 
 pub enum StructuredErrorType {
@@ -55,17 +56,21 @@ pub struct StructuredObject {
 pub:
 	kind StructuredObjectKind
 pub mut:
-	boolean_data       bool
-	number_data        f64
-	string_data        string
-	second_string_data string
-	error_type         StructuredErrorType
-	has_cause          bool
-	cause              string
-	bytes              []u8
-	values             []&dom.JSValue
-	entries            []StructuredMapEntry
-	properties         []StructuredProperty
+	boolean_data        bool
+	number_data         f64
+	string_data         string
+	second_string_data  string
+	error_type          StructuredErrorType
+	has_cause           bool
+	cause               string
+	bytes               []u8
+	viewed_array_buffer ?&StructuredObject
+	byte_length         ?u32
+	byte_offset         u32
+	array_length        ?u32
+	values              []&dom.JSValue
+	entries             []StructuredMapEntry
+	properties          []StructuredProperty
 }
 
 pub fn StructuredObject.create(kind StructuredObjectKind) &StructuredObject {
@@ -83,6 +88,18 @@ pub fn structured_object_from_value(value dom.JSValue) !&StructuredObject {
 		return error('DataCloneError: value is not a structured-clone object')
 	}
 	return unsafe { &StructuredObject(value.object_data) }
+}
+
+fn error_name_to_type(name string) StructuredErrorType {
+	return match name {
+		'EvalError' { .eval_error }
+		'RangeError' { .range_error }
+		'ReferenceError' { .reference_error }
+		'SyntaxError' { .syntax_error }
+		'TypeError' { .type_error }
+		'URIError' { .uri_error }
+		else { .error }
+	}
 }
 
 struct StructuredSerializer {
@@ -126,6 +143,42 @@ fn (mut serializer StructuredSerializer) write_string(value string) ! {
 
 fn (mut serializer StructuredSerializer) write_tag(tag StructuredSerializeValueTag) {
 	serializer.write_u8(u8(tag))
+}
+
+fn (mut serializer StructuredSerializer) write_optional_u32(value ?u32) {
+	if actual := value {
+		serializer.write_u8(1)
+		serializer.write_u32(actual)
+	} else {
+		serializer.write_u8(0)
+	}
+}
+
+fn serialize_array_buffer(mut serializer StructuredSerializer, array_buffer &StructuredObject, for_storage bool) ! {
+	if array_buffer.kind != .array_buffer {
+		return error('DataCloneError: value is not an ArrayBuffer')
+	}
+	_ = for_storage
+	serializer.write_tag(.array_buffer)
+	serializer.write_bytes(array_buffer.bytes)!
+}
+
+fn serialize_viewed_array_buffer(mut serializer StructuredSerializer, view &StructuredObject, for_storage bool) ! {
+	if view.kind != .array_buffer_view {
+		return error('DataCloneError: value is not an ArrayBuffer view')
+	}
+	buffer := view.viewed_array_buffer or {
+		return error('DataCloneError: ArrayBuffer view has no viewed buffer')
+	}
+	if buffer.kind != .array_buffer {
+		return error('DataCloneError: ArrayBuffer view has an invalid viewed buffer')
+	}
+	serializer.write_tag(.array_buffer_view)
+	serializer.serialize_value(structured_object_value(buffer), for_storage)!
+	serializer.write_string(view.string_data)!
+	serializer.write_optional_u32(view.byte_length)
+	serializer.write_u32(view.byte_offset)
+	serializer.write_optional_u32(view.array_length)
 }
 
 fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_storage bool) ! {
@@ -243,12 +296,10 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 			}
 		}
 		.array_buffer {
-			// ArrayBuffer cloning is allowed for storage. Transfer-only host
-			// objects are rejected by structured_serialize_for_storage in the
-			// transfer layer.
-			_ = for_storage
-			serializer.write_tag(.array_buffer)
-			serializer.write_bytes(object.bytes)!
+			serialize_array_buffer(mut serializer, object, for_storage)!
+		}
+		.array_buffer_view {
+			serialize_viewed_array_buffer(mut serializer, object, for_storage)!
 		}
 	}
 }
@@ -289,8 +340,7 @@ fn (mut decoder StructuredDecoder) read_u32() !u32 {
 	if decoder.offset + 4 > decoder.data.len {
 		return error('DataCloneError: truncated serialization record')
 	}
-	value := u32(decoder.data[decoder.offset]) | (u32(decoder.data[decoder.offset + 1]) << 8) | (u32(decoder.data[
-		decoder.offset + 2]) << 16) | (u32(decoder.data[decoder.offset + 3]) << 24)
+	value := u32(decoder.data[decoder.offset]) | (u32(decoder.data[decoder.offset + 1]) << 8) | (u32(decoder.data[decoder.offset + 2]) << 16) | (u32(decoder.data[decoder.offset + 3]) << 24)
 	decoder.offset += 4
 	return value
 }
@@ -325,10 +375,27 @@ fn (mut decoder StructuredDecoder) read_string() !string {
 	return decoder.read_bytes()!.bytestr()
 }
 
+struct DecodedOptionalU32 {
+	value ?u32
+}
+
+fn (mut decoder StructuredDecoder) read_optional_u32() !DecodedOptionalU32 {
+	present := decoder.read_u8()!
+	if present > 1 {
+		return error('DataCloneError: invalid optional integer encoding')
+	}
+	if present == 0 {
+		return DecodedOptionalU32{}
+	}
+	return DecodedOptionalU32{
+		value: decoder.read_u32()!
+	}
+}
+
 fn (mut decoder StructuredDecoder) register_object(object &StructuredObject) &dom.JSValue {
 	value := &dom.JSValue{
-		kind:                  .object
-		object_data:           voidptr(object)
+		kind: .object
+		object_data: voidptr(object)
 		is_structured_object_: true
 	}
 	decoder.memory << value
@@ -337,7 +404,7 @@ fn (mut decoder StructuredDecoder) register_object(object &StructuredObject) &do
 
 fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 	tag_byte := decoder.read_u8()!
-	if tag_byte > u8(StructuredSerializeValueTag.array_buffer) {
+	if tag_byte > u8(StructuredSerializeValueTag.array_buffer_view) {
 		return error('DataCloneError: invalid structured serialization tag')
 	}
 	tag := unsafe { StructuredSerializeValueTag(tag_byte) }
@@ -352,21 +419,23 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 		}
 		.boolean_primitive {
 			value := decoder.read_u8()!
-			if value > 1 { return error('DataCloneError: invalid Boolean encoding') }
+			if value > 1 {
+				return error('DataCloneError: invalid Boolean encoding')
+			}
 			return &dom.JSValue{
-				kind:         .boolean
+				kind: .boolean
 				boolean_data: value == 1
 			}
 		}
 		.number_primitive {
 			return &dom.JSValue{
-				kind:        .number
+				kind: .number
 				number_data: decoder.read_f64()!
 			}
 		}
 		.string_primitive {
 			return &dom.JSValue{
-				kind:        .string
+				kind: .string
 				string_data: decoder.read_string()!
 			}
 		}
@@ -379,7 +448,9 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 		}
 		.boolean_object {
 			encoded := decoder.read_u8()!
-			if encoded > 1 { return error('DataCloneError: invalid Boolean object encoding') }
+			if encoded > 1 {
+				return error('DataCloneError: invalid Boolean object encoding')
+			}
 			mut object := StructuredObject.create(.boolean_object)
 			value := decoder.register_object(object)
 			object.boolean_data = encoded == 1
@@ -420,7 +491,7 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			length := int(decoder.read_u32()!)
 			for _ in 0 .. length {
 				object.entries << StructuredMapEntry{
-					key:   decoder.decode_value()!
+					key: decoder.decode_value()!
 					value: decoder.decode_value()!
 				}
 			}
@@ -450,9 +521,13 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			object.error_type = unsafe { StructuredErrorType(error_type) }
 			object.string_data = decoder.read_string()!
 			has_cause := decoder.read_u8()!
-			if has_cause > 1 { return error('DataCloneError: invalid Error cause encoding') }
+			if has_cause > 1 {
+				return error('DataCloneError: invalid Error cause encoding')
+			}
 			object.has_cause = has_cause == 1
-			if object.has_cause { object.cause = decoder.read_string()! }
+			if object.has_cause {
+				object.cause = decoder.read_string()!
+			}
 			return value
 		}
 		.object {
@@ -461,7 +536,7 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			length := int(decoder.read_u32()!)
 			for _ in 0 .. length {
 				object.properties << StructuredProperty{
-					key:   decoder.read_string()!
+					key: decoder.read_string()!
 					value: decoder.decode_value()!
 				}
 			}
@@ -471,6 +546,21 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			mut object := StructuredObject.create(.array_buffer)
 			value := decoder.register_object(object)
 			object.bytes = decoder.read_bytes()!
+			return value
+		}
+		.array_buffer_view {
+			mut object := StructuredObject.create(.array_buffer_view)
+			value := decoder.register_object(object)
+			buffer_value := decoder.decode_value()!
+			buffer := structured_object_from_value(*buffer_value)!
+			if buffer.kind != .array_buffer {
+				return error('DataCloneError: ArrayBuffer view references a non-buffer')
+			}
+			object.viewed_array_buffer = buffer
+			object.string_data = decoder.read_string()!
+			object.byte_length = decoder.read_optional_u32()!.value
+			object.byte_offset = decoder.read_u32()!
+			object.array_length = decoder.read_optional_u32()!.value
 			return value
 		}
 		.empty, .big_int_primitive {

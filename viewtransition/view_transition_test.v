@@ -24,6 +24,9 @@ fn test_setup_uses_dom_task_then_activates_and_finishes() {
 		snapshot_height: 600
 	}
 	mut transition := ViewTransition.create(document)
+	assert transition.ready() == transition.ready_promise
+	assert transition.update_callback_done() == transition.update_callback_done_promise
+	assert transition.finished() == transition.finished_promise
 	transition.set_update_callback(resolved_update)
 	transition.setup_view_transition()
 	assert document.rendering_suppression

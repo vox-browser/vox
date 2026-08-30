@@ -3,10 +3,10 @@ module speech
 import dom
 
 fn test_grammar_result_and_list_indexed_getters() {
-	mut grammar := SpeechGrammar.new()
+	mut grammar := SpeechGrammar.construct_impl()
 	grammar.set_src('grammar:test')
 	grammar.set_weight(0.5)
-	mut grammars := SpeechGrammarList.new()
+	mut grammars := SpeechGrammarList.construct_impl()
 	grammars.replace_from_platform([grammar])
 	assert grammars.length() == 1
 	assert grammars.item(0) or { panic('missing') }.src() == 'grammar:test'
@@ -23,7 +23,7 @@ fn test_grammar_result_and_list_indexed_getters() {
 }
 
 fn test_recognition_defaults_handlers_phrase_and_event() {
-	mut recognition := SpeechRecognition.new()
+	mut recognition := SpeechRecognition.construct_impl()
 	assert recognition.max_alternatives() == 1
 	assert recognition.grammars().length() == 0
 	recognition.set_lang('en-US')
@@ -34,7 +34,7 @@ fn test_recognition_defaults_handlers_phrase_and_event() {
 	recognition.set_onresult(callback)
 	assert recognition.onresult() or { panic('missing handler') } == callback
 	results := SpeechRecognitionResultList.create()
-	event := SpeechRecognitionEvent.new('result', SpeechRecognitionEventInit{
+	event := SpeechRecognitionEvent.construct_impl('result', SpeechRecognitionEventInit{
 		result_index: 2
 		results:      results
 	})
@@ -42,7 +42,7 @@ fn test_recognition_defaults_handlers_phrase_and_event() {
 	assert event.type_name() == 'result'
 	assert event.result_index() == 2
 	assert event.results() or { panic('missing results') } == results
-	assert SpeechRecognitionPhrase.new('Ladybird', 2).boost() == 2
+	assert SpeechRecognitionPhrase.construct_impl('Ladybird', 2).boost() == 2
 	assert SpeechRecognitionPhrase.new_with_default_boost('Ladybird').boost() == 1
 }
 
@@ -96,7 +96,7 @@ fn test_synthesis_current_upstream_defaults_and_utterance_properties() {
 	synthesis.replace_voices_from_platform([voice])
 	assert synthesis.get_voices()[0].is_default()
 	assert synthesis.get_voices()[0].voice_uri() == 'urn:test'
-	mut utterance := SpeechSynthesisUtterance.new('hello')
+	mut utterance := SpeechSynthesisUtterance.construct_impl('hello')
 	utterance.set_lang('en')
 	utterance.set_voice(voice)
 	utterance.set_volume(0.5)

@@ -89,3 +89,14 @@ fn test_element_internals_shadow_root_and_validation_anchor() {
 		panic(err)
 	}
 }
+
+fn test_custom_state_set_exact_factory_and_js_modification_hook() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	element := document.create_element_ns(element_internals_html_namespace, 'div') or {
+		panic(err)
+	}
+	mut states := dom.CustomStateSet.create(element)
+	assert !states.has_state('busy')
+	states.on_set_modified_from_js()
+	assert states.modification_count() == 1
+}

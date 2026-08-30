@@ -19,7 +19,8 @@ pub mut:
 @[heap]
 pub struct ReadableByteStreamController {
 mut:
-	stream_ &ReadableStream = unsafe { nil }
+	stream_              &ReadableStream = unsafe { nil }
+	pending_pull_intos_ []PullIntoDescriptor
 }
 
 pub fn (controller &ReadableByteStreamController) desired_size() ?f64 {

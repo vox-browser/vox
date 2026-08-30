@@ -61,6 +61,12 @@ pub mut:
 }
 
 pub fn ErrorEvent.create(event_name string, event_init ErrorEventInit) &ErrorEvent {
+	mut event := ErrorEvent.construct_impl(event_name, event_init) or { panic(err) }
+	event.set_is_trusted(true)
+	return event
+}
+
+pub fn ErrorEvent.construct_impl(event_name string, event_init ErrorEventInit) !&ErrorEvent {
 	return &ErrorEvent{
 		Event:     Event{
 			interface_:   .error_event
@@ -69,7 +75,6 @@ pub fn ErrorEvent.create(event_name string, event_init ErrorEventInit) &ErrorEve
 			cancelable_:  event_init.cancelable
 			composed_:    event_init.composed
 			initialized_: true
-			is_trusted_:  true
 			time_stamp_:  current_event_timestamp()
 		}
 		message_:  event_init.message

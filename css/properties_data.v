@@ -319,9 +319,17 @@ pub fn (mut c CascadedProperties) set_property_from_presentational_hint(property
 }
 
 fn cascaded_properties_for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn (PropertyID, &dom.StyleValue)) {
-	// The typed StyleValue overload below translates StyleComputer::for_each_property_expanding_shorthands. Cascaded
-	// properties currently store opaque DOM values, so only the direct longhand path is observable until DOM values expose
-	// ShorthandStyleValue/UnresolvedStyleValue/PendingSubstitutionStyleValue.
+	// Presentational hints enter the cascade through serialized DOM values, just
+	// like declarations. Reify them before expansion so shorthand presentation
+	// attributes such as SVG `mask` contribute their longhands.
+	if property_is_shorthand(property_id) {
+		if typed_value := parse_css_value_logic(property_id, value.css_text) {
+			for_each_typed_property_expanding_shorthands(property_id, typed_value, fn [set_longhand_property] (longhand_id PropertyID, longhand_value StyleValue) {
+				set_longhand_property(longhand_id, dom_style_value_from_value_logic(longhand_value))
+			})
+			return
+		}
+	}
 	set_longhand_property(property_id, value)
 }
 

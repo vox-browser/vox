@@ -138,6 +138,21 @@ pub fn ViewTransition.create(document &TransitionDocument) &ViewTransition {
 	return transition
 }
 
+// https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-updatecallbackdone
+pub fn (transition &ViewTransition) update_callback_done() &webidl.Promise {
+	return transition.update_callback_done_promise
+}
+
+// https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-ready
+pub fn (transition &ViewTransition) ready() &webidl.Promise {
+	return transition.ready_promise
+}
+
+// https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-finished
+pub fn (transition &ViewTransition) finished() &webidl.Promise {
+	return transition.finished_promise
+}
+
 pub fn (mut transition ViewTransition) set_update_callback(callback ?UpdateCallback) {
 	transition.update_callback = callback
 }

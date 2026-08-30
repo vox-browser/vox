@@ -78,6 +78,7 @@ fn test_input_methods_record_exact_actions() {
 	assert platform.input_actions.last().kind == .drop
 	api.mouse_down(0, 0, 1, 99, 0)
 	assert platform.input_actions.last().button == button_left
+	assert api.button_from_unsigned_short(button_middle) == button_middle
 }
 
 fn test_dom_helpers_dumps_hit_testing_and_timeline() {
@@ -103,6 +104,7 @@ fn test_dom_helpers_dumps_hit_testing_and_timeline() {
 	assert timeline.current_time()?.value == 42
 	mutable_timeline.set_time(none)
 	assert timeline.current_time() == none
+	assert timeline.duration() == none
 	event := dom.Event.new('activation')
 	target := dom.EventTarget.new()
 	assert api.dispatch_user_activated_event(target, event)!

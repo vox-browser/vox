@@ -17,8 +17,7 @@ fn select_test_element(node &dom.Node, local_name string) ?&dom.Element {
 }
 
 fn test_select_option_list_selectedness_value_and_reset() {
-	document :=
-		parse_document('<select required><option value="">Choose</option><optgroup><option value="a"> A  label </option></optgroup><option selected value="b">B</option></select>')
+	document := parse_document('<select required><option value="">Choose</option><optgroup><option value="a"> A  label </option></optgroup><option selected value="b">B</option></select>')
 	select_element := select_test_element(unsafe { &dom.Node(document) }, 'select') or {
 		panic('missing select')
 	}
@@ -45,8 +44,7 @@ fn test_select_option_list_selectedness_value_and_reset() {
 }
 
 fn test_select_selectedness_uses_last_updated_option_and_disabled_default() {
-	document :=
-		parse_document('<select><option disabled>disabled</option><option>first</option><option>last</option></select>')
+	document := parse_document('<select><option disabled>disabled</option><option>first</option><option>last</option></select>')
 	select_element := select_test_element(unsafe { &dom.Node(document) }, 'select') or {
 		panic('missing select')
 	}
@@ -81,8 +79,7 @@ fn test_select_options_collection_mutations() {
 	set_html_select_element_indexed_option(select_control, 2, new_option) or { panic('${err}') }
 	assert html_select_element_length(select_control) == 3
 	assert html_option_element_text(html_select_element_item(select_control, 2) or {
-		panic('missing')
-	}) == 'new'
+		panic('missing')}) == 'new'
 	html_select_element_remove_option(select_control, 1)
 	assert html_select_element_length(select_control) == 2
 }
@@ -138,8 +135,7 @@ fn test_nested_select_boundaries_and_option_disabled_by_optgroup() {
 }
 
 fn test_selectedcontent_cloning_disabling_and_non_primary_clearing() {
-	document :=
-		parse_document('<select><selectedcontent></selectedcontent><selectedcontent>stale</selectedcontent><option selected><b>Chosen</b> text</option></select>')
+	document := parse_document('<select><selectedcontent></selectedcontent><selectedcontent>stale</selectedcontent><option selected><b>Chosen</b> text</option></select>')
 	root := unsafe { &dom.Node(document) }
 	select_element := select_test_element(root, 'select') or { panic('missing select') }
 	select_control := unsafe { &dom.HTMLSelectElement(select_element) }
@@ -162,15 +158,164 @@ fn test_selectedcontent_cloning_disabling_and_non_primary_clearing() {
 }
 
 fn test_selectedcontent_nested_select_and_option_ancestors_disable_it() {
-	document :=
-		parse_document('<select><option><selectedcontent>x</selectedcontent></option></select>')
+	document := parse_document('<select><option><selectedcontent>x</selectedcontent></option></select>')
 	root := unsafe { &dom.Node(document) }
 	selectedcontent_element := select_test_element(root, 'selectedcontent') or {
 		panic('missing selectedcontent')
 	}
 	selectedcontent := unsafe { &dom.HTMLSelectedContentElement(selectedcontent_element) }
-	html_selectedcontent_element_post_connection(selectedcontent)!
+	html_selected_content_element_post_connection(selectedcontent)!
 	assert html_selectedcontent_element_disabled(selectedcontent)
-	clear_html_selectedcontent_element(selectedcontent)
+	html_selected_content_element_clear_selectedcontent(selectedcontent)
 	assert selectedcontent_element.as_node().children_as_vector().len == 0
+}
+
+fn test_optgroup_lifecycle_datalist_options_and_selectedcontent_removal_boundary() {
+	document := parse_document('<select><optgroup><option>one</option></optgroup><option>two</option></select><datalist><option>a</option><div><option>b</option></div></datalist>')
+	root := unsafe { &dom.Node(document) }
+	select_element := select_test_element(root, 'select') or { panic('select') }
+	select_control := unsafe { &dom.HTMLSelectElement(select_element) }
+	optgroup_element := select_test_element(root, 'optgroup') or { panic('optgroup') }
+	optgroup := unsafe { &dom.HTMLOptGroupElement(optgroup_element) }
+	html_opt_group_element_inserted(optgroup)
+	assert html_select_element_selected_index(select_control) == 0
+	html_opt_group_element_removed_from(optgroup, select_element.as_node(), root)
+
+	datalist_element := select_test_element(root, 'datalist') or { panic('datalist') }
+	datalist := unsafe { &dom.HTMLDataListElement(datalist_element) }
+	options := html_data_list_element_options(datalist)
+	assert options.length() == 2
+	assert voidptr(html_data_list_element_options(datalist)) == voidptr(options)
+
+	selectedcontent_element := dom.create_element(document, 'selectedcontent', ns_html, none, none, false)!
+	selectedcontent := unsafe { &dom.HTMLSelectedContentElement(selectedcontent_element) }
+	html_selected_content_element_removed_from(selectedcontent, none, root)!
+}
+
+fn test_option_lifecycle_cached_select_form_label_role_and_selectedcontent_clone() {
+	document := parse_document('<form><select><selectedcontent></selectedcontent><option selected>Alpha</option></select></form>')
+	select_element := select_test_element(unsafe { &dom.Node(document) }, 'select') or {
+		panic('missing select')
+	}
+	select_control := unsafe { &dom.HTMLSelectElement(select_element) }
+	option := html_select_element_list_of_options(select_control)[0]
+	html_option_element_inserted(option)
+	assert option.cached_nearest_select_element_? == select_control
+	assert html_option_element_compute_nearest_select_element(option)? == select_control
+	assert html_option_element_form(option) != none
+	assert html_option_element_default_role(option) == .option
+
+	mut model := HTMLSelectElementModel.create(select_control)
+	model.form_associated_element_was_inserted()
+	inner := model.inner_text_element_ or { panic('missing inner text') }
+	assert inner.as_node().child_text_content() == 'Alpha'
+	mut option_element := option_dom_element(option)
+	option_element.set_attribute_value('label', 'Named')
+	html_option_element_attribute_changed(option, 'label', none, 'Named', none)
+	assert inner.as_node().child_text_content() == 'Named'
+
+	selectedcontent_element := select_test_element(unsafe { &dom.Node(document) }, 'selectedcontent') or {
+		panic('missing selectedcontent')
+	}
+	selectedcontent := unsafe { &dom.HTMLSelectedContentElement(selectedcontent_element) }
+	html_option_element_clone_into_selectedcontent(option, selectedcontent)!
+	assert selectedcontent_element.as_node().descendant_text_content() == 'Alpha'
+
+	mut option_node_ := option_node(option)
+	option_node_.string_replace_all('Beta')
+	html_option_element_children_changed(option, dom.ChildrenChangedMetadata{
+		type_: .mutation
+		node: option_node(option)
+	})
+	assert html_option_element_text(option) == 'Beta'
+
+	old_parent := option_node(option).parent_node()
+	old_root := option_node(option).root()
+	option_node_.remove(false)
+	html_option_element_removed_from(option, old_parent, old_root)
+	assert option.cached_nearest_select_element_ == none
+}
+
+fn select_test_make_document_fully_active(mut document dom.Document) {
+	mut navigable := &dom.Navigable{
+		active_document_: &document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
+}
+
+fn test_select_model_options_picker_notifications_and_shadow_tree() {
+	mut document := parse_document('<select><option value="a">Alpha</option><optgroup label="Group"><option selected value="b"> Beta </option></optgroup><hr></select>')
+	select_test_make_document_fully_active(mut document)
+	select_element := select_test_element(unsafe { &dom.Node(document) }, 'select') or {
+		panic('missing select')
+	}
+	select_control := unsafe { &dom.HTMLSelectElement(select_element) }
+	mut model := HTMLSelectElementModel.create(select_control)
+	assert model.has_activation_behavior()
+	assert model.default_tab_index_value() == 0
+	assert model.default_role() == .combobox
+	assert model.is_focusable()
+	assert model.is_mutable()
+	assert model.options().length() == 2
+	assert model.item_value(1)? == html_select_element_list_of_options(select_control)[1]
+	assert model.options().selected_index() == 1
+
+	model.form_associated_element_was_inserted()
+	assert select_element.shadow_root() != none
+	inner := model.inner_text_element_ or { panic('missing inner text') }
+	assert inner.as_node().child_text_content() == 'Beta'
+	chevron := model.chevron_icon_element_ or { panic('missing chevron') }
+	model.computed_properties_changed(true)
+	assert chevron.get_attribute_value('style').contains('display:none')
+
+	model.set_picker_security_state(false, true)
+	mut rejected := false
+	model.show_picker() or {
+		rejected = true
+		assert err.msg().starts_with('NotAllowedError:')
+	}
+	assert rejected
+	model.set_picker_security_state(true, true)
+	model.show_picker()!
+	assert model.is_open_
+	assert model.select_items_.len == 3
+	model.did_select_item(1)
+	assert html_select_element_value(select_control) == 'a'
+	assert !model.is_open_
+	mut event_loop := main_thread_event_loop()
+	event_loop.process()
+	assert model.user_validity_
+
+	model.reset_algorithm()
+	assert html_select_element_value(select_control) == 'b'
+	assert !model.user_validity_
+}
+
+fn test_select_model_collection_indexed_mutation_children_and_roles() {
+	document := parse_document('<select multiple><option>a</option></select>')
+	select_element := select_test_element(unsafe { &dom.Node(document) }, 'select') or {
+		panic('missing select')
+	}
+	select_control := unsafe { &dom.HTMLSelectElement(select_element) }
+	mut model := HTMLSelectElementModel.create(select_control)
+	assert model.default_role() == .listbox
+	option_element := dom.create_element(document, 'option', ns_html, none, none, false)!
+	mut option_node_ := option_element.as_node()
+	option_node_.string_replace_all('new')
+	option := unsafe { &dom.HTMLOptionElement(option_element) }
+	model.set_value_of_indexed_property(2, option)!
+	assert model.options().length() == 3
+	assert model.options().item(2)? == option
+	metadata := dom.ChildrenChangedMetadata{
+		type_: .inserted
+		node: option_node(option)
+	}
+	assert model.can_skip_children_changed_selectedness_update(metadata)
+	model.children_changed(metadata)
+	model.remove(1)
+	assert model.options().length() == 2
+	model.options().set_selected_index(1)
+	assert model.options().selected_index() == 1
 }

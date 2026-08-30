@@ -65,10 +65,12 @@ fn test_fill_or_stroke_style() {
 	red := dom.Color{255, 0, 0, 255}
 	color_style := FillOrStrokeStyle.from_color(red)
 	assert color_style.as_color()? == red
+	assert color_style.to_gfx_paint_style().color == red
 
 	gradient := CanvasGradient.create_linear(0, 0, 10, 10)
 	gradient_style := FillOrStrokeStyle.from_gradient(gradient)
 	assert gradient_style.as_color() == none
+	assert gradient_style.to_gfx_paint_style().gradient != none
 	// A non-color style falls back to black.
 	assert gradient_style.to_color_but_fixme_should_accept_any_paint_style() == canvas_color_black()
 }

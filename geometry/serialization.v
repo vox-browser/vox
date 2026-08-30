@@ -28,6 +28,13 @@ pub fn DOMPointReadOnly.deserialize(record SerializedDOMPoint) &DOMPointReadOnly
 	return DOMPointReadOnly.construct(record.x, record.y, record.z, record.w)
 }
 
+pub fn (mut point DOMPointReadOnly) deserialization_steps(record SerializedDOMPoint) {
+	point.x_ = record.x
+	point.y_ = record.y
+	point.z_ = record.z
+	point.w_ = record.w
+}
+
 pub fn DOMPoint.deserialize(record SerializedDOMPoint) &DOMPoint {
 	return DOMPoint.construct(record.x, record.y, record.z, record.w)
 }
@@ -68,6 +75,13 @@ pub fn (rect &DOMRectReadOnly) serialization_steps() SerializedDOMRect {
 
 pub fn DOMRectReadOnly.deserialize(record SerializedDOMRect) &DOMRectReadOnly {
 	return DOMRectReadOnly.construct(record.x, record.y, record.width, record.height)
+}
+
+pub fn (mut rect DOMRectReadOnly) deserialization_steps(record SerializedDOMRect) {
+	rect.x_ = record.x
+	rect.y_ = record.y
+	rect.width_ = record.width
+	rect.height_ = record.height
 }
 
 pub fn DOMRect.deserialize(record SerializedDOMRect) &DOMRect {
@@ -126,6 +140,25 @@ pub fn DOMMatrixReadOnly.deserialize(record SerializedDOMMatrix) !&DOMMatrixRead
 		return error('DataCloneError: a serialized 3D DOMMatrix must contain 16 elements')
 	}
 	return DOMMatrixReadOnly.construct(record.elements)
+}
+
+pub fn (mut matrix DOMMatrixReadOnly) deserialization_steps(record SerializedDOMMatrix) ! {
+	if record.is_2d {
+		if record.elements.len != 6 {
+			return error('DataCloneError: a serialized 2D DOMMatrix must contain 6 elements')
+		}
+		matrix.initialize_from_create_2d_matrix(record.elements[0], record.elements[1],
+			record.elements[2], record.elements[3], record.elements[4], record.elements[5])
+		return
+	}
+	if record.elements.len != 16 {
+		return error('DataCloneError: a serialized 3D DOMMatrix must contain 16 elements')
+	}
+	matrix.initialize_from_create_3d_matrix(record.elements[0], record.elements[1],
+		record.elements[2], record.elements[3], record.elements[4], record.elements[5],
+		record.elements[6], record.elements[7], record.elements[8], record.elements[9],
+		record.elements[10], record.elements[11], record.elements[12], record.elements[13],
+		record.elements[14], record.elements[15])
 }
 
 pub fn DOMMatrix.deserialize(record SerializedDOMMatrix) !&DOMMatrix {
@@ -229,6 +262,13 @@ pub fn DOMQuad.deserialize(record SerializedDOMQuad) &DOMQuad {
 		z: record.p4.z
 		w: record.p4.w
 	})
+}
+
+pub fn (mut quad DOMQuad) deserialization_steps(record SerializedDOMQuad) {
+	quad.p1_ = DOMPoint.deserialize(record.p1)
+	quad.p2_ = DOMPoint.deserialize(record.p2)
+	quad.p3_ = DOMPoint.deserialize(record.p3)
+	quad.p4_ = DOMPoint.deserialize(record.p4)
 }
 
 pub struct DOMQuadJSON {

@@ -90,8 +90,8 @@ pub:
 	type_       StorageType
 	endpoint    StorageEndpointType
 	storage_key StorageKey
-	quota       ?u64
 mut:
+	quota_     ?u64
 	map_       map[string]string
 	key_order_ []string
 	host       ?&StorageHost
@@ -102,9 +102,17 @@ pub fn StorageBottle.create(type_ StorageType, endpoint StorageEndpointType, key
 		type_:       type_
 		endpoint:    endpoint
 		storage_key: key
-		quota:       quota
+		quota_:      quota
 		host:        host
 	}
+}
+
+pub fn (bottle &StorageBottle) proxy() &StorageBottle {
+	return bottle
+}
+
+pub fn (bottle &StorageBottle) quota() ?u64 {
+	return bottle.quota_
 }
 
 pub fn (bottle &StorageBottle) size() int {
@@ -142,7 +150,7 @@ pub fn (mut bottle StorageBottle) set(key string, value string) StorageSetResult
 	}
 	old_value := bottle.map_[key] or { '' }
 	had_old_value := key in bottle.map_
-	if quota := bottle.quota {
+	if quota := bottle.quota_ {
 		mut current_size := u64(0)
 		for existing_key, existing_value in bottle.map_ {
 			if existing_key != key {
@@ -162,6 +170,80 @@ pub fn (mut bottle StorageBottle) set(key string, value string) StorageSetResult
 	return StorageSetResult{
 		old_value: if had_old_value { old_value } else { none }
 	}
+}
+
+@[heap]
+pub struct LocalStorageBottle {
+mut:
+	bottle_ &StorageBottle
+}
+
+pub fn LocalStorageBottle.create(key StorageKey, quota ?u64, host &StorageHost) &LocalStorageBottle {
+	return &LocalStorageBottle{
+		bottle_: StorageBottle.create(.local, .local_storage, key, quota, host)
+	}
+}
+
+pub fn (bottle &LocalStorageBottle) size() int {
+	return bottle.bottle_.size()
+}
+
+pub fn (bottle &LocalStorageBottle) keys() []string {
+	return bottle.bottle_.keys()
+}
+
+pub fn (bottle &LocalStorageBottle) get(key string) ?string {
+	return bottle.bottle_.get(key)
+}
+
+pub fn (mut bottle LocalStorageBottle) set(key string, value string) StorageSetResult {
+	return bottle.bottle_.set(key, value)
+}
+
+pub fn (mut bottle LocalStorageBottle) clear() {
+	bottle.bottle_.clear()
+}
+
+pub fn (mut bottle LocalStorageBottle) remove(key string) {
+	bottle.bottle_.remove(key)
+}
+
+@[heap]
+pub struct SessionStorageBottle {
+mut:
+	bottle_ &StorageBottle
+}
+
+pub fn SessionStorageBottle.create(quota ?u64) &SessionStorageBottle {
+	return &SessionStorageBottle{
+		bottle_: StorageBottle.create(.session, .session_storage, StorageKey{
+			origin: StorageOrigin{}
+		}, quota, none)
+	}
+}
+
+pub fn (bottle &SessionStorageBottle) size() int {
+	return bottle.bottle_.size()
+}
+
+pub fn (bottle &SessionStorageBottle) keys() []string {
+	return bottle.bottle_.keys()
+}
+
+pub fn (bottle &SessionStorageBottle) get(key string) ?string {
+	return bottle.bottle_.get(key)
+}
+
+pub fn (mut bottle SessionStorageBottle) set(key string, value string) StorageSetResult {
+	return bottle.bottle_.set(key, value)
+}
+
+pub fn (mut bottle SessionStorageBottle) clear() {
+	bottle.bottle_.clear()
+}
+
+pub fn (mut bottle SessionStorageBottle) remove(key string) {
+	bottle.bottle_.remove(key)
 }
 
 pub fn (mut bottle StorageBottle) clear() {
@@ -212,6 +294,10 @@ pub fn (bucket &StorageBucket) bottle(endpoint StorageEndpointType) ?&StorageBot
 	return bucket.bottles[int(endpoint)] or { none }
 }
 
+pub fn (bucket &StorageBucket) bottle_map() map[int]&StorageBottle {
+	return bucket.bottles.clone()
+}
+
 @[heap]
 pub struct StorageShelf {
 mut:
@@ -230,10 +316,18 @@ pub fn (shelf &StorageShelf) default_bucket() &StorageBucket {
 	return shelf.buckets['default'] or { panic('storage shelf is missing its default bucket') }
 }
 
+pub fn (shelf &StorageShelf) bucket_map() map[string]&StorageBucket {
+	return shelf.buckets.clone()
+}
+
 @[heap]
 pub struct StorageShed {
 mut:
 	shelves map[string]&StorageShelf
+}
+
+pub fn StorageShed.create() &StorageShed {
+	return &StorageShed{}
 }
 
 pub fn (mut shed StorageShed) obtain_a_storage_shelf(environment StorageEnvironment, type_ StorageType, host ?&StorageHost) ?&StorageShelf {
@@ -248,6 +342,10 @@ pub fn (mut shed StorageShed) obtain_a_storage_shelf(environment StorageEnvironm
 pub fn (mut shed StorageShed) obtain_a_storage_bottle_map(environment StorageEnvironment, endpoint StorageEndpointType, host ?&StorageHost) ?&StorageBottle {
 	shelf := shed.obtain_a_storage_shelf(environment, .session, host) or { return none }
 	return shelf.default_bucket().bottle(endpoint)
+}
+
+pub fn obtain_a_session_storage_bottle_map(mut shed StorageShed, environment StorageEnvironment, identifier StorageEndpointType, host ?&StorageHost) ?&StorageBottle {
+	return shed.obtain_a_storage_bottle_map(environment, identifier, host)
 }
 
 @[heap]

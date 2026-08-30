@@ -255,11 +255,15 @@ pub:
 	value Value
 }
 
+pub type MessageEventListener = fn (PackedMessage)
+
 @[heap]
 pub struct MessagePort {
 mut:
-	messages_ []PackedMessage
-	closed_   bool
+	messages_       []PackedMessage
+	listeners_      []MessageEventListener
+	readable_target_ &ReadableStream = unsafe { nil }
+	closed_         bool
 }
 
 pub fn MessagePort.create() &MessagePort {
@@ -285,9 +289,20 @@ pub fn pack_and_post_message(mut port MessagePort, type_ string, value Value) ! 
 	if port.closed_ {
 		return error('InvalidStateError: MessagePort is closed')
 	}
-	port.messages_ << PackedMessage{
+	message := PackedMessage{
 		type_: type_
 		value: structured_clone(value)
+	}
+	port.messages_ << message
+	for listener in port.listeners_ {
+		listener(PackedMessage{
+			type_: message.type_
+			value: message.value.clone()
+		})
+	}
+	if !isnil(port.readable_target_) {
+		mut target := port.readable_target_
+		receive_cross_realm_message(mut target, message)
 	}
 }
 

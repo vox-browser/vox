@@ -284,10 +284,15 @@ pub fn (cache &RuleCache) matching_rule_buckets(abstract_element dom.AbstractEle
 	}
 
 	mut attribute_buckets := [][]MatchingRule{}
-	element.for_each_attribute(fn [cache, mut attribute_buckets] (attribute &dom.Attr_) {
+	attribute_buckets_ptr := &attribute_buckets
+	element.for_each_attribute(fn [cache, attribute_buckets_ptr] (attribute &dom.Attr_) {
 		name := attribute.name().to_lower()
 		if name in cache.rules_by_attribute_name {
-			attribute_buckets << (cache.rules_by_attribute_name[name] or { []MatchingRule{} })
+			unsafe {
+				mut collected := *attribute_buckets_ptr
+				collected << (cache.rules_by_attribute_name[name] or { []MatchingRule{} })
+				*attribute_buckets_ptr = collected
+			}
 		}
 	})
 	buckets << attribute_buckets
@@ -398,7 +403,9 @@ fn style_scope_user_agent_stylesheet(name string) ?&CSSStyleSheet {
 		return sheet
 	}
 	source := user_agent_style_sheet_source(name) or { return none }
-	return parse_css_stylesheet_with_parser(source, none)
+	return parse_css_stylesheet_with_params(ParsingParams{
+		is_ua_style_sheet: .yes
+	}, source, none)
 }
 
 pub fn (scope &StyleScope) stylesheets_for_cascade_origin(cascade_origin CascadeOrigin) []&CSSStyleSheet {
@@ -976,6 +983,12 @@ fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callb
 		}
 		callback(sheet)
 	}
+	for sheet in css_author_style_sheets_for(document).embedded_sheets {
+		if sheet.base.disabled {
+			continue
+		}
+		callback(sheet)
+	}
 }
 
 fn style_scope_pseudo_element_from_dom(pseudo_element dom.PseudoElement) PseudoElement {
@@ -987,6 +1000,7 @@ fn style_scope_pseudo_element_from_dom(pseudo_element dom.PseudoElement) PseudoE
 		.marker { .marker }
 		.placeholder { .placeholder }
 		.selection { .selection }
+		.backdrop { .backdrop }
 	}
 }
 
@@ -1216,6 +1230,25 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		for bucket in rule_cache.matching_rule_buckets(abstract_element) {
 			style_scope_add_rules_to_run(style_computer, abstract_element, bucket, shadow_root,
 				element_shadow_root, mut rules_to_run)
+		}
+	}
+	// A shadow host also participates in the author scope of its own shadow
+	// root, where :host and :host(...) rules are declared. Its ordinary tree
+	// root (and therefore its primary style scope) is still the document or an
+	// enclosing shadow root, so collect the host's own scope explicitly.
+	if cascade_origin == .author {
+		if own_root := element_shadow_root {
+			own_scope := css_style_scope_for_shadow_root(own_root)
+			if voidptr(own_scope) != voidptr(scope) {
+				if own_cache := own_scope.rule_cache_for_cascade_origin(cascade_origin,
+					qualified_layer_name)
+				{
+					for bucket in own_cache.matching_rule_buckets(abstract_element) {
+						style_scope_add_rules_to_run(style_computer, abstract_element, bucket,
+							shadow_root, element_shadow_root, mut rules_to_run)
+					}
+				}
+			}
 		}
 	}
 

@@ -7,7 +7,8 @@ module webcrypto
 
 pub struct KeyAlgorithm {
 pub mut:
-	name string
+	name     string
+	realm_id u64
 }
 
 pub fn KeyAlgorithm.create() &KeyAlgorithm {

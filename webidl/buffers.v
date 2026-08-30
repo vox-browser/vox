@@ -126,3 +126,93 @@ pub fn (mut source BufferSource) write(bytes []u8, starting_offset u32) ! {
 		source.bytes[start + index] = bytes[index]
 	}
 }
+
+// These wrappers retain the class surface used by generated bindings. The
+// contained BufferSource is the typed standalone representation of the raw JS
+// ArrayBuffer, DataView, or TypedArray object.
+pub struct BufferableObjectBase {
+mut:
+	bufferable_object_ BufferSource
+}
+
+pub fn BufferableObjectBase.create(object BufferSource) BufferableObjectBase {
+	return BufferableObjectBase{
+		bufferable_object_: object
+	}
+}
+
+pub fn (object &BufferableObjectBase) byte_length() u32 {
+	if object.bufferable_object_.out_of_bounds {
+		return 0
+	}
+	return object.bufferable_object_.byte_length
+}
+
+pub fn (object &BufferableObjectBase) byte_offset() u32 {
+	return if object.bufferable_object_.kind == .array_buffer {
+		u32(0)
+	} else {
+		object.bufferable_object_.byte_offset
+	}
+}
+
+pub fn (object &BufferableObjectBase) element_size() u32 {
+	return object.bufferable_object_.element_size()
+}
+
+pub fn (object &BufferableObjectBase) raw_object() BufferSource {
+	return object.bufferable_object_
+}
+
+pub fn (object &BufferableObjectBase) bufferable_object() BufferSource {
+	return object.bufferable_object_
+}
+
+pub fn (object &BufferableObjectBase) viewed_array_buffer() BufferSource {
+	source := object.bufferable_object_
+	return BufferSource{
+		kind:          .array_buffer
+		byte_length:   u32(source.bytes.len)
+		detached:      source.detached
+		out_of_bounds: source.out_of_bounds
+		bytes:         source.bytes.clone()
+	}
+}
+
+pub fn BufferableObjectBase.bufferable_object_from_raw_object(object BufferSource) BufferSource {
+	return object
+}
+
+pub fn (object &BufferableObjectBase) is_typed_array_base() bool {
+	return object.bufferable_object_.is_typed_array()
+}
+
+pub fn (object &BufferableObjectBase) is_data_view() bool {
+	return object.bufferable_object_.is_data_view()
+}
+
+pub fn (object &BufferableObjectBase) is_array_buffer() bool {
+	return object.bufferable_object_.is_array_buffer()
+}
+
+pub struct ArrayBufferView {
+mut:
+	base BufferableObjectBase
+}
+
+pub fn ArrayBufferView.create(source BufferSource) !ArrayBufferView {
+	if source.kind == .array_buffer {
+		return error('TypeError: ArrayBufferView requires a DataView or TypedArray')
+	}
+	return ArrayBufferView{
+		base: BufferableObjectBase.create(source)
+	}
+}
+
+pub fn (mut view ArrayBufferView) write(bytes []u8, starting_offset u32) ! {
+	view.base.bufferable_object_.write(bytes, starting_offset)!
+}
+
+pub fn (view &ArrayBufferView) raw_object() BufferSource {
+	return view.base.raw_object()
+}

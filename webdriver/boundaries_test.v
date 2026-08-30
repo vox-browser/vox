@@ -60,3 +60,28 @@ fn test_screenshot_paints_from_origin_to_viewport_edge_and_rejects_empty_canvas(
 	empty := FramebufferImage{}
 	assert encode_canvas_element(empty, fake_png).is_error()
 }
+
+fn test_upstream_client_entry_points_parse_route_and_frame_response() {
+	mut client := Client.new()
+	client.on_ready_to_read('GET /status HTTP/1.1\r\nHost: localhost\r\n\r\n')!
+	assert client.responses.len == 1
+	assert client.responses[0].status == 200
+	assert client.responses[0].raw.starts_with('HTTP/1.1 200 OK')
+	assert client.response_log.last().contains('GET /status')
+	assert client.alive
+	client.die()
+	assert !client.alive
+}
+
+fn test_upstream_script_completion_helpers_observe_timeout() {
+	result := execute_a_function_body('return arguments[0]', [json2.Any('ok')], echo_executor)
+	assert promise_call(result).state == .fulfilled
+	mut timer := HeapTimer{}
+	timer.start(10)
+	assert fire_completion_when_resolved(result, mut timer).state == .fulfilled
+	assert !timer.running
+	mut expired := HeapTimer{}
+	expired.start(1)
+	expired.tick(1)
+	assert fire_completion_when_resolved(result, mut expired).state == .pending
+}

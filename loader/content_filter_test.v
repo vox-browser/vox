@@ -33,7 +33,8 @@ fn test_content_filter_honors_enabled_and_data_url_exemptions() {
 	assert filter.is_filtered(dom.URL{'https://blocked.test/ad.js'})
 	assert !filter.is_filtered(dom.URL{'https://allowed.test/ad.js'})
 	assert !filter.is_filtered(dom.URL{'data:text/plain,blocked.test'})
-	filter.filtering_enabled = false
+	filter.set_filtering_enabled(false)
+	assert !filter.filtering_enabled()
 	assert !filter.is_filtered(dom.URL{'https://blocked.test/ad.js'})
 }
 

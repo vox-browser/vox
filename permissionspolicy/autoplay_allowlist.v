@@ -3,9 +3,12 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of PermissionsPolicy/AutoplayAllowlist.{h,cpp}.
+@[has_globals]
 module permissionspolicy
 
 import dom
+
+__global autoplay_allowlist_singleton = AutoplayAllowlist{}
 
 pub enum Decision {
 	enabled
@@ -26,6 +29,10 @@ mut:
 
 pub fn AutoplayAllowlist.new() AutoplayAllowlist {
 	return AutoplayAllowlist{}
+}
+
+pub fn AutoplayAllowlist.the() &AutoplayAllowlist {
+	return &autoplay_allowlist_singleton
 }
 
 pub fn (mut allowlist AutoplayAllowlist) enable_globally() {

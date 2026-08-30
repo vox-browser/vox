@@ -13,10 +13,106 @@ import strconv
 pub type NamespaceResolver = fn (string) ?string
 
 @[heap]
+pub struct XPathNSResolver {
+mut:
+	callback_ ?NamespaceResolver
+}
+
+pub fn XPathNSResolver.create(callback NamespaceResolver) &XPathNSResolver {
+	return &XPathNSResolver{
+		callback_: callback
+	}
+}
+
+pub fn (resolver &XPathNSResolver) callback() NamespaceResolver {
+	return resolver.callback_ or { panic('XPathNSResolver has no callback') }
+}
+
+pub struct MirroredXPathNode {
+pub:
+	original   &dom.Node
+	name       string
+	data       string
+	attributes map[string]string
+	children   []&MirroredXPathNode
+}
+
+pub fn mirror_node(node &dom.Node) ?&MirroredXPathNode {
+	match node.type_() {
+		.invalid, .attribute_node, .entity_reference_node, .entity_node, .document_type_node,
+		.notation_node {
+			return none
+		}
+		.document_node {
+			document := node.as_document() or { return none }
+			root := document.document_element() or { return none }
+			return mirror_node(root.as_node())
+		}
+		else {}
+	}
+	mut name := node.node_name()
+	mut data := ''
+	mut attributes := map[string]string{}
+	if element := node.as_element() {
+		name = element.local_name()
+		for attribute_name in element.get_attribute_names() {
+			attributes[attribute_name] = element.get_attribute(attribute_name) or { '' }
+		}
+	} else if node.is_character_data() {
+		character_data := unsafe { &dom.CharacterData(node) }
+		data = character_data.data()
+	}
+	mut children := []&MirroredXPathNode{}
+	for child in node.children_as_vector() {
+		if mirrored := mirror_node(child) {
+			children << mirrored
+		}
+	}
+	return &MirroredXPathNode{
+		original:   node
+		name:       name
+		data:       data
+		attributes: attributes
+		children:   children
+	}
+}
+
+pub enum XPathNativeResultKind {
+	undefined
+	node_set
+	boolean
+	number
+	string
+}
+
+pub struct XPathNativeResult {
+pub:
+	kind          XPathNativeResultKind
+	nodes         []&dom.Node
+	boolean_value bool
+	number_value  f64
+	string_value  string
+}
+
+pub fn convert_xpath_result(native_result XPathNativeResult, requested ResultType, mut result XPathResult) {
+	match native_result.kind {
+		.undefined {}
+		.node_set { result.set_node_set(native_result.nodes, requested) }
+		.boolean { result.set_boolean(native_result.boolean_value) }
+		.number { result.set_number(native_result.number_value) }
+		.string { result.set_string(native_result.string_value) }
+	}
+}
+
+@[heap]
 pub struct XPathEvaluator {}
 
 pub fn XPathEvaluator.construct() &XPathEvaluator {
 	return &XPathEvaluator{}
+}
+
+pub fn XPathEvaluator.construct_impl() &XPathEvaluator {
+	return XPathEvaluator.construct()
 }
 
 @[heap]
@@ -88,13 +184,11 @@ fn evaluate_into(expression string, context &dom.Node, requested ResultType, mut
 	validate_expression(expression)!
 	value := expression.trim_space()
 	if value.len >= 2 && value[0] in [`'`, `"`] && value[value.len - 1] == value[0] {
-		result.result_type = .string
-		result.string_value = value[1..value.len - 1]
+		result.set_string(value[1..value.len - 1])
 		return
 	}
 	if value == 'true()' || value == 'false()' {
-		result.result_type = .boolean
-		result.boolean_value = value == 'true()'
+		result.set_boolean(value == 'true()')
 		return
 	}
 	for function_name in ['count', 'string', 'boolean', 'number'] {
@@ -104,22 +198,18 @@ fn evaluate_into(expression string, context &dom.Node, requested ResultType, mut
 			nodes, scalar := evaluate_path(argument, context)!
 			match function_name {
 				'count' {
-					result.result_type = .number
-					result.number_value = f64(nodes.len)
+					result.set_number(f64(nodes.len))
 				}
 				'boolean' {
-					result.result_type = .boolean
-					result.boolean_value = nodes.len > 0 || scalar != ''
+					result.set_boolean(nodes.len > 0 || scalar != '')
 				}
 				'string' {
-					result.result_type = .string
-					result.string_value = first_string_value(nodes, scalar)
+					result.set_string(first_string_value(nodes, scalar))
 				}
 				'number' {
-					result.result_type = .number
-					result.number_value = strconv.atof64(first_string_value(nodes, scalar)) or {
+					result.set_number(strconv.atof64(first_string_value(nodes, scalar)) or {
 						math.nan()
-					}
+					})
 				}
 				else {}
 			}
@@ -127,8 +217,7 @@ fn evaluate_into(expression string, context &dom.Node, requested ResultType, mut
 		}
 	}
 	if numeric := strconv.atof64(value) {
-		result.result_type = .number
-		result.number_value = numeric
+		result.set_number(numeric)
 		return
 	}
 	nodes, _ := evaluate_path(value, context)!

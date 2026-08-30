@@ -1,5 +1,7 @@
 module html
 
+import dom
+
 fn close_watcher_enabled() bool {
 	return true
 }
@@ -72,4 +74,72 @@ fn test_close_watcher_cancel_and_disabled_states() {
 	mut mutable_disabled := unsafe { &CloseWatcher(disabled) }
 	assert mutable_disabled.request_close(false)
 	assert disabled.is_active
+}
+
+struct CloseWatcherEventCounts {
+mut:
+	cancel int
+	close  int
+}
+
+fn close_watcher_event_callback(mut counts CloseWatcherEventCounts) &dom.CallbackType {
+	return &dom.CallbackType{
+		handle_event: fn [mut counts] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			if event.type_name() == 'cancel' {
+				counts.cancel++
+			} else if event.type_name() == 'close' {
+				counts.close++
+			}
+			return dom.js_undefined()
+		}
+	}
+}
+
+fn test_close_watcher_construct_impl_handlers_request_close_and_abort() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut navigable := &dom.Navigable{
+		active_document_:          document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_cached_navigable(navigable)
+	mut window := WindowModel.create_top_level(document, none, 'close-watcher') or { panic(err) }
+	mut watcher := CloseWatcher.construct_impl(window, CloseWatcherOptions{}) or { panic(err) }
+	mut counts := CloseWatcherEventCounts{}
+	callback := close_watcher_event_callback(mut counts)
+	watcher.set_oncancel(callback)
+	watcher.set_onclose(callback)
+	assert watcher.oncancel()? == callback
+	assert watcher.onclose()? == callback
+	watcher.request_close_for_bindings()
+	assert counts.cancel == 1
+	assert counts.close == 1
+	assert !watcher.is_active
+
+	signal := dom.AbortSignal.new()
+	mut aborted_watcher := CloseWatcher.construct_impl(window, CloseWatcherOptions{
+		signal: signal
+	}) or { panic(err) }
+	assert aborted_watcher.is_active
+	mut mutable_signal := unsafe { &dom.AbortSignal(signal) }
+	mutable_signal.signal_abort(dom.js_undefined())
+	assert !aborted_watcher.is_active
+
+	window.set_last_activation_timestamp(42)
+	assert window.has_history_action_activation()
+	window.consume_history_action_user_activation()
+	assert !window.has_history_action_activation()
+}
+
+fn test_close_watcher_construct_impl_rejects_detached_context() {
+	document := dom.Document.create(dom.url_about_blank())
+	window := WindowModel.create_top_level(document, none, 'detached') or { panic(err) }
+	mut context := unsafe { &BrowsingContextModel(window.browsing_context()) }
+	context.remove()
+	CloseWatcher.construct_impl(window, CloseWatcherOptions{}) or {
+		assert err.msg().starts_with('InvalidStateError:')
+		return
+	}
+	assert false
 }

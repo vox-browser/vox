@@ -26,6 +26,7 @@ mut:
 	flush_algorithm_     ?FlushAlgorithm
 	cancel_algorithm_    ?CancelAlgorithm
 	backpressure_        bool
+	backpressure_change_promise_ &VoidPromise = unsafe { nil }
 	stored_error_        string
 	terminated_          bool
 }
@@ -41,6 +42,7 @@ pub fn TransformStream.construct_impl(transformer Transformer, writable_strategy
 		transform_algorithm_: transformer.transform
 		flush_algorithm_:     transformer.flush
 		cancel_algorithm_:    transformer.cancel
+		backpressure_change_promise_: VoidPromise.pending()
 	}
 	readable_high_water_mark := extract_high_water_mark(readable_strategy, 0)!
 	writable_high_water_mark := extract_high_water_mark(writable_strategy, 1)!
@@ -87,7 +89,15 @@ pub fn (stream &TransformStream) backpressure() bool {
 
 fn (mut stream TransformStream) update_backpressure() {
 	desired := stream.readable_.desired_size() or { 0.0 }
-	stream.backpressure_ = desired <= 0
+	new_backpressure := desired <= 0
+	if stream.backpressure_ != new_backpressure {
+		if !isnil(stream.backpressure_change_promise_) {
+			mut changed := stream.backpressure_change_promise_
+			changed.resolve()
+		}
+		stream.backpressure_change_promise_ = VoidPromise.pending()
+		stream.backpressure_ = new_backpressure
+	}
 }
 
 fn (mut stream TransformStream) write_chunk(value Value) ! {
@@ -173,7 +183,8 @@ pub fn (mut stream TransformStream) terminate() {
 @[heap]
 pub struct TransformStreamDefaultController {
 mut:
-	stream_ &TransformStream = unsafe { nil }
+	stream_        &TransformStream = unsafe { nil }
+	finish_promise_ &VoidPromise    = unsafe { nil }
 }
 
 pub fn (controller &TransformStreamDefaultController) desired_size() ?f64 {

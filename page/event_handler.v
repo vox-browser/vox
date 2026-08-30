@@ -34,6 +34,7 @@ pub:
 pub struct EventHandler {
 pub mut:
 	drag_and_drop DragAndDropEventHandler
+	auto_scroll   AutoScrollHandler
 	event_log     []InputDispatch
 mut:
 	active_document       bool = true
@@ -44,6 +45,10 @@ mut:
 	prevent_mouse_event   bool
 	previous_screen       ?PixelPoint
 	focused_target_       string
+	hovered_chrome_widget string
+	current_cursor        string = 'arrow'
+	selection_anchor      PixelPoint
+	selection_extent      PixelPoint
 }
 
 pub fn (mut handler EventHandler) set_document_state(active bool, has_paint_root bool) {

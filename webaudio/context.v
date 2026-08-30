@@ -31,6 +31,13 @@ pub mut:
 	up_z       AudioParam
 }
 
+pub struct AudioDestinationNode {
+	AudioNode
+pub:
+	offline           bool
+	max_channel_count u32
+}
+
 fn new_audio_listener(context_id u64, first_id u64) AudioListener {
 	mut next_id := first_id
 	mut values := []AudioParam{}
@@ -75,11 +82,13 @@ pub mut:
 	current_time        f64
 	state               AudioContextState = .suspended
 	rendering_state     AudioContextState = .suspended
-	destination         AudioNode
+	destination         AudioDestinationNode
 	listener            AudioListener
 	next_id             u64 = 10
 	control_messages    ControlMessageQueue
 	onstatechange_count u32
+	onstatechange       bool
+	media_element_tasks u32
 }
 
 pub fn verify_sample_rate(sample_rate f32) ! {
@@ -99,7 +108,8 @@ pub fn verify_audio_options(number_of_channels u32, length u32, sample_rate f32)
 	verify_sample_rate(sample_rate)!
 }
 
-fn make_base_context(id u64, sample_rate f32, destination_channels u32) !BaseAudioContext {
+fn make_base_context(id u64, sample_rate f32, destination_channels u32,
+	offline bool) !BaseAudioContext {
 	verify_sample_rate(sample_rate)!
 	mut destination := AudioNode{
 		id:                1
@@ -110,11 +120,16 @@ fn make_base_context(id u64, sample_rate f32, destination_channels u32) !BaseAud
 	}
 	destination.set_channel_count(destination_channels)!
 	destination.channel_count_mode = .explicit
+	destination_node := AudioDestinationNode{
+		AudioNode:         destination
+		offline:           offline
+		max_channel_count: if offline { destination_channels } else { u32(2) }
+	}
 	listener := new_audio_listener(id, 1)
 	return BaseAudioContext{
 		id:          id
 		sample_rate: sample_rate
-		destination: destination
+		destination: destination_node
 		listener:    listener
 		next_id:     10
 	}
@@ -170,7 +185,7 @@ pub mut:
 pub fn new_audio_context(id u64, sample_rate ?f32, fully_active bool) !AudioContext {
 	if !fully_active { return error('InvalidStateError: Document is not fully active') }
 	rate := sample_rate or { f32(44_100) }
-	mut base := make_base_context(id, rate, 2)!
+	mut base := make_base_context(id, rate, 2, false)!
 	base.rendering_state = .running
 	base.state = .running
 	// The constructor queues one statechange event after changing the initial
@@ -307,9 +322,8 @@ pub:
 }
 
 pub fn (mut context BaseAudioContext) set_destination_channel_count(count u32, offline bool) ! {
-	if offline {
-		return error('InvalidStateError: Cannot change channel count in an OfflineAudioContext')
+	if offline != context.destination.offline {
+		return error('InvalidStateError: Destination context kind does not match')
 	}
-	if count < 1 || count > 2 { return error('IndexSizeError: Channel index is out of range') }
 	context.destination.set_channel_count(count)!
 }

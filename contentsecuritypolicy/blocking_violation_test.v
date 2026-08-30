@@ -54,6 +54,31 @@ fn test_report_only_does_not_block() {
 	assert global.reports[0].disposition == .report
 }
 
+fn test_violation_accessors_and_disposition_conversion() {
+	policy, _, fixture := csp_fixture("default-src 'none'", .report)
+	mut violation := Violation.create_a_violation_object_for_global_policy_and_directive(fixture,
+		policy, default_src)
+	violation.set_status(418)
+	violation.set_resource(ViolationResource(ViolationResourceKind.inline))
+	violation.set_source_file(csp_url('https', 'example.test', ['script.js']))
+	violation.set_line_number(7)
+	violation.set_column_number(3)
+	violation.set_element(ElementContext{ is_script: true })
+	violation.set_sample('sample')
+	assert violation.status() == 418
+	assert violation.referrer() == fixture.referrer
+	assert violation.policy() == policy
+	assert violation.disposition() == .report
+	assert violation.effective_directive() == default_src
+	assert violation.source_file() != none
+	assert violation.line_number() == 7
+	assert violation.column_number() == 3
+	assert violation.element() != none
+	assert violation.sample() == 'sample'
+	assert original_disposition_to_string(.report) == 'report'
+	assert original_disposition_to_bindings_disposition(.enforce) == .enforce
+}
+
 fn test_navigation_inline_eval_wasm_and_base_checks() {
 	_, list, fixture := csp_fixture("form-action 'none'; script-src 'none' 'report-sample'; style-src 'none'; base-uri 'self'",
 		.enforce)

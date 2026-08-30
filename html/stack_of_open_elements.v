@@ -149,6 +149,27 @@ fn (s &StackOfOpenElements) has_in_scope_impl_element(target_node &dom.Element, 
 	panic('has_in_scope_impl_element: VERIFY_NOT_REACHED')
 }
 
+pub struct StackOfOpenElementsElementTarget {
+pub:
+	element &dom.Element @[required]
+}
+
+pub type StackOfOpenElementsScopeTarget = StackOfOpenElementsElementTarget | string
+
+// C++ overloads has_in_scope_impl for tag names and element identity. V uses a
+// sum type so both algorithms retain the exact method name.
+pub fn (s &StackOfOpenElements) has_in_scope_impl(target StackOfOpenElementsScopeTarget, list []string, check_math_and_svg ...bool) bool {
+	match target {
+		string {
+			check := if check_math_and_svg.len > 0 { check_math_and_svg[0] } else { true }
+			return s.has_in_scope_impl_tag(target, list, check)
+		}
+		StackOfOpenElementsElementTarget {
+			return s.has_in_scope_impl_element(target.element, list)
+		}
+	}
+}
+
 // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-scope
 pub fn (s &StackOfOpenElements) has_in_scope(tag_name string) bool {
 	return s.has_in_scope_impl_tag(tag_name, scope_base_list, true)

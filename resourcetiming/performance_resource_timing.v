@@ -64,9 +64,10 @@ pub mut:
 }
 
 pub fn convert_fetch_timestamp(time_stamp f64, context &ResourceTimingContext) f64 {
-	if time_stamp == 0 { return 0 }
-	return highresolutiontime.coarsen_time(time_stamp - context.time_origin,
-		context.cross_origin_isolated_capability)
+	if time_stamp == 0 {
+		return 0
+	}
+	return highresolutiontime.coarsen_time(time_stamp - context.time_origin, context.cross_origin_isolated_capability)
 }
 
 @[heap]
@@ -87,19 +88,18 @@ pub fn PerformanceResourceTiming.mark_resource_timing(mut context ResourceTiming
 	converted_start := convert_fetch_timestamp(timing_info.start_time, context)
 	converted_end := convert_fetch_timestamp(timing_info.end_time, context)
 	base := &performancetimeline.PerformanceEntry{
-		name:            requested_url
-		entry_type:      'resource'
-		start_time:      converted_start
-		duration:        converted_end - converted_start
-		available:       .yes
+		name: requested_url
+		entry_type: 'resource'
+		start_time: converted_start
+		duration: converted_end - converted_start
+		available: .yes
 		max_buffer_size: u64(250)
 	}
 	mut entry := &PerformanceResourceTiming{
 		performance_entry_: base
-		context_:           context
+		context_: context
 	}
-	entry.setup_the_resource_timing_entry(initiator_type, requested_url, timing_info, cache_mode,
-		body_info, response_status, delivery_type)
+	entry.setup_the_resource_timing_entry(initiator_type, requested_url, timing_info, cache_mode, body_info, response_status, delivery_type)
 	context.timeline.add_entry(base)
 	context.resource_entries << entry
 	return entry
@@ -127,6 +127,19 @@ pub fn (entry &PerformanceResourceTiming) entry_type() string {
 	return 'resource'
 }
 
+pub fn PerformanceResourceTiming.available_from_timeline() performancetimeline.AvailableFromTimeline {
+	return .yes
+}
+
+pub fn PerformanceResourceTiming.max_buffer_size() ?u64 {
+	return u64(250)
+}
+
+pub fn (entry &PerformanceResourceTiming) should_add_entry(_ ?performancetimeline.PerformanceObserverInit) performancetimeline.ShouldAddEntry {
+	_ = entry
+	return .yes
+}
+
 pub fn (entry &PerformanceResourceTiming) initiator_type() string {
 	return entry.initiator_type_
 }
@@ -144,8 +157,7 @@ pub fn (entry &PerformanceResourceTiming) next_hop_protocol() string {
 }
 
 pub fn (entry &PerformanceResourceTiming) worker_start() f64 {
-	return convert_fetch_timestamp(entry.timing_info_.final_service_worker_start_time,
-		entry.context_)
+	return convert_fetch_timestamp(entry.timing_info_.final_service_worker_start_time, entry.context_)
 }
 
 pub fn (entry &PerformanceResourceTiming) redirect_start() f64 {
@@ -201,18 +213,15 @@ pub fn (entry &PerformanceResourceTiming) secure_connection_start() f64 {
 }
 
 pub fn (entry &PerformanceResourceTiming) request_start() f64 {
-	return convert_fetch_timestamp(entry.timing_info_.final_network_request_start_time,
-		entry.context_)
+	return convert_fetch_timestamp(entry.timing_info_.final_network_request_start_time, entry.context_)
 }
 
 pub fn (entry &PerformanceResourceTiming) final_response_headers_start() f64 {
-	return convert_fetch_timestamp(entry.timing_info_.final_network_response_start_time,
-		entry.context_)
+	return convert_fetch_timestamp(entry.timing_info_.final_network_response_start_time, entry.context_)
 }
 
 pub fn (entry &PerformanceResourceTiming) first_interim_response_start() f64 {
-	return convert_fetch_timestamp(entry.timing_info_.first_interim_network_response_start_time,
-		entry.context_)
+	return convert_fetch_timestamp(entry.timing_info_.first_interim_network_response_start_time, entry.context_)
 }
 
 pub fn (entry &PerformanceResourceTiming) response_start() f64 {
@@ -234,8 +243,12 @@ pub fn (entry &PerformanceResourceTiming) decoded_body_size() u64 {
 
 pub fn (entry &PerformanceResourceTiming) transfer_size() u64 {
 	if mode := entry.cache_mode_ {
-		if mode == .local { return 0 }
-		if mode == .validated { return 300 }
+		if mode == .local {
+			return 0
+		}
+		if mode == .validated {
+			return 300
+		}
 	}
 	return entry.response_body_info_.encoded_size + 300
 }
@@ -286,32 +299,32 @@ pub:
 pub fn (entry &PerformanceResourceTiming) to_json() PerformanceResourceTimingJSON {
 	base := entry.performance_entry_
 	return PerformanceResourceTimingJSON{
-		name:                         base.name
-		entry_type:                   entry.entry_type()
-		start_time:                   base.start_time
-		duration:                     base.duration
-		initiator_type:               entry.initiator_type()
-		delivery_type:                entry.delivery_type()
-		next_hop_protocol:            entry.next_hop_protocol()
-		worker_start:                 entry.worker_start()
-		redirect_start:               entry.redirect_start()
-		redirect_end:                 entry.redirect_end()
-		fetch_start:                  entry.fetch_start()
-		domain_lookup_start:          entry.domain_lookup_start()
-		domain_lookup_end:            entry.domain_lookup_end()
-		connect_start:                entry.connect_start()
-		connect_end:                  entry.connect_end()
-		secure_connection_start:      entry.secure_connection_start()
-		request_start:                entry.request_start()
+		name: base.name
+		entry_type: entry.entry_type()
+		start_time: base.start_time
+		duration: base.duration
+		initiator_type: entry.initiator_type()
+		delivery_type: entry.delivery_type()
+		next_hop_protocol: entry.next_hop_protocol()
+		worker_start: entry.worker_start()
+		redirect_start: entry.redirect_start()
+		redirect_end: entry.redirect_end()
+		fetch_start: entry.fetch_start()
+		domain_lookup_start: entry.domain_lookup_start()
+		domain_lookup_end: entry.domain_lookup_end()
+		connect_start: entry.connect_start()
+		connect_end: entry.connect_end()
+		secure_connection_start: entry.secure_connection_start()
+		request_start: entry.request_start()
 		final_response_headers_start: entry.final_response_headers_start()
 		first_interim_response_start: entry.first_interim_response_start()
-		response_start:               entry.response_start()
-		response_end:                 entry.response_end()
-		transfer_size:                entry.transfer_size()
-		encoded_body_size:            entry.encoded_body_size()
-		decoded_body_size:            entry.decoded_body_size()
-		response_status:              entry.response_status()
-		render_blocking_status:       entry.render_blocking_status()
-		content_type:                 entry.content_type()
+		response_start: entry.response_start()
+		response_end: entry.response_end()
+		transfer_size: entry.transfer_size()
+		encoded_body_size: entry.encoded_body_size()
+		decoded_body_size: entry.decoded_body_size()
+		response_status: entry.response_status()
+		render_blocking_status: entry.render_blocking_status()
+		content_type: entry.content_type()
 	}
 }

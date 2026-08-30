@@ -25,8 +25,12 @@ pub:
 
 @[heap]
 pub struct FakeXRDevice {
-pub:
+pub mut:
 	id int
+}
+
+pub fn FakeXRDevice.create() &FakeXRDevice {
+	return &FakeXRDevice{}
 }
 
 @[heap]
@@ -57,9 +61,8 @@ pub fn XRTest.create() &XRTest {
 
 pub fn (mut xr XRTest) simulate_device_connection(init FakeXRDeviceInit) &XRPromise {
 	_ = init
-	device := &FakeXRDevice{
-		id: xr.next_id_
-	}
+	mut device := FakeXRDevice.create()
+	device.id = xr.next_id_
 	xr.next_id_++
 	return &XRPromise{
 		state:  .fulfilled

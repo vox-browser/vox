@@ -125,7 +125,7 @@ struct WebDriverKeyData {
 	code_point u32
 }
 
-fn webdriver_key(code_point u32) ?WebDriverKeyData {
+fn webdriver_key_to_key_code(code_point u32) ?WebDriverKeyData {
 	return match code_point {
 		0xe003 { WebDriverKeyData{'Backspace', 0, 8} }
 		0xe004 { WebDriverKeyData{'Tab', 0, 9} }
@@ -151,7 +151,7 @@ pub fn (mut api Internals) send_text(target &dom.Element, value string, modifier
 	html.HTMLOrSVGElement.create(target).focus()
 	for character in value.runes() {
 		code_point := u32(character)
-		if data := webdriver_key(code_point) {
+		if data := webdriver_key_to_key_code(code_point) {
 			api.platform.input_actions << InputAction{
 				kind:       .key_down
 				key:        data.key
@@ -199,7 +199,7 @@ pub fn (mut api Internals) mouse_down(x f64, y f64, click_count u16, button u16,
 		x:           x
 		y:           y
 		click_count: click_count
-		button:      normalized_mouse_button(button)
+		button:      api.button_from_unsigned_short(button)
 		modifiers:   modifiers
 	}
 }
@@ -209,12 +209,12 @@ pub fn (mut api Internals) mouse_up(x f64, y f64, button u16, modifiers u16) {
 		kind:      .mouse_up
 		x:         x
 		y:         y
-		button:    normalized_mouse_button(button)
+		button:    api.button_from_unsigned_short(button)
 		modifiers: modifiers
 	}
 }
 
-fn normalized_mouse_button(button u16) u16 {
+pub fn (_ &Internals) button_from_unsigned_short(button u16) u16 {
 	return match button {
 		button_middle { button_middle }
 		button_right { button_right }

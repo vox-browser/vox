@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Painting`
 
 Translation workspace: `~/code/libweb_v/painting`
-Audited: 2026-08-16
+Audited: 2026-08-29
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers were
 audited. The V package implements the renderer-independent painting model: CSS
@@ -15,13 +15,18 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 3,472 | 741 | Complete |
+| `Painting/` | 48 | 10,038 | 4,265 | 825 | Complete |
 
 ## Independent fidelity audit
 
 The completed translation was cross-checked unit-by-unit against all 48 current
 upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
+
+- The repository-wide symbol audit now classifies all 741 extracted Painting
+  implementations: 670 direct or consolidated V candidates, 52 constructors or
+  destructors, 10 GC/binding-runtime hooks, and 9 namespace template
+  specializations, with zero unmatched symbols.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
   height independently, matching `DevicePixelConverter` for fractional origins.
@@ -92,6 +97,11 @@ following behavioral mismatches and added focused regressions:
 | `VideoPaintable.cpp` | `painting_algorithms.v` |
 | `ViewportPaintable.cpp` | `paintable.v`, `scrolling.v`, `visual_context.v` |
 
+The consolidated C++ class entry points are implemented in
+`upstream_paintable_entry_points.v`, `upstream_display_entry_points.v`,
+`upstream_value_entry_points.v`, and `upstream_algorithm_entry_points.v`, with
+focused parity coverage in `upstream_entry_points_test.v`.
+
 Header-only APIs are represented alongside their implementation families:
 `ChromeMetrics` and border/box data in `box_model.v`; `ChromeWidget`, resize,
 scroll frames and scroll state in `scrolling.v`; `DevicePixelConverter` in
@@ -118,11 +128,11 @@ paint styles in `svg_painting.v`.
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v test painting
-Summary for all V _test.v files: 6 passed, 6 total.
+$ /Users/alex/code/v/v_old -enable-globals test painting
+Summary for all V _test.v files: 7 passed, 7 total.
 
-$ /Users/alex/code/v/v fmt -verify painting
-(no output; exit status 0)
+$ python3 tools/libweb_translation_audit.py
+Painting: 741 symbols, 0 unmatched.
 
 $ git diff --check -- painting
 (no output; exit status 0)

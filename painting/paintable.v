@@ -55,8 +55,10 @@ pub:
 }
 
 pub struct PaintableFragment {
-pub:
+pub mut:
 	paintable_id            string
+	layout_node_id          string
+	text_value              string
 	offset                  Point
 	size                    Size
 	containing_block_offset Point
@@ -69,6 +71,8 @@ pub:
 	orientation             Orientation
 	has_trailing_whitespace bool
 	space_width             f64
+	shadow_values           []ShadowData
+	decoration_thickness    f64
 }
 
 pub fn (fragment PaintableFragment) absolute_rect() Rect {
@@ -341,12 +345,25 @@ pub fn (mut box PaintableBox) invalidate_paint_cache() {
 pub struct StackingContext {
 pub:
 	paintable_id string
+	parent_id    string
+	paintable_box_id string
 	z_index      int
 	tree_order   int
 pub mut:
 	children                 []StackingContext
 	last_paint_generation_id ?u64
 }
+
+pub fn (context StackingContext) parent() string { return context.parent_id }
+pub fn (context StackingContext) paintable_box() string { return if context.paintable_box_id.len > 0 { context.paintable_box_id } else { context.paintable_id } }
+pub fn (context StackingContext) paint_node() []string { return [context.paintable_id] }
+pub fn (context StackingContext) paint_node_as_stacking_context() []string { return stacking_paint_order(context) }
+pub fn (context StackingContext) paint_svg() []string { return stacking_paint_order(context) }
+pub fn (context StackingContext) paint_descendants() []string { mut result := []string{}; for child in context.children { result << stacking_paint_order(child) }; return result }
+pub fn (context StackingContext) paint_child(index int) []string { return if index >= 0 && index < context.children.len { stacking_paint_order(context.children[index]) } else { [] } }
+pub fn (context StackingContext) paint_internal() []string { return stacking_paint_order(context) }
+pub fn (context StackingContext) paint() []string { return stacking_paint_order(context) }
+pub fn (context StackingContext) hit_test(id string) ?string { if context.paintable_id == id { return id }; for child in context.children.reverse() { if found := child.hit_test(id) { return found } }; return none }
 
 pub fn (mut context StackingContext) sort() {
 	context.children.sort_with_compare(fn (a &StackingContext, b &StackingContext) int {

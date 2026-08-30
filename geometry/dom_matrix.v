@@ -21,6 +21,8 @@ module geometry
 
 import math
 
+pub type DOMMatrixConstructorInit = []f64 | string
+
 // https://drafts.fxtf.org/geometry/#dictdef-dommatrix2dinit — every member is optional.
 pub struct DOMMatrix2DInit {
 pub mut:
@@ -82,40 +84,57 @@ mut:
 // https://drafts.fxtf.org/geometry/#create-a-2d-matrix — the six given components with the remaining
 // elements set to the identity (m33 = m44 = 1, the rest 0); is2D is true.
 fn DOMMatrixReadOnly.create_2d(m11 f64, m12 f64, m21 f64, m22 f64, m41 f64, m42 f64) &DOMMatrixReadOnly {
-	return &DOMMatrixReadOnly{
-		m11_:   m11
-		m12_:   m12
-		m21_:   m21
-		m22_:   m22
-		m33_:   1.0
-		m41_:   m41
-		m42_:   m42
-		m44_:   1.0
-		is_2d_: true
-	}
+	mut matrix := &DOMMatrixReadOnly{}
+	matrix.initialize_from_create_2d_matrix(m11, m12, m21, m22, m41, m42)
+	return matrix
 }
 
 // https://drafts.fxtf.org/geometry/#create-a-3d-matrix — all sixteen components; is2D is false.
 fn DOMMatrixReadOnly.create_3d(m11 f64, m12 f64, m13 f64, m14 f64, m21 f64, m22 f64, m23 f64, m24 f64, m31 f64, m32 f64, m33 f64, m34 f64, m41 f64, m42 f64, m43 f64, m44 f64) &DOMMatrixReadOnly {
-	return &DOMMatrixReadOnly{
-		m11_:   m11
-		m12_:   m12
-		m13_:   m13
-		m14_:   m14
-		m21_:   m21
-		m22_:   m22
-		m23_:   m23
-		m24_:   m24
-		m31_:   m31
-		m32_:   m32
-		m33_:   m33
-		m34_:   m34
-		m41_:   m41
-		m42_:   m42
-		m43_:   m43
-		m44_:   m44
-		is_2d_: false
-	}
+	mut matrix := &DOMMatrixReadOnly{}
+	matrix.initialize_from_create_3d_matrix(m11, m12, m13, m14, m21, m22, m23,
+		m24, m31, m32, m33, m34, m41, m42, m43, m44)
+	return matrix
+}
+
+pub fn (mut matrix DOMMatrixReadOnly) initialize_from_create_2d_matrix(m11 f64, m12 f64, m21 f64, m22 f64, m41 f64, m42 f64) {
+	matrix.m11_ = m11
+	matrix.m12_ = m12
+	matrix.m13_ = 0
+	matrix.m14_ = 0
+	matrix.m21_ = m21
+	matrix.m22_ = m22
+	matrix.m23_ = 0
+	matrix.m24_ = 0
+	matrix.m31_ = 0
+	matrix.m32_ = 0
+	matrix.m33_ = 1
+	matrix.m34_ = 0
+	matrix.m41_ = m41
+	matrix.m42_ = m42
+	matrix.m43_ = 0
+	matrix.m44_ = 1
+	matrix.is_2d_ = true
+}
+
+pub fn (mut matrix DOMMatrixReadOnly) initialize_from_create_3d_matrix(m11 f64, m12 f64, m13 f64, m14 f64, m21 f64, m22 f64, m23 f64, m24 f64, m31 f64, m32 f64, m33 f64, m34 f64, m41 f64, m42 f64, m43 f64, m44 f64) {
+	matrix.m11_ = m11
+	matrix.m12_ = m12
+	matrix.m13_ = m13
+	matrix.m14_ = m14
+	matrix.m21_ = m21
+	matrix.m22_ = m22
+	matrix.m23_ = m23
+	matrix.m24_ = m24
+	matrix.m31_ = m31
+	matrix.m32_ = m32
+	matrix.m33_ = m33
+	matrix.m34_ = m34
+	matrix.m41_ = m41
+	matrix.m42_ = m42
+	matrix.m43_ = m43
+	matrix.m44_ = m44
+	matrix.is_2d_ = false
 }
 
 // DOMMatrixReadOnly::create(realm) — the 2D identity matrix.
@@ -138,6 +157,14 @@ pub fn DOMMatrixReadOnly.construct(init ?[]f64) !&DOMMatrixReadOnly {
 			numbers[11], numbers[12], numbers[13], numbers[14], numbers[15])
 	}
 	return error('Sequence must contain exactly 6 or 16 elements, got ${numbers.len} element(s)')
+}
+
+pub fn DOMMatrixReadOnly.construct_impl(init ?DOMMatrixConstructorInit, is_window bool) !&DOMMatrixReadOnly {
+	value := init or { return DOMMatrixReadOnly.create() }
+	return match value {
+		[]f64 { DOMMatrixReadOnly.construct(value) }
+		string { DOMMatrixReadOnly.construct_from_string(value, is_window) }
+	}
 }
 
 // https://drafts.fxtf.org/geometry/#create-a-dommatrixreadonly-from-the-2d-dictionary
@@ -264,6 +291,10 @@ pub fn (matrix &DOMMatrixReadOnly) f() f64 {
 
 pub fn (matrix &DOMMatrixReadOnly) is_2d() bool {
 	return matrix.is_2d_
+}
+
+pub fn (matrix &DOMMatrixReadOnly) is2d() bool {
+	return matrix.is_2d()
 }
 
 // https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-isidentity — every off-diagonal element is

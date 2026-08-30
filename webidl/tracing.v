@@ -43,6 +43,10 @@ fn trace_value(value Value) string {
 	}
 }
 
+pub fn (mut state TraceState) log_trace_impl(function string, arguments []Value) {
+	state.log_trace(function, arguments)
+}
+
 fn escape_control_characters(value string) string {
 	mut output := ''
 	for character in value.runes() {

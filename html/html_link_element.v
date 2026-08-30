@@ -25,41 +25,98 @@ pub:
 	body         []u8
 }
 
-pub type LinkResourceFetchHook = fn (dom.URL, LinkResourceKind, CORSSettingAttribute) !LinkResourceResponse
+// V counterparts of HTMLLinkElement::LinkProcessingOptions and the Fetch
+// request fields written by create_link_request/setup steps. Fetch itself is
+// kept behind LinkResourceFetchHook, but the observable request construction
+// and dispatch decisions stay explicit here.
+pub struct LinkProcessingOptions {
+pub mut:
+	href                         string
+	integrity                    string
+	type_                        string
+	cryptographic_nonce_metadata string
+	destination                  ?string
+	crossorigin                  CORSSettingAttribute
+	referrer_policy              string
+	base_url                     dom.URL
+	document                     ?&dom.Document
+	fetch_priority               string
+}
 
-pub type LinkConnectionHook = fn (dom.URL) !
+pub struct LinkRequest {
+pub mut:
+	url             dom.URL
+	destination     ?string
+	crossorigin     CORSSettingAttribute
+	integrity       string
+	nonce           string
+	referrer_policy string
+	priority        string
+	initiator       string = 'link'
+	render_blocking bool
+	kind            LinkResourceKind
+}
+
+pub type LinkResourceFetchHook = fn(dom.URL, LinkResourceKind, CORSSettingAttribute) !LinkResourceResponse
+
+pub type LinkConnectionHook = fn(dom.URL) !
+
+pub type LinkFaviconDecodeHook = fn([]u8, dom.URL, &dom.Document) !
+
+__global (
+	link_fallback_favicon_fetch_hook LinkResourceFetchHook
+	link_favicon_decode_hook         LinkFaviconDecodeHook
+)
+
+fn decode_favicon(favicon_data []u8, favicon_url dom.URL, document &dom.Document) !bool {
+	if favicon_data.len == 0 {
+		return error('Failed to decode empty favicon')
+	}
+	if link_favicon_decode_hook != unsafe { nil } {
+		link_favicon_decode_hook(favicon_data.clone(), favicon_url, document)!
+	}
+	return true
+}
 
 @[heap]
 pub struct HTMLLinkElementModel {
 mut:
-	base_url_                 dom.URL
-	event_target_             &dom.EventTarget = unsafe { nil }
-	rel_                      string
-	href_                     string
-	type_                     string
-	media_                    string
-	sizes_                    string
-	disabled_                 bool
-	connected_                bool = true
-	crossorigin_              CORSSettingAttribute
-	fetch_hook_               ?LinkResourceFetchHook
-	dns_prefetch_hook_        ?LinkConnectionHook
-	preconnect_hook_          ?LinkConnectionHook
-	loaded_icon_              ?[]u8
-	loaded_icon_url_          ?dom.URL
-	loaded_style_sheet_       ?string
-	preloaded_response_       ?LinkResourceResponse
-	stylesheet_loading_       bool
-	stylesheet_failed_        bool
-	explicitly_enabled_       bool
-	parser_inserted_          bool
-	was_enabled_when_created_ bool
-	event_counts_             map[string]int
+	element_                      ?&dom.HTMLLinkElement
+	base_url_                     dom.URL
+	event_target_                 &dom.EventTarget = unsafe { nil }
+	rel_                          string
+	href_                         string
+	type_                         string
+	media_                        string
+	sizes_                        string
+	disabled_                     bool
+	connected_                    bool = true
+	crossorigin_                  CORSSettingAttribute
+	fetch_hook_                   ?LinkResourceFetchHook
+	dns_prefetch_hook_            ?LinkConnectionHook
+	preconnect_hook_              ?LinkConnectionHook
+	loaded_icon_                  ?[]u8
+	loaded_icon_url_              ?dom.URL
+	loaded_style_sheet_           ?string
+	preloaded_response_           ?LinkResourceResponse
+	stylesheet_loading_           bool
+	stylesheet_failed_            bool
+	explicitly_enabled_           bool
+	parser_inserted_              bool
+	parser_document_              ?&dom.Document
+	was_enabled_when_created_     bool
+	integrity_                    string
+	as_                           string
+	referrer_policy_              string
+	fetch_priority_               string
+	cryptographic_nonce_          string
+	document_load_event_delaying_ bool
+	event_counts_                 map[string]int
 }
 
 pub fn HTMLLinkElementModel.create(base_url dom.URL) &HTMLLinkElementModel {
 	return &HTMLLinkElementModel{
-		base_url_:     base_url
+		base_url_: base_url
 		event_target_: dom.EventTarget.new()
 	}
 }
@@ -81,7 +138,41 @@ fn (link &HTMLLinkElementModel) has_relation(name string) bool {
 
 fn (mut link HTMLLinkElementModel) fire_event(name string) {
 	link.event_counts_[name]++
-	link.event_target_.dispatch_event(dom.Event.create(name, dom.EventInit{}))
+	event := dom.Event.create(name, dom.EventInit{})
+	if element := link.element_ {
+		unsafe { &dom.EventTarget(element) }
+		.dispatch_event(event)
+	} else {
+		link.event_target_.dispatch_event(event)
+	}
+}
+
+fn link_dom_element(element &dom.HTMLLinkElement) &dom.Element {
+	return unsafe { &dom.Element(element) }
+}
+
+pub fn html_link_element_model_for_dom_element(element &dom.HTMLLinkElement) &HTMLLinkElementModel {
+	if element.link_element_model_ != unsafe { nil } {
+		return unsafe { &HTMLLinkElementModel(element.link_element_model_) }
+	}
+	dom_element := link_dom_element(element)
+	mut model := HTMLLinkElementModel.create(dom_element.document().base_url())
+	model.element_ = element
+	model.rel_ = dom_element.get_attribute_value('rel')
+	model.href_ = dom_element.get_attribute_value('href')
+	model.type_ = dom_element.get_attribute_value('type')
+	model.media_ = dom_element.get_attribute_value('media')
+	model.sizes_ = dom_element.get_attribute_value('sizes')
+	model.disabled_ = dom_element.has_attribute('disabled')
+	model.crossorigin_ = cors_setting_attribute_from_keyword(dom_element.get_attribute('crossorigin'))
+	model.integrity_ = dom_element.get_attribute_value('integrity')
+	model.as_ = ascii_lowercase_string(dom_element.get_attribute_value('as'))
+	model.referrer_policy_ = ascii_lowercase_string(dom_element.get_attribute_value('referrerpolicy'))
+	model.fetch_priority_ = ascii_lowercase_string(dom_element.get_attribute_value('fetchpriority'))
+	model.connected_ = dom_element.as_node().is_browsing_context_connected()
+	mut mutable_element := unsafe { &dom.HTMLLinkElement(element) }
+	mutable_element.link_element_model_ = voidptr(model)
+	return model
 }
 
 pub fn (link &HTMLLinkElementModel) event_target() &dom.EventTarget {
@@ -149,6 +240,10 @@ pub fn (mut link HTMLLinkElementModel) set_crossorigin(value ?string) {
 	link.crossorigin_ = cors_setting_attribute_from_keyword(value)
 }
 
+pub fn (mut link HTMLLinkElementModel) set_as(value string) {
+	link.as_ = ascii_lowercase_string(value)
+}
+
 pub fn (mut link HTMLLinkElementModel) set_disabled(value bool) {
 	link.disabled_ = value
 	if !value {
@@ -165,91 +260,270 @@ pub fn (mut link HTMLLinkElementModel) set_parser_state(inserted bool, enabled_w
 	link.was_enabled_when_created_ = enabled_when_created
 }
 
+pub fn (mut link HTMLLinkElementModel) set_parser_document(document &dom.Document) {
+	link.parser_document_ = document
+	link.parser_inserted_ = true
+}
+
+pub fn (mut link HTMLLinkElementModel) set_was_enabled_when_created_by_parser(value bool) {
+	link.was_enabled_when_created_ = value
+}
+
 pub fn (link &HTMLLinkElementModel) should_fetch_and_process_resource_type() bool {
-	if !link.connected_ || link.href_ == '' {
-		return false
-	}
-	return link.has_relation('stylesheet') || link.has_relation('icon')
-		|| link.has_relation('preload') || link.has_relation('dns-prefetch')
-		|| link.has_relation('preconnect')
+	return link.has_relation('stylesheet') || link.has_relation('icon') || link.has_relation('preload') || link.has_relation('dns-prefetch') || link.has_relation('preconnect')
 }
 
 pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_resource() {
 	if !link.should_fetch_and_process_resource_type() {
 		return
 	}
-	url := dom.dom_url_parse(link.href_, link.base_url_, 'UTF-8') or {
-		link.fire_event('error')
-		return
-	}
-	if link.has_relation('dns-prefetch') {
-		if hook := link.dns_prefetch_hook_ {
-			hook(url) or { link.fire_event('error') }
-		}
-	}
-	if link.has_relation('preconnect') {
-		if hook := link.preconnect_hook_ {
-			hook(url) or { link.fire_event('error') }
-		}
-	}
-	mut kind := LinkResourceKind.other
-	if link.has_relation('stylesheet') {
-		if link.disabled_ {
-			return
-		}
-		kind = .stylesheet
-		link.stylesheet_loading_ = true
-	} else if link.has_relation('icon') {
-		kind = .icon
+	// A relationship containing anything outside the pure speculative-fetch
+	// set uses the default algorithm. Otherwise preload wins over preconnect,
+	// and preconnect wins over DNS prefetch.
+	if link.has_relation('stylesheet') || link.has_relation('icon') || link.has_relation('alternate') {
+		link.default_fetch_and_process_linked_resource()
 	} else if link.has_relation('preload') {
-		kind = .preload
-	} else {
+		link.fetch_and_process_linked_preload_resource()
+	} else if link.has_relation('preconnect') {
+		link.fetch_and_process_linked_preconnect_resource()
+	} else if link.has_relation('dns-prefetch') {
+		link.fetch_and_process_linked_dns_prefetch_resource()
+	}
+}
+
+pub fn (link &HTMLLinkElementModel) create_link_options() &LinkProcessingOptions {
+	return &LinkProcessingOptions{
+		href: link.href_
+		integrity: link.integrity_
+		type_: link.type_
+		cryptographic_nonce_metadata: link.cryptographic_nonce_
+		crossorigin: link.crossorigin_
+		referrer_policy: link.referrer_policy_
+		base_url: link.base_url_
+		document: if element := link.element_ {
+			link_dom_element(element).document()} else {
+			none}
+		fetch_priority: link.fetch_priority_
+	}
+}
+
+pub fn (link &HTMLLinkElementModel) create_link_request(options &LinkProcessingOptions) ?&LinkRequest {
+	assert options.href != ''
+	url := dom.dom_url_parse(options.href, options.base_url, 'UTF-8') or { return none }
+	return &LinkRequest{
+		url: url
+		destination: options.destination
+		crossorigin: options.crossorigin
+		integrity: options.integrity
+		nonce: options.cryptographic_nonce_metadata
+		referrer_policy: options.referrer_policy
+		priority: options.fetch_priority
+	}
+}
+
+pub fn (mut link HTMLLinkElementModel) linked_resource_fetch_setup_steps(mut request LinkRequest) bool {
+	if link.has_relation('icon') {
+		return link.icon_linked_resource_fetch_setup_steps(mut request)
+	}
+	if link.has_relation('stylesheet') {
+		return link.stylesheet_linked_resource_fetch_setup_steps(mut request)
+	}
+	return true
+}
+
+pub fn (mut link HTMLLinkElementModel) icon_linked_resource_fetch_setup_steps(mut request LinkRequest) bool {
+	request.destination = 'image'
+	request.kind = .icon
+	return true
+}
+
+pub fn (mut link HTMLLinkElementModel) stylesheet_linked_resource_fetch_setup_steps(mut request LinkRequest) bool {
+	if link.disabled_ {
+		return false
+	}
+	request.destination = 'style'
+	request.kind = .stylesheet
+	link.stylesheet_loading_ = true
+	link.document_load_event_delaying_ = true
+	if element := link.element_ {
+		mut dom_element := link_dom_element(element)
+		mut document := unsafe { &dom.Document(dom_element.document()) }
+		if link.contributes_a_script_blocking_style_sheet() && !document.script_blocking_style_sheet_set.contains(dom_element) {
+			document.script_blocking_style_sheet_set << dom_element
+		}
+		if link.is_implicitly_potentially_render_blocking() {
+			dom_element.block_rendering()
+		}
+		request.render_blocking = document.is_render_blocking_element(dom_element)
+	}
+	return true
+}
+
+pub fn (mut link HTMLLinkElementModel) default_fetch_and_process_linked_resource() {
+	if link.href_ == '' {
 		return
 	}
+	options := link.create_link_options()
+	mut request := link.create_link_request(options) or { return }
+	if !link.linked_resource_fetch_setup_steps(mut request) {
+		return
+	}
+	request.initiator = if link.has_relation('stylesheet') { 'css' } else { 'link' }
 	fetch := link.fetch_hook_ or {
-		link.stylesheet_loading_ = false
-		link.stylesheet_failed_ = kind == .stylesheet
+		link.process_linked_resource(false, request.url, LinkResourceResponse{})
+		return
+	}
+	response := fetch(request.url, request.kind, request.crossorigin) or {
+		link.process_linked_resource(false, request.url, LinkResourceResponse{})
+		return
+	}
+	success := response.status >= 200 && response.status < 300
+	link.process_linked_resource(success, request.url, response)
+}
+
+pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_dns_prefetch_resource() {
+	if link.href_ == '' {
+		return
+	}
+	url := dom.dom_url_parse(link.href_, link.base_url_, 'UTF-8') or { return }
+	if hook := link.dns_prefetch_hook_ {
+		hook(url) or {}
+	}
+}
+
+pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_preconnect_resource() {
+	options := link.create_link_options()
+	link.preconnect(options)
+}
+
+fn translate_preload_destination(destination string) ?string {
+	lower := ascii_lowercase_string(destination)
+	if lower !in ['fetch', 'font', 'image', 'script', 'style', 'track'] {
+		return none
+	}
+	// Fetch's potential destination translation maps "fetch" to the empty
+	// destination; use none to retain that distinction.
+	return if lower == 'fetch' { '' } else { lower }
+}
+
+pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_preload_resource() {
+	mut options := link.create_link_options()
+	destination := translate_preload_destination(link.as_) or { return }
+	options.destination = if destination == '' { none } else { destination }
+	link.preload(mut options)
+}
+
+pub fn (mut link HTMLLinkElementModel) preconnect(options &LinkProcessingOptions) {
+	if options.href == '' {
+		return
+	}
+	url := dom.dom_url_parse(options.href, options.base_url, 'UTF-8') or { return }
+	if url.scheme() !in ['http', 'https'] {
+		return
+	}
+	if hook := link.preconnect_hook_ {
+		hook(url) or {}
+	}
+}
+
+fn link_type_matches_destination(type_ string, destination ?string) bool {
+	if type_ == '' || destination == none {
+		return true
+	}
+	essence := ascii_lowercase_string(type_.split(';')[0].trim_space())
+	dest := destination or { return true }
+	return match dest {
+		'audio', 'video' { essence.starts_with('audio/') || essence.starts_with('video/') }
+		'script' {
+			essence in ['text/javascript', 'application/javascript', 'application/ecmascript',
+				'text/ecmascript']
+		}
+		'image' { essence.starts_with('image/') }
+		'font' {
+			essence.starts_with('font/') || essence in ['application/font-woff',
+				'application/vnd.ms-fontobject']
+		}
+		'style' { essence == 'text/css' }
+		'track' { essence == 'text/vtt' }
+		else { false }
+	}
+}
+
+pub fn (mut link HTMLLinkElementModel) preload(mut options LinkProcessingOptions) {
+	if !link_type_matches_destination(options.type_, options.destination) || options.href == '' {
+		return
+	}
+	mut request := link.create_link_request(options) or { return }
+	request.kind = .preload
+	fetch := link.fetch_hook_ or {
 		link.fire_event('error')
 		return
 	}
-
-	response := fetch(url, kind, link.crossorigin_) or {
-		link.stylesheet_loading_ = false
-		link.stylesheet_failed_ = kind == .stylesheet
+	response := fetch(request.url, .preload, request.crossorigin) or {
 		link.fire_event('error')
 		return
 	}
 	if response.status < 200 || response.status >= 300 {
-		link.stylesheet_loading_ = false
-		link.stylesheet_failed_ = kind == .stylesheet
 		link.fire_event('error')
 		return
 	}
-	match kind {
-		.stylesheet {
-			mime := ascii_lowercase_string(response.content_type.split(';')[0].trim_space())
-			if mime != '' && mime != 'text/css' {
-				link.stylesheet_loading_ = false
-				link.stylesheet_failed_ = true
-				link.fire_event('error')
-				return
-			}
-			link.loaded_style_sheet_ = response.body.bytestr()
-			link.stylesheet_loading_ = false
-			link.stylesheet_failed_ = false
-			link.fire_event('load')
-		}
-		.icon {
-			link.loaded_icon_ = response.body.clone()
-			link.loaded_icon_url_ = url
-			link.fire_event('load')
-		}
-		.preload {
-			link.preloaded_response_ = response
-			link.fire_event('load')
-		}
-		else {}
+	link.preloaded_response_ = response
+	link.fire_event('load')
+}
+
+pub fn (mut link HTMLLinkElementModel) process_linked_resource(success bool, url dom.URL, response LinkResourceResponse) {
+	if link.has_relation('icon') {
+		link.process_icon_resource(success, url, response.body)
+	} else if link.has_relation('stylesheet') {
+		link.process_stylesheet_resource(success, response)
 	}
+}
+
+pub fn (mut link HTMLLinkElementModel) process_icon_resource(success bool, url dom.URL, body []u8) {
+	if !success {
+		return
+	}
+	link.loaded_icon_ = body.clone()
+	link.loaded_icon_url_ = url
+	if element := link.element_ {
+		mut document := unsafe { &dom.Document(link_dom_element(element).document()) }
+		document.check_favicon_after_loading_link_resource()
+	}
+}
+
+pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succeeded bool, response LinkResourceResponse) {
+	if element := link.element_ {
+		if !link_dom_element(element).document().is_fully_active() {
+			return
+		}
+	}
+	mut success := request_succeeded
+	mime_from_response := ascii_lowercase_string(response.content_type.split(';')[0].trim_space())
+	mime := if link.type_ != '' { ascii_lowercase_string(link.type_) } else { mime_from_response }
+	if mime != '' && mime != 'text/css' {
+		success = false
+	}
+	link.loaded_style_sheet_ = none
+	if success {
+		link.loaded_style_sheet_ = response.body.bytestr()
+		link.stylesheet_failed_ = false
+		link.fire_event('load')
+	} else {
+		link.stylesheet_failed_ = true
+		link.fire_event('error')
+	}
+	link.stylesheet_loading_ = false
+	if element := link.element_ {
+		mut dom_element := link_dom_element(element)
+		mut document := unsafe { &dom.Document(dom_element.document()) }
+		document.script_blocking_style_sheet_set = document.script_blocking_style_sheet_set.filter(voidptr(it) != voidptr(dom_element))
+		dom_element.unblock_rendering()
+	}
+	link.finished_loading_critical_style_subresources(link.stylesheet_failed_)
+}
+
+pub fn (mut link HTMLLinkElementModel) finished_loading_critical_style_subresources(_ bool) {
+	link.document_load_event_delaying_ = false
 }
 
 pub fn (link &HTMLLinkElementModel) sheet() ?string {
@@ -264,20 +538,217 @@ pub fn (link &HTMLLinkElementModel) loaded_icon() ?[]u8 {
 	return link.loaded_icon_
 }
 
+pub fn (link &HTMLLinkElementModel) loaded_icon_url() ?dom.URL {
+	return link.loaded_icon_url_
+}
+
 pub fn (link &HTMLLinkElementModel) preloaded_response() ?LinkResourceResponse {
 	return link.preloaded_response_
 }
 
 pub fn (link &HTMLLinkElementModel) contributes_a_script_blocking_style_sheet() bool {
-	return link.has_relation('stylesheet') && !link.disabled_
-		&& (link.stylesheet_loading_ || (link.parser_inserted_ && link.was_enabled_when_created_))
+	return link.parser_inserted_ && link.was_enabled_when_created_
 }
 
 pub fn (link &HTMLLinkElementModel) is_implicitly_potentially_render_blocking() bool {
-	return link.has_relation('stylesheet') && !link.disabled_ && !link.has_relation('alternate')
+	return link.parser_inserted_
 }
 
 pub fn (mut link HTMLLinkElementModel) removed() {
 	link.connected_ = false
 	link.stylesheet_loading_ = false
+}
+
+pub fn html_link_element_inserted(element &dom.HTMLLinkElement) {
+	mut dom_element := link_dom_element(element)
+	dom_element.inserted()
+	if dom_element.document().get_browsing_context() == none {
+		return
+	}
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	model.connected_ = dom_element.as_node().is_browsing_context_connected()
+	if model.should_fetch_and_process_resource_type() && model.connected_ {
+		model.fetch_and_process_linked_resource()
+	}
+}
+
+pub fn html_link_element_removed_from(element &dom.HTMLLinkElement, old_parent ?&dom.Node, old_root &dom.Node) {
+	mut dom_element := link_dom_element(element)
+	dom_element.removed_from(old_parent, old_root)
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	if model.loaded_style_sheet_ != none {
+		model.loaded_style_sheet_ = none
+		dom_element.unblock_rendering()
+	}
+	model.removed()
+}
+
+pub fn html_link_element_finished_loading_critical_style_subresources(element &dom.HTMLLinkElement, any_failed bool) {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	model.finished_loading_critical_style_subresources(any_failed)
+}
+
+pub fn html_link_element_attribute_changed(element &dom.HTMLLinkElement, name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut dom_element := link_dom_element(element)
+	dom_element.attribute_changed(name, old_value, value, namespace_)
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	if name == 'type' {
+		model.type_ = ascii_lowercase_string(value or { '' })
+		return
+	}
+	old_relations := link_relation_tokens(model.rel_)
+	if name == 'rel' {
+		model.rel_ = value or { '' }
+	}
+	if value == none && name == 'disabled' {
+		model.explicitly_enabled_ = true
+	}
+	match name {
+		'href' {
+			model.href_ = value or { '' }
+		}
+		'media' {
+			model.media_ = value or { '' }
+		}
+		'sizes' {
+			model.sizes_ = value or { '' }
+		}
+		'crossorigin' {
+			model.crossorigin_ = cors_setting_attribute_from_keyword(value)
+		}
+		'integrity' {
+			model.integrity_ = value or { '' }
+		}
+		'as' {
+			model.as_ = ascii_lowercase_string(value or { '' })
+		}
+		'referrerpolicy' {
+			model.referrer_policy_ = ascii_lowercase_string(value or { '' })
+		}
+		'fetchpriority' {
+			model.fetch_priority_ = ascii_lowercase_string(value or { '' })
+		}
+		'disabled' {
+			model.disabled_ = value != none
+		}
+		else {}
+	}
+	if model.has_relation('stylesheet') && model.loaded_style_sheet_ != none {
+		if name == 'disabled' {
+			model.loaded_style_sheet_ = none
+		} else if name == 'media' {
+			// The compact sheet representation stores only decoded CSS; media is
+			// retained independently in model.media_.
+		}
+	}
+	model.connected_ = dom_element.as_node().is_browsing_context_connected()
+	if !model.should_fetch_and_process_resource_type() || !model.connected_ {
+		return
+	}
+	mut should_fetch := name == 'href'
+	if !should_fetch && (model.has_relation('preconnect') || model.has_relation('stylesheet')) {
+		should_fetch = name == 'crossorigin'
+	}
+	if !should_fetch && model.has_relation('preload') {
+		should_fetch = name == 'as'
+	}
+	if !should_fetch && model.has_relation('stylesheet') {
+		should_fetch = name == 'disabled' || 'stylesheet' !in old_relations
+	}
+	if should_fetch {
+		model.fetch_and_process_linked_resource()
+	}
+}
+
+pub fn html_link_element_create_link_options(element &dom.HTMLLinkElement) &LinkProcessingOptions {
+	model := html_link_element_model_for_dom_element(element)
+	return model.create_link_options()
+}
+
+pub fn html_link_element_create_link_request(element &dom.HTMLLinkElement, options &LinkProcessingOptions) ?&LinkRequest {
+	model := html_link_element_model_for_dom_element(element)
+	return model.create_link_request(options)
+}
+
+pub fn html_link_element_default_fetch_and_process_linked_resource(element &dom.HTMLLinkElement) {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	model.default_fetch_and_process_linked_resource()
+}
+
+pub fn html_link_element_fetch_and_process_linked_dns_prefetch_resource(element &dom.HTMLLinkElement) {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	model.fetch_and_process_linked_dns_prefetch_resource()
+}
+
+pub fn html_link_element_fetch_and_process_linked_preconnect_resource(element &dom.HTMLLinkElement) {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	model.fetch_and_process_linked_preconnect_resource()
+}
+
+pub fn html_link_element_fetch_and_process_linked_preload_resource(element &dom.HTMLLinkElement) {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	model.fetch_and_process_linked_preload_resource()
+}
+
+pub fn html_link_element_linked_resource_fetch_setup_steps(element &dom.HTMLLinkElement, mut request LinkRequest) bool {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	return model.linked_resource_fetch_setup_steps(mut request)
+}
+
+pub fn html_link_element_icon_linked_resource_fetch_setup_steps(element &dom.HTMLLinkElement, mut request LinkRequest) bool {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	return model.icon_linked_resource_fetch_setup_steps(mut request)
+}
+
+pub fn html_link_element_stylesheet_linked_resource_fetch_setup_steps(element &dom.HTMLLinkElement, mut request LinkRequest) bool {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	return model.stylesheet_linked_resource_fetch_setup_steps(mut request)
+}
+
+pub fn html_link_element_preconnect(element &dom.HTMLLinkElement, options &LinkProcessingOptions) {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	model.preconnect(options)
+}
+
+pub fn html_link_element_preload(element &dom.HTMLLinkElement, mut options LinkProcessingOptions) {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	model.preload(mut options)
+}
+
+pub fn html_link_element_process_icon_resource(element &dom.HTMLLinkElement, success bool, url dom.URL, body []u8) {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	model.process_icon_resource(success, url, body)
+}
+
+pub fn html_link_element_process_stylesheet_resource(element &dom.HTMLLinkElement, success bool, response LinkResourceResponse) {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	model.process_stylesheet_resource(success, response)
+}
+
+pub fn html_link_element_load_favicon_and_use_if_window_is_active(element &dom.HTMLLinkElement) bool {
+	model := html_link_element_model_for_dom_element(element)
+	data := model.loaded_icon() or { return false }
+	url := model.loaded_icon_url() or { return false }
+	return decode_favicon(data, url, link_dom_element(element).document()) or { false }
+}
+
+pub fn set_link_favicon_decode_hook(hook LinkFaviconDecodeHook) {
+	link_favicon_decode_hook = hook
+}
+
+pub fn set_link_fallback_favicon_fetch_hook(hook LinkResourceFetchHook) {
+	link_fallback_favicon_fetch_hook = hook
+}
+
+pub fn html_link_element_load_fallback_favicon_if_needed(document &dom.Document) {
+	document_url := dom.URL{ value: document.url_string() }
+	if document.has_active_favicon() || document_url.scheme() !in ['http', 'https'] {
+		return
+	}
+	url := dom.dom_url_parse('/favicon.ico', document_url, document.encoding_or_default()) or {
+		return
+	}
+	if link_fallback_favicon_fetch_hook != unsafe { nil } {
+		link_fallback_favicon_fetch_hook(url, .icon, .use_credentials) or { return }
+	}
 }

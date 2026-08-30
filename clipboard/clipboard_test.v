@@ -20,6 +20,18 @@ fn test_well_known_clipboard_formats_use_mime_essence() {
 	assert os_specific_well_known_format('invalid') == ''
 }
 
+fn test_write_blobs_and_option_to_clipboard_decodes_utf8_and_preserves_native_formats() {
+	text := fileapi.Blob.create([u8(0x66), 0x6f, 0x80], 'text/plain;charset=utf-8')
+	image := fileapi.Blob.create([u8(0xc2), 0xa9], 'image/png')
+	native_write := write_blobs_and_option_to_clipboard([text, image], 'attachment')
+	assert native_write.presentation_style == 'attachment'
+	assert native_write.item.system_clipboard_representations.len == 2
+	assert native_write.item.system_clipboard_representations[0].mime_type == 'text/plain'
+	assert native_write.item.system_clipboard_representations[0].data.bytestr() == 'fo�'
+	assert native_write.item.system_clipboard_representations[1].mime_type == 'image/png'
+	assert native_write.item.system_clipboard_representations[1].data.bytestr() == '©'
+}
+
 fn test_clipboard_operations_require_transient_activation() {
 	mut event_loop := html.EventLoop.create(.window)
 	backend := SystemClipboardBackend.create()
@@ -66,11 +78,11 @@ fn test_clipboard_read_builds_items_and_ignores_unknown_native_formats() {
 		SystemClipboardItem{
 			system_clipboard_representations: [
 				SystemClipboardRepresentation{
-					data:      '<b>hello</b>'.bytes()
+					data: '<b>hello</b>'.bytes()
 					mime_type: 'text/html;charset=utf-8'
 				},
 				SystemClipboardRepresentation{
-					data:      '{"ignored":true}'.bytes()
+					data: '{"ignored":true}'.bytes()
 					mime_type: 'application/json'
 				},
 			]
@@ -78,7 +90,7 @@ fn test_clipboard_read_builds_items_and_ignores_unknown_native_formats() {
 		SystemClipboardItem{
 			system_clipboard_representations: [
 				SystemClipboardRepresentation{
-					data:      [u8(137), 80, 78, 71]
+					data: [u8(137), 80, 78, 71]
 					mime_type: 'image/png'
 				},
 			]
@@ -108,12 +120,11 @@ fn test_clipboard_write_serializes_supported_representations_and_styles() {
 	item := ClipboardItem.construct_impl([
 		ClipboardItemInput{
 			type_: 'text/plain'
-			data:  ClipboardItemDataPromise.resolved_string('plain')
+			data: ClipboardItemDataPromise.resolved_string('plain')
 		},
 		ClipboardItemInput{
 			type_: 'text/html'
-			data:  ClipboardItemDataPromise.resolved_blob(fileapi.Blob.create('<i>html</i>'.bytes(),
-				'text/html'))
+			data: ClipboardItemDataPromise.resolved_blob(fileapi.Blob.create('<i>html</i>'.bytes(), 'text/html'))
 		},
 	], ClipboardItemOptions{
 		presentation_style: .attachment
@@ -140,7 +151,7 @@ fn test_clipboard_write_waits_for_pending_representation_data() {
 	item := ClipboardItem.construct_impl([
 		ClipboardItemInput{
 			type_: 'text/plain'
-			data:  data
+			data: data
 		},
 	], ClipboardItemOptions{}) or { panic(err) }
 	write := board.write([item])
@@ -162,7 +173,7 @@ fn test_clipboard_write_rejects_rejected_data_and_unsupported_types() {
 	rejected_item := ClipboardItem.construct_impl([
 		ClipboardItemInput{
 			type_: 'text/plain'
-			data:  ClipboardItemDataPromise.rejected('producer failed')
+			data: ClipboardItemDataPromise.rejected('producer failed')
 		},
 	], ClipboardItemOptions{}) or { panic(err) }
 	rejected_write := board.write([rejected_item])
@@ -173,7 +184,7 @@ fn test_clipboard_write_rejects_rejected_data_and_unsupported_types() {
 	unsupported_item := ClipboardItem.construct_impl([
 		ClipboardItemInput{
 			type_: 'application/json'
-			data:  ClipboardItemDataPromise.resolved_string('{}')
+			data: ClipboardItemDataPromise.resolved_string('{}')
 		},
 	], ClipboardItemOptions{}) or { panic(err) }
 	unsupported_write := board.write([unsupported_item])

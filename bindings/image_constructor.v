@@ -28,6 +28,10 @@ pub fn (_ &ImageConstructor) metadata() ConstructorMetadata {
 	}
 }
 
+pub fn (_ &ImageConstructor) has_constructor() bool {
+	return true
+}
+
 pub fn (_ &ImageConstructor) call() !dom.JSValue {
 	return error("TypeError: Constructor Image requires 'new'")
 }

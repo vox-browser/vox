@@ -2,12 +2,22 @@ module urlpattern
 
 fn test_absolute_string_pattern_and_component_accessors() {
 	pattern :=
-		URLPattern.new(URLPatternInput('https://*.example.com/books/*'), none, URLPatternOptions{})!
+		URLPattern.construct_impl(URLPatternInput('https://*.example.com/books/*'), none, URLPatternOptions{})!
 	assert pattern.protocol() == 'https'
 	assert pattern.hostname() == '*.example.com'
 	assert pattern.pathname() == '/books/*'
 	assert pattern.test(URLPatternInput('https://api.example.com/books/42'), none)!
 	assert !pattern.test(URLPatternInput('http://api.example.com/books/42'), none)!
+}
+
+fn test_create_and_constructor_share_the_initialize_algorithm() {
+	created := URLPattern.create(URLPatternInput('/items/:id'), 'https://example.test',
+		URLPatternOptions{})!
+	constructed := URLPattern.new(URLPatternInput('/items/:id'), 'https://example.test',
+		URLPatternOptions{})!
+	assert created.protocol() == constructed.protocol()
+	assert created.hostname() == constructed.hostname()
+	assert created.pathname() == constructed.pathname()
 }
 
 fn test_named_path_groups_and_base_url() {

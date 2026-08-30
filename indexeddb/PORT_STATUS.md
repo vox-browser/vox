@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/IndexedDB`
 
 Translation workspace: `~/code/libweb_v/indexeddb`
-Audited: 2026-08-16
+Audited: 2026-08-29
 
 All 18 upstream IndexedDB `.cpp` implementation units have an audited V
 implementation mapping. The companion headers and all 12 IDL files are
@@ -54,9 +54,15 @@ represented by typed V APIs.
 | `Internal/ObjectStore.h` | `records.v` |
 | `Internal/RequestList.h` | `request_list.v` |
 
+The upstream inline accessor surfaces and shared algorithms are implemented in
+`upstream_object_entry_points.v`, `upstream_handle_entry_points.v`,
+`upstream_internal_entry_points.v`, and `upstream_algorithm_entry_points.v`.
+The internal C++ `Database`, `ObjectStore`, and `Index` classes map to the V
+`DatabaseData`, `ObjectStoreData`, and `IndexData` records respectively.
+
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `IndexedDB/` | 18 | 6,449 | 2,362 | 523 | Complete |
+| `IndexedDB/` | 18 | 6,449 | 3,979 | 622 | Complete |
 
 The V implementation covers IndexedDB key construction and total ordering,
 key/value conversion, compound and dotted key paths, generated-key injection,
@@ -71,6 +77,13 @@ ordering for keys and schema names, string/array `length` key paths,
 multi-entry conversion that skips invalid array members, cursor source/state
 validation and `continuePrimaryKey` ordering, direct-versionchange rejection,
 live-upgrade transaction exclusion, and rollback of newly created databases.
+Internal mutation logs retain inverse record, index, schema-name, and key
+generator operations, including per-request rollback from a saved log
+position. Connection registries and transaction-local handle caches preserve
+database and handle identity at the standalone runtime boundary.
+
+The symbol audit covers 425 upstream implementation entries with zero
+unmatched symbols.
 
 `IDBFactory` is also the explicit storage-key/backend boundary. Its database
 catalog is deliberately in memory, rather than being persisted by a browser
@@ -88,11 +101,8 @@ the work normally performed inside the asynchronous `upgradeneeded` callback.
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v test indexeddb
-Summary for all V _test.v files: 4 passed, 4 total.
-
-$ /Users/alex/code/v/v fmt -verify indexeddb
-(no output; exit status 0)
+$ /Users/alex/code/v/v_old -enable-globals test indexeddb
+Summary for all V _test.v files: 5 passed, 5 total.
 
 $ git diff --check -- indexeddb
 (no output; exit status 0)

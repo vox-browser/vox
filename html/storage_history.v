@@ -89,6 +89,10 @@ pub fn Storage.create(type_ StorageType, bottle &StorageBottle, mut hub StorageH
 	return storage
 }
 
+pub fn (storage &Storage) type_() StorageType {
+	return storage.type_
+}
+
 pub fn (storage &Storage) length() usize {
 	return usize(storage.storage_bottle.keys.len)
 }
@@ -169,6 +173,19 @@ pub fn (storage &Storage) supported_property_names() []string {
 
 pub fn (storage &Storage) named_item_value(name string) dom.JSValue {
 	return if value := storage.get_item(name) { dom.js_string(value) } else { dom.js_undefined() }
+}
+
+pub fn (mut storage Storage) reorder() {
+	// The specification deliberately leaves the resulting order
+	// implementation-defined, so retaining insertion order is conforming.
+}
+
+pub fn (storage &Storage) dump() {
+	eprintln('Storage (${storage.storage_bottle.keys.len} key(s))')
+	for index, key in storage.storage_bottle.keys {
+		value := storage.storage_bottle.entries[key]
+		eprintln('[${index}] "${key}": "${value}"')
+	}
 }
 
 pub fn (mut storage Storage) set_value_of_named_property(key string, value dom.JSValue) ! {
@@ -358,7 +375,7 @@ pub fn (mut history History) replace_state(data dom.JSValue, unused string, url 
 	history.shared_history_push_replace_state(data, url, .replace)!
 }
 
-pub fn (mut history History) go(delta int) ! {
+pub fn (mut history History) delta_traverse(delta int) ! {
 	history.require_fully_active('go')!
 	if delta == 0 {
 		history.last_traversal_ = HistoryTraversalRecord{
@@ -379,6 +396,10 @@ pub fn (mut history History) go(delta int) ! {
 		action: .traverse
 		delta:  delta
 	}
+}
+
+pub fn (mut history History) go(delta int) ! {
+	history.delta_traverse(delta)!
 }
 
 pub fn (mut history History) back() ! {

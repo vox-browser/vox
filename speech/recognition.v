@@ -20,6 +20,10 @@ mut:
 }
 
 pub fn SpeechRecognition.new() &SpeechRecognition {
+	return SpeechRecognition.construct_impl()
+}
+
+pub fn SpeechRecognition.construct_impl() &SpeechRecognition {
 	return &SpeechRecognition{
 		EventTarget: dom.EventTarget{}
 		grammars_:   SpeechGrammarList.new()
@@ -180,6 +184,14 @@ mut:
 }
 
 pub fn SpeechRecognitionEvent.new(event_name string, init SpeechRecognitionEventInit) &SpeechRecognitionEvent {
+	return SpeechRecognitionEvent.construct_impl(event_name, init)
+}
+
+pub fn SpeechRecognitionEvent.construct_impl(event_name string, init SpeechRecognitionEventInit) &SpeechRecognitionEvent {
+	return SpeechRecognitionEvent.create(event_name, init)
+}
+
+pub fn SpeechRecognitionEvent.create(event_name string, init SpeechRecognitionEventInit) &SpeechRecognitionEvent {
 	base := dom.Event.new_with_init(event_name, dom.EventInit{
 		bubbles:    init.bubbles
 		cancelable: init.cancelable
@@ -210,6 +222,10 @@ mut:
 }
 
 pub fn SpeechRecognitionPhrase.new(phrase string, boost f32) &SpeechRecognitionPhrase {
+	return SpeechRecognitionPhrase.construct_impl(phrase, boost)
+}
+
+pub fn SpeechRecognitionPhrase.construct_impl(phrase string, boost f32) &SpeechRecognitionPhrase {
 	return &SpeechRecognitionPhrase{
 		phrase_: phrase
 		boost_:  boost
@@ -217,7 +233,7 @@ pub fn SpeechRecognitionPhrase.new(phrase string, boost f32) &SpeechRecognitionP
 }
 
 pub fn SpeechRecognitionPhrase.new_with_default_boost(phrase string) &SpeechRecognitionPhrase {
-	return SpeechRecognitionPhrase.new(phrase, 1)
+	return SpeechRecognitionPhrase.construct_impl(phrase, 1)
 }
 
 pub fn (recognition_phrase &SpeechRecognitionPhrase) phrase() string {

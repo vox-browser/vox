@@ -38,6 +38,12 @@ pub fn (flags SandboxingFlagSet) is_empty() bool {
 	return flags.bits & 0x1ff == 0
 }
 
+pub fn (flags SandboxingFlagSet) union(other SandboxingFlagSet) SandboxingFlagSet {
+	return SandboxingFlagSet{
+		bits: flags.bits | other.bits
+	}
+}
+
 fn (mut flags SandboxingFlagSet) add(flag SandboxingFlag) {
 	flags = SandboxingFlagSet{
 		bits: flags.bits | u32(flag)
@@ -54,13 +60,11 @@ pub fn parse_a_sandboxing_directive(input SandboxingDirective) SandboxingFlagSet
 			lowercase_input := ascii_lowercase_string(input)
 			mut position := 0
 			for position < lowercase_input.len {
-				for position < lowercase_input.len
-					&& is_number_ascii_whitespace(lowercase_input[position]) {
+				for position < lowercase_input.len && is_number_ascii_whitespace(lowercase_input[position]) {
 					position++
 				}
 				start := position
-				for position < lowercase_input.len
-					&& !is_number_ascii_whitespace(lowercase_input[position]) {
+				for position < lowercase_input.len && !is_number_ascii_whitespace(lowercase_input[position]) {
 					position++
 				}
 				if start < position {
@@ -115,8 +119,7 @@ pub fn parse_a_sandboxing_directive(input SandboxingDirective) SandboxingFlagSet
 	if 'allow-downloads' !in tokens {
 		output.add(.sandboxed_downloads)
 	}
-	if 'allow-top-navigation-to-custom-protocols' !in tokens && 'allow-popups' !in tokens
-		&& 'allow-top-navigation' !in tokens {
+	if 'allow-top-navigation-to-custom-protocols' !in tokens && 'allow-popups' !in tokens && 'allow-top-navigation' !in tokens {
 		output.add(.sandboxed_custom_protocols)
 	}
 	return output

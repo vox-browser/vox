@@ -19,7 +19,7 @@ fn test_compile_instantiate_and_streaming_mime_boundary() {
 	}
 	source := instantiate(webidl.BufferSource.array_buffer(bytes), imports)!
 	assert source.module.exports().len == 1
-	assert source.instance.exports['f'].kind == .function_
+	assert source.instance.exports()['f'].kind == .function_
 	streamed := compile_streaming(StreamingResponse{
 		content_type: 'application/wasm; charset=binary'
 		body:         bytes

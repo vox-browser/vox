@@ -1,6 +1,7 @@
 module html
 
 import dom
+import encoding
 
 // Public identifier prefixes which select quirks mode. Kept in the same order as
 // HTMLParser.cpp's s_quirks_public_ids.
@@ -40,10 +41,9 @@ const quirks_public_id_prefixes = ['+//Silmaril//dtd html Pro v0r11 19970101//',
 // stage that turns tokens into a DOM tree.
 //
 // This covers the tree-construction insertion modes, foster parenting, template contents, foreign
-// (SVG/MathML) content, active formatting elements, and the adoption agency algorithm. Script
-// execution, declarative shadow roots, parser-created custom-element reactions, and form association
-// still depend on HTML subsystems that have not reached this translation yet.
-
+// (SVG/MathML) content, active formatting elements, the adoption agency algorithm, parser-inserted
+// script preparation, and declarative shadow roots. JavaScript evaluation and network fetching are
+// explicit host hooks, as they are owned by LibJS and Fetch rather than the HTML parser.
 pub enum InsertionMode {
 	initial
 	before_html
@@ -74,9 +74,11 @@ pub:
 	insert_before_sibling ?&dom.Node
 }
 
+@[heap]
 pub struct HTMLParser {
 pub mut:
-	document                           &dom.Document = unsafe { nil }
+	document_                          &dom.Document = unsafe { nil }
+	realm_                             &ScriptingRealm = unsafe { nil }
 	tokenizer                          HTMLTokenizer
 	insertion_mode                     InsertionMode = .initial
 	original_insertion_mode            InsertionMode = .initial
@@ -95,6 +97,10 @@ pub mut:
 	stop_parsing                  bool
 	aborted                       bool
 	context_element               ?&dom.Element
+	script_nesting_level          usize
+	script_models                 map[i64]&HTMLScriptElementModel
+	script_fetch_hook             ?ScriptElementFetchHook
+	script_execute_hook           ?ScriptElementExecuteHook
 
 	character_insertion_node    ?&dom.Text
 	character_insertion_builder []rune
@@ -107,10 +113,143 @@ pub mut:
 pub fn HTMLParser.create(document &dom.Document, input string) &HTMLParser {
 	mut doc := document
 	doc.set_document_type(.html)
-	return &HTMLParser{
-		document:  document
-		tokenizer: HTMLTokenizer.new(input)
+	realm := &ScriptingRealm{
+		scripting_enabled: unsafe { &dom.Node(document) }.is_scripting_enabled()
 	}
+	mut parser := &HTMLParser{
+		document_: document
+		realm_: realm
+		tokenizer: HTMLTokenizer.new(input)
+		scripting_enabled: realm.scripting_enabled
+	}
+	parser.tokenizer.set_parser(parser)
+	parser.stack_of_open_elements.set_on_element_popped(fn [parser] (element &dom.Element) {
+		mut mutable_parser := unsafe { &HTMLParser(parser) }
+		mutable_parser.handle_element_popped(element)
+	})
+	return parser
+}
+
+// HTMLParser::document().
+pub fn (p &HTMLParser) document() &dom.Document {
+	return p.document_
+}
+
+pub fn (mut p HTMLParser) tokenizer() &HTMLTokenizer {
+	return &p.tokenizer
+}
+
+pub fn (p &HTMLParser) aborted() bool {
+	return p.aborted
+}
+
+pub fn (p &HTMLParser) stopped() bool {
+	return p.stop_parsing
+}
+
+fn (mut p HTMLParser) stop_parsing() {
+	p.stop_parsing = true
+}
+
+// HTMLParser::realm(). LibJS is represented by ScriptingRealm in this port;
+// the parser retains the same realm for its complete lifetime.
+pub fn (p &HTMLParser) realm() &ScriptingRealm {
+	return p.realm_
+}
+
+// HTMLParser::create_for_scripting(). Input is supplied later through the
+// tokenizer's insertion point by Document.write().
+pub fn HTMLParser.create_for_scripting(document &dom.Document) &HTMLParser {
+	return HTMLParser.create(document, '')
+}
+
+// HTMLParser::create_with_uncertain_encoding().
+pub fn HTMLParser.create_with_uncertain_encoding(document &dom.Document, input []u8, transport_encoding ?string) !&HTMLParser {
+	encoding_name := if document_encoding := document.get_encoding() {
+		document_encoding
+	} else {
+		run_html_encoding_sniffing_algorithm(input, transport_encoding)
+	}
+	return HTMLParser.create_from_bytes(document, input, encoding_name)!
+}
+
+// Byte-input counterpart of HTMLParser::create(document, input, encoding).
+pub fn HTMLParser.create_from_bytes(document &dom.Document, input []u8, encoding_name string) !&HTMLParser {
+	decoder := encoding.TextDecoder.construct(encoding_name, encoding.TextDecoderOptions{})!
+	decoded_input := decoder.decode(input, encoding.TextDecodeOptions{})!
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_encoding(encoding_name)
+	return HTMLParser.create(document, decoded_input)
+}
+
+pub fn (mut p HTMLParser) set_script_hooks(fetch ?ScriptElementFetchHook, execute ?ScriptElementExecuteHook) {
+	p.script_fetch_hook = fetch
+	p.script_execute_hook = execute
+}
+
+pub fn (p &HTMLParser) current_script_nesting_level() usize {
+	return p.script_nesting_level
+}
+
+fn (p &HTMLParser) insertion_mode_name() string {
+	return match p.insertion_mode {
+		.initial { 'Initial' }
+		.before_html { 'BeforeHTML' }
+		.before_head { 'BeforeHead' }
+		.in_head { 'InHead' }
+		.in_head_noscript { 'InHeadNoscript' }
+		.after_head { 'AfterHead' }
+		.in_body { 'InBody' }
+		.text { 'Text' }
+		.in_table { 'InTable' }
+		.in_table_text { 'InTableText' }
+		.in_caption { 'InCaption' }
+		.in_column_group { 'InColumnGroup' }
+		.in_table_body { 'InTableBody' }
+		.in_row { 'InRow' }
+		.in_cell { 'InCell' }
+		.in_template { 'InTemplate' }
+		.after_body { 'AfterBody' }
+		.in_frameset { 'InFrameset' }
+		.after_frameset { 'AfterFrameset' }
+		.after_after_body { 'AfterAfterBody' }
+		.after_after_frameset { 'AfterAfterFrameset' }
+	}
+}
+
+fn (mut p HTMLParser) increment_script_nesting_level() {
+	p.script_nesting_level++
+}
+
+fn (mut p HTMLParser) decrement_script_nesting_level() {
+	assert p.script_nesting_level > 0
+	p.script_nesting_level--
+}
+
+fn (mut p HTMLParser) register_parser_inserted_script(element &dom.Element, token &HTMLToken) {
+	mut script := HTMLScriptElementModel.create(p.document_.base_url())
+	script.element_ = unsafe { &dom.HTMLScriptElement(element) }
+	mut script_element := unsafe { &dom.HTMLScriptElement(element) }
+	script_element.script_element_model_ = voidptr(script)
+	script.set_parser_document(p.document_)
+	script.set_scripting_enabled(p.scripting_enabled)
+	script.set_src(token.attribute('src'))
+	script.set_type(token.attribute('type'))
+	script.set_language(token.attribute('language'))
+	script.set_async(token.has_attribute('async'))
+	script.set_nomodule(token.has_attribute('nomodule'))
+	script.set_fetch_hook(p.script_fetch_hook)
+	script.set_execute_hook(p.script_execute_hook)
+	p.script_models[element.as_node().unique_id().value()] = script
+}
+
+fn (mut p HTMLParser) prepare_and_execute_parser_inserted_script(element &dom.Element) {
+	mut script := p.script_models[element.as_node().unique_id().value()] or { return }
+	script.set_text(element.as_node().descendant_text_content())
+	p.increment_script_nesting_level()
+	script.prepare_script(p.document_)
+	script.parser_execute_ready_script()
+	p.decrement_script_nesting_level()
 }
 
 fn same_node(a &dom.Node, b &dom.Node) bool {
@@ -122,11 +261,18 @@ fn node_as_text(n &dom.Node) &dom.Text {
 }
 
 // ===== the run loop =====
-
 pub fn (mut p HTMLParser) run() {
+	p.run_with_stop_at_insertion_point(.no)
+}
+
+pub fn (mut p HTMLParser) run_until_insertion_point() {
+	p.run_with_stop_at_insertion_point(.yes)
+}
+
+fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point StopAtInsertionPoint) {
 	p.stop_parsing = false
 	for {
-		mut token := p.tokenizer.next_token() or { break }
+		mut token := p.tokenizer.next_token_impl(stop_at_insertion_point) or { break }
 
 		if p.next_line_feed_can_be_ignored {
 			p.next_line_feed_can_be_ignored = false
@@ -150,6 +296,63 @@ pub fn (mut p HTMLParser) run() {
 		}
 	}
 	p.flush_character_insertions()
+	p.tokenizer.parser_did_run()
+	if stop_at_insertion_point == .no && p.document_.allow_declarative_shadow_roots() {
+		materialize_declarative_shadow_roots(unsafe { &dom.Node(p.document_) })
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#abort-a-parser
+pub fn (mut p HTMLParser) abort() {
+	p.aborted = true
+	p.stop_parsing = true
+	p.tokenizer.abort()
+}
+
+// The tree-construction rules parse a template's contents into its inert
+// DocumentFragment. Once parsing is complete, materialize declarative shadow
+// roots by attaching that fragment to the template's parent and removing the
+// template element. Processing the fragment first also handles nested roots.
+fn materialize_declarative_shadow_roots(node &dom.Node) {
+	for child in node.children_as_vector() {
+		if element := child.as_element() {
+			if element.local_name() == 'template' {
+				template := unsafe { &dom.HTMLTemplateElement(element) }
+				materialize_declarative_shadow_roots(template.content().as_node())
+			} else {
+				materialize_declarative_shadow_roots(child)
+			}
+			if shadow_root := element.shadow_root() {
+				materialize_declarative_shadow_roots(unsafe { &dom.Node(shadow_root) })
+			}
+		} else {
+			materialize_declarative_shadow_roots(child)
+		}
+	}
+	for child in node.children_as_vector() {
+		template_element := child.as_element() or { continue }
+		if template_element.local_name() != 'template' {
+			continue
+		}
+		mode_name := template_element.get_attribute_value('shadowrootmode').to_lower()
+		if mode_name !in ['open', 'closed'] {
+			continue
+		}
+		mut host := node.as_element() or { continue }
+		mode := if mode_name == 'closed' { dom.ShadowRootMode.closed } else { .open }
+		host.attach_a_shadow_root(mode, template_element.has_attribute('shadowrootclonable'), template_element.has_attribute('shadowrootserializable'), template_element.has_attribute('shadowrootdelegatesfocus'), .named) or { continue }
+		mut shadow_root := host.shadow_root() or { continue }
+		shadow_root.set_declarative(true)
+		template := unsafe { &dom.HTMLTemplateElement(template_element) }
+		mut content := template.content().as_node()
+		mut shadow_node := unsafe { &dom.Node(shadow_root) }
+		for content_child in content.children_as_vector() {
+			moved := content.remove_child(content_child) or { continue }
+			shadow_node.append_child(moved) or {}
+		}
+		mut host_node := host.as_node()
+		host_node.remove_child(template_element.as_node()) or {}
+	}
 }
 
 fn (mut p HTMLParser) process_using_the_rules_for(mode InsertionMode, mut token HTMLToken) {
@@ -179,7 +382,6 @@ fn (mut p HTMLParser) process_using_the_rules_for(mode InsertionMode, mut token 
 }
 
 // ===== tree-building primitives =====
-
 fn (p &HTMLParser) current_node() ?&dom.Element {
 	if p.stack_of_open_elements.is_empty() {
 		return none
@@ -194,11 +396,18 @@ fn (p &HTMLParser) adjusted_current_node() ?&dom.Element {
 	return p.current_node()
 }
 
+fn (p &HTMLParser) node_before_current_node() ?&dom.Element {
+	if p.stack_of_open_elements.elements.len < 2 {
+		return none
+	}
+	return p.stack_of_open_elements.elements[p.stack_of_open_elements.elements.len - 2]
+}
+
 // https://html.spec.whatwg.org/multipage/parsing.html#appropriate-place-for-inserting-a-node
 fn (mut p HTMLParser) find_appropriate_place_for_inserting_node_with_override(override_target ?&dom.Element) AdjustedInsertionLocation {
 	target := override_target or { p.current_node() or { return AdjustedInsertionLocation{} } }
 	mut location := AdjustedInsertionLocation{
-		parent:                target.as_node()
+		parent: target.as_node()
 		insert_before_sibling: none
 	}
 	if p.foster_parenting && target.local_name() in ['table', 'tbody', 'tfoot', 'thead', 'tr'] {
@@ -208,7 +417,7 @@ fn (mut p HTMLParser) find_appropriate_place_for_inserting_node_with_override(ov
 			if last_table.element == none || last_template.index > last_table.index {
 				template_element := unsafe { &dom.HTMLTemplateElement(template) }
 				return AdjustedInsertionLocation{
-					parent:                template_element.content().as_node()
+					parent: template_element.content().as_node()
 					insert_before_sibling: none
 				}
 			}
@@ -217,20 +426,20 @@ fn (mut p HTMLParser) find_appropriate_place_for_inserting_node_with_override(ov
 			if parent := lt.as_node().parent_node() {
 				// If last table has a parent node, insert immediately before last table.
 				location = AdjustedInsertionLocation{
-					parent:                parent
+					parent: parent
 					insert_before_sibling: lt.as_node()
 				}
 			} else if previous_element := p.stack_of_open_elements.element_immediately_above(lt) {
 				// Otherwise, inside the element immediately above last table.
 				location = AdjustedInsertionLocation{
-					parent:                previous_element.as_node()
+					parent: previous_element.as_node()
 					insert_before_sibling: none
 				}
 			}
 		} else {
 			// No last table (fragment case): inside the first element, after its last child.
 			location = AdjustedInsertionLocation{
-				parent:                p.stack_of_open_elements.first().as_node()
+				parent: p.stack_of_open_elements.first().as_node()
 				insert_before_sibling: none
 			}
 		}
@@ -241,7 +450,7 @@ fn (mut p HTMLParser) find_appropriate_place_for_inserting_node_with_override(ov
 			if element_in_namespace(el, ns_html) && el.local_name() == 'template' {
 				template_element := unsafe { &dom.HTMLTemplateElement(el) }
 				return AdjustedInsertionLocation{
-					parent:                template_element.content().as_node()
+					parent: template_element.content().as_node()
 					insert_before_sibling: none
 				}
 			}
@@ -255,7 +464,6 @@ fn (mut p HTMLParser) find_appropriate_place_for_inserting_node() AdjustedInsert
 }
 
 // ===== table-context stack helpers =====
-
 fn (mut p HTMLParser) clear_the_stack_back_to_a_table_context() {
 	for {
 		cn := p.current_node() or { break }
@@ -377,23 +585,37 @@ fn (mut p HTMLParser) reset_the_insertion_mode_appropriately() {
 
 // https://html.spec.whatwg.org/multipage/parsing.html#create-an-element-for-the-token
 fn (mut p HTMLParser) create_element_for(token &HTMLToken, namespace_ ?string, intended_parent &dom.Node) &dom.Element {
-	// FIXME: the C++ uses intendedParent only to find the node document; here it is always p.document.
-	_ = intended_parent
+	// Steps 1-2 concern the optional speculative parser. This parser is the
+	// active tree builder, so there is no speculative mock-element branch.
+	document := intended_parent.document()
 	local_name := token.tag_name
 	is_value := token.attribute('is')
-	mut element := dom.create_element(p.document, local_name, namespace_, none, is_value, false) or {
+	definition := document.lookup_custom_element_definition(namespace_, local_name, is_value)
+	will_execute_script := definition != none && !p.parsing_fragment
+	mut mutable_document := unsafe { &dom.Document(document) }
+	if will_execute_script {
+		mutable_document.increment_throw_on_dynamic_markup_insertion_counter()
+	}
+	mut element := dom.create_element(document, local_name, namespace_, none, is_value, will_execute_script) or {
+		if will_execute_script {
+			mutable_document.decrement_throw_on_dynamic_markup_insertion_counter()
+		}
 		panic('create_element_for(${local_name}): ${err}')
 	}
-	// Append each attribute in the token to element. Foreign-content attributes carry a prefix and
-	// namespace (from adjust_foreign_attributes). (FIXME: form association, custom elements, and
-	// speculative parsing are not handled.)
+	if token.had_duplicate_attribute {
+		element.set_had_duplicate_attribute_during_tokenization()
+	}
+	// Append each attribute in the token to element. Foreign-content attributes
+	// carry a prefix and namespace from adjust_foreign_attributes().
 	for attribute in token.attributes {
 		if attribute.prefix != none || attribute.namespace_ != none {
-			element.set_attribute_value_ns(attribute.local_name, attribute.value, attribute.prefix,
-				attribute.namespace_)
+			element.set_attribute_value_ns(attribute.local_name, attribute.value, attribute.prefix, attribute.namespace_)
 		} else if !element.has_attribute(attribute.local_name) {
 			element.set_attribute_value(attribute.local_name, attribute.value)
 		}
+	}
+	if will_execute_script {
+		mutable_document.decrement_throw_on_dynamic_markup_insertion_counter()
 	}
 	return element
 }
@@ -424,7 +646,7 @@ fn (mut p HTMLParser) insert_an_element_at_the_adjusted_insertion_location(eleme
 fn (mut p HTMLParser) insert_comment(token &HTMLToken) {
 	location := p.find_appropriate_place_for_inserting_node()
 	mut parent := location.parent or { return }
-	comment := p.document.create_comment(token.comment())
+	comment := p.document_.create_comment(token.comment())
 	parent.insert_before(comment.as_node(), location.insert_before_sibling, false)
 }
 
@@ -437,7 +659,7 @@ fn (mut p HTMLParser) find_character_insertion_node() ?&dom.Text {
 				return node_as_text(prev)
 			}
 		}
-		new_text := p.document.create_text_node('')
+		new_text := p.document_.create_text_node('')
 		parent.insert_before(new_text.as_node(), sibling, false)
 		return new_text
 	}
@@ -449,7 +671,7 @@ fn (mut p HTMLParser) find_character_insertion_node() ?&dom.Text {
 			return node_as_text(last)
 		}
 	}
-	mut new_text := p.document.create_text_node('')
+	mut new_text := p.document_.create_text_node('')
 	parent.append_child(new_text.as_node()) or {}
 	return new_text
 }
@@ -472,6 +694,17 @@ fn (mut p HTMLParser) flush_character_insertions() {
 	p.character_insertion_builder = []
 }
 
+fn (mut p HTMLParser) handle_element_popped(element &dom.Element) {
+	// An option's buffered text must be visible before the selectedcontent
+	// cloning algorithm observes it.
+	if element_in_namespace(element, ns_html) && element.local_name() == 'option' {
+		p.flush_character_insertions()
+		html_option_element_maybe_clone_into_selectedcontent(unsafe {
+			&dom.HTMLOptionElement(element)
+		}) or {}
+	}
+}
+
 fn (mut p HTMLParser) insert_character(data rune) {
 	node := p.find_character_insertion_node() or { return }
 	if cin := p.character_insertion_node {
@@ -489,7 +722,6 @@ fn (mut p HTMLParser) insert_character(data rune) {
 }
 
 // ===== implied end tags / p closing =====
-
 const implied_end_tag_names = ['dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc']
 
 fn (mut p HTMLParser) generate_implied_end_tags(exception string) {
@@ -599,18 +831,13 @@ fn (p &HTMLParser) which_quirks_mode(token &HTMLToken) dom.QuirksMode {
 			return .yes
 		}
 	}
-	if token.doctype.missing_system_identifier
-		&& (public_identifier.starts_with('-//w3c//dtd html 4.01 frameset//')
-		|| public_identifier.starts_with('-//w3c//dtd html 4.01 transitional//')) {
+	if token.doctype.missing_system_identifier && (public_identifier.starts_with('-//w3c//dtd html 4.01 frameset//') || public_identifier.starts_with('-//w3c//dtd html 4.01 transitional//')) {
 		return .yes
 	}
-	if public_identifier.starts_with('-//w3c//dtd xhtml 1.0 frameset//')
-		|| public_identifier.starts_with('-//w3c//dtd xhtml 1.0 transitional//') {
+	if public_identifier.starts_with('-//w3c//dtd xhtml 1.0 frameset//') || public_identifier.starts_with('-//w3c//dtd xhtml 1.0 transitional//') {
 		return .limited
 	}
-	if !token.doctype.missing_system_identifier
-		&& (public_identifier.starts_with('-//w3c//dtd html 4.01 frameset//')
-		|| public_identifier.starts_with('-//w3c//dtd html 4.01 transitional//')) {
+	if !token.doctype.missing_system_identifier && (public_identifier.starts_with('-//w3c//dtd html 4.01 frameset//') || public_identifier.starts_with('-//w3c//dtd html 4.01 transitional//')) {
 		return .limited
 	}
 	return .no
@@ -618,7 +845,6 @@ fn (p &HTMLParser) which_quirks_mode(token &HTMLToken) dom.QuirksMode {
 
 // ===== adoption agency algorithm =====
 // https://html.spec.whatwg.org/multipage/parsing.html#adoption-agency-algorithm
-
 enum AdoptionAgencyOutcome {
 	do_nothing
 	run_any_other_end_tag_steps
@@ -660,8 +886,8 @@ fn (mut p HTMLParser) run_the_adoption_agency_algorithm(token &HTMLToken) Adopti
 		}
 
 		// 7. furthestBlock = topmost special node below formattingElement.
+		// 8. No furthestBlock: pop up to and including formattingElement, remove from AFE, return.
 		furthest_block := p.stack_of_open_elements.topmost_special_node_below(formatting_element) or {
-			// 8. No furthestBlock: pop up to and including formattingElement, remove from AFE, return.
 			for {
 				cn := p.current_node() or { break }
 				if same_element(cn, formatting_element) {
@@ -741,11 +967,9 @@ fn (mut p HTMLParser) run_the_adoption_agency_algorithm(token &HTMLToken) Adopti
 		}
 
 		// 14. Insert lastNode at the appropriate place with commonAncestor as override target.
-		adjusted_location :=
-			p.find_appropriate_place_for_inserting_node_with_override(common_ancestor)
+		adjusted_location := p.find_appropriate_place_for_inserting_node_with_override(common_ancestor)
 		mut adjusted_parent := adjusted_location.parent or { return .do_nothing }
-		adjusted_parent.insert_before(last_node.as_node(), adjusted_location.insert_before_sibling,
-			false)
+		adjusted_parent.insert_before(last_node.as_node(), adjusted_location.insert_before_sibling, false)
 
 		// 15. Create a new element for formattingElement's token, with furthestBlock as intended parent.
 		formatting_element_index := p.list_of_active_formatting_elements.find_index(formatting_element) or {

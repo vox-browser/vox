@@ -26,23 +26,23 @@ fn test_structured_serialize_primitives() {
 fn test_structured_serialize_preserves_aliases_and_cycles() {
 	mut shared_object := StructuredObject.create(.object)
 	shared_text := &dom.JSValue{
-		kind:        .string
+		kind: .string
 		string_data: 'shared'
 	}
 	shared_object.properties << StructuredProperty{
-		key:   'name'
+		key: 'name'
 		value: shared_text
 	}
 	shared_value := &dom.JSValue{
-		kind:                  .object
-		object_data:           voidptr(shared_object)
+		kind: .object
+		object_data: voidptr(shared_object)
 		is_structured_object_: true
 	}
 
 	mut root := StructuredObject.create(.array)
 	root_value := &dom.JSValue{
-		kind:                  .object
-		object_data:           voidptr(root)
+		kind: .object
+		object_data: voidptr(root)
 		is_structured_object_: true
 	}
 	root.values << shared_value
@@ -63,19 +63,19 @@ fn test_structured_serialize_preserves_aliases_and_cycles() {
 
 fn test_structured_serialize_composite_types() {
 	key := &dom.JSValue{
-		kind:        .string
+		kind: .string
 		string_data: 'buffer'
 	}
 	mut buffer := StructuredObject.create(.array_buffer)
 	buffer.bytes = [u8(1), 2, 3, 255]
 	buffer_value := &dom.JSValue{
-		kind:                  .object
-		object_data:           voidptr(buffer)
+		kind: .object
+		object_data: voidptr(buffer)
 		is_structured_object_: true
 	}
 	mut map_object := StructuredObject.create(.map)
 	map_object.entries << StructuredMapEntry{
-		key:   key
+		key: key
 		value: buffer_value
 	}
 	map_value := structured_object_value(map_object)
@@ -89,6 +89,27 @@ fn test_structured_serialize_composite_types() {
 	assert decoded_map.entries[0].key.string_data == 'buffer'
 	decoded_buffer := structured_object_from_value(*decoded_map.entries[0].value) or { panic(err) }
 	assert decoded_buffer.bytes == [u8(1), 2, 3, 255]
+}
+
+fn test_structured_serialize_array_buffer_view_and_error_names() {
+	mut buffer := StructuredObject.create(.array_buffer)
+	buffer.bytes = [u8(10), 20, 30, 40]
+	mut view := StructuredObject.create(.array_buffer_view)
+	view.viewed_array_buffer = buffer
+	view.string_data = 'Uint16Array'
+	view.byte_length = 2
+	view.byte_offset = 1
+	view.array_length = 1
+	decoded_value := structured_deserialize(structured_serialize(structured_object_value(view))!)!
+	decoded := structured_object_from_value(decoded_value)!
+	assert decoded.kind == .array_buffer_view
+	assert decoded.string_data == 'Uint16Array'
+	assert decoded.byte_length? == 2
+	assert decoded.byte_offset == 1
+	assert decoded.array_length? == 1
+	assert decoded.viewed_array_buffer?.bytes == [u8(10), 20, 30, 40]
+	assert error_name_to_type('TypeError') == .type_error
+	assert error_name_to_type('SomethingElse') == .error
 }
 
 fn test_structured_deserialize_rejects_bad_records() {

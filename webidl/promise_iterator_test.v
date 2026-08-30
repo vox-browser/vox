@@ -8,6 +8,13 @@ fn reject_step(value Value) !Value {
 	return error('callback rejected ${value.string_value}')
 }
 
+fn promise_callback(_ Value, arguments []Value) !Value {
+	if arguments.len == 0 {
+		return error('missing argument')
+	}
+	return arguments[0]
+}
+
 fn test_promise_settlement_reactions_and_handled_flag() {
 	mut source := create_promise()
 	mut child := source.upon_fulfillment(double_number)
@@ -39,6 +46,34 @@ fn test_async_iterator_next_return_and_throw() {
 	assert iterator.next().result.object_value['done'].boolean_value
 	mut throwing := AsyncIterator.create([]Value{}, .value)
 	assert throwing.throw_(string_value('boom')).is_rejected()
+}
+
+fn test_async_iterator_and_promise_named_algorithm_entries() {
+	mut iterator := AsyncIterator.create([string_value('value')], .value)
+	assert iterator.iterator_next_impl().result.object_value['value'].string_value == 'value'
+	assert iterator.iterator_return_impl(string_value('done')).result.object_value['done'].boolean_value
+	assert iterator.iterator_return(string_value('again')).is_fulfilled()
+	callback := CallbackType{
+		callback: promise_callback
+		operation_returns_promise: .yes
+	}
+	assert invoke_callback_impl(callback, none, [number_value(3)])!.number_value == 3
+	assert invoke_promise_callback(callback, none, []Value{}).is_rejected()
+	mut source := create_resolved_promise(number_value(2))
+	mut child := react_to_promise(mut source, double_number, double_number)
+	assert child.result.number_value == 4
+	mark_promise_as_handled(mut source)
+	assert source.is_handled
+	assert is_promise_fulfilled(source)
+	rejected := create_rejected_promise_from_exception(SimpleException{
+		type_: .type_error
+		message: 'failure'
+	})
+	assert rejected.is_rejected()
+	conversion := property_to_callback(object_value({
+		'run': callback_value()
+	}), 'run', .no)!
+	assert conversion.callback != none
 }
 
 fn test_cached_attribute_first_value_wins_until_clear() {

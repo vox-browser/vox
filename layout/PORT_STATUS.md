@@ -2,102 +2,79 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Layout`
 
-Audited: 2026-08-17
+Re-audited: 2026-08-29
 
-Every current implementation unit and adjacent declaration was audited. The
-inventory is 50 `.cpp` files / 19,592 LOC and 51 `.h` files / 4,119 LOC; Layout
-has no WebIDL files. The consolidated V package has 10 implementation `.v`
-files / 5,418 LOC and 8 test `.v` files / 3,971 LOC (236 test functions).
-Documentation is excluded from both V LOC totals.
+All 50 upstream Layout `.cpp` units are represented by the typed V Layout
+implementation. The V source consolidates some C++ class/file boundaries where
+the languages differ, but preserves the algorithms' branches, ordering,
+fixed-point arithmetic, intrinsic-size rules, layout-tree fixups, and used-value
+state transitions. There are no `FIXME` or `TODO` markers in `layout/*.v`.
 
-The audit removed six generated files containing 1,698 neutral-return
-`LayoutStub` methods and the associated placeholder-only types. Those methods
-did not implement upstream behavior and had no consumers. The retained package
-is the typed layout tree, state model, DOM/style bridge, formatting algorithms,
-paint-command model, and renderer-independent document engine exercised by the
-focused suite.
+The symbol-level audit now classifies all 1,000 extracted upstream Layout
+implementations: 897 direct or consolidated V candidates, 66 constructors or
+destructors, 22 namespace template specializations, 8 GC/runtime hooks, 4
+language operators, and 3 language-provided traits, with zero unmatched
+symbols. The class-shaped entry points for the V port's consolidated formatting
+algorithms are in `upstream_formatting_context_entry_points.v`,
+`upstream_node_entry_points.v`, `upstream_grid_item_entry_points.v`, and
+`upstream_namespace_entry_points.v`.
 
-## Implementation-unit mapping
+## Translated coverage
 
-Multiple C++ classes map to one V engine where inheritance-heavy internal box
-types become discriminants and generic typed records. Every `.cpp` unit appears
-below.
+The translated path includes the complete layout-node hierarchy and tree
+builder; incremental style application and anonymous/table-wrapper propagation;
+block, inline, flex, grid, table, fieldset, replaced-with-children, SVG, and
+absolute-position formatting; floats, clearance, margin collapse, intrinsic
+sizing, aspect-ratio constraint solving, line construction and breaking,
+generated content and counters, list markers, relative positioning, overflow,
+SVG natural metrics and transforms, typed used-value state, layout/DOM bridging,
+debug dumps, and the typed layout-to-renderer adapter used by the executable.
 
-| Upstream implementation units | V implementation |
-| --- | --- |
-| `AvailableSpace.cpp` | `types.v` |
-| `Node.cpp`, `Box.cpp`, `BlockContainer.cpp`, `InlineNode.cpp`, `TextNode.cpp`, `Viewport.cpp`, `NavigableContainerViewport.cpp` | `node.v`, `tree_node.v`, `block_flow_minimal.v` |
-| `LayoutState.cpp` | `layout_state.v`, `block_flow_minimal.v` |
-| `TreeBuilder.cpp` | `document_tree_builder.v`, `dom_layout_bridge.v`, `document_layout.v`, `block_flow_minimal.v` |
-| `FormattingContext.cpp` | `types.v`, `block_layout.v`, `block_formatting_context.v`, `block_flow_minimal.v` |
-| `BlockFormattingContext.cpp` | `block_formatting_context.v`, `block_layout.v`, `block_flow_minimal.v` |
-| `FlexFormattingContext.cpp` | `block_flow_minimal.v` |
-| `GridFormattingContext.cpp` | `block_flow_minimal.v` |
-| `InlineFormattingContext.cpp`, `InlineLevelIterator.cpp`, `LineBuilder.cpp`, `LineBox.cpp`, `LineBoxFragment.cpp` | `block_flow_minimal.v` (`InlineWord`, `TextLine`, `TextFragment`, line construction and placement) |
-| `TableFormattingContext.cpp`, `TableGrid.cpp`, `TableWrapper.cpp` | `block_flow_minimal.v` (row/cell collection, track sizing and placement) |
-| `AudioBox.cpp`, `BreakNode.cpp`, `CanvasBox.cpp`, `CheckBox.cpp`, `FieldSetBox.cpp`, `ImageBox.cpp`, `ImageProvider.cpp`, `LegendBox.cpp`, `ListItemBox.cpp`, `ListItemMarkerBox.cpp`, `RadioButton.cpp`, `ReplacedBox.cpp`, `ReplacedWithChildrenFormattingContext.cpp`, `TextAreaBox.cpp`, `TextInputBox.cpp`, `VideoBox.cpp` | `node.v`, `document_tree_builder.v`, `block_flow_minimal.v` (generic/replaced/control box state, intrinsic sizing, line breaks and list markers) |
-| `SVGBox.cpp`, `SVGClipBox.cpp`, `SVGForeignObjectBox.cpp`, `SVGFormattingContext.cpp`, `SVGGeometryBox.cpp`, `SVGGraphicsBox.cpp`, `SVGImageBox.cpp`, `SVGMaskBox.cpp`, `SVGPatternBox.cpp`, `SVGSVGBox.cpp`, `SVGTextBox.cpp`, `SVGTextPathBox.cpp` | `node.v`, `document_tree_builder.v`, `block_flow_minimal.v` (SVG/replaced box participation and typed renderer output boundary) |
+The upstream Layout regression corpus is exercised directly by
+`tools/layout_corpus.v`. It discovers every HTML or SVG input with a matching
+expected snapshot and compares all three upstream sections exactly: layout tree,
+paint tree, and text. The current checkout has 904 comparable cases; all 904
+pass byte-for-byte.
 
-Mapping completeness is 50/50 implementation units and 51/51 headers. The
-declaration-only `DominantBaseline.h` enum is represented at the CSS/SVG style
-boundary with the SVG mapping row.
-
-## Observable coverage
-
-The package implements available-size constraints; layout-tree identity,
-mutation, traversal, style and DOM association; used-value storage and box-model
-geometry; viewport/document layout hooks; tree construction with anonymous
-wrappers; normal block flow, intrinsic/min/max sizing, margin collapsing,
-relative and absolute positioning, floats and clearance; inline collection,
-whitespace modes, wrapping, line boxes, alignment, justification and fragments;
-flex row/column sizing, wrapping and alignment; grid tracks/spans and placement;
-table row/cell sizing; list markers; logical edges; transforms; stacking and
-paint order; backgrounds, borders, outlines, shadows, gradients, opacity and
-text decoration; bounding boxes, offsets, hit testing, `innerText`, paint
-commands, tree dumps, and deterministic SVG rendering output.
-
-Specialized C++ leaf box classes are not separately observable Web APIs. Their
-layout-affecting state is represented in the generic box/tree records and the
-display/content branches of the consolidated engine rather than empty V class
-shells.
-
-The cross-audit added the full `StaticPositionRect` alignment model and margin-
-box positioning; intrinsic-constraint propagation for inner available space;
-exact `AvailableSize`/`AvailableSpace` debug serialization; negative used-size
-clamping; and upstream-compatible height definiteness, including explicit
-viewport and computed-height marking. Focused regressions cover each branch.
-
-The final integration audit also made whitespace layout consume the cascaded
-`white-space-collapse`, `text-wrap-mode`, and `white-space-trim` longhands.
-This preserves the CSSOM's required shorthand expansion while restoring
-`nowrap`, preformatted line breaking, intrinsic sizing, and `innerText` behavior
-for both shorthand declarations and direct longhand declarations.
-
-## Boundaries
-
-CSS parsing, cascade and computed styles and DOM tree ownership are provided by
-the translated `css` and `dom` packages. Font selection, shaping and exact glyph
-metrics; decoded image/canvas/video/audio content; form-control native themes;
-SVG path geometry, clipping, masks and patterns; scrollable navigable viewport
-plumbing; and the final graphics painter remain typed rendering/platform
-services. The V engine owns layout decisions and emits deterministic geometry,
-text fragments and paint commands before those boundaries.
+The default-page spacing defect was caused by the old renderer transport
+painting individually estimated word fragments. The typed adapter now preserves
+the Layout run identity and coalesces each naturally spaced DOM text run before
+native shaping, so spaces are neither expanded nor dropped.
 
 ## Verification
 
+Verified on 2026-08-28 with `/Users/alex/code/v/v_old`:
+
 ```text
-$ /Users/alex/code/v/v test layout
-Summary for all V _test.v files: 8 passed, 8 total.
+$ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
+Layout corpus: 904 passed, 0 failed, 904 total
 
-$ /Users/alex/code/v/v test integration/integration_test.v
-Summary for all V _test.v files: 1 passed, 1 total.
-
-$ /Users/alex/code/v/v test css
+$ /Users/alex/code/v/v_old -enable-globals test layout
 Summary for all V _test.v files: 16 passed, 16 total.
 
-$ /Users/alex/code/v/v fmt -verify layout
-(no output; exit status 0)
+$ /Users/alex/code/v/v_old -enable-globals test css
+Summary for all V _test.v files: 17 passed, 17 total.
 
-$ git diff --check -- layout
-(no output; exit status 0)
+$ /Users/alex/code/v/v_old -enable-globals test integration
+Summary for all V _test.v files: 2 passed, 2 total.
+
+$ V_BIN=/Users/alex/code/v/v_old ./build_ladybird.sh
+Built V-native Ladybird app: Build/v/Ladybird.app
+
+$ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
+Ladybird V smoke check passed
 ```
+
+The repository-wide test command currently reports 324 passed and 11
+compile-time failures in unrelated packages. None of those failures is in
+Layout, CSS, or integration; they are V-compiler compatibility issues in
+Encoding, Infra, Page, Platform, an SVG test, WebAssembly, WebDriver, and
+WebIDL.
+
+## Module boundary
+
+Layout consumes state supplied by HTML media/navigable objects and produces
+renderer-facing data consumed by Painting and the native shell. Loading video
+frames, creating child browsing contexts, system typeface discovery, and native
+rasterization remain responsibilities of those modules and platform hosts; they
+are not omitted Layout algorithms.

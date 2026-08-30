@@ -1,9 +1,9 @@
 module css
 
 import dom
+import fetch
 
 // https://drafts.csswg.org/css-values-4/#style-resource-base-url
-
 pub struct StyleSheetAndURL {
 pub mut:
 	sheet ?&CSSStyleSheet
@@ -20,7 +20,7 @@ pub fn CSSFetchEnvironmentSettings.from_document(document &dom.Document) CSSFetc
 	base_url := document.base_url().to_string()
 	return CSSFetchEnvironmentSettings{
 		api_base_url: base_url
-		origin:       document.origin().value
+		origin: document.origin().value
 	}
 }
 
@@ -44,7 +44,7 @@ pub mut:
 
 pub fn RuleOrDeclaration.from_style_declaration(declaration &CSSStyleProperties, environment_settings_object CSSFetchEnvironmentSettings) RuleOrDeclaration {
 	return RuleOrDeclaration{
-		value:                       RuleOrDeclarationValue(RuleOrDeclarationStyleDeclaration{
+		value: RuleOrDeclarationValue(RuleOrDeclarationStyleDeclaration{
 			declaration: declaration
 		})
 		environment_settings_object: environment_settings_object
@@ -53,7 +53,7 @@ pub fn RuleOrDeclaration.from_style_declaration(declaration &CSSStyleProperties,
 
 pub fn RuleOrDeclaration.from_rule(rule &CSSRule, environment_settings_object CSSFetchEnvironmentSettings) RuleOrDeclaration {
 	return RuleOrDeclaration{
-		value:                       RuleOrDeclarationValue(RuleOrDeclarationRule{
+		value: RuleOrDeclarationValue(RuleOrDeclarationRule{
 			parent_style_sheet: rule.parent_style_sheet
 		})
 		environment_settings_object: environment_settings_object
@@ -83,7 +83,7 @@ fn style_resource_base_url(css_rule_or_declaration RuleOrDeclaration) StyleSheet
 		if base_url := style_sheet.base_url {
 			return StyleSheetAndURL{
 				sheet: style_sheet
-				url:   base_url
+				url: base_url
 			}
 		}
 
@@ -91,7 +91,7 @@ fn style_resource_base_url(css_rule_or_declaration RuleOrDeclaration) StyleSheet
 		if location := style_sheet.base.location {
 			return StyleSheetAndURL{
 				sheet: style_sheet
-				url:   location
+				url: location
 			}
 		}
 	}
@@ -99,7 +99,7 @@ fn style_resource_base_url(css_rule_or_declaration RuleOrDeclaration) StyleSheet
 	// 5. Return cssRuleOrDeclaration's relevant settings object's API base URL.
 	return StyleSheetAndURL{
 		sheet: sheet
-		url:   css_rule_or_declaration.environment_settings_object.api_base_url
+		url: css_rule_or_declaration.environment_settings_object.api_base_url
 	}
 }
 
@@ -235,8 +235,7 @@ fn normalize_url_path(path string) string {
 	}
 
 	is_absolute_path := path_only.starts_with('/')
-	trailing_slash := path_only.ends_with('/') || path_only.ends_with('/.')
-		|| path_only.ends_with('/..')
+	trailing_slash := path_only.ends_with('/') || path_only.ends_with('/.') || path_only.ends_with('/..')
 	mut segments := []string{}
 	for segment in path_only.split('/') {
 		if segment.len == 0 || segment == '.' {
@@ -306,11 +305,6 @@ pub enum CorsMode {
 	no_cors
 }
 
-pub struct CSSFetchController {
-pub mut:
-	request CSSRequest
-}
-
 fn fetch_a_style_resource_impl(url_value StyleResourceURL, css_rule_or_declaration RuleOrDeclaration, destination CSSRequestDestination, cors_mode CorsMode) ?CSSRequest {
 	// 1. Let parsedUrl be the result of resolving urlValue given cssRuleOrDeclaration. If that failed, return.
 	parsed_url := resolve_a_style_resource_url(url_value, css_rule_or_declaration) or {
@@ -324,18 +318,16 @@ fn fetch_a_style_resource_impl(url_value StyleResourceURL, css_rule_or_declarati
 	//    origin is environmentSettings's origin, credentials mode is "same-origin", use-url-credentials flag is set,
 	//    client is environmentSettings, and whose referrer is environmentSettings's API base URL.
 	mut request := CSSRequest{
-		url:                 parsed_url
-		destination:         destination
-		mode:                if cors_mode == .cors {
-			CSSRequestMode.cors
-		} else {
-			CSSRequestMode.no_cors
-		}
-		origin:              environment_settings.origin
-		credentials_mode:    .same_origin
+		url: parsed_url
+		destination: destination
+		mode: if cors_mode == .cors {
+			CSSRequestMode.cors} else {
+			CSSRequestMode.no_cors}
+		origin: environment_settings.origin
+		credentials_mode: .same_origin
 		use_url_credentials: true
-		client_base_url:     environment_settings.api_base_url
-		referrer:            environment_settings.api_base_url
+		client_base_url: environment_settings.api_base_url
+		referrer: environment_settings.api_base_url
 	}
 
 	// 4. If corsMode is "no-cors", set req's credentials mode to "include".
@@ -374,16 +366,64 @@ fn fetch_a_style_resource_impl(url_value StyleResourceURL, css_rule_or_declarati
 	return request
 }
 
-// https://drafts.csswg.org/css-values-4/#fetch-a-style-resource
-pub fn fetch_a_style_resource(url_value StyleResourceURL, css_rule_or_declaration RuleOrDeclaration, destination CSSRequestDestination, cors_mode CorsMode) ?CSSFetchController {
-	request := fetch_a_style_resource_impl(url_value, css_rule_or_declaration, destination,
-		cors_mode) or { return none }
-
-	// Boundary: Fetch::Fetching::fetch() and FetchAlgorithms are not translated yet; return the constructed request in
-	// a controller-shaped object.
-	return CSSFetchController{
-		request: request
+fn css_request_to_fetch_request(request CSSRequest) &fetch.Request {
+	mut fetch_request := fetch.Request.create()
+	fetch_request.url_list = [dom.URL{ value: request.url }]
+	fetch_request.mode = match request.mode or { CSSRequestMode.no_cors } {
+		.cors { .cors }
+		.no_cors { .no_cors }
 	}
+	fetch_request.credentials_mode = match request.credentials_mode or {
+		CSSRequestCredentialsMode.same_origin} {
+		.include { .include }
+		.same_origin { .same_origin }
+	}
+	fetch_request.destination = match request.destination {
+		.empty { none }
+		.image { fetch.Destination.image }
+		.font { fetch.Destination.font }
+		.style { fetch.Destination.style }
+	}
+	fetch_request.origin = fetch.RequestOrigin{
+		is_client: false
+		origin: dom.Origin{ value: request.origin }
+	}
+	fetch_request.use_url_credentials = request.use_url_credentials
+	fetch_request.integrity_metadata = request.integrity_metadata
+	if request.referrer != '' {
+		fetch_request.referrer = fetch.Referrer{
+			url: dom.URL{ value: request.referrer }
+		}
+	}
+	if policy := request.referrer_policy {
+		fetch_request.referrer_policy = match policy {
+			.no_referrer { 'no-referrer' }
+			.no_referrer_when_downgrade { 'no-referrer-when-downgrade' }
+			.same_origin { 'same-origin' }
+			.origin { 'origin' }
+			.strict_origin { 'strict-origin' }
+			.origin_when_cross_origin { 'origin-when-cross-origin' }
+			.strict_origin_when_cross_origin { 'strict-origin-when-cross-origin' }
+			.unsafe_url { 'unsafe-url' }
+		}
+	}
+	if initiator_type := request.initiator_type {
+		fetch_request.initiator_type = match initiator_type {
+			.css { fetch.InitiatorType.css }
+			.script { fetch.InitiatorType.script }
+		}
+	}
+	return fetch_request
+}
+
+// https://drafts.csswg.org/css-values-4/#fetch-a-style-resource
+pub fn fetch_a_style_resource(url_value StyleResourceURL, css_rule_or_declaration RuleOrDeclaration, destination CSSRequestDestination, cors_mode CorsMode, process_response fetch.ProcessResponseConsumeBody, host &fetch.FetchHost) ?&fetch.FetchController {
+	request := fetch_a_style_resource_impl(url_value, css_rule_or_declaration, destination, cors_mode) or { return none }
+	mut fetch_request := css_request_to_fetch_request(request)
+	algorithms := fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{
+		process_response_consume_body: process_response
+	})
+	return fetch.fetch(fetch_request, algorithms, host)
 }
 
 // https://drafts.csswg.org/css-images-4/#fetch-an-external-image-for-a-stylesheet
@@ -395,7 +435,6 @@ pub fn fetch_an_external_image_for_a_stylesheet(url_value StyleResourceURL, decl
 
 	// NB: We can't directly call fetch_a_style_resource() because we want to make use of SharedResourceRequest to
 	//     deduplicate image requests.
-
 	request := fetch_a_style_resource_impl(url_value, declaration, .image, .no_cors) or {
 		return none
 	}

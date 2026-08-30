@@ -12,12 +12,22 @@ mut:
 	chunks_           [][]u8
 }
 
+pub struct ScalarValueConversion {
+pub:
+	value          ?u32
+	reprocess_item bool
+}
+
 pub fn TextEncoderStream.create() &TextEncoderStream {
+	return TextEncoderStream.construct_impl()
+}
+
+pub fn TextEncoderStream.construct_impl() &TextEncoderStream {
 	return &TextEncoderStream{}
 }
 
 pub fn (stream &TextEncoderStream) encoding() string {
-	return 'utf-8'
+	return (&TextEncoderCommonMixin{}).encoding()
 }
 
 pub fn (stream &TextEncoderStream) chunks() [][]u8 {
@@ -33,23 +43,12 @@ pub fn (mut stream TextEncoderStream) encode_and_enqueue_chunk(input []u16) []u8
 	mut i := 0
 	for i < input.len {
 		item := input[i]
-		if leading := stream.leading_surrogate {
-			stream.leading_surrogate = none
-			if item >= 0xdc00 && item <= 0xdfff {
-				append_utf8_code_point(mut output, 0x10000 + ((u32(leading) - 0xd800) << 10) +
-					(u32(item) - 0xdc00))
-				i++
-				continue
-			}
-			append_replacement(mut output)
-			continue
+		conversion := stream.convert_code_unit_to_scalar_value(item)
+		if scalar := conversion.value {
+			append_utf8_code_point(mut output, scalar)
 		}
-		if item >= 0xd800 && item <= 0xdbff {
-			stream.leading_surrogate = item
-		} else if item >= 0xdc00 && item <= 0xdfff {
-			append_replacement(mut output)
-		} else {
-			append_utf8_code_point(mut output, item)
+		if conversion.reprocess_item {
+			continue
 		}
 		i++
 	}
@@ -57,6 +56,30 @@ pub fn (mut stream TextEncoderStream) encode_and_enqueue_chunk(input []u16) []u8
 		stream.chunks_ << output.clone()
 	}
 	return output
+}
+
+// https://encoding.spec.whatwg.org/#convert-code-unit-to-scalar-value
+pub fn (mut stream TextEncoderStream) convert_code_unit_to_scalar_value(item u16) ScalarValueConversion {
+	if leading := stream.leading_surrogate {
+		stream.leading_surrogate = none
+		if item >= 0xdc00 && item <= 0xdfff {
+			return ScalarValueConversion{
+				value: 0x10000 + ((u32(leading) - 0xd800) << 10) + (u32(item) - 0xdc00)
+			}
+		}
+		return ScalarValueConversion{
+			value:          u32(0xfffd)
+			reprocess_item: true
+		}
+	}
+	if item >= 0xd800 && item <= 0xdbff {
+		stream.leading_surrogate = item
+		return ScalarValueConversion{}
+	}
+	if item >= 0xdc00 && item <= 0xdfff {
+		return ScalarValueConversion{ value: u32(0xfffd) }
+	}
+	return ScalarValueConversion{ value: u32(item) }
 }
 
 pub fn (mut stream TextEncoderStream) encode_string_and_enqueue_chunk(input string) []u8 {

@@ -27,6 +27,12 @@ fn test_construct_no_options() {
 	assert f.raw_bytes().bytestr() == 'x'
 }
 
+fn test_file_exact_constructor_entry_point() {
+	file := File.construct_impl([BlobPart.from_string('body')], 'entry.txt', none)
+	assert file.name() == 'entry.txt'
+	assert file.raw_bytes().bytestr() == 'body'
+}
+
 fn test_construct_type_is_normalized_via_mime_parser() {
 	// The type is parsed and re-serialized (type/subtype lowercased, params preserved).
 	f := File.construct([BlobPart.from_string('x')], 'a.txt', FilePropertyBag{

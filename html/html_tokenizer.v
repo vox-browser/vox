@@ -116,6 +116,7 @@ enum ConsumeNextResult {
 
 pub struct HTMLTokenizer {
 mut:
+	parser_      ?&HTMLParser
 	state        State = .data
 	return_state State = .data
 
@@ -161,6 +162,28 @@ pub fn HTMLTokenizer.new(input string) HTMLTokenizer {
 	}
 	t.source_positions << Position{0, 0}
 	return t
+}
+
+pub fn (mut tokenizer HTMLTokenizer) set_parser(parser &HTMLParser) {
+	tokenizer.parser_ = parser
+}
+
+pub fn (tokenizer &HTMLTokenizer) source() string {
+	return tokenizer.source
+}
+
+pub fn HTMLTokenizer.state_name(state State) string {
+	mut builder := strings.new_builder(32)
+	for part in state.str().split('_') {
+		if part.len == 0 {
+			continue
+		}
+		builder.write_string(part[..1].to_upper())
+		if part.len > 1 {
+			builder.write_string(part[1..])
+		}
+	}
+	return builder.str()
 }
 
 // ===== ASCII / Unicode classification (mirrors AK/CharacterTypes.h) =====
@@ -354,13 +377,25 @@ fn (mut t HTMLTokenizer) create_new_token(type_ TokenType) {
 }
 
 fn (mut t HTMLTokenizer) will_emit_current() {
-	if t.current_token.is_start_tag() {
-		t.last_emitted_start_tag_name = t.current_token.tag_name
+	mut token := t.current_token
+	t.will_emit(mut token)
+	t.current_token = token
+}
+
+// TOKENIZER_TRACE_DEBUG is a compile-time diagnostic in C++; these hooks are
+// intentionally side-effect-free when tracing is disabled.
+pub fn (_ &HTMLTokenizer) will_switch_to(_ State) {}
+
+pub fn (_ &HTMLTokenizer) will_reconsume_in(_ State) {}
+
+pub fn (mut t HTMLTokenizer) will_emit(mut token HTMLToken) {
+	if token.is_start_tag() {
+		t.last_emitted_start_tag_name = token.tag_name
 	}
-	is_start_or_end_tag := t.current_token.type_ == .start_tag || t.current_token.type_ == .end_tag
-	t.current_token.end_position = t.nth_last_position(if is_start_or_end_tag { 1 } else { 0 })
+	is_start_or_end_tag := token.type_ == .start_tag || token.type_ == .end_tag
+	token.end_position = t.nth_last_position(if is_start_or_end_tag { 1 } else { 0 })
 	if is_start_or_end_tag {
-		t.current_token.normalize_attributes()
+		token.normalize_attributes()
 	}
 }
 
@@ -445,7 +480,7 @@ fn (mut t HTMLTokenizer) flush_codepoints_consumed_as_a_character_reference() {
 	}
 }
 
-fn (t &HTMLTokenizer) is_insertion_point_defined() bool {
+pub fn (t &HTMLTokenizer) is_insertion_point_defined() bool {
 	return t.insertion_point != none
 }
 
@@ -470,6 +505,79 @@ pub fn (mut t HTMLTokenizer) switch_to(new_state State) {
 
 pub fn (mut t HTMLTokenizer) abort() {
 	t.aborted = true
+}
+
+// Append input to the tokenizer's decoded input stream. This is used by the
+// DOM/html module bridge; document.write() uses the insertion-point operation
+// below so its ordering remains spec-accurate.
+pub fn (mut t HTMLTokenizer) feed(input string) {
+	t.source += input
+	t.decoded_input << input.runes()
+	t.has_emitted_eof = false
+}
+
+// HTMLTokenizer::update_insertion_point().
+pub fn (mut t HTMLTokenizer) update_insertion_point() {
+	t.insertion_point = t.current_offset
+}
+
+// HTMLTokenizer::undefine/store/restore_insertion_point().
+pub fn (mut t HTMLTokenizer) undefine_insertion_point() {
+	t.insertion_point = none
+}
+
+pub fn (mut t HTMLTokenizer) store_insertion_point() {
+	t.old_insertion_point = t.insertion_point
+}
+
+pub fn (mut t HTMLTokenizer) restore_insertion_point() {
+	t.insertion_point = t.old_insertion_point
+	t.old_insertion_point = none
+}
+
+// HTMLTokenizer::insert_input_at_insertion_point(). The insertion point is a
+// code-point offset, just like decoded_input/current_offset.
+pub fn (mut t HTMLTokenizer) insert_input_at_insertion_point(input string) {
+	insertion_point := t.insertion_point or {
+		panic('HTMLTokenizer::insert_input_at_insertion_point() with no insertion point')
+	}
+
+	inserted := input.runes()
+	mut new_decoded_input := []rune{cap: t.decoded_input.len + inserted.len}
+	new_decoded_input << t.decoded_input[..insertion_point]
+	new_decoded_input << inserted
+	new_decoded_input << t.decoded_input[insertion_point..]
+	t.decoded_input = new_decoded_input
+	t.insertion_point = insertion_point + inserted.len
+}
+
+pub fn (mut t HTMLTokenizer) insert_eof() {
+	t.explicit_eof_inserted = true
+}
+
+pub fn (t &HTMLTokenizer) is_eof_inserted() bool {
+	return t.explicit_eof_inserted
+}
+
+// HTMLTokenizer::parser_did_run(). Reclaim fully consumed input while keeping
+// the logical insertion-point state intact.
+pub fn (mut t HTMLTokenizer) parser_did_run() {
+	insertion_point_is_at_start := if insertion_point := t.insertion_point {
+		insertion_point == 0
+	} else {
+		true
+	}
+	old_insertion_point_is_at_start := if old_insertion_point := t.old_insertion_point {
+		old_insertion_point == 0
+	} else {
+		true
+	}
+	if t.current_offset > 0 && t.current_offset == t.decoded_input.len
+		&& insertion_point_is_at_start && old_insertion_point_is_at_start {
+		t.decoded_input.clear()
+		t.current_offset = 0
+		t.prev_offset = 0
+	}
 }
 
 fn convert_numeric_control_code(code u32) u32 {

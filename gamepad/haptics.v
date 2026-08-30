@@ -69,7 +69,7 @@ fn valid_magnitude(value f64) bool {
 	return !(value < 0.0 || value > 1.0)
 }
 
-pub fn valid_effect(effect_type GamepadHapticEffectType, params GamepadEffectParameters) bool {
+pub fn is_valid_effect(effect_type GamepadHapticEffectType, params GamepadEffectParameters) bool {
 	if params.duration > max_vibration_duration
 		|| params.start_delay > max_vibration_duration - params.duration {
 		return false
@@ -84,6 +84,10 @@ pub fn valid_effect(effect_type GamepadHapticEffectType, params GamepadEffectPar
 	return true
 }
 
+pub fn valid_effect(effect_type GamepadHapticEffectType, params GamepadEffectParameters) bool {
+	return is_valid_effect(effect_type, params)
+}
+
 fn rejected_haptic_promise(message string) &HapticPromise {
 	return &HapticPromise{
 		state:  .rejected
@@ -92,7 +96,7 @@ fn rejected_haptic_promise(message string) &HapticPromise {
 }
 
 pub fn (mut actuator GamepadHapticActuator) play_effect(effect_type GamepadHapticEffectType, params GamepadEffectParameters, document_active bool, document_visible bool) &HapticPromise {
-	if !valid_effect(effect_type, params) {
+	if !is_valid_effect(effect_type, params) {
 		return rejected_haptic_promise('TypeError: Invalid effect')
 	}
 	if !document_active || !document_visible {
@@ -102,7 +106,7 @@ pub fn (mut actuator GamepadHapticActuator) play_effect(effect_type GamepadHapti
 		old.state = .fulfilled
 		old.result = .preempted
 		actuator.playing_ = none
-		actuator.pending_type_ = none
+		actuator.clear_playing_effect_timers()
 	}
 	if effect_type !in actuator.effects_ {
 		return rejected_haptic_promise('NotSupportedError: Gamepad does not support this effect')
@@ -121,8 +125,16 @@ pub fn (mut actuator GamepadHapticActuator) play_effect(effect_type GamepadHapti
 pub fn (mut actuator GamepadHapticActuator) complete_pending_effect() bool {
 	mut promise := actuator.playing_ or { return false }
 	effect_type := actuator.pending_type_ or { return false }
-	params := actuator.pending_params_
-	mut device := unsafe { &Device(actuator.gamepad.device) }
+	succeeded := actuator.issue_haptic_effect(effect_type, actuator.pending_params_)
+	promise.state = .fulfilled
+	promise.result = .complete
+	actuator.playing_ = none
+	actuator.clear_playing_effect_timers()
+	return succeeded
+}
+
+pub fn (mut actuator GamepadHapticActuator) issue_haptic_effect(effect_type GamepadHapticEffectType, params GamepadEffectParameters) bool {
+	mut device := unsafe { &Device(actuator.gamepad.sdl_gamepad()) }
 	succeeded := match effect_type {
 		.dual_rumble {
 			device.issue_dual_rumble(magnitude_to_u16(params.strong_magnitude),
@@ -133,16 +145,10 @@ pub fn (mut actuator GamepadHapticActuator) complete_pending_effect() bool {
 				magnitude_to_u16(params.right_trigger))
 		}
 	}
-	// The duration callback stops only the effect that it started. Platform
-	// failures do not reject the already-accepted playEffect() promise.
 	match effect_type {
 		.dual_rumble { device.issue_dual_rumble(0, 0) }
 		.trigger_rumble { device.issue_trigger_rumble(0, 0) }
 	}
-	promise.state = .fulfilled
-	promise.result = .complete
-	actuator.playing_ = none
-	actuator.pending_type_ = none
 	return succeeded
 }
 
@@ -174,7 +180,7 @@ pub fn (mut actuator GamepadHapticActuator) reset(document_active bool, document
 			playing.state = .fulfilled
 			playing.result = .preempted
 			actuator.playing_ = none
-			actuator.pending_type_ = none
+			actuator.clear_playing_effect_timers()
 		}
 		reset_promise.state = .fulfilled
 		reset_promise.result = .complete
@@ -189,5 +195,10 @@ pub fn (mut actuator GamepadHapticActuator) document_became_hidden() {
 		actuator.stop_haptic_effects()
 	}
 	actuator.playing_ = none
+	actuator.clear_playing_effect_timers()
+}
+
+pub fn (mut actuator GamepadHapticActuator) clear_playing_effect_timers() {
 	actuator.pending_type_ = none
+	actuator.pending_params_ = GamepadEffectParameters{}
 }

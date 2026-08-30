@@ -43,12 +43,29 @@ fn test_video_representation_dimensions_poster_and_controls() {
 	controls.toggle_playback()
 	assert controls.play_icon_is_pause
 	controls.set_current_time(30)
-	assert controls.timeline_percentage == 0.25
+	assert controls.timeline_percentage == 25
 	assert controls.timestamp == '0:30 / 2:00'
 	controls.set_volume(0.25)!
 	assert controls.mute_icon == .low
 	controls.toggle_mute()
-	assert controls.mute_icon == .empty
+	assert controls.mute_icon == .low
+	assert controls.was_muted
+	assert controls.shadow_tree_created
+	assert controls.registered_event_listeners_.len == 10
+	controls.remove_event_listeners()
+	assert controls.registered_event_listeners_.len == 0
+}
+
+fn test_concrete_video_poster_attribute_change_uses_video_state() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	mut video_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'video') or {
+		panic(err)
+	}
+	video := unsafe { &dom.HTMLVideoElement(video_element) }
+	mut model := html_video_element_model_for_dom_element(video)
+	model.set_poster_fetch_hook(poster_test_fetch)
+	html_video_element_attribute_changed(video, 'poster', none, '/poster.png', none)
+	assert model.poster_frame()?.width == 320
 }
 
 fn test_track_element_loads_webvtt_and_failure() {
@@ -72,4 +89,37 @@ fn test_track_element_loads_webvtt_and_failure() {
 	broken.start_the_track_processing_model()
 	assert broken.ready_state() == .error
 	assert broken.event_count('error') == 1
+}
+
+fn test_concrete_track_element_attributes_and_insertion_use_track_state() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/root/' })
+	mut audio_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'audio') or {
+		panic(err)
+	}
+	mut track_dom_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'track') or {
+		panic(err)
+	}
+	mut audio_node := unsafe { &dom.Node(audio_element) }
+	track_node := unsafe { &dom.Node(track_dom_element) }
+	audio_node.append_child(track_node) or { panic(err) }
+
+	track_element := unsafe { &dom.HTMLTrackElement(track_dom_element) }
+	mut model := html_track_element_model_for_dom_element(track_element)
+	model.set_fetch_hook(track_test_fetch)
+
+	html_track_element_attribute_changed(track_element, 'kind', none, 'captions', none)
+	html_track_element_attribute_changed(track_element, 'label', none, 'English', none)
+	html_track_element_attribute_changed(track_element, 'srclang', none, 'en', none)
+	html_track_element_attribute_changed(track_element, 'id', none, 'captions-en', none)
+	html_track_element_attribute_changed(track_element, 'src', none, '/captions.vtt', none)
+	html_track_element_inserted(track_element)
+
+	assert model.track.kind() == .captions
+	assert model.track.label() == 'English'
+	assert model.track.language() == 'en'
+	assert model.track.id() == 'captions-en'
+	assert model.track.mode() == .hidden
+	assert model.ready_state() == .loaded
+	assert model.track.cues().length() == 2
+	assert model.event_count('load') == 1
 }

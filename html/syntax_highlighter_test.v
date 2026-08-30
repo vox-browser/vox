@@ -12,6 +12,8 @@ fn spans_have_kind(spans []SyntaxHighlightSpan, kind AugmentedTokenKind) bool {
 fn test_html_syntax_highlighter_emits_markup_attributes_and_pairs() {
 	highlighter := HTMLSyntaxHighlighter.create()
 	result := highlighter.rehighlight('<div class="box"><span id=x>text</span></div>')
+	literal_result := syntax_highlighter_rehighlight(highlighter, '<b>x</b>')
+	assert literal_result.matching_pairs.len == 1
 	assert spans_have_kind(result.spans, .open_tag)
 	assert spans_have_kind(result.spans, .close_tag)
 	assert spans_have_kind(result.spans, .attribute_name)

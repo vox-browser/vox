@@ -44,6 +44,18 @@ pub fn (button &GamepadButton) value() f64 {
 	return button.value_
 }
 
+pub fn (mut button GamepadButton) set_pressed(value bool) {
+	button.pressed_ = value
+}
+
+pub fn (mut button GamepadButton) set_touched(value bool) {
+	button.touched_ = value
+}
+
+pub fn (mut button GamepadButton) set_value(value f64) {
+	button.value_ = value
+}
+
 pub struct GamepadEventInit {
 	dom.EventInit
 pub:
@@ -53,22 +65,26 @@ pub:
 @[heap]
 pub struct GamepadEvent {
 pub:
-	event   &dom.Event
-	gamepad ?&Gamepad
+	event    &dom.Event
+	gamepad_ ?&Gamepad
 }
 
 pub fn GamepadEvent.construct_impl(event_name string, init GamepadEventInit) !&GamepadEvent {
 	return &GamepadEvent{
-		event:   dom.Event.construct_impl(event_name, init.EventInit)!
-		gamepad: init.gamepad
+		event:    dom.Event.construct_impl(event_name, init.EventInit)!
+		gamepad_: init.gamepad
 	}
 }
 
 pub fn GamepadEvent.create(event_name string, pad ?&Gamepad) &GamepadEvent {
 	return &GamepadEvent{
-		event:   dom.Event.create(event_name, dom.EventInit{})
-		gamepad: pad
+		event:    dom.Event.create(event_name, dom.EventInit{})
+		gamepad_: pad
 	}
+}
+
+pub fn (event &GamepadEvent) gamepad() ?&Gamepad {
+	return event.gamepad_
 }
 
 pub fn (event &GamepadEvent) type_name() string {

@@ -8,10 +8,11 @@
 // HTMLFieldSetElement.{h,cpp}, and HTMLOutputElement.{h,cpp}.
 module html
 
+import aria
 import color
 import dom
 
-pub type BaseAllowedHook = fn (dom.URL) bool
+pub type BaseAllowedHook = fn(dom.URL) bool
 
 @[heap]
 pub struct HTMLBaseElementModel {
@@ -25,7 +26,7 @@ mut:
 pub fn HTMLBaseElementModel.create(fallback_base_url dom.URL) &HTMLBaseElementModel {
 	return &HTMLBaseElementModel{
 		fallback_base_url_: fallback_base_url
-		frozen_base_url_:   fallback_base_url
+		frozen_base_url_: fallback_base_url
 	}
 }
 
@@ -64,6 +65,81 @@ pub fn (mut base HTMLBaseElementModel) set_the_frozen_base_url() {
 
 pub fn (base &HTMLBaseElementModel) frozen_base_url() dom.URL {
 	return base.frozen_base_url_
+}
+
+pub fn html_base_element_set_the_frozen_base_url(base &dom.HTMLBaseElement) {
+	element := unsafe { &dom.Element(base) }
+	document := element.document()
+	fallback := document.fallback_base_url()
+	href := element.get_attribute_value('href')
+	mut frozen := dom.dom_url_parse(href, fallback, document.encoding_or_default()) or { fallback }
+	if frozen.scheme() in ['data', 'javascript'] {
+		frozen = fallback
+	}
+	mut mutable_base := unsafe { &dom.HTMLBaseElement(base) }
+	mutable_base.frozen_base_url_ = frozen
+	mutable_base.frozen_base_url_initialized_ = true
+	if frozen != fallback {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.respond_to_base_url_changes()
+	}
+}
+
+pub fn html_base_element_inserted(base &dom.HTMLBaseElement) {
+	mut element := unsafe { &dom.Element(base) }
+	element.inserted()
+	mut document := unsafe { &dom.Document(element.document()) }
+	document.update_base_element()
+	if first := document.first_base_element_with_href_in_tree_order() {
+		if first == base {
+			html_base_element_set_the_frozen_base_url(base)
+		}
+	}
+}
+
+pub fn html_base_element_removed_from(base &dom.HTMLBaseElement, old_parent ?&dom.Node, old_root &dom.Node) {
+	mut element := unsafe { &dom.Element(base) }
+	element.removed_from(old_parent, old_root)
+	mut document := unsafe { &dom.Document(element.document()) }
+	old_first := document.first_base_element_with_href_in_tree_order()
+	document.update_base_element()
+	if first := document.first_base_element_with_href_in_tree_order() {
+		if old := old_first {
+			if first != old {
+				html_base_element_set_the_frozen_base_url(first)
+			}
+		} else {
+			html_base_element_set_the_frozen_base_url(first)
+		}
+	}
+}
+
+pub fn html_base_element_attribute_changed(base &dom.HTMLBaseElement, name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut element := unsafe { &dom.Element(base) }
+	element.attribute_changed(name, old_value, value, namespace_)
+	if name != 'href' {
+		return
+	}
+	mut document := unsafe { &dom.Document(element.document()) }
+	document.update_base_element()
+	if first := document.first_base_element_with_href_in_tree_order() {
+		if first == base {
+			html_base_element_set_the_frozen_base_url(base)
+		}
+	}
+}
+
+pub fn html_base_element_href(base &dom.HTMLBaseElement) string {
+	element := unsafe { &dom.Element(base) }
+	href := element.get_attribute_value('href')
+	url := dom.dom_url_parse(href, element.document().fallback_base_url(),
+		element.document().encoding_or_default()) or { return href }
+	return url.serialize()
+}
+
+pub fn set_html_base_element_href(base &dom.HTMLBaseElement, href string) {
+	mut element := unsafe { &dom.Element(base) }
+	element.set_attribute_value('href', href)
 }
 
 pub enum MetaHttpEquivState {
@@ -157,26 +233,38 @@ fn (mut meta HTMLMetaElementModel) update_metadata() {
 	content := meta.content_ or { return }
 	match name {
 		'referrer' {
-			if content == '' {
-				return
-			}
-			legacy := match ascii_lowercase_string(content) {
-				'never' { ReferrerPolicy.no_referrer }
-				'default' { ReferrerPolicy.strict_origin_when_cross_origin }
-				'always' { ReferrerPolicy.unsafe_url }
-				'origin-when-crossorigin' { ReferrerPolicy.origin_when_cross_origin }
-				else { referrer_policy_from_string(content) or { return } }
-			}
-			meta.document_state.referrer_policy = legacy
+			meta.update_referrer_policy()
 		}
 		'theme-color' {
-			meta.document_state.theme_color = if content.trim_space() == '' { none } else { content }
+			meta.document_state.theme_color = if content.trim_space() == '' {
+				none
+			} else {
+				content
+			}
 		}
 		'color-scheme' {
 			meta.document_state.supported_color_schemes = parse_meta_color_schemes(content)
 		}
 		else {}
 	}
+}
+
+pub fn (mut meta HTMLMetaElementModel) update_referrer_policy() {
+	if !meta.in_document {
+		return
+	}
+	content := meta.content_ or { return }
+	if content == '' {
+		return
+	}
+	policy := match ascii_lowercase_string(content) {
+		'never' { ReferrerPolicy.no_referrer }
+		'default' { ReferrerPolicy.strict_origin_when_cross_origin }
+		'always' { ReferrerPolicy.unsafe_url }
+		'origin-when-crossorigin' { ReferrerPolicy.origin_when_cross_origin }
+		else { referrer_policy_from_string(content) or { return } }
+	}
+	meta.document_state.referrer_policy = policy
 }
 
 fn parse_meta_csp(input string) SerializedCSPPolicy {
@@ -192,14 +280,14 @@ fn parse_meta_csp(input string) SerializedCSPPolicy {
 			continue
 		}
 		directives << SerializedCSPDirective{
-			name:  name
+			name: name
 			value: parts[1..].clone()
 		}
 	}
 	return SerializedCSPPolicy{
-		directives:               directives
-		disposition:              .enforce
-		source:                   .meta
+		directives: directives
+		disposition: .enforce
+		source: .meta
 		pre_parsed_policy_string: input
 	}
 }
@@ -241,6 +329,100 @@ pub fn (mut meta HTMLMetaElementModel) removed() {
 	}
 }
 
+pub fn html_meta_element_http_equiv_state(meta &dom.HTMLMetaElement) ?MetaHttpEquivState {
+	return meta_http_equiv_state(unsafe { &dom.Element(meta) }.get_attribute_value('http-equiv'))
+}
+
+fn html_meta_element_update_referrer_policy(meta &dom.HTMLMetaElement) {
+	element := unsafe { &dom.Element(meta) }
+	if !element.as_node().is_connected() {
+		return
+	}
+	content := element.get_attribute('content') or { return }
+	if content == '' {
+		return
+	}
+	policy := match ascii_lowercase_string(content) {
+		'never' { ReferrerPolicy.no_referrer }
+		'default' { ReferrerPolicy.strict_origin_when_cross_origin }
+		'always' { ReferrerPolicy.unsafe_url }
+		'origin-when-crossorigin' { ReferrerPolicy.origin_when_cross_origin }
+		else { referrer_policy_from_string(content) or { return } }
+	}
+	mut document := unsafe { &dom.Document(element.document()) }
+	document.set_meta_referrer_policy(policy.to_string())
+}
+
+pub fn html_meta_element_update_metadata(meta &dom.HTMLMetaElement, old_name ?string) {
+	element := unsafe { &dom.Element(meta) }
+	name := ascii_lowercase_string(element.get_attribute_value('name'))
+	mut document := unsafe { &dom.Document(element.document()) }
+	if name == 'theme-color' {
+		document.obtain_theme_color()
+	} else if name == 'color-scheme' {
+		document.obtain_supported_color_schemes()
+	} else if name == 'referrer' {
+		html_meta_element_update_referrer_policy(meta)
+	}
+	if previous := old_name {
+		old_lower := ascii_lowercase_string(previous)
+		if old_lower == 'theme-color' {
+			document.obtain_theme_color()
+		} else if old_lower == 'color-scheme' {
+			document.obtain_supported_color_schemes()
+		}
+	}
+}
+
+pub fn html_meta_element_inserted(meta &dom.HTMLMetaElement) {
+	mut element := unsafe { &dom.Element(meta) }
+	element.inserted()
+	html_meta_element_update_metadata(meta, none)
+	state := html_meta_element_http_equiv_state(meta) or { return }
+	content := element.get_attribute('content') or { return }
+	mut document := unsafe { &dom.Document(element.document()) }
+	match state {
+		.refresh {
+			if content != '' {
+				document.shared_declarative_refresh_steps(content)
+			}
+		}
+		.content_language {
+			if !content.contains(',') {
+				candidate := content.trim_left(' \t\n\r\v\f').fields()[0] or { return }
+				if candidate != '' {
+					document.set_pragma_set_default_language(candidate)
+				}
+			}
+		}
+		.content_security_policy {
+			parent := element.as_node().parent_element() or { return }
+			if parent.local_name() == 'head' && content != '' {
+				policy := parse_meta_csp(content)
+				serialized := policy.directives.map('${it.name} ${it.value.join(' ')}'.trim_space()).join('; ')
+				document.enforce_meta_csp(serialized)
+			}
+		}
+		else {}
+	}
+}
+
+pub fn html_meta_element_removed_from(meta &dom.HTMLMetaElement, old_parent ?&dom.Node, old_root &dom.Node) {
+	mut element := unsafe { &dom.Element(meta) }
+	element.removed_from(old_parent, old_root)
+	html_meta_element_update_metadata(meta, none)
+}
+
+pub fn html_meta_element_attribute_changed(meta &dom.HTMLMetaElement, local_name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut element := unsafe { &dom.Element(meta) }
+	element.attribute_changed(local_name, old_value, value, namespace_)
+	if local_name == 'name' {
+		html_meta_element_update_metadata(meta, old_value)
+	} else {
+		html_meta_element_update_metadata(meta, none)
+	}
+}
+
 pub struct StyleSheetModel {
 pub mut:
 	text     string
@@ -248,7 +430,7 @@ pub mut:
 	disabled bool
 }
 
-pub type StyleParseHook = fn (string) !
+pub type StyleParseHook = fn(string) !
 
 @[heap]
 pub struct HTMLStyleElementModel {
@@ -281,8 +463,9 @@ pub fn (mut style HTMLStyleElementModel) set_type(value string) {
 
 pub fn (mut style HTMLStyleElementModel) set_media(value string) {
 	style.media_ = value
-	if mut sheet := style.sheet_ {
-		sheet.media = value
+	if sheet := style.sheet_ {
+		mut mutable_sheet := unsafe { &StyleSheetModel(sheet) }
+		mutable_sheet.media = value
 	}
 }
 
@@ -308,7 +491,7 @@ pub fn (mut style HTMLStyleElementModel) update_a_style_block() {
 		}
 	}
 	style.sheet_ = &StyleSheetModel{
-		text:  style.text_
+		text: style.text_
 		media: style.media_
 	}
 }
@@ -328,6 +511,78 @@ pub fn (mut style HTMLStyleElementModel) set_disabled(value bool) {
 }
 
 pub fn (style &HTMLStyleElementModel) contributes_a_script_blocking_style_sheet() bool {
+	return false
+}
+
+fn html_style_element_base(style &dom.HTMLStyleElement) &dom.StyleElementBase {
+	if base := style.style_element_base_ {
+		return base
+	}
+	base := &dom.StyleElementBase{
+		element_: unsafe { &dom.Element(style) }
+	}
+	mut mutable_style := unsafe { &dom.HTMLStyleElement(style) }
+	mutable_style.style_element_base_ = base
+	return base
+}
+
+fn html_style_element_update_a_style_block(style &dom.HTMLStyleElement) {
+	mut base := html_style_element_base(style)
+	base.update_a_style_block()
+	if sheet := base.sheet() {
+		mut mutable_sheet := unsafe { &dom.CSSStyleSheet(sheet) }
+		mutable_sheet.media = unsafe { &dom.Element(style) }.get_attribute_value('media')
+	}
+}
+
+pub fn html_style_element_children_changed(style &dom.HTMLStyleElement, metadata dom.ChildrenChangedMetadata) {
+	mut element := unsafe { &dom.Element(style) }
+	element.children_changed(metadata)
+	html_style_element_update_a_style_block(style)
+}
+
+pub fn html_style_element_inserted(style &dom.HTMLStyleElement) {
+	html_style_element_update_a_style_block(style)
+	mut element := unsafe { &dom.Element(style) }
+	element.inserted()
+}
+
+pub fn html_style_element_removed_from(style &dom.HTMLStyleElement, old_parent ?&dom.Node, old_root &dom.Node) {
+	mut base := html_style_element_base(style)
+	base.update_a_style_block()
+	mut element := unsafe { &dom.Element(style) }
+	element.removed_from(old_parent, old_root)
+}
+
+pub fn html_style_element_attribute_changed(style &dom.HTMLStyleElement, name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut element := unsafe { &dom.Element(style) }
+	element.attribute_changed(name, old_value, value, namespace_)
+	mut base := html_style_element_base(style)
+	if name == 'media' {
+		if sheet := base.sheet() {
+			mut mutable_sheet := unsafe { &dom.CSSStyleSheet(sheet) }
+			mutable_sheet.media = value or { '' }
+		}
+	} else if name == 'type' {
+		html_style_element_update_a_style_block(style)
+	}
+}
+
+pub fn html_style_element_sheet(style &dom.HTMLStyleElement) ?&dom.CSSStyleSheet {
+	return html_style_element_base(style).sheet()
+}
+
+pub fn html_style_element_disabled(style &dom.HTMLStyleElement) bool {
+	sheet := html_style_element_base(style).sheet() or { return false }
+	return sheet.disabled
+}
+
+pub fn set_html_style_element_disabled(style &dom.HTMLStyleElement, disabled bool) {
+	mut sheet := html_style_element_base(style).sheet() or { return }
+	sheet.disabled = disabled
+}
+
+pub fn html_style_element_contributes_a_script_blocking_style_sheet(_ &dom.HTMLStyleElement) bool {
 	return false
 }
 
@@ -377,21 +632,115 @@ pub fn html_body_presentational_hints(attributes map[string]string, inherited_fr
 	if background := attributes['background'] {
 		hints.background_image = dom.dom_url_parse(background, base_url, 'UTF-8')
 	}
-	hints.margin_top = first_body_margin(attributes, 'marginheight', 'topmargin',
-		inherited_frame_attributes, 'marginheight')
-	hints.margin_bottom = first_body_margin(attributes, 'marginheight', 'bottommargin',
-		inherited_frame_attributes, 'marginheight')
-	hints.margin_left = first_body_margin(attributes, 'marginwidth', 'leftmargin',
-		inherited_frame_attributes, 'marginwidth')
-	hints.margin_right = first_body_margin(attributes, 'marginwidth', 'rightmargin',
-		inherited_frame_attributes, 'marginwidth')
+	hints.margin_top = first_body_margin(attributes, 'marginheight', 'topmargin', inherited_frame_attributes, 'marginheight')
+	hints.margin_bottom = first_body_margin(attributes, 'marginheight', 'bottommargin', inherited_frame_attributes, 'marginheight')
+	hints.margin_left = first_body_margin(attributes, 'marginwidth', 'leftmargin', inherited_frame_attributes, 'marginwidth')
+	hints.margin_right = first_body_margin(attributes, 'marginwidth', 'rightmargin', inherited_frame_attributes, 'marginwidth')
 	return hints
+}
+
+fn window_event_name_for_attribute(attribute_name string) ?string {
+	return match attribute_name {
+		'onafterprint' { 'afterprint' }
+		'onbeforeprint' { 'beforeprint' }
+		'onbeforeunload' { 'beforeunload' }
+		'ongamepadconnected' { 'gamepadconnected' }
+		'ongamepaddisconnected' { 'gamepaddisconnected' }
+		'onhashchange' { 'hashchange' }
+		'onlanguagechange' { 'languagechange' }
+		'onmessage' { 'message' }
+		'onmessageerror' { 'messageerror' }
+		'onoffline' { 'offline' }
+		'ononline' { 'online' }
+		'onpagehide' { 'pagehide' }
+		'onpagereveal' { 'pagereveal' }
+		'onpageshow' { 'pageshow' }
+		'onpageswap' { 'pageswap' }
+		'onpopstate' { 'popstate' }
+		'onrejectionhandled' { 'rejectionhandled' }
+		'onstorage' { 'storage' }
+		'onunhandledrejection' { 'unhandledrejection' }
+		'onunload' { 'unload' }
+		else { none }
+	}
+}
+
+pub fn html_body_element_attribute_changed(body &dom.HTMLBodyElement, name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut element := unsafe { &dom.Element(body) }
+	element.attribute_changed(name, old_value, value, namespace_)
+	if namespace_ != none {
+		return
+	}
+	mut document := unsafe { &dom.Document(element.document()) }
+	if name in ['link', 'alink', 'vlink'] {
+		parsed := legacy_dom_color(value or { '' }) or { return }
+		match name {
+			'link' { document.set_normal_link_color(parsed) }
+			'alink' { document.set_active_link_color(parsed) }
+			'vlink' { document.set_visited_link_color(parsed) }
+			else {}
+		}
+	} else if name == 'background' {
+		mut mutable_body := unsafe { &dom.HTMLBodyElement(body) }
+		mutable_body.background_url_ = document.encoding_parse_url(value or { '' })
+	}
+	if event_name := window_event_name_for_attribute(name) {
+		event_target := unsafe { &dom.EventTarget(element.as_node()) }
+		event_target.element_event_handler_attribute_changed(event_name, value)
+	}
+}
+
+pub fn html_body_element_global_event_handlers_to_event_target(body &dom.HTMLBodyElement, event_name string) ?&dom.EventTarget {
+	element := unsafe { &dom.Element(body) }
+	if dom.is_window_reflecting_body_element_event_handler(event_name) {
+		window := element.document().get_window() or { return none }
+		return unsafe { &dom.EventTarget(window) }
+	}
+	return unsafe { &dom.EventTarget(element.as_node()) }
+}
+
+pub fn html_body_element_window_event_handlers_to_event_target(body &dom.HTMLBodyElement) ?&dom.EventTarget {
+	window := unsafe { &dom.Element(body) }.document().get_window() or { return none }
+	return unsafe { &dom.EventTarget(window) }
 }
 
 pub fn html_source_element_inserted_into_media(mut media HTMLMediaElement, parent_has_src_attribute bool) ! {
 	if !parent_has_src_attribute && media.network_state() == .empty {
 		media.select_resource()!
 	}
+}
+
+pub fn html_source_element_inserted(source &dom.HTMLSourceElement) {
+	mut element := unsafe { &dom.Element(source) }
+	element.inserted()
+	parent := element.as_node().parent_element() or { return }
+	mut media := html_media_element_for_dom_element(parent) or { return }
+	if !parent.has_attribute('src') && media.network_state() == .empty {
+		mut candidates := []string{}
+		for child in parent.as_node().children_as_vector() {
+			if source_candidate := child.as_element() {
+				if source_candidate.local_name() == 'source' {
+					candidates << source_candidate.get_attribute_value('src')
+				}
+			}
+		}
+		media.set_source_candidates(candidates)
+		media.select_resource() or {}
+	}
+	// Picture-element relevant mutations are handled by the image update path
+	// once concrete HTMLImageElement state is attached to DOM image elements.
+}
+
+pub fn html_source_element_moved_from(source &dom.HTMLSourceElement, old_parent ?&dom.Node) {
+	mut element := unsafe { &dom.Element(source) }
+	element.moved_from(old_parent)
+	// The upstream picture-child relevant-mutation step is still marked FIXME.
+}
+
+pub fn html_source_element_removed_from(source &dom.HTMLSourceElement, old_parent ?&dom.Node, old_root &dom.Node) {
+	mut element := unsafe { &dom.Element(source) }
+	element.removed_from(old_parent, old_root)
+	// The upstream picture-child relevant-mutation step is still marked FIXME.
 }
 
 fn relation_tokens(value string) []string {
@@ -416,8 +765,39 @@ pub fn html_anchor_element_rel_list(anchor &dom.HTMLAnchorElement) []string {
 	return relation_tokens(unsafe { &dom.Element(anchor) }.get_attribute_value('rel'))
 }
 
-pub fn html_area_element_rel_list(area &dom.HTMLAreaElement) []string {
-	return relation_tokens(unsafe { &dom.Element(area) }.get_attribute_value('rel'))
+pub fn html_area_element_rel_list(area &dom.HTMLAreaElement) &dom.DOMTokenList {
+	if list := area.rel_list_ {
+		return list
+	}
+	element := unsafe { &dom.Element(area) }
+	list := dom.DOMTokenList.create(element, 'rel')
+	mut mutable_area := unsafe { &dom.HTMLAreaElement(area) }
+	mutable_area.rel_list_ = list
+	return list
+}
+
+pub fn html_area_element_attribute_changed(area &dom.HTMLAreaElement, name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut element := unsafe { &dom.Element(area) }
+	element.attribute_changed(name, old_value, value, namespace_)
+	if name == 'rel' {
+		if list := area.rel_list_ {
+			mut mutable_list := unsafe { &dom.DOMTokenList(list) }
+			mutable_list.associated_attribute_changed(value or { '' })
+		}
+	}
+	// href URL state is parsed on demand by the translated hyperlink mixin.
+}
+
+pub fn html_area_element_default_tab_index_value(_ &dom.HTMLAreaElement) i32 {
+	return 0
+}
+
+pub fn html_area_element_default_role(area &dom.HTMLAreaElement) aria.Role {
+	return if unsafe { &dom.Element(area) }.get_attribute_value('href') != '' {
+		.link
+	} else {
+		.generic
+	}
 }
 
 pub fn html_anchor_element_text(anchor &dom.HTMLAnchorElement) string {
@@ -445,17 +825,85 @@ pub fn activate_html_anchor_element(anchor &dom.HTMLAnchorElement, is_image_map_
 	}
 	download := element.has_attribute('download')
 	return HyperlinkActivationResult{
-		url:              dom.URL{
+		url: dom.URL{
 			value: serialized
 		}
-		download:         download
+		download: download
 		user_involvement: if download { .browser_ui } else { user_involvement }
 	}
 }
 
+pub fn html_anchor_element_has_download_preference(anchor &dom.HTMLAnchorElement) bool {
+	return unsafe { &dom.Element(anchor) }.has_attribute('download')
+}
+
+pub fn html_anchor_element_attribute_changed(_ &dom.HTMLAnchorElement, local_name string) {
+	// relList is materialized on demand in this port, so changing rel needs no
+	// cached-token-list invalidation beyond the attribute mutation itself.
+	_ = local_name
+}
+
+pub fn html_anchor_element_has_activation_behavior(_ &dom.HTMLAnchorElement) bool {
+	return true
+}
+
+pub fn html_anchor_element_activation_behavior(anchor &dom.HTMLAnchorElement, is_image_map_target bool, trusted bool, offset_x f64, offset_y f64, user_involvement UserNavigationInvolvement, platform_control_key bool) ?HyperlinkActivationResult {
+	return activate_html_anchor_element(anchor, is_image_map_target, trusted, offset_x, offset_y, user_involvement, platform_control_key)
+}
+
+pub fn html_anchor_element_default_tab_index_value(_ &dom.HTMLAnchorElement) i32 {
+	return 0
+}
+
+pub fn html_anchor_element_default_role(anchor &dom.HTMLAnchorElement) aria.Role {
+	return if unsafe { &dom.Element(anchor) }.get_attribute_value('href') != '' {
+		.link
+	} else {
+		.generic
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/image-maps.html#dom-map-areas
+pub fn html_map_element_areas(map_element &dom.HTMLMapElement) &dom.HTMLCollection {
+	if areas := map_element.areas_ {
+		return areas
+	}
+	element := unsafe { &dom.Element(map_element) }
+	areas := dom.HTMLCollection.create(unsafe { &dom.ParentNode(element) }, .descendants,
+		fn (candidate &dom.Element) bool {
+		return candidate.local_name() == 'area'
+	}, fn (_ &dom.Element, _ &dom.Element) bool {
+		return false
+	})
+	mut mutable_map := unsafe { &dom.HTMLMapElement(map_element) }
+	mutable_map.areas_ = areas
+	return areas
+}
+
+pub fn html_mod_element_default_role(element &dom.HTMLModElement) aria.Role {
+	local_name := unsafe { &dom.Element(element) }.local_name()
+	if local_name == 'del' {
+		return .deletion
+	}
+	if local_name == 'ins' {
+		return .insertion
+	}
+	panic('HTMLModElement has unexpected local name ${local_name}')
+}
+
+pub fn html_quote_element_default_role(element &dom.HTMLQuoteElement) aria.Role {
+	local_name := unsafe { &dom.Element(element) }.local_name()
+	if local_name == 'blockquote' {
+		return .blockquote
+	}
+	if local_name == 'q' {
+		return .generic
+	}
+	panic('HTMLQuoteElement has unexpected local name ${local_name}')
+}
+
 fn is_labelable_element(element &dom.Element) bool {
-	if element.local_name() == 'input'
-		&& ascii_lowercase_string(element.get_attribute_value('type')) == 'hidden' {
+	if element.local_name() == 'input' && ascii_lowercase_string(element.get_attribute_value('type')) == 'hidden' {
 		return false
 	}
 	return element.local_name() in ['button', 'input', 'meter', 'output', 'progress', 'select',
@@ -504,6 +952,76 @@ pub fn html_label_element_control(label &dom.HTMLLabelElement) ?&dom.Element {
 	return none
 }
 
+pub fn html_label_element_for_(label &dom.HTMLLabelElement) ?string {
+	return unsafe { &dom.Element(label) }.get_attribute('for')
+}
+
+pub fn html_label_element_set_being_activated(label &dom.HTMLLabelElement, activated bool) {
+	mut label_element := unsafe { &dom.Element(label) }
+	label_element.set_being_activated(activated)
+	if control := html_label_element_control(label) {
+		mut mutable_control := control
+		mutable_control.set_being_activated(activated)
+	}
+}
+
+pub fn html_label_element_has_activation_behavior(_ &dom.HTMLLabelElement) bool {
+	return true
+}
+
+pub fn html_label_element_activation_behavior(label &dom.HTMLLabelElement, event &dom.Event) {
+	if label.click_in_progress_ {
+		return
+	}
+	control := html_label_element_control(label) or { return }
+	if event.type_name() == 'click' && event.interface_ == .mouse_event {
+		mouse_event := unsafe { &dom.MouseEvent(event) }
+		if mouse_event.detail() == 1 {
+			if selection := unsafe { &dom.Element(label) }.document().get_selection() {
+				if !selection.is_collapsed() {
+					return
+				}
+			}
+		}
+	}
+	if control.is_actually_disabled() {
+		return
+	}
+	mut mutable_label := unsafe { &dom.HTMLLabelElement(label) }
+	mutable_label.click_in_progress_ = true
+	if event.interface_ == .mouse_event {
+		mouse_event := unsafe { &dom.MouseEvent(event) }
+		mut click_event := mouse_event.clone()
+		click_event.set_bubbles(true)
+		click_event.set_cancelable(true)
+		click_event.set_composed(true)
+		click_event.set_is_trusted(event.is_trusted())
+		base_event := unsafe { &dom.Event(click_event) }
+		unsafe { &dom.EventTarget(control.as_node()) }
+		.dispatch_event(base_event)
+	} else {
+		click_event := dom.Event.create('click', dom.EventInit{
+			bubbles: true
+			cancelable: true
+			composed: true
+		})
+		unsafe { &dom.EventTarget(control.as_node()) }
+		.dispatch_event(click_event)
+	}
+	mutable_label.click_in_progress_ = false
+	mut document := unsafe { &dom.Document(control.document()) }
+	document.set_focused_area(control.as_node())
+}
+
+pub fn html_label_element_form(label &dom.HTMLLabelElement) ?&dom.HTMLFormElement {
+	control := html_label_element_control(label) or { return none }
+	if form_id := control.get_attribute('form') {
+		return form_element_find_form_by_id(control.as_node().root(), form_id)
+	}
+	ancestor := form_element_nearest_ancestor(control, 'form') or { return none }
+	return unsafe { &dom.HTMLFormElement(ancestor) }
+}
+
 pub struct FieldSetContext {
 pub:
 	disabled            bool
@@ -540,6 +1058,43 @@ pub fn html_fieldset_element_elements(fieldset &dom.HTMLFieldSetElement) []&dom.
 	return collect_fieldset_listed_descendants(unsafe { &dom.Element(fieldset) }.as_node())
 }
 
+pub fn html_field_set_element_is_disabled(fieldset &dom.HTMLFieldSetElement) bool {
+	element := unsafe { &dom.Element(fieldset) }
+	if element.has_attribute('disabled') {
+		return true
+	}
+	mut ancestor := element.as_node().parent_node()
+	for ancestor != none {
+		current := ancestor or { break }
+		if candidate := current.as_element() {
+			if candidate.local_name() == 'fieldset' && candidate.has_attribute('disabled') {
+				mut first_legend := ?&dom.Element(none)
+				for child in candidate.as_node().children_as_vector() {
+					if child_element := child.as_element() {
+						if child_element.local_name() == 'legend' {
+							first_legend = child_element
+							break
+						}
+					}
+				}
+				if legend := first_legend {
+					if !element.as_node().is_descendant_of(legend.as_node()) {
+						return true
+					}
+				} else {
+					return true
+				}
+			}
+		}
+		ancestor = current.parent_node()
+	}
+	return false
+}
+
+pub fn html_field_set_element_elements(fieldset &dom.HTMLFieldSetElement) []&dom.Element {
+	return html_fieldset_element_elements(fieldset)
+}
+
 @[heap]
 pub struct HTMLOutputElementModel {
 pub:
@@ -552,6 +1107,13 @@ mut:
 pub fn HTMLOutputElementModel.create(element &dom.HTMLOutputElement) &HTMLOutputElementModel {
 	return &HTMLOutputElementModel{
 		element: element
+		html_for_: unsafe { &dom.Element(element) }.get_attribute_value('for')
+	}
+}
+
+pub fn (mut output HTMLOutputElementModel) form_associated_element_attribute_changed(name string, _ ?string, value ?string, _ ?string) {
+	if name == 'for' {
+		output.html_for_ = value or { '' }
 	}
 }
 
@@ -565,7 +1127,8 @@ pub fn (output &HTMLOutputElementModel) html_for() []string {
 
 pub fn (output &HTMLOutputElementModel) default_value() string {
 	return output.default_value_override_ or {
-		unsafe { &dom.Element(output.element) }.as_node().descendant_text_content()
+		unsafe { &dom.Element(output.element) }
+		.as_node().descendant_text_content()
 	}
 }
 
@@ -594,8 +1157,16 @@ pub fn (mut output HTMLOutputElementModel) reset() {
 	output.default_value_override_ = none
 }
 
+pub fn (mut output HTMLOutputElementModel) reset_algorithm() {
+	output.reset()
+}
+
 pub fn (mut output HTMLOutputElementModel) clear() {
 	output.default_value_override_ = output.default_value()
 	mut node := unsafe { &dom.Element(output.element) }.as_node()
 	node.string_replace_all('')
+}
+
+pub fn (mut output HTMLOutputElementModel) clear_algorithm() {
+	output.clear()
 }

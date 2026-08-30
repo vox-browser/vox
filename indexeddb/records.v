@@ -63,6 +63,7 @@ pub mut:
 	multi_entry bool
 	records     []IndexRecord
 	deleted     bool
+	store_name  string
 }
 
 pub fn (index IndexData) clone() IndexData {
@@ -83,6 +84,7 @@ pub fn (index IndexData) clone() IndexData {
 	}
 }
 
+@[heap]
 pub struct ObjectStoreData {
 pub mut:
 	name           string
@@ -92,6 +94,8 @@ pub mut:
 	records        []ObjectStoreRecord
 	indexes        map[string]IndexData
 	deleted        bool
+	database_      ?&DatabaseData
+	mutation_log_  ?&MutationLog
 }
 
 pub fn (store ObjectStoreData) clone() ObjectStoreData {

@@ -90,6 +90,8 @@ fn test_text_track_cue_list_lookup() {
 	assert list.length() == 2
 	assert list.item(0)?.id() == 'a'
 	assert list.item(1)?.id() == 'b'
+	assert list.internal_get_own_property(dom.js_number(1))?.id() == 'b'
+	assert list.internal_get_own_property(dom.js_string('1')) == none
 	assert list.item(2) == none
 	assert list.get_cue_by_id('b')?.id() == 'b'
 	// The empty string always returns null.
@@ -107,6 +109,8 @@ fn test_text_track_list_lookup() {
 	list.add_track(track_b)
 	assert list.length() == 2
 	assert list.item(1)?.id() == 'b'
+	assert list.internal_get_own_property(dom.js_number(0))?.id() == 'a'
+	assert list.internal_get_own_property(dom.js_number(1.5)) == none
 	assert list.get_track_by_id('a')?.id() == 'a'
 	assert list.get_track_by_id('missing') == none
 }

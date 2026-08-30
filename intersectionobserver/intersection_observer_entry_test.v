@@ -5,14 +5,14 @@ import geometry
 
 fn test_entry_constructs_read_only_rectangles_and_exposes_idl_attributes() {
 	target := &dom.Element{}
-	entry := IntersectionObserverEntry.construct(IntersectionObserverEntryInit{
-		time:                 12.5
-		root_bounds:          geometry.DOMRectInit{1, 2, 300, 200}
+	entry := IntersectionObserverEntry.construct_impl(IntersectionObserverEntryInit{
+		time: 12.5
+		root_bounds: geometry.DOMRectInit{1, 2, 300, 200}
 		bounding_client_rect: geometry.DOMRectInit{3, 4, 50, 60}
-		intersection_rect:    geometry.DOMRectInit{5, 6, 20, 30}
-		is_intersecting:      true
-		intersection_ratio:   0.4
-		target:               target
+		intersection_rect: geometry.DOMRectInit{5, 6, 20, 30}
+		is_intersecting: true
+		intersection_ratio: 0.4
+		target: target
 	}) or { panic(err) }
 	assert entry.time() == 12.5
 	root := entry.root_bounds() or { panic('root bounds should be present') }

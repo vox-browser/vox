@@ -22,6 +22,10 @@ fn test_universal_global_scope_base64_and_clone() {
 	assert cloned.string_data == 'copy'
 	assert scope.count_queuing_strategy_size() == 1
 	assert scope.byte_length_queuing_strategy_size(23) == 23
+	count_size := scope.count_queuing_strategy_size_function()
+	byte_size := scope.byte_length_queuing_strategy_size_function()
+	assert count_size(QueuingStrategyChunk{ byte_length: 99 }) == 1
+	assert byte_size(QueuingStrategyChunk{ byte_length: 23 }) == 23
 }
 
 fn test_universal_global_scope_microtasks_and_rejected_promises() {
@@ -57,4 +61,7 @@ fn test_universal_global_scope_import_map_and_experimental_flag() {
 	set_experimental_interfaces_exposed(true)
 	assert expose_experimental_interfaces()
 	set_experimental_interfaces_exposed(false)
+	UniversalGlobalScopeMixin.set_experimental_interfaces_exposed(true)
+	assert UniversalGlobalScopeMixin.expose_experimental_interfaces()
+	UniversalGlobalScopeMixin.set_experimental_interfaces_exposed(false)
 }

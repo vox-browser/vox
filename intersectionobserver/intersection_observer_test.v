@@ -13,7 +13,7 @@ fn default_observer() &IntersectionObserver {
 }
 
 fn test_margin_parser_expands_css_shorthand_and_serializes_resolved_lengths() {
-	empty := parse_a_margin('') or { panic('empty margin must parse') }
+	empty := IntersectionObserver.parse_a_margin('') or { panic('empty margin must parse') }
 	assert empty.len == 4
 	assert empty.map(it.serialize()) == ['0px', '0px', '0px', '0px']
 
@@ -33,11 +33,13 @@ fn test_margin_parser_rejects_unsupported_syntax() {
 }
 
 fn test_constructor_sorts_thresholds_applies_defaults_and_visibility_delay_floor() {
-	observer := IntersectionObserver.construct(discard_entries, IntersectionObserverInit{
-		root_margin:      '1px 2% 3px 4%'
-		scroll_margin:    '5px'
-		thresholds:       [0.75, 0.0, 0.5, 0.5]
-		delay:            5
+	document := dom.Document.create(dom.url_about_blank())
+	observer := IntersectionObserver.construct_impl(discard_entries, IntersectionObserverInit{
+		relevant_document: document
+		root_margin: '1px 2% 3px 4%'
+		scroll_margin: '5px'
+		thresholds: [0.75, 0.0, 0.5, 0.5]
+		delay: 5
 		track_visibility: true
 	}) or { panic(err) }
 	assert observer.thresholds() == [0.0, 0.5, 0.5, 0.75]
@@ -46,10 +48,12 @@ fn test_constructor_sorts_thresholds_applies_defaults_and_visibility_delay_floor
 	assert observer.delay() == 100
 	assert observer.track_visibility()
 	assert observer.is_implicit_root()
+	assert observer.intersection_root().document? == document
+	assert observer.intersection_root_node()? == unsafe { &dom.Node(document) }
 
 	empty := IntersectionObserver.construct(discard_entries, IntersectionObserverInit{
 		thresholds: []
-		delay:      -10
+		delay: -10
 	}) or { panic(err) }
 	assert empty.thresholds() == [0.0]
 	assert empty.delay() == -10
@@ -58,16 +62,14 @@ fn test_constructor_sorts_thresholds_applies_defaults_and_visibility_delay_floor
 fn test_constructor_reports_margin_and_threshold_errors() {
 	if _ := IntersectionObserver.construct(discard_entries, IntersectionObserverInit{
 		root_margin: '1em'
-	})
-	{
+	}) {
 		assert false
 	} else {
 		assert err.msg().contains('root margin')
 	}
 	if _ := IntersectionObserver.construct(discard_entries, IntersectionObserverInit{
 		scroll_margin: 'auto'
-	})
-	{
+	}) {
 		assert false
 	} else {
 		assert err.msg().contains('scroll margin')
@@ -75,8 +77,7 @@ fn test_constructor_reports_margin_and_threshold_errors() {
 	for threshold in [-0.01, 1.01] {
 		if _ := IntersectionObserver.construct(discard_entries, IntersectionObserverInit{
 			thresholds: [threshold]
-		})
-		{
+		}) {
 			assert false
 		}
 	}
@@ -137,11 +138,11 @@ fn test_root_intersection_rectangle_expands_only_same_origin_layout_roots() {
 	expanded := observer.root_intersection_rectangle(RootGeometry{ rect: base })
 	assert expanded == geometry.DOMRectInit{8, 10, 207, 130}
 	assert observer.root_intersection_rectangle(RootGeometry{
-		rect:        base
+		rect: base
 		same_origin: false
 	}) == base
 	assert observer.root_intersection_rectangle(RootGeometry{
-		rect:           base
+		rect: base
 		has_layout_box: false
 	}) == base
 }

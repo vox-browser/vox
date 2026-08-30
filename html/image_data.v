@@ -11,6 +11,23 @@ pub:
 	color_space PredefinedColorSpace = .srgb
 }
 
+pub struct ImageDataSizeConstructor {
+pub:
+	sw       u32
+	sh       u32
+	settings ?ImageDataSettings
+}
+
+pub struct ImageDataBufferConstructor {
+pub:
+	data     []u8
+	sw       u32
+	sh       ?u32
+	settings ?ImageDataSettings
+}
+
+pub type ImageDataConstructor = ImageDataBufferConstructor | ImageDataSizeConstructor
+
 pub struct ImageDataBitmap {
 pub:
 	width  u32
@@ -53,6 +70,20 @@ pub fn ImageData.create_with_data(data []u8, sw u32, sh ?u32, settings ?ImageDat
 		}
 	}
 	return image_data_initialize(height, sw, settings, data, none)
+}
+
+// ImageData::construct_impl is overloaded in C++; the tagged constructor
+// preserves both overloads under the exact translated entry point.
+pub fn ImageData.construct_impl(constructor ImageDataConstructor) !&ImageData {
+	match constructor {
+		ImageDataSizeConstructor {
+			return ImageData.create(constructor.sw, constructor.sh, constructor.settings)
+		}
+		ImageDataBufferConstructor {
+			return ImageData.create_with_data(constructor.data, constructor.sw, constructor.sh,
+				constructor.settings)
+		}
+	}
 }
 
 fn image_data_initialize(rows u32, pixels_per_row u32, settings ?ImageDataSettings, source []u8, default_color_space ?PredefinedColorSpace) &ImageData {

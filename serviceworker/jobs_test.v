@@ -116,3 +116,25 @@ fn test_update_enforces_maximum_scope_and_preserves_unimplemented_body_compariso
 	assert update.promise.state == .fulfilled
 	assert registration.update_via_cache() == .none
 }
+
+fn test_exact_job_queue_and_promise_entry_points() {
+	mut agent := ServiceWorkerAgent.create()
+	job := Job.create(.unregister, 'key', 'https://example.test/', '',
+		'https://example.test/page')
+	agent.schedule_job(job)
+	assert scope_to_job_queue_map(agent)['https://example.test/'].len == 1
+	assert run_job(mut agent, 'https://example.test/')
+	assert job.promise.state == .rejected
+
+	resolved := Job.create(.update, 'key', 'https://example.test/other/', 'sw.js', none)
+	resolve_job_promise(agent, resolved, none, true)
+	assert resolved.promise.state == .fulfilled && resolved.promise.bool_value? == true
+	rejected := Job.create(.update, 'key', 'https://example.test/reject/', 'sw.js', none)
+	reject_job_promise(agent, rejected, 'failure')
+	assert rejected.promise.state == .rejected && rejected.promise.error == 'failure'
+
+	queued := Job.create(.unregister, 'key', 'https://example.test/manual/', '', none)
+	agent.schedule_job(queued)
+	assert finish_job(mut agent, queued)
+	assert agent.queue_length(queued.scope_url) == 0
+}

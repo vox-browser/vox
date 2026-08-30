@@ -234,17 +234,31 @@ pub fn filtered_response(internal &Response, response_type ResponseType) &Respon
 	if response_type == .opaque {
 		return &Response{
 			response_type:     .opaque
+			aborted:           internal.aborted
 			status:            0
 			header_list:       headers
+			cache_state:       internal.cache_state
+			body_info:         internal.body_info
+			redirect_taint:    internal.redirect_taint
+			method:            internal.method
+			monotonic_response_time: internal.monotonic_response_time
+			network_error_message: internal.network_error_message
 			internal_response: internal
 		}
 	}
 	if response_type == .opaque_redirect {
 		return &Response{
 			response_type:     .opaque_redirect
+			aborted:           internal.aborted
 			status:            0
 			url_list:          internal.url_list.clone()
 			header_list:       headers
+			cache_state:       internal.cache_state
+			body_info:         internal.body_info
+			redirect_taint:    internal.redirect_taint
+			method:            internal.method
+			monotonic_response_time: internal.monotonic_response_time
+			network_error_message: internal.network_error_message
 			internal_response: internal
 		}
 	}
@@ -256,7 +270,16 @@ pub fn filtered_response(internal &Response, response_type ResponseType) &Respon
 		status_message:    internal.status_message
 		header_list:       headers
 		body:              if bytes := internal.body { bytes.clone() } else { none }
+		cache_state:       internal.cache_state
+		cors_exposed_header_name_list: internal.cors_exposed_header_name_list.clone()
+		range_requested: internal.range_requested
+		request_includes_credentials: internal.request_includes_credentials
+		timing_allow_passed: internal.timing_allow_passed
 		body_info:         internal.body_info
+		redirect_taint: internal.redirect_taint
+		method: internal.method
+		monotonic_response_time: internal.monotonic_response_time
+		network_error_message: internal.network_error_message
 		internal_response: internal
 	}
 }

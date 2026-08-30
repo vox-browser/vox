@@ -43,3 +43,19 @@ fn test_image_data_serialization_round_trip() {
 		assert false
 	}
 }
+
+fn test_image_data_exact_constructor_overloads() {
+	blank := ImageData.construct_impl(ImageDataConstructor(ImageDataSizeConstructor{
+		sw: 2
+		sh: 1
+	}))!
+	assert blank.data() == [u8(0), 0, 0, 0, 0, 0, 0, 0]
+	backed := ImageData.construct_impl(ImageDataConstructor(ImageDataBufferConstructor{
+		data: [u8(1), 2, 3, 4]
+		sw:   1
+		sh:   1
+	}))!
+	assert backed.width() == 1
+	assert backed.height() == 1
+	assert backed.data() == [u8(1), 2, 3, 4]
+}

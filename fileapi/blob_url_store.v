@@ -9,6 +9,8 @@ module fileapi
 
 import crypto.rand
 
+__global file_api_blob_url_store &BlobURLStore
+
 pub enum BlobURLObjectKind {
 	blob
 	media_source
@@ -59,6 +61,13 @@ pub fn BlobURLStore.create() &BlobURLStore {
 	return &BlobURLStore{}
 }
 
+pub fn blob_url_store() &BlobURLStore {
+	if file_api_blob_url_store == unsafe { nil } {
+		file_api_blob_url_store = BlobURLStore.create()
+	}
+	return file_api_blob_url_store
+}
+
 fn generate_random_uuid() !string {
 	mut bytes := rand.bytes(16)!
 	bytes[6] = (bytes[6] & 0x0f) | 0x40
@@ -83,6 +92,11 @@ pub fn (mut store BlobURLStore) add_entry(object BlobURLObject, environment Blob
 	return url
 }
 
+pub fn add_entry_to_blob_url_store(object BlobURLObject, environment BlobURLEnvironment) !string {
+	mut store := blob_url_store()
+	return store.add_entry(object, environment)
+}
+
 // https://www.w3.org/TR/FileAPI/#check-for-same-partition-blob-url-usage
 pub fn check_for_same_partition_blob_url_usage(entry BlobURLEntry, environment BlobURLEnvironment) bool {
 	return entry.environment.storage_key == environment.storage_key
@@ -102,6 +116,11 @@ pub fn obtain_a_blob_object(entry BlobURLEntry, environment ?BlobURLEnvironment,
 // https://w3c.github.io/FileAPI/#removeTheEntry
 pub fn (mut store BlobURLStore) remove_entry(url string) {
 	store.entries.delete(blob_url_without_fragment(url))
+}
+
+pub fn remove_entry_from_blob_url_store(url string) {
+	mut store := blob_url_store()
+	store.remove_entry(url)
 }
 
 // https://w3c.github.io/FileAPI/#lifeTime
@@ -128,6 +147,10 @@ pub fn (store &BlobURLStore) resolve(url string) ?BlobURLEntry {
 		return none
 	}
 	return store.entries[blob_url_without_fragment(url)] or { none }
+}
+
+pub fn resolve_a_blob_url(url string) ?BlobURLEntry {
+	return blob_url_store().resolve(url)
 }
 
 pub fn (store &BlobURLStore) length() int {

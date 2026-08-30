@@ -29,7 +29,10 @@ fn (store &IDBObjectStore) load() !ObjectStoreData {
 	if store.name_ !in store.transaction.database.data.stores {
 		return error('InvalidStateError: object store was deleted')
 	}
-	return store.transaction.database.data.stores[store.name_].clone()
+	data := store.transaction.database.data.stores[store.name_] or {
+		return error('InvalidStateError: object store was deleted')
+	}
+	return data.clone()
 }
 
 fn (mut store IDBObjectStore) save(data ObjectStoreData) {

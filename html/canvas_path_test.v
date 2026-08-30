@@ -144,3 +144,38 @@ fn test_path2d_copy_and_add_path() {
 	assert segs.last().kind == .move_to
 	assert segs.last().point == FloatPoint{15, 15}
 }
+
+fn test_path2d_construct_impl_variants() {
+	empty := Path2D.construct_impl(none) or { panic(err) }
+	assert empty.path().is_empty()
+	from_string := Path2D.construct_impl(Path2DConstructorArgument('M1 2 L3 4')) or {
+		panic(err)
+	}
+	assert from_string.path().last_point() == FloatPoint{3, 4}
+	from_path := Path2D.construct_impl(Path2DConstructorArgument(*from_string)) or { panic(err) }
+	assert from_path.path().segments().map(it.kind) == from_string.path().segments().map(it.kind)
+}
+
+fn test_path2d_svg_path_data_constructor_translates_every_command() {
+	path :=
+		Path2D.create_from_svg_path_data('M10 10 l5 0 h5 v5 q5 5 10 0 t10 0 c1 2 3 4 5 6 s7 8 9 10 A4 6 90 0 1 70 80 z l2 3')
+	segments := path.path().segments()
+	assert segments.map(it.kind) == [PathSegmentKind.move_to, .line_to, .line_to, .line_to,
+		.quadratic_bezier_curve_to, .quadratic_bezier_curve_to, .cubic_bezier_curve_to,
+		.cubic_bezier_curve_to, .elliptical_arc_to, .close_path, .line_to, .move_to]
+	assert segments[1].point == FloatPoint{15, 10}
+	assert segments[4].control_point_0 == FloatPoint{25, 20}
+	assert segments[5].control_point_0 == FloatPoint{35, 10}
+	assert segments[8].radii == FloatSize{4, 6}
+	assert segments[8].x_axis_rotation == math.pi / 2
+	// A relative instruction after close-path starts from the active subpath's
+	// first point, not the arc endpoint.
+	assert segments[10].point == FloatPoint{12, 13}
+	// Path2D adds a final one-point subpath at the parsed path's last point.
+	assert segments.last().kind == .move_to
+	assert segments.last().point == FloatPoint{12, 13}
+}
+
+fn test_path2d_svg_path_data_rejects_non_moveto_prefix() {
+	assert Path2D.create_from_svg_path_data('L10 20').path().is_empty()
+}

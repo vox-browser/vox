@@ -39,6 +39,8 @@ fn test_dom_string_list() {
 	assert list.length() == 2
 	assert list.item(0)? == 'one'
 	assert list.item(2) == none
+	assert list.item_value(1)? == 'two'
+	assert list.item_value(-1) == none
 	assert list.contains('two')
 	assert !list.contains('three')
 }
@@ -64,6 +66,10 @@ fn test_file_filter_deduplicates_filters() {
 	filter.add_filter(FileFilterMimeType{'image/png'})
 	filter.add_filter(FileFilterMimeType{'image/png'})
 	filter.add_filter(FileFilterExtension{'.png'})
+	decoded := decode_file_filter(encode_file_filter(filter))!
+	assert decoded.filters.len == 3
+	assert decode_file_filter_mime_type(encode_file_filter_mime_type(FileFilterMimeType{'text/plain'}))!.value == 'text/plain'
+	assert decode_file_filter_extension(encode_file_filter_extension(FileFilterExtension{'.txt'}))!.value == '.txt'
 	assert filter.filters.len == 3
 }
 
@@ -89,6 +95,11 @@ fn test_create_potential_cors_request() {
 		RequestDestination.style, .no_cors, .yes)
 	assert fallback.mode == .same_origin
 	assert fallback.credentials_mode == .include
+	key := PreloadKey.create(anonymous)
+	assert key.url == anonymous.url
+	assert key.destination == anonymous.destination
+	assert key.mode == anonymous.mode
+	assert key.credentials_mode == anonymous.credentials_mode
 }
 
 fn test_drag_data_store_has_text_item() {

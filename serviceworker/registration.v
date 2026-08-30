@@ -50,6 +50,26 @@ pub fn (registration &Registration) is_stale(now f64) bool {
 	return now - last > 86400
 }
 
+pub fn (registration &Registration) is_unregistered(store &RegistrationStore) bool {
+	return store.is_unregistered(registration)
+}
+
+pub fn Registration.get(store &RegistrationStore, storage_key string, scope ?string) ?&Registration {
+	return store.get(storage_key, scope)
+}
+
+pub fn Registration.set(mut store RegistrationStore, storage_key string, scope string, update_via_cache ServiceWorkerUpdateViaCache) &Registration {
+	return store.set(storage_key, scope, update_via_cache)
+}
+
+pub fn Registration.match_(store &RegistrationStore, storage_key string, client_url string) ?&Registration {
+	return store.match_client(storage_key, client_url)
+}
+
+pub fn Registration.remove(mut store RegistrationStore, storage_key string, scope string) {
+	store.remove(storage_key, scope)
+}
+
 pub fn (registration &Registration) newest_worker() ?&ServiceWorkerRecord {
 	if installing := registration.installing_worker_ {
 		return installing

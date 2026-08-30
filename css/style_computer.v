@@ -675,7 +675,8 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 	pseudo_element := abstract_element.pseudo_element()
 	for property in declaration_style_properties(declaration) {
 		// OPTIMIZATION: only cascade the requested properties, when a set was given.
-		if properties_to_cascade.len > 0 && property.property_id !in properties_to_cascade {
+		if properties_to_cascade.len > 0 && property.property_id !in properties_to_cascade
+			&& !property_is_shorthand(property.property_id) {
 			continue
 		}
 		if important != property.important {
@@ -689,6 +690,9 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 		resolved_property_value := resolve_cascade_declaration_value(abstract_element,
 			property.property_id, property.value)
 		for longhand in expand_property_longhands(property.property_id, resolved_property_value) {
+			if properties_to_cascade.len > 0 && longhand.id !in properties_to_cascade {
+				continue
+			}
 			mut physical_property_id := longhand.id
 			if property_is_logical_alias(longhand.id) {
 				context := logical_alias_mapping_context or { continue }
@@ -774,7 +778,7 @@ pub fn (s &StyleComputer) recompute_style(mut abstract_element dom.AbstractEleme
 	computed := s.compute_style(abstract_element)
 	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
 
-	mut pseudo_elements := [dom.PseudoElement.before, .after, .selection]
+	mut pseudo_elements := [dom.PseudoElement.before, .after, .selection, .backdrop]
 	if had_list_marker || computed.display().is_list_item() {
 		pseudo_elements << dom.PseudoElement.marker
 	}

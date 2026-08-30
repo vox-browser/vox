@@ -6268,7 +6268,6 @@ fn (mut parser Parser) parse_grid_track_placement(mut tokens ComponentValueStrea
 		}
 
 		// <integer>
-		// FIXME: calculated integers in <grid-line> are not supported yet.
 		mut int_attempt := transaction.clone()
 		if integer_value := parser.parse_integer_value(mut int_attempt) {
 			if parsed_integer != none {
@@ -6276,6 +6275,8 @@ fn (mut parser Parser) parse_grid_track_placement(mut tokens ComponentValueStrea
 			}
 			if integer_value is IntegerStyleValue {
 				parsed_integer = IntegerOrCalculated.from_integer(integer_value.integer())
+			} else if integer_value is CalculatedStyleValue {
+				parsed_integer = IntegerOrCalculated.from_calculated(integer_value)
 			} else {
 				return none
 			}
@@ -11414,12 +11415,7 @@ fn (mut parser Parser) parse_a_media_query_list(mut tokens ComponentValueStream)
 	// matching the C++ parser's error recovery shape.
 	mut queries := []&MediaQuery{}
 	for {
-		query := parser.parse_media_query_tokens(mut tokens) or {
-			&MediaQuery{
-				text:    'not all'
-				matches: false
-			}
-		}
+		query := parser.parse_media_query_tokens(mut tokens) or { MediaQuery.create_not_all() }
 		queries << query
 		if !tokens.consume_a_comma() {
 			break
@@ -11967,14 +11963,14 @@ fn (mut parser Parser) parse_transform_origin_value(mut tokens ComponentValueStr
 					first_value.offset,
 					StyleValue(KeywordStyleValue.create(.center)),
 					zero_value,
-				], .space, .yes))
+				], .space, .no))
 			}
 			.y {
 				StyleValue(StyleValueList.create([
 					StyleValue(KeywordStyleValue.create(.center)),
 					first_value.offset,
 					zero_value,
-				], .space, .yes))
+				], .space, .no))
 			}
 		}
 	}
@@ -12058,7 +12054,7 @@ fn (mut parser Parser) parse_transform_origin_value(mut tokens ComponentValueStr
 	x := x_value or { return none }
 	y := y_value or { return none }
 	tokens = transaction
-	return StyleValue(StyleValueList.create([x, y, third_value], .space, .yes))
+	return StyleValue(StyleValueList.create([x, y, third_value], .space, .no))
 }
 
 fn (mut parser Parser) parse_optional_angle_value_without_consuming_on_failure(mut tokens ComponentValueStream) ?StyleValue {

@@ -64,6 +64,12 @@ fn test_html_events_predicates() {
 	assert !event_is_before_unload_event(error_event)
 	assert error.message() == 'boom'
 	assert error.lineno() == 12
+	assert error.is_trusted()
+	constructed_error := ErrorEvent.construct_impl('error', ErrorEventInit{
+		message: 'script error'
+	}) or { panic(err) }
+	assert constructed_error.message() == 'script error'
+	assert !constructed_error.is_trusted()
 
 	plain := Event.new('custom')
 	assert !event_is_before_unload_event(plain)
@@ -249,4 +255,79 @@ fn test_composition_focus_input_text_and_wheel_events() {
 	assert wheel.delta_y() == -3
 	assert wheel.delta_z() == 4
 	assert wheel.delta_mode() == dom_delta_line
+}
+
+fn test_key_code_and_keyboard_platform_translation() {
+	assert key_code_from_string('Escape') == .escape
+	assert key_code_from_string('A') == .a
+	assert key_code_from_string('?') == .question_mark
+	assert code_point_to_key_code(u32(`a`)) == .a
+	assert code_point_to_key_code(u32(`1`)) == .key_1
+	assert code_point_to_key_code(0x03bb) == .invalid
+	assert determine_key_code(.exclamation_point, u32(`!`)) == u32(`1`)
+	assert determine_key_code(.a, u32(`a`)) == u32(`A`)
+	assert determine_char_code('keypress', u32(`x`)) == u32(`x`)
+	assert determine_char_code('keydown', u32(`x`)) == 0
+	assert get_event_named_key(.left_shift)? == 'Shift'
+	assert get_event_named_key(.a) == none
+	assert get_event_key_string(u32(`λ`))? == 'λ'
+	assert get_event_key_string(10) == none
+	assert is_glyph_modifier_key(.caps_lock)
+	assert !is_glyph_modifier_key(.left_control)
+	assert remove_non_glyph_modifier_keys(modifier_shift | modifier_ctrl | modifier_alt) ==
+		modifier_shift | modifier_alt
+	assert get_event_key(.left, 0, 0) == 'ArrowLeft'
+	assert get_event_key(.a, u32(`A`), modifier_shift) == 'A'
+	assert get_event_code(.exclamation_point, 0) == 'Digit1'
+	assert get_event_code(.key_7, modifier_keypad) == 'Numpad7'
+	assert get_event_location(.right_alt, 0) == dom_key_location_right
+	assert get_event_location(.key_1, modifier_keypad) == dom_key_location_numpad
+
+	keyboard := KeyboardEvent.create_from_platform_event('keypress', .a,
+		modifier_ctrl | modifier_shift, u32(`A`), true)
+	assert keyboard.is_trusted()
+	assert keyboard.bubbles() && keyboard.cancelable() && keyboard.composed()
+	assert keyboard.key() == 'A'
+	assert keyboard.code() == 'KeyA'
+	assert keyboard.key_code() == u32(`A`)
+	assert keyboard.char_code() == u32(`A`)
+	assert keyboard.ctrl_key() && keyboard.shift_key()
+	assert keyboard.repeat()
+}
+
+fn test_exact_mouse_pointer_and_wheel_entry_points() {
+	target := &EventTarget{}
+	mut mouse := MouseEvent.create('click', MouseEventInit{
+		ctrl_key:       true
+		meta_key:       true
+		related_target: target
+	})
+	assert mouse.platform_ctrl_key()
+	assert mouse.related_target()? == target
+	mouse.set_offset_x(4.5)
+	mouse.set_offset_y(5.5)
+	assert mouse.offset_x() == 4.5
+	assert mouse.offset_y() == 5.5
+	assert mouse.is_mouse_event()
+	pointer := PointerEvent.create('pointermove', PointerEventInit{})
+	assert pointer.is_pointer_event()
+
+	wheel := WheelEvent.create_from_platform_event(unsafe { nil }, 'wheel', CSSPixelPoint_{
+		x_: 1
+		y_: 2
+	}, CSSPixelPoint_{
+		x_: 3
+		y_: 4
+	}, CSSPixelPoint_{
+		x_: 5
+		y_: 6
+	}, CSSPixelPoint_{
+		x_: 7
+		y_: 8
+	}, 9, -10, 1, 2, modifier_alt)
+	assert wheel.is_trusted()
+	assert wheel.page_x() == 3 && wheel.offset_y() == 8
+	assert wheel.delta_x() == 9 && wheel.delta_y() == -10
+	assert wheel.delta_mode() == dom_delta_pixel
+	assert wheel.alt_key()
 }

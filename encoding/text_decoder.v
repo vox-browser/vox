@@ -26,6 +26,10 @@ pub:
 }
 
 pub fn TextDecoder.construct(label string, options TextDecoderOptions) !&TextDecoder {
+	return TextDecoder.construct_impl(label, options)
+}
+
+pub fn TextDecoder.construct_impl(label string, options TextDecoderOptions) !&TextDecoder {
 	canonical := get_an_encoding(label) or { return error('RangeError: Invalid encoding ${label}') }
 	if encoding_ascii_lowercase(canonical) == 'replacement' {
 		return error('RangeError: Invalid encoding ${label}')

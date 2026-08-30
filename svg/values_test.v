@@ -7,7 +7,7 @@ fn test_number_and_length_read_only_rules() {
 	number_value.set_value(4)!
 	assert number_value.value == 4
 	mut readonly_number := SvgNumber{
-		value:     2
+		value: 2
 		read_only: true
 	}
 	if _ := readonly_number.set_value(4) {
@@ -17,7 +17,7 @@ fn test_number_and_length_read_only_rules() {
 	}
 	mut length := SvgLength{
 		value: 20
-		unit:  .px
+		unit: .px
 	}
 	length.set_value(5)!
 	assert length.value == 5
@@ -37,7 +37,7 @@ fn test_number_list_webidl_algorithms() {
 	assert list.initialize(4)! == 4
 	assert list.items == [4.0]
 	mut readonly := NumberList{
-		items:     [1.0]
+		items: [1.0]
 		read_only: true
 	}
 	if _ := readonly.append_item(2) {
@@ -49,14 +49,14 @@ fn test_number_list_webidl_algorithms() {
 
 fn test_animated_number_and_integer_optional_second_value() {
 	mut first := AnimatedNumber{
-		attribute:       '4'
-		initial:         0
+		attribute: '4'
+		initial: 0
 		supports_second: true
 	}
 	mut second := AnimatedNumber{
-		attribute:         '4'
-		initial:           0
-		supports_second:   true
+		attribute: '4'
+		initial: 0
+		supports_second: true
 		represents_second: true
 	}
 	assert first.value() == 4
@@ -71,9 +71,9 @@ fn test_animated_number_and_integer_optional_second_value() {
 	first.attribute = '50%'
 	assert first.value() == 0.5
 	mut integer := AnimatedInteger{
-		attribute:         '2'
-		initial:           1
-		supports_second:   true
+		attribute: '2'
+		initial: 1
+		supports_second: true
 		represents_second: true
 	}
 	assert integer.value() == 2
@@ -85,7 +85,7 @@ fn test_animated_number_and_integer_optional_second_value() {
 
 fn test_animated_string_legacy_reflection() {
 	mut reflected := AnimatedString{
-		legacy:  'old'
+		legacy: 'old'
 		initial: 'initial'
 	}
 	assert reflected.value() == 'old'
@@ -106,7 +106,7 @@ fn test_typed_lists_and_animated_rect() {
 	assert lengths.remove_item(0)!.value == 1
 	assert lengths.initialize(SvgLength{ value: 8 })!.value == 8
 	mut transforms := TransformList{}
-	transforms.append_item(Transform{ kind: .translate, values: [2.0, 4.0, 0, 0, 0, 0] })!
+	transforms.append_item(Transform{ kind: .translate, values: [f64(2), 4, 0, 0, 0, 0]! })!
 	assert transforms.get_item(0)!.values[1] == 4
 	assert transforms.length() == 1
 	transforms.insert_item_before(Transform{ kind: .scale }, 0)!
@@ -121,7 +121,7 @@ fn test_typed_lists_and_animated_rect() {
 	assert rect.base() == none
 	rect.nulled = false
 	rect.base_value = Rect{
-		width:  10
+		width: 10
 		height: 20
 	}
 	assert rect.base() or { Rect{} }.width == 10

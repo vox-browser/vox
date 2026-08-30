@@ -17,3 +17,11 @@ pub:
 	code    MediaErrorCode
 	message string
 }
+
+pub fn (media_error &MediaError) code() MediaErrorCode {
+	return media_error.code
+}
+
+pub fn (media_error &MediaError) message() string {
+	return media_error.message
+}

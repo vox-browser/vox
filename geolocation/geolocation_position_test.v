@@ -114,6 +114,8 @@ fn test_geolocation_visibility_emulation_cache_and_watch() {
 			accuracy:  2.0
 		}
 	})
+	emulated := geo.get_emulated_position_data()
+	assert emulated.coordinates?.latitude() == 12.5
 	watch_id := geo.watch_position(fn [mut recorder] (position &GeolocationPosition) {
 		recorder.positions << position
 	}, none, PositionOptions{ enable_high_accuracy: true })

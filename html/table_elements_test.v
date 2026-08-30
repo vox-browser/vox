@@ -17,8 +17,7 @@ fn table_test_element(node &dom.Node, local_name string) ?&dom.Element {
 }
 
 fn test_table_caption_sections_and_ordered_rows() {
-	document :=
-		parse_document('<table><tfoot><tr id="foot"></tr></tfoot><tbody><tr id="body"></tr></tbody><thead><tr id="head"></tr></thead></table>')
+	document := parse_document('<table><tfoot><tr id="foot"></tr></tfoot><tbody><tr id="body"></tr></tbody><thead><tr id="head"></tr></thead></table>')
 	table_dom_element := table_test_element(unsafe { &dom.Node(document) }, 'table') or {
 		panic('missing table')
 	}
@@ -67,8 +66,7 @@ fn test_table_insert_delete_rows_and_cells() {
 }
 
 fn test_table_cell_spans() {
-	document :=
-		parse_document('<table><tr><td colspan="0" rowspan="0"></td><td colspan="999999999999999999999999" rowspan="70000"></td></tr></table>')
+	document := parse_document('<table><tr><td colspan="0" rowspan="0"></td><td colspan="999999999999999999999999" rowspan="70000"></td></tr></table>')
 	row_element := table_test_element(unsafe { &dom.Node(document) }, 'tr') or {
 		panic('missing row')
 	}
@@ -85,8 +83,7 @@ fn test_table_cell_spans() {
 }
 
 fn test_table_col_span_border_and_cellpadding() {
-	document :=
-		parse_document('<table border="7" cellpadding="-2"><colgroup span="0"></colgroup><col span="999999999999999999999999"></table>')
+	document := parse_document('<table border="7" cellpadding="-2"><colgroup span="0"></colgroup><col span="999999999999999999999999"></table>')
 	table_dom_element := table_test_element(unsafe { &dom.Node(document) }, 'table') or {
 		panic('missing table')
 	}
@@ -105,4 +102,63 @@ fn test_table_col_span_border_and_cellpadding() {
 	assert html_table_col_element_span(col) == 1000
 	set_html_table_col_element_span(col, 12)
 	assert html_table_col_element_span(col) == 12
+}
+
+fn test_table_cellpadding_attribute_change_caches_and_invalidates_cells() {
+	document := parse_document('<table><tr><td></td><th></th></tr></table>')
+	table_dom_element := table_test_element(unsafe { &dom.Node(document) }, 'table') or {
+		panic('missing table')
+	}
+	table := unsafe { &dom.HTMLTableElement(table_dom_element) }
+	cell_element := table_test_element(unsafe { &dom.Node(document) }, 'td') or {
+		panic('missing cell')
+	}
+	header_element := table_test_element(unsafe { &dom.Node(document) }, 'th') or {
+		panic('missing header')
+	}
+	mut cell_node := unsafe { &dom.Node(cell_element) }
+	mut header_node := unsafe { &dom.Node(header_element) }
+	cell_node.set_needs_style_update(false)
+	header_node.set_needs_style_update(false)
+
+	mut mutable_table := table_dom_element
+	mutable_table.set_attribute_value('cellpadding', '-4')
+	assert html_table_element_cellpadding(table)? == 0
+	assert cell_node.needs_style_update()
+	assert header_node.needs_style_update()
+
+	cell_node.set_needs_style_update(false)
+	header_node.set_needs_style_update(false)
+	mutable_table.remove_attribute('cellpadding')
+	assert html_table_element_cellpadding(table)? == 1
+	assert cell_node.needs_style_update()
+	assert header_node.needs_style_update()
+}
+
+fn test_table_cell_default_roles() {
+	document := parse_document('<table><thead><tr><th id="column"></th></tr></thead><tbody><tr><th id="row"></th><td id="cell"></td></tr></tbody></table><table role="grid"><tr><td id="gridcell"></td></tr></table>')
+	column := unsafe {
+		&dom.HTMLTableCellElement(document.get_element_by_id('column') or {
+			panic('column')
+		})
+	}
+	row := unsafe {
+		&dom.HTMLTableCellElement(document.get_element_by_id('row') or {
+			panic('row')
+		})
+	}
+	cell := unsafe {
+		&dom.HTMLTableCellElement(document.get_element_by_id('cell') or {
+			panic('cell')
+		})
+	}
+	gridcell := unsafe {
+		&dom.HTMLTableCellElement(document.get_element_by_id('gridcell') or {
+			panic('gridcell')
+		})
+	}
+	assert html_table_cell_element_default_role(column)? == .columnheader
+	assert html_table_cell_element_default_role(row)? == .rowheader
+	assert html_table_cell_element_default_role(cell)? == .cell
+	assert html_table_cell_element_default_role(gridcell)? == .gridcell
 }

@@ -31,6 +31,12 @@ pub:
 	document            &dom.Document = unsafe { nil }
 	rule_context        []RuleContext
 	declared_namespaces map[string]bool
+	is_ua_style_sheet   IsUAStyleSheet
+}
+
+pub enum IsUAStyleSheet {
+	no
+	yes
 }
 
 pub enum PropertyID {
@@ -2109,7 +2115,9 @@ pub fn (c CalculatedStyleValue) numeric_type() ?NumericType {
 pub fn (c CalculatedStyleValue) contains_percentage() bool {
 	if numeric_type := c.numeric_type_ {
 		if exponent := numeric_type.exponent(.percent) {
-			return exponent != 0
+			if exponent != 0 {
+				return true
+			}
 		}
 	}
 	return c.serialization.contains('%')
@@ -2614,7 +2622,11 @@ pub fn (lp LengthPercentage) resolved(context LengthResolutionContext, reference
 			value
 		}
 		Percentage {
-			Length.make_css_px(CSSPixels.nearest_value_for(value.value() * reference_value.to_double() / 100.0))
+			// PercentageOr<Length>::resolved first converts percentage *
+			// reference_value to CSSPixels, then divides that fixed-point
+			// value by the integer 100 through CSSPixelFraction.
+			numerator := CSSPixels.nearest_value_for(value.value() * reference_value.to_double())
+			Length.make_css_px(numerator.divided_by(CSSPixels.new(100)).to_css_pixels())
 		}
 		CalculatedStyleValue {
 			Length.resolve_calculated_with_px(value, context, reference_value)
@@ -3271,6 +3283,14 @@ pub mut:
 	width        ?CSSPixels
 	height       ?CSSPixels
 	aspect_ratio ?CSSPixelFraction
+}
+
+// ComputedValues.h: whether `auto` permits a replaced element's natural ratio
+// and the optional author-specified preferred ratio.
+pub struct AspectRatio {
+pub:
+	use_natural_aspect_ratio_if_available bool = true
+	preferred_ratio                       ?Ratio
 }
 
 pub fn (s SizeWithAspectRatio) has_width() bool {

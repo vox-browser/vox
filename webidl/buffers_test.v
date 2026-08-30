@@ -33,3 +33,19 @@ fn test_buffer_source_kind_predicates() {
 	assert typed.is_typed_array()
 	assert is_buffer_source_type(buffer_source_value(typed))
 }
+
+fn test_bufferable_object_and_array_buffer_view_surfaces() {
+	source := BufferSource.view(.uint16_array, [u8(0), 1, 2, 3], 2, 2)!
+	base := BufferableObjectBase.create(source)
+	assert base.byte_length() == 2
+	assert base.byte_offset() == 2
+	assert base.element_size() == 2
+	assert base.is_typed_array_base()
+	assert !base.is_data_view()
+	assert !base.is_array_buffer()
+	assert base.viewed_array_buffer().byte_length == 4
+	assert BufferableObjectBase.bufferable_object_from_raw_object(source).kind == .uint16_array
+	mut view := ArrayBufferView.create(source)!
+	view.write([u8(8), 9], 0)!
+	assert view.raw_object().bytes == [u8(0), 1, 8, 9]
+}

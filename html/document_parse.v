@@ -9,9 +9,6 @@ import dom
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#parse-html-from-a-string
 // Parse `markup` into `document` (a full-document parse, not a fragment). Runs the tree
 // construction stage to completion.
-//
-// FIXME: the spec's "the end" steps (DOMContentLoaded, the load event, readyState transitions) are
-// not run — they require the event loop / a Window, which are out of scope for this port.
 pub fn parse_html_from_a_string(document &dom.Document, markup string) {
 	install_document_fragment_parsing_hook(document)
 	mut mutable_document := unsafe { &dom.Document(document) }
@@ -20,7 +17,10 @@ pub fn parse_html_from_a_string(document &dom.Document, markup string) {
 
 // Convenience: parse an HTML string into a fresh (about:blank) html Document and return it.
 pub fn parse_document(markup string) &dom.Document {
-	document := dom.Document.create(dom.url_about_blank())
+	mut document := dom.Document.create(dom.url_about_blank())
+	// Documents created by navigation allow declarative shadow roots. This
+	// convenience entry point is the browser/navigation parse path.
+	document.set_allow_declarative_shadow_roots(true)
 	parse_html_from_a_string(document, markup)
 	return document
 }

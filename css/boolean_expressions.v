@@ -86,10 +86,16 @@ pub enum BooleanExpressionKind {
 @[heap]
 pub struct BooleanExpression {
 pub mut:
-	kind     BooleanExpressionKind
-	text     string
-	matches  MatchResult = .unknown
-	children []&BooleanExpression
+	kind                           BooleanExpressionKind
+	text                           string
+	matches                        MatchResult = .unknown
+	children                       []&BooleanExpression
+	media_feature_name             string
+	media_feature_kind             MediaFeatureEvalKind
+	media_feature_value            ?MediaFeatureValueLocal
+	media_feature_comparison       ?MediaFeatureComparison
+	media_feature_right_comparison ?MediaFeatureComparison
+	media_feature_right_value      ?MediaFeatureValueLocal
 }
 
 pub fn BooleanExpression.create_general_enclosed(serialized_contents string, matches MatchResult) &BooleanExpression {
@@ -97,6 +103,21 @@ pub fn BooleanExpression.create_general_enclosed(serialized_contents string, mat
 		kind:    .general_enclosed
 		text:    serialized_contents
 		matches: matches
+	}
+}
+
+fn BooleanExpression.create_media_feature(serialized_contents string, feature_name string, kind MediaFeatureEvalKind, value ?MediaFeatureValueLocal, comparison ?MediaFeatureComparison, right_comparison ?MediaFeatureComparison, right_value ?MediaFeatureValueLocal) &BooleanExpression {
+	return &BooleanExpression{
+		kind:                           .general_enclosed
+		text:                           serialized_contents
+		matches:                        evaluate_media_feature(feature_name, kind, value,
+			comparison, right_comparison, right_value, none)
+		media_feature_name:             feature_name
+		media_feature_kind:             kind
+		media_feature_value:            value
+		media_feature_comparison:       comparison
+		media_feature_right_comparison: right_comparison
+		media_feature_right_value:      right_value
 	}
 }
 
@@ -183,7 +204,12 @@ pub fn (expression &BooleanExpression) evaluate(document ?&dom.Document) MatchRe
 	match expression.kind {
 		.general_enclosed, .constant, .supports_declaration, .supports_selector,
 		.supports_font_tech, .supports_font_format {
-			_ = document
+			if expression.kind == .general_enclosed && expression.media_feature_name.len > 0 {
+				return evaluate_media_feature(expression.media_feature_name,
+					expression.media_feature_kind, expression.media_feature_value,
+					expression.media_feature_comparison, expression.media_feature_right_comparison,
+					expression.media_feature_right_value, document)
+			}
 			return expression.matches
 		}
 		.not {

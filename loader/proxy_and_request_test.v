@@ -33,17 +33,32 @@ fn test_proxy_mappings_use_ordered_wildcards_and_skip_invalid_proxies() {
 fn test_load_request_defaults_mutators_timer_and_file_request_surface() {
 	mut headers := http.HeaderList.create()
 	mut request := LoadRequest.create(headers)
-	assert request.method == 'GET'
-	assert request.include_credentials
-	request.url = dom.URL{'https://example.test/'}
-	request.method = 'POST'
-	request.body = [u8(1), 2, 3]
-	request.cache_mode = fetch.CacheMode.no_store
-	request.initiator_type = fetch.InitiatorType.fetch
+	assert request.method() == 'GET'
+	assert request.include_credentials()
+	request.set_url(dom.URL{'https://example.test/'})
+	request.set_method('POST')
+	request.set_body([u8(1), 2, 3])
+	request.set_cache_mode(fetch.CacheMode.no_store)
+	request.set_initiator_type(fetch.InitiatorType.fetch)
+	request.set_include_credentials(false)
+	request.set_page(42)
+	assert (request.url() or { panic('missing URL') }).serialize() == 'https://example.test/'
+	assert request.method() == 'POST'
+	assert request.body() == [u8(1), 2, 3]
+	assert request.cache_mode() == .no_store
+	assert !request.include_credentials()
+	assert (request.initiator_type() or { panic('missing initiator') }) == fetch.InitiatorType.fetch
+	assert (request.page() or { panic('missing page') }) == u64(42)
+	assert request.headers() == headers
 	request.start_timer()
 	assert request.load_time() >= 0
 	file_request := FileRequest.create('/tmp/example', ignore_file_result)
-	assert file_request.path == '/tmp/example'
+	assert file_request.path() == '/tmp/example'
+}
+
+fn test_loader_singletons_are_stable() {
+	assert ContentFilter.the() == ContentFilter.the()
+	assert ProxyMappings.the() == ProxyMappings.the()
 }
 
 fn test_user_agent_and_platform_match_upstream_tokens() {

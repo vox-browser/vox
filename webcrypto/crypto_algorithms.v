@@ -54,6 +54,8 @@ pub:
 	info []u8
 }
 
+pub type HKDFParams = HkdfParams
+
 pub struct Pbkdf2Params {
 pub:
 	name       string = 'PBKDF2'
@@ -61,6 +63,8 @@ pub:
 	salt       []u8
 	iterations u32
 }
+
+pub type PBKDF2Params = Pbkdf2Params
 
 pub struct AesKeyGenParams {
 pub:

@@ -16,6 +16,7 @@ fn test_valid_date_microsyntaxes() {
 	assert is_valid_time_string('23:59:59.999')
 	assert is_valid_time_string('00:00')
 	assert !is_valid_time_string('24:00')
+	assert !is_valid_time_string('12:60')
 	assert !is_valid_time_string('12:30:00.0000')
 	assert is_valid_local_date_and_time_string('2024-02-29T23:59')
 	assert is_valid_local_date_and_time_string('2024-02-29 23:59')

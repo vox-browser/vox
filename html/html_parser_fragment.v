@@ -2,10 +2,29 @@ module html
 
 import dom
 
-fn dom_html_fragment_parse_callback(target voidptr, context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots) []&dom.Node {
+fn dom_html_fragment_parse_callback(target voidptr, context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots) ![]&dom.Node {
 	_ = target
-	_ = allow_declarative_shadow_roots
-	return parse_html_fragment(context_element, markup)
+	return parse_html_fragment_with_options(context_element, markup, allow_declarative_shadow_roots)
+}
+
+fn dom_xml_fragment_parse_callback(target voidptr, context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots) ![]&dom.Node {
+	_ = target
+	return parse_xml_fragment_with_options(context_element, markup, allow_declarative_shadow_roots == .yes)
+}
+
+fn dom_fragment_prepare_script_descendants_callback(target voidptr, root &dom.Node) {
+	_ = target
+	root.for_each_in_subtree(fn (node &dom.Node) dom.TraversalDecision {
+		element := node.as_element() or { return .@continue }
+		if !element.is_html_element() || element.local_name() != 'script' {
+			return .@continue
+		}
+		script_element := unsafe { &dom.HTMLScriptElement(element) }
+		mut script := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(script_element)) }
+		script.unmark_as_already_started()
+		script.unmark_as_parser_inserted()
+		return .@continue
+	})
 }
 
 fn dom_html_document_parse_callback(target voidptr, document &dom.Document, markup string) {
@@ -14,13 +33,80 @@ fn dom_html_document_parse_callback(target voidptr, document &dom.Document, mark
 	parser.run()
 }
 
+fn dom_html_parser_abort_callback(target voidptr) {
+	mut parser := unsafe { &HTMLParser(target) }
+	parser.abort()
+}
+
+fn dom_html_parser_feed_callback(target voidptr, input string) {
+	mut parser := unsafe { &HTMLParser(target) }
+	parser.tokenizer.feed(input)
+}
+
+fn dom_html_parser_run_callback(target voidptr, stop_at_insertion_point bool) {
+	mut parser := unsafe { &HTMLParser(target) }
+	if stop_at_insertion_point {
+		parser.run_until_insertion_point()
+	} else {
+		parser.run()
+	}
+}
+
+fn dom_html_parser_script_nesting_level_callback(target voidptr) usize {
+	parser := unsafe { &HTMLParser(target) }
+	return parser.current_script_nesting_level()
+}
+
+fn dom_html_parser_insertion_point_is_defined_callback(target voidptr) bool {
+	parser := unsafe { &HTMLParser(target) }
+	return parser.tokenizer.is_insertion_point_defined()
+}
+
+fn dom_html_parser_update_insertion_point_callback(target voidptr) {
+	mut parser := unsafe { &HTMLParser(target) }
+	parser.tokenizer.update_insertion_point()
+}
+
+fn dom_html_parser_insert_input_callback(target voidptr, input string) {
+	mut parser := unsafe { &HTMLParser(target) }
+	parser.tokenizer.insert_input_at_insertion_point(input)
+}
+
+fn dom_html_parser_insert_eof_callback(target voidptr) {
+	mut parser := unsafe { &HTMLParser(target) }
+	parser.tokenizer.insert_eof()
+}
+
+fn make_dom_html_parser_handle(parser &HTMLParser) &dom.HTMLParser {
+	return &dom.HTMLParser{
+		target: voidptr(parser)
+		abort_callback: dom_html_parser_abort_callback
+		feed_callback: dom_html_parser_feed_callback
+		run_callback: dom_html_parser_run_callback
+		script_nesting_level_callback: dom_html_parser_script_nesting_level_callback
+		insertion_point_is_defined_callback: dom_html_parser_insertion_point_is_defined_callback
+		update_insertion_point_callback: dom_html_parser_update_insertion_point_callback
+		insert_input_callback: dom_html_parser_insert_input_callback
+		insert_eof_callback: dom_html_parser_insert_eof_callback
+	}
+}
+
+fn dom_html_parser_create_for_scripting_callback(target voidptr, document &dom.Document) &dom.HTMLParser {
+	_ = target
+	parser := HTMLParser.create_for_scripting(document)
+	return make_dom_html_parser_handle(parser)
+}
+
 // Install the HTML tree builder behind DOM::Element.innerHTML/setHTMLUnsafe/insertAdjacentHTML.
 // The callback avoids a module cycle: html imports dom, while dom only retains this function pointer.
 pub fn install_document_fragment_parsing_hook(document &dom.Document) {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_html_fragment_parsing_hook(dom.DocumentHTMLFragmentParsingHook{
 		parse_fragment: dom_html_fragment_parse_callback
+		parse_xml_fragment: dom_xml_fragment_parse_callback
+		prepare_script_descendants: dom_fragment_prepare_script_descendants_callback
 		parse_document: dom_html_document_parse_callback
+		create_parser_for_scripting: dom_html_parser_create_for_scripting_callback
 	})
 }
 
@@ -29,10 +115,17 @@ pub fn install_document_fragment_parsing_hook(document &dom.Document) {
 // Parses `markup` as if it were the contents of `context_element`, returning the parsed nodes (in
 // tree order) which the caller inserts into the real tree.
 pub fn parse_html_fragment(context_element &dom.Element, markup string) []&dom.Node {
+	return parse_html_fragment_with_options(context_element, markup, .no)
+}
+
+pub fn parse_html_fragment_with_options(context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots) []&dom.Node {
 	install_document_fragment_parsing_hook(context_element.document())
 	// 1. Let document be a Document node whose type is "html".
 	mut temp_document := dom.Document.create_for_fragment_parsing()
 	temp_document.set_document_type(.html)
+	if allow_declarative_shadow_roots == .yes {
+		temp_document.set_allow_declarative_shadow_roots(true)
+	}
 
 	// 2/3. Inherit quirks mode from the context's node document.
 	context_document := context_element.document()

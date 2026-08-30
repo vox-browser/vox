@@ -7,6 +7,26 @@
 // modules are translated, preserving Navigator's required lazy singleton rules.
 module html
 
+pub struct NavigatorLanguageMixin {
+pub:
+	preferred_languages []string = ['en-US']
+}
+
+pub fn (mixin &NavigatorLanguageMixin) language() string {
+	return if mixin.preferred_languages.len > 0 { mixin.preferred_languages[0] } else { '' }
+}
+
+pub fn (mixin &NavigatorLanguageMixin) languages() []string {
+	return mixin.preferred_languages.clone()
+}
+
+pub struct NavigatorOnLineMixin {}
+
+pub fn (mixin &NavigatorOnLineMixin) on_line() bool {
+	_ = mixin
+	return true
+}
+
 pub struct NavigatorHostConfiguration {
 pub:
 	pdf_viewer_supported bool
@@ -43,6 +63,25 @@ pub mut:
 	battery_promise_          ?&NavigatorBatteryPromise
 	xr_                       ?&NavigatorCapability
 	beacon_context_           ?&NavigatorBeaconContext
+}
+
+pub fn (navigator &Navigator) language() string {
+	_ = navigator
+	return NavigatorLanguageMixin{}.language()
+}
+
+pub fn (navigator &Navigator) languages() []string {
+	_ = navigator
+	return NavigatorLanguageMixin{}.languages()
+}
+
+pub fn (navigator &Navigator) on_line() bool {
+	_ = navigator
+	return true
+}
+
+pub fn (navigator &Navigator) this_navigator_storage_object() &Navigator {
+	return navigator
 }
 
 pub fn Navigator.create(configuration NavigatorHostConfiguration) &Navigator {
@@ -183,6 +222,10 @@ pub mut:
 
 pub fn WorkerNavigator.create() &WorkerNavigator {
 	return &WorkerNavigator{}
+}
+
+pub fn (navigator &WorkerNavigator) this_navigator_storage_object() &WorkerNavigator {
+	return navigator
 }
 
 pub fn (mut navigator WorkerNavigator) media_capabilities() &NavigatorCapability {

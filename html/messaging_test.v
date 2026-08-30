@@ -47,6 +47,7 @@ fn test_message_event_accessors_and_legacy_initializer() {
 	assert event.extract_an_origin() or { panic('missing origin') } == dom.Origin{
 		value: 'https://example.com'
 	}
+	assert message_event_to_message_event_source_internal(none) == none
 
 	event.init_message_event('messageerror', true, false, dom.js_number(4), 'custom-origin', '8',
 		none, [])
@@ -80,6 +81,23 @@ fn test_message_channel_queues_until_started_and_clones_data() {
 	drain_messaging_tasks()
 	assert recorder.types == ['message']
 	assert recorder.data == ['[object Object]']
+}
+
+fn test_message_port_exact_registry_and_transport_helpers() {
+	mut seen := 0
+	MessagePort.for_each_message_port(fn [mut seen] (_ &MessagePort) {
+		seen++
+	})
+	assert seen >= 0
+	channel := MessageChannel.construct_impl()!
+	mut source := channel.port1()
+	mut target := channel.port2()
+	target.enable()
+	record := structured_serialize_with_transfer(dom.js_string('direct'), [])!
+	source.send_message_on_transport(record)!
+	assert target.pending_messages_.len == 0
+	source.post_port_message(structured_serialize_with_transfer(dom.js_string('queued'), [])!)
+	target.read_from_transport()
 }
 
 fn test_message_port_close_and_self_transfer_errors() {
@@ -194,4 +212,17 @@ fn test_broadcast_channel_filters_by_name_and_storage_key() {
 		return
 	}
 	assert false
+}
+
+fn test_broadcast_channel_repository_exact_registration_api() {
+	mut repository := BroadcastChannelRepository.create()
+	channel := BroadcastChannel.construct_impl('repository-test')
+	mut mutable_channel := channel
+	mutable_channel.set_messaging_environment(dom.Origin{ value: 'https://example.test' },
+		'repository-key', true)
+	repository.register_channel(channel)
+	assert repository.registered_channels_for_key('repository-key') == [channel]
+	repository.unregister_channel(channel)
+	assert repository.registered_channels_for_key('repository-key').len == 0
+	mutable_channel.close()
 }

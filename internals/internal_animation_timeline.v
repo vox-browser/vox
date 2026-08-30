@@ -25,6 +25,10 @@ pub fn InternalAnimationTimeline.create() &InternalAnimationTimeline {
 // Upstream's update_current_time override intentionally does nothing.
 pub fn (timeline &InternalAnimationTimeline) update_current_time(_ f64) {}
 
+pub fn (_ &InternalAnimationTimeline) duration() ?animations.TimeValue {
+	return none
+}
+
 pub fn (mut timeline InternalAnimationTimeline) set_time(time ?f64) {
 	// Internals is allowed to control this monotonic test timeline directly.
 	timeline.timeline.current_time_ = if value := time {

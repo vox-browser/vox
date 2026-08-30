@@ -5,19 +5,19 @@ import url
 fn test_policy_parser_duplicate_case_and_clone() {
 	mut policy := parse_a_serialized_csp(" SCRIPT-SRC 'self' https://cdn.test ; img-src data:; script-src 'none'; ; \u0100bad x",
 		.header, .enforce)
-	assert policy.directives.len == 2
-	assert policy.directives[0].name == script_src
-	assert policy.directives[0].value == ["'self'", 'https://cdn.test']
-	assert policy.directives[0].kind == .script_source
-	assert policy.directives[1].kind == .image_source
+	assert policy.directives().len == 2
+	assert policy.directives()[0].name() == script_src
+	assert policy.directives()[0].value() == ["'self'", 'https://cdn.test']
+	assert policy.directives()[0].kind == .script_source
+	assert policy.directives()[1].kind == .image_source
 	assert policy.contains_directive_with_name(img_src)
 	policy.set_self_origin(url.Origin.tuple('https', url.Host.from_string('example.test'), none,
 		none))
 	cloned := policy.clone()
 	policy.remove_directive(img_src)
-	assert policy.directives.len == 1
-	assert cloned.directives.len == 2
-	assert cloned.pre_parsed_policy_string == policy.pre_parsed_policy_string
+	assert policy.directives().len == 1
+	assert cloned.directives().len == 2
+	assert cloned.pre_parsed_policy_string() == policy.pre_parsed_policy_string()
 }
 
 fn test_factory_maps_all_known_directives() {
@@ -73,7 +73,32 @@ fn test_response_policy_parsing() {
 	}
 	list := parse_a_responses_content_security_policies(response)
 	assert list.policies.len == 2
-	assert list.policies[0].disposition == .enforce
-	assert list.policies[1].disposition == .report
+	assert list.policies[0].disposition() == .enforce
+	assert list.policies[1].disposition() == .report
 	assert list.policies[0].self_origin_value().serialize() == 'https://example.test'
+}
+
+fn test_concrete_directives_delegate_to_shared_algorithms() {
+	mut policy := Policy.parse_a_serialized_csp("img-src 'none'; script-src 'self'; sandbox",
+		.header, .enforce)
+	policy.set_self_origin(url.Origin.tuple('https', url.Host.from_string('example.test'), none,
+		none))
+	mut request := new_request(url.URL{
+		scheme: 'https'
+		host:   url.Host.from_string('evil.test')
+	})
+	request.destination = .image
+	image := ImageSourceDirective(create_directive(img_src, ["'none'"]))
+	assert image.pre_request_check(request, policy) == .blocked
+	script := ScriptSourceDirective(create_directive(script_src, ["'self'"]))
+	assert script.inline_check(none, .script, policy, 'alert(1)') == .blocked
+	sandboxed := SandboxDirective(create_directive(sandbox, []))
+	assert sandboxed.initialization(true, policy) == .blocked
+	assert policy.directives().len == 3
+	assert policy.disposition() == .enforce
+	assert policy.source() == .header
+	global := GlobalContext{
+		policy_list: PolicyList.create([policy])
+	}
+	assert PolicyList.from_object(global) != none
 }

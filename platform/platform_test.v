@@ -57,5 +57,20 @@ fn test_image_codec_and_plugin_registries() {
 	mut fonts := FontPluginRegistry{}
 	font := FontPlugin.new(true, [], false)
 	fonts.install(font)
-	assert fonts.get().is_layout_test_mode
+	assert fonts.get().is_layout_test_mode()
+}
+
+fn test_platform_plugins_expose_upstream_process_singletons() {
+	event_loop := EventLoopPlugin.new()
+	EventLoopPlugin.install(event_loop)
+	assert EventLoopPlugin.the() == event_loop
+	font := FontPlugin.new(true, [], false)
+	FontPlugin.install(font)
+	assert FontPlugin.the() == font
+	assert FontPlugin.the().is_layout_test_mode()
+	codec := &ImageCodecPlugin{}
+	assert !ImageCodecPlugin.is_initialized()
+	ImageCodecPlugin.install(codec)
+	assert ImageCodecPlugin.is_initialized()
+	assert ImageCodecPlugin.the() == codec
 }

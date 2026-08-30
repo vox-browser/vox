@@ -53,7 +53,15 @@ pub:
 }
 
 pub fn Module.construct(source webidl.BufferSource) !&Module {
-	return compile_module(webidl.get_buffer_source_copy(source))
+	return compile_a_webassembly_module(webidl.get_buffer_source_copy(source))
+}
+
+pub fn Module.construct_impl(source webidl.BufferSource) !&Module {
+	return Module.construct(source)
+}
+
+pub fn (compiled &Module) compiled_module() &Module {
+	return compiled
 }
 
 pub fn (compiled &Module) imports() []ModuleImportDescriptor {
@@ -121,11 +129,16 @@ fn (mut decoder Decoder) name() !string {
 }
 
 fn compile_module(bytes []u8) !&Module {
-	if bytes.len < 8 || bytes[..4] != [u8(0), 0x61, 0x73, 0x6d] || bytes[4..8] != [u8(1), 0, 0, 0] {
+	if bytes.len < 8 || bytes[..4] != [u8(0), 0x61, 0x73, 0x6d] || bytes[4..8] != [
+		u8(1),
+		0,
+		0,
+		0,
+	] {
 		return error('CompileError: invalid WebAssembly magic or version')
 	}
 	mut decoder := Decoder{
-		bytes:  bytes
+		bytes: bytes
 		offset: 8
 	}
 	mut imports := []ModuleImportDescriptor{}
@@ -159,16 +172,18 @@ fn compile_module(bytes []u8) !&Module {
 			0 { parse_custom_section(mut section, mut custom)! }
 			2 { parse_import_section(mut section, mut imports)! }
 			7 { parse_export_section(mut section, mut exports)! }
-			else { section.offset = section.bytes.len }
+			else {
+				section.offset = section.bytes.len
+			}
 		}
 		if section.offset != section.bytes.len {
 			return error('CompileError: trailing bytes in section ${section_id}')
 		}
 	}
 	return &Module{
-		bytes:            bytes.clone()
-		import_entries:   imports
-		export_entries:   exports
+		bytes: bytes.clone()
+		import_entries: imports
+		export_entries: exports
 		custom_sections_: custom
 	}
 }
@@ -186,7 +201,9 @@ fn section_rank(section_id u8) !int {
 		12 { 11 }
 		10 { 12 }
 		11 { 13 }
-		else { return error('CompileError: unknown section id ${section_id}') }
+		else {
+			return error('CompileError: unknown section id ${section_id}')
+		}
 	}
 }
 
@@ -195,7 +212,7 @@ fn parse_custom_section(mut decoder Decoder, mut result []CustomSection) ! {
 	contents := decoder.bytes[decoder.offset..].clone()
 	decoder.offset = decoder.bytes.len
 	result << CustomSection{
-		name:     name
+		name: name
 		contents: contents
 	}
 }
@@ -206,8 +223,12 @@ fn external_kind(byte u8) !ImportExportKind {
 		1 { .table }
 		2 { .memory }
 		3 { .global }
-		4 { return error('CompileError: tag imports/exports are not exposed by this API') }
-		else { return error('CompileError: invalid external kind') }
+		4 {
+			return error('CompileError: tag imports/exports are not exposed by this API')
+		}
+		else {
+			return error('CompileError: invalid external kind')
+		}
 	}
 }
 
@@ -221,8 +242,8 @@ fn parse_import_section(mut decoder Decoder, mut result []ModuleImportDescriptor
 		skip_import_description(mut decoder, kind)!
 		result << ModuleImportDescriptor{
 			module: module_name
-			name:   name
-			kind:   kind
+			name: name
+			kind: kind
 		}
 	}
 }
@@ -242,7 +263,9 @@ fn skip_import_description(mut decoder Decoder, kind ImportExportKind) ! {
 		.global {
 			decoder.byte()!
 			mutability := decoder.byte()!
-			if mutability > 1 { return error('CompileError: invalid global mutability') }
+			if mutability > 1 {
+				return error('CompileError: invalid global mutability')
+			}
 		}
 	}
 }
@@ -287,16 +310,17 @@ pub type ImportObject = map[string]map[string]ExternalValue
 @[heap]
 pub struct Instance {
 pub:
-	module  &Module
-	exports map[string]ExternalValue
+	module &Module
+mut:
+	exports_ map[string]ExternalValue
 }
 
 pub fn Instance.construct(compiled &Module, imports ImportObject) !&Instance {
 	for required in compiled.import_entries {
-		namespace_value := imports[required.module] or {
+		if required.module !in imports {
 			return error('LinkError: Import module=${required.module} is not an object')
 		}
-		namespace := namespace_value.clone()
+		namespace := imports[required.module].clone()
 		value := namespace[required.name] or {
 			return error('LinkError: Import ${required.module}.${required.name} is missing')
 		}
@@ -307,16 +331,22 @@ pub fn Instance.construct(compiled &Module, imports ImportObject) !&Instance {
 	mut exports := map[string]ExternalValue{}
 	for descriptor in compiled.export_entries {
 		exports[descriptor.name] = ExternalValue{
-			kind:  descriptor.kind
+			kind: descriptor.kind
 			value: if descriptor.kind == .function_ {
-				webidl.callback_value()
-			} else {
-				webidl.platform_object_value()
-			}
+				webidl.callback_value()} else {
+				webidl.platform_object_value()}
 		}
 	}
 	return &Instance{
-		module:  compiled
-		exports: exports
+		module:   compiled
+		exports_: exports
 	}
+}
+
+pub fn Instance.construct_impl(compiled &Module, imports ImportObject) !&Instance {
+	return Instance.construct(compiled, imports)
+}
+
+pub fn (instance &Instance) exports() map[string]ExternalValue {
+	return instance.exports_.clone()
 }

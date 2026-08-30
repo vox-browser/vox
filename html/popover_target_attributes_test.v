@@ -3,7 +3,13 @@ module html
 import dom
 
 fn test_popover_target_resolution_and_activation() {
-	mut document := &dom.Document{}
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
 	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
 	button := document.create_element_ns('http://www.w3.org/1999/xhtml', 'button') or { panic(err) }
 	popover_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
@@ -15,6 +21,8 @@ fn test_popover_target_resolution_and_activation() {
 	mutable_popover_element.set_attribute_value('id', 'menu')
 	mutable_popover_element.set_attribute_value('popover', 'auto')
 	mut root_node := root.as_node()
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(root_node) or { panic(err) }
 	root_node.append_child(button.as_node()) or { panic(err) }
 	root_node.append_child(popover_element.as_node()) or { panic(err) }
 

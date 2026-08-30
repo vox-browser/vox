@@ -509,3 +509,22 @@ pub fn (subtle_crypto &SubtleCrypto) decapsulate_bits(algorithm string, key &Cry
 	validate_operation_key(key, normalized, .decapsulate_bits)!
 	return error('NotSupportedError: ${normalized} decapsulation backend is unavailable')
 }
+
+pub fn (subtle_crypto &SubtleCrypto) encapsulate_key(algorithm string, key &CryptoKey,
+	shared_key_algorithm string, extractable bool, usages []KeyUsage) !EncapsulatedKey {
+	bits := subtle_crypto.encapsulate_bits(algorithm, key)!
+	shared_key := subtle_crypto.import_key(.raw_secret, bits.shared_key,
+		shared_key_algorithm, extractable, normalize_key_usages_for_operation(usages), '')!
+	return EncapsulatedKey{
+		shared_key: shared_key
+		ciphertext: bits.ciphertext.clone()
+	}
+}
+
+pub fn (subtle_crypto &SubtleCrypto) decapsulate_key(algorithm string, key &CryptoKey,
+	ciphertext []u8, shared_key_algorithm string, extractable bool,
+	usages []KeyUsage) !&CryptoKey {
+	bits := subtle_crypto.decapsulate_bits(algorithm, key, ciphertext)!
+	return subtle_crypto.import_key(.raw_secret, bits, shared_key_algorithm, extractable,
+		normalize_key_usages_for_operation(usages), '')
+}

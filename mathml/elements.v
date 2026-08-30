@@ -8,6 +8,7 @@
 module mathml
 
 import css
+import dom
 
 pub enum MathDepthKind {
 	absolute
@@ -39,25 +40,74 @@ pub:
 	local_name string
 pub mut:
 	attributes map[string]string
+mut:
+	cryptographic_nonce_       string
+	event_target_              &dom.EventTarget = unsafe { nil }
+	browsing_context_connected bool
+	has_header_delivered_csp   bool
 }
 
 pub fn MathMLElement.create(local_name string) &MathMLElement {
 	return &MathMLElement{
 		local_name: local_name
 		attributes: map[string]string{}
+		event_target_: &dom.EventTarget{}
 	}
 }
 
 pub fn (mut element MathMLElement) set_attribute(name string, value string) {
+	old_value := element.attributes[name]
 	element.attributes[name] = value
+	element.attribute_changed(name, old_value, value, none)
 }
 
 pub fn (mut element MathMLElement) remove_attribute(name string) {
+	old_value := element.attributes[name]
 	element.attributes.delete(name)
+	element.attribute_changed(name, old_value, none, none)
 }
 
 pub fn (element &MathMLElement) attribute(name string) ?string {
 	return element.attributes[name]
+}
+
+// HTMLOrSVGElement's nonce attribute-change steps.
+pub fn (mut element MathMLElement) attribute_changed(local_name string, _ ?string, value ?string, namespace_ ?string) {
+	if local_name != 'nonce' || namespace_ != none {
+		return
+	}
+	element.cryptographic_nonce_ = value or { '' }
+}
+
+pub fn (element &MathMLElement) cloned(mut copy MathMLElement, _ bool) ! {
+	copy.cryptographic_nonce_ = element.cryptographic_nonce_
+}
+
+// These two values come from the element's shadow-including root in C++.
+pub fn (mut element MathMLElement) set_insertion_policy_state(browsing_context_connected bool, has_header_delivered_csp bool) {
+	element.browsing_context_connected = browsing_context_connected
+	element.has_header_delivered_csp = has_header_delivered_csp
+}
+
+pub fn (mut element MathMLElement) inserted() {
+	if !element.browsing_context_connected || !element.has_header_delivered_csp || 'nonce' !in element.attributes {
+		return
+	}
+	nonce := element.cryptographic_nonce_
+	element.set_attribute('nonce', '')
+	element.cryptographic_nonce_ = nonce
+}
+
+pub fn (element &MathMLElement) nonce() string {
+	return element.cryptographic_nonce_
+}
+
+pub fn (mut element MathMLElement) set_nonce(nonce string) {
+	element.cryptographic_nonce_ = nonce
+}
+
+pub fn (element &MathMLElement) global_event_handlers_to_event_target(_ string) &dom.EventTarget {
+	return element.event_target_
 }
 
 // https://www.w3.org/TR/html-aria/#el-math
@@ -125,7 +175,7 @@ fn parse_script_level(value string) ?MathDepthHint {
 		return none
 	}
 	return MathDepthHint{
-		kind:  kind
+		kind: kind
 		value: int(signed)
 	}
 }
@@ -167,8 +217,7 @@ fn is_zero_number(value string) bool {
 fn has_length_syntax(value string, percentages bool) bool {
 	trimmed := value.trim_space()
 	lower := ascii_lower(trimmed)
-	if lower.starts_with('calc(') || lower.starts_with('min(') || lower.starts_with('max(')
-		|| lower.starts_with('clamp(') {
+	if lower.starts_with('calc(') || lower.starts_with('min(') || lower.starts_with('max(') || lower.starts_with('clamp(') {
 		return percentages || !lower.contains('%')
 	}
 	if trimmed.ends_with('%') {
@@ -237,6 +286,7 @@ pub fn MathMLMiElement.create() &MathMLMiElement {
 		MathMLElement: MathMLElement{
 			local_name: 'mi'
 			attributes: map[string]string{}
+			event_target_: &dom.EventTarget{}
 		}
 	}
 }
@@ -265,13 +315,13 @@ pub fn MathMLMspaceElement.create() &MathMLMspaceElement {
 		MathMLElement: MathMLElement{
 			local_name: 'mspace'
 			attributes: map[string]string{}
+			event_target_: &dom.EventTarget{}
 		}
 	}
 }
 
 pub fn (element &MathMLMspaceElement) is_presentational_hint(name string) bool {
-	return element.MathMLElement.is_presentational_hint(name)
-		|| name in ['width', 'height', 'depth']
+	return element.MathMLElement.is_presentational_hint(name) || name in ['width', 'height', 'depth']
 }
 
 pub fn (element &MathMLMspaceElement) apply_presentational_hints() PresentationalHints {

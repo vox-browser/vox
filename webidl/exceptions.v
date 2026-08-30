@@ -20,46 +20,69 @@ pub:
 }
 
 pub struct DOMException {
-pub:
-	name    string = 'Error'
-	message string
+mut:
+	name_    string = 'Error'
+	message_ string
 }
 
 pub fn DOMException.create(name string, message string) DOMException {
 	return DOMException{
-		name:    name
-		message: message
+		name_:    name
+		message_: message
 	}
 }
 
 // The JS constructor intentionally takes message before name.
 pub fn DOMException.construct(message string, name string) DOMException {
 	return DOMException{
-		name:    name
-		message: message
+		name_:    name
+		message_: message
 	}
 }
 
+pub fn DOMException.construct_impl(message string, name string) DOMException {
+	return DOMException.construct(message, name)
+}
+
+pub fn (exception DOMException) name() string {
+	return exception.name_
+}
+
+pub fn (exception DOMException) message() string {
+	return exception.message_
+}
+
 pub fn (exception DOMException) code() u16 {
-	return legacy_code_for_name(exception.name)
+	return get_legacy_code_for_name(exception.name_)
 }
 
 pub fn (exception DOMException) serialize() []string {
-	return [exception.name, exception.message]
+	return exception.serialization_steps()
+}
+
+pub fn (exception DOMException) serialization_steps() []string {
+	return [exception.name_, exception.message_]
 }
 
 pub fn DOMException.deserialize(fields []string) !DOMException {
 	if fields.len != 2 {
 		return error('DataCloneError: invalid DOMException serialization')
 	}
-	return DOMException{
-		name:    fields[0]
-		message: fields[1]
+	mut exception := DOMException{}
+	exception.deserialization_steps(fields)!
+	return exception
+}
+
+pub fn (mut exception DOMException) deserialization_steps(fields []string) ! {
+	if fields.len != 2 {
+		return error('DataCloneError: invalid DOMException serialization')
 	}
+	exception.name_ = fields[0]
+	exception.message_ = fields[1]
 }
 
 pub fn (exception DOMException) str() string {
-	return '[${exception.name}]: ${exception.message}'
+	return '[${exception.name_}]: ${exception.message_}'
 }
 
 pub fn legacy_code_for_name(name string) u16 {
@@ -90,6 +113,14 @@ pub fn legacy_code_for_name(name string) u16 {
 	}
 }
 
+pub fn get_legacy_code_for_name(name string) u16 {
+	return legacy_code_for_name(name)
+}
+
+pub fn throw_completion(exception DOMException) ! {
+	return error(exception.str())
+}
+
 pub struct QuotaExceededErrorOptions {
 pub:
 	quota     ?f64
@@ -97,10 +128,17 @@ pub:
 }
 
 pub struct QuotaExceededError {
-pub:
-	base      DOMException
-	quota     ?f64
-	requested ?f64
+pub mut:
+	base DOMException
+mut:
+	quota_     ?f64
+	requested_ ?f64
+}
+
+pub fn QuotaExceededError.create(message string) QuotaExceededError {
+	return QuotaExceededError{
+		base: DOMException.create('QuotaExceededError', message)
+	}
 }
 
 pub fn QuotaExceededError.construct(message string, options QuotaExceededErrorOptions) !QuotaExceededError {
@@ -121,9 +159,21 @@ pub fn QuotaExceededError.construct(message string, options QuotaExceededErrorOp
 	}
 	return QuotaExceededError{
 		base:      DOMException.create('QuotaExceededError', message)
-		quota:     options.quota
-		requested: options.requested
+		quota_:     options.quota
+		requested_: options.requested
 	}
+}
+
+pub fn QuotaExceededError.construct_impl(message string, options QuotaExceededErrorOptions) !QuotaExceededError {
+	return QuotaExceededError.construct(message, options)
+}
+
+pub fn (exception QuotaExceededError) quota() ?f64 {
+	return exception.quota_
+}
+
+pub fn (exception QuotaExceededError) requested() ?f64 {
+	return exception.requested_
 }
 
 pub struct SerializedQuotaExceededError {
@@ -136,17 +186,27 @@ pub:
 
 pub fn (exception QuotaExceededError) serialize() SerializedQuotaExceededError {
 	return SerializedQuotaExceededError{
-		name:      exception.base.name
-		message:   exception.base.message
-		quota:     exception.quota
-		requested: exception.requested
+		name:      exception.base.name()
+		message:   exception.base.message()
+		quota:     exception.quota_
+		requested: exception.requested_
 	}
+}
+
+pub fn (exception QuotaExceededError) serialization_steps() SerializedQuotaExceededError {
+	return exception.serialize()
 }
 
 pub fn QuotaExceededError.deserialize(value SerializedQuotaExceededError) QuotaExceededError {
 	return QuotaExceededError{
 		base:      DOMException.create(value.name, value.message)
-		quota:     value.quota
-		requested: value.requested
+		quota_:     value.quota
+		requested_: value.requested
 	}
+}
+
+pub fn (mut exception QuotaExceededError) deserialization_steps(value SerializedQuotaExceededError) {
+	exception.base = DOMException.create(value.name, value.message)
+	exception.quota_ = value.quota
+	exception.requested_ = value.requested
 }

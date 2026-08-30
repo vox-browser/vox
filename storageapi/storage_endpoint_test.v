@@ -47,3 +47,7 @@ fn test_registered_endpoints_quotas() {
 	session_quota := endpoints[4].quota or { panic('session storage should have a quota') }
 	assert session_quota == session_storage_quota
 }
+
+fn test_storage_endpoint_exact_registered_endpoints_entry_point() {
+	assert StorageEndpoint.registered_endpoints() == registered_endpoints()
+}

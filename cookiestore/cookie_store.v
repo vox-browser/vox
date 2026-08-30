@@ -28,7 +28,7 @@ pub:
 	value       string
 	expires     ?f64
 	domain      ?string
-	path        string         = '/'
+	path        string = '/'
 	same_site   CookieSameSite = .strict
 	partitioned bool
 }
@@ -295,8 +295,7 @@ pub fn parse_cookie_store_url(input string, base &url.URL) ?url.URL {
 			return none
 		}
 		for code_point in host.runes() {
-			if url.is_forbidden_host_code_point(u32(code_point)) && code_point != `[`
-				&& code_point != `]` {
+			if url.is_forbidden_host_code_point(u32(code_point)) && code_point != `[` && code_point != `]` {
 				return none
 			}
 		}
@@ -306,12 +305,12 @@ pub fn parse_cookie_store_url(input string, base &url.URL) ?url.URL {
 			}
 		}
 		mut result := url.URL{
-			scheme:   scheme
+			scheme: scheme
 			username: username
 			password: password
-			host:     url.Host.from_string(host)
-			port:     port
-			paths:    ['']
+			host: url.Host.from_string(host)
+			port: port
+			paths: ['']
 		}
 		if authority_end < input.len {
 			result = split_url_tail(result, input[authority_end..])
@@ -342,20 +341,26 @@ pub fn parse_cookie_store_url(input string, base &url.URL) ?url.URL {
 }
 
 fn urls_have_same_origin(a &url.URL, b &url.URL) bool {
-	return a.scheme == b.scheme && url_host_string(a) == url_host_string(b)
-		&& a.port_or_default() == b.port_or_default()
+	return a.scheme == b.scheme && url_host_string(a) == url_host_string(b) && a.port_or_default() == b.port_or_default()
 }
 
-fn create_cookie_list_item(cookie Cookie) CookieListItem {
+// https://cookiestore.spec.whatwg.org/#create-a-cookielistitem
+pub fn create_a_cookie_list_item(cookie Cookie) CookieListItem {
 	return CookieListItem{
-		name:  cookie.name
+		name: cookie.name
 		value: cookie.value
 	}
 }
 
+// The binding creates a fresh JavaScript array. Cloning gives typed callers
+// the same isolation from the internal query result.
+pub fn cookie_list_to_value(cookie_list []CookieListItem) []CookieListItem {
+	return cookie_list.clone()
+}
+
 // https://cookiestore.spec.whatwg.org/#normalize-a-cookie-name-or-value
 pub fn normalize_cookie_name_or_value(input string) string {
-	return input.trim('	 ')
+	return input.trim('\t ')
 }
 
 fn query_cookies(backend &CookieStoreBackend, record &url.URL, name ?string) []CookieListItem {
@@ -366,7 +371,7 @@ fn query_cookies(backend &CookieStoreBackend, record &url.URL, name ?string) []C
 				continue
 			}
 		}
-		list << create_cookie_list_item(cookie)
+		list << create_a_cookie_list_item(cookie)
 	}
 	return list
 }
@@ -407,8 +412,7 @@ fn contains_forbidden_cookie_byte(value string) bool {
 pub fn set_a_cookie(mut backend CookieStoreBackend, record &url.URL, input CookieInit) bool {
 	name := normalize_cookie_name_or_value(input.name)
 	value := normalize_cookie_name_or_value(input.value)
-	if contains_forbidden_cookie_byte(name) || contains_forbidden_cookie_byte(value)
-		|| name.contains('=') {
+	if contains_forbidden_cookie_byte(name) || contains_forbidden_cookie_byte(value) || name.contains('=') {
 		return false
 	}
 	if name.len == 0 {
@@ -416,8 +420,7 @@ pub fn set_a_cookie(mut backend CookieStoreBackend, record &url.URL, input Cooki
 			return false
 		}
 		lower_value := value.to_lower()
-		if lower_value.starts_with('__host-') || lower_value.starts_with('__host-http-')
-			|| lower_value.starts_with('__http-') || lower_value.starts_with('__secure-') {
+		if lower_value.starts_with('__host-') || lower_value.starts_with('__host-http-') || lower_value.starts_with('__http-') || lower_value.starts_with('__secure-') {
 			return false
 		}
 	}
@@ -464,22 +467,21 @@ pub fn set_a_cookie(mut backend CookieStoreBackend, record &url.URL, input Cooki
 	if path.len == 0 {
 		path = serialized_cookie_default_path(record)
 	}
-	if !path.starts_with('/') || (path != '/' && lower_name.starts_with('__host-'))
-		|| path.len > maximum_attribute_value_size {
+	if !path.starts_with('/') || (path != '/' && lower_name.starts_with('__host-')) || path.len > maximum_attribute_value_size {
 		return false
 	}
 	// Partitioned storage is also a FIXME in upstream CookieStore.cpp.
 	_ = input.partitioned
 	backend.store(record, Cookie{
-		name:        name
-		value:       value
-		domain:      parsed_domain
-		path:        path
-		expires:     expires
-		secure:      true
-		same_site:   input.same_site
+		name: name
+		value: value
+		domain: parsed_domain
+		path: path
+		expires: expires
+		secure: true
+		same_site: input.same_site
 		partitioned: false
-		host_only:   host_only
+		host_only: host_only
 	})
 	return true
 }
@@ -489,12 +491,12 @@ pub fn delete_a_cookie(mut backend CookieStoreBackend, record &url.URL, options 
 	name := normalize_cookie_name_or_value(options.name)
 	value := if name.len == 0 { 'ladybird' } else { '' }
 	return set_a_cookie(mut backend, record, CookieInit{
-		name:        name
-		value:       value
-		expires:     f64(-8.64e15)
-		domain:      options.domain
-		path:        options.path
-		same_site:   .strict
+		name: name
+		value: value
+		expires: f64(-8.64e15)
+		domain: options.domain
+		path: options.path
+		same_site: .strict
 		partitioned: options.partitioned
 	})
 }
@@ -510,7 +512,7 @@ mut:
 
 pub fn CookieStore.create(backend &CookieStoreBackend, environment CookieStoreEnvironment, event_loop &html.EventLoop) &CookieStore {
 	return &CookieStore{
-		backend_:    backend
+		backend_: backend
 		environment: environment
 		event_loop_: event_loop
 	}
@@ -560,7 +562,7 @@ fn (store &CookieStore) queue_list_query(record url.URL, name ?string, promise &
 		list := query_cookies(store.backend_, &record, name)
 		html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [list, promise] () {
 			mut mutable_promise := unsafe { &CookieListPromise(promise) }
-			mutable_promise.resolve(list)
+			mutable_promise.resolve(cookie_list_to_value(list))
 		})
 	})
 }
@@ -642,7 +644,7 @@ pub fn (store &CookieStore) set(name string, value string) &CookieVoidPromise {
 		return promise
 	}
 	store.queue_set(CookieInit{
-		name:  name
+		name: name
 		value: value
 	}, promise, 'Name or value are malformed')
 	return promise
@@ -704,24 +706,53 @@ pub fn (store &CookieStore) onchange() ?&dom.CallbackType {
 	return store.event_target().event_handler_attribute('change')
 }
 
-struct PreparedLists {
+pub enum CookieChangeType {
+	changed
+	deleted
+}
+
+pub struct CookieChange {
+pub:
+	cookie Cookie
+	type_  CookieChangeType
+}
+
+// https://cookiestore.spec.whatwg.org/#observable-changes
+pub fn observable_changes(changes []Cookie, now f64) []CookieChange {
+	mut observable := []CookieChange{cap: changes.len}
+	for cookie in changes {
+		type_ := if expiry := cookie.expires {
+			if expiry < now { CookieChangeType.deleted } else { CookieChangeType.changed }
+		} else {
+			CookieChangeType.changed
+		}
+		observable << CookieChange{
+			cookie: cookie
+			type_: type_
+		}
+	}
+	return observable
+}
+
+pub struct PreparedLists {
+pub:
 	changed []CookieListItem
 	deleted []CookieListItem
 }
 
-fn prepare_lists(changes []Cookie, now f64) PreparedLists {
+// https://cookiestore.spec.whatwg.org/#prepare-lists
+pub fn prepare_lists(changes []CookieChange) PreparedLists {
 	mut changed := []CookieListItem{}
 	mut deleted := []CookieListItem{}
-	for cookie in changes {
-		if expiry := cookie.expires {
-			if expiry < now {
-				deleted << CookieListItem{
-					name: cookie.name
-				}
-				continue
+	for change in changes {
+		item := create_a_cookie_list_item(change.cookie)
+		if change.type_ == .changed {
+			changed << item
+		} else {
+			deleted << CookieListItem{
+				name: item.name
 			}
 		}
-		changed << create_cookie_list_item(cookie)
 	}
 	return PreparedLists{
 		changed: changed
@@ -733,7 +764,8 @@ fn prepare_lists(changes []Cookie, now f64) PreparedLists {
 pub fn (store &CookieStore) process_cookie_changes(changes []Cookie) {
 	now := store.backend_.now_ms()
 	html.queue_a_task(.dom_manipulation, store.event_loop_, store.environment.document, fn [store, changes, now] () {
-		lists := prepare_lists(changes, now)
+		observable := observable_changes(changes, now)
+		lists := prepare_lists(observable)
 		mut event := CookieChangeEvent.create('change', CookieChangeEventInit{
 			changed: lists.changed
 			deleted: lists.deleted

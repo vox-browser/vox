@@ -8,6 +8,7 @@
 module html
 
 import dom
+import painting
 
 pub struct BitmapRect {
 pub:
@@ -30,6 +31,12 @@ pub interface DecodedImageData {
 	intrinsic_height() ?f64
 	intrinsic_aspect_ratio() ?f64
 	frame_rect(frame_index usize) ?BitmapRect
+}
+
+// DecodedImageData's default virtual keeps the caller's frame index. Animated
+// implementations override this when advancing their ring buffer.
+pub fn decoded_image_data_notify_frame_advanced(_ DecodedImageData, frame_index usize) usize {
+	return frame_index
 }
 
 pub struct BitmapDecodedImageFrame {
@@ -113,6 +120,20 @@ pub fn (data &BitmapDecodedImageData) frame_rect(frame_index usize) ?BitmapRect 
 	}
 }
 
+pub fn (data &AnimatedDecodedImageData) session_id() i64 {
+	return data.session_id
+}
+
+pub fn (data &BitmapDecodedImageData) paint(mut recorder painting.DisplayListRecorder, frame_index usize, destination painting.IntRect, clip_rect painting.IntRect, scaling_mode painting.ScalingMode) bool {
+	bitmap := data.bitmap(frame_index) or { return false }
+	return recorder.draw_scaled_bitmap(painting.DrawScaledBitmap{
+		destination: destination
+		clip_rect:   clip_rect
+		bitmap_id:   u64(voidptr(bitmap)).str()
+		scaling:     scaling_mode
+	})
+}
+
 const animated_decoded_image_buffer_pool_size = 8
 const animated_decoded_image_request_batch_size = 4
 
@@ -150,7 +171,19 @@ mut:
 
 __global (
 	html_animated_image_sessions map[i64]&AnimatedDecodedImageData
+	html_animated_frame_delivery_callback_installed bool
 )
+
+pub fn AnimatedDecodedImageData.session_registry() map[i64]&AnimatedDecodedImageData {
+	return html_animated_image_sessions.clone()
+}
+
+pub fn AnimatedDecodedImageData.install_frame_delivery_callback() {
+	if html_animated_frame_delivery_callback_installed {
+		return
+	}
+	html_animated_frame_delivery_callback_installed = true
+}
 
 pub fn AnimatedDecodedImageData.create(session_id i64, frame_count u32, loop_count u32, width int, height int, durations []u32, initial_bitmaps []&dom.ImmutableBitmap_, request_frames ?AnimationFrameRequestCallback, stop_animation_decode ?AnimationStopCallback) &AnimatedDecodedImageData {
 	mut data := &AnimatedDecodedImageData{
@@ -177,6 +210,7 @@ pub fn AnimatedDecodedImageData.create(session_id i64, frame_count u32, loop_cou
 	if initial_bitmaps.len != 0 {
 		data.last_displayed_bitmap = initial_bitmaps[0]
 	}
+	AnimatedDecodedImageData.install_frame_delivery_callback()
 	html_animated_image_sessions[session_id] = data
 	return data
 }
@@ -199,6 +233,11 @@ fn (data &AnimatedDecodedImageData) find_slot_index(frame_index u32) ?int {
 	return none
 }
 
+pub fn (data &AnimatedDecodedImageData) find_slot(frame_index u32) ?&AnimatedBitmapSlot {
+	index := data.find_slot_index(frame_index) or { return none }
+	return &data.buffer_slots[index]
+}
+
 fn (data &AnimatedDecodedImageData) oldest_slot_index() int {
 	mut oldest := 0
 	for index, slot in data.buffer_slots {
@@ -207,6 +246,11 @@ fn (data &AnimatedDecodedImageData) oldest_slot_index() int {
 		}
 	}
 	return oldest
+}
+
+pub fn (mut data AnimatedDecodedImageData) evict_oldest_slot() &AnimatedBitmapSlot {
+	index := data.oldest_slot_index()
+	return &data.buffer_slots[index]
 }
 
 pub fn (data &AnimatedDecodedImageData) bitmap(frame_index usize) ?&dom.ImmutableBitmap_ {
@@ -263,6 +307,16 @@ pub fn (data &AnimatedDecodedImageData) frame_rect(_ usize) ?BitmapRect {
 	}
 }
 
+pub fn (data &AnimatedDecodedImageData) paint(mut recorder painting.DisplayListRecorder, frame_index usize, destination painting.IntRect, clip_rect painting.IntRect, scaling_mode painting.ScalingMode) bool {
+	bitmap := data.bitmap(frame_index) or { return false }
+	return recorder.draw_scaled_bitmap(painting.DrawScaledBitmap{
+		destination: destination
+		clip_rect:   clip_rect
+		bitmap_id:   u64(voidptr(bitmap)).str()
+		scaling:     scaling_mode
+	})
+}
+
 pub fn (mut data AnimatedDecodedImageData) receive_frames(bitmaps []&dom.ImmutableBitmap_, start_frame_index u32) {
 	data.request_in_flight = false
 	for offset, bitmap in bitmaps {
@@ -284,6 +338,10 @@ pub fn (mut data AnimatedDecodedImageData) receive_frames(bitmaps []&dom.Immutab
 }
 
 pub fn animated_decoded_image_deliver_frames_for_session(session_id i64, bitmaps []&dom.ImmutableBitmap_) {
+	AnimatedDecodedImageData.deliver_frames_for_session(session_id, bitmaps)
+}
+
+pub fn AnimatedDecodedImageData.deliver_frames_for_session(session_id i64, bitmaps []&dom.ImmutableBitmap_) {
 	if data := html_animated_image_sessions[session_id] {
 		mut mutable_data := data
 		mutable_data.receive_frames(bitmaps, data.last_requested_start_frame)
