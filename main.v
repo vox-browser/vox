@@ -40,6 +40,8 @@ fn C.native_window_width() int
 
 fn C.native_window_height() int
 
+fn C.native_wake_browser()
+
 fn C.native_draw_rect_srgb(x f32, y f32, width f32, height f32, fill_color gg.Color)
 
 fn C.native_configure_document_font(path string)
@@ -56,6 +58,8 @@ const initial_width = 1024
 const initial_height = 768
 const toolbar_height = 88.0
 const status_bar_height = 24.0
+const max_preloaded_resources = 32
+const max_cached_resources = 256
 
 const demo_markup = '<!doctype html>
 <html>
@@ -124,6 +128,7 @@ mut:
 	navigation_results    chan NavigationResult
 	navigation_generation int
 	background_image_ids  map[string]int
+	resource_cache        map[string]PreloadedResource
 	screenshot_path       string
 	screenshot_scheduled  bool
 	use_document_font     bool
@@ -156,6 +161,12 @@ struct NavigationResult {
 	resolved    string
 	loaded      ?LoadedPage
 	error       string
+}
+
+struct PreloadedResource {
+	url   string
+	body  string
+	error string
 }
 
 // Keep the root executable linked against the translated support modules too. The visible page
@@ -426,6 +437,20 @@ fn fetch_text_resource(reference string, base string) !string {
 	return response.body
 }
 
+fn fetch_resource_in_background(resource_url string, results chan PreloadedResource) {
+	body := fetch_text_resource(resource_url, '') or {
+		results <- PreloadedResource{
+			url: resource_url
+			error: err.msg()
+		}
+		return
+	}
+	results <- PreloadedResource{
+		url: resource_url
+		body: body
+	}
+}
+
 fn fetch_page_in_background(resolved string, base string, generation int, add_history bool, results chan NavigationResult) {
 	loaded := fetch_page(resolved, base) or {
 		results <- NavigationResult{
@@ -434,6 +459,9 @@ fn fetch_page_in_background(resolved string, base string, generation int, add_hi
 			resolved: resolved
 			error: err.msg()
 		}
+		$if macos {
+			C.native_wake_browser()
+		}
 		return
 	}
 	results <- NavigationResult{
@@ -441,6 +469,9 @@ fn fetch_page_in_background(resolved string, base string, generation int, add_hi
 		add_history: add_history
 		resolved: resolved
 		loaded: loaded
+	}
+	$if macos {
+		C.native_wake_browser()
 	}
 }
 
@@ -460,7 +491,78 @@ fn document_title(document &dom.Document) string {
 	return title.as_node().text_content() or { '' }
 }
 
-fn install_external_styles(document &dom.Document, base_url string) []string {
+fn document_preload_resource_urls(document &dom.Document, base_url string) []string {
+	root := unsafe { &dom.Node(document) }
+	mut urls := []string{}
+	mut seen := map[string]bool{}
+	for link in css.query_selector_all(root, 'link[rel][href]') {
+		if link.get_attribute_value('rel').to_lower().split(' ').filter(it != '').all(it != 'stylesheet') {
+			continue
+		}
+		resource_url := resolve_document_reference(link.get_attribute_value('href'), base_url)
+		if resource_url.starts_with('http://') || resource_url.starts_with('https://') {
+			if resource_url !in seen {
+				seen[resource_url] = true
+				urls << resource_url
+				if urls.len == max_preloaded_resources {
+					return urls
+				}
+			}
+		}
+	}
+	for script in css.query_selector_all(root, 'script[src]') {
+		type_ := script.get_attribute_value('type').trim_space().to_lower()
+		if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
+			continue
+		}
+		resource_url := resolve_document_reference(script.get_attribute_value('src'), base_url)
+		if (resource_url.starts_with('http://') || resource_url.starts_with('https://')) && resource_url !in seen {
+			seen[resource_url] = true
+			urls << resource_url
+			if urls.len == max_preloaded_resources {
+				return urls
+			}
+		}
+	}
+	for image in css.query_selector_all(root, 'img[src]') {
+		resource_url := resolve_document_reference(image.get_attribute_value('src'), base_url)
+		if (resource_url.starts_with('http://') || resource_url.starts_with('https://')) && resource_url !in seen {
+			seen[resource_url] = true
+			urls << resource_url
+			if urls.len == max_preloaded_resources {
+				return urls
+			}
+		}
+	}
+	return urls
+}
+
+fn preload_document_resources(document &dom.Document, base_url string, cached map[string]PreloadedResource) map[string]PreloadedResource {
+	urls := document_preload_resource_urls(document, base_url)
+	mut loaded := map[string]PreloadedResource{}
+	mut pending_urls := []string{}
+	for resource_url in urls {
+		if existing := cached[resource_url] {
+			loaded[resource_url] = existing
+		} else {
+			pending_urls << resource_url
+		}
+	}
+	if pending_urls.len == 0 {
+		return loaded
+	}
+	results := chan PreloadedResource{ cap: pending_urls.len }
+	for resource_url in pending_urls {
+		spawn fetch_resource_in_background(resource_url, results)
+	}
+	for _ in pending_urls {
+		resource := <-results
+		loaded[resource.url] = resource
+	}
+	return loaded
+}
+
+fn install_external_styles(document &dom.Document, base_url string, preloaded map[string]PreloadedResource) []string {
 	root := unsafe { &dom.Node(document) }
 	mut messages := []string{}
 	for link in css.query_selector_all(root, 'link[rel][href]') {
@@ -476,9 +578,17 @@ fn install_external_styles(document &dom.Document, base_url string) []string {
 				continue
 			}
 		}
-		stylesheet := fetch_text_resource(href, base_url) or {
-			messages << 'Stylesheet ${href}: ${err.msg()}'
-			continue
+		stylesheet := if resource := preloaded[resolved_url] {
+			if resource.error != '' {
+				messages << 'Stylesheet ${href}: ${resource.error}'
+				continue
+			}
+			resource.body
+		} else {
+			fetch_text_resource(href, base_url) or {
+				messages << 'Stylesheet ${href}: ${err.msg()}'
+				continue
+			}
 		}
 		mut style := document.create_element('style') or { continue }
 		style.set_attribute_value('data-libweb-v-source-url', resolved_url)
@@ -492,7 +602,7 @@ fn install_external_styles(document &dom.Document, base_url string) []string {
 	return messages
 }
 
-fn script_sources(document &dom.Document, base_url string, mut messages []string) []string {
+fn script_sources(document &dom.Document, base_url string, preloaded map[string]PreloadedResource, mut messages []string) []string {
 	root := unsafe { &dom.Node(document) }
 	mut sources := []string{}
 	for script_element in css.query_selector_all(root, 'script') {
@@ -501,9 +611,18 @@ fn script_sources(document &dom.Document, base_url string, mut messages []string
 			continue
 		}
 		if src := script_element.get_attribute('src') {
-			source := fetch_text_resource(src, base_url) or {
-				messages << 'Script ${src}: ${err.msg()}'
-				continue
+			resolved_url := resolve_document_reference(src, base_url)
+			source := if resource := preloaded[resolved_url] {
+				if resource.error != '' {
+					messages << 'Script ${src}: ${resource.error}'
+					continue
+				}
+				resource.body
+			} else {
+				fetch_text_resource(src, base_url) or {
+					messages << 'Script ${src}: ${err.msg()}'
+					continue
+				}
 			}
 			sources << source
 		} else {
@@ -677,8 +796,8 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 	return json_string_property(state, 'navigate')
 }
 
-fn run_document_javascript(document &dom.Document, current_url string, runtime &browserjs.Runtime, mut messages []string) ?string {
-	sources := script_sources(document, current_url, mut messages)
+fn run_document_javascript(document &dom.Document, current_url string, preloaded map[string]PreloadedResource, runtime &browserjs.Runtime, mut messages []string) ?string {
+	sources := script_sources(document, current_url, preloaded, mut messages)
 	if sources.len == 0 {
 		return none
 	}
@@ -774,12 +893,18 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(), 'UTF-8') {
 		app.document.set_url(document_url)
 	}
-	app.js_messages << install_external_styles(app.document, loaded.url)
+	preloaded_resources := preload_document_resources(app.document, loaded.url, app.resource_cache)
+	for resource_url, resource in preloaded_resources {
+		if resource.error == '' && app.resource_cache.len < max_cached_resources {
+			app.resource_cache[resource_url] = resource
+		}
+	}
+	app.js_messages << install_external_styles(app.document, loaded.url, preloaded_resources)
 	if app.js_runtime != unsafe { nil } {
 		app.js_runtime.close()
 	}
 	app.js_runtime = browserjs.Runtime.create()
-	javascript_navigation := run_document_javascript(app.document, loaded.url, app.js_runtime, mut app.js_messages)
+	javascript_navigation := run_document_javascript(app.document, loaded.url, preloaded_resources, app.js_runtime, mut app.js_messages)
 	app.page_model.load(loaded.url)
 	if add_history {
 		if app.history_index + 1 < app.history.len {
@@ -1006,7 +1131,12 @@ fn transformed_rect_points(command layout.PaintCommand, page_x f32, page_y f32, 
 	return points
 }
 
-fn background_image_bytes(image_url string) ![]u8 {
+fn (app &BrowserApp) background_image_bytes(image_url string) ![]u8 {
+	if resource := app.resource_cache[image_url] {
+		if resource.error == '' {
+			return resource.body.bytes()
+		}
+	}
 	if image_url.starts_with('data:') {
 		comma := image_url.index(',') or { return error('Malformed data URL') }
 		metadata := image_url[..comma].to_lower()
@@ -1049,7 +1179,7 @@ fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
 	} else if !image_url.contains('://') && !image_url.starts_with('data:') && os.is_file(image_url) {
 		app.ctx.create_image(image_url) or { return none }
 	} else {
-		bytes := background_image_bytes(image_url) or { return none }
+		bytes := app.background_image_bytes(image_url) or { return none }
 		app.ctx.create_image_from_byte_array(bytes) or { return none }
 	}
 	app.background_image_ids[image_url] = image.id
@@ -1501,7 +1631,7 @@ fn (mut app BrowserApp) draw() {
 		app.ctx.draw_text(12, status_y + 4, footer, color: gg.rgb(203, 213, 225), size: 12)
 	}
 	app.ctx.end()
-	if app.screenshot_path != '' && !app.screenshot_scheduled {
+	if app.screenshot_path != '' && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') {
 		app.screenshot_scheduled = true
 		schedule_native_screenshot(app.screenshot_path)
 	}
@@ -1708,14 +1838,25 @@ fn main() {
 		exit(2)
 	}
 	initial_url, markup, source_label := initial_document(options.source)
+	initial_viewport_height := if options.height > int(toolbar_height + status_bar_height) {
+		options.height - int(toolbar_height + status_bar_height)
+	} else {
+		1
+	}
+	defer_remote_navigation := markup == '' && !options.headless_smoke
 	page_model := page.Page.create(1.0) or { panic(err) }
 	mut app := &BrowserApp{
 		markup: markup
 		source_label: source_label
+		address: initial_url
+		address_cursor: initial_url.runes().len
 		page_model: page_model
 		navigation_results: chan NavigationResult{ cap: 4 }
+		resource_cache: map[string]PreloadedResource{}
 		screenshot_path: options.screenshot
 		use_document_font: use_document_font
+		viewport_width: options.width
+		viewport_height: initial_viewport_height
 	}
 	if markup != '' {
 		app.install_loaded_page(LoadedPage{
@@ -1724,7 +1865,7 @@ fn main() {
 			status: 'Loaded locally'
 			content_type: 'text/html'
 		}, true)
-	} else {
+	} else if !defer_remote_navigation {
 		app.navigate(initial_url, true)
 	}
 	if options.headless_smoke {
@@ -1779,5 +1920,8 @@ fn main() {
 		}
 		user_data: app
 	)
+	if defer_remote_navigation {
+		app.navigate(initial_url, true)
+	}
 	app.ctx.run()
 }

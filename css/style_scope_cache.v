@@ -309,6 +309,47 @@ pub fn (cache &RuleCache) for_each_matching_rules(abstract_element dom.AbstractE
 	}
 }
 
+fn (cache &RuleCache) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	for bucket in cache.matching_rule_buckets(abstract_element) {
+		for rule in bucket {
+			if rule_pseudo_element := rule.pseudo_element {
+				if rule_pseudo_element == pseudo_element {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+fn (caches &RuleCaches) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	if caches.main.has_candidate_rule_for_pseudo_element(abstract_element, pseudo_element) {
+		return true
+	}
+	for _, cache in caches.by_layer {
+		if cache.has_candidate_rule_for_pseudo_element(abstract_element, pseudo_element) {
+			return true
+		}
+	}
+	return false
+}
+
+// Avoid running a complete cascade for generated pseudo-elements when none of
+// the element's rule-cache buckets can possibly supply a rule for that pseudo.
+// This is the same coarse candidate filtering used before selector matching;
+// it can produce false positives, but never skips a potentially matching rule.
+pub fn (scope &StyleScope) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	scope.build_rule_cache_if_needed()
+	for caches in [scope.author_rule_cache, scope.user_rule_cache, scope.user_agent_rule_cache] {
+		if value := caches {
+			if value.has_candidate_rule_for_pseudo_element(abstract_element, pseudo_element) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 pub fn StyleScope.new(node &dom.Node) &StyleScope {
 	mut scope := &StyleScope{
 		node: node
@@ -527,6 +568,7 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 						}
 					}
 				}
+				matching_rule.pseudo_element = pseudo_element
 
 				for pseudo_class in style_scope_pseudo_classes_with_rule_cache() {
 					mut pseudo_class_cache := scope.pseudo_class_rule_cache[pseudo_class] or {

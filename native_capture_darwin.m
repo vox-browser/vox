@@ -91,6 +91,35 @@ int native_window_height(void) {
 	return (int)llround([native_browser_view() bounds].size.height);
 }
 
+void native_wake_browser(void) {
+	dispatch_async(dispatch_get_main_queue(), ^{
+		NSWindow *window = [NSApp mainWindow];
+		if (window == nil) {
+			window = [NSApp keyWindow];
+		}
+		NSMutableArray<NSView *> *views = [NSMutableArray array];
+		if ([window contentView] != nil) {
+			[views addObject:[window contentView]];
+		}
+		while ([views count] > 0) {
+			NSView *view = [views lastObject];
+			[views removeLastObject];
+			[view setNeedsDisplay:YES];
+			[views addObjectsFromArray:[view subviews]];
+		}
+		NSEvent *event = [NSEvent otherEventWithType:NSEventTypeApplicationDefined
+		                                location:NSZeroPoint
+		                           modifierFlags:0
+		                               timestamp:0
+		                            windowNumber:[window windowNumber]
+		                                 context:nil
+		                                 subtype:0
+		                                   data1:0
+		                                   data2:0];
+		[NSApp postEvent:event atStart:NO];
+	});
+}
+
 void native_draw_rect_srgb(float x, float y, float width, float height, gg__Color color) {
 	if (width <= 0 || height <= 0) {
 		return;

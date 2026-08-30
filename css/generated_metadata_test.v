@@ -835,6 +835,25 @@ fn test_subtree_style_recompute_installs_pseudos_and_walks_shadow_tree() {
 	assert (child_style.property(.color, .no) or { panic('shadow child color missing') }).css_text == 'red'
 }
 
+fn test_subtree_style_recompute_filters_pseudos_without_skipping_bucketed_rules() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'main') or { panic('${err}') }
+	mut matched := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	matched.set_attribute_value('class', 'generated')
+	plain := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(root.as_node()) or { panic('${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(matched.as_node()) or { panic('${err}') }
+	root_node.append_child(plain.as_node()) or { panic('${err}') }
+	add_document_author_style_sheet(doc, '.generated::before { content: "generated"; color: blue; }')
+
+	mut computer := StyleComputer.new(doc)
+	recompute_style_for_subtree(mut computer, root.as_node())
+	assert dom.AbstractElement.new(matched, dom.PseudoElement.before).computed_properties() != none
+	assert dom.AbstractElement.new(plain, dom.PseudoElement.before).computed_properties() == none
+}
+
 fn test_document_user_stylesheet_participates_in_user_cascade() {
 	doc := dom.Document.create(dom.url_about_blank())
 	set_document_user_style_sheet(doc, '.target { color: green !important; }')

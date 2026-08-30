@@ -793,6 +793,16 @@ pub fn (s &StyleComputer) recompute_style(mut abstract_element dom.AbstractEleme
 	for pseudo_element in pseudo_elements {
 		mutable_computer.push_ancestor(abstract_element.element())
 		mut pseudo_abstract := dom.AbstractElement.new(abstract_element.element(), pseudo_element)
+		css_pseudo_element := style_scope_pseudo_element_from_abstract_element(pseudo_abstract) or {
+			mutable_computer.pop_ancestor(abstract_element.element())
+			continue
+		}
+		scope := css_style_scope_for(pseudo_abstract)
+		if !scope.has_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element) {
+			pseudo_abstract.set_computed_properties(none)
+			mutable_computer.pop_ancestor(abstract_element.element())
+			continue
+		}
 		if pseudo_style := s.compute_pseudo_element_style_if_needed(pseudo_abstract) {
 			pseudo_abstract.set_computed_properties(computed_properties_to_dom(pseudo_style))
 		} else {

@@ -8546,6 +8546,7 @@ pub mut:
 	specificity                  u32
 	cascade_origin               CascadeOrigin
 	contains_pseudo_element      bool
+	pseudo_element               ?PseudoElement
 	slotted                      bool
 	contains_part_pseudo_element bool
 }
