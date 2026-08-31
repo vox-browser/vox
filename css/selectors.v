@@ -8,13 +8,11 @@ import strings
 // CSSOM in this V port already exposes `Selector` as a raw-text wrapper, so the
 // parsed selector tree below is built on demand from `Selector.text` rather than
 // changing the public CSSOM storage shape in cssom_rules.v.
-
 const selector_ancestor_hash_count = 8
 const selector_unbounded_sibling_invalidation_distance = int(0x3fffffff)
 const selector_html_namespace = 'http://www.w3.org/1999/xhtml'
 
 // This is a <complex-selector> in the spec. https://www.w3.org/TR/selectors-4/#complex
-
 pub enum SelectorKind {
 	normal
 	relative
@@ -29,8 +27,8 @@ pub struct MatchContext {
 pub mut:
 	style_sheet_for_rule                              ?&CSSStyleSheet
 	subject                                           ?&dom.Element
-	slotted_element                                   ?&dom.Element    // Only set when matching a ::slotted() pseudo-element
-	part_owning_parent                                ?&dom.Element    // Only set temporarily when matching a ::part() pseudo-element
+	slotted_element                                   ?&dom.Element // Only set when matching a ::slotted() pseudo-element
+	part_owning_parent                                ?&dom.Element // Only set temporarily when matching a ::part() pseudo-element
 	rule_shadow_root                                  ?&dom.ShadowRoot // Shadow root the matched rule belongs to
 	collect_per_element_selector_involvement_metadata bool
 	attempted_pseudo_class_matches                    PseudoClassBitmap
@@ -541,13 +539,11 @@ pub fn (pattern ANPlusBPattern) matches(index int) bool {
 
 	// When "step_size < 0", we start at "offset" and count backwards.
 	if pattern.step_size < 0 {
-		return index <= pattern.offset
-			&& canonical_modulo(index - pattern.offset, -pattern.step_size) == 0
+		return index <= pattern.offset && canonical_modulo(index - pattern.offset, -pattern.step_size) == 0
 	}
 
 	// Otherwise, we start at "offset" and count forwards.
-	return index >= pattern.offset
-		&& canonical_modulo(index - pattern.offset, pattern.step_size) == 0
+	return index >= pattern.offset && canonical_modulo(index - pattern.offset, pattern.step_size) == 0
 }
 
 // https://drafts.csswg.org/css-syntax-3/#serializing-anb
@@ -564,13 +560,11 @@ pub fn (pattern ANPlusBPattern) serialize() string {
 	// - A is 1: Append "n" to result.
 	if pattern.step_size == 1 {
 		result.write_u8(`n`)
-	}
 	// - A is -1: Append "-n" to result.
-	else if pattern.step_size == -1 {
+	} else if pattern.step_size == -1 {
 		result.write_string('-n')
-	}
 	// - A is non-zero: Serialize A and append it to result, then append "n" to result.
-	else if pattern.step_size != 0 {
+	} else if pattern.step_size != 0 {
 		result.write_string('${pattern.step_size}n')
 	}
 
@@ -578,9 +572,8 @@ pub fn (pattern ANPlusBPattern) serialize() string {
 	// - B is greater than zero: Append "+" to result, then append the serialization of B to result.
 	if pattern.offset > 0 {
 		result.write_string('+${pattern.offset}')
-	}
 	// - B is less than zero: Append the serialization of B to result.
-	else if pattern.offset < 0 {
+	} else if pattern.offset < 0 {
 		result.write_string('${pattern.offset}')
 	}
 
@@ -629,7 +622,7 @@ pub mut:
 
 pub fn SelectorName.new(name string) SelectorName {
 	return SelectorName{
-		name:           name
+		name: name
 		lowercase_name: name.to_lower()
 	}
 }
@@ -638,9 +631,9 @@ pub fn SelectorName.new(name string) SelectorName {
 // https://www.w3.org/TR/selectors-4/#typedef-wq-name
 pub enum QualifiedNameNamespaceType {
 	default_ // `E`
-	none     // `|E`
-	any      // `*|E`
-	named    // `ns|E`
+	none // `|E`
+	any // `*|E`
+	named // `ns|E`
 }
 
 pub struct SelectorQualifiedName {
@@ -653,11 +646,11 @@ pub mut:
 pub enum AttributeMatchType {
 	has_attribute
 	exact_value_match
-	contains_word       // [att~=val]
-	contains_string     // [att*=val]
+	contains_word // [att~=val]
+	contains_string // [att*=val]
 	starts_with_segment // [att|=val]
-	starts_with_string  // [att^=val]
-	ends_with_string    // [att$=val]
+	starts_with_string // [att^=val]
+	ends_with_string // [att$=val]
 }
 
 pub enum AttributeCaseType {
@@ -744,7 +737,7 @@ pub fn (simple_selector SimpleSelector) serialize() string {
 					.contains_string { s.write_string('*=') }
 					.starts_with_segment { s.write_string('|=') }
 					.starts_with_string { s.write_string('^=') }
-					.ends_with_string { s.write_string('$=') }
+					.ends_with_string { s.write_string('\$=') }
 					.has_attribute {}
 				}
 
@@ -782,10 +775,9 @@ pub fn (simple_selector SimpleSelector) serialize() string {
 			if !accepts_arguments {
 				s.write_u8(`:`)
 				s.write_string(name)
-			}
-			// Otherwise, append ":" (U+003A), followed by the name of the pseudo-class, followed by "(" (U+0028),
-			// followed by the value of the pseudo-class argument(s) determined as per below, followed by ")" (U+0029), to s.
-			else {
+			} else {
+				// Otherwise, append ":" (U+003A), followed by the name of the pseudo-class, followed by "(" (U+0028),
+				// followed by the value of the pseudo-class argument(s) determined as per below, followed by ")" (U+0029), to s.
 				s.write_u8(`:`)
 				s.write_string(name)
 				s.write_u8(`(`)
@@ -851,9 +843,7 @@ pub fn (simple_selector SimpleSelector) absolutized(selector_for_nesting SimpleS
 			if pseudo_class.argument_selector_list.selectors.len != 0 {
 				mut new_selector_list := SelectorList{}
 				for argument_selector in pseudo_class.argument_selector_list.selectors {
-					if absolutized := absolutize_selector_with_simple(argument_selector,
-						selector_for_nesting)
-					{
+					if absolutized := absolutize_selector_with_simple(argument_selector, selector_for_nesting) {
 						new_selector_list.selectors << absolutized
 					} else if !pseudo_class.is_forgiving {
 						return none
@@ -884,17 +874,18 @@ pub fn (simple_selector SimpleSelector) absolutized(selector_for_nesting SimpleS
 
 pub enum Combinator {
 	no_combinator
-	immediate_child    // >
-	descendant         // <whitespace>
-	next_sibling       // +
+	immediate_child // >
+	descendant // <whitespace>
+	next_sibling // +
 	subsequent_sibling // ~
-	column             // ||
+	column // ||
 }
 
 pub struct CompoundSelector {
-pub mut:
+
 	// Spec-wise, the <combinator> is not part of a <compound-selector>,
 	// but it is more understandable to put them together.
+pub mut:
 	combinator       Combinator
 	simple_selectors []SimpleSelector
 }
@@ -911,11 +902,13 @@ __global (
 pub fn begin_selector_parse_cache() {
 	parsed_compound_selector_cache.clear()
 	parsed_compound_selector_cache_enabled = true
+	begin_parsed_value_cache()
 }
 
 pub fn end_selector_parse_cache() {
 	parsed_compound_selector_cache_enabled = false
 	parsed_compound_selector_cache.clear()
+	end_parsed_value_cache()
 }
 
 pub fn (compound_selector CompoundSelector) absolutized(selector_for_nesting SimpleSelector) ?CompoundSelector {
@@ -930,7 +923,7 @@ pub fn (compound_selector CompoundSelector) absolutized(selector_for_nesting Sim
 	}
 
 	return CompoundSelector{
-		combinator:       compound_selector.combinator
+		combinator: compound_selector.combinator
 		simple_selectors: absolutized_simple_selectors
 	}
 }
@@ -976,8 +969,7 @@ pub fn (selector Selector) contains_unknown_webkit_pseudo_element() bool {
 					}
 				}
 			}
-			if simple_selector.type_ == .pseudo_element
-				&& simple_selector.pseudo_element.type_ == .unknown_webkit {
+			if simple_selector.type_ == .pseudo_element && simple_selector.pseudo_element.type_ == .unknown_webkit {
 				return true
 			}
 		}
@@ -1050,8 +1042,7 @@ pub fn (selector Selector) specificity() u32 {
 						.has, .is_, .not_ {
 							// The specificity of an :is(), :not(), or :has() pseudo-class is replaced by the
 							// specificity of the most specific complex selector in its selector list argument.
-							child_specificity :=
-								count_specificity_of_most_complex_selector(pseudo_class.argument_selector_list)
+							child_specificity := count_specificity_of_most_complex_selector(pseudo_class.argument_selector_list)
 							ids += (child_specificity & ids_mask) >> ids_shift
 							classes += (child_specificity & classes_mask) >> classes_shift
 							tag_names += (child_specificity & tag_names_mask) >> tag_names_shift
@@ -1061,8 +1052,7 @@ pub fn (selector Selector) specificity() u32 {
 							// is the specificity of the pseudo class itself (counting as one pseudo-class selector)
 							// plus the specificity of the most specific complex selector in its selector list argument (if any).
 							classes++
-							child_specificity :=
-								count_specificity_of_most_complex_selector(pseudo_class.argument_selector_list)
+							child_specificity := count_specificity_of_most_complex_selector(pseudo_class.argument_selector_list)
 							ids += (child_specificity & ids_mask) >> ids_shift
 							classes += (child_specificity & classes_mask) >> classes_shift
 							tag_names += (child_specificity & tag_names_mask) >> tag_names_shift
@@ -1084,8 +1074,8 @@ pub fn (selector Selector) specificity() u32 {
 					// The specificity of a named view transition pseudo-element selector with a <custom-ident> argument is equivalent
 					// to a type selector. The specificity of a named view transition pseudo-element selector with a '*' argument is zero.
 					// NB: We just break before adding to the type (tag name) specificity in case this is a named view transition pseudo that uses '*'
-					if simple_selector.pseudo_element.type_ in [.view_transition_group, .view_transition_image_pair, .view_transition_old, .view_transition_new]
-						&& simple_selector.pseudo_element.pt_name_selector.is_universal {
+					if simple_selector.pseudo_element.type_ in [.view_transition_group,
+						.view_transition_image_pair, .view_transition_old, .view_transition_new] && simple_selector.pseudo_element.pt_name_selector.is_universal {
 						continue
 					}
 
@@ -1110,9 +1100,7 @@ pub fn (selector Selector) specificity() u32 {
 
 	// Due to storage limitations, implementations may have limitations on the size of A, B, or C.
 	// If so, values higher than the limit must be clamped to that limit, and not overflow.
-	return (selector_min_u32(ids, 0xff) << ids_shift) +
-		(selector_min_u32(classes, 0xff) << classes_shift) +
-		(selector_min_u32(tag_names, 0xff) << tag_names_shift)
+	return (selector_min_u32(ids, 0xff) << ids_shift) + (selector_min_u32(classes, 0xff) << classes_shift) + (selector_min_u32(tag_names, 0xff) << tag_names_shift)
 }
 
 // https://www.w3.org/TR/cssom/#serialize-a-selector
@@ -1138,19 +1126,16 @@ pub fn (selector Selector) serialize() string {
 	// To serialize a selector let s be the empty string, run the steps below for each part of the chain of the selector, and finally return s:
 	for i, compound_selector in compound_selectors {
 		// 1. If there is only one simple selector in the compound selectors which is a universal selector, append the result of serializing the universal selector to s.
-		if compound_selector.simple_selectors.len == 1
-			&& compound_selector.simple_selectors[0].type_ == .universal {
+		if compound_selector.simple_selectors.len == 1 && compound_selector.simple_selectors[0].type_ == .universal {
 			s.write_string(compound_selector.simple_selectors[0].serialize())
-		}
-		// 2. Otherwise, for each simple selector in the compound selectors that is not a universal selector
-		//    of which the namespace prefix maps to a namespace that is not the default namespace
-		//    serialize the simple selector and append the result to s.
-		else {
+		} else {
+			// 2. Otherwise, for each simple selector in the compound selectors that is not a universal selector
+			//    of which the namespace prefix maps to a namespace that is not the default namespace
+			//    serialize the simple selector and append the result to s.
 			for simple_selector in compound_selector.simple_selectors {
 				if simple_selector.type_ == .universal {
 					qualified_name := simple_selector.qualified_name
-					if qualified_name.namespace_type == .default_
-						|| qualified_name.namespace_type == .any {
+					if qualified_name.namespace_type == .default_ || qualified_name.namespace_type == .any {
 						continue
 					}
 					// FIXME: I *think* if we have a namespace prefix that happens to equal the same as the default namespace,
@@ -1261,7 +1246,6 @@ pub fn adapt_nested_relative_selector_list(selectors SelectorList) SelectorList 
 	// "When serializing a relative selector in a nested style rule, the selector must be absolutized,
 	// with the implied nesting selector inserted."
 	// - https://drafts.csswg.org/css-nesting-1/#cssom
-
 	mut new_list := SelectorList{}
 	for selector in selectors.selectors {
 		compound_selectors := selector.compound_selectors()
@@ -1270,8 +1254,7 @@ pub fn adapt_nested_relative_selector_list(selectors SelectorList) SelectorList 
 			continue
 		}
 		first_combinator := compound_selectors[0].combinator
-		if first_combinator !in [.no_combinator, .descendant]
-			|| !selector.contains_the_nesting_selector() {
+		if first_combinator !in [.no_combinator, .descendant] || !selector.contains_the_nesting_selector() {
 			new_list.selectors << selector.relative_to(SimpleSelector{
 				type_: .nesting
 			})
@@ -1332,8 +1315,7 @@ pub fn matches(selector Selector, element &dom.Element, shadow_host ?&dom.Elemen
 		}
 	}
 
-	return matches_selector_at(selector, compound_selectors.len - 1, element, shadow_host, mut
-		context, scope, selector_kind, anchor)
+	return matches_selector_at(selector, compound_selectors.len - 1, element, shadow_host, mut context, scope, selector_kind, anchor)
 }
 
 fn matches_selector_at(selector Selector, component_list_index int, initial_element &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode, selector_kind SelectorKind, anchor ?&dom.Element) bool {
@@ -1345,8 +1327,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 	mut element_for_compound_matching := initial_element
 	for i := compound_selector.simple_selectors.len - 1; i >= 0; i-- {
 		simple_selector := compound_selector.simple_selectors[i]
-		if !matches_simple(simple_selector, element_for_compound_matching, shadow_host, mut
-			context, scope, selector_kind, anchor) {
+		if !matches_simple(simple_selector, element_for_compound_matching, shadow_host, mut context, scope, selector_kind, anchor) {
 			return false
 		}
 		if part_owning_parent := context.part_owning_parent {
@@ -1379,9 +1360,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 							return false
 						}
 					}
-					if matches_selector_at(selector, component_list_index - 1, ancestor_element,
-						shadow_host, mut context, scope, selector_kind, anchor)
-					{
+					if matches_selector_at(selector, component_list_index - 1, ancestor_element, shadow_host, mut context, scope, selector_kind, anchor) {
 						return true
 					}
 				}
@@ -1395,8 +1374,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 			}
 			parent := traverse_up(element.as_node(), shadow_host) or { return false }
 			parent_element := parent.as_element() or { return false }
-			return matches_selector_at(selector, component_list_index - 1, parent_element,
-				shadow_host, mut context, scope, selector_kind, anchor)
+			return matches_selector_at(selector, component_list_index - 1, parent_element, shadow_host, mut context, scope, selector_kind, anchor)
 		}
 		.next_sibling {
 			if context.collect_per_element_selector_involvement_metadata {
@@ -1411,8 +1389,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 				return false
 			}
 			if sibling := previous_element_sibling(element) {
-				return matches_selector_at(selector, component_list_index - 1, sibling,
-					shadow_host, mut context, scope, selector_kind, anchor)
+				return matches_selector_at(selector, component_list_index - 1, sibling, shadow_host, mut context, scope, selector_kind, anchor)
 			}
 			return false
 		}
@@ -1427,9 +1404,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 			mut sibling := previous_element_sibling(element)
 			for sibling != none {
 				sibling_element := sibling or { break }
-				if matches_selector_at(selector, component_list_index - 1, sibling_element,
-					shadow_host, mut context, scope, selector_kind, anchor)
-				{
+				if matches_selector_at(selector, component_list_index - 1, sibling_element, shadow_host, mut context, scope, selector_kind, anchor) {
 					return true
 				}
 				sibling = previous_element_sibling(sibling_element)
@@ -1456,13 +1431,11 @@ fn matches_simple(component SimpleSelector, element &dom.Element, shadow_host ?&
 			if component.type_ == .tag_name {
 				// See https://html.spec.whatwg.org/multipage/semantics-other.html#case-sensitivity-of-selectors
 				if element.document() != unsafe { nil } && element.document().document_type() == .html && element.namespace_uri() or {
-					''
-				} == selector_html_namespace {
+					''} == selector_html_namespace {
 					if qualified_name.name.lowercase_name != element.local_name() {
 						return false
 					}
-				} else if !equals_ignoring_ascii_case(qualified_name.name.name,
-					element.local_name()) {
+				} else if !equals_ignoring_ascii_case(qualified_name.name.name, element.local_name()) {
 					return false
 				}
 			}
@@ -1484,15 +1457,13 @@ fn matches_simple(component SimpleSelector, element &dom.Element, shadow_host ?&
 			return matches_attribute(component.attribute, context.style_sheet_for_rule, element)
 		}
 		.pseudo_class {
-			return matches_pseudo_class(component.pseudo_class, element, shadow_host, mut context,
-				scope, selector_kind)
+			return matches_pseudo_class(component.pseudo_class, element, shadow_host, mut context, scope, selector_kind)
 		}
 		.pseudo_element {
 			if component.pseudo_element.type_ == .slotted {
 				slotted_element := context.slotted_element or { return false }
 				compound_selector := component.pseudo_element.compound_selector or { return false }
-				return matches(compound_selector, slotted_element, shadow_host, mut context, none,
-					none, .normal, none)
+				return matches(compound_selector, slotted_element, shadow_host, mut context, none, none, .normal, none)
 			}
 			if component.pseudo_element.type_ == .part {
 				// All part names need to match the [pseudo-]element.
@@ -1579,8 +1550,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 				mutable_element.affected_by_first_child_pseudo_class = true
 				mutable_element.affected_by_last_child_pseudo_class = true
 			}
-			return previous_element_sibling(element) == none
-				&& next_element_sibling(element) == none
+			return previous_element_sibling(element) == none && next_element_sibling(element) == none
 		}
 		.empty {
 			if !element.as_node().has_children() {
@@ -1603,8 +1573,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			return element.is_html_element() && element.local_name() == 'html'
 		}
 		.host {
-			return matches_host_pseudo_class(element, shadow_host, mut context,
-				pseudo_class.argument_selector_list)
+			return matches_host_pseudo_class(element, shadow_host, mut context, pseudo_class.argument_selector_list)
 		}
 		.scope {
 			if scope_node := scope {
@@ -1632,8 +1601,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 				mutable_element.affected_by_forward_positional_pseudo_class = true
 				mutable_element.affected_by_backward_positional_pseudo_class = true
 			}
-			return previous_sibling_with_same_type(element) == none
-				&& next_sibling_with_same_type(element) == none
+			return previous_sibling_with_same_type(element) == none && next_sibling_with_same_type(element) == none
 		}
 		.lang {
 			return matches_lang_pseudo_class(element, pseudo_class.languages)
@@ -1719,8 +1687,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			mut index := 1
 			match pseudo_class.type_ {
 				.nth_child {
-					if !matches_nth_selector_list(pseudo_class.argument_selector_list, element,
-						shadow_host, mut context) {
+					if !matches_nth_selector_list(pseudo_class.argument_selector_list, element, shadow_host, mut context) {
 						return false
 					}
 					parent := element.as_node().parent() or {
@@ -1731,16 +1698,13 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 						if child_element == element {
 							break
 						}
-						if matches_nth_selector_list(pseudo_class.argument_selector_list,
-							child_element, shadow_host, mut context)
-						{
+						if matches_nth_selector_list(pseudo_class.argument_selector_list, child_element, shadow_host, mut context) {
 							index++
 						}
 					}
 				}
 				.nth_last_child {
-					if !matches_nth_selector_list(pseudo_class.argument_selector_list, element,
-						shadow_host, mut context) {
+					if !matches_nth_selector_list(pseudo_class.argument_selector_list, element, shadow_host, mut context) {
 						return false
 					}
 					parent := element.as_node().parent() or {
@@ -1751,9 +1715,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 						if child_element == element {
 							break
 						}
-						if matches_nth_selector_list(pseudo_class.argument_selector_list,
-							child_element, shadow_host, mut context)
-						{
+						if matches_nth_selector_list(pseudo_class.argument_selector_list, child_element, shadow_host, mut context) {
 							index++
 						}
 					}
@@ -1792,8 +1754,12 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 				return false
 			}
 			match element.directionality() {
-				.ltr { return ident.keyword == .ltr }
-				.rtl { return ident.keyword == .rtl }
+				.ltr {
+					return ident.keyword == .ltr
+				}
+				.rtl {
+					return ident.keyword == .rtl
+				}
 			}
 		}
 		.read_only {
@@ -1812,8 +1778,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			return matches_open_state_pseudo_class(element, false)
 		}
 		.modal {
-			return element.local_name() == 'dialog' && element.has_attribute('open')
-				&& element.in_top_layer()
+			return element.local_name() == 'dialog' && element.has_attribute('open') && element.in_top_layer()
 		}
 		.popover_open {
 			// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-popover-open
@@ -1869,8 +1834,7 @@ fn fast_matches(selector Selector, element_to_match &dom.Element, shadow_host ?&
 	mut current := element_to_match
 	mut compound_selector_index := compound_selectors.len - 1
 
-	if !fast_matches_compound_selector(compound_selectors[compound_selectors.len - 1], current,
-		shadow_host, mut context) {
+	if !fast_matches_compound_selector(compound_selectors[compound_selectors.len - 1], current, shadow_host, mut context) {
 		return false
 	}
 
@@ -1900,9 +1864,7 @@ fn fast_matches(selector Selector, element_to_match &dom.Element, shadow_host ?&
 				mut ancestor := parent_element(current)
 				for ancestor != none {
 					ancestor_element := ancestor or { break }
-					if fast_matches_compound_selector(left_compound_selector, ancestor_element,
-						shadow_host, mut context)
-					{
+					if fast_matches_compound_selector(left_compound_selector, ancestor_element, shadow_host, mut context) {
 						current = ancestor_element
 						break
 					}
@@ -1918,8 +1880,7 @@ fn fast_matches(selector Selector, element_to_match &dom.Element, shadow_host ?&
 					return false
 				}
 				current = parent_element(current) or { return false }
-				if !fast_matches_compound_selector(compound_selectors[compound_selector_index],
-					current, shadow_host, mut context) {
+				if !fast_matches_compound_selector(compound_selectors[compound_selector_index], current, shadow_host, mut context) {
 					if backtrack := backtrack_element {
 						current = backtrack
 						compound_selector_index = backtrack_compound_selector_index
@@ -1952,17 +1913,14 @@ fn fast_matches_simple_selector(simple_selector SimpleSelector, element &dom.Ele
 
 	match simple_selector.type_ {
 		.universal {
-			return matches_namespace(simple_selector.qualified_name, element,
-				context.style_sheet_for_rule)
+			return matches_namespace(simple_selector.qualified_name, element, context.style_sheet_for_rule)
 		}
 		.tag_name {
 			// https://html.spec.whatwg.org/multipage/semantics-other.html#case-sensitivity-of-selectors
 			// When comparing a CSS element type selector to the names of HTML elements in HTML documents, the CSS element type selector must first be converted to ASCII lowercase. The
 			// same selector when compared to other elements must be compared according to its original case. In both cases, to match the values must be identical to each other (and therefore
 			// the comparison is case sensitive).
-			if element.namespace_uri() or { '' } == selector_html_namespace
-				&& element.document() != unsafe { nil }
-				&& element.document().document_type() == .html {
+			if element.namespace_uri() or { '' } == selector_html_namespace && element.document() != unsafe { nil } && element.document().document_type() == .html {
 				if simple_selector.qualified_name.name.lowercase_name != element.local_name() {
 					return false
 				}
@@ -1970,8 +1928,7 @@ fn fast_matches_simple_selector(simple_selector SimpleSelector, element &dom.Ele
 				// NOTE: Any other elements are either SVG, XHTML or MathML, all of which are case-sensitive.
 				return false
 			}
-			return matches_namespace(simple_selector.qualified_name, element,
-				context.style_sheet_for_rule)
+			return matches_namespace(simple_selector.qualified_name, element, context.style_sheet_for_rule)
 		}
 		.class {
 			// Class selectors are matched case insensitively in quirks mode.
@@ -1985,12 +1942,10 @@ fn fast_matches_simple_selector(simple_selector SimpleSelector, element &dom.Ele
 			return simple_selector.name.name == element.id() or { '' }
 		}
 		.attribute {
-			return matches_attribute(simple_selector.attribute, context.style_sheet_for_rule,
-				element)
+			return matches_attribute(simple_selector.attribute, context.style_sheet_for_rule, element)
 		}
 		.pseudo_class {
-			return matches_pseudo_class(simple_selector.pseudo_class, element, shadow_host, mut
-				context, none, .normal)
+			return matches_pseudo_class(simple_selector.pseudo_class, element, shadow_host, mut context, none, .normal)
 		}
 		else {
 			return false
@@ -2020,7 +1975,7 @@ fn parse_complex_selector(source string) []CompoundSelector {
 
 		if saw_whitespace && current.len != 0 && !is_combinator_start(text, i) {
 			compounds << CompoundSelector{
-				combinator:       combinator
+				combinator: combinator
 				simple_selectors: current
 			}
 			current = []
@@ -2030,7 +1985,7 @@ fn parse_complex_selector(source string) []CompoundSelector {
 		if is_combinator_start(text, i) {
 			if current.len != 0 {
 				compounds << CompoundSelector{
-					combinator:       combinator
+					combinator: combinator
 					simple_selectors: current
 				}
 				current = []
@@ -2054,7 +2009,7 @@ fn parse_complex_selector(source string) []CompoundSelector {
 		parsed := parse_simple_selector(text, i)
 		if parsed.next <= i {
 			current << SimpleSelector{
-				type_:        .invalid
+				type_: .invalid
 				invalid_text: text[i..i + 1]
 			}
 			i++
@@ -2066,7 +2021,7 @@ fn parse_complex_selector(source string) []CompoundSelector {
 
 	if current.len != 0 {
 		compounds << CompoundSelector{
-			combinator:       combinator
+			combinator: combinator
 			simple_selectors: current
 		}
 	}
@@ -2091,7 +2046,7 @@ fn parse_simple_selector(text string, start int) ParsedSimpleSelector {
 			selector: SimpleSelector{
 				type_: .nesting
 			}
-			next:     start + 1
+			next: start + 1
 		}
 	}
 	if ch == `#` {
@@ -2099,15 +2054,15 @@ fn parse_simple_selector(text string, start int) ParsedSimpleSelector {
 		if name.len == 0 {
 			return ParsedSimpleSelector{
 				selector: invalid_simple_selector('#')
-				next:     next
+				next: next
 			}
 		}
 		return ParsedSimpleSelector{
 			selector: SimpleSelector{
 				type_: .id
-				name:  SelectorName.new(name)
+				name: SelectorName.new(name)
 			}
-			next:     next
+			next: next
 		}
 	}
 	if ch == `.` {
@@ -2115,22 +2070,22 @@ fn parse_simple_selector(text string, start int) ParsedSimpleSelector {
 		if name.len == 0 {
 			return ParsedSimpleSelector{
 				selector: invalid_simple_selector('.')
-				next:     next
+				next: next
 			}
 		}
 		return ParsedSimpleSelector{
 			selector: SimpleSelector{
 				type_: .class
-				name:  SelectorName.new(name)
+				name: SelectorName.new(name)
 			}
-			next:     next
+			next: next
 		}
 	}
 	if ch == `[` {
 		body, next := read_balanced(text, start, `[`, `]`)
 		return ParsedSimpleSelector{
 			selector: parse_attribute_selector(body)
-			next:     next
+			next: next
 		}
 	}
 	if ch == `:` {
@@ -2141,10 +2096,10 @@ fn parse_simple_selector(text string, start int) ParsedSimpleSelector {
 	}
 	return ParsedSimpleSelector{
 		selector: SimpleSelector{
-			type_:        .invalid
+			type_: .invalid
 			invalid_text: text[start..start + 1]
 		}
-		next:     start + 1
+		next: start + 1
 	}
 }
 
@@ -2202,24 +2157,24 @@ fn parse_type_or_universal_selector(text string, start int) ParsedSimpleSelector
 
 	qualified_name := SelectorQualifiedName{
 		namespace_type: namespace_type
-		namespace_:     namespace_
-		name:           SelectorName.new(name)
+		namespace_: namespace_
+		name: SelectorName.new(name)
 	}
 	if is_universal {
 		return ParsedSimpleSelector{
 			selector: SimpleSelector{
-				type_:          .universal
+				type_: .universal
 				qualified_name: qualified_name
 			}
-			next:     i
+			next: i
 		}
 	}
 	return ParsedSimpleSelector{
 		selector: SimpleSelector{
-			type_:          .tag_name
+			type_: .tag_name
 			qualified_name: qualified_name
 		}
-		next:     i
+		next: i
 	}
 }
 
@@ -2230,7 +2185,7 @@ fn parse_attribute_selector(body string) SimpleSelector {
 	}
 	mut case_type := AttributeCaseType.default_match
 
-	operators := ['~=', '*=', '|=', '^=', '$=', '=']
+	operators := ['~=', '*=', '|=', '^=', '\$=', '=']
 	mut operator := ''
 	mut operator_index := -1
 	for candidate in operators {
@@ -2246,8 +2201,7 @@ fn parse_attribute_selector(body string) SimpleSelector {
 		return invalid_simple_selector('[${body}]')
 	}
 	value := if operator_index >= 0 {
-		value_text, parsed_case_type, ok := parse_attribute_value_and_case_suffix(text[
-			operator_index + operator.len..].trim_space())
+		value_text, parsed_case_type, ok := parse_attribute_value_and_case_suffix(text[operator_index + operator.len..].trim_space())
 		if !ok {
 			return invalid_simple_selector('[${body}]')
 		}
@@ -2264,18 +2218,18 @@ fn parse_attribute_selector(body string) SimpleSelector {
 		'*=' { AttributeMatchType.contains_string }
 		'|=' { AttributeMatchType.starts_with_segment }
 		'^=' { AttributeMatchType.starts_with_string }
-		'$=' { AttributeMatchType.ends_with_string }
+		'\$=' { AttributeMatchType.ends_with_string }
 		'=' { AttributeMatchType.exact_value_match }
 		else { AttributeMatchType.has_attribute }
 	}
 
 	return SimpleSelector{
-		type_:     .attribute
+		type_: .attribute
 		attribute: SelectorAttribute{
-			match_type:     match_type
+			match_type: match_type
 			qualified_name: qualified_name
-			value:          value
-			case_type:      case_type
+			value: value
+			case_type: case_type
 		}
 	}
 }
@@ -2292,7 +2246,7 @@ fn parse_attribute_qualified_name(name_text string) ?SelectorQualifiedName {
 		}
 		return SelectorQualifiedName{
 			namespace_type: .any
-			name:           SelectorName.new(name)
+			name: SelectorName.new(name)
 		}
 	}
 	if text.starts_with('|') {
@@ -2302,19 +2256,18 @@ fn parse_attribute_qualified_name(name_text string) ?SelectorQualifiedName {
 		}
 		return SelectorQualifiedName{
 			namespace_type: .none
-			name:           SelectorName.new(name)
+			name: SelectorName.new(name)
 		}
 	}
 	if text.contains('|') {
 		parts := text.split_nth('|', 2)
-		if parts.len != 2 || !is_valid_selector_identifier(parts[0])
-			|| !is_valid_selector_identifier(parts[1]) || parts[1] == '*' {
+		if parts.len != 2 || !is_valid_selector_identifier(parts[0]) || !is_valid_selector_identifier(parts[1]) || parts[1] == '*' {
 			return none
 		}
 		return SelectorQualifiedName{
 			namespace_type: .named
-			namespace_:     parts[0]
-			name:           SelectorName.new(parts[1])
+			namespace_: parts[0]
+			name: SelectorName.new(parts[1])
 		}
 	}
 	if !is_valid_selector_identifier(text) {
@@ -2322,7 +2275,7 @@ fn parse_attribute_qualified_name(name_text string) ?SelectorQualifiedName {
 	}
 	return SelectorQualifiedName{
 		namespace_type: .default_
-		name:           SelectorName.new(text)
+		name: SelectorName.new(text)
 	}
 }
 
@@ -2378,22 +2331,22 @@ fn parse_pseudo_selector(text string, start int) ParsedSimpleSelector {
 	if is_pseudo_element {
 		return ParsedSimpleSelector{
 			selector: parse_pseudo_element_selector(name, argument, is_function)
-			next:     next
+			next: next
 		}
 	}
 
 	pseudo_element := pseudo_element_from_string(name)
-	if pseudo_element != .unknown && !is_function
-		&& pseudo_element in [.before, .after, .first_line, .first_letter] {
+	if pseudo_element != .unknown && !is_function && pseudo_element in [.before, .after, .first_line,
+		.first_letter] {
 		return ParsedSimpleSelector{
 			selector: parse_pseudo_element_selector(name, argument, false)
-			next:     next
+			next: next
 		}
 	}
 
 	return ParsedSimpleSelector{
 		selector: parse_pseudo_class_selector(name, argument, is_function)
-		next:     next
+		next: next
 	}
 }
 
@@ -2415,7 +2368,7 @@ fn parse_pseudo_element_selector(name string, argument string, is_function bool)
 	}
 	mut selector := PseudoElementSelector{
 		type_: pseudo_element
-		name:  if pseudo_element == .unknown_webkit { name } else { '' }
+		name: if pseudo_element == .unknown_webkit { name } else { '' }
 	}
 	if is_function {
 		match pseudo_element {
@@ -2441,8 +2394,7 @@ fn parse_pseudo_element_selector(name string, argument string, is_function bool)
 				selector.value_kind = .ident_list
 				selector.ident_list = idents
 			}
-			.view_transition_group, .view_transition_image_pair, .view_transition_old,
-			.view_transition_new {
+			.view_transition_group, .view_transition_image_pair, .view_transition_old, .view_transition_new {
 				selector.value_kind = .pt_name_selector
 				arg := argument.trim_space()
 				if arg != '*' && !is_valid_selector_identifier(arg) {
@@ -2450,7 +2402,7 @@ fn parse_pseudo_element_selector(name string, argument string, is_function bool)
 				}
 				selector.pt_name_selector = PseudoElementPTNameSelector{
 					is_universal: arg == '*'
-					value:        arg
+					value: arg
 				}
 			}
 			else {
@@ -2460,14 +2412,14 @@ fn parse_pseudo_element_selector(name string, argument string, is_function bool)
 		}
 	}
 	return SimpleSelector{
-		type_:          .pseudo_element
+		type_: .pseudo_element
 		pseudo_element: selector
 	}
 }
 
 fn invalid_simple_selector(text string) SimpleSelector {
 	return SimpleSelector{
-		type_:        .invalid
+		type_: .invalid
 		invalid_text: text
 	}
 }
@@ -2475,7 +2427,11 @@ fn invalid_simple_selector(text string) SimpleSelector {
 fn parse_pseudo_class_selector(name string, argument string, is_function bool) SimpleSelector {
 	pseudo_class_type := pseudo_class_from_string(name)
 	if pseudo_class_type == .invalid {
-		return invalid_simple_selector(if is_function { ':${name}(${argument})' } else { ':${name}' })
+		return invalid_simple_selector(if is_function {
+			':${name}(${argument})'
+		} else {
+			':${name}'
+		})
 	}
 	if is_function {
 		if !pseudo_class_valid_as_function(pseudo_class_type) || argument.trim_space().len == 0 {
@@ -2503,8 +2459,7 @@ fn parse_pseudo_class_selector(name string, argument string, is_function bool) S
 			}
 		}
 		.is_, .where, .not_ {
-			if pseudo_class_type == .not_
-				&& !selector_list_text_is_valid_for_standard(argument, false) {
+			if pseudo_class_type == .not_ && !selector_list_text_is_valid_for_standard(argument, false) {
 				return invalid_simple_selector(':${name}(${argument})')
 			}
 			pseudo_class.is_forgiving = pseudo_class_type in [.is_, .where]
@@ -2520,12 +2475,10 @@ fn parse_pseudo_class_selector(name string, argument string, is_function bool) S
 				if pseudo_class_type !in [.nth_child, .nth_last_child] {
 					return invalid_simple_selector(':${name}(${argument})')
 				}
-				if selector_list_text.len == 0
-					|| !selector_list_text_is_valid_for_standard(selector_list_text, false) {
+				if selector_list_text.len == 0 || !selector_list_text_is_valid_for_standard(selector_list_text, false) {
 					return invalid_simple_selector(':${name}(${argument})')
 				}
-				pseudo_class.argument_selector_list = selector_list_from_text(selector_list_text,
-					false)
+				pseudo_class.argument_selector_list = selector_list_from_text(selector_list_text, false)
 			}
 		}
 		.lang {
@@ -2543,7 +2496,7 @@ fn parse_pseudo_class_selector(name string, argument string, is_function bool) S
 				return invalid_simple_selector(':${name}(${argument})')
 			}
 			pseudo_class.ident = PseudoClassIdent{
-				keyword:      direction_keyword_from_string(ident)
+				keyword: direction_keyword_from_string(ident)
 				string_value: ident
 			}
 		}
@@ -2562,7 +2515,7 @@ fn parse_pseudo_class_selector(name string, argument string, is_function bool) S
 	}
 
 	return SimpleSelector{
-		type_:        SimpleSelectorType.pseudo_class
+		type_: SimpleSelectorType.pseudo_class
 		pseudo_class: pseudo_class
 	}
 }
@@ -2753,7 +2706,7 @@ fn parse_an_plus_b(text string) ?ANPlusBPattern {
 	if input == 'odd' {
 		return ANPlusBPattern{
 			step_size: 2
-			offset:    1
+			offset: 1
 		}
 	}
 	if input == 'even' {
@@ -2789,7 +2742,7 @@ fn parse_an_plus_b(text string) ?ANPlusBPattern {
 	}
 	return ANPlusBPattern{
 		step_size: step_size
-		offset:    offset
+		offset: offset
 	}
 }
 
@@ -2892,8 +2845,7 @@ fn selector_ancestor_hashes(selector Selector) ([8]u32, bool) {
 		compound_selector := compound_selectors[i]
 		match combinator_to_right {
 			.descendant, .immediate_child {
-				append_result := append_hashes_from_compound(compound_selector, ancestor_hashes,
-					next_hash_index)
+				append_result := append_hashes_from_compound(compound_selector, ancestor_hashes, next_hash_index)
 				ancestor_hashes = append_result.ancestor_hashes
 				next_hash_index = append_result.next_hash_index
 				if append_result.is_full {
@@ -2930,22 +2882,19 @@ fn append_hashes_from_compound(compound_selector CompoundSelector, ancestor_hash
 	for simple_selector in compound_selector.simple_selectors {
 		match simple_selector.type_ {
 			.id, .class {
-				result = append_unique_hash(selector_string_hash(simple_selector.name.name),
-					result.ancestor_hashes, result.next_hash_index)
+				result = append_unique_hash(selector_string_hash(simple_selector.name.name), result.ancestor_hashes, result.next_hash_index)
 				if result.is_full {
 					return result
 				}
 			}
 			.tag_name {
-				result = append_unique_hash(selector_string_hash(simple_selector.qualified_name.name.lowercase_name),
-					result.ancestor_hashes, result.next_hash_index)
+				result = append_unique_hash(selector_string_hash(simple_selector.qualified_name.name.lowercase_name), result.ancestor_hashes, result.next_hash_index)
 				if result.is_full {
 					return result
 				}
 			}
 			.attribute {
-				result = append_unique_hash(selector_string_hash(simple_selector.attribute.qualified_name.name.lowercase_name),
-					result.ancestor_hashes, result.next_hash_index)
+				result = append_unique_hash(selector_string_hash(simple_selector.attribute.qualified_name.name.lowercase_name), result.ancestor_hashes, result.next_hash_index)
 				if result.is_full {
 					return result
 				}
@@ -2995,7 +2944,6 @@ fn contains_invalid_contents_for_has(selector Selector) bool {
 	// - It can't appear inside itself
 	// - It bans most pseudo-elements
 	// https://drafts.csswg.org/selectors/#relational
-
 	for compound_selector in selector.compound_selectors() {
 		for simple_selector in compound_selector.simple_selectors {
 			if simple_selector.type_ == .pseudo_element {
@@ -3064,8 +3012,7 @@ fn language_range_matches_tag(language_range string, language_tag string) bool {
 	//    Two subtags match if either they are the same when compared case-insensitively or the language range's subtag
 	//    is the wildcard '*'.
 	subtags_match := fn (language_range_subtag string, language_subtag string) bool {
-		return language_range_subtag == '*'
-			|| equals_ignoring_ascii_case(language_range_subtag, language_subtag)
+		return language_range_subtag == '*' || equals_ignoring_ascii_case(language_range_subtag, language_subtag)
 	}
 
 	// 2. Begin with the first subtag in each list. If the first subtag in the range does not match the first
@@ -3125,7 +3072,6 @@ fn matches_lang_pseudo_class(element &dom.Element, languages []string) bool {
 	// performed case-insensitively within the ASCII range.
 
 	// FIXME: Canonicalize both as extlang.
-
 	for language_range in languages {
 		if language_range_matches_tag(language_range, element_language) {
 			return true
@@ -3147,20 +3093,16 @@ fn matches_relative_selector(selector Selector, compound_index int, element &dom
 			return false
 		}
 		.descendant {
-			return has_matching_descendant_for_relative(selector, element.as_node(), shadow_host, mut
-				context, anchor, scope)
+			return has_matching_descendant_for_relative(selector, element.as_node(), shadow_host, mut context, anchor, scope)
 		}
 		.immediate_child {
 			mut has := false
 			for child in element.as_node().children {
 				child_element := child.as_element() or { continue }
-				if !matches_selector_at(selector, compound_index, child_element, shadow_host, mut
-					context, scope, .relative, anchor) {
+				if !matches_selector_at(selector, compound_index, child_element, shadow_host, mut context, scope, .relative, anchor) {
 					continue
 				}
-				if matches_relative_selector(selector, compound_index + 1, child_element,
-					shadow_host, mut context, anchor, scope)
-				{
+				if matches_relative_selector(selector, compound_index + 1, child_element, shadow_host, mut context, anchor, scope) {
 					has = true
 					break
 				}
@@ -3173,12 +3115,10 @@ fn matches_relative_selector(selector Selector, compound_index int, element &dom
 				mutable_anchor.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator = true
 			}
 			sibling := next_element_sibling(element) or { return false }
-			if !matches_selector_at(selector, compound_index, sibling, shadow_host, mut context,
-				scope, .relative, anchor) {
+			if !matches_selector_at(selector, compound_index, sibling, shadow_host, mut context, scope, .relative, anchor) {
 				return false
 			}
-			return matches_relative_selector(selector, compound_index + 1, sibling, shadow_host, mut
-				context, anchor, scope)
+			return matches_relative_selector(selector, compound_index + 1, sibling, shadow_host, mut context, anchor, scope)
 		}
 		.subsequent_sibling {
 			if context.collect_per_element_selector_involvement_metadata {
@@ -3188,8 +3128,7 @@ fn matches_relative_selector(selector Selector, compound_index int, element &dom
 			mut sibling := next_element_sibling(element)
 			for sibling != none {
 				sibling_element := sibling or { break }
-				if matches_selector_at(selector, compound_index, sibling_element, shadow_host, mut context, scope, .relative, anchor)
-					&& matches_relative_selector(selector, compound_index + 1, sibling_element, shadow_host, mut context, anchor, scope) {
+				if matches_selector_at(selector, compound_index, sibling_element, shadow_host, mut context, scope, .relative, anchor) && matches_relative_selector(selector, compound_index + 1, sibling_element, shadow_host, mut context, anchor, scope) {
 					return true
 				}
 				sibling = next_element_sibling(sibling_element)
@@ -3206,15 +3145,11 @@ fn matches_relative_selector(selector Selector, compound_index int, element &dom
 fn has_matching_descendant_for_relative(selector Selector, node &dom.Node, shadow_host ?&dom.Element, mut context MatchContext, anchor &dom.Element, scope ?&dom.ParentNode) bool {
 	for child in node.children {
 		if descendant_element := child.as_element() {
-			if matches(selector, descendant_element, shadow_host, mut context, none, scope,
-				.relative, anchor)
-			{
+			if matches(selector, descendant_element, shadow_host, mut context, none, scope, .relative, anchor) {
 				return true
 			}
 		}
-		if has_matching_descendant_for_relative(selector, child, shadow_host, mut context, anchor,
-			scope)
-		{
+		if has_matching_descendant_for_relative(selector, child, shadow_host, mut context, anchor, scope) {
 			return true
 		}
 	}
@@ -3223,13 +3158,12 @@ fn has_matching_descendant_for_relative(selector Selector, node &dom.Node, shado
 
 // https://drafts.csswg.org/selectors-4/#relational
 fn matches_has_pseudo_class(selector Selector, anchor &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode) bool {
-	cache_key := '${selector.text}\x00${anchor.as_node().unique_id()}'
+	cache_key := '${selector.text}\0${anchor.as_node().unique_id()}'
 	if cached := context.has_result_cache[cache_key] {
 		return cached == .matched
 	}
 
-	result := matches_relative_selector(selector, 0, anchor, shadow_host, mut context, anchor,
-		scope)
+	result := matches_relative_selector(selector, 0, anchor, shadow_host, mut context, anchor, scope)
 	context.has_result_cache[cache_key] = if result {
 		HasMatchResult.matched
 	} else {
@@ -3276,12 +3210,8 @@ fn matches_attribute(attribute SelectorAttribute, style_sheet_for_rule ?&CSSStyl
 		}
 		.default_match {
 			// See: https://html.spec.whatwg.org/multipage/semantics-other.html#case-sensitivity-of-selectors
-			if element.document() != unsafe { nil } && element.document().is_html_document()
-				&& element.namespace_uri() or {
-				''
-			} == selector_html_namespace
-				&& attribute.qualified_name.namespace_type == .default_
-				&& attribute_name in selector_html_case_insensitive_attribute_names() {
+			if element.document() != unsafe { nil } && element.document().is_html_document() && element.namespace_uri() or {
+				''} == selector_html_namespace && attribute.qualified_name.namespace_type == .default_ && attribute_name in selector_html_case_insensitive_attribute_names() {
 				SelectorCaseSensitivity.case_insensitive
 			} else {
 				SelectorCaseSensitivity.case_sensitive
@@ -3376,14 +3306,12 @@ fn matches_single_attribute(attribute_selector SelectorAttribute, attribute &dom
 			return false
 		}
 		.contains_string {
-			return attribute_selector.value.len != 0
-				&& selector_string_contains(attribute_value, attribute_selector.value, case_sensitivity)
+			return attribute_selector.value.len != 0 && selector_string_contains(attribute_value, attribute_selector.value, case_sensitivity)
 		}
 		.starts_with_segment {
 			// https://www.w3.org/TR/CSS2/selector.html#attribute-selectors
 			// [att|=val]
 			// Represents an element with the att attribute, its value either being exactly "val" or beginning with "val" immediately followed by "-" (U+002D).
-
 			if attribute_value.len == 0 {
 				// If the attribute value on element is empty, the selector is true
 				// if the match value is also empty and false otherwise.
@@ -3407,17 +3335,13 @@ fn matches_single_attribute(attribute_selector SelectorAttribute, attribute &dom
 				}
 			}
 
-			return
-				selector_string_starts_with(attribute_value, attribute_selector.value, case_sensitivity)
-				&& attribute_value[attribute_length] == `-`
+			return selector_string_starts_with(attribute_value, attribute_selector.value, case_sensitivity) && attribute_value[attribute_length] == `-`
 		}
 		.starts_with_string {
-			return attribute_selector.value.len != 0
-				&& selector_string_starts_with(attribute_value, attribute_selector.value, case_sensitivity)
+			return attribute_selector.value.len != 0 && selector_string_starts_with(attribute_value, attribute_selector.value, case_sensitivity)
 		}
 		.ends_with_string {
-			return attribute_selector.value.len != 0
-				&& selector_string_ends_with(attribute_value, attribute_selector.value, case_sensitivity)
+			return attribute_selector.value.len != 0 && selector_string_ends_with(attribute_value, attribute_selector.value, case_sensitivity)
 		}
 		.has_attribute {
 			return true
@@ -3466,8 +3390,7 @@ fn previous_sibling_with_same_type(element &dom.Element) ?&dom.Element {
 	mut sibling := previous_element_sibling(element)
 	for sibling != none {
 		sibling_element := sibling or { break }
-		if sibling_element.local_name() == element.local_name()
-			&& optional_string_equal(sibling_element.namespace_uri(), element.namespace_uri()) {
+		if sibling_element.local_name() == element.local_name() && optional_string_equal(sibling_element.namespace_uri(), element.namespace_uri()) {
 			return sibling_element
 		}
 		sibling = previous_element_sibling(sibling_element)
@@ -3479,8 +3402,7 @@ fn next_sibling_with_same_type(element &dom.Element) ?&dom.Element {
 	mut sibling := next_element_sibling(element)
 	for sibling != none {
 		sibling_element := sibling or { break }
-		if sibling_element.local_name() == element.local_name()
-			&& optional_string_equal(sibling_element.namespace_uri(), element.namespace_uri()) {
+		if sibling_element.local_name() == element.local_name() && optional_string_equal(sibling_element.namespace_uri(), element.namespace_uri()) {
 			return sibling_element
 		}
 		sibling = next_element_sibling(sibling_element)
@@ -3500,8 +3422,7 @@ fn should_block_shadow_host_matching(component SimpleSelector, shadow_host ?&dom
 	// From within shadow tree, only :host pseudo-class can match the host element
 	if component.type_ == .pseudo_class {
 		pseudo_class := component.pseudo_class
-		return pseudo_class.type_ != .host && pseudo_class.type_ != .has
-			&& pseudo_class.type_ != .is_ && pseudo_class.type_ != .where
+		return pseudo_class.type_ != .host && pseudo_class.type_ != .has && pseudo_class.type_ != .is_ && pseudo_class.type_ != .where
 	}
 
 	// Allow nesting and PseudoElement as it may contain :host class
@@ -3558,8 +3479,7 @@ fn matches_host_pseudo_class(element &dom.Element, shadow_host ?&dom.Element, mu
 
 	// NOTE: There's either 0 or 1 argument selector, since the syntax is :host or :host(<compound-selector>)
 	if argument_selector_list.selectors.len != 0 {
-		return matches(argument_selector_list.selectors[0], element, none, mut context, none, none,
-			.normal, none)
+		return matches(argument_selector_list.selectors[0], element, none, mut context, none, none, .normal, none)
 	}
 
 	return true
@@ -3619,8 +3539,7 @@ fn parent_or_shadow_host_element_node(node &dom.Node) ?&dom.Node {
 
 fn pseudo_class_accepts_arguments(pseudo_class PseudoClassSelector) bool {
 	return match pseudo_class.type_ {
-		.has, .is_, .where, .not_, .nth_child, .nth_last_child, .nth_of_type, .nth_last_of_type,
-		.lang, .dir, .state {
+		.has, .is_, .where, .not_, .nth_child, .nth_last_child, .nth_of_type, .nth_last_of_type, .lang, .dir, .state {
 			true
 		}
 		.host {
@@ -3742,16 +3661,14 @@ fn read_balanced(text string, start int, open u8, close u8) (string, int) {
 }
 
 fn strip_css_string(text string) string {
-	if text.len >= 2 && ((text[0] == `"` && text[text.len - 1] == `"`)
-		|| (text[0] == `'` && text[text.len - 1] == `'`)) {
+	if text.len >= 2 && ((text[0] == `"` && text[text.len - 1] == `"`) || (text[0] == `'` && text[text.len - 1] == `'`)) {
 		return text[1..text.len - 1]
 	}
 	return text
 }
 
 fn selector_is_quoted_string(text string) bool {
-	return text.len >= 2 && ((text[0] == `"` && text[text.len - 1] == `"`)
-		|| (text[0] == `'` && text[text.len - 1] == `'`))
+	return text.len >= 2 && ((text[0] == `"` && text[text.len - 1] == `"`) || (text[0] == `'` && text[text.len - 1] == `'`))
 }
 
 fn selector_text_contains_unquoted_whitespace(text string) bool {
@@ -3913,21 +3830,18 @@ fn top_level_ascii_word_index(text string, word string) ?int {
 
 fn starts_with_combinator(text string) bool {
 	trimmed := text.trim_space()
-	return trimmed.starts_with('>') || trimmed.starts_with('+') || trimmed.starts_with('~')
-		|| trimmed.starts_with('||')
+	return trimmed.starts_with('>') || trimmed.starts_with('+') || trimmed.starts_with('~') || trimmed.starts_with('||')
 }
 
 fn is_combinator_start(text string, index int) bool {
 	if index >= text.len {
 		return false
 	}
-	return text[index] == `>` || text[index] == `+` || text[index] == `~`
-		|| (text[index] == `|` && index + 1 < text.len && text[index + 1] == `|`)
+	return text[index] == `>` || text[index] == `+` || text[index] == `~` || (text[index] == `|` && index + 1 < text.len && text[index + 1] == `|`)
 }
 
 fn is_ident_start_byte(ch u8) bool {
-	return (ch >= `A` && ch <= `Z`) || (ch >= `a` && ch <= `z`) || ch == `_`
-		|| ch >= 0x80 || ch == `-`
+	return (ch >= `A` && ch <= `Z`) || (ch >= `a` && ch <= `z`) || ch == `_` || ch >= 0x80 || ch == `-`
 }
 
 fn is_ident_byte(ch u8) bool {

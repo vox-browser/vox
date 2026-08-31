@@ -2,6 +2,7 @@ module main
 
 import color
 import browserjs
+import crypto.sha256
 import css
 import dom
 import domurl
@@ -28,6 +29,7 @@ import referrerpolicy
 import selection
 import sri
 import storageapi
+import time
 import url
 import webvtt
 import x.json2
@@ -41,6 +43,16 @@ fn C.native_window_width() int
 fn C.native_window_height() int
 
 fn C.native_wake_browser()
+
+fn C.native_wake_browser_after(milliseconds int)
+
+fn C.native_prevent_app_nap()
+
+fn C.native_show_cached_snapshot(path string)
+
+fn C.native_hide_cached_snapshot()
+
+fn C.native_cache_browser_snapshot(path string)
 
 fn C.native_draw_rect_srgb(x f32, y f32, width f32, height f32, fill_color gg.Color)
 
@@ -60,6 +72,7 @@ const toolbar_height = 88.0
 const status_bar_height = 24.0
 const max_preloaded_resources = 32
 const max_cached_resources = 256
+const max_disk_cache_entry_size = 16 * 1024 * 1024
 
 const demo_markup = '<!doctype html>
 <html>
@@ -131,7 +144,17 @@ mut:
 	resource_cache        map[string]PreloadedResource
 	screenshot_path       string
 	screenshot_scheduled  bool
-	use_document_font     bool
+	document_presented    bool
+	refresh_not_before    i64
+	snapshot_visible      bool
+	snapshot_cached       bool
+	// While a cached raster is displayed we keep it up until the background
+	// refresh has produced the live document, so neither the cached-DOM rebuild
+	// nor the refresh rebuild is seen as a frozen window. snapshot_hold_until is
+	// a safety deadline so a stalled refresh cannot pin a stale raster forever.
+	snapshot_hold       bool
+	snapshot_hold_until i64
+	use_document_font   bool
 }
 
 struct LaunchOptions {
@@ -156,11 +179,12 @@ struct LoadedPage {
 }
 
 struct NavigationResult {
-	generation  int
-	add_history bool
-	resolved    string
-	loaded      ?LoadedPage
-	error       string
+	generation      int
+	add_history     bool
+	had_cached_page bool
+	resolved        string
+	loaded          ?LoadedPage
+	error           string
 }
 
 struct PreloadedResource {
@@ -202,6 +226,21 @@ fn link_translated_modules() {
 
 fn html_escape(value string) string {
 	return value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+}
+
+fn debug_timing_enabled() bool {
+	return os.getenv('LADYBIRD_DEBUG_TIMING') != ''
+}
+
+// debug_timing_checkpoint reports the elapsed time since `previous` for one load
+// phase when LADYBIRD_DEBUG_TIMING is set, and returns the current timestamp so
+// callers can chain checkpoints. It has no effect when the env var is unset.
+fn debug_timing_checkpoint(label string, previous u64) u64 {
+	now := time.sys_mono_now()
+	if debug_timing_enabled() {
+		eprintln('Ladybird V timing: ${label} ${(now - previous) / 1_000_000} ms')
+	}
+	return now
 }
 
 fn schedule_native_screenshot(path string) {
@@ -369,6 +408,78 @@ fn tls_ca_bundle() string {
 	return ''
 }
 
+fn browser_cache_root() string {
+	if configured := os.getenv_opt('LADYBIRD_CACHE_DIR') {
+		if configured != '' {
+			return configured
+		}
+	}
+	return os.join_path(os.cache_dir(), 'ladybird-v')
+}
+
+fn browser_cache_entry_path(cache_root string, category string, resource_url string) string {
+	return os.join_path(cache_root, category, sha256.hexhash(resource_url))
+}
+
+fn read_browser_cache_entry(path string) ?string {
+	if !os.is_file(path) {
+		return none
+	}
+	contents := os.read_file(path) or { return none }
+	if contents.len == 0 || contents.len > max_disk_cache_entry_size {
+		return none
+	}
+	return contents
+}
+
+fn write_browser_cache_entry(path string, contents string) {
+	if contents.len == 0 || contents.len > max_disk_cache_entry_size {
+		return
+	}
+	os.mkdir_all(os.dir(path)) or { return }
+	temporary_path := '${path}.${os.getpid()}.${time.sys_mono_now()}.tmp'
+	os.write_file(temporary_path, contents) or { return }
+	os.mv(temporary_path, path) or {
+		os.rm(temporary_path) or {}
+	}
+}
+
+fn read_cached_page(resource_url string) ?LoadedPage {
+	if !resource_url.starts_with('http://') && !resource_url.starts_with('https://') {
+		return none
+	}
+	path := browser_cache_entry_path(browser_cache_root(), 'pages', resource_url)
+	markup := read_browser_cache_entry(path) or { return none }
+	return LoadedPage{
+		url: resource_url
+		markup: markup
+		status: 'Cached · refreshing'
+		content_type: 'text/html'
+	}
+}
+
+fn cache_loaded_page(loaded LoadedPage) {
+	if !loaded.content_type.to_lower().contains('html') {
+		return
+	}
+	path := browser_cache_entry_path(browser_cache_root(), 'pages', loaded.url)
+	write_browser_cache_entry(path, loaded.markup)
+}
+
+fn read_cached_resource(resource_url string) ?string {
+	path := browser_cache_entry_path(browser_cache_root(), 'resources', resource_url)
+	return read_browser_cache_entry(path)
+}
+
+fn cache_resource(resource_url string, body string) {
+	path := browser_cache_entry_path(browser_cache_root(), 'resources', resource_url)
+	write_browser_cache_entry(path, body)
+}
+
+fn cached_snapshot_path(resource_url string) string {
+	return browser_cache_entry_path(browser_cache_root(), 'snapshots', resource_url)
+}
+
 fn fetch_page(address string, base string) !LoadedPage {
 	resolved := resolve_url(address, base)
 	if resolved == 'about:home' || resolved == 'about:blank' {
@@ -410,12 +521,14 @@ fn fetch_page(address string, base string) !LoadedPage {
 	} else {
 		'<html><body><h1>${html_escape(content_type)}</h1><pre>${html_escape(response.body)}</pre></body></html>'
 	}
-	return LoadedPage{
+	loaded := LoadedPage{
 		url: resolved
 		markup: markup
 		status: 'HTTP ${response.status_code} · ${response.body.len} bytes'
 		content_type: content_type
 	}
+	cache_loaded_page(loaded)
+	return loaded
 }
 
 fn fetch_text_resource(reference string, base string) !string {
@@ -423,6 +536,11 @@ fn fetch_text_resource(reference string, base string) !string {
 	if resolved.starts_with('file://') {
 		path := urllib.path_unescape(resolved['file://'.len..])!
 		return os.read_file(path)
+	}
+	if resolved.starts_with('http://') || resolved.starts_with('https://') {
+		if cached := read_cached_resource(resolved) {
+			return cached
+		}
 	}
 	response := vhttp.fetch(
 		url: resolved
@@ -434,6 +552,7 @@ fn fetch_text_resource(reference string, base string) !string {
 	if response.status_code < 200 || response.status_code >= 400 {
 		return error('HTTP ${response.status_code}')
 	}
+	cache_resource(resolved, response.body)
 	return response.body
 }
 
@@ -451,11 +570,12 @@ fn fetch_resource_in_background(resource_url string, results chan PreloadedResou
 	}
 }
 
-fn fetch_page_in_background(resolved string, base string, generation int, add_history bool, results chan NavigationResult) {
+fn fetch_page_in_background(resolved string, base string, generation int, add_history bool, had_cached_page bool, results chan NavigationResult) {
 	loaded := fetch_page(resolved, base) or {
 		results <- NavigationResult{
 			generation: generation
 			add_history: add_history
+			had_cached_page: had_cached_page
 			resolved: resolved
 			error: err.msg()
 		}
@@ -467,6 +587,7 @@ fn fetch_page_in_background(resolved string, base string, generation int, add_hi
 	results <- NavigationResult{
 		generation: generation
 		add_history: add_history
+		had_cached_page: had_cached_page
 		resolved: resolved
 		loaded: loaded
 	}
@@ -866,8 +987,11 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	} else {
 		1
 	}
+	mut layout_checkpoint := time.sys_mono_now()
 	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width), f64(viewport_height))
+	layout_checkpoint = debug_timing_checkpoint('  layout_tree', layout_checkpoint)
 	app.paint_commands = app.root_box.paint_commands()
+	debug_timing_checkpoint('  paint_commands', layout_checkpoint)
 	root_rect := app.root_box.border_box()
 	document_height := root_rect.y + root_rect.height
 	app.content_height = if document_height > f64(viewport_height) {
@@ -880,6 +1004,29 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	app.status = '${app.load_status} · ${app.paint_commands.len} paints · ${int(root_rect.width)}×${int(root_rect.height)} CSS px'
 }
 
+fn (mut app BrowserApp) replace_load_status(status string) {
+	previous_status := app.load_status
+	app.load_status = status
+	if previous_status != '' && app.status.starts_with(previous_status) {
+		app.status = status + app.status[previous_status.len..]
+	} else {
+		app.status = status
+	}
+}
+
+fn (mut app BrowserApp) update_current_history_entry(loaded LoadedPage) {
+	if app.history_index < 0 || app.history_index >= app.history.len {
+		return
+	}
+	if app.history[app.history_index].url != loaded.url {
+		return
+	}
+	app.history[app.history_index] = HistoryEntry{
+		url: loaded.url
+		markup: loaded.markup
+	}
+}
+
 fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool) {
 	app.markup = loaded.markup
 	app.source_label = loaded.url
@@ -888,23 +1035,31 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	app.address_select = false
 	app.scroll_y = 0
 	app.load_status = loaded.status
+	app.document_presented = false
+	app.snapshot_cached = false
 	app.js_messages = []
+	mut checkpoint := time.sys_mono_now()
+	install_start := checkpoint
 	app.document = html.parse_document(loaded.markup)
+	checkpoint = debug_timing_checkpoint('parse_document', checkpoint)
 	if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(), 'UTF-8') {
 		app.document.set_url(document_url)
 	}
 	preloaded_resources := preload_document_resources(app.document, loaded.url, app.resource_cache)
+	checkpoint = debug_timing_checkpoint('preload_resources', checkpoint)
 	for resource_url, resource in preloaded_resources {
 		if resource.error == '' && app.resource_cache.len < max_cached_resources {
 			app.resource_cache[resource_url] = resource
 		}
 	}
 	app.js_messages << install_external_styles(app.document, loaded.url, preloaded_resources)
+	checkpoint = debug_timing_checkpoint('install_styles', checkpoint)
 	if app.js_runtime != unsafe { nil } {
 		app.js_runtime.close()
 	}
 	app.js_runtime = browserjs.Runtime.create()
 	javascript_navigation := run_document_javascript(app.document, loaded.url, preloaded_resources, app.js_runtime, mut app.js_messages)
+	checkpoint = debug_timing_checkpoint('run_javascript', checkpoint)
 	app.page_model.load(loaded.url)
 	if add_history {
 		if app.history_index + 1 < app.history.len {
@@ -921,6 +1076,8 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	} else {
 		initial_height
 	})
+	checkpoint = debug_timing_checkpoint('relayout', checkpoint)
+	debug_timing_checkpoint('install_total', install_start)
 	title := document_title(app.document)
 	gg.set_window_title(if title != '' { '${title} — Ladybird V' } else { 'Ladybird V' })
 	if destination := javascript_navigation {
@@ -945,7 +1102,34 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	app.status = app.load_status
 	app.navigation_generation++
 	if app.ctx != unsafe { nil } {
-		spawn fetch_page_in_background(resolved, base, app.navigation_generation, add_history, app.navigation_results)
+		generation := app.navigation_generation
+		mut network_add_history := add_history
+		mut had_cached_page := false
+		if cached := read_cached_page(resolved) {
+			snapshot_path := cached_snapshot_path(resolved)
+			$if macos {
+				if os.is_file(snapshot_path) {
+					C.native_show_cached_snapshot(snapshot_path)
+					app.snapshot_visible = true
+					// Hold the raster across the cached rebuild AND the refresh
+					// rebuild, capped by a safety deadline in case the network
+					// never answers.
+					app.snapshot_hold = true
+					app.snapshot_hold_until = time.sys_mono_now() + 8_000_000_000
+				}
+			}
+			app.install_loaded_page(cached, add_history)
+			had_cached_page = true
+			network_add_history = false
+			app.refresh_not_before = time.sys_mono_now() + 500_000_000
+			$if macos {
+				C.native_wake_browser_after(500)
+			}
+		}
+		if app.navigation_generation != generation {
+			return
+		}
+		spawn fetch_page_in_background(resolved, base, generation, network_add_history, had_cached_page, app.navigation_results)
 		return
 	}
 	loaded := fetch_page(resolved, base) or {
@@ -966,8 +1150,21 @@ fn (mut app BrowserApp) poll_navigation() {
 			if result.generation != app.navigation_generation {
 				return
 			}
+			// The live document (or a definitive failure) has arrived; stop
+			// pinning the cached raster so the next frame reveals the real page.
+			app.snapshot_hold = false
 			if loaded := result.loaded {
-				app.install_loaded_page(loaded, result.add_history)
+				if result.had_cached_page && app.address == loaded.url && app.markup == loaded.markup {
+					app.replace_load_status(loaded.status)
+					app.update_current_history_entry(loaded)
+				} else {
+					app.install_loaded_page(loaded, result.add_history)
+					if result.had_cached_page {
+						app.update_current_history_entry(loaded)
+					}
+				}
+			} else if result.had_cached_page {
+				app.replace_load_status('Cached · refresh failed: ${result.error}')
 			} else {
 				app.install_loaded_page(LoadedPage{
 					url: result.resolved
@@ -1337,8 +1534,7 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 				$if macos {
 					if app.ctx.native_rendering {
 						unsafe {
-							C.native_draw_polygon_srgb(&points[0], points.len / 2,
-								f32(app.ctx.height), fill)
+							C.native_draw_polygon_srgb(&points[0], points.len / 2, f32(app.ctx.height), fill)
 						}
 						return
 					}
@@ -1571,7 +1767,11 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 }
 
 fn (mut app BrowserApp) draw() {
-	app.poll_navigation()
+	refresh_ready := app.refresh_not_before == 0 || time.sys_mono_now() >= app.refresh_not_before
+	if app.document == unsafe { nil } || (app.document_presented && refresh_ready) {
+		app.refresh_not_before = 0
+		app.poll_navigation()
+	}
 	window := browser_window_size()
 	content_viewport_height := window.height - app.chrome_height()
 	if window.width > 0 && (window.width != app.viewport_width || content_viewport_height != app.viewport_height) {
@@ -1631,6 +1831,21 @@ fn (mut app BrowserApp) draw() {
 		app.ctx.draw_text(12, status_y + 4, footer, color: gg.rgb(203, 213, 225), size: 12)
 	}
 	app.ctx.end()
+	if app.document != unsafe { nil } {
+		app.document_presented = true
+		$if macos {
+			hold_expired := app.snapshot_hold_until != 0 && time.sys_mono_now() >= app.snapshot_hold_until
+			if app.snapshot_visible && (!app.snapshot_hold || hold_expired) {
+				C.native_hide_cached_snapshot()
+				app.snapshot_visible = false
+				app.snapshot_hold = false
+			}
+			if !app.snapshot_cached && !app.load_status.starts_with('Cached') && !app.load_status.starts_with('Loading ') {
+				app.snapshot_cached = true
+				C.native_cache_browser_snapshot(cached_snapshot_path(app.address))
+			}
+		}
+	}
 	if app.screenshot_path != '' && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') {
 		app.screenshot_scheduled = true
 		schedule_native_screenshot(app.screenshot_path)
@@ -1832,6 +2047,9 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 
 fn main() {
 	link_translated_modules()
+	$if macos {
+		C.native_prevent_app_nap()
+	}
 	use_document_font := configure_browser_layout_font()
 	options := parse_launch_options(os.args[1..]) or {
 		eprintln('Ladybird V: ${err.msg()}')

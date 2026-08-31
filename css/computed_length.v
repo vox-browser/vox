@@ -44,7 +44,7 @@ pub fn computed_length_px(element &dom.Element, property_id PropertyID, author_r
 // used while computing the element.
 pub fn (c &ComputedProperties) length_percentage_to_px(property_id PropertyID, percentage_basis_px f64) ?f64 {
 	value := c.property(property_id, .yes) or { return none }
-	typed := parse_css_value_logic(property_id, value.css_text) or { return none }
+	typed := style_value_logic_from_dom(property_id, value) or { return none }
 	if typed.is_percentage() {
 		percentage := typed.as_percentage().percentage()
 		basis := CSSPixels.nearest_value_for(percentage_basis_px)
@@ -67,7 +67,7 @@ pub fn (c &ComputedProperties) length_percentage_to_px(property_id PropertyID, p
 	context.root_font_metrics.line_height = CSSPixels.nearest_value_for(c.root_line_height_px_)
 	if typed.is_calculated() {
 		resolution_context := CalculationResolutionContext{
-			percentage_basis:          Length.make_px(percentage_basis_px)
+			percentage_basis: Length.make_px(percentage_basis_px)
 			length_resolution_context: context
 		}
 		if length := typed.as_calculated().resolve_length(resolution_context) {
@@ -132,7 +132,7 @@ pub fn (c &ComputedProperties) resolve_length_percentage_text_px(text string, pe
 // This computed style's font-size in px (already absolute in a computed style). Falls back to 16px.
 pub fn (c &ComputedProperties) resolved_font_size_px() f64 {
 	value := c.property(.font_size, .yes) or { return 16.0 }
-	typed := parse_css_value_logic(.font_size, value.css_text) or { return 16.0 }
+	typed := style_value_logic_from_dom(.font_size, value) or { return 16.0 }
 	if typed.is_length() {
 		length := typed.as_length().length()
 		if length.is_absolute() {
@@ -157,10 +157,8 @@ pub fn computed_percentage(element &dom.Element, property_id PropertyID, author_
 // A calc() resolution context using `element`'s computed font-size (for em/ex/ch), the root font-size
 // (for rem), and an optional percentage basis in px (the containing measure for `%` inside the calc).
 fn calc_resolution_context(element &dom.Element, percentage_basis_px ?f64, author_rules []&CSSRule) CalculationResolutionContext {
-	font_metrics := computed_interpolation_font_metrics_for_size(CSSPixels.nearest_value_for(computed_font_size_px(element,
-		author_rules)))
-	root_font_metrics := computed_interpolation_font_metrics_for_size(CSSPixels.nearest_value_for(root_font_size_px(element,
-		author_rules)))
+	font_metrics := computed_interpolation_font_metrics_for_size(CSSPixels.nearest_value_for(computed_font_size_px(element, author_rules)))
+	root_font_metrics := computed_interpolation_font_metrics_for_size(CSSPixels.nearest_value_for(root_font_size_px(element, author_rules)))
 	mut length_context := LengthResolutionContext.default()
 	length_context.viewport_rect = css_pixel_rect_from_dom_rect(element.document().viewport_rect())
 	length_context.font_metrics = font_metrics

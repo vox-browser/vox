@@ -334,6 +334,45 @@ fn test_recompute_style_for_subtree_inherits_down_levels() {
 	assert leaf_color.css_text == root_color.css_text
 }
 
+fn test_style_sharing_keeps_element_styles_independent() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut first := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	mut second := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	mut root_node := root.as_node()
+	root_node.append_child(first.as_node()) or { panic('append first failed: ${err}') }
+	root_node.append_child(second.as_node()) or { panic('append second failed: ${err}') }
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(root.as_node()) or { panic('append root failed: ${err}') }
+
+	mut computer := StyleComputer.new(doc)
+	recompute_style_for_subtree(mut computer, root.as_node())
+	mut first_style := computed_properties_from_dom(dom.AbstractElement.new(first, none).computed_properties() or {
+		panic('first style missing')
+	}) or { panic('first typed style missing') }
+	second_style := computed_properties_from_dom(dom.AbstractElement.new(second, none).computed_properties() or {
+		panic('second style missing')
+	}) or { panic('second typed style missing') }
+
+	assert first_style.style_sharing_identity_ != ''
+	assert first_style.style_sharing_identity_ == second_style.style_sharing_identity_
+	assert voidptr(first_style) != voidptr(second_style)
+	assert first_style.equals(second_style)
+
+	new_width := parse_css_value(ParsingParams{}, '37px', .width) or {
+		panic('width did not parse')
+	}
+	first_style.set_property_without_modifying_flags(.width, new_width)
+	assert first_style.property(.width, .no)?.css_text == '37px'
+	assert second_style.property(.width, .no)?.css_text != '37px'
+}
+
 // DOM::Document.update_style() runs the CSS style pass over the whole tree through the installed hook:
 // after a single update_style() call, every element is styled and inherited color reaches a descendant.
 fn test_document_update_style_runs_css_pass_via_hook() {

@@ -15,7 +15,6 @@ import strconv
 // style/layout types that are not fully present in this port yet. Those gaps are
 // intentionally represented by explicit stubs in this file instead of spreading
 // parser-specific assumptions through parser_core.v.
-
 pub struct Parser {
 pub mut:
 	component_values []ComponentValue
@@ -35,7 +34,7 @@ pub fn Parser.from_css_text(text string) Parser {
 pub fn Parser.with_context(context ParsingParams, text string) Parser {
 	return Parser{
 		component_values: parse_component_values_for_value_logic(text)
-		context:          context
+		context: context
 	}
 }
 
@@ -54,7 +53,7 @@ fn ComponentValueStream.new(values []ComponentValue) ComponentValueStream {
 fn (stream ComponentValueStream) clone() ComponentValueStream {
 	return ComponentValueStream{
 		values: stream.values.clone()
-		index:  stream.index
+		index: stream.index
 	}
 }
 
@@ -143,33 +142,31 @@ fn consume_component_value_list_for_value_logic(tokens []Token, mut state ValueL
 		state.value++
 		if token.is(.open_curly) || token.is(.open_square) || token.is(.open_paren) {
 			end_type := token.mirror_variant()
-			block_values := consume_component_value_list_for_value_logic(tokens, mut state,
-				end_type)
+			block_values := consume_component_value_list_for_value_logic(tokens, mut state, end_type)
 			mut end_token := Token.create(end_type, '')
 			if state.value < tokens.len && tokens[state.value].is(end_type) {
 				end_token = tokens[state.value]
 				state.value++
 			}
 			values << ComponentValue.from_block(SimpleBlock{
-				token:     token
-				value:     block_values
+				token: token
+				value: block_values
 				end_token: end_token
 			})
 			continue
 		}
 		if token.is(.function) {
-			function_values := consume_component_value_list_for_value_logic(tokens, mut state,
-				.close_paren)
+			function_values := consume_component_value_list_for_value_logic(tokens, mut state, .close_paren)
 			mut end_token := Token.create(.close_paren, '')
 			if state.value < tokens.len && tokens[state.value].is(.close_paren) {
 				end_token = tokens[state.value]
 				state.value++
 			}
 			values << ComponentValue.from_function(Function{
-				name:       token.function_name()
-				value:      function_values
+				name: token.function_name()
+				value: function_values
 				name_token: token
-				end_token:  end_token
+				end_token: end_token
 			})
 			continue
 		}
@@ -268,19 +265,13 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.animation_play_state {
 			return parser.parse_animation_play_state_value(mut tokens)
 		}
-		.border_block_end_width, .border_block_start_width, .border_bottom_width,
-		.border_inline_end_width, .border_inline_start_width, .border_left_width,
-		.border_right_width, .border_top_width, .outline_width {
+		.border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width, .outline_width {
 			return parser.parse_border_or_outline_width_value(mut tokens)
 		}
-		.border_block_end_style, .border_block_start_style, .border_bottom_style,
-		.border_inline_end_style, .border_inline_start_style, .border_left_style,
-		.border_right_style, .border_top_style {
+		.border_block_end_style, .border_block_start_style, .border_bottom_style, .border_inline_end_style, .border_inline_start_style, .border_left_style, .border_right_style, .border_top_style {
 			return parser.parse_line_style_value(mut tokens)
 		}
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius,
-		.border_end_start_radius, .border_start_end_radius, .border_start_start_radius,
-		.border_top_left_radius, .border_top_right_radius {
+		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius, .border_start_end_radius, .border_start_start_radius, .border_top_left_radius, .border_top_right_radius {
 			return parser.parse_border_radius_value(mut tokens)
 		}
 		.border_image_outset {
@@ -295,20 +286,16 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_image_width {
 			return parser.parse_border_image_width_value(mut tokens)
 		}
-		.block_size, .height, .inline_size, .min_block_size, .min_height, .min_inline_size,
-		.min_width, .width, .max_block_size, .max_height, .max_inline_size, .max_width {
+		.block_size, .height, .inline_size, .min_block_size, .min_height, .min_inline_size, .min_width, .width, .max_block_size, .max_height, .max_inline_size, .max_width {
 			return parser.parse_sizing_value(property_id, mut tokens)
 		}
-		.bottom, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
-		.left, .right, .top {
+		.bottom, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left, .right, .top {
 			return parser.parse_inset_value(mut tokens)
 		}
-		.margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end,
-		.margin_inline_start, .margin_left, .margin_right, .margin_top {
+		.margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top {
 			return parser.parse_margin_value(mut tokens)
 		}
-		.padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
-		.padding_inline_start, .padding_left, .padding_right, .padding_top {
+		.padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top {
 			return parser.parse_padding_value(mut tokens)
 		}
 		.border_spacing {
@@ -332,10 +319,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.overflow_block, .overflow_inline, .overflow_x, .overflow_y {
 			return parser.parse_overflow_value(mut tokens)
 		}
-		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
-		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
-		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
-		.overflow_clip_margin_right, .overflow_clip_margin_top {
+		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top {
 			return parser.parse_overflow_clip_margin_value(mut tokens)
 		}
 		.overflow_wrap {
@@ -368,10 +352,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.position_visibility {
 			return parser.parse_position_visibility_value(mut tokens)
 		}
-		.background_color, .border_block_end_color, .border_block_start_color,
-		.border_bottom_color, .border_inline_end_color, .border_inline_start_color,
-		.border_left_color, .border_right_color, .border_top_color, .color, .flood_color,
-		.outline_color, .stop_color, .webkit_text_fill_color {
+		.background_color, .border_block_end_color, .border_block_start_color, .border_bottom_color, .border_inline_end_color, .border_inline_start_color, .border_left_color, .border_right_color, .border_top_color, .color, .flood_color, .outline_color, .stop_color, .webkit_text_fill_color {
 			return parser.parse_color_value(mut tokens)
 		}
 		.color_scheme {
@@ -386,13 +367,10 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.container_type {
 			return parser.parse_container_type_value(mut tokens)
 		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape,
-		.corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape,
-		.corner_top_left_shape, .corner_top_right_shape {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape {
 			return parser.parse_corner_shape_value(mut tokens)
 		}
-		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity {
+		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity, .stroke_opacity {
 			return parser.parse_opacity_value(mut tokens)
 		}
 		.animation_timeline {
@@ -791,15 +769,13 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 			])
 		}
 		.overflow_clip_margin_block {
-			return parser.parse_overflow_clip_margin_shorthand(mut tokens,
-				.overflow_clip_margin_block, [
+			return parser.parse_overflow_clip_margin_shorthand(mut tokens, .overflow_clip_margin_block, [
 				PropertyID.overflow_clip_margin_block_start,
 				PropertyID.overflow_clip_margin_block_end,
 			])
 		}
 		.overflow_clip_margin_inline {
-			return parser.parse_overflow_clip_margin_shorthand(mut tokens,
-				.overflow_clip_margin_inline, [
+			return parser.parse_overflow_clip_margin_shorthand(mut tokens, .overflow_clip_margin_inline, [
 				PropertyID.overflow_clip_margin_inline_start,
 				PropertyID.overflow_clip_margin_inline_end,
 			])
@@ -1226,8 +1202,7 @@ fn (mut stream ComponentValueStream) consume_remaining_component_values() []Comp
 
 fn parse_animation_keyword_list_for_value_logic(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut keywords := []StyleValue{}
 	for value in values {
@@ -1261,8 +1236,7 @@ fn (mut parser Parser) parse_animation_composition_value(mut tokens ComponentVal
 	_ = parser
 	// https://drafts.csswg.org/css-animations-2/#animation-composition
 	// replace | add | accumulate
-	return parse_animation_keyword_list_for_value_logic(mut tokens,
-		['replace', 'add', 'accumulate'])
+	return parse_animation_keyword_list_for_value_logic(mut tokens, ['replace', 'add', 'accumulate'])
 }
 
 fn (mut parser Parser) parse_animation_delay_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -1281,8 +1255,7 @@ fn (mut parser Parser) parse_animation_duration_value(mut tokens ComponentValueS
 	// https://drafts.csswg.org/css-animations-2/#animation-duration
 	// auto | <time [0s,∞]>
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut durations := []StyleValue{}
 	for value in values {
@@ -1331,8 +1304,7 @@ fn (mut parser Parser) parse_animation_iteration_count_value(mut tokens Componen
 	// https://drafts.csswg.org/css-animations-1/#animation-iteration-count
 	// infinite | <number [0,∞]>
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut iteration_counts := []StyleValue{}
 	for value in values {
@@ -1408,8 +1380,7 @@ fn (mut parser Parser) parse_animation_name_value(mut tokens ComponentValueStrea
 	// https://drafts.csswg.org/css-animations-1/#animation-name
 	// list, each item either a case-sensitive css identifier or the keyword none
 	mut transaction := tokens.clone()
-	name_values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	name_values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 	mut names := []StyleValue{}
 	for values in name_values {
 		names << (parse_animation_name_entry_for_value_logic(values) or { return none })
@@ -1481,8 +1452,7 @@ fn parse_single_keyword_value_for_value_logic(mut tokens ComponentValueStream, k
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	token := transaction.consume() or { return none }
-	if !token.is(.ident)
-		|| !equals_ignoring_ascii_case(token.token().ident(), string_from_keyword(keyword)) {
+	if !token.is(.ident) || !equals_ignoring_ascii_case(token.token().ident(), string_from_keyword(keyword)) {
 		return none
 	}
 	transaction.consume_whitespace()
@@ -1503,8 +1473,7 @@ fn (mut parser Parser) parse_dashed_ident_value(mut tokens ComponentValueStream,
 
 fn (mut parser Parser) parse_dashed_ident_comma_list_value(mut tokens ComponentValueStream, blacklist []string) ?StyleValue {
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut idents := []StyleValue{}
 	for value in values {
@@ -1571,8 +1540,7 @@ fn (mut parser Parser) parse_timeline_name_value(mut tokens ComponentValueStream
 
 fn (mut parser Parser) parse_view_timeline_inset_list_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut insets := []StyleValue{}
 	for value in values {
@@ -1611,8 +1579,7 @@ fn (mut parser Parser) parse_transition_property_value(mut tokens ComponentValue
 	}
 
 	mut transaction := tokens.clone()
-	transition_property_values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	transition_property_values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut transition_properties := []StyleValue{}
 	for value in transition_property_values {
@@ -1637,8 +1604,7 @@ fn (mut parser Parser) parse_transition_property_value(mut tokens ComponentValue
 
 fn (mut parser Parser) parse_transition_time_list_value(mut tokens ComponentValueStream, non_negative bool) ?StyleValue {
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut times := []StyleValue{}
 	for value in values {
@@ -1677,8 +1643,7 @@ fn parse_transition_timing_keyword(mut tokens ComponentValueStream) ?StyleValue 
 
 fn (mut parser Parser) parse_transition_timing_function_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut timing_functions := []StyleValue{}
 	for value in values {
@@ -1708,8 +1673,7 @@ fn (mut parser Parser) parse_transition_timing_function_value(mut tokens Compone
 
 fn (mut parser Parser) parse_transition_behavior_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut behaviors := []StyleValue{}
 	for value in values {
@@ -1852,8 +1816,7 @@ fn (mut parser Parser) parse_shadow_value(mut tokens ComponentValueStream, shado
 	}
 
 	transaction = tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 	mut shadows := []StyleValue{}
 	for value in values {
 		mut shadow_tokens := ComponentValueStream.new(value)
@@ -1932,8 +1895,7 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 		}
 
 		token := transaction.peek() or { return none }
-		if shadow_type == .normal && token.is(.ident)
-			&& equals_ignoring_ascii_case(token.token().ident(), 'inset') {
+		if shadow_type == .normal && token.is(.ident) && equals_ignoring_ascii_case(token.token().ident(), 'inset') {
 			if placement != none {
 				return none
 			}
@@ -1955,8 +1917,7 @@ fn (mut parser Parser) parse_single_shadow_value(mut tokens ComponentValueStream
 	resolved_placement := placement or { ShadowPlacement.outer }
 
 	tokens = transaction
-	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x,
-		resolved_offset_y, blur_radius, spread_distance, resolved_placement))
+	return StyleValue(ShadowStyleValue.create(shadow_type, color, resolved_offset_x, resolved_offset_y, blur_radius, spread_distance, resolved_placement))
 }
 
 const content_quote_keywords = ['open-quote', 'close-quote', 'no-open-quote', 'no-close-quote']
@@ -2017,8 +1978,7 @@ fn (mut parser Parser) parse_content_value(mut tokens ComponentValueStream) ?Sty
 	}
 
 	tokens = transaction
-	return StyleValue(ContentStyleValue.create(StyleValueList.create(content_values, .space, .yes),
-		alt_text))
+	return StyleValue(ContentStyleValue.create(StyleValueList.create(content_values, .space, .yes), alt_text))
 }
 
 fn (mut parser Parser) parse_content_item(mut tokens ComponentValueStream) ?StyleValue {
@@ -2072,8 +2032,7 @@ fn (mut parser Parser) parse_counter_value(mut tokens ComponentValueStream) ?Sty
 		return none
 	}
 	function_name := to_ascii_lowercase(component_value.function().name)
-	arguments :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
+	arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
 	default_counter_style := CounterStyleStyleValue.create_named('decimal')
 
 	if function_name == 'counter' {
@@ -2106,8 +2065,7 @@ fn (mut parser Parser) parse_counter_value(mut tokens ComponentValueStream) ?Sty
 			counter_style = parser.parse_counter_style_argument(arguments[2]) or { return none }
 		}
 		tokens = transaction
-		return StyleValue(CounterStyleValue.create_counters(counter_name,
-			join_value.string_value(), counter_style))
+		return StyleValue(CounterStyleValue.create_counters(counter_name, join_value.string_value(), counter_style))
 	}
 
 	return none
@@ -2277,9 +2235,7 @@ fn (mut parser Parser) parse_border_radius_rect_value(mut args ComponentValueStr
 	if groups.len == 2 {
 		verticals = parser.parse_border_radius_lp_list(groups[1]) or { return none }
 	}
-	return StyleValue(BorderRadiusRectStyleValue.create(StyleValue(BorderRadiusStyleValue.create(horizontals[0],
-		verticals[0])), StyleValue(BorderRadiusStyleValue.create(horizontals[1], verticals[1])), StyleValue(BorderRadiusStyleValue.create(horizontals[2],
-		verticals[2])), StyleValue(BorderRadiusStyleValue.create(horizontals[3], verticals[3]))))
+	return StyleValue(BorderRadiusRectStyleValue.create(StyleValue(BorderRadiusStyleValue.create(horizontals[0], verticals[0])), StyleValue(BorderRadiusStyleValue.create(horizontals[1], verticals[1])), StyleValue(BorderRadiusStyleValue.create(horizontals[2], verticals[2])), StyleValue(BorderRadiusStyleValue.create(horizontals[3], verticals[3]))))
 }
 
 // FIXME: path() stores the raw string without SVG path-data validation.
@@ -2314,10 +2270,10 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		}
 		tokens = transaction
 		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeInset{
-			top:           top
-			right:         right
-			bottom:        bottom
-			left:          left
+			top: top
+			right: right
+			bottom: bottom
+			left: left
 			border_radius: border_radius
 		})))
 	}
@@ -2354,10 +2310,10 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		}
 		tokens = transaction
 		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeXywh{
-			x:             x
-			y:             y
-			width:         width
-			height:        height
+			x: x
+			y: y
+			width: width
+			height: height
 			border_radius: border_radius
 		})))
 	}
@@ -2378,10 +2334,10 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		}
 		tokens = transaction
 		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeRect{
-			top:           top
-			right:         right
-			bottom:        bottom
-			left:          left
+			top: top
+			right: right
+			bottom: bottom
+			left: left
 			border_radius: border_radius
 		})))
 	}
@@ -2409,7 +2365,7 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		position := parser.parse_basic_shape_at_position(mut args) or { return none }
 		tokens = transaction
 		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeCircle{
-			radius:   StyleValue(resolved_radius)
+			radius: StyleValue(resolved_radius)
 			position: position.value
 		})))
 	}
@@ -2440,15 +2396,14 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		position := parser.parse_basic_shape_at_position(mut args) or { return none }
 		tokens = transaction
 		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeEllipse{
-			radius:   StyleValue(resolved_radius)
+			radius: StyleValue(resolved_radius)
 			position: position.value
 		})))
 	}
 
 	if function_name == 'polygon' {
 		// polygon( <'fill-rule'>? , [ <length-percentage> <length-percentage> ]# )
-		arguments :=
-			parse_a_comma_separated_list_of_component_values_for_value_logic(function_values)
+		arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function_values)
 		if arguments.len < 1 {
 			return none
 		}
@@ -2480,14 +2435,13 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		tokens = transaction
 		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapePolygon{
 			fill_rule: fill_rule
-			points:    points
+			points: points
 		})))
 	}
 
 	if function_name == 'path' {
 		// path( <'fill-rule'>?, <string> )
-		arguments :=
-			parse_a_comma_separated_list_of_component_values_for_value_logic(function_values)
+		arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function_values)
 		if arguments.len < 1 || arguments.len > 2 {
 			return none
 		}
@@ -2508,7 +2462,7 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		}
 		tokens = transaction
 		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapePath{
-			fill_rule:         fill_rule
+			fill_rule: fill_rule
 			path_instructions: path_string
 		})))
 	}
@@ -2607,8 +2561,7 @@ fn (mut parser Parser) parse_shape_outside_value(mut tokens ComponentValueStream
 		}
 		mut box_attempt := transaction.clone()
 		if value := parse_property_keyword_value(mut box_attempt, ['margin-box', 'border-box',
-			'padding-box', 'content-box'])
-		{
+			'padding-box', 'content-box']) {
 			if shape_box != none {
 				return none
 			}
@@ -2633,7 +2586,7 @@ fn (mut parser Parser) parse_shape_outside_value(mut tokens ComponentValueStream
 
 // Parses a `||` combination of font-variant keywords into a fixed-size tuple, where
 // `slot_for` maps a lowercased ident to its canonical tuple slot (or none if not a member).
-fn (mut parser Parser) parse_font_variant_tuple(mut tokens ComponentValueStream, slot_count int, slot_for fn (string) ?int) ?StyleValue {
+fn (mut parser Parser) parse_font_variant_tuple(mut tokens ComponentValueStream, slot_count int, slot_for fn(string) ?int) ?StyleValue {
 	_ = parser
 	mut transaction := tokens.clone()
 	mut slots := []?StyleValue{}
@@ -2857,11 +2810,11 @@ fn (mut parser Parser) parse_border_inline_width_shorthand(mut tokens ComponentV
 	], .border_width)
 }
 
-// Returns the longhand's initial value as a typed StyleValue (re-parsed from its serialized initial).
+// Returns the longhand's retained typed initial value.
 fn (mut parser Parser) longhand_initial_typed_value(property_id PropertyID) ?StyleValue {
 	_ = parser
 	dom_initial := computed_interpolation_property_initial_value(property_id)
-	return parse_css_value_logic(property_id, dom_initial.css_text)
+	return style_value_logic_from_dom(property_id, dom_initial)
 }
 
 // Returns a single-value initial for a coordinated (list-valued) longhand: the first element of its
@@ -3087,8 +3040,7 @@ const animation_shorthand_longhands = [PropertyID.animation_duration,
 
 // https://drafts.csswg.org/css-animations/#propdef-animation
 fn (mut parser Parser) parse_animation_shorthand(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_coordinating_value_list_shorthand(mut tokens, .animation,
-		animation_shorthand_longhands)
+	return parser.parse_coordinating_value_list_shorthand(mut tokens, .animation, animation_shorthand_longhands)
 }
 
 // https://drafts.csswg.org/scroll-animations-1/#propdef-scroll-timeline
@@ -3150,8 +3102,8 @@ fn (mut parser Parser) parse_border_image_slice_portion(mut tokens ComponentValu
 		}
 	}
 	return BorderImageSlicePortion{
-		slice:  slice
-		width:  width
+		slice: slice
+		width: width
 		outset: outset
 	}
 }
@@ -3208,7 +3160,8 @@ fn (mut parser Parser) parse_border_image_shorthand(mut tokens ComponentValueStr
 	}
 
 	component_ids := [PropertyID.border_image_source, PropertyID.border_image_slice,
-		PropertyID.border_image_width, PropertyID.border_image_outset, PropertyID.border_image_repeat]
+		PropertyID.border_image_width, PropertyID.border_image_outset,
+		PropertyID.border_image_repeat]
 	resolved := [
 		source or { parser.longhand_initial_typed_value(.border_image_source) or { return none } },
 		slice or { parser.longhand_initial_typed_value(.border_image_slice) or { return none } },
@@ -3363,8 +3316,7 @@ fn (mut parser Parser) parse_grid_track_size_list_shorthand(property_id Property
 			areas_attempt.consume()
 			areas_attempt.consume_whitespace()
 			mut columns_list := GridTrackSizeList{}
-			count := parser.parse_track_list_impl(mut areas_attempt, mut columns_list,
-				.track_size_only)
+			count := parser.parse_track_list_impl(mut areas_attempt, mut columns_list, .track_size_only)
 			if count == 0 {
 				return none
 			}
@@ -3422,9 +3374,7 @@ const grid_shorthand_longhands = [PropertyID.grid_auto_flow, PropertyID.grid_aut
 // | <'grid-template-rows'> / [ auto-flow && dense? ] <'grid-auto-columns'>?
 fn (mut parser Parser) parse_grid_shorthand(mut tokens ComponentValueStream) ?StyleValue {
 	mut template_attempt := tokens.clone()
-	if grid_template := parser.parse_grid_track_size_list_shorthand(.grid, mut template_attempt,
-		true)
-	{
+	if grid_template := parser.parse_grid_track_size_list_shorthand(.grid, mut template_attempt, true) {
 		tokens = template_attempt
 		return grid_template
 	}
@@ -3491,9 +3441,9 @@ fn (mut parser Parser) parse_grid_shorthand(mut tokens ComponentValueStream) ?St
 }
 
 // The font shorthand's longhands, flattened (font-variant is expanded to its leaf longhands).
-const font_shorthand_longhands = [PropertyID.font_family, PropertyID.font_size, PropertyID.font_width,
-	PropertyID.font_style, PropertyID.font_variant_alternates, PropertyID.font_variant_caps,
-	PropertyID.font_variant_east_asian, PropertyID.font_variant_emoji,
+const font_shorthand_longhands = [PropertyID.font_family, PropertyID.font_size,
+	PropertyID.font_width, PropertyID.font_style, PropertyID.font_variant_alternates,
+	PropertyID.font_variant_caps, PropertyID.font_variant_east_asian, PropertyID.font_variant_emoji,
 	PropertyID.font_variant_ligatures, PropertyID.font_variant_numeric,
 	PropertyID.font_variant_position, PropertyID.font_weight, PropertyID.line_height,
 	PropertyID.font_feature_settings, PropertyID.font_kerning, PropertyID.font_language_override,
@@ -3667,26 +3617,20 @@ fn (mut parser Parser) complete_background_layer(image ?StyleValue, position_x ?
 		clip = origin
 	}
 	return BackgroundLayer{
-		image:      image or {
-			parser.longhand_initial_first_value(.background_image) or { return none }
-		}
+		image: image or {
+			parser.longhand_initial_first_value(.background_image) or { return none }}
 		position_x: position_x or {
-			parser.longhand_initial_first_value(.background_position_x) or { return none }
-		}
+			parser.longhand_initial_first_value(.background_position_x) or { return none }}
 		position_y: position_y or {
-			parser.longhand_initial_first_value(.background_position_y) or { return none }
-		}
-		size:       size or {
-			parser.longhand_initial_first_value(.background_size) or { return none }
-		}
-		repeat:     repeat or {
-			parser.longhand_initial_first_value(.background_repeat) or { return none }
-		}
+			parser.longhand_initial_first_value(.background_position_y) or { return none }}
+		size: size or {
+			parser.longhand_initial_first_value(.background_size) or { return none }}
+		repeat: repeat or {
+			parser.longhand_initial_first_value(.background_repeat) or { return none }}
 		attachment: attachment or {
-			parser.longhand_initial_first_value(.background_attachment) or { return none }
-		}
-		origin:     origin or { return none }
-		clip:       clip or { return none }
+			parser.longhand_initial_first_value(.background_attachment) or { return none }}
+		origin: origin or { return none }
+		clip: clip or { return none }
 	}
 }
 
@@ -3714,12 +3658,10 @@ fn (mut parser Parser) parse_background_shorthand(mut tokens ComponentValueStrea
 			if background_color != none {
 				return none
 			}
-			if !(image != none || position_x != none || position_y != none || size != none
-				|| repeat != none || attachment != none || origin != none || clip != none) {
+			if !(image != none || position_x != none || position_y != none || size != none || repeat != none || attachment != none || origin != none || clip != none) {
 				return none
 			}
-			layer := parser.complete_background_layer(image, position_x, position_y, size, repeat,
-				attachment, origin, clip) or { return none }
+			layer := parser.complete_background_layer(image, position_x, position_y, size, repeat, attachment, origin, clip) or { return none }
 			layers << layer
 			image = none
 			position_x = none
@@ -3745,8 +3687,7 @@ fn (mut parser Parser) parse_background_shorthand(mut tokens ComponentValueStrea
 		if origin == none || clip == none {
 			mut attempt := transaction.clone()
 			if value := single_keyword_style_value(mut attempt, ['border-box', 'content-box',
-				'padding-box', 'text'])
-			{
+				'padding-box', 'text']) {
 				// First <box> sets origin, second sets clip.
 				if origin == none {
 					origin = value
@@ -3815,13 +3756,10 @@ fn (mut parser Parser) parse_background_shorthand(mut tokens ComponentValueStrea
 	}
 
 	// The final layer additionally allows background-color.
-	if background_color == none && !(image != none || position_x != none
-		|| position_y != none || size != none || repeat != none || attachment != none
-		|| origin != none || clip != none) {
+	if background_color == none && !(image != none || position_x != none || position_y != none || size != none || repeat != none || attachment != none || origin != none || clip != none) {
 		return none
 	}
-	final_layer := parser.complete_background_layer(image, position_x, position_y, size, repeat,
-		attachment, origin, clip) or { return none }
+	final_layer := parser.complete_background_layer(image, position_x, position_y, size, repeat, attachment, origin, clip) or { return none }
 	layers << final_layer
 
 	color_value := background_color or {
@@ -3889,20 +3827,17 @@ fn (mut parser Parser) complete_mask_layer(image ?StyleValue, position ?StyleVal
 		clip = origin
 	}
 	return MaskLayer{
-		image:     image or { parser.longhand_initial_first_value(.mask_image) or { return none } }
-		position:  position or {
-			parser.longhand_initial_first_value(.mask_position) or { return none }
-		}
-		size:      size or { parser.longhand_initial_first_value(.mask_size) or { return none } }
-		repeat:    repeat or {
-			parser.longhand_initial_first_value(.mask_repeat) or { return none }
-		}
-		origin:    origin or { return none }
-		clip:      clip or { return none }
+		image: image or { parser.longhand_initial_first_value(.mask_image) or { return none } }
+		position: position or {
+			parser.longhand_initial_first_value(.mask_position) or { return none }}
+		size: size or { parser.longhand_initial_first_value(.mask_size) or { return none } }
+		repeat: repeat or {
+			parser.longhand_initial_first_value(.mask_repeat) or { return none }}
+		origin: origin or { return none }
+		clip: clip or { return none }
 		composite: composite or {
-			parser.longhand_initial_first_value(.mask_composite) or { return none }
-		}
-		mode:      mode or { parser.longhand_initial_first_value(.mask_mode) or { return none } }
+			parser.longhand_initial_first_value(.mask_composite) or { return none }}
+		mode: mode or { parser.longhand_initial_first_value(.mask_mode) or { return none } }
 	}
 }
 
@@ -3926,12 +3861,10 @@ fn (mut parser Parser) parse_mask_shorthand(mut tokens ComponentValueStream) ?St
 	for transaction.has_more_tokens() {
 		peek := transaction.peek() or { break }
 		if peek.is(.comma) {
-			if !(image != none || position != none || size != none || repeat != none
-				|| origin != none || clip != none || composite != none || mode != none) {
+			if !(image != none || position != none || size != none || repeat != none || origin != none || clip != none || composite != none || mode != none) {
 				return none
 			}
-			layer := parser.complete_mask_layer(image, position, size, repeat, origin, clip,
-				composite, mode) or { return none }
+			layer := parser.complete_mask_layer(image, position, size, repeat, origin, clip, composite, mode) or { return none }
 			layers << layer
 			image = none
 			position = none
@@ -3991,8 +3924,7 @@ fn (mut parser Parser) parse_mask_shorthand(mut tokens ComponentValueStream) ?St
 		if origin == none || clip == none {
 			mut attempt := transaction.clone()
 			if value := single_keyword_style_value(mut attempt, ['content-box', 'padding-box',
-				'border-box', 'fill-box', 'stroke-box', 'view-box', 'no-clip'])
-			{
+				'border-box', 'fill-box', 'stroke-box', 'view-box', 'no-clip']) {
 				is_no_clip := if value is KeywordStyleValue {
 					value.keyword() == .no_clip
 				} else {
@@ -4021,8 +3953,7 @@ fn (mut parser Parser) parse_mask_shorthand(mut tokens ComponentValueStream) ?St
 		if composite == none {
 			mut attempt := transaction.clone()
 			if value := single_keyword_style_value(mut attempt, ['add', 'subtract', 'intersect',
-				'exclude'])
-			{
+				'exclude']) {
 				composite = value
 				transaction = attempt
 				transaction.consume_whitespace()
@@ -4031,9 +3962,7 @@ fn (mut parser Parser) parse_mask_shorthand(mut tokens ComponentValueStream) ?St
 		}
 		if mode == none {
 			mut attempt := transaction.clone()
-			if value := single_keyword_style_value(mut attempt,
-				['alpha', 'luminance', 'match-source'])
-			{
+			if value := single_keyword_style_value(mut attempt, ['alpha', 'luminance', 'match-source']) {
 				mode = value
 				transaction = attempt
 				transaction.consume_whitespace()
@@ -4043,12 +3972,10 @@ fn (mut parser Parser) parse_mask_shorthand(mut tokens ComponentValueStream) ?St
 		return none
 	}
 
-	if !(image != none || position != none || size != none || repeat != none || origin != none
-		|| clip != none || composite != none || mode != none) {
+	if !(image != none || position != none || size != none || repeat != none || origin != none || clip != none || composite != none || mode != none) {
 		return none
 	}
-	final_layer := parser.complete_mask_layer(image, position, size, repeat, origin, clip,
-		composite, mode) or { return none }
+	final_layer := parser.complete_mask_layer(image, position, size, repeat, origin, clip, composite, mode) or { return none }
 	layers << final_layer
 
 	mut images := []StyleValue{}
@@ -4230,43 +4157,35 @@ fn (mut parser Parser) parse_border_edge_shorthand(mut tokens ComponentValueStre
 }
 
 fn (mut parser Parser) parse_border_top_shorthand(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_border_edge_shorthand(mut tokens, .border_top, .border_top_width,
-		.border_top_style, .border_top_color)
+	return parser.parse_border_edge_shorthand(mut tokens, .border_top, .border_top_width, .border_top_style, .border_top_color)
 }
 
 fn (mut parser Parser) parse_border_right_shorthand(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_border_edge_shorthand(mut tokens, .border_right, .border_right_width,
-		.border_right_style, .border_right_color)
+	return parser.parse_border_edge_shorthand(mut tokens, .border_right, .border_right_width, .border_right_style, .border_right_color)
 }
 
 fn (mut parser Parser) parse_border_bottom_shorthand(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_border_edge_shorthand(mut tokens, .border_bottom, .border_bottom_width,
-		.border_bottom_style, .border_bottom_color)
+	return parser.parse_border_edge_shorthand(mut tokens, .border_bottom, .border_bottom_width, .border_bottom_style, .border_bottom_color)
 }
 
 fn (mut parser Parser) parse_border_left_shorthand(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_border_edge_shorthand(mut tokens, .border_left, .border_left_width,
-		.border_left_style, .border_left_color)
+	return parser.parse_border_edge_shorthand(mut tokens, .border_left, .border_left_width, .border_left_style, .border_left_color)
 }
 
 fn (mut parser Parser) parse_border_block_start_shorthand(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_border_edge_shorthand(mut tokens, .border_block_start,
-		.border_block_start_width, .border_block_start_style, .border_block_start_color)
+	return parser.parse_border_edge_shorthand(mut tokens, .border_block_start, .border_block_start_width, .border_block_start_style, .border_block_start_color)
 }
 
 fn (mut parser Parser) parse_border_block_end_shorthand(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_border_edge_shorthand(mut tokens, .border_block_end,
-		.border_block_end_width, .border_block_end_style, .border_block_end_color)
+	return parser.parse_border_edge_shorthand(mut tokens, .border_block_end, .border_block_end_width, .border_block_end_style, .border_block_end_color)
 }
 
 fn (mut parser Parser) parse_border_inline_start_shorthand(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_border_edge_shorthand(mut tokens, .border_inline_start,
-		.border_inline_start_width, .border_inline_start_style, .border_inline_start_color)
+	return parser.parse_border_edge_shorthand(mut tokens, .border_inline_start, .border_inline_start_width, .border_inline_start_style, .border_inline_start_color)
 }
 
 fn (mut parser Parser) parse_border_inline_end_shorthand(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_border_edge_shorthand(mut tokens, .border_inline_end,
-		.border_inline_end_width, .border_inline_end_style, .border_inline_end_color)
+	return parser.parse_border_edge_shorthand(mut tokens, .border_inline_end, .border_inline_end_width, .border_inline_end_style, .border_inline_end_color)
 }
 
 // https://drafts.csswg.org/css-backgrounds/#propdef-border  ->  width/style/color applied to all four edges,
@@ -4380,10 +4299,18 @@ fn (mut parser Parser) parse_list_style_shorthand(mut tokens ComponentValueStrea
 		property_id := remaining[matched_index]
 		value := matched_value or { return none }
 		match property_id {
-			.list_style_position { position = value }
-			.list_style_image { image = value }
-			.list_style_type { type_ = value }
-			else { return none }
+			.list_style_position {
+				position = value
+			}
+			.list_style_image {
+				image = value
+			}
+			.list_style_type {
+				type_ = value
+			}
+			else {
+				return none
+			}
 		}
 		remaining.delete(matched_index)
 		tokens = matched_tokens
@@ -4446,8 +4373,8 @@ fn (mut parser Parser) parse_font_variant_shorthand(mut tokens ComponentValueStr
 }
 
 fn flex_shorthand_value(grow StyleValue, shrink StyleValue, basis StyleValue) StyleValue {
-	return StyleValue(ShorthandStyleValue.create(.flex, [PropertyID.flex_grow, PropertyID.flex_shrink,
-		PropertyID.flex_basis], [grow, shrink, basis]))
+	return StyleValue(ShorthandStyleValue.create(.flex, [PropertyID.flex_grow,
+		PropertyID.flex_shrink, PropertyID.flex_basis], [grow, shrink, basis]))
 }
 
 // https://drafts.csswg.org/css-flexbox-1/#propdef-flex  ->  none | [ <'flex-grow'> <'flex-shrink'>? || <'flex-basis'> ]
@@ -4455,8 +4382,7 @@ fn (mut parser Parser) parse_flex_shorthand(mut tokens ComponentValueStream) ?St
 	mut none_attempt := tokens.clone()
 	if _ := parse_property_keyword_value(mut none_attempt, ['none']) {
 		tokens = none_attempt
-		return flex_shorthand_value(StyleValue(NumberStyleValue.create(0)),
-			StyleValue(NumberStyleValue.create(0)), StyleValue(KeywordStyleValue.create(.auto)))
+		return flex_shorthand_value(StyleValue(NumberStyleValue.create(0)), StyleValue(NumberStyleValue.create(0)), StyleValue(KeywordStyleValue.create(.auto)))
 	}
 
 	mut grow := ?StyleValue(none)
@@ -4511,8 +4437,7 @@ fn (mut parser Parser) parse_flex_shorthand(mut tokens ComponentValueStream) ?St
 fn (mut parser Parser) parse_white_space_shorthand(mut tokens ComponentValueStream) ?StyleValue {
 	mut keyword_attempt := tokens.clone()
 	if value := parse_property_keyword_value(mut keyword_attempt, ['normal', 'pre', 'pre-wrap',
-		'pre-line'])
-	{
+		'pre-line']) {
 		if value is KeywordStyleValue {
 			mut collapse := Keyword.collapse
 			mut mode := Keyword.wrap
@@ -4685,8 +4610,7 @@ fn (mut parser Parser) parse_grid_row_shorthand(mut tokens ComponentValueStream)
 }
 
 fn (mut parser Parser) parse_grid_column_shorthand(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_grid_line_shorthand(mut tokens, .grid_column, .grid_column_start,
-		.grid_column_end)
+	return parser.parse_grid_line_shorthand(mut tokens, .grid_column, .grid_column_start, .grid_column_end)
 }
 
 // <grid-line> [ / <grid-line> ]{0,3}  (grid-area)
@@ -5034,8 +4958,7 @@ fn (mut parser Parser) parse_font_variant_alternates_value(mut tokens ComponentV
 		}
 		function := peek.function()
 		function_name := to_ascii_lowercase(function.name)
-		arguments :=
-			parse_a_comma_separated_list_of_component_values_for_value_logic(function.value)
+		arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function.value)
 		if arguments.len == 0 {
 			break
 		}
@@ -5058,48 +4981,42 @@ fn (mut parser Parser) parse_font_variant_alternates_value(mut tokens ComponentV
 					return none
 				}
 				transaction.consume()
-				stylistic = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.stylistic,
-					feature_value_names))
+				stylistic = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.stylistic, feature_value_names))
 			}
 			'styleset' {
 				if styleset != none {
 					return none
 				}
 				transaction.consume()
-				styleset = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.styleset,
-					feature_value_names))
+				styleset = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.styleset, feature_value_names))
 			}
 			'character-variant' {
 				if character_variant != none {
 					return none
 				}
 				transaction.consume()
-				character_variant = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.character_variant,
-					feature_value_names))
+				character_variant = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.character_variant, feature_value_names))
 			}
 			'swash' {
 				if feature_value_names.len != 1 || swash != none {
 					return none
 				}
 				transaction.consume()
-				swash = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.swash,
-					feature_value_names))
+				swash = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.swash, feature_value_names))
 			}
 			'ornaments' {
 				if feature_value_names.len != 1 || ornaments != none {
 					return none
 				}
 				transaction.consume()
-				ornaments = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.ornaments,
-					feature_value_names))
+				ornaments = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.ornaments, feature_value_names))
 			}
 			'annotation' {
 				if feature_value_names.len != 1 || annotation != none {
 					return none
 				}
 				transaction.consume()
-				annotation = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.annotation,
-					feature_value_names))
+				annotation = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.annotation, feature_value_names))
 			}
 			else {
 				break
@@ -5281,8 +5198,7 @@ const font_size_keywords = ['xx-small', 'x-small', 'small', 'medium', 'large', '
 // (a comma-separated list of custom cursors and then a mandatory predefined keyword).
 fn (mut parser Parser) parse_cursor_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
-	parts :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	parts := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 	if parts.len == 0 {
 		return none
 	}
@@ -5374,9 +5290,9 @@ fn (mut parser Parser) parse_counter_definitions_value(mut tokens ComponentValue
 		}
 
 		counter_definitions << CounterDefinition{
-			name:        counter_name
+			name: counter_name
 			is_reversed: false
-			value:       value
+			value: value
 		}
 		transaction.consume_whitespace()
 	}
@@ -5423,8 +5339,7 @@ fn (mut parser Parser) parse_filter_value_list_value(mut tokens ComponentValueSt
 		if !token.is_function() {
 			return none
 		}
-		filter_value := parser.parse_filter_function(to_ascii_lowercase(token.function().name),
-			token.function().value) or { return none }
+		filter_value := parser.parse_filter_function(to_ascii_lowercase(token.function().name), token.function().value) or { return none }
 		filter_value_list << filter_value
 	}
 
@@ -5499,8 +5414,8 @@ fn (mut parser Parser) parse_filter_function(name string, function_values []Comp
 		return FilterStyleValue(FilterOperationDropShadow{
 			offset_x: x_offset
 			offset_y: y_offset
-			radius:   maybe_radius
-			color:    maybe_color
+			radius: maybe_radius
+			color: maybe_color
 		})
 	}
 
@@ -5542,7 +5457,7 @@ fn (mut parser Parser) parse_filter_function(name string, function_values []Comp
 	if !tokens.has_more_tokens() {
 		return FilterStyleValue(FilterOperationColor{
 			operation: color_type
-			amount:    StyleValue(NumberStyleValue.create(1))
+			amount: StyleValue(NumberStyleValue.create(1))
 		})
 	}
 
@@ -5578,7 +5493,7 @@ fn (mut parser Parser) parse_filter_function(name string, function_values []Comp
 	}
 	return FilterStyleValue(FilterOperationColor{
 		operation: color_type
-		amount:    final_amount
+		amount: final_amount
 	})
 }
 
@@ -5667,17 +5582,16 @@ fn (mut parser Parser) parse_grid_template_areas_value(mut tokens ComponentValue
 			}
 
 			grid_areas[name] = GridArea{
-				row_start:    usize(y)
-				row_end:      usize(y_end)
+				row_start: usize(y)
+				row_end: usize(y_end)
 				column_start: usize(x)
-				column_end:   usize(x_end)
+				column_end: usize(x_end)
 			}
 		}
 	}
 
 	tokens = transaction
-	return StyleValue(GridTemplateAreaStyleValue.create(grid_areas, usize(grid_area_rows.len),
-		usize(column_count)))
+	return StyleValue(GridTemplateAreaStyleValue.create(grid_areas, usize(grid_area_rows.len), usize(column_count)))
 }
 
 // Splits one grid-template-areas string into its column cell names (or '.' for a null cell).
@@ -5802,7 +5716,9 @@ fn (mut parser Parser) parse_grid_inflexible_breadth(mut tokens ComponentValueSt
 		'max-content' { GridSize.from_size(Size.make_max_content()) }
 		'min-content' { GridSize.from_size(Size.make_min_content()) }
 		'auto' { GridSize.make_auto() }
-		else { return none }
+		else {
+			return none
+		}
 	}
 	tokens = transaction
 	return result
@@ -5851,8 +5767,7 @@ fn (mut parser Parser) parse_grid_minmax_kinds(mut tokens ComponentValueStream, 
 		return none
 	}
 
-	parts :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
+	parts := parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
 	if parts.len != 2 {
 		return none
 	}
@@ -6051,8 +5966,7 @@ fn (mut parser Parser) parse_grid_track_repeat_impl(mut tokens ComponentValueStr
 		return none
 	}
 
-	parts :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
+	parts := parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
 	if parts.len != 2 {
 		return none
 	}
@@ -6073,8 +5987,7 @@ fn (mut parser Parser) parse_grid_track_repeat_impl(mut tokens ComponentValueStr
 	mut second_arg_tokens := ComponentValueStream.new(parts[1])
 	second_arg_tokens.consume_whitespace()
 	mut track_list := GridTrackSizeList{}
-	parsed_track_count := parser.parse_track_list_impl(mut second_arg_tokens, mut track_list,
-		inner_kind)
+	parsed_track_count := parser.parse_track_list_impl(mut second_arg_tokens, mut track_list, inner_kind)
 	if parsed_track_count == 0 || second_arg_tokens.has_more_tokens() {
 		return none
 	}
@@ -6102,8 +6015,7 @@ fn (mut parser Parser) parse_grid_auto_repeat(mut tokens ComponentValueStream) ?
 fn (mut parser Parser) parse_grid_track_list(mut tokens ComponentValueStream) ?GridTrackSizeList {
 	mut transaction := tokens.clone()
 	mut track_list := GridTrackSizeList{}
-	parsed_track_count := parser.parse_track_list_impl(mut transaction, mut track_list,
-		.track_size_or_repeat)
+	parsed_track_count := parser.parse_track_list_impl(mut transaction, mut track_list, .track_size_or_repeat)
 	if parsed_track_count == 0 {
 		return none
 	}
@@ -6203,7 +6115,9 @@ fn parse_grid_auto_flow_axis(mut tokens ComponentValueStream) ?GridAutoFlowAxis 
 	axis := match to_ascii_lowercase(token.token().ident()) {
 		'row' { GridAutoFlowAxis.row }
 		'column' { GridAutoFlowAxis.column }
-		else { return none }
+		else {
+			return none
+		}
 	}
 	tokens = transaction
 	return axis
@@ -6247,8 +6161,7 @@ fn (mut parser Parser) parse_grid_track_placement(mut tokens ComponentValueStrea
 			transaction.consume()
 			transaction.consume_whitespace()
 			// "span" must not appear in between <custom-ident> and <integer>.
-			if transaction.has_more_tokens()
-				&& (parsed_custom_ident != none || parsed_integer != none) {
+			if transaction.has_more_tokens() && (parsed_custom_ident != none || parsed_integer != none) {
 				return none
 			}
 			is_span = true
@@ -6298,8 +6211,7 @@ fn (mut parser Parser) parse_grid_track_placement(mut tokens ComponentValueStrea
 		}
 		if valid {
 			tokens = transaction
-			return StyleValue(GridTrackPlacementStyleValue.create(GridTrackPlacement.make_line(parsed_integer,
-				parsed_custom_ident)))
+			return StyleValue(GridTrackPlacementStyleValue.create(GridTrackPlacement.make_line(parsed_integer, parsed_custom_ident)))
 		}
 	}
 
@@ -6315,8 +6227,7 @@ fn (mut parser Parser) parse_grid_track_placement(mut tokens ComponentValueStrea
 			// If the <integer> is omitted, it defaults to 1.
 			span_value := parsed_integer or { IntegerOrCalculated.from_integer(1) }
 			tokens = transaction
-			return StyleValue(GridTrackPlacementStyleValue.create(GridTrackPlacement.make_span(span_value,
-				parsed_custom_ident)))
+			return StyleValue(GridTrackPlacementStyleValue.create(GridTrackPlacement.make_span(span_value, parsed_custom_ident)))
 		}
 	}
 
@@ -6327,8 +6238,7 @@ fn (mut parser Parser) parse_grid_track_placement(mut tokens ComponentValueStrea
 // [ <family-name> | <generic-family> ]#
 fn (mut parser Parser) parse_font_family_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 	mut families := []StyleValue{}
 	for value in values {
 		mut item_tokens := ComponentValueStream.new(value)
@@ -6405,8 +6315,7 @@ fn (mut parser Parser) parse_family_name_value(mut tokens ComponentValueStream) 
 	if parts.len == 1 {
 		// <generic-family> and the CSS-wide keywords (and `default`) are not <family-name>s.
 		first := to_ascii_lowercase(parts[0])
-		if is_css_wide_keyword_string(first) || first == 'default'
-			|| is_generic_font_family_name(first) {
+		if is_css_wide_keyword_string(first) || first == 'default' || is_generic_font_family_name(first) {
 			return none
 		}
 	}
@@ -6531,10 +6440,10 @@ fn (mut parser Parser) parse_clip_value(mut tokens ComponentValueStream) ?StyleV
 
 	tokens = transaction
 	return StyleValue(RectStyleValue.create(EdgeRect{
-		top_edge:    params[0]
-		right_edge:  params[1]
+		top_edge: params[0]
+		right_edge: params[1]
 		bottom_edge: params[2]
-		left_edge:   params[3]
+		left_edge: params[3]
 	}))
 }
 
@@ -6602,8 +6511,7 @@ fn (mut parser Parser) parse_flex_basis_value(mut tokens ComponentValueStream) ?
 	if value := parse_stub_keyword_from_set_for_value_logic(mut transaction, [
 		'max-content',
 		'min-content',
-	])
-	{
+	]) {
 		tokens = transaction
 		return value
 	}
@@ -6735,8 +6643,7 @@ fn (mut parser Parser) parse_text_align_value(mut tokens ComponentValueStream) ?
 
 fn (mut parser Parser) parse_text_justify_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens,
-		['auto', 'none', 'inter-word', 'inter-character'])
+	return parse_property_keyword_value(mut tokens, ['auto', 'none', 'inter-word', 'inter-character'])
 }
 
 fn (mut parser Parser) parse_text_overflow_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -6855,8 +6762,7 @@ fn (mut parser Parser) parse_white_space_trim_value(mut tokens ComponentValueStr
 
 fn (mut parser Parser) parse_word_break_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens,
-		['normal', 'keep-all', 'break-all', 'break-word'])
+	return parse_property_keyword_value(mut tokens, ['normal', 'keep-all', 'break-all', 'break-word'])
 }
 
 fn (mut parser Parser) parse_z_index_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -6895,8 +6801,7 @@ fn (mut parser Parser) parse_mix_blend_mode_value(mut tokens ComponentValueStrea
 
 fn (mut parser Parser) parse_object_fit_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens,
-		['fill', 'contain', 'cover', 'none', 'scale-down'])
+	return parse_property_keyword_value(mut tokens, ['fill', 'contain', 'cover', 'none', 'scale-down'])
 }
 
 fn (mut parser Parser) parse_align_content_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -6931,8 +6836,7 @@ fn (mut parser Parser) parse_column_span_value(mut tokens ComponentValueStream) 
 
 fn (mut parser Parser) parse_flex_direction_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens,
-		['row', 'row-reverse', 'column', 'column-reverse'])
+	return parse_property_keyword_value(mut tokens, ['row', 'row-reverse', 'column', 'column-reverse'])
 }
 
 fn (mut parser Parser) parse_flex_wrap_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -7032,8 +6936,7 @@ fn (mut parser Parser) parse_vertical_align_value(mut tokens ComponentValueStrea
 		'middle',
 		'top',
 		'bottom',
-	])
-	{
+	]) {
 		tokens = transaction
 		return value
 	}
@@ -7061,8 +6964,7 @@ fn parse_scrollbar_gutter_ident_for_value_logic(mut tokens ComponentValueStream,
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	component_value := transaction.consume() or { return false }
-	if !component_value.is(.ident)
-		|| !equals_ignoring_ascii_case(component_value.token().ident(), ident) {
+	if !component_value.is(.ident) || !equals_ignoring_ascii_case(component_value.token().ident(), ident) {
 		return false
 	}
 	tokens = transaction
@@ -7255,8 +7157,7 @@ fn (mut parser Parser) parse_position_area(mut tokens ComponentValueStream) ?Sty
 	_ = parser
 	// <position-area> = one or two position-area keywords, with axis-compatible
 	// validation deferred until the full generated keyword table is translated.
-	return parse_stub_keyword_list_for_value_logic(mut tokens,
-		position_area_keywords_for_value_logic())
+	return parse_stub_keyword_list_for_value_logic(mut tokens, position_area_keywords_for_value_logic())
 }
 
 fn (mut parser Parser) parse_position_area_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -7342,8 +7243,7 @@ fn (mut parser Parser) parse_position_try_fallbacks_value(mut tokens ComponentVa
 	}
 
 	transaction = tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 	mut fallbacks := []StyleValue{}
 	for value in values {
 		mut fallback_tokens := ComponentValueStream.new(value)
@@ -7425,8 +7325,7 @@ fn (mut parser Parser) parse_will_change_value(mut tokens ComponentValueStream) 
 	}
 
 	transaction = tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 	mut features := []StyleValue{}
 	for value in values {
 		feature := parse_will_change_feature_for_value_logic(mut parser, value) or { return none }
@@ -7724,8 +7623,7 @@ fn (mut parser Parser) parse_paint_order_value(mut tokens ComponentValueStream) 
 		return first_keyword_value
 	}
 
-	return StyleValue(StyleValueList.create([first_keyword_value, second_keyword_value], .space,
-		.yes))
+	return StyleValue(StyleValueList.create([first_keyword_value, second_keyword_value], .space, .yes))
 }
 
 fn (mut parser Parser) parse_text_decoration_line_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -7866,8 +7764,13 @@ fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keyword
 	// where more tokens legitimately follow. Whole-value callers rely on the
 	// top-level leftover-token check in parse_css_value_tokens instead.
 	// `overlay` is a legacy overflow alias whose generated metadata maps it to `auto`.
-	keyword := if ident == 'overlay' { Keyword.auto } else { keyword_from_string(ident) or {
-			return none} }
+	keyword := if ident == 'overlay' {
+		Keyword.auto
+	} else {
+		keyword_from_string(ident) or {
+			return none
+		}
+	}
 	tokens = transaction
 	return StyleValue(KeywordStyleValue.create(keyword))
 }
@@ -8004,7 +7907,7 @@ fn (mut parser Parser) parse_position_and_length_for_value_logic(mut tokens Comp
 	length := parser.parse_length_percentage_value(mut tokens) or { return none }
 	return PositionAndLengthForValueLogic{
 		position: position
-		length:   length
+		length: length
 	}
 }
 
@@ -8024,7 +7927,7 @@ fn (mut parser Parser) parse_position_and_maybe_length_for_value_logic(mut token
 	tokens = transaction
 	return PositionAndMaybeLengthForValueLogic{
 		position: position
-		length:   length
+		length: length
 	}
 }
 
@@ -8047,17 +7950,13 @@ fn (mut parser Parser) parse_css_position_value(mut tokens ComponentValueStream,
 		mut transaction := tokens.clone()
 		if group1 := parser.parse_position_and_length_for_value_logic(mut transaction) {
 			if group2 := parser.parse_position_and_length_for_value_logic(mut transaction) {
-				if position_edge_is_horizontal_for_value_logic(group1.position, false)
-					&& position_edge_is_vertical_for_value_logic(group2.position, false) {
+				if position_edge_is_horizontal_for_value_logic(group1.position, false) && position_edge_is_vertical_for_value_logic(group2.position, false) {
 					tokens = transaction
-					return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(group1.position,
-						group1.length), EdgeStyleValue.create(group2.position, group2.length)))
+					return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(group1.position, group1.length), EdgeStyleValue.create(group2.position, group2.length)))
 				}
-				if position_edge_is_vertical_for_value_logic(group1.position, false)
-					&& position_edge_is_horizontal_for_value_logic(group2.position, false) {
+				if position_edge_is_vertical_for_value_logic(group1.position, false) && position_edge_is_horizontal_for_value_logic(group2.position, false) {
 					tokens = transaction
-					return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(group2.position,
-						group2.length), EdgeStyleValue.create(group1.position, group1.length)))
+					return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(group2.position, group2.length), EdgeStyleValue.create(group1.position, group1.length)))
 				}
 			}
 		}
@@ -8074,21 +7973,18 @@ fn (mut parser Parser) parse_css_position_value(mut tokens ComponentValueStream,
 				mut group2 := group2_value
 
 				// 2-value or 4-value if both <length-percentage>s are present or missing.
-				if !((group1.length != none && group2.length != none)
-					|| (group1.length == none && group2.length == none)) {
+				if !((group1.length != none && group2.length != none) || (group1.length == none && group2.length == none)) {
 					// If 'left' or 'right' is given, that position is X and the other is Y.
 					// Conversely -
 					// If 'top' or 'bottom' is given, that position is Y and the other is X.
-					if position_edge_is_vertical_for_value_logic(group1.position, false)
-						|| position_edge_is_horizontal_for_value_logic(group2.position, false) {
+					if position_edge_is_vertical_for_value_logic(group1.position, false) || position_edge_is_horizontal_for_value_logic(group2.position, false) {
 						tmp := group1
 						group1 = group2
 						group2 = tmp
 					}
 
 					// [ center | [ left | right ] ]
-					if position_edge_is_horizontal_for_value_logic(group1.position, true)
-						&& position_edge_is_vertical_for_value_logic(group2.position, true) {
+					if position_edge_is_horizontal_for_value_logic(group1.position, true) && position_edge_is_vertical_for_value_logic(group2.position, true) {
 						edge_x := if group1.position == .center {
 							EdgeStyleValue.create(PositionEdge.center, none)
 						} else {
@@ -8112,9 +8008,7 @@ fn (mut parser Parser) parse_css_position_value(mut tokens ComponentValueStream,
 	{
 		mut transaction := tokens.clone()
 		if horizontal_edge := parser.parse_position_or_length_for_value_logic(mut transaction, true) {
-			if vertical_edge := parser.parse_position_or_length_for_value_logic(mut transaction,
-				false)
-			{
+			if vertical_edge := parser.parse_position_or_length_for_value_logic(mut transaction, false) {
 				tokens = transaction
 				return StyleValue(PositionStyleValue.create(horizontal_edge, vertical_edge))
 			}
@@ -8133,17 +8027,14 @@ fn (mut parser Parser) parse_css_position_value(mut tokens ComponentValueStream,
 				// If 'left' or 'right' is given, that position is X and the other is Y.
 				// Conversely -
 				// If 'top' or 'bottom' is given, that position is Y and the other is X.
-				if position_edge_is_vertical_for_value_logic(first_edge, false)
-					|| position_edge_is_horizontal_for_value_logic(second_edge, false) {
+				if position_edge_is_vertical_for_value_logic(first_edge, false) || position_edge_is_horizontal_for_value_logic(second_edge, false) {
 					tmp := first_edge
 					first_edge = second_edge
 					second_edge = tmp
 				}
-				if position_edge_is_horizontal_for_value_logic(first_edge, true)
-					&& position_edge_is_vertical_for_value_logic(second_edge, true) {
+				if position_edge_is_horizontal_for_value_logic(first_edge, true) && position_edge_is_vertical_for_value_logic(second_edge, true) {
 					tokens = transaction
-					return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(first_edge,
-						none), EdgeStyleValue.create(second_edge, none)))
+					return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(first_edge, none), EdgeStyleValue.create(second_edge, none)))
 				}
 			}
 		}
@@ -8155,22 +8046,18 @@ fn (mut parser Parser) parse_css_position_value(mut tokens ComponentValueStream,
 		if edge := parse_position_edge_for_value_logic(mut transaction) {
 			tokens = transaction
 			if position_edge_is_horizontal_for_value_logic(edge, false) {
-				return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(edge, none), EdgeStyleValue.create(PositionEdge.center,
-					none)))
+				return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(edge, none), EdgeStyleValue.create(PositionEdge.center, none)))
 			}
 			if position_edge_is_vertical_for_value_logic(edge, false) {
-				return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(PositionEdge.center,
-					none), EdgeStyleValue.create(edge, none)))
+				return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(PositionEdge.center, none), EdgeStyleValue.create(edge, none)))
 			}
-			return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(PositionEdge.center,
-				none), EdgeStyleValue.create(PositionEdge.center, none)))
+			return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(PositionEdge.center, none), EdgeStyleValue.create(PositionEdge.center, none)))
 		}
 
 		mut length_transaction := tokens.clone()
 		if maybe_percentage := parser.parse_length_percentage_value(mut length_transaction) {
 			tokens = length_transaction
-			return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(none,
-				maybe_percentage), EdgeStyleValue.create(PositionEdge.center, none)))
+			return StyleValue(PositionStyleValue.create(EdgeStyleValue.create(none, maybe_percentage), EdgeStyleValue.create(PositionEdge.center, none)))
 		}
 	}
 
@@ -8179,14 +8066,12 @@ fn (mut parser Parser) parse_css_position_value(mut tokens ComponentValueStream,
 
 fn (mut parser Parser) parse_position_list_value(mut tokens ComponentValueStream, position_parsing_mode PositionParsingMode) ?StyleValue {
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut positions := []StyleValue{}
 	for value in values {
 		mut position_tokens := ComponentValueStream.new(value)
-		position_value := parser.parse_css_position_value(mut position_tokens,
-			position_parsing_mode) or { return none }
+		position_value := parser.parse_css_position_value(mut position_tokens, position_parsing_mode) or { return none }
 		position_tokens.consume_whitespace()
 		if position_tokens.has_more_tokens() {
 			return none
@@ -8209,11 +8094,8 @@ fn (mut parser Parser) parse_single_background_position_x_or_y_value(property_id
 
 	mut keyword_transaction := transaction.clone()
 	if keyword := parse_single_keyword_from_set_for_value_logic(mut keyword_transaction, if property_id == .background_position_x {
-		['center', 'left', 'right']
-	} else {
-		['center', 'bottom', 'top']
-	})
-	{
+		['center', 'left', 'right']} else {
+		['center', 'bottom', 'top']}) {
 		if keyword == .center {
 			tokens = keyword_transaction
 			return StyleValue(EdgeStyleValue.create(PositionEdge.center, none))
@@ -8235,14 +8117,12 @@ fn (mut parser Parser) parse_single_background_position_x_or_y_value(property_id
 
 fn (mut parser Parser) parse_background_position_axis_list_value(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut positions := []StyleValue{}
 	for value in values {
 		mut position_tokens := ComponentValueStream.new(value)
-		position_value := parser.parse_single_background_position_x_or_y_value(property_id, mut
-			position_tokens) or { return none }
+		position_value := parser.parse_single_background_position_x_or_y_value(property_id, mut position_tokens) or { return none }
 		position_tokens.consume_whitespace()
 		if position_tokens.has_more_tokens() {
 			return none
@@ -8284,8 +8164,7 @@ fn (mut parser Parser) parse_single_background_size_value(mut tokens ComponentVa
 
 	y_value := parser.parse_background_size_component_value(mut transaction, false) or {
 		tokens = transaction
-		return StyleValue(BackgroundSizeStyleValue.create(x_value,
-			StyleValue(KeywordStyleValue.create(.auto))))
+		return StyleValue(BackgroundSizeStyleValue.create(x_value, StyleValue(KeywordStyleValue.create(.auto))))
 	}
 	tokens = transaction
 	return StyleValue(BackgroundSizeStyleValue.create(x_value, y_value))
@@ -8294,8 +8173,7 @@ fn (mut parser Parser) parse_single_background_size_value(mut tokens ComponentVa
 fn (mut parser Parser) parse_background_size_list_value(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
 	_ = property_id
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut sizes := []StyleValue{}
 	for value in values {
@@ -8395,8 +8273,7 @@ fn (mut parser Parser) parse_border_image_slice_value(mut tokens ComponentValueS
 	}
 
 	tokens = transaction
-	return StyleValue(BorderImageSliceStyleValue.create(expanded_values[0], expanded_values[1],
-		expanded_values[2], expanded_values[3], fill))
+	return StyleValue(BorderImageSliceStyleValue.create(expanded_values[0], expanded_values[1], expanded_values[2], expanded_values[3], fill))
 }
 
 fn (mut parser Parser) parse_border_radius_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -8512,8 +8389,7 @@ fn (mut parser Parser) parse_fit_content_value(mut tokens ComponentValueStream) 
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	component_value := transaction.consume() or { return none }
-	if component_value.is(.ident)
-		&& equals_ignoring_ascii_case(component_value.token().ident(), 'fit-content') {
+	if component_value.is(.ident) && equals_ignoring_ascii_case(component_value.token().ident(), 'fit-content') {
 		tokens = transaction
 		return StyleValue(StubStyleValue.create(.fit_content, 'fit-content'))
 	}
@@ -8550,8 +8426,7 @@ fn (mut parser Parser) parse_sizing_value(property_id PropertyID, mut tokens Com
 	if value := parse_stub_keyword_from_set_for_value_logic(mut transaction, [
 		'max-content',
 		'min-content',
-	])
-	{
+	]) {
 		tokens = transaction
 		return value
 	}
@@ -8720,8 +8595,7 @@ fn (mut parser Parser) parse_single_repeat_style_value(property_id PropertyID, m
 
 fn (mut parser Parser) parse_repeat_style_list_value(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut repeat_styles := []StyleValue{}
 	for value in values {
@@ -8952,7 +8826,9 @@ fn (mut parser Parser) parse_corner_shape_value(mut tokens ComponentValueStream)
 	if component_value.is(.ident) {
 		ident := to_ascii_lowercase(component_value.token().ident())
 		keyword := keyword_from_string(ident) or { return none }
-		if keyword !in [.round, .scoop, .bevel, .notch, .square, .squircle] { return none }
+		if keyword !in [.round, .scoop, .bevel, .notch, .square, .squircle] {
+			return none
+		}
 		tokens = transaction
 		return StyleValue(KeywordStyleValue.create(keyword))
 	}
@@ -9095,8 +8971,7 @@ fn (mut parser Parser) parse_font_weight_value(mut tokens ComponentValueStream) 
 	}
 
 	mut numeric_transaction := tokens.clone()
-	remaining_text :=
-		serialize_a_series_of_component_values(numeric_transaction.consume_remaining_component_values())
+	remaining_text := serialize_a_series_of_component_values(numeric_transaction.consume_remaining_component_values())
 	if value := numeric_style_value_from_css_text_for_value_logic(remaining_text) {
 		if value is NumberStyleValue {
 			number := value.number()
@@ -9117,8 +8992,7 @@ fn (mut parser Parser) parse_font_width_value(mut tokens ComponentValueStream) ?
 		return value
 	}
 	mut transaction := tokens.clone()
-	remaining_text :=
-		serialize_a_series_of_component_values(transaction.consume_remaining_component_values())
+	remaining_text := serialize_a_series_of_component_values(transaction.consume_remaining_component_values())
 	if value := numeric_style_value_from_css_text_for_value_logic(remaining_text) {
 		if value is PercentageStyleValue {
 			tokens = transaction
@@ -9168,8 +9042,7 @@ fn (mut parser Parser) parse_line_height_value(mut tokens ComponentValueStream) 
 	}
 
 	mut transaction := tokens.clone()
-	remaining_text :=
-		serialize_a_series_of_component_values(transaction.consume_remaining_component_values())
+	remaining_text := serialize_a_series_of_component_values(transaction.consume_remaining_component_values())
 	if value := numeric_style_value_from_css_text_for_value_logic(remaining_text) {
 		match value {
 			LengthStyleValue, NumberStyleValue, PercentageStyleValue {
@@ -9207,8 +9080,7 @@ fn (mut parser Parser) parse_letter_or_word_spacing_value(mut tokens ComponentVa
 	}
 
 	mut transaction := tokens.clone()
-	remaining_text :=
-		serialize_a_series_of_component_values(transaction.consume_remaining_component_values())
+	remaining_text := serialize_a_series_of_component_values(transaction.consume_remaining_component_values())
 	if value := numeric_style_value_from_css_text_for_value_logic(remaining_text) {
 		match value {
 			LengthStyleValue, PercentageStyleValue {
@@ -9227,8 +9099,7 @@ fn (mut parser Parser) parse_math_depth_value(mut tokens ComponentValueStream) ?
 	mut keyword_transaction := tokens.clone()
 	keyword_transaction.consume_whitespace()
 	if component_value := keyword_transaction.consume() {
-		if component_value.is(.ident)
-			&& equals_ignoring_ascii_case(component_value.token().ident(), 'auto-add') {
+		if component_value.is(.ident) && equals_ignoring_ascii_case(component_value.token().ident(), 'auto-add') {
 			keyword_transaction.consume_whitespace()
 			if !keyword_transaction.has_more_tokens() {
 				tokens = keyword_transaction
@@ -9276,7 +9147,9 @@ fn (mut parser Parser) parse_math_style_value(mut tokens ComponentValueStream) ?
 	keyword := match to_ascii_lowercase(component_value.token().ident()) {
 		'normal' { Keyword.normal }
 		'compact' { Keyword.compact }
-		else { return none }
+		else {
+			return none
+		}
 	}
 
 	transaction.consume_whitespace()
@@ -9909,8 +9782,7 @@ fn (mut parser Parser) parse_flex_value(mut tokens ComponentValueStream) ?StyleV
 		return none
 	}
 	unit := string_to_flex_unit(component_value.token().dimension_unit()) or { return none }
-	return StyleValue(FlexStyleValue.create(Flex.new(component_value.token().dimension_value(),
-		unit)))
+	return StyleValue(FlexStyleValue.create(Flex.new(component_value.token().dimension_value(), unit)))
 }
 
 fn (mut parser Parser) parse_frequency_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -9923,8 +9795,7 @@ fn (mut parser Parser) parse_frequency_value(mut tokens ComponentValueStream) ?S
 		return none
 	}
 	unit := string_to_frequency_unit(component_value.token().dimension_unit()) or { return none }
-	return StyleValue(FrequencyStyleValue.create(Frequency.new(component_value.token().dimension_value(),
-		unit)))
+	return StyleValue(FrequencyStyleValue.create(Frequency.new(component_value.token().dimension_value(), unit)))
 }
 
 fn (mut parser Parser) parse_resolution_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -9937,8 +9808,7 @@ fn (mut parser Parser) parse_resolution_value(mut tokens ComponentValueStream) ?
 		return none
 	}
 	unit := string_to_resolution_unit(component_value.token().dimension_unit()) or { return none }
-	return StyleValue(ResolutionStyleValue.create(Resolution.new(component_value.token().dimension_value(),
-		unit)))
+	return StyleValue(ResolutionStyleValue.create(Resolution.new(component_value.token().dimension_value(), unit)))
 }
 
 fn (mut parser Parser) parse_time_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -9954,8 +9824,7 @@ fn (mut parser Parser) parse_time_value(mut tokens ComponentValueStream) ?StyleV
 		return none
 	}
 	unit := string_to_time_unit(component_value.token().dimension_unit()) or { return none }
-	return StyleValue(TimeStyleValue.create(Time.new(component_value.token().dimension_value(),
-		unit)))
+	return StyleValue(TimeStyleValue.create(Time.new(component_value.token().dimension_value(), unit)))
 }
 
 fn (mut parser Parser) parse_string_value(mut tokens ComponentValueStream) ?StringStyleValue {
@@ -10020,8 +9889,7 @@ fn easing_number_from_style_value(value StyleValue) ?f64 {
 }
 
 fn style_value_resolves_to_percentage_for_value_logic(value StyleValue) bool {
-	return value.is_percentage()
-		|| (value.is_calculated() && value.as_calculated().resolves_to_percentage())
+	return value.is_percentage() || (value.is_calculated() && value.as_calculated().resolves_to_percentage())
 }
 
 fn color_function_rectangular_color_space_from_string(value string) ?RectangularColorSpace {
@@ -10090,12 +9958,12 @@ fn (mut parser Parser) parse_easing_value(mut tokens ComponentValueStream) ?Styl
 		maybe_simple_easing := if equals_ignoring_ascii_case(name, 'step-start') {
 			?EasingStyleValue(EasingStyleValue.create(EasingStyleValueFunction(EasingSteps{
 				number_of_intervals: StyleValue(IntegerStyleValue.create(1))
-				position:            .start
+				position: .start
 			})))
 		} else if equals_ignoring_ascii_case(name, 'step-end') {
 			?EasingStyleValue(EasingStyleValue.create(EasingStyleValueFunction(EasingSteps{
 				number_of_intervals: StyleValue(IntegerStyleValue.create(1))
-				position:            .end
+				position: .end
 			})))
 		} else {
 			?EasingStyleValue(none)
@@ -10111,13 +9979,11 @@ fn (mut parser Parser) parse_easing_value(mut tokens ComponentValueStream) ?Styl
 		return none
 	}
 
-	mut comma_separated_arguments :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(part.function().value)
+	mut comma_separated_arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(part.function().value)
 
 	// Remove whitespace
 	for i in 0 .. comma_separated_arguments.len {
-		comma_separated_arguments[i] =
-			remove_whitespace_from_component_values(comma_separated_arguments[i])
+		comma_separated_arguments[i] = remove_whitespace_from_component_values(comma_separated_arguments[i])
 	}
 
 	name := part.function().name
@@ -10160,12 +10026,12 @@ fn (mut parser Parser) parse_easing_value(mut tokens ComponentValueStream) ?Styl
 
 			stops << EasingLinearStop{
 				output: resolved_output
-				input:  first_input
+				input: first_input
 			}
 			if resolved_second_input := second_input {
 				stops << EasingLinearStop{
 					output: resolved_output
-					input:  resolved_second_input
+					input: resolved_second_input
 				}
 			}
 		}
@@ -10271,7 +10137,7 @@ fn (mut parser Parser) parse_easing_value(mut tokens ComponentValueStream) ?Styl
 		tokens = transaction
 		return StyleValue(EasingStyleValue.create(EasingStyleValueFunction(EasingSteps{
 			number_of_intervals: intervals
-			position:            position
+			position: position
 		})))
 	}
 
@@ -10559,10 +10425,10 @@ fn (mut parser Parser) parse_lab_like_color_value(component_value ComponentValue
 	}
 
 	return ParsedColorComponents{
-		first:  first
+		first: first
 		second: second
-		third:  third
-		alpha:  alpha or { StyleValue(NumberStyleValue.create(1)) }
+		third: third
+		alpha: alpha or { StyleValue(NumberStyleValue.create(1)) }
 	}
 }
 
@@ -10594,10 +10460,10 @@ fn (mut parser Parser) parse_lch_like_color_value(component_value ComponentValue
 	}
 
 	return ParsedColorComponents{
-		first:  first
+		first: first
 		second: second
-		third:  third
-		alpha:  alpha or { StyleValue(NumberStyleValue.create(1)) }
+		third: third
+		alpha: alpha or { StyleValue(NumberStyleValue.create(1)) }
 	}
 }
 
@@ -10677,8 +10543,7 @@ fn (mut parser Parser) parse_color_interpolation_method_value(mut tokens Compone
 					hue_interpolation_method = maybe_hue_method
 					transaction.consume_whitespace()
 					hue_token := transaction.consume() or { return none }
-					if !hue_token.is(.ident)
-						|| !equals_ignoring_ascii_case(hue_token.token().ident(), 'hue') {
+					if !hue_token.is(.ident) || !equals_ignoring_ascii_case(hue_token.token().ident(), 'hue') {
 						return none
 					}
 				}
@@ -10687,7 +10552,7 @@ fn (mut parser Parser) parse_color_interpolation_method_value(mut tokens Compone
 
 		tokens = transaction
 		return ColorInterpolationMethodStyleValue.create(ColorInterpolationMethod(PolarColorInterpolationMethod{
-			color_space:              polar_color_space
+			color_space: polar_color_space
 			hue_interpolation_method: hue_interpolation_method
 		}))
 	}
@@ -10720,16 +10585,14 @@ fn (mut parser Parser) parse_color_mix_component(mut tokens ComponentValueStream
 			if percentage < 0 || percentage > 100 {
 				return none
 			}
-			percentage_or_calculated =
-				PercentageOrCalculated.from_percentage(percentage_value.as_percentage().percentage())
+			percentage_or_calculated = PercentageOrCalculated.from_percentage(percentage_value.as_percentage().percentage())
 		} else {
-			percentage_or_calculated =
-				PercentageOrCalculated.from_calculated(percentage_value.as_calculated())
+			percentage_or_calculated = PercentageOrCalculated.from_calculated(percentage_value.as_calculated())
 		}
 	}
 
 	return ColorMixComponent{
-		color:      color_style_value
+		color: color_style_value
 		percentage: percentage_or_calculated
 	}
 }
@@ -10762,8 +10625,7 @@ fn (mut parser Parser) parse_color_mix_function(component_value ComponentValue) 
 
 	if first_percentage := first_component.percentage {
 		if second_percentage := second_component.percentage {
-			if !first_percentage.is_calculated() && !second_percentage.is_calculated()
-				&& first_percentage.value().value() == 0 && second_percentage.value().value() == 0 {
+			if !first_percentage.is_calculated() && !second_percentage.is_calculated() && first_percentage.value().value() == 0 && second_percentage.value().value() == 0 {
 				return none
 			}
 		}
@@ -10774,8 +10636,7 @@ fn (mut parser Parser) parse_color_mix_function(component_value ComponentValue) 
 		return none
 	}
 
-	return StyleValue(ColorMixStyleValue.create(color_interpolation_method, first_component,
-		second_component))
+	return StyleValue(ColorMixStyleValue.create(color_interpolation_method, first_component, second_component))
 }
 
 fn (mut parser Parser) parse_light_dark_color_value(component_value ComponentValue) ?StyleValue {
@@ -10844,20 +10705,16 @@ fn (mut parser Parser) parse_color_from_component_value(component_value Componen
 		return hwb
 	}
 	if lab_values := parser.parse_lab_like_color_value(component_value, 'lab') {
-		return StyleValue(LabColorStyleValue.create(lab_values.first, lab_values.second,
-			lab_values.third, lab_values.alpha))
+		return StyleValue(LabColorStyleValue.create(lab_values.first, lab_values.second, lab_values.third, lab_values.alpha))
 	}
 	if lch_values := parser.parse_lch_like_color_value(component_value, 'lch') {
-		return StyleValue(LCHColorStyleValue.create(lch_values.first, lch_values.second,
-			lch_values.third, lch_values.alpha))
+		return StyleValue(LCHColorStyleValue.create(lch_values.first, lch_values.second, lch_values.third, lch_values.alpha))
 	}
 	if oklab_values := parser.parse_lab_like_color_value(component_value, 'oklab') {
-		return StyleValue(OKLabColorStyleValue.create(oklab_values.first, oklab_values.second,
-			oklab_values.third, oklab_values.alpha))
+		return StyleValue(OKLabColorStyleValue.create(oklab_values.first, oklab_values.second, oklab_values.third, oklab_values.alpha))
 	}
 	if oklch_values := parser.parse_lch_like_color_value(component_value, 'oklch') {
-		return StyleValue(OKLCHColorStyleValue.create(oklch_values.first, oklch_values.second,
-			oklch_values.third, oklch_values.alpha))
+		return StyleValue(OKLCHColorStyleValue.create(oklch_values.first, oklch_values.second, oklch_values.third, oklch_values.alpha))
 	}
 	if light_dark := parser.parse_light_dark_color_value(component_value) {
 		return light_dark
@@ -11668,8 +11525,7 @@ fn (mut parser Parser) parse_image_or_none_value(mut tokens ComponentValueStream
 
 fn (mut parser Parser) parse_image_or_none_list_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
-	values :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
+	values := parse_a_comma_separated_list_of_component_values_for_value_logic(transaction.consume_remaining_component_values())
 
 	mut images := []StyleValue{}
 	for value in values {
@@ -11709,24 +11565,17 @@ fn (mut parser Parser) parse_image_value(mut tokens ComponentValueStream) ?CSSIm
 		}
 		return CSSImageSourceStyleValue(ImageStyleValue.create_from_url_string(url_string))
 	}
-	if component_value.is_function_named('linear-gradient')
-		|| component_value.is_function_named('repeating-linear-gradient')
-		|| component_value.is_function_named('-webkit-linear-gradient')
-		|| component_value.is_function_named('-webkit-repeating-linear-gradient') {
+	if component_value.is_function_named('linear-gradient') || component_value.is_function_named('repeating-linear-gradient') || component_value.is_function_named('-webkit-linear-gradient') || component_value.is_function_named('-webkit-repeating-linear-gradient') {
 		mut inner := ComponentValueStream.new(component_value.function().value)
-		gradient := parser.parse_linear_gradient_function(component_value.function().name, mut
-			inner) or { return none }
+		gradient := parser.parse_linear_gradient_function(component_value.function().name, mut inner) or { return none }
 		return CSSImageSourceStyleValue(gradient)
 	}
-	if component_value.is_function_named('radial-gradient')
-		|| component_value.is_function_named('repeating-radial-gradient') {
+	if component_value.is_function_named('radial-gradient') || component_value.is_function_named('repeating-radial-gradient') {
 		mut inner := ComponentValueStream.new(component_value.function().value)
-		gradient := parser.parse_radial_gradient_function(component_value.function().name, mut
-			inner) or { return none }
+		gradient := parser.parse_radial_gradient_function(component_value.function().name, mut inner) or { return none }
 		return CSSImageSourceStyleValue(gradient)
 	}
-	if component_value.is_function_named('conic-gradient')
-		|| component_value.is_function_named('repeating-conic-gradient') {
+	if component_value.is_function_named('conic-gradient') || component_value.is_function_named('repeating-conic-gradient') {
 		mut inner := ComponentValueStream.new(component_value.function().value)
 		gradient := parser.parse_conic_gradient_function(component_value.function().name, mut inner) or {
 			return none
@@ -11788,15 +11637,13 @@ fn (mut parser Parser) parse_transform_function_value(mut tokens ComponentValueS
 	function := transform_function_from_string(part.function().name) or { return none }
 
 	function_metadata := transform_function_metadata(function)
-	mut arguments :=
-		parse_a_comma_separated_list_of_component_values_for_value_logic(part.function().value)
+	mut arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(part.function().value)
 
 	if arguments.len > function_metadata.parameters.len {
 		return none
 	}
 
-	if arguments.len < function_metadata.parameters.len
-		&& function_metadata.parameters[arguments.len].required {
+	if arguments.len < function_metadata.parameters.len && function_metadata.parameters[arguments.len].required {
 		return none
 	}
 
@@ -11804,8 +11651,7 @@ fn (mut parser Parser) parse_transform_function_value(mut tokens ComponentValueS
 	for argument_index in 0 .. arguments.len {
 		mut argument_tokens := ComponentValueStream.new(arguments[argument_index])
 		argument_tokens.consume_whitespace()
-		value := parser.parse_transform_parameter_value(function_metadata.parameters[argument_index], mut
-			argument_tokens) or { return none }
+		value := parser.parse_transform_parameter_value(function_metadata.parameters[argument_index], mut argument_tokens) or { return none }
 		values << value
 		if argument_tokens.has_more_tokens() {
 			return none
@@ -11843,8 +11689,7 @@ fn (mut parser Parser) parse_transform_value(mut tokens ComponentValueStream) ?S
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	if component_value := transaction.peek() {
-		if component_value.is(.ident)
-			&& equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
+		if component_value.is(.ident) && equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
 			transaction.consume()
 			tokens = transaction
 			return StyleValue(KeywordStyleValue.create(.none_))
@@ -11872,7 +11717,7 @@ mut:
 fn transform_origin_axis_offset_from_style_value_for_value_logic(value StyleValue) ?TransformOriginAxisOffsetForValueLogic {
 	if value is PercentageStyleValue || value is LengthStyleValue {
 		return TransformOriginAxisOffsetForValueLogic{
-			axis:   .none_
+			axis: .none_
 			offset: value
 		}
 	}
@@ -11880,31 +11725,31 @@ fn transform_origin_axis_offset_from_style_value_for_value_logic(value StyleValu
 		return match value.to_keyword() {
 			.top {
 				TransformOriginAxisOffsetForValueLogic{
-					axis:   .y
+					axis: .y
 					offset: value
 				}
 			}
 			.left {
 				TransformOriginAxisOffsetForValueLogic{
-					axis:   .x
+					axis: .x
 					offset: value
 				}
 			}
 			.center {
 				TransformOriginAxisOffsetForValueLogic{
-					axis:   .none_
+					axis: .none_
 					offset: value
 				}
 			}
 			.bottom {
 				TransformOriginAxisOffsetForValueLogic{
-					axis:   .y
+					axis: .y
 					offset: value
 				}
 			}
 			.right {
 				TransformOriginAxisOffsetForValueLogic{
-					axis:   .x
+					axis: .x
 					offset: value
 				}
 			}
@@ -11915,7 +11760,7 @@ fn transform_origin_axis_offset_from_style_value_for_value_logic(value StyleValu
 	}
 	if value is CalculatedStyleValue {
 		return TransformOriginAxisOffsetForValueLogic{
-			axis:   .none_
+			axis: .none_
 			offset: value
 		}
 	}
@@ -11929,8 +11774,7 @@ fn (mut parser Parser) parse_transform_origin_component_value_for_value_logic(mu
 		'left',
 		'right',
 		'top',
-	])
-	{
+	]) {
 		return StyleValue(KeywordStyleValue.create(keyword))
 	}
 	return parser.parse_length_percentage_value(mut tokens)
@@ -11988,12 +11832,10 @@ fn (mut parser Parser) parse_transform_origin_value(mut tokens ComponentValueStr
 		transaction = third_transaction
 	}
 
-	if (first_value.offset is LengthStyleValue || first_value.offset is PercentageStyleValue)
-		&& second_value.axis == .x {
+	if (first_value.offset is LengthStyleValue || first_value.offset is PercentageStyleValue) && second_value.axis == .x {
 		return none
 	}
-	if (second_value.offset is LengthStyleValue || second_value.offset is PercentageStyleValue)
-		&& first_value.axis == .y {
+	if (second_value.offset is LengthStyleValue || second_value.offset is PercentageStyleValue) && first_value.axis == .y {
 		return none
 	}
 
@@ -12070,8 +11912,7 @@ fn (mut parser Parser) parse_rotate_value(mut tokens ComponentValueStream) ?Styl
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	if component_value := transaction.peek() {
-		if component_value.is(.ident)
-			&& equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
+		if component_value.is(.ident) && equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
 			transaction.consume()
 			tokens = transaction
 			return StyleValue(KeywordStyleValue.create(.none_))
@@ -12101,8 +11942,7 @@ fn (mut parser Parser) parse_rotate_value(mut tokens ComponentValueStream) ?Styl
 		axis := axis_transaction.consume() or { return none }
 		if axis.is(.ident) {
 			ident := axis.token().ident()
-			if equals_ignoring_ascii_case(ident, 'x') || equals_ignoring_ascii_case(ident, 'y')
-				|| equals_ignoring_ascii_case(ident, 'z') {
+			if equals_ignoring_ascii_case(ident, 'x') || equals_ignoring_ascii_case(ident, 'y') || equals_ignoring_ascii_case(ident, 'z') {
 				input = axis_transaction
 				return to_ascii_lowercase(ident)
 			}
@@ -12164,8 +12004,7 @@ fn (mut parser Parser) parse_translate_value(mut tokens ComponentValueStream) ?S
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	if component_value := transaction.peek() {
-		if component_value.is(.ident)
-			&& equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
+		if component_value.is(.ident) && equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
 			transaction.consume()
 			tokens = transaction
 			return StyleValue(KeywordStyleValue.create(.none_))
@@ -12208,8 +12047,7 @@ fn (mut parser Parser) parse_scale_value(mut tokens ComponentValueStream) ?Style
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	if component_value := transaction.peek() {
-		if component_value.is(.ident)
-			&& equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
+		if component_value.is(.ident) && equals_ignoring_ascii_case(component_value.token().ident(), 'none') {
 			transaction.consume()
 			tokens = transaction
 			return StyleValue(KeywordStyleValue.create(.none_))
@@ -12344,8 +12182,8 @@ fn (mut parser Parser) parse_color_stop_list(mut tokens ComponentValueStream, an
 		second_position := parser.parse_color_stop_position(mut tokens, angular)
 		elements << ColorStopListElement{
 			color_stop: ColorStop{
-				color:           color
-				position:        position
+				color: color
+				position: position
 				second_position: second_position
 			}
 		}
@@ -12414,8 +12252,8 @@ fn (mut parser Parser) parse_radial_gradient_function(function_name string, mut 
 				has_prefix = true
 				continue
 			}
-			if !size_set
-				&& ident in ['closest-side', 'closest-corner', 'farthest-side', 'farthest-corner'] {
+			if !size_set && ident in ['closest-side', 'closest-corner', 'farthest-side',
+				'farthest-corner'] {
 				size = StyleValue(KeywordStyleValue.create(keyword_from_string(ident) or {
 					return none
 				}))
@@ -12460,8 +12298,7 @@ fn (mut parser Parser) parse_radial_gradient_function(function_name string, mut 
 		tokens = probe
 	}
 	color_stops := parser.parse_linear_color_stop_list(mut tokens) or { return none }
-	return RadialGradientStyleValue.create(ending_shape, size, position, color_stops, repeating,
-		none)
+	return RadialGradientStyleValue.create(ending_shape, size, position, color_stops, repeating, none)
 }
 
 fn (mut parser Parser) parse_conic_gradient_function(function_name string, mut tokens ComponentValueStream) ?ConicGradientStyleValue {
@@ -12501,7 +12338,44 @@ fn (mut parser Parser) parse_conic_gradient_function(function_name string, mut t
 	return ConicGradientStyleValue.create(from_angle, position, color_stops, repeating, none)
 }
 
+// Parsing a declared value is a context-free pure function of the property and
+// its text: the same (property_id, text) always yields the same StyleValue, and
+// var()/env() resolution happens later against the produced Unresolved value.
+// The cascade re-parses the same declared values for every element that matches
+// a rule, so a per-traversal cache (enabled around a layout pass, mirroring the
+// selector parse cache) collapses that repeated work to once per distinct value.
+// The cache is nested (property id -> value text -> parsed value) so a hit reuses
+// the caller's existing text string as the inner key without allocating a
+// composite key on every one of the hundreds of thousands of cascade lookups.
+__global (
+	css_parsed_value_cache         = map[int]map[string]StyleValue{}
+	css_parsed_value_cache_enabled bool
+)
+
+fn begin_parsed_value_cache() {
+	css_parsed_value_cache.clear()
+	css_parsed_value_cache_enabled = true
+}
+
+fn end_parsed_value_cache() {
+	css_parsed_value_cache_enabled = false
+	css_parsed_value_cache.clear()
+}
+
 pub fn parse_css_value_logic(property_id PropertyID, text string) ?StyleValue {
+	if css_parsed_value_cache_enabled {
+		key := int(property_id)
+		if cached := css_parsed_value_cache[key][text] {
+			return cached
+		}
+		mut cache_parser := Parser.from_css_text(text)
+		value := cache_parser.parse_css_value(property_id)?
+		if key !in css_parsed_value_cache {
+			css_parsed_value_cache[key] = map[string]StyleValue{}
+		}
+		css_parsed_value_cache[key][text] = value
+		return value
+	}
 	mut parser := Parser.from_css_text(text)
 	return parser.parse_css_value(property_id)
 }
@@ -12530,15 +12404,40 @@ fn value_logic_round_to_u8(value f64) u8 {
 	return u8(int(math.max(0.0, math.min(255.0, math.round(value)))))
 }
 
+@[heap]
+struct TypedStyleValueBox {
+	value StyleValue
+}
+
 fn dom_style_value_from_value_logic(value StyleValue) &dom.StyleValue {
+	typed_value := &TypedStyleValueBox{
+		value: value
+	}
 	return &dom.StyleValue{
 		// Pending-substitution values are deliberately not author-serializable,
 		// but the DOM-side opaque value must retain the original shorthand text
 		// so the longhand can resolve var()/env()/attr() during the cascade.
 		css_text: if value is PendingSubstitutionStyleValue {
-			value.original_shorthand_value_ref().serialize(.normal)
-		} else {
-			value.serialize(.normal)
-		}
+			value.original_shorthand_value_ref().serialize(.normal)} else {
+			value.serialize(.normal)}
+		css_value_handle: voidptr(typed_value)
 	}
+}
+
+// Recover the typed value retained by dom_style_value_from_value_logic(). DOM
+// deliberately treats this pointer as opaque to avoid a dom -> css import
+// cycle. Hand-authored DOM bridge values have no handle, so retain the old
+// parse-from-text fallback for those boundary cases.
+fn typed_style_value_logic_from_dom(value &dom.StyleValue) ?StyleValue {
+	if value.css_value_handle != unsafe { nil } {
+		return unsafe { (&TypedStyleValueBox(value.css_value_handle)).value }
+	}
+	return none
+}
+
+fn style_value_logic_from_dom(property_id PropertyID, value &dom.StyleValue) ?StyleValue {
+	if typed := typed_style_value_logic_from_dom(value) {
+		return typed
+	}
+	return parse_css_value_logic(property_id, value.css_text)
 }

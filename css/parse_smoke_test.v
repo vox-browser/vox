@@ -1,10 +1,11 @@
 module css
 
+import dom
+
 // Runtime smoke test of the ported CSS value parser. Validates that parsing +
 // shorthand expansion + serialization work end to end now that the module
 // compiles and runs natively. Guards against the first-token-drop regression
 // (a failed CSS-wide-keyword probe used to swallow the value's first token).
-
 fn parsed(text string, property PropertyID) ?string {
 	value := parse_css_value(ParsingParams{}, text, property) or { return none }
 	return value.css_text
@@ -80,4 +81,37 @@ fn test_css_wide_keyword() {
 fn test_invalid_returns_none() {
 	assert parsed('not-a-length', PropertyID.width) == none
 	assert parsed('12px', PropertyID.color) == none
+}
+
+fn test_dom_style_value_retains_typed_css_value() {
+	value := parse_css_value(ParsingParams{}, '42px', .width) or {
+		panic('width did not parse')
+	}
+	assert value.css_value_handle != unsafe { nil }
+	typed := typed_style_value_logic_from_dom(value) or {
+		panic('typed value handle was not retained')
+	}
+	assert typed is LengthStyleValue
+	assert typed.serialize(.normal) == '42px'
+
+	// DOM callers may still construct a serialized-only value. Keep the
+	// compatibility parser at that boundary while typed parser output takes the
+	// allocation-free path above.
+	serialized_only := &dom.StyleValue{
+		css_text: '17px'
+	}
+	assert typed_style_value_logic_from_dom(serialized_only) == none
+	fallback := style_value_logic_from_dom(.width, serialized_only) or {
+		panic('serialized fallback did not parse')
+	}
+	assert fallback is LengthStyleValue
+	assert fallback.serialize(.normal) == '17px'
+}
+
+fn test_initial_values_are_typed_and_cached() {
+	first := computed_interpolation_property_initial_value(.width)
+	second := computed_interpolation_property_initial_value(.width)
+	assert voidptr(first) == voidptr(second)
+	assert first.css_value_handle != unsafe { nil }
+	assert typed_style_value_logic_from_dom(first) != none
 }

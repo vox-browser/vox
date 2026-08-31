@@ -6,7 +6,6 @@ import math
 import strings
 
 // --- Small generated/layout/parser stand-ins used by these value objects ---
-
 pub struct CursorImageValue {
 pub mut:
 	serialization string
@@ -113,7 +112,6 @@ fn percentage_style_value(value f64) StyleValue {
 }
 
 // --- Generated enum subset ---
-
 pub enum AnchorSize {
 	block
 	height
@@ -291,7 +289,6 @@ pub fn font_tech_to_string(value FontTech) string {
 }
 
 // --- AddFunctionStyleValue ---
-
 pub struct AddFunctionStyleValue {
 pub mut:
 	value_ StyleValue
@@ -328,7 +325,6 @@ pub fn (style_value AddFunctionStyleValue) properties_equal(other AddFunctionSty
 }
 
 // --- AnchorStyleValue ---
-
 pub struct AnchorStyleValue {
 pub mut:
 	anchor_name_    ?string
@@ -338,8 +334,8 @@ pub mut:
 
 pub fn AnchorStyleValue.create(anchor_name ?string, anchor_side StyleValue, fallback_value ?StyleValue) AnchorStyleValue {
 	return AnchorStyleValue{
-		anchor_name_:    anchor_name
-		anchor_side_:    anchor_side
+		anchor_name_: anchor_name
+		anchor_side_: anchor_side
 		fallback_value_: fallback_value
 	}
 }
@@ -385,7 +381,6 @@ pub fn (style_value AnchorStyleValue) properties_equal(other AnchorStyleValue) b
 }
 
 // --- AnchorSizeStyleValue ---
-
 pub struct AnchorSizeStyleValue {
 pub mut:
 	anchor_name_    ?string
@@ -395,8 +390,8 @@ pub mut:
 
 pub fn AnchorSizeStyleValue.create(anchor_name ?string, anchor_size ?AnchorSize, fallback_value ?StyleValue) AnchorSizeStyleValue {
 	return AnchorSizeStyleValue{
-		anchor_name_:    anchor_name
-		anchor_size_:    anchor_size
+		anchor_name_: anchor_name
+		anchor_size_: anchor_size
 		fallback_value_: fallback_value
 	}
 }
@@ -448,7 +443,6 @@ pub fn (style_value AnchorSizeStyleValue) properties_equal(other AnchorSizeStyle
 }
 
 // --- BackgroundSizeStyleValue ---
-
 pub struct BackgroundSizeStyleValue {
 pub mut:
 	size_x_ StyleValue
@@ -495,7 +489,6 @@ pub fn (style_value BackgroundSizeStyleValue) properties_equal(other BackgroundS
 }
 
 // --- BorderImageSliceStyleValue ---
-
 pub struct BorderImageSliceStyleValue {
 pub mut:
 	top_    StyleValue
@@ -507,11 +500,11 @@ pub mut:
 
 pub fn BorderImageSliceStyleValue.create(top StyleValue, right StyleValue, bottom StyleValue, left StyleValue, fill bool) BorderImageSliceStyleValue {
 	return BorderImageSliceStyleValue{
-		top_:    top
-		right_:  right
+		top_: top
+		right_: right
 		bottom_: bottom
-		left_:   left
-		fill_:   fill
+		left_: left
+		fill_: fill
 	}
 }
 
@@ -537,8 +530,7 @@ pub fn (style_value BorderImageSliceStyleValue) fill() bool {
 
 pub fn (style_value BorderImageSliceStyleValue) serialize(mode SerializationMode) string {
 	mut serialized := style_value.top_.serialize(mode)
-	if !(style_value.top_ == style_value.right_ && style_value.top_ == style_value.bottom_
-		&& style_value.top_ == style_value.left_) {
+	if !(style_value.top_ == style_value.right_ && style_value.top_ == style_value.bottom_ && style_value.top_ == style_value.left_) {
 		serialized += ' ${style_value.right_.serialize(mode)}'
 		if style_value.top_ != style_value.bottom_ || style_value.right_ != style_value.left_ {
 			serialized += ' ${style_value.bottom_.serialize(mode)}'
@@ -563,7 +555,6 @@ pub fn (style_value BorderImageSliceStyleValue) properties_equal(other BorderIma
 }
 
 // --- BorderRadiusStyleValue ---
-
 pub struct BorderRadiusStyleValue {
 pub mut:
 	is_elliptical_    bool
@@ -577,9 +568,9 @@ pub fn BorderRadiusStyleValue.create_zero() BorderRadiusStyleValue {
 
 pub fn BorderRadiusStyleValue.create(horizontal_radius StyleValue, vertical_radius StyleValue) BorderRadiusStyleValue {
 	return BorderRadiusStyleValue{
-		is_elliptical_:    horizontal_radius != vertical_radius
+		is_elliptical_: horizontal_radius != vertical_radius
 		horizontal_radius: horizontal_radius
-		vertical_radius:   vertical_radius
+		vertical_radius: vertical_radius
 	}
 }
 
@@ -606,13 +597,11 @@ pub fn (style_value BorderRadiusStyleValue) absolutized(context ComputationConte
 	absolutized_horizontal_radius := style_value.horizontal_radius.absolutized(context)
 	absolutized_vertical_radius := style_value.vertical_radius.absolutized(context)
 
-	if absolutized_vertical_radius == style_value.vertical_radius
-		&& absolutized_horizontal_radius == style_value.horizontal_radius {
+	if absolutized_vertical_radius == style_value.vertical_radius && absolutized_horizontal_radius == style_value.horizontal_radius {
 		return StyleValue(style_value)
 	}
 
-	return StyleValue(BorderRadiusStyleValue.create(absolutized_horizontal_radius,
-		absolutized_vertical_radius))
+	return StyleValue(BorderRadiusStyleValue.create(absolutized_horizontal_radius, absolutized_vertical_radius))
 }
 
 pub fn (style_value BorderRadiusStyleValue) to_string() string {
@@ -624,7 +613,6 @@ pub fn (style_value BorderRadiusStyleValue) properties_equal(other BorderRadiusS
 }
 
 // --- BorderRadiusRectStyleValue ---
-
 pub struct BorderRadiusRectStyleValue {
 pub mut:
 	top_left_     StyleValue
@@ -634,18 +622,15 @@ pub mut:
 }
 
 pub fn BorderRadiusRectStyleValue.create_zero() BorderRadiusRectStyleValue {
-	return BorderRadiusRectStyleValue.create(StyleValue(BorderRadiusStyleValue.create_zero()),
-		StyleValue(BorderRadiusStyleValue.create_zero()),
-		StyleValue(BorderRadiusStyleValue.create_zero()),
-		StyleValue(BorderRadiusStyleValue.create_zero()))
+	return BorderRadiusRectStyleValue.create(StyleValue(BorderRadiusStyleValue.create_zero()), StyleValue(BorderRadiusStyleValue.create_zero()), StyleValue(BorderRadiusStyleValue.create_zero()), StyleValue(BorderRadiusStyleValue.create_zero()))
 }
 
 pub fn BorderRadiusRectStyleValue.create(top_left StyleValue, top_right StyleValue, bottom_right StyleValue, bottom_left StyleValue) BorderRadiusRectStyleValue {
 	return BorderRadiusRectStyleValue{
-		top_left_:     top_left
-		top_right_:    top_right
+		top_left_: top_left
+		top_right_: top_right
 		bottom_right_: bottom_right
-		bottom_left_:  bottom_left
+		bottom_left_: bottom_left
 	}
 }
 
@@ -700,10 +685,7 @@ pub fn (style_value BorderRadiusRectStyleValue) serialize(mode SerializationMode
 }
 
 pub fn (style_value BorderRadiusRectStyleValue) absolutized(context ComputationContext) StyleValue {
-	return StyleValue(BorderRadiusRectStyleValue.create(style_value.top_left_.absolutized(context),
-		style_value.top_right_.absolutized(context),
-		style_value.bottom_right_.absolutized(context),
-		style_value.bottom_left_.absolutized(context)))
+	return StyleValue(BorderRadiusRectStyleValue.create(style_value.top_left_.absolutized(context), style_value.top_right_.absolutized(context), style_value.bottom_right_.absolutized(context), style_value.bottom_left_.absolutized(context)))
 }
 
 pub fn (style_value BorderRadiusRectStyleValue) to_string() string {
@@ -715,7 +697,6 @@ pub fn (style_value BorderRadiusRectStyleValue) properties_equal(other BorderRad
 }
 
 // --- BasicShapeStyleValue ---
-
 pub struct BasicShapeInset {
 pub mut:
 	top           StyleValue
@@ -798,8 +779,8 @@ pub fn (style_value BasicShapeStyleValue) basic_shape() BasicShape {
 
 pub fn (shape BasicShapeInset) serialize(mode SerializationMode) string {
 	mut serialized := 'inset('
-	serialized +=
-		serialize_a_positional_value_list([shape.top, shape.right, shape.bottom, shape.left], mode)
+	serialized += serialize_a_positional_value_list([shape.top, shape.right, shape.bottom,
+		shape.left], mode)
 
 	serialized_border_radius := shape.border_radius.serialize(mode)
 	if serialized_border_radius != '0px' {
@@ -905,8 +886,12 @@ pub fn (shape BasicShapePath) serialize(mode SerializationMode) string {
 	// meaning. NB: So, we don't include `nonzero` in that case.
 	if !(mode == .resolved_value && shape.fill_rule == .nonzero) {
 		match shape.fill_rule {
-			.nonzero { serialized += 'nonzero, ' }
-			.evenodd { serialized += 'evenodd, ' }
+			.nonzero {
+				serialized += 'nonzero, '
+			}
+			.evenodd {
+				serialized += 'evenodd, '
+			}
 		}
 	}
 
@@ -990,10 +975,10 @@ pub fn (style_value BasicShapeStyleValue) absolutized(context ComputationContext
 	absolutized_shape := match shape {
 		BasicShapeInset {
 			BasicShape(BasicShapeInset{
-				top:           shape.top.absolutized(context)
-				right:         shape.right.absolutized(context)
-				bottom:        shape.bottom.absolutized(context)
-				left:          shape.left.absolutized(context)
+				top: shape.top.absolutized(context)
+				right: shape.right.absolutized(context)
+				bottom: shape.bottom.absolutized(context)
+				left: shape.left.absolutized(context)
 				border_radius: shape.border_radius.absolutized(context)
 			})
 		}
@@ -1001,38 +986,36 @@ pub fn (style_value BasicShapeStyleValue) absolutized(context ComputationContext
 			// Note: Given xywh(x y w h), the equivalent function is inset(y calc(100% - x - w)
 			// calc(100% - y - h) x).
 			BasicShape(BasicShapeInset{
-				top:           shape.y.absolutized(context)
-				right:         basic_shape_one_hundred_percent_minus([shape.x, shape.width],
-					context)
-				bottom:        basic_shape_one_hundred_percent_minus([shape.y, shape.height],
-					context)
-				left:          shape.x.absolutized(context)
+				top: shape.y.absolutized(context)
+				right: basic_shape_one_hundred_percent_minus([shape.x, shape.width], context)
+				bottom: basic_shape_one_hundred_percent_minus([shape.y, shape.height], context)
+				left: shape.x.absolutized(context)
 				border_radius: shape.border_radius.absolutized(context)
 			})
 		}
 		BasicShapeRect {
 			// Note: Given rect(t r b l), the equivalent function is inset(t calc(100% - r) calc(100% - b) l).
 			BasicShape(BasicShapeInset{
-				top:           basic_shape_rect_resolve_auto(shape.top, 0).absolutized(context)
-				right:         basic_shape_one_hundred_percent_minus([
+				top: basic_shape_rect_resolve_auto(shape.top, 0).absolutized(context)
+				right: basic_shape_one_hundred_percent_minus([
 					basic_shape_rect_resolve_auto(shape.right, 100),
 				], context)
-				bottom:        basic_shape_one_hundred_percent_minus([
+				bottom: basic_shape_one_hundred_percent_minus([
 					basic_shape_rect_resolve_auto(shape.bottom, 100),
 				], context)
-				left:          basic_shape_rect_resolve_auto(shape.left, 0).absolutized(context)
+				left: basic_shape_rect_resolve_auto(shape.left, 0).absolutized(context)
 				border_radius: shape.border_radius.absolutized(context)
 			})
 		}
 		BasicShapeCircle {
 			BasicShape(BasicShapeCircle{
-				radius:   shape.radius.absolutized(context)
+				radius: shape.radius.absolutized(context)
 				position: absolutized_style_value_option(shape.position, context)
 			})
 		}
 		BasicShapeEllipse {
 			BasicShape(BasicShapeEllipse{
-				radius:   shape.radius.absolutized(context)
+				radius: shape.radius.absolutized(context)
 				position: absolutized_style_value_option(shape.position, context)
 			})
 		}
@@ -1046,7 +1029,7 @@ pub fn (style_value BasicShapeStyleValue) absolutized(context ComputationContext
 			}
 			BasicShape(BasicShapePolygon{
 				fill_rule: shape.fill_rule
-				points:    points
+				points: points
 			})
 		}
 		BasicShapePath {
@@ -1069,7 +1052,6 @@ pub fn (style_value BasicShapeStyleValue) properties_equal(other BasicShapeStyle
 }
 
 // --- ContentStyleValue ---
-
 pub struct ContentStyleValue {
 pub mut:
 	content_  StyleValueList
@@ -1078,7 +1060,7 @@ pub mut:
 
 pub fn ContentStyleValue.create(content StyleValueList, alt_text ?StyleValueList) ContentStyleValue {
 	return ContentStyleValue{
-		content_:  content
+		content_: content
 		alt_text_: alt_text
 	}
 }
@@ -1112,7 +1094,6 @@ pub fn (style_value ContentStyleValue) properties_equal(other ContentStyleValue)
 }
 
 // --- CursorStyleValue ---
-
 pub struct CursorStyleValue {
 pub mut:
 	image_ CursorImageValue
@@ -1127,8 +1108,8 @@ pub fn CursorStyleValue.create(image CursorImageValue, x ?StyleValue, y ?StyleVa
 	}
 	return CursorStyleValue{
 		image_: image
-		x_:     x
-		y_:     y
+		x_: x
+		y_: y
 	}
 }
 
@@ -1142,8 +1123,7 @@ pub fn (style_value CursorStyleValue) serialize(mode SerializationMode) string {
 }
 
 pub fn (style_value CursorStyleValue) absolutized(context ComputationContext) StyleValue {
-	return StyleValue(CursorStyleValue.create(style_value.image_.absolutized(context), absolutized_style_value_option(style_value.x_,
-		context), absolutized_style_value_option(style_value.y_, context)))
+	return StyleValue(CursorStyleValue.create(style_value.image_.absolutized(context), absolutized_style_value_option(style_value.x_, context), absolutized_style_value_option(style_value.y_, context)))
 }
 
 pub fn (style_value CursorStyleValue) to_string() string {
@@ -1155,7 +1135,6 @@ pub fn (style_value CursorStyleValue) properties_equal(other CursorStyleValue) b
 }
 
 // --- DisplayStyleValue ---
-
 pub struct DisplayStyleValue {
 pub mut:
 	display_ Display
@@ -1185,7 +1164,6 @@ pub fn (style_value DisplayStyleValue) properties_equal(other DisplayStyleValue)
 }
 
 // --- EasingStyleValue ---
-
 pub struct EasingLinearStop {
 pub mut:
 	output StyleValue
@@ -1309,7 +1287,7 @@ pub fn (style_value EasingStyleValue) absolutized(context ComputationContext) St
 			for stop in function.stops {
 				absolutized_stops << EasingLinearStop{
 					output: stop.output.absolutized(context)
-					input:  absolutized_style_value_option(stop.input, context)
+					input: absolutized_style_value_option(stop.input, context)
 				}
 			}
 			EasingStyleValueFunction(EasingLinear{
@@ -1327,7 +1305,7 @@ pub fn (style_value EasingStyleValue) absolutized(context ComputationContext) St
 		EasingSteps {
 			EasingStyleValueFunction(EasingSteps{
 				number_of_intervals: function.number_of_intervals.absolutized(context)
-				position:            function.position
+				position: function.position
 			})
 		}
 	}
@@ -1344,7 +1322,6 @@ pub fn (style_value EasingStyleValue) properties_equal(other EasingStyleValue) b
 }
 
 // --- EdgeStyleValue ---
-
 pub struct EdgeStyleValue {
 pub mut:
 	edge_   ?PositionEdge
@@ -1353,7 +1330,7 @@ pub mut:
 
 pub fn EdgeStyleValue.create(edge ?PositionEdge, offset ?StyleValue) EdgeStyleValue {
 	return EdgeStyleValue{
-		edge_:   edge
+		edge_: edge
 		offset_: offset
 	}
 }
@@ -1401,19 +1378,23 @@ pub fn (style_value EdgeStyleValue) serialize(mode SerializationMode) string {
 pub fn (style_value EdgeStyleValue) with_resolved_keywords() EdgeStyleValue {
 	if edge := style_value.edge_ {
 		if edge == .center {
-			return EdgeStyleValue.create(none,
-				StyleValue(PercentageStyleValue.create(Percentage.new(50))))
+			return EdgeStyleValue.create(none, StyleValue(PercentageStyleValue.create(Percentage.new(50))))
 		}
 	}
 
 	if edge := style_value.edge_ {
 		if edge == .right || edge == .bottom {
 			if offset := style_value.offset_ {
-				return EdgeStyleValue.create(none, StyleValue(StubStyleValue.create(.calculated,
-					'calc(100% - ${offset.serialize(.normal)})')))
+				// EdgeStyleValue::with_resolved_keywords() creates a calculated value in
+				// upstream. Keep that value typed here as well: representing it as a
+				// StubStyleValue only worked while computed values were serialized and
+				// reparsed before every use.
+				return EdgeStyleValue.create(none, StyleValue(CalculatedStyleValue{
+					serialization: 'calc(100% - ${offset.serialize(.normal)})'
+					numeric_type_: NumericType.with_type(.length, 1)
+				}))
 			}
-			return EdgeStyleValue.create(none,
-				StyleValue(PercentageStyleValue.create(Percentage.new(100))))
+			return EdgeStyleValue.create(none, StyleValue(PercentageStyleValue.create(Percentage.new(100))))
 		}
 	}
 
@@ -1445,7 +1426,6 @@ pub fn (style_value EdgeStyleValue) properties_equal(other EdgeStyleValue) bool 
 }
 
 // --- FilterValueListStyleValue ---
-
 pub enum ColorFilterType {
 	brightness
 	contrast
@@ -1579,8 +1559,8 @@ pub fn (style_value FilterValueListStyleValue) absolutized(context ComputationCo
 				FilterStyleValue(FilterOperationDropShadow{
 					offset_x: filter_value.offset_x.absolutized(context)
 					offset_y: filter_value.offset_y.absolutized(context)
-					radius:   absolutized_style_value_option(filter_value.radius, context)
-					color:    absolutized_style_value_option(filter_value.color, context)
+					radius: absolutized_style_value_option(filter_value.radius, context)
+					color: absolutized_style_value_option(filter_value.color, context)
 				})
 			}
 			FilterOperationHueRotate {
@@ -1591,7 +1571,7 @@ pub fn (style_value FilterValueListStyleValue) absolutized(context ComputationCo
 			FilterOperationColor {
 				FilterStyleValue(FilterOperationColor{
 					operation: filter_value.operation
-					amount:    StyleValue(NumberStyleValue.create(number_from_style_value(filter_value.amount.absolutized(context), 1.0)))
+					amount: StyleValue(NumberStyleValue.create(number_from_style_value(filter_value.amount.absolutized(context), 1.0)))
 				})
 			}
 			URL {
@@ -1611,7 +1591,6 @@ pub fn (style_value FilterValueListStyleValue) properties_equal(other FilterValu
 }
 
 // --- FontSourceStyleValue ---
-
 pub struct FontSourceLocal {
 pub mut:
 	name StyleValue
@@ -1630,7 +1609,7 @@ pub fn FontSourceStyleValue.create(source FontSourceStyleValueSource, format ?st
 	return FontSourceStyleValue{
 		source_: source
 		format_: format
-		tech_:   tech
+		tech_: tech
 	}
 }
 
@@ -1683,7 +1662,6 @@ pub fn (style_value FontSourceStyleValue) properties_equal(other FontSourceStyle
 }
 
 // --- FontStyleStyleValue ---
-
 pub struct FontStyleStyleValue {
 pub mut:
 	font_style_  FontStyleKeyword
@@ -1692,7 +1670,7 @@ pub mut:
 
 pub fn FontStyleStyleValue.create(font_style FontStyleKeyword, angle_value ?StyleValue) FontStyleStyleValue {
 	return FontStyleStyleValue{
-		font_style_:  font_style
+		font_style_: font_style
 		angle_value_: angle_value
 	}
 }
@@ -1752,7 +1730,6 @@ pub fn (style_value FontStyleStyleValue) properties_equal(other FontStyleStyleVa
 }
 
 // --- FontVariantAlternatesFunctionStyleValue ---
-
 pub struct FontVariantAlternatesFunctionStyleValue {
 pub mut:
 	function_type_ FontFeatureValueType
@@ -1762,7 +1739,7 @@ pub mut:
 pub fn FontVariantAlternatesFunctionStyleValue.create(function_type FontFeatureValueType, names []StyleValue) FontVariantAlternatesFunctionStyleValue {
 	return FontVariantAlternatesFunctionStyleValue{
 		function_type_: function_type
-		names_:         names
+		names_: names
 	}
 }
 
@@ -1795,8 +1772,7 @@ pub fn (style_value FontVariantAlternatesFunctionStyleValue) absolutized(context
 		return StyleValue(style_value)
 	}
 
-	return StyleValue(FontVariantAlternatesFunctionStyleValue.create(style_value.function_type_,
-		absolutized_names))
+	return StyleValue(FontVariantAlternatesFunctionStyleValue.create(style_value.function_type_, absolutized_names))
 }
 
 pub fn (style_value FontVariantAlternatesFunctionStyleValue) to_string() string {
@@ -1808,7 +1784,6 @@ pub fn (style_value FontVariantAlternatesFunctionStyleValue) properties_equal(ot
 }
 
 // --- OpenTypeTaggedStyleValue ---
-
 pub enum OpenTypeTaggedStyleValueMode {
 	font_feature_settings
 	font_variation_settings
@@ -1823,8 +1798,8 @@ pub mut:
 
 pub fn OpenTypeTaggedStyleValue.create(mode OpenTypeTaggedStyleValueMode, tag string, value StyleValue) OpenTypeTaggedStyleValue {
 	return OpenTypeTaggedStyleValue{
-		mode_:  mode
-		tag_:   tag
+		mode_: mode
+		tag_: tag
 		value_: value
 	}
 }
@@ -1842,8 +1817,7 @@ pub fn (style_value OpenTypeTaggedStyleValue) absolutized(context ComputationCon
 	if absolutized_value == style_value.value_ {
 		return StyleValue(style_value)
 	}
-	return StyleValue(OpenTypeTaggedStyleValue.create(style_value.mode_, style_value.tag_,
-		absolutized_value))
+	return StyleValue(OpenTypeTaggedStyleValue.create(style_value.mode_, style_value.tag_, absolutized_value))
 }
 
 pub fn (style_value OpenTypeTaggedStyleValue) serialize(mode SerializationMode) string {
@@ -1874,7 +1848,6 @@ pub fn (style_value OpenTypeTaggedStyleValue) properties_equal(other OpenTypeTag
 }
 
 // --- PositionStyleValue ---
-
 pub struct PositionStyleValue {
 pub mut:
 	edge_x_ EdgeStyleValue
@@ -1889,14 +1862,12 @@ pub fn PositionStyleValue.create(edge_x EdgeStyleValue, edge_y EdgeStyleValue) P
 }
 
 pub fn PositionStyleValue.create_center() PositionStyleValue {
-	return PositionStyleValue.create(EdgeStyleValue.create(PositionEdge.center, none), EdgeStyleValue.create(PositionEdge.center,
-		none))
+	return PositionStyleValue.create(EdgeStyleValue.create(PositionEdge.center, none), EdgeStyleValue.create(PositionEdge.center, none))
 }
 
 pub fn PositionStyleValue.create_computed_center() PositionStyleValue {
 	center := StyleValue(PercentageStyleValue.create(Percentage.new(50)))
-	return PositionStyleValue.create(EdgeStyleValue.create(none, center), EdgeStyleValue.create(none,
-		center))
+	return PositionStyleValue.create(EdgeStyleValue.create(none, center), EdgeStyleValue.create(none, center))
 }
 
 pub fn (style_value PositionStyleValue) edge_x() EdgeStyleValue {
@@ -1912,8 +1883,7 @@ pub fn (style_value PositionStyleValue) is_center(mode SerializationMode) bool {
 }
 
 pub fn (style_value PositionStyleValue) with_resolved_keywords() PositionStyleValue {
-	return PositionStyleValue.create(style_value.edge_x_.with_resolved_keywords(),
-		style_value.edge_y_.with_resolved_keywords())
+	return PositionStyleValue.create(style_value.edge_x_.with_resolved_keywords(), style_value.edge_y_.with_resolved_keywords())
 }
 
 pub fn (style_value PositionStyleValue) absolutized(context ComputationContext) StyleValue {
@@ -1935,7 +1905,6 @@ pub fn (style_value PositionStyleValue) properties_equal(other PositionStyleValu
 }
 
 // --- RadialSizeStyleValue ---
-
 pub struct RadialExtentComponent {
 pub mut:
 	extent RadialExtent
@@ -2007,7 +1976,6 @@ pub fn (style_value RadialSizeStyleValue) properties_equal(other RadialSizeStyle
 }
 
 // --- RandomValueSharingStyleValue ---
-
 pub struct RandomCachingKey {
 pub mut:
 	name       string
@@ -2037,16 +2005,16 @@ pub fn RandomValueSharingStyleValue.create_fixed(fixed_value StyleValue) RandomV
 
 pub fn RandomValueSharingStyleValue.create_auto(name string, element_shared bool) RandomValueSharingStyleValue {
 	return RandomValueSharingStyleValue{
-		is_auto_:        true
-		name_:           name
+		is_auto_: true
+		name_: name
 		element_shared_: element_shared
 	}
 }
 
 pub fn RandomValueSharingStyleValue.create_dashed_ident(name string, element_shared bool) RandomValueSharingStyleValue {
 	return RandomValueSharingStyleValue{
-		is_auto_:        false
-		name_:           name
+		is_auto_: false
+		name_: name
 		element_shared_: element_shared
 	}
 }
@@ -2065,7 +2033,6 @@ pub fn (style_value RandomValueSharingStyleValue) absolutized(context Computatio
 
 	// Otherwise, the random base value is a pseudo-random real number in the range `[0, 1)` (greater than or equal to 0
 	// and less than 1), generated from a uniform distribution, and influenced by the function's random caching key.
-
 	abstract_element := context.abstract_element or {
 		panic('RandomValueSharingStyleValue::absolutized requires ComputationContext.abstract_element')
 	}
@@ -2138,7 +2105,6 @@ pub fn (style_value RandomValueSharingStyleValue) properties_equal(other RandomV
 }
 
 // --- RectStyleValue ---
-
 pub struct RectStyleValue {
 pub mut:
 	rect_ EdgeRect
@@ -2167,7 +2133,6 @@ pub fn (style_value RectStyleValue) properties_equal(other RectStyleValue) bool 
 }
 
 // --- RepeatStyleStyleValue ---
-
 pub struct RepeatStyleStyleValue {
 pub mut:
 	repeat_x_ Repetition
@@ -2214,7 +2179,6 @@ pub fn (style_value RepeatStyleStyleValue) properties_equal(other RepeatStyleSty
 }
 
 // --- ScrollFunctionStyleValue ---
-
 pub struct ScrollFunctionStyleValue {
 pub mut:
 	scroller_ Scroller
@@ -2224,7 +2188,7 @@ pub mut:
 pub fn ScrollFunctionStyleValue.create(scroller Scroller, axis Axis) ScrollFunctionStyleValue {
 	return ScrollFunctionStyleValue{
 		scroller_: scroller
-		axis_:     axis
+		axis_: axis
 	}
 }
 
@@ -2264,7 +2228,6 @@ pub fn (style_value ScrollFunctionStyleValue) properties_equal(other ScrollFunct
 }
 
 // --- ScrollbarColorStyleValue ---
-
 pub struct ScrollbarColorStyleValue {
 pub mut:
 	thumb_color_ StyleValue
@@ -2299,7 +2262,6 @@ pub fn (style_value ScrollbarColorStyleValue) properties_equal(other ScrollbarCo
 }
 
 // --- ScrollbarGutterStyleValue ---
-
 pub struct ScrollbarGutterStyleValue {
 pub mut:
 	value_ ScrollbarGutter
@@ -2333,7 +2295,6 @@ pub fn (style_value ScrollbarGutterStyleValue) properties_equal(other ScrollbarG
 }
 
 // --- ShadowStyleValue ---
-
 pub enum ShadowPlacement {
 	outer
 	inner
@@ -2357,13 +2318,13 @@ pub mut:
 
 pub fn ShadowStyleValue.create(shadow_type ShadowType, color ?StyleValue, offset_x StyleValue, offset_y StyleValue, blur_radius ?StyleValue, spread_distance ?StyleValue, placement ShadowPlacement) ShadowStyleValue {
 	return ShadowStyleValue{
-		shadow_type_:     shadow_type
-		color_:           color
-		offset_x_:        offset_x
-		offset_y_:        offset_y
-		blur_radius_:     blur_radius
+		shadow_type_: shadow_type
+		color_: color
+		offset_x_: offset_x
+		offset_y_: offset_y
+		blur_radius_: blur_radius
 		spread_distance_: spread_distance
-		placement_:       placement
+		placement_: placement
 	}
 }
 
@@ -2420,10 +2381,7 @@ pub fn (style_value ShadowStyleValue) serialize(mode SerializationMode) string {
 }
 
 pub fn (style_value ShadowStyleValue) absolutized(context ComputationContext) StyleValue {
-	return StyleValue(ShadowStyleValue.create(style_value.shadow_type_, style_value.color(),
-		style_value.offset_x_.absolutized(context), style_value.offset_y_.absolutized(context),
-		style_value.blur_radius().absolutized(context),
-		style_value.spread_distance().absolutized(context), style_value.placement_))
+	return StyleValue(ShadowStyleValue.create(style_value.shadow_type_, style_value.color(), style_value.offset_x_.absolutized(context), style_value.offset_y_.absolutized(context), style_value.blur_radius().absolutized(context), style_value.spread_distance().absolutized(context), style_value.placement_))
 }
 
 pub fn (style_value ShadowStyleValue) to_string() string {
@@ -2435,7 +2393,6 @@ pub fn (style_value ShadowStyleValue) properties_equal(other ShadowStyleValue) b
 }
 
 // --- ShorthandStyleValue ---
-
 pub struct ShorthandStyleValue {
 pub mut:
 	shorthand_      PropertyID
@@ -2445,9 +2402,9 @@ pub mut:
 
 pub fn ShorthandStyleValue.create(shorthand PropertyID, sub_properties []PropertyID, values []StyleValue) ShorthandStyleValue {
 	return ShorthandStyleValue{
-		shorthand_:      shorthand
+		shorthand_: shorthand
 		sub_properties_: sub_properties
-		values_:         values
+		values_: values
 	}
 }
 
@@ -2477,7 +2434,7 @@ fn coordinating_list_config(shorthand PropertyID) ?CoordinatingListConfig {
 		.animation {
 			CoordinatingListConfig{
 				entry_when_all_initial: 'none'
-				reset_only_longhands:   [PropertyID.animation_timeline]
+				reset_only_longhands: [PropertyID.animation_timeline]
 			}
 		}
 		.transition {
@@ -2549,8 +2506,7 @@ fn (style_value ShorthandStyleValue) serialize_coordinating_list(mode Serializat
 	for entry_index := 0; entry_index < entry_count; entry_index++ {
 		mut parts := []string{}
 		for longhand_index, _ in style_value.sub_properties_ {
-			if !style_value.should_serialize_coordinating_longhand(entry_index, longhand_index,
-				config, mode) {
+			if !style_value.should_serialize_coordinating_longhand(entry_index, longhand_index, config, mode) {
 				continue
 			}
 			list := style_value.values_[longhand_index] as StyleValueList
@@ -2625,22 +2581,14 @@ fn (style_value ShorthandStyleValue) serialize_background(mode SerializationMode
 		if index == layer_count - 1 {
 			shorthand_append_if_not_initial(mut parts, color, .background_color, mode)
 		}
-		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(image, index),
-			.background_image, mode)
-		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(position_x, index),
-			.background_position_x, mode)
-		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(position_y, index),
-			.background_position_y, mode)
-		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(size, index),
-			.background_size, mode)
-		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(repeat, index),
-			.background_repeat, mode)
-		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(attachment, index),
-			.background_attachment, mode)
-		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(origin, index),
-			.background_origin, mode)
-		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(clip, index),
-			.background_clip, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(image, index), .background_image, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(position_x, index), .background_position_x, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(position_y, index), .background_position_y, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(size, index), .background_size, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(repeat, index), .background_repeat, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(attachment, index), .background_attachment, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(origin, index), .background_origin, mode)
+		shorthand_append_if_not_initial(mut parts, shorthand_layer_value(clip, index), .background_clip, mode)
 		layers << if parts.len == 0 { 'none' } else { parts.join(' ') }
 	}
 	return layers.join(', ')
@@ -2675,10 +2623,7 @@ fn (style_value ShorthandStyleValue) serialize_mask(mode SerializationMode) ?str
 
 	mut layers := []string{}
 	for index := 0; index < layer_count; index++ {
-		layers << serialize_mask_layer(mode, shorthand_layer_value(image, index), shorthand_layer_value(position,
-			index), shorthand_layer_value(size, index), shorthand_layer_value(repeat, index), shorthand_layer_value(origin,
-			index), shorthand_layer_value(clip, index), shorthand_layer_value(composite, index), shorthand_layer_value(mask_mode,
-			index))
+		layers << serialize_mask_layer(mode, shorthand_layer_value(image, index), shorthand_layer_value(position, index), shorthand_layer_value(size, index), shorthand_layer_value(repeat, index), shorthand_layer_value(origin, index), shorthand_layer_value(clip, index), shorthand_layer_value(composite, index), shorthand_layer_value(mask_mode, index))
 	}
 	return layers.join(', ')
 }
@@ -2743,8 +2688,7 @@ fn (style_value ShorthandStyleValue) serialize_background_position(mode Serializ
 	layer_count := if x_count > y_count { x_count } else { y_count }
 	mut layers := []string{}
 	for index := 0; index < layer_count; index++ {
-		layers << '${shorthand_layer_value(position_x, index).serialize(mode)} ${shorthand_layer_value(position_y,
-			index).serialize(mode)}'
+		layers << '${shorthand_layer_value(position_x, index).serialize(mode)} ${shorthand_layer_value(position_y, index).serialize(mode)}'
 	}
 	return layers.join(', ')
 }
@@ -2881,8 +2825,11 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	// The box `{1,4}`/`{1,2}` shorthands (margin/padding/inset/border-color/style/width/
 	// corner-*-shape/gap/overflow and their logical variants) collapse via the positional
 	// value list serializer rather than default_serialize.
-	if property_is_positional_value_list_shorthand(style_value.shorthand_)
-		|| style_value.shorthand_ in [PropertyID.place_content, .place_items, .place_self] {
+	if property_is_positional_value_list_shorthand(style_value.shorthand_) || style_value.shorthand_ in [
+		PropertyID.place_content,
+		.place_items,
+		.place_self,
+	] {
 		return serialize_a_positional_value_list(style_value.values_, mode)
 	}
 	if s := style_value.serialize_grid_template(mode) {
@@ -2987,16 +2934,14 @@ fn (style_value ShorthandStyleValue) serialize_grid_template(mode SerializationM
 }
 
 fn serialize_grid_template_values(mode SerializationMode, areas StyleValue, rows StyleValue, columns StyleValue) ?string {
-	if areas !is GridTemplateAreaStyleValue || rows !is GridTrackSizeListStyleValue
-		|| columns !is GridTrackSizeListStyleValue {
+	if areas !is GridTemplateAreaStyleValue || rows !is GridTrackSizeListStyleValue || columns !is GridTrackSizeListStyleValue {
 		return none
 	}
 	areas_value := areas as GridTemplateAreaStyleValue
 	rows_value := rows as GridTrackSizeListStyleValue
 	columns_value := columns as GridTrackSizeListStyleValue
 
-	if areas_value.row_count() == 0 && rows_value.grid_track_size_list().is_empty()
-		&& columns_value.grid_track_size_list().is_empty() {
+	if areas_value.row_count() == 0 && rows_value.grid_track_size_list().is_empty() && columns_value.grid_track_size_list().is_empty() {
 		return 'none'
 	}
 
@@ -3136,8 +3081,7 @@ fn (style_value ShorthandStyleValue) serialize_grid_area(mode SerializationMode)
 	mut column_end := style_value.values_[3]
 
 	// With four explicit (non-auto) lines, serialize as-is (after collapse).
-	if !grid_placement_is_auto(row_start) && !grid_placement_is_auto(column_start)
-		&& !grid_placement_is_auto(row_end) && !grid_placement_is_auto(column_end) {
+	if !grid_placement_is_auto(row_start) && !grid_placement_is_auto(column_start) && !grid_placement_is_auto(row_end) && !grid_placement_is_auto(column_end) {
 		return serialize_grid_area_lines(mode, row_start, column_start, row_end, column_end)
 	}
 
@@ -3301,7 +3245,6 @@ pub fn (style_value ShorthandStyleValue) properties_equal(other ShorthandStyleVa
 }
 
 // --- StyleValueList ---
-
 pub enum StyleValueListSeparator {
 	space
 	comma
@@ -3321,9 +3264,9 @@ pub mut:
 
 pub fn StyleValueList.create(values []StyleValue, separator StyleValueListSeparator, collapsible StyleValueListCollapsible) StyleValueList {
 	return StyleValueList{
-		separator_:   separator
+		separator_: separator
 		collapsible_: collapsible
-		values_:      values
+		values_: values
 	}
 }
 
@@ -3389,8 +3332,7 @@ pub fn (style_value StyleValueList) absolutized(context ComputationContext) Styl
 			for j := i + 1; j < style_value.values_.len; j++ {
 				result << style_value.values_[j].absolutized(context)
 			}
-			return StyleValue(StyleValueList.create(result, style_value.separator_,
-				style_value.collapsible_))
+			return StyleValue(StyleValueList.create(result, style_value.separator_, style_value.collapsible_))
 		}
 	}
 	return StyleValue(style_value)
@@ -3458,7 +3400,6 @@ pub fn (style_value StyleValueList) properties_equal(other StyleValueList) bool 
 }
 
 // --- SuperellipseStyleValue ---
-
 pub struct SuperellipseStyleValue {
 pub mut:
 	parameter_ StyleValue
@@ -3537,7 +3478,6 @@ pub fn (style_value SuperellipseStyleValue) properties_equal(other SuperellipseS
 }
 
 // --- TextIndentStyleValue ---
-
 pub enum TextIndentHanging {
 	no
 	yes
@@ -3558,8 +3498,8 @@ pub mut:
 pub fn TextIndentStyleValue.create(length_percentage StyleValue, hanging TextIndentHanging, each_line TextIndentEachLine) TextIndentStyleValue {
 	return TextIndentStyleValue{
 		length_percentage_: length_percentage
-		hanging_:           hanging == .yes
-		each_line_:         each_line == .yes
+		hanging_: hanging == .yes
+		each_line_: each_line == .yes
 	}
 }
 
@@ -3607,7 +3547,6 @@ pub fn (style_value TextIndentStyleValue) properties_equal(other TextIndentStyle
 }
 
 // --- TextUnderlinePositionStyleValue ---
-
 pub struct TextUnderlinePositionStyleValue {
 pub mut:
 	horizontal_ TextUnderlinePositionHorizontal
@@ -3617,7 +3556,7 @@ pub mut:
 pub fn TextUnderlinePositionStyleValue.create(horizontal TextUnderlinePositionHorizontal, vertical TextUnderlinePositionVertical) TextUnderlinePositionStyleValue {
 	return TextUnderlinePositionStyleValue{
 		horizontal_: horizontal
-		vertical_:   vertical
+		vertical_: vertical
 	}
 }
 
@@ -3655,7 +3594,6 @@ pub fn (style_value TextUnderlinePositionStyleValue) properties_equal(other Text
 }
 
 // --- TreeCountingFunctionStyleValue ---
-
 pub enum TreeCountingFunction {
 	sibling_count
 	sibling_index
@@ -3674,7 +3612,7 @@ pub mut:
 
 pub fn TreeCountingFunctionStyleValue.create(function TreeCountingFunction, computed_type TreeCountingComputedType) TreeCountingFunctionStyleValue {
 	return TreeCountingFunctionStyleValue{
-		function_:      function
+		function_: function
 		computed_type_: computed_type
 	}
 }
@@ -3697,8 +3635,7 @@ fn (style_value TreeCountingFunctionStyleValue) resolve_for_dom_context(context 
 pub fn (style_value TreeCountingFunctionStyleValue) resolve_for_dom_abstract_element(abstract_element &dom.AbstractElement) int {
 	mut element := unsafe { &dom.Element(abstract_element.element()) }
 	element.set_style_uses_tree_counting_function()
-	tree_counting_function_resolution_context :=
-		abstract_element.tree_counting_function_resolution_context()
+	tree_counting_function_resolution_context := abstract_element.tree_counting_function_resolution_context()
 	return style_value.resolve_for_dom_context(tree_counting_function_resolution_context)
 }
 
@@ -3741,7 +3678,6 @@ pub fn (style_value TreeCountingFunctionStyleValue) properties_equal(other TreeC
 }
 
 // --- TupleStyleValue ---
-
 pub struct TupleStyleValue {
 pub mut:
 	tuple_ []?StyleValue
@@ -3793,7 +3729,6 @@ pub fn (style_value TupleStyleValue) properties_equal(other TupleStyleValue) boo
 }
 
 // --- UnicodeRangeStyleValue ---
-
 pub struct UnicodeRangeStyleValue {
 pub mut:
 	unicode_range_ UnicodeRange
@@ -3830,7 +3765,6 @@ pub fn (style_value UnicodeRangeStyleValue) properties_equal(other UnicodeRangeS
 }
 
 // --- ViewFunctionStyleValue ---
-
 pub struct ViewFunctionStyleValue {
 pub mut:
 	axis_  Axis
@@ -3839,7 +3773,7 @@ pub mut:
 
 pub fn ViewFunctionStyleValue.create(axis Axis, inset StyleValue) ViewFunctionStyleValue {
 	return ViewFunctionStyleValue{
-		axis_:  axis
+		axis_: axis
 		inset_: inset
 	}
 }
@@ -3889,7 +3823,6 @@ pub fn (style_value ViewFunctionStyleValue) properties_equal(other ViewFunctionS
 }
 
 // --- StyleValue downcasts for translated subclasses ---
-
 pub fn (style_value StyleValue) as_border_radius() ?BorderRadiusStyleValue {
 	value := style_value
 	if value is BorderRadiusStyleValue {

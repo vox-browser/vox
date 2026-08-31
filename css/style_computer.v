@@ -77,37 +77,25 @@ enum LogicalPropertyGroup {
 // their relative order.
 fn logical_property_group_for_property(property_id PropertyID) ?LogicalPropertyGroup {
 	return match property_id {
-		.border_top_color, .border_right_color, .border_bottom_color, .border_left_color,
-		.border_block_start_color, .border_block_end_color, .border_inline_start_color,
-		.border_inline_end_color {
+		.border_top_color, .border_right_color, .border_bottom_color, .border_left_color, .border_block_start_color, .border_block_end_color, .border_inline_start_color, .border_inline_end_color {
 			LogicalPropertyGroup.border_color
 		}
-		.border_top_left_radius, .border_top_right_radius, .border_bottom_right_radius,
-		.border_bottom_left_radius, .border_start_start_radius, .border_start_end_radius,
-		.border_end_start_radius, .border_end_end_radius {
+		.border_top_left_radius, .border_top_right_radius, .border_bottom_right_radius, .border_bottom_left_radius, .border_start_start_radius, .border_start_end_radius, .border_end_start_radius, .border_end_end_radius {
 			LogicalPropertyGroup.border_radius
 		}
-		.border_top_style, .border_right_style, .border_bottom_style, .border_left_style,
-		.border_block_start_style, .border_block_end_style, .border_inline_start_style,
-		.border_inline_end_style {
+		.border_top_style, .border_right_style, .border_bottom_style, .border_left_style, .border_block_start_style, .border_block_end_style, .border_inline_start_style, .border_inline_end_style {
 			LogicalPropertyGroup.border_style
 		}
-		.border_top_width, .border_right_width, .border_bottom_width, .border_left_width,
-		.border_block_start_width, .border_block_end_width, .border_inline_start_width,
-		.border_inline_end_width {
+		.border_top_width, .border_right_width, .border_bottom_width, .border_left_width, .border_block_start_width, .border_block_end_width, .border_inline_start_width, .border_inline_end_width {
 			LogicalPropertyGroup.border_width
 		}
-		.corner_top_left_shape, .corner_top_right_shape, .corner_bottom_right_shape,
-		.corner_bottom_left_shape, .corner_start_start_shape, .corner_start_end_shape,
-		.corner_end_start_shape, .corner_end_end_shape {
+		.corner_top_left_shape, .corner_top_right_shape, .corner_bottom_right_shape, .corner_bottom_left_shape, .corner_start_start_shape, .corner_start_end_shape, .corner_end_start_shape, .corner_end_end_shape {
 			LogicalPropertyGroup.corner_shape
 		}
-		.top, .right, .bottom, .left, .inset_block_start, .inset_block_end, .inset_inline_start,
-		.inset_inline_end {
+		.top, .right, .bottom, .left, .inset_block_start, .inset_block_end, .inset_inline_start, .inset_inline_end {
 			LogicalPropertyGroup.inset
 		}
-		.margin_top, .margin_right, .margin_bottom, .margin_left, .margin_block_start,
-		.margin_block_end, .margin_inline_start, .margin_inline_end {
+		.margin_top, .margin_right, .margin_bottom, .margin_left, .margin_block_start, .margin_block_end, .margin_inline_start, .margin_inline_end {
 			LogicalPropertyGroup.margin
 		}
 		.max_width, .max_height, .max_block_size, .max_inline_size {
@@ -119,14 +107,10 @@ fn logical_property_group_for_property(property_id PropertyID) ?LogicalPropertyG
 		.overflow_x, .overflow_y, .overflow_block, .overflow_inline {
 			LogicalPropertyGroup.overflow
 		}
-		.overflow_clip_margin_top, .overflow_clip_margin_right, .overflow_clip_margin_bottom,
-		.overflow_clip_margin_left, .overflow_clip_margin_block_start,
-		.overflow_clip_margin_block_end, .overflow_clip_margin_inline_start,
-		.overflow_clip_margin_inline_end {
+		.overflow_clip_margin_top, .overflow_clip_margin_right, .overflow_clip_margin_bottom, .overflow_clip_margin_left, .overflow_clip_margin_block_start, .overflow_clip_margin_block_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_inline_end {
 			LogicalPropertyGroup.overflow_clip_margin
 		}
-		.padding_top, .padding_right, .padding_bottom, .padding_left, .padding_block_start,
-		.padding_block_end, .padding_inline_start, .padding_inline_end {
+		.padding_top, .padding_right, .padding_bottom, .padding_left, .padding_block_start, .padding_block_end, .padding_inline_start, .padding_inline_end {
 			LogicalPropertyGroup.padding
 		}
 		.width, .height, .block_size, .inline_size {
@@ -469,8 +453,7 @@ fn map_logical_alias_to_physical_property(property_id PropertyID, context Logica
 			map_overflow_clip_margin(physical_edge_for_logical_edge(.inline_end, context))
 		}
 		.border_start_start_radius {
-			map_border_radius(physical_corner_for_logical_edges(.block_start, .inline_start,
-				context))
+			map_border_radius(physical_corner_for_logical_edges(.block_start, .inline_start, context))
 		}
 		.border_start_end_radius {
 			map_border_radius(physical_corner_for_logical_edges(.block_start, .inline_end, context))
@@ -543,25 +526,21 @@ fn is_pseudo_padding_property(name string) bool {
 fn is_pseudo_border_property(name string) bool {
 	return name in ['border', 'border-block-end', 'border-block-end-color', 'border-block-end-style',
 		'border-block-end-width', 'border-block-start', 'border-block-start-color',
-		'border-block-start-style', 'border-block-start-width', 'border-bottom',
-		'border-bottom-color', 'border-bottom-left-radius', 'border-bottom-right-radius',
-		'border-bottom-style', 'border-bottom-width', 'border-color', 'border-image-outset',
-		'border-image-repeat', 'border-image-slice', 'border-image-source', 'border-image-width',
-		'border-inline-end', 'border-inline-end-color', 'border-inline-end-style',
-		'border-inline-end-width', 'border-inline-start', 'border-inline-start-color',
-		'border-inline-start-style', 'border-inline-start-width', 'border-left', 'border-left-color',
-		'border-left-style', 'border-left-width', 'border-radius', 'border-right',
-		'border-right-color', 'border-right-style', 'border-right-width', 'border-style',
-		'border-top', 'border-top-color', 'border-top-left-radius', 'border-top-right-radius',
-		'border-top-style', 'border-top-width', 'border-width']
+		'border-block-start-style', 'border-block-start-width', 'border-bottom', 'border-bottom-color',
+		'border-bottom-left-radius', 'border-bottom-right-radius', 'border-bottom-style',
+		'border-bottom-width', 'border-color', 'border-image-outset', 'border-image-repeat',
+		'border-image-slice', 'border-image-source', 'border-image-width', 'border-inline-end',
+		'border-inline-end-color', 'border-inline-end-style', 'border-inline-end-width',
+		'border-inline-start', 'border-inline-start-color', 'border-inline-start-style',
+		'border-inline-start-width', 'border-left', 'border-left-color', 'border-left-style',
+		'border-left-width', 'border-radius', 'border-right', 'border-right-color',
+		'border-right-style', 'border-right-width', 'border-style', 'border-top', 'border-top-color',
+		'border-top-left-radius', 'border-top-right-radius', 'border-top-style', 'border-top-width',
+		'border-width']
 }
 
 fn pseudo_element_supports_common_text_properties(name string, include_inline_layout bool) bool {
-	return is_pseudo_font_property(name) || name in ['color', 'opacity']
-		|| is_pseudo_background_property(name)
-		|| is_pseudo_inline_typesetting_property(name)
-		|| is_pseudo_text_decoration_property(name)
-		|| (include_inline_layout && is_pseudo_inline_layout_property(name))
+	return is_pseudo_font_property(name) || name in ['color', 'opacity'] || is_pseudo_background_property(name) || is_pseudo_inline_typesetting_property(name) || is_pseudo_text_decoration_property(name) || (include_inline_layout && is_pseudo_inline_layout_property(name))
 }
 
 // Generated from PseudoElements.json. The DOM-side enum currently exposes the pseudo-elements that
@@ -576,13 +555,10 @@ fn pseudo_element_supports_property(pseudo_element dom.PseudoElement, property_i
 			pseudo_element_supports_common_text_properties(name, false)
 		}
 		.first_letter {
-			pseudo_element_supports_common_text_properties(name, true)
-				|| is_pseudo_margin_property(name) || is_pseudo_padding_property(name)
-				|| is_pseudo_border_property(name) || name == 'box-shadow'
+			pseudo_element_supports_common_text_properties(name, true) || is_pseudo_margin_property(name) || is_pseudo_padding_property(name) || is_pseudo_border_property(name) || name == 'box-shadow'
 		}
 		.selection {
-			name in ['color', 'background-color', 'text-shadow', 'stroke-width']
-				|| is_pseudo_text_decoration_property(name)
+			name in ['color', 'background-color', 'text-shadow', 'stroke-width'] || is_pseudo_text_decoration_property(name)
 		}
 		else {
 			true
@@ -610,8 +586,8 @@ fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty
 		}
 		result << StyleProperty{
 			property_id: property_id
-			value:       value
-			important:   if property.important { Important.yes } else { Important.no }
+			value: value
+			important: if property.important { Important.yes } else { Important.no }
 		}
 	}
 	return result
@@ -638,7 +614,7 @@ fn expand_property_longhands(property_id PropertyID, value &dom.StyleValue) []Ex
 			}
 			mut list := *longhands_ptr
 			list << ExpandedLonghand{
-				id:    longhand_id
+				id: longhand_id
 				value: longhand_value
 			}
 			*longhands_ptr = list
@@ -651,17 +627,17 @@ fn expand_property_longhands(property_id PropertyID, value &dom.StyleValue) []Ex
 // keyword. The port's dom.StyleValue only carries serialized text, so re-type it to test the typed
 // StyleValue predicate.
 fn opaque_is_revert(property_id PropertyID, value &dom.StyleValue) bool {
-	typed := parse_css_value_logic(property_id, value.css_text) or { return false }
+	typed := style_value_logic_from_dom(property_id, value) or { return false }
 	return typed.is_revert()
 }
 
 fn opaque_is_revert_layer(property_id PropertyID, value &dom.StyleValue) bool {
-	typed := parse_css_value_logic(property_id, value.css_text) or { return false }
+	typed := style_value_logic_from_dom(property_id, value) or { return false }
 	return typed.is_revert_layer()
 }
 
 fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, property_id PropertyID, value &dom.StyleValue) &dom.StyleValue {
-	typed := parse_css_value_logic(property_id, value.css_text) or { return unsafe { value } }
+	typed := style_value_logic_from_dom(property_id, value) or { return unsafe { value } }
 	if typed is UnresolvedStyleValue {
 		mut resolved := resolve_unresolved_style_value_for_property(abstract_element, property_id, typed)
 		resolved.base_url = value.base_url
@@ -677,13 +653,15 @@ fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, prope
 // set it in the cascade.
 // Unresolved var()/env() values are resolved before shorthand expansion by
 // resolve_cascade_declaration_value(); CascadedProperties performs the final custom-property pass.
-// The upstream pending-substitution "seen" set is an optimization and does not change results.
 fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, declaration &CSSStyleProperties, cascade_origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
 	pseudo_element := abstract_element.pseudo_element()
+	// CSSStyleProperties retains an unresolved shorthand and pending-substitution
+	// placeholders for its longhands. Once the shorthand has resolved and set a
+	// longhand, a later placeholder must not overwrite that real value.
+	mut seen_properties := []u8{len: int(PropertyID.mask) + 1}
 	for property in declaration_style_properties(declaration) {
 		// OPTIMIZATION: only cascade the requested properties, when a set was given.
-		if properties_to_cascade.len > 0 && property.property_id !in properties_to_cascade
-			&& !property_is_shorthand(property.property_id) {
+		if properties_to_cascade.len > 0 && property.property_id !in properties_to_cascade && !property_is_shorthand(property.property_id) {
 			continue
 		}
 		if important != property.important {
@@ -694,12 +672,20 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 				continue
 			}
 		}
-		resolved_property_value := resolve_cascade_declaration_value(abstract_element,
-			property.property_id, property.value)
+		resolved_property_value := resolve_cascade_declaration_value(abstract_element, property.property_id, property.value)
+		property_value_is_pending := if typed := typed_style_value_logic_from_dom(resolved_property_value) {
+			typed is PendingSubstitutionStyleValue
+		} else {
+			false
+		}
 		for longhand in expand_property_longhands(property.property_id, resolved_property_value) {
 			if properties_to_cascade.len > 0 && longhand.id !in properties_to_cascade {
 				continue
 			}
+			if seen_properties[int(longhand.id)] != 0 && property_value_is_pending {
+				continue
+			}
+			seen_properties[int(longhand.id)] = 1
 			mut physical_property_id := longhand.id
 			if property_is_logical_alias(longhand.id) {
 				context := logical_alias_mapping_context or { continue }
@@ -709,11 +695,9 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 			if opaque_is_revert(longhand.id, longhand.value) {
 				cascaded_properties.revert_property(physical_property_id, important, cascade_origin)
 			} else if opaque_is_revert_layer(longhand.id, longhand.value) {
-				cascaded_properties.revert_layer_property(physical_property_id, important,
-					layer_name)
+				cascaded_properties.revert_layer_property(physical_property_id, important, layer_name)
 			} else {
-				cascaded_properties.set_property(physical_property_id, longhand.value, important,
-					cascade_origin, layer_name, voidptr(declaration))
+				cascaded_properties.set_property(physical_property_id, longhand.value, important, cascade_origin, layer_name, voidptr(declaration))
 			}
 		}
 	}
@@ -748,8 +732,7 @@ fn keyword_to_direction(keyword Keyword) ?Direction {
 fn logical_alias_normalize_value(abstract_element dom.AbstractElement, property_id PropertyID, value ?&dom.StyleValue) &dom.StyleValue {
 	initial := computed_interpolation_property_initial_value(property_id)
 	if current := value {
-		if computed_interpolation_style_value_is_inherit(current)
-			|| computed_interpolation_style_value_is_unset(current) {
+		if computed_interpolation_style_value_is_inherit(current) || computed_interpolation_style_value_is_unset(current) {
 			if parent := parent_computed_properties(abstract_element) {
 				return parent.property(property_id, .yes) or { initial }
 			}
@@ -821,6 +804,12 @@ pub fn (s &StyleComputer) recompute_style(mut abstract_element dom.AbstractEleme
 // traverses shadow roots before light-DOM children, matching Document's
 // shadow-including style walk.
 pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.Node) {
+	is_top_level_pass := style_computer.style_computation_pass_depth_ == 0
+	if is_top_level_pass {
+		style_computer.style_sharing_cache_.clear()
+	}
+	style_computer.style_computation_pass_depth_++
+
 	element_opt := node.as_element()
 	if element := element_opt {
 		style_computer.push_ancestor(element)
@@ -848,6 +837,7 @@ pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.N
 	mutable_node.set_needs_style_update(false)
 	mutable_node.set_child_needs_style_update(false)
 	mutable_node.set_entire_subtree_needs_style_update(false)
+	style_computer.style_computation_pass_depth_--
 }
 
 // The computed value of `property_id` for `element`, serialized — the real-StyleComputer equivalent of the
@@ -864,8 +854,7 @@ pub fn computed_value_for(element &dom.Element, property_id PropertyID) ?string 
 	// Style the document once (a full UA + author + inline pass over the tree is expensive), then read the
 	// Re-run the document pass whenever DOM invalidation says this element or an
 	// inheritance ancestor is stale.
-	if abstract_element.computed_properties() == none
-		|| document.element_needs_style_update(element) {
+	if abstract_element.computed_properties() == none || document.element_needs_style_update(element) {
 		document.needs_full_style_update = true
 		document.update_style()
 	}

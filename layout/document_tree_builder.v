@@ -3,7 +3,9 @@ module layout
 import dom
 import css
 import html
+import os
 import svg
+import time
 import url
 
 const audio_controls_markup = '<style>
@@ -134,17 +136,23 @@ fn resolve_marker_layout_counters(mut builder_state TreeBuilderState, abstract_e
 // SVG), then perform anonymous-inline, continuation and table fixups before
 // assigning containing blocks and layout indexes.
 pub fn build_layout_tree(document &dom.Document) ?&Node {
+	mut timing_checkpoint := time.sys_mono_now()
 	root_element := document.document_element() or { return none }
 	materialize_svg_use_shadow_trees(document)
 	materialize_audio_controls_shadow_trees(document)
+	timing_checkpoint = layout_timing_checkpoint('    materialize', timing_checkpoint)
 	// HTML cannot own concrete CSSStyleSheet objects because css imports html's
 	// DOM layer. Synchronize <style> elements at the boundary, then perform the
 	// same top-down style pass that Document::update_style() performs upstream.
 	css.sync_document_style_elements(document)
+	timing_checkpoint = layout_timing_checkpoint('    sync_styles', timing_checkpoint)
 	mut style_computer := css.css_style_computer_for(document)
 	viewport_rect := document.viewport_rect()
 	style_computer.set_viewport_rect(css.CSSPixelRect.new(viewport_rect.x, viewport_rect.y, viewport_rect.width, viewport_rect.height))
+	css.begin_style_profile()
 	css.recompute_style_for_subtree(mut style_computer, root_element.as_node())
+	css.end_style_profile()
+	timing_checkpoint = layout_timing_checkpoint('    style', timing_checkpoint)
 	// The layout tree's root is the Viewport (whose DOM node is the Document itself); the root element's box
 	// is its child. This is faithful to TreeBuilder recursing from the Document node, where
 	// `is<DOM::Document>` allocates a Layout::Viewport with the document style.
@@ -157,6 +165,7 @@ pub fn build_layout_tree(document &dom.Document) ?&Node {
 		propagate_overflow_to_viewport(root_element_box, mut viewport)
 		viewport.append_child(root_element_box)
 	}
+	timing_checkpoint = layout_timing_checkpoint('    build_boxes', timing_checkpoint)
 	// Top-layer elements do not generate boxes at their DOM-tree position.
 	// Their ::backdrop and principal box are siblings of the root element under
 	// the viewport, in top-layer order.
@@ -176,7 +185,16 @@ pub fn build_layout_tree(document &dom.Document) ?&Node {
 	fixup_table_tree(mut viewport, document)
 	recompute_containing_blocks(viewport)
 	assign_layout_indexes(viewport)
+	layout_timing_checkpoint('    tree_fixups', timing_checkpoint)
 	return viewport
+}
+
+fn layout_timing_checkpoint(label string, previous u64) u64 {
+	now := time.sys_mono_now()
+	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
+		eprintln('Ladybird V timing: ${label} ${(now - previous) / 1_000_000} ms')
+	}
+	return now
 }
 
 fn materialize_audio_controls_shadow_trees(document &dom.Document) {
@@ -298,8 +316,10 @@ pub fn (result &DocumentLayoutResult) used_values_for(box &NodeWithStyle) ?&Used
 // formatting context handles block, inline, flex, grid, table, SVG, fieldset,
 // and replaced content.
 pub fn run_document_layout(document &dom.Document, viewport_width f64, viewport_height f64) ?DocumentLayoutResult {
+	mut timing_checkpoint := time.sys_mono_now()
 	install_document_layout_hook(document)
 	root := build_layout_tree(document) or { return none }
+	timing_checkpoint = layout_timing_checkpoint('    build_tree_total', timing_checkpoint)
 	viewport := root.as_viewport() or { return none }
 	// TreeBuilder upstream associates each DOM node with its Layout::Node as it
 	// is created. Install the opaque bridge before layout as well, so algorithms
@@ -311,7 +331,9 @@ pub fn run_document_layout(document &dom.Document, viewport_width f64, viewport_
 	layout_absolutely_positioned_descendants(mut state, root)
 	resolve_relative_insets(mut state, root)
 	measure_document_scrollable_overflow(mut state, root)
+	timing_checkpoint = layout_timing_checkpoint('    geometry', timing_checkpoint)
 	attach_layout_nodes_with_state(root, state)
+	layout_timing_checkpoint('    attach_layout', timing_checkpoint)
 	return DocumentLayoutResult{
 		root: root
 		state: state
@@ -1576,19 +1598,13 @@ pub fn html_object_element_create_layout_node(document &dom.Document, element &d
 				}
 				return unsafe { &Node(InlineNode.new(document, dom_element.as_node(), computed)) }
 			}
-			if display.is_table_inside() || display.is_table_row_group()
-				|| display.is_table_header_group() || display.is_table_footer_group()
-				|| display.is_table_row() {
+			if display.is_table_inside() || display.is_table_row_group() || display.is_table_header_group() || display.is_table_footer_group() || display.is_table_row() {
 				return unsafe { &Node(Box.new(document, dom_element.as_node(), computed)) }
 			}
 			if display.is_list_item() {
 				return unsafe { &Node(ListItemBox.new(document, dom_element.as_node(), computed)) }
 			}
-			if display.is_table_cell() || display.is_table_column()
-				|| display.is_table_column_group() || display.is_table_caption()
-				|| display.is_math_inside() || display.is_flow_inside()
-				|| display.is_flow_root_inside() || display.is_contents()
-				|| display.is_ruby_inside() {
+			if display.is_table_cell() || display.is_table_column() || display.is_table_column_group() || display.is_table_caption() || display.is_math_inside() || display.is_flow_inside() || display.is_flow_root_inside() || display.is_contents() || display.is_ruby_inside() {
 				return unsafe { &Node(BlockContainer.new(document, dom_element.as_node(), computed)) }
 			}
 			if display.is_flex_inside() || display.is_grid_inside() {
@@ -1596,7 +1612,9 @@ pub fn html_object_element_create_layout_node(document &dom.Document, element &d
 			}
 			return unsafe { &Node(InlineNode.new(document, dom_element.as_node(), computed)) }
 		}
-		else { return none }
+		else {
+			return none
+		}
 	}
 }
 

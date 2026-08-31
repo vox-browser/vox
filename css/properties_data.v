@@ -17,7 +17,6 @@ fn option_string_equal(a ?string, b ?string) bool {
 }
 
 // --- CustomPropertyData ---
-
 const custom_property_data_max_ancestor_count = 32
 const custom_property_data_absorb_threshold = 8
 
@@ -66,16 +65,16 @@ pub fn CustomPropertyData.create(own_values StylePropertyMap, parent ?&CustomPro
 		grandparent := parent_data.parent_
 		ancestor_count := if gp := grandparent { gp.ancestor_count_ + 1 } else { u8(0) }
 		return &CustomPropertyData{
-			own_values_:     own_values_copy
-			parent_:         grandparent
+			own_values_: own_values_copy
+			parent_: grandparent
 			ancestor_count_: ancestor_count
 		}
 	}
 
 	ancestor_count := parent_data.ancestor_count_ + 1
 	return &CustomPropertyData{
-		own_values_:     own_values_copy
-		parent_:         parent_data
+		own_values_: own_values_copy
+		parent_: parent_data
 		ancestor_count_: ancestor_count
 	}
 }
@@ -94,7 +93,7 @@ pub fn (c &CustomPropertyData) own_values() StylePropertyMap {
 	return c.own_values_
 }
 
-pub fn (c &CustomPropertyData) for_each_property(callback fn (string, StyleProperty)) {
+pub fn (c &CustomPropertyData) for_each_property(callback fn(string, StyleProperty)) {
 	mut seen := map[string]bool{}
 	mut current := ?&CustomPropertyData(c)
 	for {
@@ -125,7 +124,6 @@ pub fn (c &CustomPropertyData) is_empty() bool {
 }
 
 // --- CascadedProperties ---
-
 pub enum CascadeOrigin {
 	user_agent
 	user
@@ -146,11 +144,18 @@ pub mut:
 pub struct CascadedProperties {
 pub mut:
 	properties_                 map[PropertyID][]CascadedPropertiesEntry
-	contained_properties_cache_ map[PropertyID]bool
+	contained_properties_cache_ []u8
 }
 
 pub fn CascadedProperties.new() &CascadedProperties {
-	return &CascadedProperties{}
+	return &CascadedProperties{
+		properties_: map[PropertyID][]CascadedPropertiesEntry{}
+		contained_properties_cache_: []u8{len: number_of_longhand_properties}
+	}
+}
+
+fn cascaded_property_index(property_id PropertyID) int {
+	return int(property_id) - int(first_longhand_property_id())
 }
 
 pub fn (mut c CascadedProperties) visit_edges() {
@@ -165,14 +170,13 @@ pub fn (mut c CascadedProperties) revert_property(property_id PropertyID, import
 	mut entries := c.properties_[property_id] or { return }
 	mut filtered := []CascadedPropertiesEntry{}
 	for entry in entries {
-		if entry.property.property_id == property_id && entry.property.important == important
-			&& cascade_origin == entry.origin {
+		if entry.property.property_id == property_id && entry.property.important == important && cascade_origin == entry.origin {
 			continue
 		}
 		filtered << entry
 	}
 	if filtered.len == 0 {
-		c.contained_properties_cache_[property_id] = false
+		c.contained_properties_cache_[cascaded_property_index(property_id)] = 0
 		c.properties_.delete(property_id)
 		return
 	}
@@ -186,14 +190,13 @@ pub fn (mut c CascadedProperties) revert_layer_property(property_id PropertyID, 
 	mut entries := c.properties_[property_id] or { return }
 	mut filtered := []CascadedPropertiesEntry{}
 	for entry in entries {
-		if entry.property.property_id == property_id && entry.property.important == important
-			&& option_string_equal(entry.layer_name, layer_name) {
+		if entry.property.property_id == property_id && entry.property.important == important && option_string_equal(entry.layer_name, layer_name) {
 			continue
 		}
 		filtered << entry
 	}
 	if filtered.len == 0 {
-		c.contained_properties_cache_[property_id] = false
+		c.contained_properties_cache_[cascaded_property_index(property_id)] = 0
 		c.properties_.delete(property_id)
 		return
 	}
@@ -203,12 +206,11 @@ pub fn (mut c CascadedProperties) revert_layer_property(property_id PropertyID, 
 pub fn (mut c CascadedProperties) resolve_unresolved_properties(abstract_element &dom.AbstractElement) {
 	for property_id, mut entries in c.properties_ {
 		for index, mut entry in entries {
-			parsed_value := parse_css_value_logic(property_id, entry.property.value.css_text) or {
+			parsed_value := style_value_logic_from_dom(property_id, entry.property.value) or {
 				continue
 			}
 			if parsed_value is UnresolvedStyleValue {
-				entry.property.value = resolve_unresolved_style_value_for_property(*abstract_element,
-					property_id, parsed_value)
+				entry.property.value = resolve_unresolved_style_value_for_property(*abstract_element, property_id, parsed_value)
 				entries[index] = entry
 			}
 		}
@@ -219,8 +221,7 @@ pub fn (mut c CascadedProperties) resolve_unresolved_properties(abstract_element
 // https://drafts.csswg.org/css-values-5/#property-replacement
 fn resolve_unresolved_style_value_for_property(abstract_element dom.AbstractElement, property_id PropertyID, unresolved UnresolvedStyleValue) &dom.StyleValue {
 	mut guarded_contexts := GuardedSubstitutionContexts{}
-	return resolve_unresolved_style_value_for_property_with_context(abstract_element, property_id,
-		unresolved, mut guarded_contexts)
+	return resolve_unresolved_style_value_for_property_with_context(abstract_element, property_id, unresolved, mut guarded_contexts)
 }
 
 fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom.AbstractElement, property_id PropertyID, unresolved UnresolvedStyleValue, mut guarded_contexts GuardedSubstitutionContexts) &dom.StyleValue {
@@ -243,10 +244,9 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 
 	// 1. Substitute arbitrary substitution functions in prop's value, given << "property", prop's name >> as the
 	//    substitution context. Let result be the returned component value sequence.
-	result := substitute_arbitrary_substitution_functions_for_element(abstract_element, mut
-		guarded_contexts, unresolved.tokens, SubstitutionContext{
+	result := substitute_arbitrary_substitution_functions_for_element(abstract_element, mut guarded_contexts, unresolved.tokens, SubstitutionContext{
 		dependency_type: .property
-		first:           string_from_property_id(property_id)
+		first: string_from_property_id(property_id)
 	})
 
 	// 2. If result contains the guaranteed-invalid value, prop is invalid at computed-value time; return.
@@ -267,7 +267,7 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 }
 
 pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &dom.StyleValue, important Important, origin CascadeOrigin, layer_name ?string, source voidptr) {
-	c.contained_properties_cache_[property_id] = true
+	c.contained_properties_cache_[cascaded_property_index(property_id)] = 1
 
 	mut entries := c.properties_[property_id] or { []CascadedPropertiesEntry{} }
 	for index := entries.len - 1; index >= 0; index-- {
@@ -277,9 +277,9 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 				return
 			}
 			entry.property = StyleProperty{
-				important:   important
+				important: important
 				property_id: property_id
-				value:       unsafe { value }
+				value: unsafe { value }
 			}
 			entries[index] = entry
 			c.properties_[property_id] = entries
@@ -288,42 +288,42 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 	}
 
 	entries << CascadedPropertiesEntry{
-		property:   StyleProperty{
-			important:   important
+		property: StyleProperty{
+			important: important
 			property_id: property_id
-			value:       unsafe { value }
+			value: unsafe { value }
 		}
-		origin:     origin
+		origin: origin
 		layer_name: layer_name
-		source:     source
+		source: source
 	}
 	c.properties_[property_id] = entries
 }
 
 pub fn (mut c CascadedProperties) set_property_from_presentational_hint(property_id PropertyID, value &dom.StyleValue) {
 	cascaded_properties_for_each_property_expanding_shorthands(property_id, value, fn [mut c] (longhand_property_id PropertyID, longhand_value &dom.StyleValue) {
-		c.contained_properties_cache_[longhand_property_id] = true
+		c.contained_properties_cache_[cascaded_property_index(longhand_property_id)] = 1
 		mut entries := c.properties_[longhand_property_id] or { []CascadedPropertiesEntry{} }
 		entries << CascadedPropertiesEntry{
-			property:   StyleProperty{
-				important:   .no
+			property: StyleProperty{
+				important: .no
 				property_id: longhand_property_id
-				value:       unsafe { longhand_value }
+				value: unsafe { longhand_value }
 			}
-			origin:     .author
+			origin: .author
 			layer_name: none
-			source:     unsafe { nil }
+			source: unsafe { nil }
 		}
 		c.properties_[longhand_property_id] = entries
 	})
 }
 
-fn cascaded_properties_for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn (PropertyID, &dom.StyleValue)) {
+fn cascaded_properties_for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn(PropertyID, &dom.StyleValue)) {
 	// Presentational hints enter the cascade through serialized DOM values, just
 	// like declarations. Reify them before expansion so shorthand presentation
 	// attributes such as SVG `mask` contribute their longhands.
 	if property_is_shorthand(property_id) {
-		if typed_value := parse_css_value_logic(property_id, value.css_text) {
+		if typed_value := style_value_logic_from_dom(property_id, value) {
 			for_each_typed_property_expanding_shorthands(property_id, typed_value, fn [set_longhand_property] (longhand_id PropertyID, longhand_value StyleValue) {
 				set_longhand_property(longhand_id, dom_style_value_from_value_logic(longhand_value))
 			})
@@ -333,9 +333,8 @@ fn cascaded_properties_for_each_property_expanding_shorthands(property_id Proper
 	set_longhand_property(property_id, value)
 }
 
-fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value StyleValue, set_longhand_property fn (PropertyID, StyleValue)) {
-	if property_is_shorthand(property_id)
-		&& (value.type_() == .unresolved || value.type_() == .pending_substitution) {
+fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value StyleValue, set_longhand_property fn(PropertyID, StyleValue)) {
+	if property_is_shorthand(property_id) && (value.type_() == .unresolved || value.type_() == .pending_substitution) {
 		// If a shorthand property contains an arbitrary substitution function in its value, the longhand properties
 		// it's associated with must instead be filled in with a special, unobservable-to-authors pending-substitution
 		// value that indicates the shorthand contains an arbitrary substitution function, and thus the longhand's
@@ -345,8 +344,7 @@ fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value St
 		set_longhand_property(property_id, value)
 		pending_substitution_value := StyleValue(PendingSubstitutionStyleValue.create(value))
 		for longhand_id in longhands_for_shorthand_local(property_id) {
-			for_each_typed_property_expanding_shorthands(longhand_id, pending_substitution_value,
-				set_longhand_property)
+			for_each_typed_property_expanding_shorthands(longhand_id, pending_substitution_value, set_longhand_property)
 		}
 		return
 	}
@@ -355,8 +353,7 @@ fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value St
 		properties := value.sub_properties()
 		values := value.values()
 		for i := 0; i < properties.len && i < values.len; i++ {
-			for_each_typed_property_expanding_shorthands(properties[i], values[i],
-				set_longhand_property)
+			for_each_typed_property_expanding_shorthands(properties[i], values[i], set_longhand_property)
 		}
 		return
 	}
@@ -476,7 +473,8 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 				PropertyID.border_bottom_color]
 		}
 		.border_left {
-			[PropertyID.border_left_width, PropertyID.border_left_style, PropertyID.border_left_color]
+			[PropertyID.border_left_width, PropertyID.border_left_style,
+				PropertyID.border_left_color]
 		}
 		.border_block_start {
 			[PropertyID.border_block_start_width, PropertyID.border_block_start_style,
@@ -571,7 +569,8 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 			[PropertyID.overflow_clip_margin_block_start, PropertyID.overflow_clip_margin_block_end]
 		}
 		.overflow_clip_margin_inline {
-			[PropertyID.overflow_clip_margin_inline_start, PropertyID.overflow_clip_margin_inline_end]
+			[PropertyID.overflow_clip_margin_inline_start,
+				PropertyID.overflow_clip_margin_inline_end]
 		}
 		.all {
 			all_shorthand_longhands()
@@ -654,7 +653,7 @@ fn all_shorthand_longhands() []PropertyID {
 }
 
 pub fn (c &CascadedProperties) property(property_id PropertyID) ?&dom.StyleValue {
-	if property_id !in c.contained_properties_cache_ || !c.contained_properties_cache_[property_id] {
+	if c.contained_properties_cache_[cascaded_property_index(property_id)] == 0 {
 		return none
 	}
 	entries := c.properties_[property_id] or { return none }
@@ -665,7 +664,7 @@ pub fn (c &CascadedProperties) property(property_id PropertyID) ?&dom.StyleValue
 }
 
 pub fn (c &CascadedProperties) property_source(property_id PropertyID) voidptr {
-	if property_id !in c.contained_properties_cache_ || !c.contained_properties_cache_[property_id] {
+	if c.contained_properties_cache_[cascaded_property_index(property_id)] == 0 {
 		return unsafe { nil }
 	}
 	entries := c.properties_[property_id] or { return unsafe { nil } }
@@ -676,7 +675,7 @@ pub fn (c &CascadedProperties) property_source(property_id PropertyID) voidptr {
 }
 
 pub fn (c &CascadedProperties) style_property(property_id PropertyID) ?StyleProperty {
-	if property_id !in c.contained_properties_cache_ || !c.contained_properties_cache_[property_id] {
+	if c.contained_properties_cache_[cascaded_property_index(property_id)] == 0 {
 		return none
 	}
 	entries := c.properties_[property_id] or { return none }

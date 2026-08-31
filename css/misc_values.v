@@ -5,7 +5,6 @@ import strings
 import dom
 
 // --- Display ---
-
 pub enum DisplayOutside {
 	block
 	inline_
@@ -94,16 +93,16 @@ pub fn Display.from_outside_inside(outside DisplayOutside, inside DisplayInside)
 
 pub fn Display.from_outside_inside_and_list_item(outside DisplayOutside, inside DisplayInside, list_item DisplayListItem) Display {
 	return Display{
-		type_:     .outside_and_inside
-		outside_:  outside
-		inside_:   inside
+		type_: .outside_and_inside
+		outside_: outside
+		inside_: inside
 		list_item: list_item
 	}
 }
 
 pub fn Display.from_internal(internal DisplayInternal) Display {
 	return Display{
-		type_:     .internal
+		type_: .internal
 		internal_: internal
 	}
 }
@@ -111,7 +110,7 @@ pub fn Display.from_internal(internal DisplayInternal) Display {
 pub fn Display.from_box(box DisplayBox) Display {
 	return Display{
 		type_: .box
-		box_:  box
+		box_: box
 	}
 }
 
@@ -288,11 +287,7 @@ pub fn (d Display) is_table_caption() bool {
 
 // https://drafts.csswg.org/css-display-3/#internal-table-element
 pub fn (d Display) is_internal_table() bool {
-	return d.is_internal()
-		&& (d.internal() == .table_row_group || d.internal() == .table_header_group
-		|| d.internal() == .table_footer_group || d.internal() == .table_row
-		|| d.internal() == .table_cell || d.internal() == .table_column_group
-		|| d.internal() == .table_column)
+	return d.is_internal() && (d.internal() == .table_row_group || d.internal() == .table_header_group || d.internal() == .table_footer_group || d.internal() == .table_row || d.internal() == .table_cell || d.internal() == .table_column_group || d.internal() == .table_column)
 }
 
 pub fn (d Display) is_none() bool {
@@ -546,7 +541,6 @@ pub fn display_from_multi_keyword_strings(idents []string) ?Display {
 }
 
 // --- Clip ---
-
 pub enum ClipType {
 	auto_
 	rect
@@ -560,7 +554,7 @@ pub mut:
 
 pub fn Clip.new(type_ ClipType, edge_rect EdgeRect) Clip {
 	return Clip{
-		type_:     type_
+		type_: type_
 		edge_rect: edge_rect
 	}
 }
@@ -571,10 +565,10 @@ pub fn Clip.from_rect(edge_rect EdgeRect) Clip {
 
 pub fn Clip.make_auto() Clip {
 	return Clip.new(.auto_, EdgeRect{
-		top_edge:    LengthOrAuto.make_auto()
-		right_edge:  LengthOrAuto.make_auto()
+		top_edge: LengthOrAuto.make_auto()
+		right_edge: LengthOrAuto.make_auto()
 		bottom_edge: LengthOrAuto.make_auto()
-		left_edge:   LengthOrAuto.make_auto()
+		left_edge: LengthOrAuto.make_auto()
 	})
 }
 
@@ -591,7 +585,6 @@ pub fn (c Clip) to_rect() EdgeRect {
 }
 
 // --- Filter ---
-
 pub struct Filter {
 pub mut:
 	filter_value_list []FilterStyleValue
@@ -623,7 +616,6 @@ pub fn (f Filter) filters() []FilterStyleValue {
 }
 
 // --- EasingFunction ---
-
 pub enum StepPosition {
 	jump_start
 	jump_end
@@ -771,6 +763,7 @@ fn cubic_bezier_derivative_at(x1 f64, x2 f64, t f64) f64 {
 // https://www.w3.org/TR/css-easing-1/#cubic-bezier-algo
 pub fn (f CubicBezierEasingFunction) evaluate_at(input_progress f64, before_flag bool) f64 {
 	_ = before_flag
+
 	// For input progress values outside the range [0, 1], the curve is extended infinitely using tangent of the curve
 	// at the closest endpoint as follows:
 
@@ -909,8 +902,7 @@ fn canonicalize_linear_easing_function_control_points(control_points []LinearEas
 	}
 
 	// 2. If the last control point lacks an input progress value, set its input progress value to 1.
-	if canonicalized_control_points.len > 0
-		&& canonicalized_control_points[canonicalized_control_points.len - 1].input == none {
+	if canonicalized_control_points.len > 0 && canonicalized_control_points[canonicalized_control_points.len - 1].input == none {
 		canonicalized_control_points[canonicalized_control_points.len - 1].input = 1.0
 	}
 
@@ -942,8 +934,7 @@ fn canonicalize_linear_easing_function_control_points(control_points []LinearEas
 			run_stop_count := idx - start_idx + 1
 			delta := (end_input - start_input) / f64(run_stop_count)
 			for run_idx in 0 .. run_stop_count {
-				canonicalized_control_points[run_idx + start_idx - 1].input = start_input +
-					delta * f64(run_idx)
+				canonicalized_control_points[run_idx + start_idx - 1].input = start_input + delta * f64(run_idx)
 			}
 			run_start_idx = none
 		} else if control_point.input == none && run_start_idx == none {
@@ -962,15 +953,15 @@ pub fn EasingFunction.linear() EasingFunction {
 		value: LinearEasingFunction{
 			control_points: [
 				LinearEasingControlPoint{
-					input:  0.0
+					input: 0.0
 					output: 0.0
 				},
 				LinearEasingControlPoint{
-					input:  1.0
+					input: 1.0
 					output: 1.0
 				},
 			]
-			stringified:    'linear'
+			stringified: 'linear'
 		}
 	}
 }
@@ -980,10 +971,10 @@ pub fn EasingFunction.ease_in() EasingFunction {
 	// Equivalent to cubic-bezier(0.42, 0, 1, 1).
 	return EasingFunction{
 		value: CubicBezierEasingFunction{
-			x1:          0.42
-			y1:          0
-			x2:          1
-			y2:          1
+			x1: 0.42
+			y1: 0
+			x2: 1
+			y2: 1
 			stringified: 'ease-in'
 		}
 	}
@@ -994,10 +985,10 @@ pub fn EasingFunction.ease_out() EasingFunction {
 	// Equivalent to cubic-bezier(0, 0, 0.58, 1).
 	return EasingFunction{
 		value: CubicBezierEasingFunction{
-			x1:          0
-			y1:          0
-			x2:          0.58
-			y2:          1
+			x1: 0
+			y1: 0
+			x2: 0.58
+			y2: 1
 			stringified: 'ease-out'
 		}
 	}
@@ -1008,10 +999,10 @@ pub fn EasingFunction.ease_in_out() EasingFunction {
 	// Equivalent to cubic-bezier(0.42, 0, 0.58, 1).
 	return EasingFunction{
 		value: CubicBezierEasingFunction{
-			x1:          0.42
-			y1:          0
-			x2:          0.58
-			y2:          1
+			x1: 0.42
+			y1: 0
+			x2: 0.58
+			y2: 1
 			stringified: 'ease-in-out'
 		}
 	}
@@ -1022,10 +1013,10 @@ pub fn EasingFunction.ease() EasingFunction {
 	// Equivalent to cubic-bezier(0.25, 0.1, 0.25, 1).
 	return EasingFunction{
 		value: CubicBezierEasingFunction{
-			x1:          0.25
-			y1:          0.1
-			x2:          0.25
-			y2:          1
+			x1: 0.25
+			y1: 0.1
+			x2: 0.25
+			y2: 1
 			stringified: 'ease'
 		}
 	}
@@ -1061,7 +1052,7 @@ pub fn EasingFunction.from_css_style_value(style_value StyleValue) EasingFunctio
 					}
 
 					resolved_control_points << LinearEasingControlPoint{
-						input:  input
+						input: input
 						output: output
 					}
 				}
@@ -1069,13 +1060,12 @@ pub fn EasingFunction.from_css_style_value(style_value StyleValue) EasingFunctio
 				// https://drafts.csswg.org/css-easing-2/#funcdef-linear
 				// If an argument lacks a <percentage>, its input progress value is initially empty. This is corrected
 				// at used value time by linear() canonicalization.
-				resolved_control_points =
-					canonicalize_linear_easing_function_control_points(resolved_control_points)
+				resolved_control_points = canonicalize_linear_easing_function_control_points(resolved_control_points)
 
 				EasingFunction{
 					value: LinearEasingFunction{
 						control_points: resolved_control_points
-						stringified:    function.serialize(.resolved_value)
+						stringified: function.serialize(.resolved_value)
 					}
 				}
 			}
@@ -1087,10 +1077,10 @@ pub fn EasingFunction.from_css_style_value(style_value StyleValue) EasingFunctio
 
 				EasingFunction{
 					value: CubicBezierEasingFunction{
-						x1:          resolved_x1
-						y1:          resolved_y1
-						x2:          resolved_x2
-						y2:          resolved_y2
+						x1: resolved_x1
+						y1: resolved_y1
+						x2: resolved_x2
+						y2: resolved_y2
 						stringified: function.serialize(.normal)
 					}
 				}
@@ -1099,8 +1089,8 @@ pub fn EasingFunction.from_css_style_value(style_value StyleValue) EasingFunctio
 				EasingFunction{
 					value: StepsEasingFunction{
 						interval_count: int_from_style_value(function.number_of_intervals)
-						position:       function.position
-						stringified:    function.serialize(.resolved_value)
+						position: function.position
+						stringified: function.serialize(.resolved_value)
 					}
 				}
 			}
@@ -1119,6 +1109,21 @@ pub fn EasingFunction.from_css_style_value(style_value StyleValue) EasingFunctio
 
 pub fn EasingFunction.from_style_value(style_value &dom.StyleValue) EasingFunction {
 	if style_value.css_text.len == 0 {
+		return EasingFunction.ease()
+	}
+
+	if typed := typed_style_value_logic_from_dom(style_value) {
+		if typed is EasingStyleValue {
+			return EasingFunction.from_css_style_value(typed)
+		}
+		if typed is KeywordStyleValue {
+			return match typed.serialize(.normal) {
+				'linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease' {
+					EasingFunction.from_css_style_value(typed)
+				}
+				else { EasingFunction.ease() }
+			}
+		}
 		return EasingFunction.ease()
 	}
 
@@ -1185,13 +1190,12 @@ pub fn make_linear_easing_function(control_points []LinearEasingControlPoint, st
 	return EasingFunction{
 		value: LinearEasingFunction{
 			control_points: canonicalize_linear_easing_function_control_points(control_points)
-			stringified:    stringified
+			stringified: stringified
 		}
 	}
 }
 
 // --- PreferredColorScheme ---
-
 pub enum PreferredColorScheme {
 	auto_
 	light
@@ -1217,7 +1221,6 @@ pub fn preferred_color_scheme_to_string(value PreferredColorScheme) string {
 }
 
 // --- PreferredContrast ---
-
 pub enum PreferredContrast {
 	auto_
 	less
@@ -1249,7 +1252,6 @@ pub fn preferred_contrast_to_string(value PreferredContrast) string {
 }
 
 // --- PreferredMotion ---
-
 pub enum PreferredMotion {
 	auto_
 	no_preference

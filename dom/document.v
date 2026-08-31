@@ -1151,7 +1151,7 @@ pub mut:
 	layout_handle voidptr = unsafe { nil }
 }
 
-pub type SVGRelayoutCallback = fn (&SVGSVGBox)
+pub type SVGRelayoutCallback = fn(&SVGSVGBox)
 
 @[heap]
 pub struct SVGSVGBox {
@@ -1355,6 +1355,11 @@ pub mut:
 pub struct StyleValue {
 pub mut:
 	css_text string
+	// The CSS module stores an opaque pointer to its typed css.StyleValue here.
+	// DOM cannot name that type without creating a module cycle; CSS owns both
+	// creating and reading the handle. Values constructed by DOM-only callers
+	// leave this nil and are parsed by the CSS bridge on first use.
+	css_value_handle voidptr = unsafe { nil }
 	// Style resource URLs are resolved against the stylesheet that supplied the
 	// declaration, which can differ from the owning document's base URL.
 	base_url ?string
@@ -1446,14 +1451,14 @@ pub struct WindowProxy {}
 @[heap]
 pub struct NavigationParams {
 pub mut:
-	response_mime_type                        string = 'text/html'
-	response_body                             []u8
-	response_url                              URL = url_about_blank()
-	request_current_url                       ?URL
-	browsing_context                          ?&BrowsingContext
-	origin                                    Origin = origin_create_opaque()
-	needs_a_browsing_context_group_switch     bool
-	would_switch_due_to_report_only           bool
+	response_mime_type                    string = 'text/html'
+	response_body                         []u8
+	response_url                          URL = url_about_blank()
+	request_current_url                   ?URL
+	browsing_context                      ?&BrowsingContext
+	origin                                Origin = origin_create_opaque()
+	needs_a_browsing_context_group_switch bool
+	would_switch_due_to_report_only       bool
 }
 
 @[heap]

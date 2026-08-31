@@ -2,8 +2,11 @@ module css
 
 import math
 import dom
+import os
 import platform
 import strconv
+import strings
+import time
 
 // Translated scaffolding from:
 // - LibWeb/CSS/ComputedProperties.h/cpp
@@ -995,14 +998,19 @@ type ComputedInterpolationPropertyIDs = []PropertyID
 type ComputedInterpolationInvalidationProperties = []InvalidationProperty
 
 fn computed_interpolation_longhand_property_ids() ComputedInterpolationPropertyIDs {
-	mut ids := []PropertyID{cap: number_of_longhand_properties}
-	for index in 0 .. number_of_longhand_properties {
-		if property_id := property_id_from_longhand_index(index) {
-			ids << property_id
+	if computed_interpolation_longhand_ids_cache.len == 0 {
+		mut ids := []PropertyID{cap: number_of_longhand_properties}
+		for index in 0 .. number_of_longhand_properties {
+			if property_id := property_id_from_longhand_index(index) {
+				ids << property_id
+			}
 		}
+		computed_interpolation_longhand_ids_cache = ids.clone()
 	}
-	return ids
+	return computed_interpolation_longhand_ids_cache
 }
+
+__global computed_interpolation_longhand_ids_cache = []PropertyID{}
 
 fn computed_interpolation_is_longhand_property(property_id PropertyID) bool {
 	// PropertyID is generated with every longhand in one contiguous block followed by
@@ -1018,6 +1026,9 @@ fn computed_interpolation_verify_longhand_property(property_id PropertyID) {
 }
 
 fn computed_interpolation_property_computation_order() ComputedInterpolationPropertyIDs {
+	if computed_interpolation_computation_order_cache.len != 0 {
+		return computed_interpolation_computation_order_cache
+	}
 	// GeneratedCSSPropertyID.cpp puts dependency-bearing properties first. math-depth feeds font-size,
 	// the font set feeds font-relative units, line-height feeds lh units, color-scheme feeds
 	// light-dark(), and background-image determines coordinated background-list lengths.
@@ -1050,11 +1061,18 @@ fn computed_interpolation_property_computation_order() ComputedInterpolationProp
 			order << property_id
 		}
 	}
-	return order
+	computed_interpolation_computation_order_cache = order.clone()
+	return computed_interpolation_computation_order_cache
 }
+
+__global computed_interpolation_computation_order_cache = []PropertyID{}
+__global computed_interpolation_initial_value_cache = map[PropertyID]&dom.StyleValue{}
 
 fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
+	if cached := computed_interpolation_initial_value_cache[property_id] {
+		return cached
+	}
 	initial_text := match property_id {
 		.accent_color {
 			'auto'
@@ -1656,15 +1674,34 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		}
 	}
 
-	return parse_css_value(ParsingParams{}, initial_text, property_id) or {
+	value := parse_css_value(ParsingParams{}, initial_text, property_id) or {
 		return computed_interpolation_empty_style_value()
 	}
+	computed_interpolation_initial_value_cache[property_id] = value
+	return value
 }
 
 fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
-	return string_from_property_id(property_id) in inherited_properties
+	if !computed_interpolation_inherited_cache_initialized {
+		computed_interpolation_inherited_cache = []u8{len: number_of_longhand_properties}
+		for index in 0 .. number_of_longhand_properties {
+			if id := property_id_from_longhand_index(index) {
+				if string_from_property_id(id) in inherited_properties {
+					computed_interpolation_inherited_cache[index] = 1
+				}
+			}
+		}
+		computed_interpolation_inherited_cache_initialized = true
+	}
+	index := int(property_id) - int(first_longhand_property_id())
+	return computed_interpolation_inherited_cache[index] != 0
 }
+
+__global (
+	computed_interpolation_inherited_cache             = []u8{}
+	computed_interpolation_inherited_cache_initialized bool
+)
 
 fn computed_interpolation_property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
@@ -1703,6 +1740,13 @@ fn computed_interpolation_property_requires_computation_with_initial_value(prope
 }
 
 fn computed_interpolation_style_value_keyword(value &dom.StyleValue) ?Keyword {
+	if typed := typed_style_value_logic_from_dom(value) {
+		keyword := typed.to_keyword()
+		if keyword != .invalid {
+			return keyword
+		}
+		return none
+	}
 	serialized := value.css_text.trim_space()
 	if serialized.len == 0 {
 		return none
@@ -1781,17 +1825,21 @@ pub enum WithAnimationsApplied {
 @[heap]
 pub struct ComputedProperties {
 pub mut:
-	property_values_                        map[PropertyID]&dom.StyleValue
-	property_important_                     map[PropertyID]bool
-	property_inherited_                     map[PropertyID]bool
-	animated_property_inherited_            map[PropertyID]bool
-	animated_property_result_of_transition_ map[PropertyID]bool
+	property_values_                        []&dom.StyleValue
+	property_important_                     []u8
+	property_inherited_                     []u8
+	animated_property_inherited_            []u8
+	animated_property_result_of_transition_ []u8
 	animated_property_values_               map[PropertyID]&dom.StyleValue
 	display_before_box_type_transformation_ Display = Display.new()
 	cached_computed_font_list_              ?&FontCascadeList
 	cached_first_available_computed_font_   ?&PlatformFont
 	line_height_                            ?CSSPixels
 	attempted_pseudo_class_matches_         map[string]bool
+	// Stable identity of the inputs used by the style-sharing cache. Clones
+	// retain it so equivalent descendant subtrees can share computations even
+	// though every element owns a separately mutable ComputedProperties object.
+	style_sharing_identity_ string
 	// Lengths whose computed value remains viewport- or root-font-relative
 	// need the same style-computation context when Layout resolves their used
 	// value. LibWeb carries that context through the layout node; retaining it
@@ -1802,7 +1850,32 @@ pub mut:
 }
 
 pub fn ComputedProperties.new() &ComputedProperties {
-	return &ComputedProperties{}
+	return &ComputedProperties{
+		property_values_: []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
+		property_important_: []u8{len: (number_of_longhand_properties + 7) / 8}
+		property_inherited_: []u8{len: (number_of_longhand_properties + 7) / 8}
+		animated_property_inherited_: []u8{len: (number_of_longhand_properties + 7) / 8}
+		animated_property_result_of_transition_: []u8{len: (number_of_longhand_properties + 7) / 8}
+		animated_property_values_: map[PropertyID]&dom.StyleValue{}
+	}
+}
+
+fn (c &ComputedProperties) clone_for_style_sharing() &ComputedProperties {
+	return &ComputedProperties{
+		property_values_: c.property_values_.clone()
+		property_important_: c.property_important_.clone()
+		property_inherited_: c.property_inherited_.clone()
+		animated_property_inherited_: c.animated_property_inherited_.clone()
+		animated_property_result_of_transition_: c.animated_property_result_of_transition_.clone()
+		animated_property_values_: map[PropertyID]&dom.StyleValue{}
+		display_before_box_type_transformation_: c.display_before_box_type_transformation_
+		line_height_: c.line_height_
+		attempted_pseudo_class_matches_: map[string]bool{}
+		style_sharing_identity_: c.style_sharing_identity_
+		viewport_rect_: c.viewport_rect_
+		root_font_size_px_: c.root_font_size_px_
+		root_line_height_px_: c.root_line_height_px_
+	}
 }
 
 // ComputedValues::clone_inherited_values(), followed by the display override
@@ -1925,8 +1998,12 @@ pub fn (mut c ComputedProperties) take_properties_for_table_wrapper() &ComputedP
 }
 
 pub fn (c &ComputedProperties) for_each_property(callback fn(PropertyID, &dom.StyleValue)) {
-	for property_id, value in c.property_values_ {
-		callback(property_id, value)
+	for index, value in c.property_values_ {
+		if value != unsafe { nil } {
+			if property_id := property_id_from_longhand_index(index) {
+				callback(property_id, value)
+			}
+		}
 	}
 }
 
@@ -1948,58 +2025,56 @@ pub fn (mut c ComputedProperties) reset_non_inherited_animated_properties() {
 
 pub fn (c &ComputedProperties) is_property_important(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
-	return c.property_important_[property_id] or { false }
+	index := int(property_id) - int(first_longhand_property_id())
+	return c.property_important_[index / 8] & (u8(1) << (index % 8)) != 0
 }
 
 pub fn (c &ComputedProperties) is_property_inherited(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
-	return c.property_inherited_[property_id] or { false }
+	index := int(property_id) - int(first_longhand_property_id())
+	return c.property_inherited_[index / 8] & (u8(1) << (index % 8)) != 0
 }
 
 pub fn (c &ComputedProperties) is_animated_property_inherited(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
-	return c.animated_property_inherited_[property_id] or { false }
+	index := int(property_id) - int(first_longhand_property_id())
+	return c.animated_property_inherited_[index / 8] & (u8(1) << (index % 8)) != 0
 }
 
 pub fn (c &ComputedProperties) is_animated_property_result_of_transition(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
-	return c.animated_property_result_of_transition_[property_id] or { false }
+	index := int(property_id) - int(first_longhand_property_id())
+	return c.animated_property_result_of_transition_[index / 8] & (u8(1) << (index % 8)) != 0
+}
+
+fn set_computed_property_flag(mut flags []u8, property_id PropertyID, enabled bool) {
+	index := int(property_id) - int(first_longhand_property_id())
+	mask := u8(1) << (index % 8)
+	if enabled {
+		flags[index / 8] |= mask
+	} else {
+		flags[index / 8] &= ~mask
+	}
 }
 
 pub fn (mut c ComputedProperties) set_property_important(property_id PropertyID, important Important) {
 	computed_interpolation_verify_longhand_property(property_id)
-	if important == .yes {
-		c.property_important_[property_id] = true
-	} else {
-		c.property_important_.delete(property_id)
-	}
+	set_computed_property_flag(mut c.property_important_, property_id, important == .yes)
 }
 
 pub fn (mut c ComputedProperties) set_property_inherited(property_id PropertyID, inherited ComputedPropertyInheritance) {
 	computed_interpolation_verify_longhand_property(property_id)
-	if inherited == .yes {
-		c.property_inherited_[property_id] = true
-	} else {
-		c.property_inherited_.delete(property_id)
-	}
+	set_computed_property_flag(mut c.property_inherited_, property_id, inherited == .yes)
 }
 
 pub fn (mut c ComputedProperties) set_animated_property_inherited(property_id PropertyID, inherited ComputedPropertyInheritance) {
 	computed_interpolation_verify_longhand_property(property_id)
-	if inherited == .yes {
-		c.animated_property_inherited_[property_id] = true
-	} else {
-		c.animated_property_inherited_.delete(property_id)
-	}
+	set_computed_property_flag(mut c.animated_property_inherited_, property_id, inherited == .yes)
 }
 
 pub fn (mut c ComputedProperties) set_animated_property_result_of_transition(property_id PropertyID, result AnimatedPropertyResultOfTransition) {
 	computed_interpolation_verify_longhand_property(property_id)
-	if result == .yes {
-		c.animated_property_result_of_transition_[property_id] = true
-	} else {
-		c.animated_property_result_of_transition_.delete(property_id)
-	}
+	set_computed_property_flag(mut c.animated_property_result_of_transition_, property_id, result == .yes)
 }
 
 pub fn (mut c ComputedProperties) set_property(property_id PropertyID, value &dom.StyleValue, inherited ComputedPropertyInheritance, important Important) {
@@ -2010,7 +2085,8 @@ pub fn (mut c ComputedProperties) set_property(property_id PropertyID, value &do
 
 pub fn (mut c ComputedProperties) set_property_without_modifying_flags(property_id PropertyID, value &dom.StyleValue) {
 	computed_interpolation_verify_longhand_property(property_id)
-	c.property_values_[property_id] = unsafe { value }
+	index := int(property_id) - int(first_longhand_property_id())
+	c.property_values_[index] = unsafe { value }
 	if property_affects_computed_font_list(property_id) {
 		c.clear_computed_font_list_cache()
 	}
@@ -2041,16 +2117,18 @@ pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_
 	}
 
 	// By the time C++ calls this method, the property should have been assigned.
-	return c.property_values_[property_id] or { return none }
+	index := int(property_id) - int(first_longhand_property_id())
+	value := c.property_values_[index]
+	if value == unsafe { nil } {
+		return none
+	}
+	return value
 }
 
 pub fn (mut c ComputedProperties) revert_property(property_id PropertyID, style_for_revert &ComputedProperties) {
 	computed_interpolation_verify_longhand_property(property_id)
-	if value := style_for_revert.property_values_[property_id] {
-		c.property_values_[property_id] = unsafe { value }
-	} else {
-		c.property_values_.delete(property_id)
-	}
+	index := int(property_id) - int(first_longhand_property_id())
+	c.property_values_[index] = style_for_revert.property_values_[index]
 	c.set_property_important(property_id, if style_for_revert.is_property_important(property_id) {
 		Important.yes
 	} else {
@@ -2068,7 +2146,7 @@ pub fn (c &ComputedProperties) gap_value(property_id PropertyID) GapValue {
 	if computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .normal {
 		return GapValue.normal()
 	}
-	parsed_value := parse_css_value_logic(property_id, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(property_id, value) or {
 		return GapValue.normal()
 	}
 	match parsed_value {
@@ -2083,7 +2161,7 @@ pub fn (c &ComputedProperties) gap_value(property_id PropertyID) GapValue {
 
 pub fn (c &ComputedProperties) size_value(property_id PropertyID) Size {
 	value := c.property(property_id, .yes) or { return Size.make_auto() }
-	parsed := parse_css_value_logic(property_id, value.css_text) or { return Size.make_auto() }
+	parsed := style_value_logic_from_dom(property_id, value) or { return Size.make_auto() }
 	keyword := parsed.to_keyword()
 	match keyword {
 		.auto {
@@ -2157,7 +2235,7 @@ pub fn (c &ComputedProperties) length_box(left_id PropertyID, top_id PropertyID,
 
 pub fn (c &ComputedProperties) color_or_fallback(property_id PropertyID, color_resolution_context ColorResolutionContext, fallback ComputedColor) ComputedColor {
 	value := c.property(property_id, .yes) or { return fallback }
-	parsed_value := parse_css_value_logic(property_id, value.css_text) or { return fallback }
+	parsed_value := style_value_logic_from_dom(property_id, value) or { return fallback }
 	if !parsed_value.has_color() {
 		return fallback
 	}
@@ -2166,7 +2244,7 @@ pub fn (c &ComputedProperties) color_or_fallback(property_id PropertyID, color_r
 }
 
 fn color_scheme_style_value_from_dom_style_value(value &dom.StyleValue) ?ColorSchemeStyleValue {
-	parsed_value := parse_css_value_logic(.color_scheme, value.css_text) or { return none }
+	parsed_value := style_value_logic_from_dom(.color_scheme, value) or { return none }
 	if parsed_value is ColorSchemeStyleValue {
 		color_scheme := parsed_value
 		return color_scheme
@@ -2223,9 +2301,23 @@ pub fn (c &ComputedProperties) color_scheme(preferred_scheme PreferredColorSchem
 }
 
 fn computed_interpolation_split_coordinating_list_value(value &dom.StyleValue) []&dom.StyleValue {
-	// Boundary: DOM::StyleValue is currently an opaque DOM-side placeholder in this V port, so we subdivide the
-	// serialized value list here. Coordinating list properties are comma-separated, and commas inside nested CSS
-	// functions or strings are part of the item.
+	// Coordinating list properties are represented by a comma-separated
+	// StyleValueList. Preserve the typed values when they came through the CSS
+	// bridge; falling back to text here would discard exactly the representation
+	// that the computed style cache keeps alive.
+	if typed := typed_style_value_logic_from_dom(value) {
+		if typed is StyleValueList && typed.separator() == .comma {
+			mut typed_values := []&dom.StyleValue{cap: typed.size()}
+			for item in typed.values() {
+				typed_values << dom_style_value_from_value_logic(item)
+			}
+			return typed_values
+		}
+	}
+
+	// Hand-authored DOM bridge values have no typed handle, so subdivide the
+	// serialized list. Commas inside nested functions or strings belong to the
+	// item rather than the coordinating list.
 	text := value.css_text
 	mut values := []&dom.StyleValue{}
 	mut start := 0
@@ -2428,7 +2520,7 @@ pub fn (c &ComputedProperties) text_underline_offset() CSSPixels {
 	if computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .auto {
 		return CSSPixels{}
 	}
-	parsed := parse_css_value_logic(.text_underline_offset, value.css_text) or {
+	parsed := style_value_logic_from_dom(.text_underline_offset, value) or {
 		return CSSPixels{}
 	}
 	return Length.from_style_value_logic(parsed, Length.make_css_px(c.font_size())).absolute_length_to_px()
@@ -2436,7 +2528,7 @@ pub fn (c &ComputedProperties) text_underline_offset() CSSPixels {
 
 pub fn (c &ComputedProperties) text_underline_position() TextUnderlinePosition {
 	value := c.property(.text_underline_position, .yes) or { return TextUnderlinePosition{} }
-	parsed := parse_css_value_logic(.text_underline_position, value.css_text) or {
+	parsed := style_value_logic_from_dom(.text_underline_position, value) or {
 		return TextUnderlinePosition{}
 	}
 	if parsed is TextUnderlinePositionStyleValue {
@@ -2515,23 +2607,23 @@ pub fn (c &ComputedProperties) background_layers() []BackgroundLayerData {
 			origin: keyword_to_background_box_for_computed_properties(computed_interpolation_style_value_keyword(origin_value) or {
 				Keyword.padding_box}, .padding_box)
 		}
-		if parsed_x := parse_css_value_logic(.background_position_x, position_x_value.css_text) {
+		if parsed_x := style_value_logic_from_dom(.background_position_x, position_x_value) {
 			if parsed_x is EdgeStyleValue {
 				layer.position_x = LengthPercentage.from_style_value_logic(parsed_x.with_resolved_keywords().offset())
 			}
 		}
-		if parsed_y := parse_css_value_logic(.background_position_y, position_y_value.css_text) {
+		if parsed_y := style_value_logic_from_dom(.background_position_y, position_y_value) {
 			if parsed_y is EdgeStyleValue {
 				layer.position_y = LengthPercentage.from_style_value_logic(parsed_y.with_resolved_keywords().offset())
 			}
 		}
-		if repeat := parse_css_value_logic(.background_repeat, repeat_value.css_text) {
+		if repeat := style_value_logic_from_dom(.background_repeat, repeat_value) {
 			if repeat is RepeatStyleStyleValue {
 				layer.repeat_x = repeat.repeat_x()
 				layer.repeat_y = repeat.repeat_y()
 			}
 		}
-		if size := parse_css_value_logic(.background_size, size_value.css_text) {
+		if size := style_value_logic_from_dom(.background_size, size_value) {
 			if size is BackgroundSizeStyleValue {
 				layer.size_type = .length_percentage
 				layer.size_x = LengthPercentageOrAuto.from_style_value_logic(size.size_x())
@@ -2616,7 +2708,7 @@ pub fn (c &ComputedProperties) background_origin() []BackgroundBox {
 
 pub fn (c &ComputedProperties) border_spacing_horizontal() Length {
 	value := c.property(.border_spacing, .yes) or { return Length.make_px(0) }
-	parsed := parse_css_value_logic(.border_spacing, value.css_text) or { return Length.make_px(0) }
+	parsed := style_value_logic_from_dom(.border_spacing, value) or { return Length.make_px(0) }
 	if parsed is StyleValueList && parsed.size() > 0 {
 		return Length.from_style_value_logic(parsed.value_at(0, false), none)
 	}
@@ -2625,7 +2717,7 @@ pub fn (c &ComputedProperties) border_spacing_horizontal() Length {
 
 pub fn (c &ComputedProperties) border_spacing_vertical() Length {
 	value := c.property(.border_spacing, .yes) or { return Length.make_px(0) }
-	parsed := parse_css_value_logic(.border_spacing, value.css_text) or { return Length.make_px(0) }
+	parsed := style_value_logic_from_dom(.border_spacing, value) or { return Length.make_px(0) }
 	if parsed is StyleValueList && parsed.size() > 0 {
 		return Length.from_style_value_logic(parsed.value_at(if parsed.size() > 1 { 1 } else { 0 }, false), none)
 	}
@@ -2644,7 +2736,7 @@ pub fn (c &ComputedProperties) caption_side() CaptionSide {
 
 pub fn (c &ComputedProperties) clip() Clip {
 	value := c.property(.clip, .yes) or { return Clip.make_auto() }
-	parsed := parse_css_value_logic(.clip, value.css_text) or { return Clip.make_auto() }
+	parsed := style_value_logic_from_dom(.clip, value) or { return Clip.make_auto() }
 	if parsed is RectStyleValue {
 		return Clip.from_rect(parsed.rect())
 	}
@@ -2656,7 +2748,7 @@ pub fn (c &ComputedProperties) display() Display {
 	// The port stores it as an opaque dom.StyleValue, so re-type it and extract the Display; fall back to
 	// inline (as upstream does when the value isn't a DisplayStyleValue).
 	value := c.property(.display, .yes) or { return Display.from_short(.inline_) }
-	typed := parse_css_value_logic(.display, value.css_text) or {
+	typed := style_value_logic_from_dom(.display, value) or {
 		return Display.from_short(.inline_)
 	}
 	if typed is DisplayStyleValue {
@@ -2719,7 +2811,7 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 			final_quote_nesting_level: initial_quote_nesting_level
 		}
 	}
-	parsed := parse_css_value_logic(.content, value.css_text) or {
+	parsed := style_value_logic_from_dom(.content, value) or {
 		return ContentDataAndQuoteNestingLevel{
 			final_quote_nesting_level: initial_quote_nesting_level
 		}
@@ -2839,7 +2931,7 @@ pub fn (c &ComputedProperties) content_visibility() ContentVisibility {
 
 pub fn (c &ComputedProperties) cursor() []CursorData {
 	value := c.property(.cursor, .yes) or { return [CursorData{ keyword: 'auto' }] }
-	parsed := parse_css_value_logic(.cursor, value.css_text) or {
+	parsed := style_value_logic_from_dom(.cursor, value) or {
 		return [CursorData{ keyword: 'auto' }]
 	}
 	mut result := []CursorData{}
@@ -2864,7 +2956,7 @@ pub fn (c &ComputedProperties) cursor() []CursorData {
 
 pub fn (c &ComputedProperties) tab_size() TabSize {
 	value := c.property(.tab_size, .yes) or { return TabSize.number(8) }
-	parsed := parse_css_value_logic(.tab_size, value.css_text) or { return TabSize.number(8) }
+	parsed := style_value_logic_from_dom(.tab_size, value) or { return TabSize.number(8) }
 	if parsed is LengthStyleValue {
 		return TabSize.length(parsed.length())
 	}
@@ -2898,7 +2990,7 @@ pub fn (c &ComputedProperties) white_space_collapse() WhiteSpaceCollapse {
 
 pub fn (c &ComputedProperties) white_space_trim() WhiteSpaceTrimData {
 	value := c.property(.white_space_trim, .yes) or { return WhiteSpaceTrimData{} }
-	parsed_value := parse_css_value_logic(.white_space_trim, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(.white_space_trim, value) or {
 		return WhiteSpaceTrimData{}
 	}
 	if parsed_value is KeywordStyleValue {
@@ -3033,7 +3125,7 @@ fn keyword_to_text_decoration_line_for_computed_properties(keyword Keyword) ?Tex
 
 pub fn (c &ComputedProperties) text_decoration_line() []TextDecorationLine {
 	value := c.property(.text_decoration_line, .yes) or { return []TextDecorationLine{} }
-	parsed_value := parse_css_value_logic(.text_decoration_line, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(.text_decoration_line, value) or {
 		return []TextDecorationLine{}
 	}
 
@@ -3095,7 +3187,7 @@ pub fn (c &ComputedProperties) text_decoration_thickness() TextDecorationThickne
 			from_font: true
 		}
 	}
-	parsed_value := parse_css_value_logic(.text_decoration_thickness, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(.text_decoration_thickness, value) or {
 		return TextDecorationThickness{}
 	}
 	match parsed_value {
@@ -3132,7 +3224,7 @@ pub fn (c &ComputedProperties) text_shadow(layout_node &dom.LayoutNode) []Shadow
 
 pub fn (c &ComputedProperties) text_indent() TextIndentData {
 	value := c.property(.text_indent, .yes) or { return TextIndentData{} }
-	parsed_value := parse_css_value_logic(.text_indent, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(.text_indent, value) or {
 		return TextIndentData{}
 	}
 	if parsed_value is TextIndentStyleValue {
@@ -3175,7 +3267,7 @@ pub fn (c &ComputedProperties) list_style_type(registered_counter_styles map[str
 			counter_style: registered_counter_styles['disc'] or { CounterStyle.disc() }
 		}
 	}
-	parsed := parse_css_value_logic(.list_style_type, value.css_text) or {
+	parsed := style_value_logic_from_dom(.list_style_type, value) or {
 		return ListStyleType{
 			kind: .counter_style
 			name: 'disc'
@@ -3300,7 +3392,7 @@ pub fn (c &ComputedProperties) widows() int {
 pub fn (c &ComputedProperties) accent_color(layout_node &dom.LayoutNode) ?ComputedColor {
 	color_resolution_context := color_resolution_context_for_layout_node(layout_node)
 	value := c.property(.accent_color, .yes) or { return none }
-	parsed_value := parse_css_value_logic(.accent_color, value.css_text) or { return none }
+	parsed_value := style_value_logic_from_dom(.accent_color, value) or { return none }
 	if !parsed_value.has_color() {
 		return none
 	}
@@ -3382,7 +3474,7 @@ pub fn (c &ComputedProperties) appearance() Appearance {
 
 pub fn (c &ComputedProperties) backdrop_filter() Filter {
 	value := c.property(.backdrop_filter, .yes) or { return Filter.make_none() }
-	parsed := parse_css_value_logic(.backdrop_filter, value.css_text) or {
+	parsed := style_value_logic_from_dom(.backdrop_filter, value) or {
 		return Filter.make_none()
 	}
 	if parsed is FilterValueListStyleValue {
@@ -3393,7 +3485,7 @@ pub fn (c &ComputedProperties) backdrop_filter() Filter {
 
 pub fn (c &ComputedProperties) filter() Filter {
 	value := c.property(.filter, .yes) or { return Filter.make_none() }
-	parsed := parse_css_value_logic(.filter, value.css_text) or { return Filter.make_none() }
+	parsed := style_value_logic_from_dom(.filter, value) or { return Filter.make_none() }
 	if parsed is FilterValueListStyleValue {
 		return Filter.new(parsed.filter_value_list())
 	}
@@ -3407,7 +3499,7 @@ pub fn (c &ComputedProperties) opacity() f32 {
 
 pub fn (c &ComputedProperties) aspect_ratio() AspectRatio {
 	value := c.property(.aspect_ratio, .yes) or { return AspectRatio{} }
-	parsed := parse_css_value_logic(.aspect_ratio, value.css_text) or { return AspectRatio{} }
+	parsed := style_value_logic_from_dom(.aspect_ratio, value) or { return AspectRatio{} }
 	if parsed is StyleValueList {
 		values := parsed.values()
 		if values.len == 2 && values[0].to_keyword() == .auto && values[1].is_ratio() {
@@ -3555,7 +3647,7 @@ pub fn (c &ComputedProperties) box_shadow(layout_node &dom.LayoutNode) []ShadowD
 
 fn (c &ComputedProperties) shadow(property_id PropertyID, layout_node &dom.LayoutNode) []ShadowData {
 	value := c.property(property_id, .yes) or { return []ShadowData{} }
-	parsed := parse_css_value_logic(property_id, value.css_text) or { return []ShadowData{} }
+	parsed := style_value_logic_from_dom(property_id, value) or { return []ShadowData{} }
 	if parsed.to_keyword() == .none_ {
 		return []ShadowData{}
 	}
@@ -3626,7 +3718,7 @@ pub fn (c &ComputedProperties) vertical_align() VerticalAlign {
 
 pub fn (c &ComputedProperties) vertical_align_length_percentage() ?LengthPercentage {
 	value := c.property(.vertical_align, .yes) or { return none }
-	parsed_value := parse_css_value_logic(.vertical_align, value.css_text) or { return none }
+	parsed_value := style_value_logic_from_dom(.vertical_align, value) or { return none }
 	return match parsed_value {
 		LengthStyleValue, PercentageStyleValue, CalculatedStyleValue {
 			LengthPercentage.from_style_value_logic(parsed_value)
@@ -3674,7 +3766,7 @@ pub fn (c &ComputedProperties) font_feature_data() FontFeatureData {
 
 pub fn (c &ComputedProperties) font_variant_alternates() ?FontVariantAlternates {
 	value := c.property(.font_variant_alternates, .yes) or { return none }
-	parsed := parse_css_value_logic(.font_variant_alternates, value.css_text) or { return none }
+	parsed := style_value_logic_from_dom(.font_variant_alternates, value) or { return none }
 	if parsed.to_keyword() == .normal || parsed !is StyleValueList {
 		return none
 	}
@@ -3712,7 +3804,7 @@ pub fn (c &ComputedProperties) font_variant_caps() FontVariantCaps {
 
 pub fn (c &ComputedProperties) font_variant_east_asian() ?FontVariantEastAsian {
 	value := c.property(.font_variant_east_asian, .yes) or { return none }
-	parsed := parse_css_value_logic(.font_variant_east_asian, value.css_text) or { return none }
+	parsed := style_value_logic_from_dom(.font_variant_east_asian, value) or { return none }
 	if parsed.to_keyword() == .normal || parsed !is TupleStyleValue {
 		return none
 	}
@@ -3760,7 +3852,7 @@ pub fn (c &ComputedProperties) font_variant_emoji() FontVariantEmoji {
 
 pub fn (c &ComputedProperties) font_variant_ligatures() ?FontVariantLigatures {
 	value := c.property(.font_variant_ligatures, .yes) or { return none }
-	parsed := parse_css_value_logic(.font_variant_ligatures, value.css_text) or { return none }
+	parsed := style_value_logic_from_dom(.font_variant_ligatures, value) or { return none }
 	if parsed.to_keyword() == .normal {
 		return none
 	}
@@ -3815,7 +3907,7 @@ pub fn (c &ComputedProperties) font_variant_ligatures() ?FontVariantLigatures {
 
 pub fn (c &ComputedProperties) font_variant_numeric() ?FontVariantNumeric {
 	value := c.property(.font_variant_numeric, .yes) or { return none }
-	parsed := parse_css_value_logic(.font_variant_numeric, value.css_text) or { return none }
+	parsed := style_value_logic_from_dom(.font_variant_numeric, value) or { return none }
 	if parsed.to_keyword() == .normal || parsed !is TupleStyleValue {
 		return none
 	}
@@ -3881,7 +3973,7 @@ pub fn (c &ComputedProperties) font_kerning() FontKerning {
 
 pub fn (c &ComputedProperties) font_language_override() ?string {
 	value := c.property(.font_language_override, .yes) or { return none }
-	parsed_value := parse_css_value_logic(.font_language_override, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(.font_language_override, value) or {
 		return none
 	}
 	if parsed_value is StringStyleValue {
@@ -3892,7 +3984,7 @@ pub fn (c &ComputedProperties) font_language_override() ?string {
 
 pub fn (c &ComputedProperties) font_feature_settings() map[string]u8 {
 	value := c.property(.font_feature_settings, .yes) or { return map[string]u8{} }
-	parsed := parse_css_value_logic(.font_feature_settings, value.css_text) or {
+	parsed := style_value_logic_from_dom(.font_feature_settings, value) or {
 		return map[string]u8{}
 	}
 	if parsed !is StyleValueList {
@@ -3910,7 +4002,7 @@ pub fn (c &ComputedProperties) font_feature_settings() map[string]u8 {
 
 pub fn (c &ComputedProperties) font_variation_settings() map[string]f64 {
 	value := c.property(.font_variation_settings, .yes) or { return map[string]f64{} }
-	parsed := parse_css_value_logic(.font_variation_settings, value.css_text) or {
+	parsed := style_value_logic_from_dom(.font_variation_settings, value) or {
 		return map[string]f64{}
 	}
 	if parsed !is StyleValueList {
@@ -3944,7 +4036,7 @@ pub fn (c &ComputedProperties) grid_template_rows() GridTrackSizeList {
 
 fn (c &ComputedProperties) grid_track_size_list(property_id PropertyID) GridTrackSizeList {
 	value := c.property(property_id, .yes) or { return GridTrackSizeList{} }
-	parsed := parse_css_value_logic(property_id, value.css_text) or { return GridTrackSizeList{} }
+	parsed := style_value_logic_from_dom(property_id, value) or { return GridTrackSizeList{} }
 	if parsed is GridTrackSizeListStyleValue {
 		return parsed.grid_track_size_list()
 	}
@@ -3953,7 +4045,7 @@ fn (c &ComputedProperties) grid_track_size_list(property_id PropertyID) GridTrac
 
 pub fn (c &ComputedProperties) grid_auto_flow() GridAutoFlow {
 	value := c.property(.grid_auto_flow, .yes) or { return GridAutoFlow{} }
-	parsed := parse_css_value_logic(.grid_auto_flow, value.css_text) or { return GridAutoFlow{} }
+	parsed := style_value_logic_from_dom(.grid_auto_flow, value) or { return GridAutoFlow{} }
 	if parsed is GridAutoFlowStyleValue {
 		return GridAutoFlow{
 			row: parsed.is_row()
@@ -3981,7 +4073,7 @@ pub fn (c &ComputedProperties) grid_row_start() GridTrackPlacement {
 
 fn (c &ComputedProperties) grid_track_placement(property_id PropertyID) GridTrackPlacement {
 	value := c.property(property_id, .yes) or { return GridTrackPlacement.make_auto() }
-	parsed := parse_css_value_logic(property_id, value.css_text) or {
+	parsed := style_value_logic_from_dom(property_id, value) or {
 		return GridTrackPlacement.make_auto()
 	}
 	if parsed is GridTrackPlacementStyleValue {
@@ -4012,7 +4104,7 @@ pub fn (c &ComputedProperties) empty_cells() EmptyCells {
 
 pub fn (c &ComputedProperties) grid_template_areas() GridTemplateAreas {
 	value := c.property(.grid_template_areas, .yes) or { return GridTemplateAreas{} }
-	parsed := parse_css_value_logic(.grid_template_areas, value.css_text) or {
+	parsed := style_value_logic_from_dom(.grid_template_areas, value) or {
 		return GridTemplateAreas{}
 	}
 	if parsed is GridTemplateAreaStyleValue {
@@ -4044,7 +4136,7 @@ pub fn (c &ComputedProperties) object_position() Position {
 
 fn (c &ComputedProperties) position_value(property_id PropertyID) Position {
 	value := c.property(property_id, .yes) or { return Position{} }
-	parsed := parse_css_value_logic(property_id, value.css_text) or { return Position{} }
+	parsed := style_value_logic_from_dom(property_id, value) or { return Position{} }
 	if parsed is PositionStyleValue {
 		x := parsed.edge_x().with_resolved_keywords().offset()
 		y := parsed.edge_y().with_resolved_keywords().offset()
@@ -4128,7 +4220,7 @@ pub fn (c &ComputedProperties) isolation() Isolation {
 
 pub fn (c &ComputedProperties) touch_action() TouchActionData {
 	value := c.property(.touch_action, .yes) or { return TouchActionData.auto_() }
-	parsed_value := parse_css_value_logic(.touch_action, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(.touch_action, value) or {
 		return TouchActionData.auto_()
 	}
 	if parsed_value is KeywordStyleValue {
@@ -4183,7 +4275,7 @@ pub fn (c &ComputedProperties) touch_action() TouchActionData {
 
 pub fn (c &ComputedProperties) contain() Containment {
 	value := c.property(.contain, .yes) or { return Containment{} }
-	parsed_value := parse_css_value_logic(.contain, value.css_text) or { return Containment{} }
+	parsed_value := style_value_logic_from_dom(.contain, value) or { return Containment{} }
 	mut containment := Containment{}
 
 	if parsed_value is KeywordStyleValue {
@@ -4256,7 +4348,7 @@ pub fn (c &ComputedProperties) contain() Containment {
 
 pub fn (c &ComputedProperties) container_type() ContainerType {
 	value := c.property(.container_type, .yes) or { return ContainerType{} }
-	parsed_value := parse_css_value_logic(.container_type, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(.container_type, value) or {
 		return ContainerType{}
 	}
 	mut container_type := ContainerType{}
@@ -4333,7 +4425,7 @@ pub fn (c &ComputedProperties) background_blend_mode() []MixBlendMode {
 
 pub fn (c &ComputedProperties) view_transition_name() ?string {
 	value := c.property(.view_transition_name, .yes) or { return none }
-	parsed_value := parse_css_value_logic(.view_transition_name, value.css_text) or { return none }
+	parsed_value := style_value_logic_from_dom(.view_transition_name, value) or { return none }
 	if parsed_value is CustomIdentStyleValue {
 		return parsed_value.custom_ident()
 	}
@@ -4687,7 +4779,7 @@ fn transformation_data_from_transformation_style_value(value TransformationStyle
 }
 
 pub fn ComputedProperties.transformations_for_style_value(value &dom.StyleValue) []TransformationData {
-	parsed_value := parse_css_value_logic(.transform, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(.transform, value) or {
 		return []TransformationData{}
 	}
 	if parsed_value.is_keyword() && parsed_value.to_keyword() == .none_ {
@@ -4725,7 +4817,7 @@ pub fn (c &ComputedProperties) transform_box() TransformBox {
 
 pub fn (c &ComputedProperties) transform_origin() TransformOrigin {
 	value := c.property(.transform_origin, .yes) or { return TransformOrigin{} }
-	parsed := parse_css_value_logic(.transform_origin, value.css_text) or {
+	parsed := style_value_logic_from_dom(.transform_origin, value) or {
 		return TransformOrigin{}
 	}
 	if parsed !is StyleValueList {
@@ -4762,7 +4854,7 @@ pub fn (c &ComputedProperties) transform_style() TransformStyle {
 
 pub fn (c &ComputedProperties) rotate() ?TransformationData {
 	value := c.property(.rotate, .yes) or { return none }
-	parsed_value := parse_css_value_logic(.rotate, value.css_text) or { return none }
+	parsed_value := style_value_logic_from_dom(.rotate, value) or { return none }
 	if parsed_value is TransformationStyleValue {
 		return transformation_data_from_transformation_style_value(parsed_value)
 	}
@@ -4771,7 +4863,7 @@ pub fn (c &ComputedProperties) rotate() ?TransformationData {
 
 pub fn (c &ComputedProperties) translate() ?TransformationData {
 	value := c.property(.translate, .yes) or { return none }
-	parsed_value := parse_css_value_logic(.translate, value.css_text) or { return none }
+	parsed_value := style_value_logic_from_dom(.translate, value) or { return none }
 	if parsed_value is TransformationStyleValue {
 		return transformation_data_from_transformation_style_value(parsed_value)
 	}
@@ -4780,7 +4872,7 @@ pub fn (c &ComputedProperties) translate() ?TransformationData {
 
 pub fn (c &ComputedProperties) scale() ?TransformationData {
 	value := c.property(.scale, .yes) or { return none }
-	parsed_value := parse_css_value_logic(.scale, value.css_text) or { return none }
+	parsed_value := style_value_logic_from_dom(.scale, value) or { return none }
 	if parsed_value is TransformationStyleValue {
 		return transformation_data_from_transformation_style_value(parsed_value)
 	}
@@ -4811,7 +4903,7 @@ pub fn (c &ComputedProperties) mask_type() MaskType {
 
 fn computed_interpolation_keyword_list_property(c &ComputedProperties, property_id PropertyID, default_keywords []Keyword) []Keyword {
 	value := c.property(property_id, .yes) or { return default_keywords.clone() }
-	parsed_value := parse_css_value_logic(property_id, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(property_id, value) or {
 		return default_keywords.clone()
 	}
 
@@ -4956,7 +5048,7 @@ pub fn (c &ComputedProperties) border_image_repeat() []BorderImageRepeat {
 fn computed_interpolation_repeat_style_list_property(c &ComputedProperties, property_id PropertyID) []RepeatStyleStyleValue {
 	default_repeat := RepeatStyleStyleValue.create(.repeat, .repeat)
 	value := c.property(property_id, .yes) or { return [default_repeat] }
-	parsed_value := parse_css_value_logic(property_id, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(property_id, value) or {
 		return [default_repeat]
 	}
 
@@ -5060,7 +5152,7 @@ pub fn (c &ComputedProperties) fill_opacity() f32 {
 
 pub fn (c &ComputedProperties) stroke_dasharray() []StrokeDasharrayItem {
 	value := c.property(.stroke_dasharray, .yes) or { return []StrokeDasharrayItem{} }
-	parsed := parse_css_value_logic(.stroke_dasharray, value.css_text) or {
+	parsed := style_value_logic_from_dom(.stroke_dasharray, value) or {
 		return []StrokeDasharrayItem{}
 	}
 	if parsed.to_keyword() == .none_ || parsed !is StyleValueList {
@@ -5185,7 +5277,7 @@ pub fn (c &ComputedProperties) paint_order() PaintOrderList {
 	value := c.property(.paint_order, .yes) or {
 		return initial_paint_order_for_computed_properties()
 	}
-	parsed_value := parse_css_value_logic(.paint_order, value.css_text) or {
+	parsed_value := style_value_logic_from_dom(.paint_order, value) or {
 		return initial_paint_order_for_computed_properties()
 	}
 
@@ -5251,7 +5343,7 @@ pub fn (c &ComputedProperties) paint_order() PaintOrderList {
 
 pub fn (c &ComputedProperties) will_change() WillChange {
 	value := c.property(.will_change, .yes) or { return WillChange.make_auto() }
-	parsed := parse_css_value_logic(.will_change, value.css_text) or {
+	parsed := style_value_logic_from_dom(.will_change, value) or {
 		return WillChange.make_auto()
 	}
 	if parsed.to_keyword() == .auto {
@@ -5292,7 +5384,7 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 			css_text: 'sans-serif'
 		}
 	}
-	parsed := parse_css_value_logic(.font_family, value.css_text) or {
+	parsed := style_value_logic_from_dom(.font_family, value) or {
 		StyleValue(KeywordStyleValue.create(.sans_serif))
 	}
 	mut families := []string{}
@@ -5405,7 +5497,7 @@ pub fn (c &ComputedProperties) font_width() Percentage {
 
 pub fn (c &ComputedProperties) font_slope() int {
 	value := c.property(.font_style, .yes) or { return 0 }
-	parsed := parse_css_value_logic(.font_style, value.css_text) or { return 0 }
+	parsed := style_value_logic_from_dom(.font_style, value) or { return 0 }
 	if parsed is FontStyleStyleValue {
 		return parsed.to_font_slope()
 	}
@@ -5426,8 +5518,8 @@ pub fn (c &ComputedProperties) equals(other &ComputedProperties) bool {
 	if c.property_values_.len != other.property_values_.len {
 		return false
 	}
-	for property_id, value in c.property_values_ {
-		other_value := other.property_values_[property_id] or { return false }
+	for index, value in c.property_values_ {
+		other_value := other.property_values_[index]
 		if value != other_value {
 			return false
 		}
@@ -5454,7 +5546,7 @@ pub fn (c &ComputedProperties) z_index() ?int {
 		return none
 	}
 
-	parsed_value := parse_css_value_logic(.z_index, value.css_text) or { return none }
+	parsed_value := style_value_logic_from_dom(.z_index, value) or { return none }
 	if parsed_value.is_integer() || parsed_value.is_calculated() {
 		// Clamp z-index to the range of a signed 32-bit integer for consistency with other engines.
 		number := int_from_style_value(parsed_value)
@@ -5472,7 +5564,7 @@ pub fn (c &ComputedProperties) z_index() ?int {
 
 pub fn (c &ComputedProperties) quotes() QuotesData {
 	value := c.property(.quotes, .yes) or { return QuotesData{} }
-	parsed := parse_css_value_logic(.quotes, value.css_text) or { return QuotesData{} }
+	parsed := style_value_logic_from_dom(.quotes, value) or { return QuotesData{} }
 	if parsed !is StyleValueList {
 		return QuotesData{
 			none_: parsed.to_keyword() == .none_
@@ -5492,7 +5584,7 @@ pub fn (c &ComputedProperties) quotes() QuotesData {
 
 pub fn (c &ComputedProperties) counter_data(property_id PropertyID) []CounterData {
 	value := c.property(property_id, .yes) or { return []CounterData{} }
-	parsed := parse_css_value_logic(property_id, value.css_text) or { return []CounterData{} }
+	parsed := style_value_logic_from_dom(property_id, value) or { return []CounterData{} }
 	if parsed !is CounterDefinitionsStyleValue {
 		return []CounterData{}
 	}
@@ -5514,7 +5606,7 @@ pub fn (c &ComputedProperties) counter_data(property_id PropertyID) []CounterDat
 
 pub fn (c &ComputedProperties) scrollbar_color(layout_node &dom.LayoutNode) ScrollbarColorData {
 	value := c.property(.scrollbar_color, .yes) or { return ScrollbarColorData{} }
-	parsed := parse_css_value_logic(.scrollbar_color, value.css_text) or {
+	parsed := style_value_logic_from_dom(.scrollbar_color, value) or {
 		return ScrollbarColorData{}
 	}
 	if parsed.to_keyword() == .auto || parsed !is ScrollbarColorStyleValue {
@@ -6344,8 +6436,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		TimeStyleValue {
 			if to is TimeStyleValue {
-				interpolated_value := interpolate_raw(from.raw_value(), to.raw_value(), delta,
-					none)
+				interpolated_value := interpolate_raw(from.raw_value(), to.raw_value(), delta, none)
 				unit := from.time().unit()
 				interpolated_time := Time.new(interpolated_value, unit)
 				StyleValue(TimeStyleValue.create(interpolated_time))
@@ -6426,10 +6517,10 @@ pub fn interpolate_repeatable_style_value_list(calculation_context Interpolation
 
 pub fn interpolate_value(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	_ = element
-	from_value := parse_css_value_logic(calculation_context.property, from.css_text) or {
+	from_value := style_value_logic_from_dom(calculation_context.property, from) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
-	to_value := parse_css_value_logic(calculation_context.property, to.css_text) or {
+	to_value := style_value_logic_from_dom(calculation_context.property, to) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
 	interpolated := interpolate_style_value(calculation_context, from_value, to_value, delta, allow_discrete) or { return none }
@@ -6438,10 +6529,10 @@ pub fn interpolate_value(element &dom.Element, calculation_context Interpolation
 
 pub fn interpolate_repeatable_list(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	_ = element
-	from_value := parse_css_value_logic(calculation_context.property, from.css_text) or {
+	from_value := style_value_logic_from_dom(calculation_context.property, from) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
-	to_value := parse_css_value_logic(calculation_context.property, to.css_text) or {
+	to_value := style_value_logic_from_dom(calculation_context.property, to) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
 	interpolated := interpolate_repeatable_style_value_list(calculation_context, from_value, to_value, delta, allow_discrete) or { return none }
@@ -6460,10 +6551,10 @@ fn interpolation_font_style_with_normal_as_oblique_zero(value StyleValue) ?Style
 }
 
 fn interpolate_font_style_property(calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	parsed_from := parse_css_value_logic(.font_style, from.css_text) or {
+	parsed_from := style_value_logic_from_dom(.font_style, from) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
-	parsed_to := parse_css_value_logic(.font_style, to.css_text) or {
+	parsed_to := style_value_logic_from_dom(.font_style, to) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
 	normalized_from := interpolation_font_style_with_normal_as_oblique_zero(parsed_from) or {
@@ -6477,7 +6568,7 @@ fn interpolate_font_style_property(calculation_context InterpolationCalculationC
 }
 
 fn interpolation_transform_or_identity(property_id PropertyID, value &dom.StyleValue, identity TransformationStyleValue) ?TransformationStyleValue {
-	parsed := parse_css_value_logic(property_id, value.css_text) or { return none }
+	parsed := style_value_logic_from_dom(property_id, value) or { return none }
 	if parsed.to_keyword() == .none_ {
 		return identity
 	}
@@ -6835,10 +6926,10 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 }
 
 fn interpolate_filter_value_list(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	from_value := parse_css_value_logic(calculation_context.property, from.css_text) or {
+	from_value := style_value_logic_from_dom(calculation_context.property, from) or {
 		return none
 	}
-	to_value := parse_css_value_logic(calculation_context.property, to.css_text) or { return none }
+	to_value := style_value_logic_from_dom(calculation_context.property, to) or { return none }
 	mut from_list := interpolation_filter_list(from_value) or { return none }
 	mut to_list := interpolation_filter_list(to_value) or { return none }
 	if from_list.len == 0 && to_list.len == 0 {
@@ -6862,10 +6953,10 @@ fn interpolate_filter_value_list(element &dom.Element, calculation_context Inter
 }
 
 pub fn interpolate_box_shadow(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	from_value := parse_css_value_logic(.box_shadow, from.css_text) or {
+	from_value := style_value_logic_from_dom(.box_shadow, from) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
-	to_value := parse_css_value_logic(.box_shadow, to.css_text) or {
+	to_value := style_value_logic_from_dom(.box_shadow, to) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
 
@@ -6942,10 +7033,10 @@ fn interpolation_extend_shadow_list(mut values []ShadowStyleValue, other []Shado
 
 pub fn interpolate_transform(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	_ = element
-	from_value := parse_css_value_logic(.transform, from.css_text) or {
+	from_value := style_value_logic_from_dom(.transform, from) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
-	to_value := parse_css_value_logic(.transform, to.css_text) or {
+	to_value := style_value_logic_from_dom(.transform, to) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
 	mut from_transformations := interpolation_transform_list(from_value) or {
@@ -7299,8 +7390,8 @@ pub fn composite_value(property_id PropertyID, underlying_value &dom.StyleValue,
 	if composite_operation == .replace {
 		return none
 	}
-	underlying := parse_css_value_logic(property_id, underlying_value.css_text) or { return none }
-	animated := parse_css_value_logic(property_id, animated_value.css_text) or { return none }
+	underlying := style_value_logic_from_dom(property_id, underlying_value) or { return none }
+	animated := style_value_logic_from_dom(property_id, animated_value) or { return none }
 	composited := composite_style_value(property_id, underlying, animated, composite_operation) or {
 		return none
 	}
@@ -7513,7 +7604,7 @@ fn property_affects_stacking_context_generated_metadata_boundary(property_id Pro
 
 fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&dom.StyleValue) bool {
 	style_value := unsafe { value or { return false } }
-	parsed := parse_css_value_logic(property_id, style_value.css_text) or { return true }
+	parsed := style_value_logic_from_dom(property_id, style_value) or { return true }
 	keyword := parsed.to_keyword()
 	return match property_id {
 		.opacity {
@@ -8631,6 +8722,9 @@ pub mut:
 	css_transition_storage_                &CSSTransitionStorage = unsafe { nil }
 	animation_time_ms_                     f64
 	transition_generation_                 int
+	style_sharing_cache_                   map[string]&ComputedProperties
+	style_computation_pass_depth_          int
+	style_sharing_enabled_                 bool
 }
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
@@ -8639,6 +8733,8 @@ pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
 		viewport_rect_: css_pixel_rect_from_dom_rect(document.viewport_rect())
 		css_animation_storage_: &CSSAnimationStorage{}
 		css_transition_storage_: &CSSTransitionStorage{}
+		style_sharing_cache_: map[string]&ComputedProperties{}
+		style_sharing_enabled_: os.getenv('LADYBIRD_DISABLE_STYLE_SHARING') == ''
 	}
 }
 
@@ -8647,7 +8743,7 @@ pub fn StyleComputer.for_each_property_expanding_shorthands(property_id Property
 	// re-parse that text into a typed ShorthandStyleValue and run the typed expansion, bridging each longhand back to
 	// a dom.StyleValue.
 	if property_is_shorthand(property_id) {
-		if typed_value := parse_css_value_logic(property_id, value.css_text) {
+		if typed_value := style_value_logic_from_dom(property_id, value) {
 			for_each_typed_property_expanding_shorthands(property_id, typed_value, fn [set_longhand_property] (longhand_id PropertyID, longhand_value StyleValue) {
 				set_longhand_property(longhand_id, dom_style_value_from_value_logic(longhand_value))
 			})
@@ -8836,7 +8932,7 @@ pub fn StyleComputer.relative_size_mapping(size RelativeSize, inherited_font_siz
 
 pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) ?&dom.StyleValue {
 	font_family := cascaded_properties.property(.font_family) or { return none }
-	parsed_family := parse_css_value_logic(.font_family, font_family.css_text) or { return none }
+	parsed_family := style_value_logic_from_dom(.font_family, font_family) or { return none }
 	mut is_single_monospace := parsed_family.to_keyword() == .monospace
 	if parsed_family is StyleValueList {
 		family_list := parsed_family as StyleValueList
@@ -9236,8 +9332,7 @@ pub fn html_text_area_element_adjust_computed_style(mut properties ComputedPrope
 
 pub fn html_button_element_adjust_computed_style(mut properties ComputedProperties) {
 	display := properties.display()
-	if display.is_flex_inside() || display.is_grid_inside() || display.is_none()
-		|| display.is_contents() {
+	if display.is_flex_inside() || display.is_grid_inside() || display.is_none() || display.is_contents() {
 		return
 	}
 	adjusted := if display.is_inline_outside() {
@@ -9756,6 +9851,12 @@ fn computed_interpolation_snap_a_length_as_a_border_width(device_pixels_per_css_
 }
 
 fn computed_interpolation_length_from_dom_style_value(style_value &dom.StyleValue) ?Length {
+	if parsed_value := typed_style_value_logic_from_dom(style_value) {
+		if parsed_value is LengthStyleValue {
+			return parsed_value.length()
+		}
+		return none
+	}
 	mut parser := Parser.from_css_text(style_value.css_text)
 	mut tokens := ComponentValueStream.new(parser.component_values)
 	parsed_value := parser.parse_length_value(mut tokens) or { return none }
@@ -9773,7 +9874,7 @@ pub fn StyleComputer.compute_border_or_outline_width(absolutized_value &dom.Styl
 	// https://drafts.csswg.org/css-backgrounds/#border-width
 	// absolute length, snapped as a border width
 	mut absolute_length := computed_interpolation_line_width_keyword_to_css_pixels(absolutized_value.css_text) or {
-		parsed_value := parse_css_value_logic(.border_top_width, absolutized_value.css_text) or {
+		parsed_value := style_value_logic_from_dom(.border_top_width, absolutized_value) or {
 			return unsafe { absolutized_value }
 		}
 		match parsed_value {
@@ -9811,7 +9912,7 @@ pub fn StyleComputer.compute_length(absolutized_value &dom.StyleValue, computati
 }
 
 pub fn StyleComputer.compute_absolutized_value(property_id PropertyID, absolutized_value &dom.StyleValue, computation_context StyleComputationContextStub) &dom.StyleValue {
-	parsed_value := parse_css_value_logic(property_id, absolutized_value.css_text) or {
+	parsed_value := style_value_logic_from_dom(property_id, absolutized_value) or {
 		return unsafe { absolutized_value }
 	}
 	computed_value := parsed_value.absolutized(ComputationContext{
@@ -9823,14 +9924,19 @@ pub fn StyleComputer.compute_absolutized_value(property_id PropertyID, absolutiz
 pub fn StyleComputer.compute_corner_shape(absolutized_value &dom.StyleValue) &dom.StyleValue {
 	// https://drafts.csswg.org/css-borders-4/#propdef-corner-top-left-shape
 	// the corresponding superellipse() value
-	mut parser := Parser.from_css_text(absolutized_value.css_text)
-	mut tokens := ComponentValueStream.new(parser.component_values)
-	parsed_value := parser.parse_corner_shape_value(mut tokens) or {
-		return unsafe { absolutized_value }
-	}
-	tokens.consume_whitespace()
-	if tokens.has_more_tokens() {
-		return unsafe { absolutized_value }
+	parsed_value := if typed := typed_style_value_logic_from_dom(absolutized_value) {
+		typed
+	} else {
+		mut parser := Parser.from_css_text(absolutized_value.css_text)
+		mut tokens := ComponentValueStream.new(parser.component_values)
+		parsed := parser.parse_corner_shape_value(mut tokens) or {
+			return unsafe { absolutized_value }
+		}
+		tokens.consume_whitespace()
+		if tokens.has_more_tokens() {
+			return unsafe { absolutized_value }
+		}
+		parsed
 	}
 
 	if parsed_value is SuperellipseStyleValue {
@@ -10014,7 +10120,7 @@ pub fn StyleComputer.compute_math_depth(absolutized_value &dom.StyleValue, inher
 		}
 	}
 
-	parsed_value := parse_css_value_logic(.math_depth, absolutized_value.css_text) or {
+	parsed_value := style_value_logic_from_dom(.math_depth, absolutized_value) or {
 		return unsafe { absolutized_value }
 	}
 
@@ -10064,20 +10170,33 @@ fn computed_interpolation_keyword_to_relative_size(keyword Keyword) ?RelativeSiz
 	}
 }
 
+// css_length_font_metrics_cache memoizes LengthFontMetrics, a pure function of
+// the font size. The cascade otherwise rebuilds it (constructing a
+// platform.Font, reading face tables, and rounding four CSSPixels) hundreds of
+// thousands of times per document; keying on the raw CSSPixels value makes each
+// distinct size cost once.
+__global css_length_font_metrics_cache = map[int]LengthFontMetrics{}
+
 fn computed_interpolation_font_metrics_for_size(font_size CSSPixels) LengthFontMetrics {
+	key := font_size.raw_value()
+	if cached := css_length_font_metrics_cache[key] {
+		return cached
+	}
 	ratio := font_size.to_double() / 16.0
 	font := platform.Font{
 		family: 'sans-serif'
 		point_size: f32(font_size.to_double())
 	}
 	metrics := font.pixel_metrics()
-	return LengthFontMetrics{
+	result := LengthFontMetrics{
 		font_size: font_size
 		x_height: CSSPixels.nearest_value_for(f64(metrics.x_height))
 		cap_height: CSSPixels.nearest_value_for(12.0 * ratio)
 		zero_advance: CSSPixels.nearest_value_for(f64(metrics.advance_of_ascii_zero))
 		line_height: CSSPixels.nearest_value_for(19.2 * ratio)
 	}
+	css_length_font_metrics_cache[key] = result
+	return result
 }
 
 fn computed_interpolation_root_font_size(inheritance_parent ?dom.AbstractElement) CSSPixels {
@@ -10110,7 +10229,7 @@ pub fn StyleComputer.compute_font_size(absolutized_value &dom.StyleValue, comput
 		}
 	}
 
-	parsed_value := parse_css_value_logic(.font_size, absolutized_value.css_text) or {
+	parsed_value := style_value_logic_from_dom(.font_size, absolutized_value) or {
 		return unsafe { absolutized_value }
 	}
 	keyword := parsed_value.to_keyword()
@@ -10171,13 +10290,21 @@ pub fn StyleComputer.compute_font_style(absolutized_value &dom.StyleValue) &dom.
 	// the keyword specified, plus angle in degrees if specified
 
 	// NB: We always parse as a FontStyleStyleValue, but StylePropertyMap is able to set a KeywordStyleValue directly.
-	mut parser := Parser.from_css_text(absolutized_value.css_text)
-	mut tokens := ComponentValueStream.new(parser.component_values)
-	parsed_value := parser.parse_font_style_value(mut tokens) or {
-		return unsafe { absolutized_value }
+	parsed_value := if typed := typed_style_value_logic_from_dom(absolutized_value) {
+		typed
+	} else {
+		mut parser := Parser.from_css_text(absolutized_value.css_text)
+		mut tokens := ComponentValueStream.new(parser.component_values)
+		parsed := parser.parse_font_style_value(mut tokens) or {
+			return unsafe { absolutized_value }
+		}
+		tokens.consume_whitespace()
+		if tokens.has_more_tokens() {
+			return unsafe { absolutized_value }
+		}
+		parsed
 	}
-	tokens.consume_whitespace()
-	if tokens.has_more_tokens() || parsed_value !is FontStyleStyleValue {
+	if parsed_value !is FontStyleStyleValue {
 		return unsafe { absolutized_value }
 	}
 	return dom_style_value_from_value_logic(parsed_value)
@@ -10291,6 +10418,12 @@ fn computed_interpolation_style_value_from_css_numeric_value(value CSSNumericVal
 }
 
 fn computed_interpolation_number_from_dom_style_value(style_value &dom.StyleValue) ?f64 {
+	if parsed_value := typed_style_value_logic_from_dom(style_value) {
+		if parsed_value is NumberStyleValue {
+			return parsed_value.number()
+		}
+		return none
+	}
 	mut parser := Parser.from_css_text(style_value.css_text)
 	mut tokens := ComponentValueStream.new(parser.component_values)
 	parsed_value := parser.parse_number_value(mut tokens) or { return none }
@@ -10302,7 +10435,7 @@ fn computed_interpolation_number_from_dom_style_value(style_value &dom.StyleValu
 }
 
 fn computed_interpolation_integer_from_dom_style_value(style_value &dom.StyleValue) ?i64 {
-	parsed_value := parse_css_value_logic(.math_depth, style_value.css_text) or { return none }
+	parsed_value := style_value_logic_from_dom(.math_depth, style_value) or { return none }
 	if parsed_value.is_integer() || parsed_value.is_calculated() {
 		return int_from_style_value(parsed_value)
 	}
@@ -10310,6 +10443,12 @@ fn computed_interpolation_integer_from_dom_style_value(style_value &dom.StyleVal
 }
 
 fn computed_interpolation_percentage_from_dom_style_value(style_value &dom.StyleValue) ?Percentage {
+	if parsed_value := typed_style_value_logic_from_dom(style_value) {
+		if parsed_value is PercentageStyleValue {
+			return parsed_value.percentage()
+		}
+		return none
+	}
 	mut parser := Parser.from_css_text(style_value.css_text)
 	mut tokens := ComponentValueStream.new(parser.component_values)
 	parsed_value := parser.parse_percentage_value(mut tokens) or { return none }
@@ -10321,6 +10460,9 @@ fn computed_interpolation_percentage_from_dom_style_value(style_value &dom.Style
 }
 
 fn computed_interpolation_calculated_style_value_from_dom_style_value(style_value &dom.StyleValue) ?StyleValue {
+	if parsed_value := typed_style_value_logic_from_dom(style_value) {
+		return parsed_value
+	}
 	numeric_value := CSSNumericValue.parse(style_value.css_text) or { return none }
 	return computed_interpolation_style_value_from_css_numeric_value(numeric_value)
 }
@@ -10613,8 +10755,92 @@ fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, 
 	}
 }
 
+fn style_sharing_write_part(mut builder strings.Builder, value string) {
+	builder.write_string(value.len.str())
+	builder.write_u8(`:`)
+	builder.write_string(value)
+	builder.write_u8(`;`)
+}
+
+// Build a conservative identity for every input that can affect the computed
+// result after the cascade. A cache miss is always safe; a hit is allowed only
+// for initial, non-pseudo style computation without custom properties,
+// animations, transitions, random(), or tree-counting values. Each hit is
+// cloned into a fresh ComputedProperties so later layout/animation mutations
+// remain element-local.
+fn computed_style_sharing_key(abstract_element dom.AbstractElement, cascaded &CascadedProperties) ?string {
+	if abstract_element.pseudo_element() != none || abstract_element.element().is_document_element() || abstract_element.computed_properties() != none || abstract_element.custom_property_data() != none {
+		return none
+	}
+
+	mut property_ids := []int{cap: cascaded.properties_.len}
+	for property_id, _ in cascaded.properties_ {
+		if property_id in [.animation_composition, .animation_delay, .animation_direction,
+			.animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name,
+			.animation_play_state, .animation_timeline, .animation_timing_function,
+			.transition_behavior, .transition_delay, .transition_duration, .transition_property,
+			.transition_timing_function] {
+			return none
+		}
+		entries := cascaded.properties_[property_id] or { continue }
+		if entries.len == 0 {
+			continue
+		}
+		value := entries.last().property.value
+		if typed := typed_style_value_logic_from_dom(value) {
+			if typed is RandomValueSharingStyleValue || typed is TreeCountingFunctionStyleValue || typed is UnresolvedStyleValue || typed is PendingSubstitutionStyleValue {
+				return none
+			}
+		}
+		// Monospace font-size recascading intentionally walks the ancestor
+		// cascaded-value chain, which is broader than the computed parent identity.
+		if property_id == .font_family && value.css_text.trim_space().to_lower() == 'monospace' {
+			return none
+		}
+		// The legacy table-header value searches the ancestor cascaded-value
+		// chain, not just the computed inheritance parent.
+		if property_id == .text_align && computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .libweb_inherit_or_center {
+			return none
+		}
+		property_ids << int(property_id)
+	}
+	property_ids.sort()
+
+	mut builder := strings.new_builder(256)
+	parent := parent_computed_properties(abstract_element) or { return none }
+	if parent.style_sharing_identity_ != '' {
+		style_sharing_write_part(mut builder, parent.style_sharing_identity_)
+	} else {
+		style_sharing_write_part(mut builder, usize(voidptr(parent)).str())
+	}
+	element := abstract_element.element()
+	local_name := element.local_name().to_lower()
+	style_sharing_write_part(mut builder, local_name)
+	style_sharing_write_part(mut builder, element.namespace_uri() or { '' })
+	// Selector matching and presentational hints have already been reduced to
+	// the cascaded values above. Only the attributes read by the post-cascade
+	// element adjustment remain computation inputs.
+	if local_name == 'audio' {
+		builder.write_u8(if element.has_attribute('controls') { `1` } else { `0` })
+	} else if local_name == 'input' {
+		style_sharing_write_part(mut builder, element.get_attribute_value('type'))
+		style_sharing_write_part(mut builder, element.get_attribute_value('size'))
+	}
+	for raw_property_id in property_ids {
+		property_id := unsafe { PropertyID(raw_property_id) }
+		entries := cascaded.properties_[property_id] or { continue }
+		entry := entries.last()
+		style_sharing_write_part(mut builder, raw_property_id.str())
+		style_sharing_write_part(mut builder, entry.property.value.css_text)
+		style_sharing_write_part(mut builder, entry.property.value.base_url or { '' })
+		builder.write_u8(if entry.property.important == .yes { `1` } else { `0` })
+	}
+	return builder.str()
+}
+
 pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?bool, scope &StyleScope) ?&ComputedProperties {
 	_ = did_change_custom_properties
+	mut profile_checkpoint := if css_style_profile_enabled { time.sys_mono_now() } else { u64(0) }
 	// StyleComputer::compute_style_impl (StyleComputer.cpp:1806).
 	scope.build_rule_cache_if_needed()
 
@@ -10625,6 +10851,9 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 	mut did_match_any_pseudo_element_rules := false
 	mut attempted_pseudo_class_matches := PseudoClassBitmap{}
 	matching_rule_set := s.build_matching_rule_set(abstract_element, mut attempted_pseudo_class_matches, &did_match_any_pseudo_element_rules, mode, scope)
+	next_matching_checkpoint, matching_elapsed := css_style_profile_checkpoint(profile_checkpoint)
+	profile_checkpoint = next_matching_checkpoint
+	css_style_profile_matching_ns += matching_elapsed
 
 	if mode == .create_pseudo_element_style_if_needed {
 		pseudo_element := abstract_element.pseudo_element() or { return none }
@@ -10635,9 +10864,18 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 	}
 
 	install_custom_property_data_for_style(abstract_element, matching_rule_set)
+	next_custom_checkpoint, custom_elapsed := css_style_profile_checkpoint(profile_checkpoint)
+	profile_checkpoint = next_custom_checkpoint
+	css_style_profile_custom_ns += custom_elapsed
 
 	logical_alias_mapping_context := s.compute_logical_alias_mapping_context(abstract_element, mode, matching_rule_set)
+	next_logical_checkpoint, logical_elapsed := css_style_profile_checkpoint(profile_checkpoint)
+	profile_checkpoint = next_logical_checkpoint
+	css_style_profile_logical_ns += logical_elapsed
 	mut cascaded_properties := s.compute_cascaded_values(abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context, []PropertyID{})
+	next_cascade_checkpoint, cascade_elapsed := css_style_profile_checkpoint(profile_checkpoint)
+	profile_checkpoint = next_cascade_checkpoint
+	css_style_profile_cascade_ns += cascade_elapsed
 	if mode == .create_pseudo_element_style_if_needed {
 		pseudo_element := abstract_element.pseudo_element() or { return none }
 		content_value := cascaded_properties.property(.content)
@@ -10658,7 +10896,44 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 	mut mutable_abstract_element := abstract_element
 	mutable_abstract_element.set_cascaded_properties(cascaded_properties_to_dom(cascaded_properties))
 
+	sharing_checkpoint := if css_style_profile_enabled { time.sys_mono_now() } else { u64(0) }
+	sharing_key := if mode == .normal && s.style_sharing_enabled_ {
+		computed_style_sharing_key(mutable_abstract_element, cascaded_properties)
+	} else {
+		none
+	}
+	if css_style_profile_enabled {
+		css_style_profile_sharing_key_ns += time.sys_mono_now() - sharing_checkpoint
+	}
+	if key := sharing_key {
+		if cached := s.style_sharing_cache_[key] {
+			clone_checkpoint := if css_style_profile_enabled { time.sys_mono_now() } else { u64(0) }
+			mut shared_properties := cached.clone_for_style_sharing()
+			if css_style_profile_enabled {
+				css_style_profile_sharing_clone_ns += time.sys_mono_now() - clone_checkpoint
+			}
+			_, compute_elapsed := css_style_profile_checkpoint(profile_checkpoint)
+			css_style_profile_compute_ns += compute_elapsed
+			css_style_profile_cache_hits++
+			mut attempted_matches_by_name := map[string]bool{}
+			for pseudo_class, attempted in attempted_pseudo_class_matches.values {
+				if attempted {
+					attempted_matches_by_name[selector_pseudo_class_name(pseudo_class)] = true
+				}
+			}
+			shared_properties.set_attempted_pseudo_class_matches(attempted_matches_by_name)
+			return shared_properties
+		}
+	}
+
 	mut computed_properties := s.compute_properties(mutable_abstract_element, mut cascaded_properties)
+	_, compute_elapsed := css_style_profile_checkpoint(profile_checkpoint)
+	css_style_profile_compute_ns += compute_elapsed
+	if key := sharing_key {
+		computed_properties.style_sharing_identity_ = key
+		mut mutable_s := unsafe { &StyleComputer(s) }
+		mutable_s.style_sharing_cache_[key] = computed_properties
+	}
 	mut attempted_matches_by_name := map[string]bool{}
 	for pseudo_class, attempted in attempted_pseudo_class_matches.values {
 		if attempted {
@@ -10667,6 +10942,53 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 	}
 	computed_properties.set_attempted_pseudo_class_matches(attempted_matches_by_name)
 	return computed_properties
+}
+
+__global (
+	css_style_profile_enabled          bool
+	css_style_profile_matching_ns      u64
+	css_style_profile_custom_ns        u64
+	css_style_profile_logical_ns       u64
+	css_style_profile_cascade_ns       u64
+	css_style_profile_compute_ns       u64
+	css_style_profile_sharing_key_ns   u64
+	css_style_profile_sharing_clone_ns u64
+	css_style_profile_cache_hits       int
+)
+
+fn css_style_profile_checkpoint(previous u64) (u64, u64) {
+	if !css_style_profile_enabled {
+		return 0, 0
+	}
+	now := time.sys_mono_now()
+	return now, now - previous
+}
+
+pub fn begin_style_profile() {
+	css_style_profile_enabled = os.getenv('LADYBIRD_DEBUG_TIMING') != ''
+	css_style_profile_matching_ns = 0
+	css_style_profile_custom_ns = 0
+	css_style_profile_logical_ns = 0
+	css_style_profile_cascade_ns = 0
+	css_style_profile_compute_ns = 0
+	css_style_profile_sharing_key_ns = 0
+	css_style_profile_sharing_clone_ns = 0
+	css_style_profile_cache_hits = 0
+}
+
+pub fn end_style_profile() {
+	if !css_style_profile_enabled {
+		return
+	}
+	eprintln('Ladybird V timing:       match ${css_style_profile_matching_ns / 1_000_000} ms')
+	eprintln('Ladybird V timing:       custom ${css_style_profile_custom_ns / 1_000_000} ms')
+	eprintln('Ladybird V timing:       logical ${css_style_profile_logical_ns / 1_000_000} ms')
+	eprintln('Ladybird V timing:       cascade ${css_style_profile_cascade_ns / 1_000_000} ms')
+	eprintln('Ladybird V timing:       compute ${css_style_profile_compute_ns / 1_000_000} ms')
+	eprintln('Ladybird V timing:         sharing_key ${css_style_profile_sharing_key_ns / 1_000_000} ms')
+	eprintln('Ladybird V timing:         sharing_clone ${css_style_profile_sharing_clone_ns / 1_000_000} ms')
+	eprintln('Ladybird V timing:       style_cache ${css_style_profile_cache_hits} hits')
+	css_style_profile_enabled = false
 }
 
 pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) &CascadedProperties {
@@ -10904,40 +11226,31 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 	if tag_name == 'body' {
 		if background_color := element.get_attribute('bgcolor') {
 			if value := parse_css_value_logic(.background_color, background_color) {
-				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-					.background_color, value)
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .background_color, value)
 			}
 		}
 		if text_color := element.get_attribute('text') {
 			if value := parse_css_value_logic(.color, text_color) {
-				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-					.color, value)
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .color, value)
 			}
 		}
 		if background := element.get_attribute('background') {
 			if parsed_url := element.document().encoding_parse_url(background) {
-				if value := parse_css_value_logic(.background_image,
-					'url("${parsed_url.serialize()}")') {
-					set_html_presentational_hint(mut cascaded_properties,
-						properties_to_cascade, .background_image, value)
+				if value := parse_css_value_logic(.background_image, 'url("${parsed_url.serialize()}")') {
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .background_image, value)
 				}
 			}
 		}
 		for property_id, source in {
-			PropertyID.margin_top: html_body_margin_source(element, 'marginheight', 'topmargin',
-				'marginheight')
-			PropertyID.margin_bottom: html_body_margin_source(element, 'marginheight',
-				'bottommargin', 'marginheight')
-			PropertyID.margin_left: html_body_margin_source(element, 'marginwidth', 'leftmargin',
-				'marginwidth')
-			PropertyID.margin_right: html_body_margin_source(element, 'marginwidth',
-				'rightmargin', 'marginwidth')
+			PropertyID.margin_top:    html_body_margin_source(element, 'marginheight', 'topmargin', 'marginheight')
+			PropertyID.margin_bottom: html_body_margin_source(element, 'marginheight', 'bottommargin', 'marginheight')
+			PropertyID.margin_left:   html_body_margin_source(element, 'marginwidth', 'leftmargin', 'marginwidth')
+			PropertyID.margin_right:  html_body_margin_source(element, 'marginwidth', 'rightmargin', 'marginwidth')
 		} {
 			if source_value := source {
 				if pixels := legacy_non_negative_integer_prefix(source_value) {
 					if value := parse_css_value_logic(property_id, '${pixels}px') {
-						set_html_presentational_hint(mut cascaded_properties,
-							properties_to_cascade, property_id, value)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, value)
 					}
 				}
 			}
@@ -10966,8 +11279,7 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 			for property_id in [PropertyID.border_top_style, .border_right_style,
 				.border_bottom_style, .border_left_style] {
 				if value := parse_css_value_logic(property_id, 'solid') {
-					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-						property_id, value)
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, value)
 				}
 			}
 		}
@@ -10975,33 +11287,26 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 			match align.to_lower() {
 				'left' {
 					if zero := parse_css_value_logic(.margin_left, '0px') {
-						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-							.margin_left, zero)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .margin_left, zero)
 					}
-					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-						.margin_right, StyleValue(KeywordStyleValue.create(.auto)))
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .margin_right, StyleValue(KeywordStyleValue.create(.auto)))
 				}
 				'right' {
-					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-						.margin_left, StyleValue(KeywordStyleValue.create(.auto)))
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .margin_left, StyleValue(KeywordStyleValue.create(.auto)))
 					if zero := parse_css_value_logic(.margin_right, '0px') {
-						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-							.margin_right, zero)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .margin_right, zero)
 					}
 				}
 				'center' {
-					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-						.margin_left, StyleValue(KeywordStyleValue.create(.auto)))
-					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-						.margin_right, StyleValue(KeywordStyleValue.create(.auto)))
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .margin_left, StyleValue(KeywordStyleValue.create(.auto)))
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .margin_right, StyleValue(KeywordStyleValue.create(.auto)))
 				}
 				else {}
 			}
 		}
 		if color_value := element.get_attribute('color') {
 			if value := parse_css_value_logic(.color, color_value) {
-				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-					.color, value)
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .color, value)
 			}
 		}
 		if size_source := element.get_attribute('size') {
@@ -11010,48 +11315,42 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 					for property_id in [PropertyID.border_top_width, .border_right_width,
 						.border_bottom_width, .border_left_width] {
 						if value := parse_css_value_logic(property_id, '${f64(size) / 2.0}px') {
-							set_html_presentational_hint(mut cascaded_properties,
-								properties_to_cascade, property_id, value)
+							set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, value)
 						}
 					}
 				} else if size == 1 {
 					if value := parse_css_value_logic(.border_bottom_width, '0px') {
-						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-							.border_bottom_width, value)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .border_bottom_width, value)
 					}
 				} else if size > 1 {
 					if value := parse_css_value_logic(.height, '${size - 2}px') {
-						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-							.height, value)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .height, value)
 					}
 				}
 			}
 		}
 		if width := element.get_attribute('width') {
 			if value := html_dimension_presentational_hint(width, .width, false) {
-				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-					.width, value)
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .width, value)
 			}
 		}
 	}
 	if tag_name == 'marquee' {
 		if background_color := element.get_attribute('bgcolor') {
 			if value := parse_css_value_logic(.background_color, background_color) {
-				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-					.background_color, value)
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .background_color, value)
 			}
 		}
 		for attribute, properties in {
 			'height': [PropertyID.height]
-			'width':   [PropertyID.width]
-			'hspace':  [PropertyID.margin_left, .margin_right]
-			'vspace':  [PropertyID.margin_top, .margin_bottom]
+			'width':  [PropertyID.width]
+			'hspace': [PropertyID.margin_left, .margin_right]
+			'vspace': [PropertyID.margin_top, .margin_bottom]
 		} {
 			if source := element.get_attribute(attribute) {
 				for property_id in properties {
 					if value := html_dimension_presentational_hint(source, property_id, false) {
-						set_html_presentational_hint(mut cascaded_properties,
-							properties_to_cascade, property_id, value)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, value)
 					}
 				}
 			}
@@ -11065,8 +11364,7 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 				else { Keyword.invalid }
 			}
 			if keyword != .invalid {
-				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-					.text_align, StyleValue(KeywordStyleValue.create(keyword)))
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .text_align, StyleValue(KeywordStyleValue.create(keyword)))
 			}
 		}
 		for attribute, properties in {
@@ -11076,8 +11374,7 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 			if source := element.get_attribute(attribute) {
 				for property_id in properties {
 					if value := html_dimension_presentational_hint(source, property_id, false) {
-						set_html_presentational_hint(mut cascaded_properties,
-							properties_to_cascade, property_id, value)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, value)
 					}
 				}
 			}
@@ -11090,20 +11387,17 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 				for property_id in [PropertyID.border_top_width, .border_right_width,
 					.border_bottom_width, .border_left_width] {
 					if zero := parse_css_value_logic(property_id, '0px') {
-						set_html_presentational_hint(mut cascaded_properties,
-							properties_to_cascade, property_id, zero)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, zero)
 					}
 				}
 			}
 		}
 	}
 	if tag_name in ['pre', 'listing', 'xmp'] && element.has_attribute('wrap') {
-		set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-			.text_wrap_mode, StyleValue(KeywordStyleValue.create(.wrap)))
+		set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .text_wrap_mode, StyleValue(KeywordStyleValue.create(.wrap)))
 	}
 	if tag_name == 'caption' && element.get_attribute_value('align') == 'bottom' {
-		set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-			.caption_side, StyleValue(KeywordStyleValue.create(.bottom)))
+		set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .caption_side, StyleValue(KeywordStyleValue.create(.bottom)))
 	}
 	if tag_name in ['li', 'ol', 'ul'] {
 		if type_value := element.get_attribute('type') {
@@ -11118,11 +11412,9 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 			numbered_style := list_style_type in ['decimal', 'lower-alpha', 'upper-alpha',
 				'lower-roman', 'upper-roman']
 			unordered_style := list_style_type in ['none', 'disc', 'circle', 'square']
-			if (tag_name == 'ol' && numbered_style) || (tag_name == 'ul' && unordered_style)
-				|| (tag_name == 'li' && (numbered_style || unordered_style)) {
+			if (tag_name == 'ol' && numbered_style) || (tag_name == 'ul' && unordered_style) || (tag_name == 'li' && (numbered_style || unordered_style)) {
 				if value := parse_css_value_logic(.list_style_type, list_style_type) {
-					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-						.list_style_type, value)
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .list_style_type, value)
 				}
 			}
 		}
@@ -11136,8 +11428,7 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 				else { Keyword.invalid }
 			}
 			if keyword != .invalid {
-				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-					.clear, StyleValue(KeywordStyleValue.create(keyword)))
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .clear, StyleValue(KeywordStyleValue.create(keyword)))
 			}
 		}
 	}
@@ -11195,8 +11486,7 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 		if w := width {
 			if h := height {
 				if value := parse_css_value_logic(.aspect_ratio, 'auto ${w} / ${h}') {
-					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-						.aspect_ratio, value)
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .aspect_ratio, value)
 				}
 			}
 		}
@@ -11247,8 +11537,7 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 			if source := element.get_attribute(attribute) {
 				for property_id in properties {
 					if value := html_dimension_presentational_hint(source, property_id, false) {
-						set_html_presentational_hint(mut cascaded_properties,
-							properties_to_cascade, property_id, value)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, value)
 					}
 				}
 			}
@@ -11259,12 +11548,10 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 					width_property := property_id_from_string('border-${side}-width') or { continue }
 					style_property := property_id_from_string('border-${side}-style') or { continue }
 					if value := parse_css_value_logic(width_property, '${width}px') {
-						set_html_presentational_hint(mut cascaded_properties,
-							properties_to_cascade, width_property, value)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, width_property, value)
 					}
 					if value := parse_css_value_logic(style_property, 'solid') {
-						set_html_presentational_hint(mut cascaded_properties,
-							properties_to_cascade, style_property, value)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, style_property, value)
 					}
 				}
 			}
@@ -11278,8 +11565,7 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 				else { Keyword.invalid }
 			}
 			if keyword != .invalid {
-				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-					.text_align, StyleValue(KeywordStyleValue.create(keyword)))
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .text_align, StyleValue(KeywordStyleValue.create(keyword)))
 			}
 		}
 		for attribute, properties in {
@@ -11289,8 +11575,7 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 			if source := element.get_attribute(attribute) {
 				for property_id in properties {
 					if value := html_dimension_presentational_hint(source, property_id, false) {
-						set_html_presentational_hint(mut cascaded_properties,
-							properties_to_cascade, property_id, value)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, value)
 					}
 				}
 			}
@@ -11301,12 +11586,10 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 					width_property := property_id_from_string('border-${side}-width') or { continue }
 					style_property := property_id_from_string('border-${side}-style') or { continue }
 					if value := parse_css_value_logic(width_property, '${width}px') {
-						set_html_presentational_hint(mut cascaded_properties,
-							properties_to_cascade, width_property, value)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, width_property, value)
 					}
 					if value := parse_css_value_logic(style_property, 'solid') {
-						set_html_presentational_hint(mut cascaded_properties,
-							properties_to_cascade, style_property, value)
+						set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, style_property, value)
 					}
 				}
 			}
@@ -11361,10 +11644,8 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 		}
 		if background := element.get_attribute('background') {
 			if parsed_url := element.document().encoding_parse_url(background) {
-				if value := parse_css_value_logic(.background_image,
-					'url("${parsed_url.serialize()}")') {
-					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade,
-						.background_image, value)
+				if value := parse_css_value_logic(.background_image, 'url("${parsed_url.serialize()}")') {
+					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .background_image, value)
 				}
 			}
 		}
@@ -11424,8 +11705,7 @@ pub fn html_div_element_is_presentational_hint(_ &dom.HTMLDivElement, name strin
 }
 
 pub fn html_div_element_apply_presentational_hints(element &dom.HTMLDivElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_hr_element_is_presentational_hint(_ &dom.HTMLHRElement, name string) bool {
@@ -11433,8 +11713,7 @@ pub fn html_hr_element_is_presentational_hint(_ &dom.HTMLHRElement, name string)
 }
 
 pub fn html_hr_element_apply_presentational_hints(element &dom.HTMLHRElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn htmlhr_element_is_presentational_hint(element &dom.HTMLHRElement, name string) bool {
@@ -11450,8 +11729,7 @@ pub fn html_marquee_element_is_presentational_hint(_ &dom.HTMLMarqueeElement, na
 }
 
 pub fn html_marquee_element_apply_presentational_hints(element &dom.HTMLMarqueeElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_paragraph_element_is_presentational_hint(_ &dom.HTMLParagraphElement, name string) bool {
@@ -11459,8 +11737,7 @@ pub fn html_paragraph_element_is_presentational_hint(_ &dom.HTMLParagraphElement
 }
 
 pub fn html_paragraph_element_apply_presentational_hints(element &dom.HTMLParagraphElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_pre_element_is_presentational_hint(_ &dom.HTMLPreElement, name string) bool {
@@ -11468,8 +11745,7 @@ pub fn html_pre_element_is_presentational_hint(_ &dom.HTMLPreElement, name strin
 }
 
 pub fn html_pre_element_apply_presentational_hints(element &dom.HTMLPreElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_table_caption_element_is_presentational_hint(_ &dom.HTMLTableCaptionElement, name string) bool {
@@ -11477,8 +11753,7 @@ pub fn html_table_caption_element_is_presentational_hint(_ &dom.HTMLTableCaption
 }
 
 pub fn html_table_caption_element_apply_presentational_hints(element &dom.HTMLTableCaptionElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_table_col_element_is_presentational_hint(_ &dom.HTMLTableColElement, name string) bool {
@@ -11486,8 +11761,7 @@ pub fn html_table_col_element_is_presentational_hint(_ &dom.HTMLTableColElement,
 }
 
 pub fn html_table_col_element_apply_presentational_hints(element &dom.HTMLTableColElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_table_row_element_is_presentational_hint(_ &dom.HTMLTableRowElement, name string) bool {
@@ -11495,8 +11769,7 @@ pub fn html_table_row_element_is_presentational_hint(_ &dom.HTMLTableRowElement,
 }
 
 pub fn html_table_row_element_apply_presentational_hints(element &dom.HTMLTableRowElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_table_section_element_is_presentational_hint(_ &dom.HTMLTableSectionElement, name string) bool {
@@ -11504,8 +11777,7 @@ pub fn html_table_section_element_is_presentational_hint(_ &dom.HTMLTableSection
 }
 
 pub fn html_table_section_element_apply_presentational_hints(element &dom.HTMLTableSectionElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_ulist_element_is_presentational_hint(_ &dom.HTMLUListElement, name string) bool {
@@ -11513,8 +11785,7 @@ pub fn html_ulist_element_is_presentational_hint(_ &dom.HTMLUListElement, name s
 }
 
 pub fn html_ulist_element_apply_presentational_hints(element &dom.HTMLUListElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn htmlu_list_element_is_presentational_hint(element &dom.HTMLUListElement, name string) bool {
@@ -11530,8 +11801,7 @@ pub fn html_heading_element_is_presentational_hint(_ &dom.HTMLHeadingElement, na
 }
 
 pub fn html_heading_element_apply_presentational_hints(element &dom.HTMLHeadingElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_table_cell_element_is_presentational_hint(_ &dom.HTMLTableCellElement, name string) bool {
@@ -11539,8 +11809,7 @@ pub fn html_table_cell_element_is_presentational_hint(_ &dom.HTMLTableCellElemen
 }
 
 pub fn html_table_cell_element_apply_presentational_hints(element &dom.HTMLTableCellElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_body_element_is_presentational_hint(_ &dom.HTMLBodyElement, name string) bool {
@@ -11549,8 +11818,7 @@ pub fn html_body_element_is_presentational_hint(_ &dom.HTMLBodyElement, name str
 }
 
 pub fn html_body_element_apply_presentational_hints(element &dom.HTMLBodyElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_li_element_is_presentational_hint(_ &dom.HTMLLIElement, name string) bool {
@@ -11558,8 +11826,7 @@ pub fn html_li_element_is_presentational_hint(_ &dom.HTMLLIElement, name string)
 }
 
 pub fn html_li_element_apply_presentational_hints(element &dom.HTMLLIElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn htmlli_element_is_presentational_hint(element &dom.HTMLLIElement, name string) bool {
@@ -11575,8 +11842,7 @@ pub fn htmlol_list_element_is_presentational_hint(_ &dom.HTMLOListElement, name 
 }
 
 pub fn htmlol_list_element_apply_presentational_hints(element &dom.HTMLOListElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn htmlo_list_element_is_presentational_hint(element &dom.HTMLOListElement, name string) bool {
@@ -11592,8 +11858,7 @@ pub fn htmlbr_element_is_presentational_hint(_ &dom.HTMLBRElement, name string) 
 }
 
 pub fn htmlbr_element_apply_presentational_hints(element &dom.HTMLBRElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_br_element_is_presentational_hint(element &dom.HTMLBRElement, name string) bool {
@@ -11609,8 +11874,7 @@ pub fn html_embed_element_is_presentational_hint(_ &dom.HTMLEmbedElement, name s
 }
 
 pub fn html_embed_element_apply_presentational_hints(element &dom.HTMLEmbedElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_iframe_element_is_presentational_hint(_ &dom.HTMLIFrameElement, name string) bool {
@@ -11618,8 +11882,7 @@ pub fn html_iframe_element_is_presentational_hint(_ &dom.HTMLIFrameElement, name
 }
 
 pub fn html_iframe_element_apply_presentational_hints(element &dom.HTMLIFrameElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_canvas_element_is_presentational_hint(_ &dom.HTMLCanvasElement, name string) bool {
@@ -11627,8 +11890,7 @@ pub fn html_canvas_element_is_presentational_hint(_ &dom.HTMLCanvasElement, name
 }
 
 pub fn html_canvas_element_apply_presentational_hints(element &dom.HTMLCanvasElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_image_element_is_presentational_hint(_ &dom.HTMLImageElement, name string) bool {
@@ -11636,8 +11898,7 @@ pub fn html_image_element_is_presentational_hint(_ &dom.HTMLImageElement, name s
 }
 
 pub fn html_image_element_apply_presentational_hints(element &dom.HTMLImageElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_object_element_is_presentational_hint(_ &dom.HTMLObjectElement, name string) bool {
@@ -11645,8 +11906,7 @@ pub fn html_object_element_is_presentational_hint(_ &dom.HTMLObjectElement, name
 }
 
 pub fn html_object_element_apply_presentational_hints(element &dom.HTMLObjectElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn htmli_frame_element_is_presentational_hint(element &dom.HTMLIFrameElement, name string) bool {
@@ -11662,8 +11922,7 @@ pub fn html_font_element_is_presentational_hint(_ &dom.HTMLFontElement, name str
 }
 
 pub fn html_font_element_apply_presentational_hints(element &dom.HTMLFontElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 pub fn html_table_element_is_presentational_hint(_ &dom.HTMLTableElement, name string) bool {
@@ -11672,8 +11931,7 @@ pub fn html_table_element_is_presentational_hint(_ &dom.HTMLTableElement, name s
 }
 
 pub fn html_table_element_apply_presentational_hints(element &dom.HTMLTableElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) },
-		ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
 }
 
 fn apply_svg_presentational_hints(mut cascaded_properties CascadedProperties, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs) {

@@ -10,6 +10,20 @@ static NSString *native_capture_string(string value) {
 }
 
 static NSView *native_cached_browser_view;
+static NSImageView *native_cached_snapshot_view;
+static id<NSObject> native_activity_token;
+
+// Keep the run loop lively even when the window is occluded or not frontmost.
+// Without this, App Nap throttles the process, stalling both page loads in
+// background windows and the GCD main-queue work that captures cached rasters.
+void native_prevent_app_nap(void) {
+	if (native_activity_token != nil) {
+		return;
+	}
+	native_activity_token = [[NSProcessInfo processInfo]
+		beginActivityWithOptions:(NSActivityUserInitiated | NSActivityLatencyCritical)
+		                  reason:@"Ladybird V rendering"];
+}
 
 static void native_consider_largest_view(NSView *view, NSView **largest_view, CGFloat *largest_area) {
 	if (view == nil || [view isHidden]) {
@@ -91,33 +105,151 @@ int native_window_height(void) {
 	return (int)llround([native_browser_view() bounds].size.height);
 }
 
+static void native_request_browser_redraw(void) {
+	NSWindow *window = [NSApp mainWindow];
+	if (window == nil) {
+		window = [NSApp keyWindow];
+	}
+	NSMutableArray<NSView *> *views = [NSMutableArray array];
+	if ([window contentView] != nil) {
+		[views addObject:[window contentView]];
+	}
+	while ([views count] > 0) {
+		NSView *view = [views lastObject];
+		[views removeLastObject];
+		[view setNeedsDisplay:YES];
+		[views addObjectsFromArray:[view subviews]];
+	}
+	NSEvent *event = [NSEvent otherEventWithType:NSEventTypeApplicationDefined
+	                                location:NSZeroPoint
+	                           modifierFlags:0
+	                               timestamp:0
+	                            windowNumber:[window windowNumber]
+	                                 context:nil
+	                                 subtype:0
+	                                   data1:0
+	                                   data2:0];
+	[NSApp postEvent:event atStart:NO];
+}
+
 void native_wake_browser(void) {
 	dispatch_async(dispatch_get_main_queue(), ^{
-		NSWindow *window = [NSApp mainWindow];
-		if (window == nil) {
-			window = [NSApp keyWindow];
-		}
-		NSMutableArray<NSView *> *views = [NSMutableArray array];
-		if ([window contentView] != nil) {
-			[views addObject:[window contentView]];
-		}
-		while ([views count] > 0) {
-			NSView *view = [views lastObject];
-			[views removeLastObject];
-			[view setNeedsDisplay:YES];
-			[views addObjectsFromArray:[view subviews]];
-		}
-		NSEvent *event = [NSEvent otherEventWithType:NSEventTypeApplicationDefined
-		                                location:NSZeroPoint
-		                           modifierFlags:0
-		                               timestamp:0
-		                            windowNumber:[window windowNumber]
-		                                 context:nil
-		                                 subtype:0
-		                                   data1:0
-		                                   data2:0];
-		[NSApp postEvent:event atStart:NO];
+		native_request_browser_redraw();
 	});
+}
+
+void native_wake_browser_after(int milliseconds) {
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+		(int64_t)MAX(milliseconds, 0) * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+		native_request_browser_redraw();
+	});
+}
+
+void native_show_cached_snapshot(string path_value) {
+	NSString *path = native_capture_string(path_value);
+	void (^show_snapshot)(void) = ^{
+		NSImage *image = [[NSImage alloc] initWithContentsOfFile:path];
+		NSView *browser_view = native_browser_view();
+		if (image == nil || browser_view == nil) {
+			return;
+		}
+		[native_cached_snapshot_view removeFromSuperview];
+		native_cached_snapshot_view = [[NSImageView alloc] initWithFrame:[browser_view bounds]];
+		[native_cached_snapshot_view setImage:image];
+		[native_cached_snapshot_view setImageScaling:NSImageScaleAxesIndependently];
+		[native_cached_snapshot_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+		[browser_view addSubview:native_cached_snapshot_view
+		                 positioned:NSWindowAbove
+		                 relativeTo:nil];
+		[browser_view setNeedsDisplay:YES];
+		[browser_view displayIfNeeded];
+	};
+	if ([NSThread isMainThread]) {
+		show_snapshot();
+	} else {
+		dispatch_async(dispatch_get_main_queue(), show_snapshot);
+	}
+}
+
+void native_hide_cached_snapshot(void) {
+	void (^hide_snapshot)(void) = ^{
+		[native_cached_snapshot_view removeFromSuperview];
+		native_cached_snapshot_view = nil;
+	};
+	if ([NSThread isMainThread]) {
+		hide_snapshot();
+	} else {
+		dispatch_async(dispatch_get_main_queue(), hide_snapshot);
+	}
+}
+
+void native_cache_browser_snapshot(string path_value) {
+	NSString *path = native_capture_string(path_value);
+	BOOL debug_snapshot = getenv("LADYBIRD_DEBUG_SNAPSHOT") != NULL;
+	if (debug_snapshot) {
+		fprintf(stderr, "Ladybird V: scheduling cached snapshot %s\n", [path fileSystemRepresentation]);
+	}
+	// Capture on the next main-loop turn (after the in-progress drawRect: has
+	// returned) rather than after a fixed delay: dispatch_async runs as soon as
+	// the current frame finishes, and posting a wake guarantees the run loop
+	// iterates to service it even when the app is otherwise idle.
+	dispatch_async(dispatch_get_main_queue(), ^{
+		NSView *view = native_browser_view();
+		[view displayIfNeeded];
+		NSRect bounds = [view bounds];
+		NSBitmapImageRep *bitmap = [view bitmapImageRepForCachingDisplayInRect:bounds];
+		if (bitmap == nil) {
+			CGFloat scale = [[view window] backingScaleFactor];
+			if (scale <= 0.0) {
+				scale = 1.0;
+			}
+			NSInteger pixels_wide = (NSInteger)llround(bounds.size.width * scale);
+			NSInteger pixels_high = (NSInteger)llround(bounds.size.height * scale);
+			if (pixels_wide <= 0 || pixels_high <= 0) {
+				if (debug_snapshot) {
+					fprintf(stderr, "Ladybird V: snapshot aborted, zero-size view\n");
+				}
+				return;
+			}
+			bitmap = [[NSBitmapImageRep alloc]
+				initWithBitmapDataPlanes:NULL
+				              pixelsWide:pixels_wide
+				              pixelsHigh:pixels_high
+				           bitsPerSample:8
+				         samplesPerPixel:4
+				                hasAlpha:YES
+				                isPlanar:NO
+				          colorSpaceName:NSDeviceRGBColorSpace
+				             bytesPerRow:pixels_wide * 4
+				            bitsPerPixel:32];
+			[bitmap setSize:bounds.size];
+		}
+		[view cacheDisplayInRect:bounds toBitmapImageRep:bitmap];
+		NSBitmapImageRep *encoded_bitmap =
+		    [bitmap bitmapImageRepByConvertingToColorSpace:[NSColorSpace sRGBColorSpace]
+		                                  renderingIntent:NSColorRenderingIntentRelativeColorimetric];
+		if (encoded_bitmap == nil) {
+			encoded_bitmap = bitmap;
+		}
+		NSData *png = [encoded_bitmap representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+		if (png == nil) {
+			if (debug_snapshot) {
+				fprintf(stderr, "Ladybird V: cached snapshot PNG encoding failed\n");
+			}
+			return;
+		}
+		[[NSFileManager defaultManager] createDirectoryAtPath:[path stringByDeletingLastPathComponent]
+		                         withIntermediateDirectories:YES
+		                                          attributes:nil
+		                                               error:nil];
+		BOOL saved = [png writeToFile:path options:NSDataWritingAtomic error:nil];
+		if (debug_snapshot) {
+			fprintf(stderr, "Ladybird V: cached snapshot %s\n", saved ? "saved" : "write failed");
+		}
+	});
+	// Nudge the run loop so the queued capture is serviced promptly even if no
+	// user or timer event would otherwise wake it.
+	native_request_browser_redraw();
 }
 
 void native_draw_rect_srgb(float x, float y, float width, float height, gg__Color color) {

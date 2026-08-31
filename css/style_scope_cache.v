@@ -11,7 +11,6 @@ import dom
 // lists are not reachable from dom.Document/dom.ShadowRoot yet. Those
 // integration points are represented by explicit boundary helpers below; the
 // cache-building and selector bucketing logic itself follows the C++ structure.
-
 pub enum RuleCacheIterationDecision {
 	continue_
 	break_
@@ -25,7 +24,7 @@ pub mut:
 
 pub fn RuleCaches.new() &RuleCaches {
 	return &RuleCaches{
-		main:     RuleCache.new()
+		main: RuleCache.new()
 		by_layer: map[string]&RuleCache{}
 	}
 }
@@ -44,23 +43,23 @@ pub mut:
 
 pub fn StyleInvalidationData.new() &StyleInvalidationData {
 	return &StyleInvalidationData{
-		invalidation_plans:                    map[string]&InvalidationPlan{}
-		invalidation_plan_properties:          map[string]InvalidationProperty{}
-		ids_used_in_has_selectors:             map[string]bool{}
-		class_names_used_in_has_selectors:     map[string]bool{}
+		invalidation_plans: map[string]&InvalidationPlan{}
+		invalidation_plan_properties: map[string]InvalidationProperty{}
+		ids_used_in_has_selectors: map[string]bool{}
+		class_names_used_in_has_selectors: map[string]bool{}
 		attribute_names_used_in_has_selectors: map[string]bool{}
-		tag_names_used_in_has_selectors:       map[string]bool{}
-		pseudo_classes_used_in_has_selectors:  map[CSSPseudoClass]bool{}
+		tag_names_used_in_has_selectors: map[string]bool{}
+		pseudo_classes_used_in_has_selectors: map[CSSPseudoClass]bool{}
 	}
 }
 
 pub fn RuleCache.new() &RuleCache {
 	return &RuleCache{
-		rules_by_id:                  map[string][]MatchingRule{}
-		rules_by_class:               map[string][]MatchingRule{}
-		rules_by_tag_name:            map[string][]MatchingRule{}
-		rules_by_attribute_name:      map[string][]MatchingRule{}
-		rules_by_pseudo_element:      map[PseudoElement][]MatchingRule{}
+		rules_by_id: map[string][]MatchingRule{}
+		rules_by_class: map[string][]MatchingRule{}
+		rules_by_tag_name: map[string][]MatchingRule{}
+		rules_by_attribute_name: map[string][]MatchingRule{}
+		rules_by_pseudo_element: map[PseudoElement][]MatchingRule{}
 		rules_by_animation_keyframes: map[string]&KeyFrameSet{}
 	}
 }
@@ -98,9 +97,11 @@ pub fn (rule MatchingRule) declaration() ?&CSSStyleProperties {
 }
 
 pub fn (rule MatchingRule) absolutized_selectors() SelectorList {
-	css_rule := rule.rule or { return SelectorList{
-		selectors: [rule.selector]
-	} }
+	css_rule := rule.rule or {
+		return SelectorList{
+			selectors: [rule.selector]
+		}
+	}
 
 	if css_rule.type_ == .style {
 		mut mutable_rule := unsafe { &CSSRule(css_rule) }
@@ -161,13 +162,13 @@ fn style_scope_is_roundabout_selector_bucketable_as_something_simpler(simple_sel
 	if inner_simple_selector.type_ == .class || inner_simple_selector.type_ == .id {
 		return SimplifiedSelectorForBucketing{
 			type_: inner_simple_selector.type_
-			name:  inner_simple_selector.name.name
+			name: inner_simple_selector.name.name
 		}
 	}
 	if inner_simple_selector.type_ == .tag_name {
 		return SimplifiedSelectorForBucketing{
 			type_: inner_simple_selector.type_
-			name:  inner_simple_selector.qualified_name.name.lowercase_name
+			name: inner_simple_selector.qualified_name.name.lowercase_name
 		}
 	}
 	return none
@@ -200,13 +201,11 @@ pub fn (mut cache RuleCache) add_rule(matching_rule MatchingRule, pseudo_element
 			return
 		}
 		if simple_selector.type_ == .class {
-			style_scope_push_rule(mut cache.rules_by_class, simple_selector.name.name,
-				matching_rule)
+			style_scope_push_rule(mut cache.rules_by_class, simple_selector.name.name, matching_rule)
 			return
 		}
 		if simple_selector.type_ == .tag_name {
-			style_scope_push_rule(mut cache.rules_by_tag_name,
-				simple_selector.qualified_name.name.lowercase_name, matching_rule)
+			style_scope_push_rule(mut cache.rules_by_tag_name, simple_selector.qualified_name.name.lowercase_name, matching_rule)
 			return
 		}
 		// NOTE: Selectors like `:is/where(.foo)` and `:is/where(.foo .bar)` are
@@ -230,8 +229,7 @@ pub fn (mut cache RuleCache) add_rule(matching_rule MatchingRule, pseudo_element
 	if matching_rule.contains_pseudo_element {
 		if pseudo := pseudo_element {
 			if is_known_pseudo_element_type(pseudo) {
-				style_scope_push_pseudo_element_rule(mut cache.rules_by_pseudo_element, pseudo,
-					matching_rule)
+				style_scope_push_pseudo_element_rule(mut cache.rules_by_pseudo_element, pseudo, matching_rule)
 			} else {
 				// NOTE: We don't cache rules for unknown pseudo-elements. They can't
 				// match anything anyway.
@@ -242,8 +240,7 @@ pub fn (mut cache RuleCache) add_rule(matching_rule MatchingRule, pseudo_element
 	} else {
 		for simple_selector in last_compound_selector.simple_selectors {
 			if simple_selector.type_ == .attribute {
-				style_scope_push_rule(mut cache.rules_by_attribute_name,
-					simple_selector.attribute.qualified_name.name.lowercase_name, matching_rule)
+				style_scope_push_rule(mut cache.rules_by_attribute_name, simple_selector.attribute.qualified_name.name.lowercase_name, matching_rule)
 				return
 			}
 		}
@@ -301,7 +298,7 @@ pub fn (cache &RuleCache) matching_rule_buckets(abstract_element dom.AbstractEle
 	return buckets
 }
 
-pub fn (cache &RuleCache) for_each_matching_rules(abstract_element dom.AbstractElement, callback fn ([]MatchingRule) RuleCacheIterationDecision) {
+pub fn (cache &RuleCache) for_each_matching_rules(abstract_element dom.AbstractElement, callback fn([]MatchingRule) RuleCacheIterationDecision) {
 	for bucket in cache.matching_rule_buckets(abstract_element) {
 		if callback(bucket) == .break_ {
 			return
@@ -493,7 +490,7 @@ pub fn (scope &StyleScope) stylesheets_for_cascade_origin(cascade_origin Cascade
 	return sheets
 }
 
-pub fn (scope &StyleScope) for_each_stylesheet(cascade_origin CascadeOrigin, callback fn (&CSSStyleSheet)) {
+pub fn (scope &StyleScope) for_each_stylesheet(cascade_origin CascadeOrigin, callback fn(&CSSStyleSheet)) {
 	for sheet in scope.stylesheets_for_cascade_origin(cascade_origin) {
 		callback(sheet)
 	}
@@ -521,15 +518,15 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 
 			for selector in absolutized_selectors.selectors {
 				mut matching_rule := MatchingRule{
-					shadow_root:       style_scope_mut_shadow_root_option(scope_shadow_root)
-					rule:              style_scope_mut_css_rule(rule)
-					sheet:             style_scope_mut_css_style_sheet(sheet)
+					shadow_root: style_scope_mut_shadow_root_option(scope_shadow_root)
+					rule: style_scope_mut_css_rule(rule)
+					sheet: style_scope_mut_css_style_sheet(sheet)
 					default_namespace: sheet.default_namespace()
-					selector:          selector
+					selector: selector
 					style_sheet_index: style_sheet_index
-					rule_index:        rule_index
-					specificity:       selector.specificity()
-					cascade_origin:    cascade_origin
+					rule_index: rule_index
+					specificity: selector.specificity()
+					cascade_origin: cascade_origin
 				}
 
 				qualified_layer_name := matching_rule.qualified_layer_name()
@@ -561,8 +558,7 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 							}
 						}
 						if !contains_root_pseudo_class {
-							if simple_selector.type_ == .pseudo_class
-								&& simple_selector.pseudo_class.type_ == .root {
+							if simple_selector.type_ == .pseudo_class && simple_selector.pseudo_class.type_ == .root {
 								contains_root_pseudo_class = true
 							}
 						}
@@ -622,7 +618,7 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 		key := int(keyframe_key.value() * animation_key_frame_key_scale_factor)
 		keyframe_style := keyframe_rule.style() or { continue }
 		mut resolved_keyframe := ResolvedKeyFrame{
-			properties:             map[PropertyID]&dom.StyleValue{}
+			properties: map[PropertyID]&dom.StyleValue{}
 			use_initial_properties: map[PropertyID]bool{}
 		}
 
@@ -633,7 +629,7 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 				property_value := style_scope_keyframe_property_value(property, property_id) or {
 					continue
 				}
-				typed := parse_css_value_logic(property_id, property_value.css_text) or { continue }
+				typed := style_value_logic_from_dom(property_id, property_value) or { continue }
 				first := if typed is StyleValueList && typed.size() > 0 {
 					typed.value_at(0, false)
 				} else {
@@ -682,13 +678,13 @@ fn style_scope_generate_initial_and_final_keyframes(mut keyframe_set KeyFrameSet
 	final_key := 100 * animation_key_frame_key_scale_factor
 	if 0 !in keyframe_set.keyframes_by_key {
 		keyframe_set.keyframes_by_key[0] = ResolvedKeyFrame{
-			properties:             map[PropertyID]&dom.StyleValue{}
+			properties: map[PropertyID]&dom.StyleValue{}
 			use_initial_properties: map[PropertyID]bool{}
 		}
 	}
 	if final_key !in keyframe_set.keyframes_by_key {
 		keyframe_set.keyframes_by_key[final_key] = ResolvedKeyFrame{
-			properties:             map[PropertyID]&dom.StyleValue{}
+			properties: map[PropertyID]&dom.StyleValue{}
 			use_initial_properties: map[PropertyID]bool{}
 		}
 	}
@@ -717,19 +713,35 @@ fn style_scope_add_keyframes_rule_to_cache(mut rule_cache RuleCache, rule &CSSRu
 
 fn (mut scope StyleScope) rule_caches_for_origin_mut(cascade_origin CascadeOrigin) ?&RuleCaches {
 	match cascade_origin {
-		.author { return scope.author_rule_cache }
-		.user { return scope.user_rule_cache }
-		.user_agent { return scope.user_agent_rule_cache }
-		else { return none }
+		.author {
+			return scope.author_rule_cache
+		}
+		.user {
+			return scope.user_rule_cache
+		}
+		.user_agent {
+			return scope.user_agent_rule_cache
+		}
+		else {
+			return none
+		}
 	}
 }
 
 fn (scope &StyleScope) rule_caches_for_origin(cascade_origin CascadeOrigin) ?&RuleCaches {
 	match cascade_origin {
-		.author { return scope.author_rule_cache }
-		.user { return scope.user_rule_cache }
-		.user_agent { return scope.user_agent_rule_cache }
-		else { return none }
+		.author {
+			return scope.author_rule_cache
+		}
+		.user {
+			return scope.user_rule_cache
+		}
+		.user_agent {
+			return scope.user_agent_rule_cache
+		}
+		else {
+			return none
+		}
 	}
 }
 
@@ -871,7 +883,7 @@ pub fn (scope &StyleScope) get_pseudo_class_rule_cache(pseudo_class PseudoClass)
 	return scope.pseudo_class_rule_cache[pseudo_class] or { return none }
 }
 
-pub fn (scope &StyleScope) for_each_active_css_style_sheet(callback fn (&CSSStyleSheet)) {
+pub fn (scope &StyleScope) for_each_active_css_style_sheet(callback fn(&CSSStyleSheet)) {
 	style_scope_for_each_active_css_style_sheet_boundary(scope, callback)
 }
 
@@ -1004,7 +1016,7 @@ fn style_scope_set_needs_invalidation_of_elements_affected_by_has(document &dom.
 	mutable_document.needs_invalidation_of_elements_affected_by_has = true
 }
 
-fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callback fn (&CSSStyleSheet)) {
+fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callback fn(&CSSStyleSheet)) {
 	// Concrete CSSStyleSheet objects remain CSS-owned to avoid a dom -> css
 	// dependency. Shadow scopes store theirs directly; document scopes use the
 	// document's opaque author-sheet holder.
@@ -1105,8 +1117,7 @@ fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element d
 	// FIXME: This needs to be revised when adding support for the ::shadow
 	// selector, as it needs to cross shadow boundaries.
 	rule_root := rule_to_run.shadow_root
-	from_user_agent_or_user_stylesheet := rule_to_run.cascade_origin == .user_agent
-		|| rule_to_run.cascade_origin == .user
+	from_user_agent_or_user_stylesheet := rule_to_run.cascade_origin == .user_agent || rule_to_run.cascade_origin == .user
 
 	// NOTE: Inside shadow trees, we only match rules that are defined in the
 	// shadow tree's style sheets. Exceptions are:
@@ -1115,18 +1126,13 @@ fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element d
 	// - ::slotted() rules, which need to match elements assigned to slots from
 	//   inside the shadow root.
 	// - UA or User style sheets don't have a scope, so they are always relevant.
-	mut rule_is_relevant_for_current_scope := style_scope_optional_shadow_root_equal(rule_root,
-		shadow_root)
+	mut rule_is_relevant_for_current_scope := style_scope_optional_shadow_root_equal(rule_root, shadow_root)
 	if shadow_root_for_element := element_shadow_root {
-		rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope
-			|| style_scope_optional_shadow_root_equal(rule_root, shadow_root_for_element)
+		rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope || style_scope_optional_shadow_root_equal(rule_root, shadow_root_for_element)
 	}
-	rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope
-		|| from_user_agent_or_user_stylesheet || rule_to_run.slotted
-		|| rule_to_run.contains_part_pseudo_element
+	rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope || from_user_agent_or_user_stylesheet || rule_to_run.slotted || rule_to_run.contains_part_pseudo_element
 	if root := shadow_root {
-		rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope
-			|| (style_scope_shadow_root_is_none(rule_root) && root.uses_document_style_sheets())
+		rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope || (style_scope_shadow_root_is_none(rule_root) && root.uses_document_style_sheets())
 	}
 
 	if !rule_is_relevant_for_current_scope {
@@ -1134,8 +1140,7 @@ fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element d
 	}
 
 	selector := rule_to_run.selector
-	if selector.can_use_ancestor_filter()
-		&& style_computer.should_reject_with_ancestor_filter(selector) {
+	if selector.can_use_ancestor_filter() && style_computer.should_reject_with_ancestor_filter(selector) {
 		return
 	}
 
@@ -1147,18 +1152,14 @@ fn style_scope_add_rules_to_run(style_computer &StyleComputer, abstract_element 
 	element_namespace_uri := abstract_element.element().namespace_uri()
 	if style_scope_pseudo_element_from_abstract_element(abstract_element) != none {
 		for rule in rules {
-			if rule.contains_pseudo_element
-				&& style_scope_filter_namespace_rule(element_namespace_uri, rule) {
-				style_scope_add_rule_to_run(style_computer, abstract_element, rule, shadow_root,
-					element_shadow_root, mut rules_to_run)
+			if rule.contains_pseudo_element && style_scope_filter_namespace_rule(element_namespace_uri, rule) {
+				style_scope_add_rule_to_run(style_computer, abstract_element, rule, shadow_root, element_shadow_root, mut rules_to_run)
 			}
 		}
 	} else {
 		for rule in rules {
-			if (rule.slotted || rule.contains_part_pseudo_element || !rule.contains_pseudo_element)
-				&& style_scope_filter_namespace_rule(element_namespace_uri, rule) {
-				style_scope_add_rule_to_run(style_computer, abstract_element, rule, shadow_root,
-					element_shadow_root, mut rules_to_run)
+			if (rule.slotted || rule.contains_part_pseudo_element || !rule.contains_pseudo_element) && style_scope_filter_namespace_rule(element_namespace_uri, rule) {
+				style_scope_add_rule_to_run(style_computer, abstract_element, rule, shadow_root, element_shadow_root, mut rules_to_run)
 			}
 		}
 	}
@@ -1175,12 +1176,18 @@ fn style_scope_slot_node(slot &dom.HTMLSlotElement) &dom.Node {
 }
 
 fn style_scope_has_result_cache_boundary(style_computer &StyleComputer) map[string]HasMatchResult {
-	return style_computer.has_result_cache_.clone()
+	// MatchContext and StyleComputer own the same cache for the duration of a
+	// style pass, just as the C++ context holds a reference to StyleComputer's
+	// HashMap. Copying the whole map into and back out of every selector match
+	// turns a constant-time boundary into quadratic traffic on :has()-heavy
+	// pages and needless allocations even when the cache is empty.
+	return unsafe { style_computer.has_result_cache_ }
 }
 
 fn style_scope_store_has_result_cache_boundary(style_computer &StyleComputer, cache map[string]HasMatchResult) {
-	mut mutable_style_computer := unsafe { &StyleComputer(style_computer) }
-	mutable_style_computer.has_result_cache_ = cache.clone()
+	// The map is shared by reference in style_scope_has_result_cache_boundary().
+	_ = style_computer
+	_ = cache
 }
 
 fn style_scope_merge_attempted_pseudo_class_matches(mut attempted PseudoClassBitmap, context MatchContext) {
@@ -1197,22 +1204,16 @@ fn style_scope_add_slotted_rules_for_available_scopes(style_computer &StyleCompu
 	for {
 		current_slot := slot or { break }
 		slot_shadow_root := style_scope_slot_node(current_slot).root().as_shadow_root()
-		if rule_cache := style_computer.rule_cache_for_cascade_origin(cascade_origin,
-			qualified_layer_name, slot_shadow_root)
-		{
-			style_scope_add_rules_to_run(style_computer, abstract_element,
-				rule_cache.slotted_rules, shadow_root, element_shadow_root, mut rules_to_run)
+		if rule_cache := style_computer.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name, slot_shadow_root) {
+			style_scope_add_rules_to_run(style_computer, abstract_element, rule_cache.slotted_rules, shadow_root, element_shadow_root, mut rules_to_run)
 		}
 		slot = style_scope_slot_node(current_slot).assigned_slot_internal()
 	}
 }
 
 fn style_scope_add_part_rules_from_scope(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, qualified_layer_name ?string, part_scope_shadow_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []MatchingRule) {
-	if rule_cache := style_computer.rule_cache_for_cascade_origin(cascade_origin,
-		qualified_layer_name, part_scope_shadow_root)
-	{
-		style_scope_add_rules_to_run(style_computer, abstract_element, rule_cache.part_rules,
-			shadow_root, element_shadow_root, mut rules_to_run)
+	if rule_cache := style_computer.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name, part_scope_shadow_root) {
+		style_scope_add_rules_to_run(style_computer, abstract_element, rule_cache.part_rules, shadow_root, element_shadow_root, mut rules_to_run)
 	}
 }
 
@@ -1225,19 +1226,14 @@ fn style_scope_add_part_rules_for_available_scopes(style_computer &StyleComputer
 	if shadow_root == none {
 		return
 	}
-	if style_scope_pseudo_element_from_abstract_element(abstract_element) == none
-		&& abstract_element.element().parts.len == 0 {
+	if style_scope_pseudo_element_from_abstract_element(abstract_element) == none && abstract_element.element().parts.len == 0 {
 		return
 	}
-	style_scope_add_part_rules_from_scope(style_computer, abstract_element, cascade_origin,
-		qualified_layer_name, shadow_root, shadow_root, element_shadow_root, mut rules_to_run)
+	style_scope_add_part_rules_from_scope(style_computer, abstract_element, cascade_origin, qualified_layer_name, shadow_root, shadow_root, element_shadow_root, mut rules_to_run)
 	for part_shadow_root in style_scope_flat_tree_ancestor_shadow_roots(abstract_element.element().as_node()) {
-		style_scope_add_part_rules_from_scope(style_computer, abstract_element, cascade_origin,
-			qualified_layer_name, part_shadow_root, shadow_root, element_shadow_root, mut
-			rules_to_run)
+		style_scope_add_part_rules_from_scope(style_computer, abstract_element, cascade_origin, qualified_layer_name, part_shadow_root, shadow_root, element_shadow_root, mut rules_to_run)
 	}
-	style_scope_add_part_rules_from_scope(style_computer, abstract_element, cascade_origin,
-		qualified_layer_name, none, shadow_root, element_shadow_root, mut rules_to_run)
+	style_scope_add_part_rules_from_scope(style_computer, abstract_element, cascade_origin, qualified_layer_name, none, shadow_root, element_shadow_root, mut rules_to_run)
 }
 
 fn style_scope_flat_tree_ancestor_shadow_roots(node &dom.Node) []&dom.ShadowRoot {
@@ -1270,8 +1266,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 	mut rules_to_run := []MatchingRule{}
 	if rule_cache := scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name) {
 		for bucket in rule_cache.matching_rule_buckets(abstract_element) {
-			style_scope_add_rules_to_run(style_computer, abstract_element, bucket, shadow_root,
-				element_shadow_root, mut rules_to_run)
+			style_scope_add_rules_to_run(style_computer, abstract_element, bucket, shadow_root, element_shadow_root, mut rules_to_run)
 		}
 	}
 	// A shadow host also participates in the author scope of its own shadow
@@ -1282,24 +1277,17 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		if own_root := element_shadow_root {
 			own_scope := css_style_scope_for_shadow_root(own_root)
 			if voidptr(own_scope) != voidptr(scope) {
-				if own_cache := own_scope.rule_cache_for_cascade_origin(cascade_origin,
-					qualified_layer_name)
-				{
+				if own_cache := own_scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name) {
 					for bucket in own_cache.matching_rule_buckets(abstract_element) {
-						style_scope_add_rules_to_run(style_computer, abstract_element, bucket,
-							shadow_root, element_shadow_root, mut rules_to_run)
+						style_scope_add_rules_to_run(style_computer, abstract_element, bucket, shadow_root, element_shadow_root, mut rules_to_run)
 					}
 				}
 			}
 		}
 	}
 
-	style_scope_add_slotted_rules_for_available_scopes(style_computer, abstract_element,
-		cascade_origin, qualified_layer_name, scope, shadow_root, element_shadow_root, mut
-		rules_to_run)
-	style_scope_add_part_rules_for_available_scopes(style_computer, abstract_element,
-		cascade_origin, qualified_layer_name, scope, shadow_root, element_shadow_root, mut
-		rules_to_run)
+	style_scope_add_slotted_rules_for_available_scopes(style_computer, abstract_element, cascade_origin, qualified_layer_name, scope, shadow_root, element_shadow_root, mut rules_to_run)
+	style_scope_add_part_rules_for_available_scopes(style_computer, abstract_element, cascade_origin, qualified_layer_name, scope, shadow_root, element_shadow_root, mut rules_to_run)
 
 	mut matching_rules := []MatchingRule{}
 	for rule_to_run in rules_to_run {
@@ -1311,8 +1299,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		// `:host(...) .descendant` selectors).
 		rule_root := rule_to_run.shadow_root
 		mut shadow_host_to_use := shadow_host
-		if abstract_element.element().is_shadow_host()
-			&& !style_scope_optional_shadow_root_equal(rule_root, abstract_element.element().shadow_root()) {
+		if abstract_element.element().is_shadow_host() && !style_scope_optional_shadow_root_equal(rule_root, abstract_element.element().shadow_root()) {
 			if root := rule_root {
 				shadow_host_to_use = root.host()
 			} else {
@@ -1326,18 +1313,17 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 			rule_shadow_root_for_context = unsafe { &dom.ShadowRoot(root) }
 		}
 		mut context := MatchContext{
-			style_sheet_for_rule:                              rule_to_run.sheet
-			subject:                                           abstract_element.element()
-			rule_shadow_root:                                  rule_shadow_root_for_context
+			style_sheet_for_rule: rule_to_run.sheet
+			subject: abstract_element.element()
+			rule_shadow_root: rule_shadow_root_for_context
 			collect_per_element_selector_involvement_metadata: true
-			has_result_cache:                                  style_scope_has_result_cache_boundary(style_computer)
+			has_result_cache: style_scope_has_result_cache_boundary(style_computer)
 		}
 
 		mut did_match := false
 		if selector.is_slotted() {
 			if abstract_element.element().as_node().assigned_slot_internal() == none {
-				style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches,
-					context)
+				style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, context)
 				continue
 			}
 			// We're collecting rules for element, which is assigned to a slot.
@@ -1350,9 +1336,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 			mut slot := abstract_element.element().as_node().assigned_slot_internal()
 			for {
 				current_slot := slot or { break }
-				if style_scope_optional_shadow_root_equal(style_scope_slot_node(current_slot).root().as_shadow_root(),
-					rule_root)
-				{
+				if style_scope_optional_shadow_root_equal(style_scope_slot_node(current_slot).root().as_shadow_root(), rule_root) {
 					matching_slot = unsafe { &dom.HTMLSlotElement(current_slot) }
 					break
 				}
@@ -1367,17 +1351,13 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 				if slot_shadow_root := style_scope_slot_node(actual_slot).root().as_shadow_root() {
 					slot_shadow_host = slot_shadow_root.host()
 				}
-				did_match = matches(selector, matching_slot_element, slot_shadow_host, mut context,
-					PseudoElement.slotted, none, .normal, none)
+				did_match = matches(selector, matching_slot_element, slot_shadow_host, mut context, PseudoElement.slotted, none, .normal, none)
 			}
 		} else {
-			did_match = matches(selector, abstract_element.element(), shadow_host_to_use, mut
-				context, style_scope_pseudo_element_from_abstract_element(abstract_element), none,
-				.normal, none)
+			did_match = matches(selector, abstract_element.element(), shadow_host_to_use, mut context, style_scope_pseudo_element_from_abstract_element(abstract_element), none, .normal, none)
 		}
 
-		style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches,
-			context)
+		style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, context)
 		style_scope_store_has_result_cache_boundary(style_computer, context.has_result_cache)
 		if did_match {
 			matching_rules << rule_to_run
@@ -1389,8 +1369,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 
 pub fn style_computer_collect_matching_rules_without_scope_boundary(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []MatchingRule {
 	scope := css_style_scope_for(abstract_element)
-	return style_computer_collect_matching_rules_in_scope(style_computer, abstract_element,
-		cascade_origin, mut attempted_pseudo_class_matches, qualified_layer_name, scope)
+	return style_computer_collect_matching_rules_in_scope(style_computer, abstract_element, cascade_origin, mut attempted_pseudo_class_matches, qualified_layer_name, scope)
 }
 
 fn matching_rule_less_than(left MatchingRule, right MatchingRule) bool {
@@ -1420,30 +1399,26 @@ pub fn sort_matching_rules(mut matching_rules []MatchingRule) {
 pub fn style_computer_build_matching_rule_set_impl(style_computer &StyleComputer, abstract_element dom.AbstractElement, mut attempted_pseudo_class_matches PseudoClassBitmap, did_match_any_pseudo_element_rules &bool, mode ComputeStyleMode, scope &StyleScope) MatchingRuleSet {
 	// First, we collect all the CSS rules whose selectors match `element`:
 	mut matching_rule_set := MatchingRuleSet{}
-	matching_rule_set.user_agent_rules = style_computer_collect_matching_rules_in_scope(style_computer,
-		abstract_element, .user_agent, mut attempted_pseudo_class_matches, none, scope)
+	matching_rule_set.user_agent_rules = style_computer_collect_matching_rules_in_scope(style_computer, abstract_element, .user_agent, mut attempted_pseudo_class_matches, none, scope)
 	sort_matching_rules(mut matching_rule_set.user_agent_rules)
-	matching_rule_set.user_rules = style_computer_collect_matching_rules_in_scope(style_computer,
-		abstract_element, .user, mut attempted_pseudo_class_matches, none, scope)
+	matching_rule_set.user_rules = style_computer_collect_matching_rules_in_scope(style_computer, abstract_element, .user, mut attempted_pseudo_class_matches, none, scope)
 	sort_matching_rules(mut matching_rule_set.user_rules)
 
 	// @layer-ed author rules
 	for layer_name in scope.qualified_layer_names_in_order {
-		mut layer_rules := style_computer_collect_matching_rules_in_scope(style_computer,
-			abstract_element, .author, mut attempted_pseudo_class_matches, layer_name, scope)
+		mut layer_rules := style_computer_collect_matching_rules_in_scope(style_computer, abstract_element, .author, mut attempted_pseudo_class_matches, layer_name, scope)
 		sort_matching_rules(mut layer_rules)
 		matching_rule_set.author_rules << LayerMatchingRules{
 			qualified_layer_name: layer_name
-			rules:                layer_rules
+			rules: layer_rules
 		}
 	}
 	// Un-@layer-ed author rules
-	mut unlayered_author_rules := style_computer_collect_matching_rules_in_scope(style_computer,
-		abstract_element, .author, mut attempted_pseudo_class_matches, none, scope)
+	mut unlayered_author_rules := style_computer_collect_matching_rules_in_scope(style_computer, abstract_element, .author, mut attempted_pseudo_class_matches, none, scope)
 	sort_matching_rules(mut unlayered_author_rules)
 	matching_rule_set.author_rules << LayerMatchingRules{
 		qualified_layer_name: ''
-		rules:                unlayered_author_rules
+		rules: unlayered_author_rules
 	}
 
 	if mode == .create_pseudo_element_style_if_needed {
@@ -1455,9 +1430,7 @@ pub fn style_computer_build_matching_rule_set_impl(style_computer &StyleComputer
 			}
 		}
 		unsafe {
-			*did_match_any_pseudo_element_rules = author_rules_has_any_rules
-				|| matching_rule_set.user_rules.len != 0
-				|| matching_rule_set.user_agent_rules.len != 0
+			*did_match_any_pseudo_element_rules = author_rules_has_any_rules || matching_rule_set.user_rules.len != 0 || matching_rule_set.user_agent_rules.len != 0
 		}
 	}
 

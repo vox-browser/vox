@@ -6,7 +6,6 @@ import strings
 import dom
 
 // --- Style invalidation ---
-
 pub enum StyleInvalidationReason {
 	base_url_changed
 	hover_changed
@@ -17,7 +16,9 @@ pub enum StyleInvalidationReason {
 pub fn invalidate_style(doc &dom.Document, reason StyleInvalidationReason) {
 	mapped_reason := match reason {
 		.base_url_changed { dom.StyleInvalidationReason.base_url_changed }
-		.hover_changed, .style_sheet_changed, .dom_mutation { dom.StyleInvalidationReason.style_change }
+		.hover_changed, .style_sheet_changed, .dom_mutation {
+			dom.StyleInvalidationReason.style_change
+		}
 	}
 
 	mut document_node := unsafe { &dom.Node(doc) }
@@ -25,7 +26,6 @@ pub fn invalidate_style(doc &dom.Document, reason StyleInvalidationReason) {
 }
 
 // --- CSS parsing context ---
-
 pub struct ParsingParams {
 pub:
 	document            &dom.Document = unsafe { nil }
@@ -434,7 +434,6 @@ pub fn parse_css_value(context ParsingParams, text string, property PropertyID) 
 }
 
 // --- Color resolution ---
-
 pub struct ColorResolutionContext {
 pub mut:
 	color_scheme  ?PreferredColorScheme
@@ -463,25 +462,20 @@ fn color_resolution_context_for_computed_properties(computed &ComputedProperties
 	initial_color := SystemColor.canvas_text(scheme)
 	initial_accent := SystemColor.accent_color(scheme)
 	base_context := ColorResolutionContext{
-		color_scheme:  scheme
+		color_scheme: scheme
 		current_color: initial_color
-		accent_color:  initial_accent
+		accent_color: initial_accent
 	}
-	resolved_color := computed.color_or_fallback(.color, base_context, ComputedColor.rgba(initial_color.r,
-		initial_color.g, initial_color.b, initial_color.a))
-	resolved_accent := computed.color_or_fallback(.accent_color, base_context, ComputedColor.rgba(initial_accent.r,
-		initial_accent.g, initial_accent.b, initial_accent.a))
+	resolved_color := computed.color_or_fallback(.color, base_context, ComputedColor.rgba(initial_color.r, initial_color.g, initial_color.b, initial_color.a))
+	resolved_accent := computed.color_or_fallback(.accent_color, base_context, ComputedColor.rgba(initial_accent.r, initial_accent.g, initial_accent.b, initial_accent.a))
 	return ColorResolutionContext{
-		color_scheme:  scheme
-		current_color: Color.rgba(resolved_color.red(), resolved_color.green(),
-			resolved_color.blue(), resolved_color.alpha())
-		accent_color:  Color.rgba(resolved_accent.red(), resolved_accent.green(),
-			resolved_accent.blue(), resolved_accent.alpha())
+		color_scheme: scheme
+		current_color: Color.rgba(resolved_color.red(), resolved_color.green(), resolved_color.blue(), resolved_color.alpha())
+		accent_color: Color.rgba(resolved_accent.red(), resolved_accent.green(), resolved_accent.blue(), resolved_accent.alpha())
 	}
 }
 
 // --- ContentVisibility ---
-
 pub enum ContentVisibility {
 	auto_
 	visible
@@ -489,7 +483,6 @@ pub enum ContentVisibility {
 }
 
 // --- RequiredInvalidationAfterStyleChange ---
-
 pub struct RequiredInvalidationAfterStyleChange {
 pub mut:
 	repaint                             bool
@@ -500,12 +493,10 @@ pub mut:
 }
 
 pub fn (r RequiredInvalidationAfterStyleChange) is_none() bool {
-	return !r.repaint && !r.rebuild_stacking_context_tree && !r.relayout && !r.rebuild_layout_tree
-		&& !r.rebuild_accumulated_visual_contexts
+	return !r.repaint && !r.rebuild_stacking_context_tree && !r.relayout && !r.rebuild_layout_tree && !r.rebuild_accumulated_visual_contexts
 }
 
 // --- StyleComputer user agent source ---
-
 pub fn user_agent_style_sheet_source(url string) ?string {
 	return match url {
 		'CSS/Default.css' { user_agent_stylesheet_source }
@@ -517,7 +508,6 @@ pub fn user_agent_style_sheet_source(url string) ?string {
 }
 
 // --- Serialization ---
-
 pub enum SerializationMode {
 	normal
 	resolved_value
@@ -576,10 +566,7 @@ pub fn serialize_an_identifier(ident string) string {
 			builder.write_rune(character)
 			continue
 		}
-		if code_point >= 0x0080 || character == `-` || character == `_`
-			|| (character >= `0` && character <= `9`)
-			|| (character >= `A` && character <= `Z`)
-			|| (character >= `a` && character <= `z`) {
+		if code_point >= 0x0080 || character == `-` || character == `_` || (character >= `0` && character <= `9`) || (character >= `A` && character <= `Z`) || (character >= `a` && character <= `z`) {
 			builder.write_rune(character)
 			continue
 		}
@@ -652,7 +639,6 @@ pub fn serialize_a_css_declaration(property string, value string, important Impo
 }
 
 // --- Units ---
-
 pub enum AngleUnit {
 	deg
 	grad
@@ -968,7 +954,6 @@ pub fn ratio_between_length_units(from LengthUnit, to LengthUnit) f64 {
 }
 
 // --- Percentage ---
-
 pub struct Percentage {
 pub mut:
 	value_ f64
@@ -1008,7 +993,6 @@ pub fn (p Percentage) compare(other Percentage) int {
 }
 
 // --- Angle ---
-
 pub struct Angle {
 pub mut:
 	value_ f64
@@ -1018,7 +1002,7 @@ pub mut:
 pub fn Angle.new(value f64, unit AngleUnit) Angle {
 	return Angle{
 		value_: value
-		unit_:  unit
+		unit_: unit
 	}
 }
 
@@ -1078,7 +1062,6 @@ pub fn (a Angle) compare(other Angle) int {
 }
 
 // --- Frequency ---
-
 pub struct Frequency {
 pub mut:
 	value_ f64
@@ -1088,7 +1071,7 @@ pub mut:
 pub fn Frequency.new(value f64, unit FrequencyUnit) Frequency {
 	return Frequency{
 		value_: value
-		unit_:  unit
+		unit_: unit
 	}
 }
 
@@ -1155,7 +1138,7 @@ pub mut:
 pub fn Flex.new(value f64, unit FlexUnit) Flex {
 	return Flex{
 		value_: value
-		unit_:  unit
+		unit_: unit
 	}
 }
 
@@ -1213,7 +1196,6 @@ pub fn (f Flex) compare(other Flex) int {
 }
 
 // --- Number ---
-
 pub enum NumberType {
 	number
 	integer_with_explicit_sign
@@ -1233,7 +1215,7 @@ pub fn Number.new() Number {
 pub fn Number.with_type(type_ NumberType, value f64) Number {
 	return Number{
 		value_: value
-		type_:  type_
+		type_: type_
 	}
 }
 
@@ -1329,7 +1311,6 @@ pub fn (n Number) compare(other Number) int {
 }
 
 // --- Ratio ---
-
 pub struct Ratio {
 pub mut:
 	first_value_  f64
@@ -1338,7 +1319,7 @@ pub mut:
 
 pub fn Ratio.new(first f64, second f64) Ratio {
 	return Ratio{
-		first_value_:  first
+		first_value_: first
 		second_value_: second
 	}
 }
@@ -1361,8 +1342,7 @@ pub fn (r Ratio) value() f64 {
 
 // https://www.w3.org/TR/css-values-4/#degenerate-ratio
 pub fn (r Ratio) is_degenerate() bool {
-	return math.is_inf(r.first_value_, 0) || math.is_nan(r.first_value_) || r.first_value_ == 0
-		|| math.is_inf(r.second_value_, 0) || math.is_nan(r.second_value_) || r.second_value_ == 0
+	return math.is_inf(r.first_value_, 0) || math.is_nan(r.first_value_) || r.first_value_ == 0 || math.is_inf(r.second_value_, 0) || math.is_nan(r.second_value_) || r.second_value_ == 0
 }
 
 pub fn (r Ratio) to_string() string {
@@ -1386,7 +1366,6 @@ pub fn (r Ratio) compare(other Ratio) int {
 }
 
 // --- Resolution ---
-
 pub struct Resolution {
 pub mut:
 	value_ f64
@@ -1396,7 +1375,7 @@ pub mut:
 pub fn Resolution.new(value f64, unit ResolutionUnit) Resolution {
 	return Resolution{
 		value_: value
-		unit_:  unit
+		unit_: unit
 	}
 }
 
@@ -1453,7 +1432,6 @@ pub fn (r Resolution) compare(other Resolution) int {
 }
 
 // --- Time ---
-
 pub struct Time {
 pub mut:
 	value_ f64
@@ -1463,7 +1441,7 @@ pub mut:
 pub fn Time.new(value f64, unit TimeUnit) Time {
 	return Time{
 		value_: value
-		unit_:  unit
+		unit_: unit
 	}
 }
 
@@ -1528,7 +1506,6 @@ pub fn (t Time) compare(other Time) int {
 }
 
 // --- CSS pixel units ---
-
 pub struct CSSPixels {
 pub mut:
 	raw_value_ int
@@ -1622,9 +1599,9 @@ pub mut:
 
 pub fn CSSPixelRect.new(x f64, y f64, width f64, height f64) CSSPixelRect {
 	return CSSPixelRect{
-		x:      CSSPixels.nearest_value_for(x)
-		y:      CSSPixels.nearest_value_for(y)
-		width:  CSSPixels.nearest_value_for(width)
+		x: CSSPixels.nearest_value_for(x)
+		y: CSSPixels.nearest_value_for(y)
+		width: CSSPixels.nearest_value_for(width)
 		height: CSSPixels.nearest_value_for(height)
 	}
 }
@@ -1653,7 +1630,7 @@ pub mut:
 
 pub fn CSSPixelSize.new(width CSSPixels, height CSSPixels) CSSPixelSize {
 	return CSSPixelSize{
-		width_:  width
+		width_: width
 		height_: height
 	}
 }
@@ -1685,7 +1662,7 @@ pub fn CSSPixelFraction.new(numerator CSSPixels, denominator CSSPixels) CSSPixel
 		panic('CSSPixelFraction denominator must not be zero')
 	}
 	return CSSPixelFraction{
-		numerator_:   numerator
+		numerator_: numerator
 		denominator_: denominator
 	}
 }
@@ -1703,7 +1680,6 @@ pub fn (f CSSPixelFraction) might_be_saturated() bool {
 }
 
 // --- Length ---
-
 pub struct LengthFontMetrics {
 pub mut:
 	font_size    CSSPixels
@@ -1715,22 +1691,22 @@ pub mut:
 
 pub fn LengthFontMetrics.new(font_size CSSPixels, x_height CSSPixels, cap_height CSSPixels, zero_advance CSSPixels, line_height CSSPixels) LengthFontMetrics {
 	return LengthFontMetrics{
-		font_size:    font_size
-		x_height:     x_height
-		cap_height:   cap_height
+		font_size: font_size
+		x_height: x_height
+		cap_height: cap_height
 		zero_advance: zero_advance
-		line_height:  line_height
+		line_height: line_height
 	}
 }
 
 pub fn LengthFontMetrics.default() LengthFontMetrics {
 	font_size := CSSPixels.nearest_value_for(16.0)
 	return LengthFontMetrics{
-		font_size:    font_size
-		x_height:     CSSPixels.nearest_value_for(8.0)
-		cap_height:   CSSPixels.nearest_value_for(12.0)
+		font_size: font_size
+		x_height: CSSPixels.nearest_value_for(8.0)
+		cap_height: CSSPixels.nearest_value_for(12.0)
 		zero_advance: CSSPixels.nearest_value_for(8.0)
-		line_height:  CSSPixels.nearest_value_for(19.2)
+		line_height: CSSPixels.nearest_value_for(19.2)
 	}
 }
 
@@ -1744,8 +1720,8 @@ pub mut:
 pub fn LengthResolutionContext.default() LengthResolutionContext {
 	font_metrics := LengthFontMetrics.default()
 	return LengthResolutionContext{
-		viewport_rect:     CSSPixelRect.new(0, 0, 0, 0)
-		font_metrics:      font_metrics
+		viewport_rect: CSSPixelRect.new(0, 0, 0, 0)
+		font_metrics: font_metrics
 		root_font_metrics: font_metrics
 	}
 }
@@ -1767,7 +1743,7 @@ pub mut:
 pub fn Length.new(value f64, unit LengthUnit) Length {
 	return Length{
 		value_: value
-		unit_:  unit
+		unit_: unit
 	}
 }
 
@@ -1816,8 +1792,7 @@ pub fn (l Length) unit_name() string {
 }
 
 pub fn (l Length) to_px(context LengthResolutionContext) CSSPixels {
-	return l.to_px_with_values(context.viewport_rect, context.font_metrics,
-		context.root_font_metrics)
+	return l.to_px_with_values(context.viewport_rect, context.font_metrics, context.root_font_metrics)
 }
 
 pub fn (l Length) to_px_without_rounding(context LengthResolutionContext) f64 {
@@ -1825,8 +1800,7 @@ pub fn (l Length) to_px_without_rounding(context LengthResolutionContext) f64 {
 		return l.absolute_length_to_px_without_rounding()
 	}
 	if l.is_font_relative() {
-		return l.font_relative_length_to_px_without_rounding(context.font_metrics,
-			context.root_font_metrics)
+		return l.font_relative_length_to_px_without_rounding(context.font_metrics, context.root_font_metrics)
 	}
 	if l.is_viewport_relative() {
 		return l.viewport_relative_length_to_px_without_rounding(context.viewport_rect)
@@ -1856,8 +1830,7 @@ pub fn (l Length) absolute_length_to_px_without_rounding() f64 {
 }
 
 pub fn (l Length) font_relative_length_to_px(font_metrics LengthFontMetrics, root_font_metrics LengthFontMetrics) CSSPixels {
-	return CSSPixels.nearest_value_for(l.font_relative_length_to_px_without_rounding(font_metrics,
-		root_font_metrics))
+	return CSSPixels.nearest_value_for(l.font_relative_length_to_px_without_rounding(font_metrics, root_font_metrics))
 }
 
 pub fn (l Length) font_relative_length_to_px_without_rounding(font_metrics LengthFontMetrics, root_font_metrics LengthFontMetrics) f64 {
@@ -2019,7 +1992,6 @@ pub fn (loa LengthOrAuto) to_px_or_zero(context LengthResolutionContext) CSSPixe
 }
 
 // --- Calculated style value stubs ---
-
 pub type CalculationPercentageBasis = Angle | Frequency | Length | Number | Time
 
 pub struct CalculationResolutionContext {
@@ -2085,7 +2057,7 @@ pub fn (context CalculationResolutionContext) percentage_basis_time() ?Time {
 
 pub fn CalculationResolutionContext.from_computation_context(computation_context ComputationContext, percentage_basis ?CalculationPercentageBasis) CalculationResolutionContext {
 	return CalculationResolutionContext{
-		percentage_basis:          percentage_basis
+		percentage_basis: percentage_basis
 		length_resolution_context: computation_context.length_resolution_context
 	}
 }
@@ -2284,6 +2256,12 @@ pub fn (c CalculatedStyleValue) resolve_length(context CalculationResolutionCont
 }
 
 fn parsed_length_percentage_style_value_from_dom_style_value(style_value &dom.StyleValue) ?StyleValue {
+	if typed := typed_style_value_logic_from_dom(style_value) {
+		return match typed {
+			LengthStyleValue, PercentageStyleValue, CalculatedStyleValue { typed }
+			else { none }
+		}
+	}
 	if style_value.css_text.len == 0 {
 		return none
 	}
@@ -2308,7 +2286,7 @@ pub fn Length.from_style_value(style_value &dom.StyleValue, percentage_basis ?Le
 
 pub fn Length.resolve_calculated(calculated CalculatedStyleValue, context LengthResolutionContext, reference_value Length) Length {
 	resolution_context := CalculationResolutionContext{
-		percentage_basis:          reference_value
+		percentage_basis: reference_value
 		length_resolution_context: context
 	}
 	return calculated.resolve_length(resolution_context) or { Length.make_px(0) }
@@ -2319,7 +2297,6 @@ pub fn Length.resolve_calculated_with_px(calculated CalculatedStyleValue, contex
 }
 
 // --- PercentageOr ---
-
 pub type AnglePercentageValue = Angle | CalculatedStyleValue | Percentage
 
 pub struct AnglePercentage {
@@ -2976,7 +2953,6 @@ pub fn (np NumberPercentage) to_string_with_mode(mode SerializationMode) string 
 }
 
 // --- LengthBox ---
-
 pub struct LengthBox {
 pub mut:
 	top_    LengthPercentageOrAuto
@@ -2987,19 +2963,19 @@ pub mut:
 
 pub fn LengthBox.new() LengthBox {
 	return LengthBox{
-		top_:    LengthPercentageOrAuto.make_auto()
-		right_:  LengthPercentageOrAuto.make_auto()
+		top_: LengthPercentageOrAuto.make_auto()
+		right_: LengthPercentageOrAuto.make_auto()
 		bottom_: LengthPercentageOrAuto.make_auto()
-		left_:   LengthPercentageOrAuto.make_auto()
+		left_: LengthPercentageOrAuto.make_auto()
 	}
 }
 
 pub fn LengthBox.with_values(top LengthPercentageOrAuto, right LengthPercentageOrAuto, bottom LengthPercentageOrAuto, left LengthPercentageOrAuto) LengthBox {
 	return LengthBox{
-		top_:    top
-		right_:  right
+		top_: top
+		right_: right
 		bottom_: bottom
-		left_:   left
+		left_: left
 	}
 }
 
@@ -3020,7 +2996,6 @@ pub fn (b LengthBox) left() LengthPercentageOrAuto {
 }
 
 // --- EdgeRect ---
-
 pub struct EdgeRect {
 pub mut:
 	top_edge    LengthOrAuto
@@ -3069,7 +3044,6 @@ pub fn (e EdgeRect) resolved(context LengthResolutionContext, border_box CSSPixe
 }
 
 // --- Size ---
-
 pub enum SizeType {
 	auto_
 	calculated
@@ -3089,7 +3063,7 @@ pub mut:
 
 pub fn Size.new(type_ SizeType, length_percentage ?LengthPercentage) Size {
 	return Size{
-		type_:              type_
+		type_: type_
 		length_percentage_: length_percentage
 	}
 }
@@ -3277,7 +3251,6 @@ pub fn (s Size) to_string_with_mode(mode SerializationMode) string {
 }
 
 // --- Sizing ---
-
 pub struct SizeWithAspectRatio {
 pub mut:
 	width        ?CSSPixels
@@ -3321,12 +3294,10 @@ pub fn run_default_sizing_algorithm(specified_width ?CSSPixels, specified_height
 		if aspect_ratio := natural.aspect_ratio {
 			if !aspect_ratio.might_be_saturated() {
 				if width := specified_width {
-					return CSSPixelSize.new(width,
-						CSSPixels.nearest_value_for(width.to_double() / aspect_ratio.to_double()))
+					return CSSPixelSize.new(width, CSSPixels.nearest_value_for(width.to_double() / aspect_ratio.to_double()))
 				}
 				if height := specified_height {
-					return CSSPixelSize.new(CSSPixels.nearest_value_for(height.to_double() * aspect_ratio.to_double()),
-						height)
+					return CSSPixelSize.new(CSSPixels.nearest_value_for(height.to_double() * aspect_ratio.to_double()), height)
 				}
 			}
 		}
@@ -3366,11 +3337,9 @@ pub fn run_default_sizing_algorithm(specified_width ?CSSPixels, specified_height
 			default_width := default_size.width().to_double()
 			default_height := default_size.height().to_double()
 			if aspect_ratio.to_double() >= default_width / default_height {
-				return CSSPixelSize.new(default_size.width(),
-					CSSPixels.nearest_value_for(default_width / aspect_ratio.to_double()))
+				return CSSPixelSize.new(default_size.width(), CSSPixels.nearest_value_for(default_width / aspect_ratio.to_double()))
 			}
-			return CSSPixelSize.new(CSSPixels.nearest_value_for(default_height * aspect_ratio.to_double()),
-				default_size.height())
+			return CSSPixelSize.new(CSSPixels.nearest_value_for(default_height * aspect_ratio.to_double()), default_size.height())
 		}
 	}
 	return default_size
