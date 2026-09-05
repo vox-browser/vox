@@ -11,6 +11,91 @@ fn test_to_gfx_scaling_mode_matches_css_image_rendering() {
 	assert to_gfx_scaling_mode(.pixelated, IntSize{100, 100}, IntSize{200, 200}) == .nearest_neighbor
 }
 
+fn test_image_paintable_translates_object_fit_position_rounding_and_clip() {
+	converter := new_device_pixel_converter(1) or { panic(err) }
+	mut paintable := ImagePaintable{
+		image_rect: Rect{10, 20, 100, 100}
+		border_radii: BorderRadiiData{
+			top_left: BorderRadiusData{20, 18}
+			top_right: BorderRadiusData{16, 14}
+			bottom_right: BorderRadiusData{12, 10}
+			bottom_left: BorderRadiusData{8, 6}
+		}
+		border_widths: PixelBox{6, 5, 4, 3}
+		object_fit: .contain
+		object_position: css.Position{
+			offset_x: css.LengthPercentage.from_percentage(css.Percentage.new(50))
+			offset_y: css.LengthPercentage.from_percentage(css.Percentage.new(50))
+		}
+		resolution_context: css.LengthResolutionContext.default()
+		image_rendering: .auto_
+	}
+	contain := paintable.paint('image', IntRect{0, 0, 200, 50}, converter) or {
+		panic('expected contain image paint')
+	}
+	assert contain.bitmap.destination == IntRect{10, 58, 100, 25}
+	assert contain.bitmap.clip_rect == IntRect{10, 20, 100, 100}
+	// C++ chooses this from the 100x100 content box. Choosing from the fitted
+	// 100x25 destination instead would incorrectly select bilinear-mipmap.
+	assert contain.bitmap.scaling == .bilinear
+	assert contain.clip_radii == CornerRadii{
+		top_left: CornerRadius{17, 12}
+		top_right: CornerRadius{11, 8}
+		bottom_right: CornerRadius{7, 6}
+		bottom_left: CornerRadius{5, 2}
+	}
+
+	paintable = ImagePaintable{
+		...paintable
+		object_fit: .cover
+		object_position: css.Position{
+			offset_x: css.LengthPercentage.from_percentage(css.Percentage.new(25))
+			offset_y: css.LengthPercentage.from_percentage(css.Percentage.new(70))
+		}
+	}
+	cover := paintable.paint('image', IntRect{0, 0, 200, 50}, converter) or {
+		panic('expected cover image paint')
+	}
+	assert cover.bitmap.destination == IntRect{-65, 20, 400, 100}
+
+	paintable = ImagePaintable{
+		...paintable
+		object_fit: .none_
+		object_position: css.Position{
+			offset_x: css.LengthPercentage.from_length(css.Length.make_px(9))
+			offset_y: css.LengthPercentage.from_length(css.Length.make_px(5))
+		}
+	}
+	none_fit := paintable.paint('image', IntRect{0, 0, 200, 50}, converter) or {
+		panic('expected unscaled image paint')
+	}
+	assert none_fit.bitmap.destination == IntRect{19, 25, 200, 50}
+
+	paintable = ImagePaintable{
+		...paintable
+		object_fit: .scale_down
+		object_position: css.Position{}
+	}
+	large_scale_down := paintable.paint('image', IntRect{0, 0, 200, 50}, converter) or {
+		panic('expected large scale-down image paint')
+	}
+	assert large_scale_down.bitmap.destination == IntRect{10, 58, 100, 25}
+	small_scale_down := paintable.paint('image', IntRect{0, 0, 50, 50}, converter) or {
+		panic('expected small scale-down image paint')
+	}
+	assert small_scale_down.bitmap.destination == IntRect{35, 45, 50, 50}
+
+	paintable = ImagePaintable{
+		...paintable
+		object_fit: .fill
+		is_svg_image: true
+	}
+	svg := paintable.paint('svg', IntRect{0, 0, 200, 50}, converter) or {
+		panic('expected SVG image paint')
+	}
+	assert svg.bitmap.destination == IntRect{10, 58, 100, 25}
+}
+
 fn test_fragment_index_and_selection_offsets_cover_all_selection_states() {
 	fragment := PaintableFragment{
 		paintable_id: 'text'

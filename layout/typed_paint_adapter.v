@@ -1647,6 +1647,7 @@ fn normalize_svg_pattern_operations(operations []painting.SVGMaskPaintOperation,
 			normalized << painting.SVGMaskPaintOperation{
 				...operation
 				image_rect: normalization.map_rect(operation.image_rect)
+				image_paintable: normalized_svg_operation_image_paintable(operation.image_paintable, normalization)
 				transform: multiply_painting_affine(normalization, operation.transform)
 			}
 		} else {
@@ -1654,6 +1655,15 @@ fn normalize_svg_pattern_operations(operations []painting.SVGMaskPaintOperation,
 		}
 	}
 	return normalized
+}
+
+fn normalized_svg_operation_image_paintable(value ?painting.ImagePaintable,
+	transform painting.Affine) ?painting.ImagePaintable {
+	paintable := value or { return none }
+	return painting.ImagePaintable{
+		...paintable
+		image_rect: transform.map_rect(paintable.image_rect)
+	}
 }
 
 fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVGPaint,
@@ -2324,18 +2334,27 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 					&& used.content_height().to_double() > 0 {
 					position := paint_cumulative_offset(node, state, used)
 					object_position := computed.object_position()
+					image_rect := painting.Rect{
+						x: position.x().to_double()
+						y: position.y().to_double()
+						width: used.content_width().to_double()
+						height: used.content_height().to_double()
+					}
 					collection.operations << painting.SVGMaskPaintOperation{
 						kind: .image
 						image_url: image_url
-						image_rect: painting.Rect{
-							x: position.x().to_double()
-							y: position.y().to_double()
-							width: used.content_width().to_double()
-							height: used.content_height().to_double()
-						}
+						image_rect: image_rect
 						image_position_x: object_position.offset_x.to_string()
 						image_position_y: object_position.offset_y.to_string()
 						image_rendering: computed.image_rendering()
+						image_paintable: painting.ImagePaintable{
+							image_rect: image_rect
+							object_fit: .contain
+							object_position: object_position
+							resolution_context: computed.length_resolution_context()
+							image_rendering: computed.image_rendering()
+							is_svg_image: true
+						}
 					}
 				}
 			}
@@ -2531,6 +2550,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut replaced_image_size := ''
 	mut replaced_image_position_x := '50%'
 	mut replaced_image_position_y := '50%'
+	mut replaced_image_paintable := ?painting.ImagePaintable(none)
 	mut form_control_kind := ''
 	mut form_control_checked := false
 	mut form_control_indeterminate := false
@@ -2727,6 +2747,33 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			replaced_image_position_y = object_position.offset_y.to_string()
 		}
 	}
+	if replaced_image_url != '' {
+		replaced_image_paintable = painting.ImagePaintable{
+			image_rect: painting.Rect{
+				x: position.x().to_double()
+				y: position.y().to_double()
+				width: used.content_width().to_double()
+				height: used.content_height().to_double()
+			}
+			border_radii: painting.BorderRadiiData{
+				top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
+				top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
+				bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
+				bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
+			}
+			border_widths: painting.PixelBox{
+				top: used.border_top.to_double()
+				right: used.border_right.to_double()
+				bottom: used.border_bottom.to_double()
+				left: used.border_left.to_double()
+			}
+			object_fit: computed.object_fit()
+			object_position: computed.object_position()
+			resolution_context: computed.length_resolution_context()
+			image_rendering: computed.image_rendering()
+			is_svg_image: node.is_svg_image_box()
+		}
+	}
 	if styled_element := element {
 		if styled_element.local_name() == 'input' && computed.appearance() != .none_ {
 			input_type := styled_element.get_attribute_value('type').to_lower()
@@ -2890,6 +2937,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		replaced_image_position_x: replaced_image_position_x
 		replaced_image_position_y: replaced_image_position_y
 		replaced_image_rendering: computed.image_rendering()
+		replaced_image_paintable: replaced_image_paintable
 		is_svg_image: node.is_svg_image_box()
 		form_control_kind: form_control_kind
 		form_control_checked: form_control_checked

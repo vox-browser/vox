@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 509
+filename-level mappings. The current semantic audit nevertheless reports 508
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 509 unmatched Painting
+  were removed; the audit currently reports 508 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -60,6 +60,21 @@ following behavioral mismatches and added focused regressions:
   cached alpha/luminance surface as path content. The native image bridge
   handles both file-backed `NSImage` values and stb-decoded RGBA buffers rather
   than miscasting decoded pixels as Objective-C objects.
+- Ordinary HTML and SVG replaced images now run the decoded frame through a
+  direct translation of `ImagePaintable::paint()` instead of disguising it as
+  a no-repeat CSS background and reparsing `object-fit`/`object-position`
+  strings in the renderer. The source-ordered path preserves float aspect-ratio
+  selection, fixed-point fitted-size and position rounding, `scale-down`, SVG's
+  forced `contain`, and the source quirk that chooses scaling mode from the
+  content-box size rather than the fitted destination. Its corner clip uses
+  normalized radii shrunken by the four border widths. A six-case
+  fill/contain/cover/none/scale-down differential capture reduced MAE from
+  2.7990 to 2.1765, maximum channel error from 221 to 65, and pixels above 50
+  channel error from 527 to 23; the remaining error is raster-edge
+  antialiasing. The direct single-image replay also removes background tile
+  allocation and string parsing from every replaced-image paint. SVG images
+  nested in masks and pattern tiles consume this same result instead of the
+  renderer-local `contained_image_destination()` shortcut.
 - `SVGLinearGradientPaintStyle` now crosses the active path and mask boundaries
   without being reduced to an SVG paint fallback color. Resource href
   precedence and inheritance, monotonic computed stops, object-bounding-box and
@@ -223,7 +238,7 @@ following behavioral mismatches and added focused regressions:
 | `ExternalContentSource.cpp` | `display_list.v` |
 | `FieldSetPaintable.cpp` | `painting_algorithms.v` |
 | `GradientPainting.cpp` | `effects.v` |
-| `ImagePaintable.cpp` | `painting_algorithms.v` |
+| `ImagePaintable.cpp` | `image_paintable.v` |
 | `MarkerPaintable.cpp` | `painting_algorithms.v` |
 | `NavigableContainerViewportPaintable.cpp` | `painting_algorithms.v` |
 | `PaintStyle.cpp` | `svg_painting.v` |
@@ -319,7 +334,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 509 unmatched implementations.
+Painting: 508 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

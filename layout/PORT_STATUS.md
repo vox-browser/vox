@@ -294,7 +294,11 @@ just resolved and started every child from the SVG origin. The old generic `svg_
 transport has been removed. SVG `<image>` now follows `ImagePaintable`: its
 `href`/XLink precedence, intrinsic-ratio dimension fallback, forced `contain`
 fit, computed object position, translated `image-rendering` scaling selection,
-image-rect clip, and CSS visual-context transform cross the active renderer boundary. The same bitmap operation is retained in
+image-rect clip, and CSS visual-context transform cross the active renderer boundary. HTML `<img>` and SVG `<image>` now both retain the typed
+`ImagePaintable` inputs and run object fitting, fixed-point positioning, scaling
+selection, and border-shrunken corner clipping in the translated paint method;
+they no longer detour through the renderer's CSS-background string resolver.
+The same bitmap operation is retained in
 SVG mask display-list order and participates in alpha/luminance conversion and
 nested group opacity. URL `<linearGradient>`, `<radialGradient>`, and `<pattern>`
 fill and stroke paints are active for ordinary

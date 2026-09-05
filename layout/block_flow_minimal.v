@@ -316,8 +316,9 @@ pub mut:
 	replaced_image_position_x string
 	replaced_image_position_y string
 	replaced_image_rendering  css.ImageRendering
-	// SVGImageBox uses ImagePaintable too, but is distinguishable at replay so
-	// CSS visual-context transforms can be applied to the decoded bitmap.
+	replaced_image_paintable  ?painting.ImagePaintable
+	// Retained for detached compatibility commands; typed HTML/SVG images carry
+	// their source semantics in replaced_image_paintable.
 	is_svg_image               bool
 	form_control_kind          string
 	form_control_checked       bool
@@ -1202,6 +1203,7 @@ pub:
 	image_position_x       string = '50%'
 	image_position_y       string = '50%'
 	image_rendering        css.ImageRendering
+	image_paintable        ?painting.ImagePaintable
 	path_data              []f32
 	path_even_odd          bool
 	transform              [6]f64
@@ -1313,6 +1315,9 @@ pub mut:
 	image_viewport_offset_x  f64
 	image_viewport_offset_y  f64
 	background_blend_mode    painting.BlendMode
+	// ImagePaintable's retained, typed replaced-content geometry. Background
+	// images leave this empty and continue through BackgroundPainting.
+	image_paintable ?painting.ImagePaintable
 	// Synthetic balanced controls around the complete background color/layer
 	// group. The begin command owns the inclusive-subtree glyph runs.
 	text_clip_runs []PaintTextClipRun
@@ -2314,7 +2319,9 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		foreground_replaced_start := commands.len
 		if box.replaced_image_url != '' {
 			commands << PaintCommand{
-				kind: if box.is_svg_image { 'draw_svg_image' } else { 'draw_background_image' }
+				kind: if box.replaced_image_paintable != none {
+					'draw_replaced_image'
+				} else if box.is_svg_image { 'draw_svg_image' } else { 'draw_background_image' }
 				x: box.x
 				y: box.y
 				width: box.width
@@ -2331,6 +2338,7 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				image_clip_y: box.y
 				image_clip_width: box.width
 				image_clip_height: box.height
+				image_paintable: box.replaced_image_paintable
 			}
 		}
 		form_control_state := box.current_form_control_state()
@@ -3943,7 +3951,7 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 					}
 				}
 			}
-		} else if command.kind == 'draw_background_image' {
+		} else if command.kind in ['draw_background_image', 'draw_replaced_image'] {
 			clip_id := 'imageclip${defs.len}'
 			clip_shape := if !box_radii_are_zero(command.image_clip_radii) {
 				'<path d="${rounded_rect_svg_path(command.image_clip_x, command.image_clip_y, command.image_clip_width, command.image_clip_height, command.image_clip_radii)}"/>'

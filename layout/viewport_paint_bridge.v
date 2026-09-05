@@ -867,6 +867,7 @@ fn flatten_compatibility_visual_context(tree painting.AccumulatedVisualContextTr
 						image_position_x: operation.image_position_x
 						image_position_y: operation.image_position_y
 						image_rendering: operation.image_rendering
+						image_paintable: operation.image_paintable
 						path_data: compatibility_pack_clip_path_segments(operation.path)
 						path_even_odd: operation.path.fill_rule == .even_odd
 						transform: operation_transform

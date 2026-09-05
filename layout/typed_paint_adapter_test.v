@@ -1130,7 +1130,7 @@ fn test_svg_image_uses_image_paintable_contain_sizing_and_resolved_href() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="100" viewBox="0 0 100 50"><image x="10" y="5" width="60" height="30" transform="translate(3 4)" href="https://example.test/picture.png" style="object-position:25% 75%;image-rendering:pixelated"/></svg>')
 	root := layout_document_typed_in_viewport(document, 240, 140)
 	commands := root.paint_commands()
-	images := commands.filter(it.kind == 'draw_svg_image')
+	images := commands.filter(it.kind == 'draw_replaced_image')
 	assert images.len == 1
 	image := images[0]
 	// SVGFormattingContext maps the image bounding box through viewBox and the
@@ -1144,13 +1144,16 @@ fn test_svg_image_uses_image_paintable_contain_sizing_and_resolved_href() {
 	assert image.image_position_x == '25%'
 	assert image.image_position_y == '75%'
 	assert image.image_rendering == .pixelated
+	paintable := image.image_paintable or { panic('missing retained ImagePaintable') }
+	assert paintable.is_svg_image
+	assert paintable.image_rect == painting.Rect{26, 18, 120, 60}
 	assert commands.all(it.kind != 'draw_background_image' || it.image_url != image.image_url)
 }
 
 fn test_svg_image_bounding_box_uses_intrinsic_ratio_for_a_missing_dimension() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="100"><image x="7" y="9" width="80" href="data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2220%22%3E%3C/svg%3E"/></svg>')
 	root := layout_document_typed_in_viewport(document, 240, 140)
-	images := root.paint_commands().filter(it.kind == 'draw_svg_image')
+	images := root.paint_commands().filter(it.kind == 'draw_replaced_image')
 	assert images.len == 1
 	assert images[0].x == 7
 	assert images[0].y == 9
@@ -1161,7 +1164,7 @@ fn test_svg_image_bounding_box_uses_intrinsic_ratio_for_a_missing_dimension() {
 fn test_svg_image_legacy_xlink_href_is_used_only_when_href_is_absent() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="50"><image width="40" height="20" xlink:href="https://example.test/legacy.png"/><image y="25" width="40" height="20" href="" xlink:href="https://example.test/ignored.png"/></svg>')
 	root := layout_document_typed_in_viewport(document, 120, 70)
-	images := root.paint_commands().filter(it.kind == 'draw_svg_image')
+	images := root.paint_commands().filter(it.kind == 'draw_replaced_image')
 	assert images.len == 1
 	assert images[0].image_url == 'https://example.test/legacy.png'
 }
@@ -1371,6 +1374,11 @@ fn test_svg_mask_retains_image_paintable_between_group_opacity_boundaries() {
 	assert image.image_position_x == '25%'
 	assert image.image_position_y == '75%'
 	assert image.image_rendering == .crisp_edges
+	image_paintable := image.image_paintable or { panic('mask image lost its ImagePaintable') }
+	assert image_paintable.is_svg_image
+	assert image_paintable.image_rect == painting.Rect{10, 12, 80, 40}
+	assert image_paintable.object_position.offset_x.to_px(image_paintable.resolution_context, css.CSSPixels.new(100)).to_double() == 25
+	assert image_paintable.object_position.offset_y.to_px(image_paintable.resolution_context, css.CSSPixels.new(100)).to_double() == 75
 	assert image.transform == [f64(1), 0, 0, 1, 0, 0]!
 	assert mask.mask_operations[2].kind == .end_opacity
 	assert mask.cache_key != 0

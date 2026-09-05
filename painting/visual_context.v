@@ -101,6 +101,7 @@ pub:
 	image_position_x       string = '50%'
 	image_position_y       string = '50%'
 	image_rendering        css.ImageRendering
+	image_paintable        ?ImagePaintable
 	path                   ClipPathVisualData
 	transform              Affine
 	fill_linear_gradient   ?SVGLinearGradientPaintStyle

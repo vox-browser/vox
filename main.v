@@ -1682,14 +1682,9 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 					}
 					.image {
 						image := app.background_image(operation.image_url) or { continue }
-						rect := operation.image_rect
-						destination_x, destination_y, destination_width, destination_height := contained_image_destination(f32(rect.x), f32(rect.y), f32(rect.width), f32(rect.height), f32(image.width), f32(image.height), operation.image_position_x, operation.image_position_y)
-						if destination_width <= 0 || destination_height <= 0 {
-							continue
-						}
+						replay := resolved_svg_operation_image(operation.image_paintable, operation.image_rect, operation.image_position_x, operation.image_position_y, operation.image_rendering, image.width, image.height) or { continue }
 						operation_matrix := painting_affine_array(operation.transform)
-						scaling_mode := painting.to_gfx_scaling_mode(operation.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{int(math.round(rect.width)), int(math.round(rect.height))})
-						C.native_add_svg_pattern_image(image, destination_x, destination_y, destination_width, destination_height, 0, 0, f32(image.width), f32(image.height), f32(rect.x), f32(rect.y), f32(rect.width), f32(rect.height), f32(operation_matrix[0]), f32(operation_matrix[1]), f32(operation_matrix[2]), f32(operation_matrix[3]), f32(operation_matrix[4]), f32(operation_matrix[5]), f32(tile.height), 1, if scaling_mode == .nearest_neighbor {
+						C.native_add_svg_pattern_image(image, f32(replay.destination.x), f32(replay.destination.y), f32(replay.destination.width), f32(replay.destination.height), 0, 0, f32(image.width), f32(image.height), f32(replay.clip.x), f32(replay.clip.y), f32(replay.clip.width), f32(replay.clip.height), f32(operation_matrix[0]), f32(operation_matrix[1]), f32(operation_matrix[2]), f32(operation_matrix[3]), f32(operation_matrix[4]), f32(operation_matrix[5]), f32(tile.height), 1, if replay.scaling == .nearest_neighbor {
 							1
 						} else {
 							0
@@ -1996,6 +1991,35 @@ fn contained_image_destination(x f32, y f32, width f32, height f32,
 	return x + background_position(position_x, width - destination_width), y + background_position(position_y, height - destination_height), destination_width, destination_height
 }
 
+struct ResolvedSVGOperationImage {
+	destination painting.Rect
+	clip        painting.Rect
+	scaling     painting.ScalingMode
+}
+
+fn resolved_svg_operation_image(retained ?painting.ImagePaintable, rect painting.Rect,
+	position_x string, position_y string, image_rendering css.ImageRendering, image_width int,
+	image_height int) ?ResolvedSVGOperationImage {
+	if paintable := retained {
+		converter := painting.new_device_pixel_converter(1.0) or { return none }
+		result := paintable.paint('', painting.IntRect{0, 0, image_width, image_height}, converter) or { return none }
+		return ResolvedSVGOperationImage{
+			destination: painting.Rect{result.bitmap.destination.x, result.bitmap.destination.y, result.bitmap.destination.width, result.bitmap.destination.height}
+			clip: painting.Rect{result.bitmap.clip_rect.x, result.bitmap.clip_rect.y, result.bitmap.clip_rect.width, result.bitmap.clip_rect.height}
+			scaling: result.bitmap.scaling
+		}
+	}
+	destination_x, destination_y, destination_width, destination_height := contained_image_destination(f32(rect.x), f32(rect.y), f32(rect.width), f32(rect.height), f32(image_width), f32(image_height), position_x, position_y)
+	if destination_width <= 0 || destination_height <= 0 {
+		return none
+	}
+	return ResolvedSVGOperationImage{
+		destination: painting.Rect{destination_x, destination_y, destination_width, destination_height}
+		clip: rect
+		scaling: painting.to_gfx_scaling_mode(image_rendering, painting.IntSize{image_width, image_height}, painting.IntSize{int(math.round(rect.width)), int(math.round(rect.height))})
+	}
+}
+
 fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, page_x f32,
 	page_y f32, scroll_y f32, apply_as_clip bool) {
 	$if macos {
@@ -2020,13 +2044,9 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 					.image {
 						image := app.background_image(operation.image_url) or { continue }
 						rect := operation.image_rect
-						destination_x, destination_y, destination_width, destination_height := contained_image_destination(f32(rect.x), f32(rect.y), f32(rect.width), f32(rect.height), f32(image.width), f32(image.height), operation.image_position_x, operation.image_position_y)
-						if destination_width <= 0 || destination_height <= 0 {
-							continue
-						}
+						replay := resolved_svg_operation_image(operation.image_paintable, painting.Rect{rect.x, rect.y, rect.width, rect.height}, operation.image_position_x, operation.image_position_y, operation.image_rendering, image.width, image.height) or { continue }
 						matrix := normalized_paint_transform(operation.transform)
-						scaling_mode := painting.to_gfx_scaling_mode(operation.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{int(math.round(rect.width)), int(math.round(rect.height))})
-						C.native_add_svg_content_mask_image(image, destination_x, destination_y, destination_width, destination_height, 0, 0, f32(image.width), f32(image.height), f32(rect.x), f32(rect.y), f32(rect.width), f32(rect.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.height), if scaling_mode == .nearest_neighbor {
+						C.native_add_svg_content_mask_image(image, f32(replay.destination.x), f32(replay.destination.y), f32(replay.destination.width), f32(replay.destination.height), 0, 0, f32(image.width), f32(image.height), f32(replay.clip.x), f32(replay.clip.y), f32(replay.clip.width), f32(replay.clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.height), if replay.scaling == .nearest_neighbor {
 							1
 						} else {
 							0
@@ -2751,6 +2771,53 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 					}
 				}
 			}
+		}
+		'draw_replaced_image' {
+			image := app.background_image(command.image_url) or { return }
+			converter := painting.new_device_pixel_converter(1.0) or { return }
+			paintable := command.image_paintable or { return }
+			result := paintable.paint(command.image_url, painting.IntRect{0, 0, image.width, image.height}, converter) or { return }
+			destination := result.bitmap.destination
+			clip := result.bitmap.clip_rect
+			if destination.width <= 0 || destination.height <= 0 || clip.width <= 0
+				|| clip.height <= 0 {
+				return
+			}
+			$if macos {
+				if app.ctx.native_rendering {
+					radii := result.clip_radii
+					C.native_begin_clip()
+					C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+					C.native_draw_image_part_transformed(image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(image.width), f32(image.height), f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
+						1
+					} else {
+						0
+					})
+					C.native_end_clip()
+					return
+				}
+			}
+			// The portable renderer has no rounded image clip, but preserve the
+			// source rectangle produced by clipping cover/none destinations.
+			left := math.max(f64(destination.x), f64(clip.x))
+			top := math.max(f64(destination.y), f64(clip.y))
+			right := math.min(f64(destination.right()), f64(clip.right()))
+			bottom := math.min(f64(destination.bottom()), f64(clip.bottom()))
+			if right <= left || bottom <= top {
+				return
+			}
+			source_x := f32((left - f64(destination.x)) * f64(image.width) / f64(destination.width))
+			source_y := f32((top - f64(destination.y)) * f64(image.height) / f64(destination.height))
+			source_width := f32((right - left) * f64(image.width) / f64(destination.width))
+			source_height := f32((bottom - top) * f64(image.height) / f64(destination.height))
+			screen_left, screen_top := paint_screen_point(command, left, top, page_x, page_y, scroll_y)
+			screen_right, screen_bottom := paint_screen_point(command, right, bottom, page_x, page_y, scroll_y)
+			app.ctx.draw_image_with_config(
+				img: image
+				img_rect: gg.Rect{math.min(screen_left, screen_right), math.min(screen_top, screen_bottom), math.abs(screen_right - screen_left), math.abs(screen_bottom - screen_top)}
+				part_rect: gg.Rect{source_x, source_y, source_width, source_height}
+				color: gg.rgba(255, 255, 255, u8(clamp(command.opacity * 255.0, 0.0, 255.0)))
+			)
 		}
 		'draw_background_image' {
 			image := app.background_image(command.image_url) or { return }

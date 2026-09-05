@@ -178,12 +178,16 @@ fn test_typed_document_paints_replaced_image_content() {
 	document_node.append_child(html.as_node()) or { panic(err) }
 
 	box := layout_document_typed_in_viewport(document, 800, 600)
-	commands := box.paint_commands().filter(it.kind == 'draw_background_image')
+	commands := box.paint_commands().filter(it.kind == 'draw_replaced_image')
 	assert commands.len == 1
 	assert commands[0].image_url.starts_with('data:image/png')
 	assert commands[0].image_size == 'contain'
 	assert commands[0].image_position_x == '25%'
 	assert commands[0].image_position_y == '75%'
+	paintable := commands[0].image_paintable or { panic('missing retained ImagePaintable') }
+	assert paintable.object_fit == .contain
+	assert paintable.object_position.offset_x.to_px(paintable.resolution_context, css.CSSPixels.new(100)).to_double() == 25
+	assert paintable.object_position.offset_y.to_px(paintable.resolution_context, css.CSSPixels.new(100)).to_double() == 75
 }
 
 fn test_typed_document_paints_inline_backgrounds_and_native_checkboxes() {
