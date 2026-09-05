@@ -226,8 +226,15 @@ neither path is reparsed per command or pointer event. Wheel routing follows
 the C++ containing-block fallback, including declining
 programmatic-only hidden overflow and saturated inner scrollers. These updates
 preserve layout and per-phase command caches while refreshing visual scroll
-state and dynamic scrollbar thumbs. SVG geometry now reaches the native Quartz
-renderer as its retained move, line, quadratic/cubic Bezier, elliptical-arc,
+state and dynamic scrollbar thumbs. Uniform rounded box backgrounds now use
+one native rounded path, matching the Skia display-list player, rather than a
+renderer-local composition of three rectangles and four circles. This removes
+six draws per box, fixes translucent corner artifacts, and preserves the arcs
+through rotation, skew, and nonuniform scale. The focused nested-overflow
+screenshot improved from 103,304 to 4,022 pixels over channel error 3 (MAE
+3.2946 to 0.1633); its residual delta is on antialiased path edges. SVG
+geometry now reaches the native Quartz renderer as its retained move, line,
+quadratic/cubic Bezier, elliptical-arc,
 and close segments, including fill rule and stroke cap/join/miter state. URL
 `<clipPath>` resources follow `SVGMaskable`'s paint-time path: the attached
 resource subtree, target/resource transforms, `userSpaceOnUse` or

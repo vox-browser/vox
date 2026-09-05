@@ -137,6 +137,15 @@ following behavioral mismatches and added focused regressions:
   group once while exempting the root element. Quartz consumes one bounded
   document-font alpha mask and the portable SVG serializer emits the same
   user-space mask boundary.
+- Uniform rounded box backgrounds now follow `DisplayListPlayerSkia`'s single
+  rounded-path draw in the native renderer. The previous renderer-local
+  reconstruction used three rectangles and four `gg` circles, performed seven
+  draws per box, blended the corner circles with an unintended 75% alpha, and
+  discarded the corner arcs under rotation or skew. The retained local path is
+  now transformed as a unit for opaque and translucent colors. On the upstream
+  `nested-boxes-with-hidden-overflow-and-border-radius` screenshot this reduced
+  pixels with channel error over 3 from 103,304 to 4,022 and MAE from 3.2946 to
+  0.1633; the remaining delta is confined to antialiased path edges.
 
 ## Implementation-unit mapping
 

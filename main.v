@@ -1400,10 +1400,10 @@ fn draw_srgb_rect(ctx &gg.Context, x f32, y f32, width f32, height f32, fill_col
 	ctx.draw_rect_filled(x, y, width, height, fill_color)
 }
 
-// gg's rounded-rectangle path uses Sokol primitives even when the context is in native-rendering
-// mode. Those primitives are not presented by the macOS native frame, so compose the rounded shape
-// from CoreGraphics-backed rectangles and circles there. Transparent fills use a square native rect
-// to avoid alpha accumulating where the component shapes overlap.
+// DisplayListPlayerSkia paints a rounded rectangle as one path. Keep the native
+// renderer on that same path instead of reconstructing the shape from rectangles
+// and gg circles: besides doing seven draws, the native gg circle adapter applies
+// its own alpha and makes the four corners visibly translucent.
 fn draw_rounded_fill(ctx &gg.Context, x f32, y f32, width f32, height f32, radius f32, fill_color gg.Color) {
 	if width <= 0 || height <= 0 {
 		return
@@ -1414,10 +1414,6 @@ fn draw_rounded_fill(ctx &gg.Context, x f32, y f32, width f32, height f32, radiu
 	}
 	$if macos {
 		if ctx.native_rendering {
-			if fill_color.a != 255 {
-				draw_srgb_rect(ctx, x, y, width, height, fill_color)
-				return
-			}
 			mut used_radius := radius
 			if used_radius > width / 2 {
 				used_radius = width / 2
@@ -1425,15 +1421,7 @@ fn draw_rounded_fill(ctx &gg.Context, x f32, y f32, width f32, height f32, radiu
 			if used_radius > height / 2 {
 				used_radius = height / 2
 			}
-			draw_srgb_rect(ctx, x + used_radius, y, width - 2 * used_radius, height, fill_color)
-			draw_srgb_rect(ctx, x, y + used_radius, used_radius, height - 2 * used_radius, fill_color)
-			draw_srgb_rect(ctx, x + width - used_radius, y + used_radius, used_radius, height - 2 * used_radius, fill_color)
-			// Compensate for gg's native circle adapter, which offsets its documented center by
-			// (+1,+3) before handing the ellipse to CoreGraphics.
-			ctx.draw_circle_filled(x + used_radius - 1, y + used_radius - 3, used_radius, fill_color)
-			ctx.draw_circle_filled(x + width - used_radius - 1, y + used_radius - 3, used_radius, fill_color)
-			ctx.draw_circle_filled(x + used_radius - 1, y + height - used_radius - 3, used_radius, fill_color)
-			ctx.draw_circle_filled(x + width - used_radius - 1, y + height - used_radius - 3, used_radius, fill_color)
+			C.native_draw_rounded_rect_srgb(x, y, width, height, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, 1, 0, 0, 1, 0, 0, 0, 0, 0, f32(ctx.height), fill_color)
 			return
 		}
 	}
@@ -2472,6 +2460,13 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 	match command.kind {
 		'fill_rect' {
 			fill := paint_color(command.color, command.opacity)
+			$if macos {
+				if app.ctx.native_rendering && !command.outer_shadow && command.radius > 0 {
+					used_radius := f32(clamp(command.radius, 0.0, math.min(command.width, command.height) / 2.0))
+					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), fill)
+					return
+				}
+			}
 			if non_axis_aligned {
 				app.ctx.draw_convex_poly(rect_points, fill)
 			} else if command.outer_shadow {
