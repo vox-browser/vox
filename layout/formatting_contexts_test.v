@@ -937,6 +937,34 @@ fn test_grid_formatting_context_sizes_fr_tracks_and_gap() {
 	assert two.offset.y().to_double() == 0
 }
 
+fn test_auto_fit_collapse_looks_only_at_the_first_cell_of_a_track() {
+	// collapse_auto_fit_tracks_if_needed() asks the occupation grid whether the track's first
+	// cell is taken - is_occupied(track_index, 0) for a column - instead of scanning the whole
+	// track. The only item in column 1 sits at row 2 here, so column 1 is still collapsed to
+	// 0px and column 2 slides left into its place.
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; grid-template-columns:repeat(auto-fit, 60px); width:300px }
+		#one { grid-row:2 } #two { grid-column:2 }
+	</style><div id="grid"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'one').content_width().to_double() == 0
+	assert used_for_id(result, 'one').offset.x().to_double() == 0
+	assert used_for_id(result, 'two').content_width().to_double() == 60
+	assert used_for_id(result, 'two').offset.x().to_double() == 0
+}
+
+fn test_auto_fit_collapse_keeps_a_track_whose_first_cell_is_taken() {
+	// The other half of the same rule: an item in row 1 does keep its column alive, so the
+	// second column starts after it rather than at the container edge.
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; grid-template-columns:repeat(auto-fit, 60px); width:300px }
+		#one { grid-column:1 } #two { grid-column:2 }
+	</style><div id="grid"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'one').offset.x().to_double() == 0
+	assert used_for_id(result, 'two').offset.x().to_double() == 60
+}
+
 fn test_grid_max_content_flexible_track_accounts_for_spanning_item() {
 	document := html.parse_document('<!doctype html><style>
 		#grid { display:grid; width:max-content; grid-template-columns:50px 1fr }

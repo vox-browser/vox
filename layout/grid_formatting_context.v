@@ -1413,6 +1413,11 @@ fn increase_grid_flexible_tracks_for_spanning_items(mut state LayoutState, conta
 	}
 }
 
+// collapse_auto_fit_tracks_if_needed(). C++ asks the occupation grid whether the track's
+// *first* cell is taken - is_occupied(track_index, 0) for a column, is_occupied(0,
+// track_index) for a row - rather than scanning the whole track for an item. An item further
+// along the track therefore does not keep it alive: the only item in column 1 sitting at
+// `grid-row: 2` still leaves that column collapsed.
 fn collapse_empty_auto_fit_tracks(mut tracks []GridTrack, placements []GridItemPlacement, columns bool) {
 	for track_index in 0 .. tracks.len {
 		if !tracks[track_index].auto_fit {
@@ -1422,7 +1427,10 @@ fn collapse_empty_auto_fit_tracks(mut tracks []GridTrack, placements []GridItemP
 		for placement in placements {
 			start := if columns { placement.column } else { placement.row }
 			span := if columns { placement.column_span } else { placement.row_span }
-			if track_index >= start && track_index < start + span {
+			cross_start := if columns { placement.row } else { placement.column }
+			cross_span := if columns { placement.row_span } else { placement.column_span }
+			if track_index >= start && track_index < start + span && cross_start <= 0
+				&& cross_start + cross_span > 0 {
 				occupied = true
 				break
 			}
